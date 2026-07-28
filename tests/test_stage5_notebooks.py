@@ -1440,6 +1440,10 @@ def test_current_bootstrap_exposes_d0_expert_choice_rung0_target() -> None:
     assert '"paper2_d0_expert_choice_rung0"' in bootstrap
     assert "no model no optimizer no training" in cell
     assert "eval/rescore_d0_expert_choice.py" in runner
+    assert runner.index("sys.path.insert") < runner.index(
+        "from training.speculative_depth_d0_corpus import sha256_file"
+    )
+    assert "failure.json" in runner
 
 
 def test_current_bootstrap_exposes_dc0_split_resume_targets() -> None:

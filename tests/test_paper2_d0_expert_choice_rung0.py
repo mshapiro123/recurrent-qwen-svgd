@@ -5,6 +5,7 @@ import torch
 from eval.rescore_d0_expert_choice import (
     binary_auc,
     causal_window_expert_choice,
+    curve_replay_diagnostics,
     floor_transition_archaeology,
     score_selected_second_loop,
 )
@@ -64,3 +65,26 @@ def test_floor_archaeology_reconstructs_matches_from_predictions() -> None:
     )
     assert result["helps"] == 1
     assert result["hurts"] == 1
+
+
+def test_curve_replay_requires_exact_counts_but_tolerates_float_roundoff() -> None:
+    banked = [
+        {
+            "penalty": 0.01,
+            "correct": 10,
+            "total": 16,
+            "accuracy": 0.625,
+            "mean_loops": 1.125,
+            "net_utility": 0.62375,
+        }
+    ]
+    reconstructed = [{**banked[0], "accuracy": 0.6250002, "mean_loops": 1.1250002}]
+    diagnostics = curve_replay_diagnostics(reconstructed, banked)
+    assert diagnostics["pass"] is True
+    assert diagnostics["exact_fields_match"] is True
+    assert diagnostics["maximum_derived_absolute_difference"] > 0
+
+    wrong_counts = [{**reconstructed[0], "correct": 9}]
+    diagnostics = curve_replay_diagnostics(wrong_counts, banked)
+    assert diagnostics["pass"] is False
+    assert diagnostics["exact_fields_match"] is False

@@ -23,7 +23,21 @@ assert GH, "Missing GH_TOKEN."
 
 def run(command: list[str], cwd: Path | None = None) -> None:
     print("$", " ".join(command).replace(GH, "****"), flush=True)
-    subprocess.run(command, cwd=cwd or ROOT, check=True)
+    process = subprocess.Popen(
+        command,
+        cwd=cwd or ROOT,
+        env=os.environ.copy(),
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        bufsize=1,
+    )
+    assert process.stdout is not None
+    for line in process.stdout:
+        print(line, end="", flush=True)
+    code = process.wait()
+    if code:
+        raise subprocess.CalledProcessError(code, command)
 
 
 if not Path("/content/drive/MyDrive").is_dir():
@@ -40,4 +54,4 @@ run(["git", "config", "user.email", "colab-runner@local"])
 run(["git", "config", "user.name", "Colab Runner"])
 run([sys.executable, "-m", "pip", "install", "-q", "-r", "requirements.txt"])
 run([sys.executable, "-m", "pytest", "-q", "tests/test_paper2_d0_expert_choice_rung0.py"])
-run([sys.executable, "colab/run_stage5_paper2_d0_expert_choice_rung0.py"])
+run([sys.executable, "-u", "colab/run_stage5_paper2_d0_expert_choice_rung0.py"])

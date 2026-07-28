@@ -7,9 +7,15 @@ import os
 import shutil
 import subprocess
 import sys
+import traceback
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from training.speculative_depth_d0_corpus import sha256_file
+
 RUN_ID = "stage5_paper2_d0_expert_choice_rung0_20260728"
 RUN_DIR = ROOT / "outputs/stage5" / RUN_ID
 D0 = ROOT / "outputs/stage5/stage5_paper2_d0_20260726"
@@ -21,7 +27,55 @@ DRIVE_RUN = Path(f"/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/{
 
 def run(command: list[str]) -> None:
     print("$", " ".join(command), flush=True)
-    subprocess.run(command, cwd=ROOT, check=True)
+    process = subprocess.Popen(
+        command,
+        cwd=ROOT,
+        env=os.environ.copy(),
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        bufsize=1,
+    )
+    assert process.stdout is not None
+    for line in process.stdout:
+        print(line, end="", flush=True)
+    code = process.wait()
+    if code:
+        raise subprocess.CalledProcessError(code, command)
+
+
+def read_json(path: Path) -> dict:
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def resolve_private_artifact(
+    *,
+    label: str,
+    candidates: list[Path],
+    search_root: Path,
+    filename: str,
+) -> Path:
+    expanded = list(candidates)
+    if search_root.exists():
+        expanded.extend(sorted(search_root.rglob(filename)))
+    seen: set[str] = set()
+    diagnostics = []
+    for path in expanded:
+        key = str(path)
+        if key in seen:
+            continue
+        seen.add(key)
+        diagnostics.append(
+            {
+                "path": key,
+                "exists": path.exists(),
+                "bytes": path.stat().st_size if path.exists() else None,
+            }
+        )
+        if path.is_file():
+            print(f"resolved_{label}=" + json.dumps(diagnostics), flush=True)
+            return path
+    raise FileNotFoundError(f"missing {label}: {json.dumps(diagnostics)}")
 
 
 def publish(paths: list[Path]) -> str:
@@ -34,16 +88,36 @@ def publish(paths: list[Path]) -> str:
 
 
 def main() -> int:
+    audit_summary = read_json(D1 / "summary.json")
+    recorded_feature = Path(
+        str(audit_summary["private_artifacts"]["evaluation_feature_cache"])
+    )
     feature_candidates = [
+        recorded_feature,
         DRIVE_D1 / "private/evaluation_feature_cache.pt",
         DRIVE_D1 / "private/evaluation/evaluation_feature_cache.pt",
     ]
-    feature = next((path for path in feature_candidates if path.exists()), None)
-    floor = DRIVE_D0 / "private/floor/floor_rows.json"
-    if feature is None:
-        raise FileNotFoundError(f"missing D1 private feature cache: {feature_candidates}")
-    if not floor.exists():
-        raise FileNotFoundError(f"missing pre-D0 floor rows: {floor}")
+    feature = resolve_private_artifact(
+        label="d1_feature_cache",
+        candidates=feature_candidates,
+        search_root=DRIVE_D1,
+        filename="evaluation_feature_cache.pt",
+    )
+    floor = resolve_private_artifact(
+        label="pre_d0_floor_rows",
+        candidates=[DRIVE_D0 / "private/floor/floor_rows.json"],
+        search_root=DRIVE_D0,
+        filename="floor_rows.json",
+    )
+    floor_summary = read_json(D0 / "floor/summary.json")
+    expected_floor_sha = str(floor_summary["private_rows_sha256"])
+    observed_floor_sha = sha256_file(floor)
+    print(
+        f"pre_d0_floor_sha observed={observed_floor_sha} expected={expected_floor_sha}",
+        flush=True,
+    )
+    if observed_floor_sha != expected_floor_sha:
+        raise RuntimeError("pre-D0 private floor rows hash does not match the banked receipt")
     RUN_DIR.mkdir(parents=True, exist_ok=True)
     run(
         [
@@ -71,4 +145,26 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    try:
+        raise SystemExit(main())
+    except Exception as error:
+        traceback.print_exc()
+        try:
+            if not Path("/content/drive/MyDrive").is_dir():
+                raise RuntimeError("Drive is not mounted; failure receipt not written")
+            DRIVE_RUN.mkdir(parents=True, exist_ok=True)
+            failure = {
+                "kind": "paper2_d0_expert_choice_rung0_failure",
+                "status": "errored",
+                "error_type": type(error).__name__,
+                "error": str(error),
+                "traceback": traceback.format_exc(),
+            }
+            (DRIVE_RUN / "failure.json").write_text(
+                json.dumps(failure, indent=2, sort_keys=True) + "\n",
+                encoding="utf-8",
+            )
+            print(f"failure_receipt={DRIVE_RUN / 'failure.json'}", flush=True)
+        except Exception:
+            traceback.print_exc()
+        raise

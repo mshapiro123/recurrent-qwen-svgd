@@ -184,18 +184,67 @@ def reconstruct_oof_scores(cache: dict[str, Any]) -> torch.Tensor:
     return scores
 
 
-def _curve_equivalent(left: Sequence[dict[str, Any]], right: Sequence[dict[str, Any]]) -> bool:
+def curve_replay_diagnostics(
+    left: Sequence[dict[str, Any]],
+    right: Sequence[dict[str, Any]],
+    *,
+    float_abs_tol: float = 1e-6,
+) -> dict[str, Any]:
+    """Compare a reconstructed policy curve to its banked aggregate receipt.
+
+    Selection counts are decision-bearing and must replay exactly. Accuracy,
+    mean loops, and utility are derived floating-point fields, so they use a
+    small cross-runtime tolerance rather than requiring bitwise-equivalent
+    linear algebra from different Colab/PyTorch builds.
+    """
+
+    diagnostics: dict[str, Any] = {
+        "left_rows": len(left),
+        "right_rows": len(right),
+        "float_abs_tolerance": float(float_abs_tol),
+        "exact_fields_match": True,
+        "derived_fields_match": True,
+        "maximum_derived_absolute_difference": 0.0,
+        "mismatches": [],
+    }
     if len(left) != len(right):
-        return False
-    keys = ("penalty", "correct", "total", "accuracy", "mean_loops", "net_utility")
-    for a, b in zip(left, right, strict=True):
-        for key in keys:
-            if isinstance(a[key], float) or isinstance(b[key], float):
-                if not math.isclose(float(a[key]), float(b[key]), rel_tol=0.0, abs_tol=1e-9):
-                    return False
-            elif a[key] != b[key]:
-                return False
-    return True
+        diagnostics["exact_fields_match"] = False
+        diagnostics["derived_fields_match"] = False
+        diagnostics["mismatches"].append(
+            {"field": "curve_length", "left": len(left), "right": len(right)}
+        )
+        diagnostics["pass"] = False
+        return diagnostics
+
+    for row_index, (a, b) in enumerate(zip(left, right, strict=True)):
+        for key in ("penalty", "correct", "total"):
+            if a[key] != b[key]:
+                diagnostics["exact_fields_match"] = False
+                diagnostics["mismatches"].append(
+                    {"row": row_index, "field": key, "left": a[key], "right": b[key]}
+                )
+        for key in ("accuracy", "mean_loops", "net_utility"):
+            difference = abs(float(a[key]) - float(b[key]))
+            diagnostics["maximum_derived_absolute_difference"] = max(
+                diagnostics["maximum_derived_absolute_difference"], difference
+            )
+            if not math.isclose(
+                float(a[key]), float(b[key]), rel_tol=0.0, abs_tol=float_abs_tol
+            ):
+                diagnostics["derived_fields_match"] = False
+                diagnostics["mismatches"].append(
+                    {
+                        "row": row_index,
+                        "field": key,
+                        "left": a[key],
+                        "right": b[key],
+                        "absolute_difference": difference,
+                    }
+                )
+    diagnostics["pass"] = bool(
+        diagnostics["exact_fields_match"] and diagnostics["derived_fields_match"]
+    )
+    return diagnostics
 
 
 def floor_transition_archaeology(rows: Sequence[dict[str, Any]]) -> dict[str, Any]:
@@ -306,8 +355,16 @@ def main() -> int:
         scalars=cache["scalars"], matches=cache["matches"], metadata=cache["metadata"]
     )
     banked_curve = audit["evaluation"]["cross_fitted_scalar_policy"]["curve"]
-    if not _curve_equivalent(replay["curve"], banked_curve):
-        raise RuntimeError("frozen cross-fit reconstruction does not replay the banked audit curve")
+    replay_diagnostics = curve_replay_diagnostics(replay["curve"], banked_curve)
+    print(
+        "banked_curve_replay=" + json.dumps(replay_diagnostics, sort_keys=True),
+        flush=True,
+    )
+    if not replay_diagnostics["pass"]:
+        raise RuntimeError(
+            "frozen cross-fit reconstruction does not replay the banked audit curve: "
+            + json.dumps(replay_diagnostics, sort_keys=True)
+        )
 
     scores = reconstruct_oof_scores(cache)[:, 0]
     matches = cache["matches"].bool()
@@ -350,7 +407,8 @@ def main() -> int:
         "budgets": list(BUDGETS),
         "causal_windows": list(WINDOWS),
         "oof_score_source": "deterministic reconstruction of frozen grouped five-fold ridge probe",
-        "banked_curve_replay_exact": True,
+        "banked_curve_replay": replay_diagnostics,
+        "banked_curve_replay_exact_counts": replay_diagnostics["exact_fields_match"],
         "score_auc_help_vs_hurt": binary_auc(scores, helps=helps, hurts=hurts),
         "post_d0_transition_1_to_2": floor_transition_archaeology(
             [{"matches": row.tolist()} for row in matches]
