@@ -22,9 +22,14 @@
     {
       "interpretive_scoring": false,
       "purpose": "single-pass teacher cache construction before scoring"
+    },
+    {
+      "dc0_status": "complete_diagnostic_requires_strategy_review",
+      "interpretive_scoring": true,
+      "purpose": "registered DC0 in-place and depth-by-append comparison"
     }
   ],
-  "read_once_scoring_spent": false,
+  "read_once_scoring_spent": true,
   "seed": 20260728,
   "source_revisions": {
     "drafter": "7ae557604adf67be50417f59c2c2f167def9a775",
@@ -34,7 +39,7 @@
     "teacher_14b": "cf98f3b3bbb457ad9e2bb7baf9a0125b6b88caa8",
     "teacher_7b": "a09a35458c702b33eeacc393d103063234e8bc28"
   },
-  "status": "complete_unspent",
+  "status": "spent_dc0_complete",
   "teacher": {
     "acceptance_rate": 0.7395063275278787,
     "accepted_positions": 147550,
