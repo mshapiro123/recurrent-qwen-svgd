@@ -297,6 +297,10 @@ def evaluate_append_arm(
     batch_size: int,
     resume_dir: Path,
     read_at_t_query: bool = False,
+    append_steps: int = MAX_APPEND,
+    feedback_scale: float | None = None,
+    slot_position_mode: str = "advance",
+    capture_slot_attentions: bool = False,
 ) -> tuple[list[torch.Tensor], dict[str, int]]:
     outputs: list[torch.Tensor | None] = [None] * len(rows)
     totals = Counter()
@@ -325,11 +329,14 @@ def evaluate_append_arm(
             values = torch.tensor([rows[index]["input_ids"] for index in indices], device=device)
             result = composite.depth_by_append(
                 input_ids=values,
-                append_steps=MAX_APPEND,
+                append_steps=int(append_steps),
                 feedback_mode=feedback_mode,
                 reference_rms=reference_rms,
+                feedback_scale=feedback_scale,
                 neutral_token_id=neutral_token_id,
                 read_at_t_query=read_at_t_query,
+                slot_position_mode=slot_position_mode,
+                capture_slot_attentions=capture_slot_attentions,
                 prediction_vocab_size=vocab_size,
             )
             payload = {

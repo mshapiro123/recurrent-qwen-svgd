@@ -1,0 +1,222 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 1280 900" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Composite architecture diagram">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#4B5563"/>
+    </marker>
+    <marker id="arrB" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#2563EB"/>
+    </marker>
+    <marker id="arrA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#B45309"/>
+    </marker>
+  </defs>
+
+  <!-- ===================== HEADER ===================== -->
+  <text x="30" y="34" font-size="19" font-weight="700" fill="#111827">Composite architecture — hybrid vertical × horizontal recurrence</text>
+  <text x="30" y="56" font-size="12" fill="#6B7280">Qwen2.5-0.5B surgery · L fixed globally (a setting) · k learned per position, cap 3 (a policy) · 2026-07-29</text>
+
+  <!-- ===================== LEFT PANEL: VERTICAL AXIS ===================== -->
+  <rect x="20" y="80" width="320" height="500" rx="10" fill="#F6F6F3" stroke="#E2E2DE"/>
+  <text x="36" y="108" font-size="13.5" font-weight="700" fill="#111827">One pass — the vertical axis</text>
+
+  <!-- input -->
+  <rect x="60" y="122" width="240" height="46" rx="6" fill="#FFFFFF" stroke="#9CA3AF"/>
+  <text x="180" y="141" font-size="10.5" fill="#1F2937" text-anchor="middle">input: token embedding —</text>
+  <text x="180" y="156" font-size="10.5" fill="#2563EB" text-anchor="middle">or fed state W·h at a latent slot</text>
+  <line x1="180" y1="168" x2="180" y2="184" stroke="#4B5563" stroke-width="1.4" marker-end="url(#arr)"/>
+
+  <!-- prelude -->
+  <rect x="60" y="186" width="240" height="50" rx="6" fill="#E8E8E6" stroke="#7A7A75"/>
+  <text x="180" y="207" font-size="11" fill="#333" text-anchor="middle" font-weight="600">Prelude — layers 0–5</text>
+  <text x="180" y="223" font-size="9.5" fill="#6B7280" text-anchor="middle">(frozen)</text>
+  <line x1="180" y1="236" x2="180" y2="252" stroke="#4B5563" stroke-width="1.4" marker-end="url(#arr)"/>
+
+  <!-- recurrent block with loop -->
+  <rect x="60" y="254" width="240" height="82" rx="6" fill="#E8E8E6" stroke="#7A7A75" stroke-width="1.5"/>
+  <text x="180" y="285" font-size="11" fill="#333" text-anchor="middle" font-weight="600">Recurrent block — layers 6–17</text>
+  <text x="180" y="302" font-size="9.5" fill="#6B7280" text-anchor="middle">weight-tied (frozen)</text>
+  <text x="180" y="318" font-size="9.5" fill="#6B7280" text-anchor="middle">re-entry bridge on loops &gt; 1</text>
+  <path d="M300,320 C338,320 338,268 300,268" fill="none" stroke="#4B5563" stroke-width="1.4" marker-end="url(#arr)"/>
+  <text x="322" y="299" font-size="11" font-weight="700" fill="#111827">×L</text>
+  <line x1="180" y1="336" x2="180" y2="352" stroke="#4B5563" stroke-width="1.4" marker-end="url(#arr)"/>
+
+  <!-- coda -->
+  <rect x="60" y="354" width="240" height="50" rx="6" fill="#E8E8E6" stroke="#7A7A75"/>
+  <text x="180" y="375" font-size="11" fill="#333" text-anchor="middle" font-weight="600">Coda — layers 18–23</text>
+  <text x="180" y="391" font-size="9.5" fill="#6B7280" text-anchor="middle">(frozen)</text>
+  <line x1="180" y1="404" x2="180" y2="420" stroke="#4B5563" stroke-width="1.4" marker-end="url(#arr)"/>
+
+  <!-- final hidden -->
+  <rect x="60" y="422" width="240" height="36" rx="6" fill="#EFF4FF" stroke="#2563EB" stroke-width="1.5"/>
+  <text x="180" y="444" font-size="10.5" fill="#1E40AF" text-anchor="middle" font-weight="600">final hidden state h  (RMS ≈ 10)</text>
+
+  <!-- fork -->
+  <line x1="140" y1="458" x2="112" y2="486" stroke="#4B5563" stroke-width="1.4" marker-end="url(#arr)"/>
+  <line x1="220" y1="458" x2="252" y2="486" stroke="#B45309" stroke-width="1.4" marker-end="url(#arrA)"/>
+  <rect x="44" y="488" width="130" height="56" rx="6" fill="#FFFFFF" stroke="#9CA3AF"/>
+  <text x="109" y="511" font-size="10" fill="#1F2937" text-anchor="middle">token logits</text>
+  <text x="109" y="526" font-size="9" fill="#6B7280" text-anchor="middle">(visible output)</text>
+  <rect x="188" y="488" width="130" height="56" rx="6" fill="#FEF3E2" stroke="#B45309"/>
+  <text x="253" y="506" font-size="9.5" fill="#7C3E06" text-anchor="middle" font-weight="600">control logits</text>
+  <text x="253" y="520" font-size="9" fill="#7C3E06" text-anchor="middle">⟨continue | stop⟩</text>
+  <text x="253" y="533" font-size="8.5" fill="#B45309" text-anchor="middle">(masked, internal)</text>
+
+  <text x="180" y="568" font-size="10.5" fill="#374151" text-anchor="middle" font-weight="600">depth per pass = 12 + 12·L layer-applications</text>
+
+  <!-- ===================== RIGHT PANEL: HORIZONTAL AXIS ===================== -->
+  <rect x="360" y="80" width="900" height="500" rx="10" fill="#F6F6F3" stroke="#E2E2DE"/>
+  <text x="376" y="108" font-size="13.5" font-weight="700" fill="#111827">One decision episode — the horizontal axis (at position t)</text>
+
+  <!-- legend -->
+  <rect x="948" y="90" width="14" height="10" fill="#E8E8E6" stroke="#7A7A75"/>
+  <text x="968" y="99" font-size="9.5" fill="#4B5563">frozen backbone</text>
+  <rect x="948" y="106" width="14" height="10" fill="#EFF4FF" stroke="#2563EB"/>
+  <text x="968" y="115" font-size="9.5" fill="#4B5563">fed-state path — trained in stages A–B</text>
+  <rect x="948" y="122" width="14" height="10" fill="#FEF3E2" stroke="#B45309"/>
+  <text x="968" y="131" font-size="9.5" fill="#4B5563">control read — trained in stage C</text>
+
+  <!-- attention arcs (above chain) -->
+  <path d="M787,166 Q660,112 547,166" fill="none" stroke="#2563EB" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arrB)"/>
+  <path d="M1035,166 Q780,96 543,162" fill="none" stroke="#2563EB" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arrB)"/>
+  <text x="700" y="126" font-size="9.5" fill="#1E40AF" font-style="italic">slots attend over the entire prefix — nothing is overwritten</text>
+
+  <!-- chain -->
+  <rect x="378" y="196" width="80" height="40" rx="6" fill="#E8E8E6" stroke="#7A7A75"/>
+  <text x="418" y="220" font-size="10" fill="#4B5563" text-anchor="middle">…context</text>
+  <line x1="458" y1="216" x2="476" y2="216" stroke="#4B5563" stroke-width="1.4" marker-end="url(#arr)"/>
+
+  <rect x="478" y="170" width="122" height="92" rx="7" fill="#FFFFFF" stroke="#7A7A75" stroke-width="1.5"/>
+  <text x="539" y="196" font-size="10.5" fill="#111827" text-anchor="middle" font-weight="700">position t</text>
+  <text x="539" y="213" font-size="9.5" fill="#4B5563" text-anchor="middle">full vertical pass</text>
+  <text x="539" y="228" font-size="8.5" fill="#6B7280" text-anchor="middle">prelude → block×L → coda</text>
+  <text x="539" y="246" font-size="8.5" fill="#6B7280" text-anchor="middle">(k = 0 path untouched)</text>
+
+  <line x1="600" y1="216" x2="614" y2="216" stroke="#B45309" stroke-width="1.4" marker-end="url(#arrA)"/>
+  <!-- diamond 1 -->
+  <polygon points="656,188 694,216 656,244 618,216" fill="#FEF3E2" stroke="#B45309" stroke-width="1.5"/>
+  <text x="656" y="213" font-size="9" fill="#7C3E06" text-anchor="middle" font-weight="600">more</text>
+  <text x="656" y="225" font-size="9" fill="#7C3E06" text-anchor="middle" font-weight="600">thought?</text>
+
+  <line x1="694" y1="216" x2="724" y2="216" stroke="#2563EB" stroke-width="1.4" marker-end="url(#arrB)"/>
+  <text x="709" y="207" font-size="8" fill="#2563EB" text-anchor="middle">cont.</text>
+
+  <rect x="726" y="170" width="122" height="92" rx="7" fill="#EFF4FF" stroke="#2563EB" stroke-width="1.5"/>
+  <text x="787" y="196" font-size="10.5" fill="#1E40AF" text-anchor="middle" font-weight="700">latent slot 1</text>
+  <text x="787" y="213" font-size="9.5" fill="#1E40AF" text-anchor="middle">full vertical pass</text>
+  <text x="787" y="229" font-size="8.5" fill="#2563EB" text-anchor="middle">input = W·h (identity,</text>
+  <text x="787" y="241" font-size="8.5" fill="#2563EB" text-anchor="middle">raw scale)</text>
+
+  <line x1="848" y1="216" x2="862" y2="216" stroke="#B45309" stroke-width="1.4" marker-end="url(#arrA)"/>
+  <!-- diamond 2 -->
+  <polygon points="904,188 942,216 904,244 866,216" fill="#FEF3E2" stroke="#B45309" stroke-width="1.5"/>
+  <text x="904" y="213" font-size="9" fill="#7C3E06" text-anchor="middle" font-weight="600">more</text>
+  <text x="904" y="225" font-size="9" fill="#7C3E06" text-anchor="middle" font-weight="600">thought?</text>
+
+  <line x1="942" y1="216" x2="972" y2="216" stroke="#2563EB" stroke-width="1.4" marker-end="url(#arrB)"/>
+  <text x="957" y="207" font-size="8" fill="#2563EB" text-anchor="middle">cont.</text>
+
+  <rect x="974" y="170" width="122" height="92" rx="7" fill="#EFF4FF" stroke="#2563EB" stroke-width="1.5"/>
+  <text x="1035" y="196" font-size="10.5" fill="#1E40AF" text-anchor="middle" font-weight="700">latent slot 2</text>
+  <text x="1035" y="213" font-size="9.5" fill="#1E40AF" text-anchor="middle">full vertical pass</text>
+  <text x="1035" y="229" font-size="8.5" fill="#2563EB" text-anchor="middle">input = W·h of slot 1</text>
+
+  <line x1="1096" y1="216" x2="1110" y2="216" stroke="#B45309" stroke-width="1.4" marker-end="url(#arrA)"/>
+  <!-- diamond 3 -->
+  <polygon points="1152,188 1190,216 1152,244 1114,216" fill="#FEF3E2" stroke="#B45309" stroke-width="1.5"/>
+  <text x="1152" y="213" font-size="9" fill="#7C3E06" text-anchor="middle" font-weight="600">more</text>
+  <text x="1152" y="225" font-size="9" fill="#7C3E06" text-anchor="middle" font-weight="600">thought?</text>
+  <text x="1152" y="262" font-size="8.5" fill="#6B7280" text-anchor="middle">cont. → slot 3</text>
+  <text x="1152" y="274" font-size="8.5" fill="#6B7280" text-anchor="middle">(cap k = 3, then forced stop)</text>
+
+  <!-- stop arrows to emit bar -->
+  <line x1="656" y1="244" x2="656" y2="318" stroke="#4B5563" stroke-width="1.4" marker-end="url(#arr)"/>
+  <text x="668" y="268" font-size="8" fill="#6B7280">stop (default)</text>
+  <line x1="904" y1="244" x2="904" y2="318" stroke="#4B5563" stroke-width="1.4" marker-end="url(#arr)"/>
+  <text x="916" y="268" font-size="8" fill="#6B7280">stop</text>
+  <line x1="1152" y1="284" x2="1152" y2="318" stroke="#4B5563" stroke-width="1.4" marker-end="url(#arr)"/>
+  <text x="1164" y="302" font-size="8" fill="#6B7280">stop</text>
+
+  <rect x="500" y="320" width="700" height="42" rx="7" fill="#FFFFFF" stroke="#374151" stroke-width="1.3"/>
+  <text x="850" y="338" font-size="10.5" fill="#111827" text-anchor="middle" font-weight="600">STOP → emit the next real token from the current state</text>
+  <text x="850" y="354" font-size="9.5" fill="#6B7280" text-anchor="middle">at position t this is k = 0 — bit-identical to the plain model (architectural guardrail)</text>
+
+  <!-- eviction strip -->
+  <text x="380" y="402" font-size="10.5" fill="#111827" font-weight="600">Transient scratchpad — slots evicted after emission</text>
+  <text x="380" y="430" font-size="9.5" fill="#6B7280">during:</text>
+  <rect x="436" y="416" width="50" height="20" rx="3" fill="#E8E8E6" stroke="#9CA3AF"/><text x="461" y="430" font-size="8" fill="#4B5563" text-anchor="middle">ctx</text>
+  <rect x="490" y="416" width="28" height="20" rx="3" fill="#FFFFFF" stroke="#7A7A75"/><text x="504" y="430" font-size="8" fill="#4B5563" text-anchor="middle">t</text>
+  <rect x="522" y="416" width="28" height="20" rx="3" fill="#EFF4FF" stroke="#2563EB"/><text x="536" y="430" font-size="8" fill="#1E40AF" text-anchor="middle">s1</text>
+  <rect x="554" y="416" width="28" height="20" rx="3" fill="#EFF4FF" stroke="#2563EB"/><text x="568" y="430" font-size="8" fill="#1E40AF" text-anchor="middle">s2</text>
+  <text x="380" y="460" font-size="9.5" fill="#6B7280">after:</text>
+  <rect x="436" y="446" width="50" height="20" rx="3" fill="#E8E8E6" stroke="#9CA3AF"/><text x="461" y="460" font-size="8" fill="#4B5563" text-anchor="middle">ctx</text>
+  <rect x="490" y="446" width="28" height="20" rx="3" fill="#FFFFFF" stroke="#7A7A75"/><text x="504" y="460" font-size="8" fill="#4B5563" text-anchor="middle">t</text>
+  <rect x="522" y="446" width="34" height="20" rx="3" fill="#FFFFFF" stroke="#374151"/><text x="539" y="460" font-size="8" fill="#111827" text-anchor="middle">t+1</text>
+  <text x="640" y="432" font-size="9.5" fill="#6B7280">later real tokens see the unmodified sequence</text>
+  <text x="640" y="448" font-size="9.5" fill="#6B7280">(position ids unchanged — asserted, RG-1 identity at k = 0)</text>
+  <text x="640" y="466" font-size="9" fill="#9CA3AF" font-style="italic">persistent-scratchpad variant: pinned, not in scope</text>
+
+  <!-- compute annotation -->
+  <rect x="380" y="500" width="856" height="58" rx="7" fill="#FFFFFF" stroke="#D1D5DB"/>
+  <text x="808" y="524" font-size="11" fill="#111827" text-anchor="middle" font-weight="600">compute per position = (k + 1) · (12 + 12·L) layer-applications</text>
+  <text x="808" y="543" font-size="9.5" fill="#6B7280" text-anchor="middle">k = learned per-position policy (0–3, control tokens) · L = fixed global setting (1 now, 2 at stage D) — one is a policy, the other a setting</text>
+
+  <!-- ===================== BOTTOM STRIP: TRAINING STAGES ===================== -->
+  <text x="30" y="612" font-size="13.5" font-weight="700" fill="#111827">Training stages — each stage's labels are measured on the substrate the previous stage built</text>
+  <text x="30" y="630" font-size="10" fill="#6B7280">Label source and scoreboard throughout: cached Qwen2.5-7B greedy pass — the speculative-decoding acceptance signal.</text>
+
+  <!-- Stage A -->
+  <rect x="30" y="644" width="292" height="200" rx="10" fill="#EFF4FF" stroke="#2563EB" stroke-width="1.3"/>
+  <text x="46" y="670" font-size="11.5" font-weight="700" fill="#1E40AF">Stage A — DC1: interface</text>
+  <text x="46" y="692" font-size="9.5" fill="#1F2937">Train: horizontal bridge only</text>
+  <text x="46" y="706" font-size="9.5" fill="#1F2937">(identity init, raw scale)</text>
+  <text x="46" y="726" font-size="9.5" fill="#1F2937">Forced k = 1 · teacher-CE at slot readout</text>
+  <text x="46" y="746" font-size="9.5" fill="#1F2937">Question: can forced append be made safe?</text>
+  <text x="46" y="766" font-size="9.5" fill="#1F2937">Precondition: RG-4 + RG-11 green</text>
+  <text x="46" y="786" font-size="9.5" fill="#1F2937">Eval: one pass on frozen EVAL-C vs</text>
+  <text x="46" y="800" font-size="9.5" fill="#1F2937">in-place depth 2/3 + untrained append</text>
+  <text x="46" y="824" font-size="9" fill="#6B7280" font-style="italic">actuator qualification — parallel to T1-lite</text>
+
+  <!-- Stage B -->
+  <rect x="338" y="644" width="292" height="200" rx="10" fill="#EFF4FF" stroke="#2563EB" stroke-width="1.3"/>
+  <text x="354" y="670" font-size="11.5" font-weight="700" fill="#1E40AF">Stage B — capability</text>
+  <text x="354" y="692" font-size="9.5" fill="#1F2937">Train: bridge (+ minimal adapters</text>
+  <text x="354" y="706" font-size="9.5" fill="#1F2937">only if preregistered)</text>
+  <text x="354" y="726" font-size="9.5" fill="#1F2937">Mixed forced k ∈ {0…3} · teacher-CE</text>
+  <text x="354" y="746" font-size="9.5" fill="#1F2937">Then: forced-k utility ledger measured</text>
+  <text x="354" y="760" font-size="9.5" fill="#1F2937">on the trained interface → stage-C labels</text>
+  <text x="354" y="780" font-size="9.5" fill="#1F2937">λ grid chosen from this ledger</text>
+  <text x="354" y="800" font-size="9.5" font-weight="600" fill="#1F2937">Go/no-go: do helps materialize?</text>
+  <text x="354" y="824" font-size="9" fill="#6B7280" font-style="italic">closes D0's label-substrate misalignment</text>
+
+  <!-- Stage C -->
+  <rect x="646" y="644" width="292" height="200" rx="10" fill="#FEF3E2" stroke="#B45309" stroke-width="1.3"/>
+  <text x="662" y="670" font-size="11.5" font-weight="700" fill="#7C3E06">Stage C — controller</text>
+  <text x="662" y="692" font-size="9.5" fill="#1F2937">Train: control rows only · interface frozen</text>
+  <text x="662" y="712" font-size="9.5" fill="#1F2937">Targets: RTG continue/stop per slot,</text>
+  <text x="662" y="726" font-size="9.5" fill="#1F2937">cost λ · supervised, no RL</text>
+  <text x="662" y="746" font-size="9.5" fill="#1F2937">Decision read at t, then at each slot —</text>
+  <text x="662" y="760" font-size="9.5" fill="#1F2937">the latent analog of ⟨/think⟩</text>
+  <text x="662" y="780" font-size="9.5" fill="#1F2937">T1 forcing/override battery · policy-level</text>
+  <text x="662" y="794" font-size="9.5" fill="#1F2937">guardrail on accepted positions</text>
+  <text x="662" y="818" font-size="9" fill="#6B7280" font-style="italic">no joint fine-tune in the first pass (locked)</text>
+
+  <!-- Stage D -->
+  <rect x="954" y="644" width="292" height="200" rx="10" fill="#FFFFFF" stroke="#9CA3AF" stroke-width="1.3" stroke-dasharray="6,4"/>
+  <text x="970" y="670" font-size="11.5" font-weight="700" fill="#374151">Stage D — depth (the vertical test)</text>
+  <text x="970" y="692" font-size="9.5" fill="#1F2937">L = 2 inside every pass · full RG</text>
+  <text x="970" y="706" font-size="9.5" fill="#1F2937">battery rerun at the new configuration</text>
+  <text x="970" y="730" font-size="9.5" font-weight="600" fill="#1F2937">Iso-compute shape test:</text>
+  <text x="970" y="746" font-size="9.5" fill="#1F2937">(k = 2, L = 1) vs (k = 1, L = 2)</text>
+  <text x="970" y="760" font-size="9.5" fill="#1F2937">— both exactly 72 layer-applications</text>
+  <text x="970" y="782" font-size="9.5" fill="#1F2937">Does depth-per-step or number-of-steps</text>
+  <text x="970" y="796" font-size="9.5" fill="#1F2937">buy more at fixed compute?</text>
+  <text x="970" y="820" font-size="9" fill="#6B7280" font-style="italic">the vertical loop earns its place — or retires</text>
+
+  <!-- stage arrows -->
+  <line x1="322" y1="744" x2="336" y2="744" stroke="#4B5563" stroke-width="1.6" marker-end="url(#arr)"/>
+  <line x1="630" y1="744" x2="644" y2="744" stroke="#4B5563" stroke-width="1.6" marker-end="url(#arr)"/>
+  <line x1="938" y1="744" x2="952" y2="744" stroke="#4B5563" stroke-width="1.6" marker-end="url(#arr)"/>
+
+  <text x="640" y="878" font-size="9.5" fill="#9CA3AF" text-anchor="middle">Latent Space Reasoning program · Paper Two · composite training design for markup — strategy lane, 2026-07-29</text>
+</svg>

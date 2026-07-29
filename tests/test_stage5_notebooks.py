@@ -1476,6 +1476,21 @@ def test_current_bootstrap_exposes_dc0_split_resume_targets() -> None:
     )
 
 
+def test_current_bootstrap_exposes_dc1_preflight_without_training_authority() -> None:
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    cell = (ROOT / "colab/STAGE5_PAPER2_DC1_PREFLIGHT_CELL.py").read_text(encoding="utf-8")
+    runner = (ROOT / "colab/run_stage5_paper2_dc1_preflight.py").read_text(encoding="utf-8")
+    assert '"paper2_dc1_preflight"' in bootstrap
+    assert "paper2_dc1_preflight_v1" in cell
+    assert "no training no optimizer no checkpoint writes and EVAL-C untouched" in cell
+    assert "horizontal append k <= 3 asserted and vertical loops fixed L=1" in cell
+    assert "stage-C-ready control readout logged but never routes execution" in cell
+    assert "eval.prepare_paper2_dc1_dev_c" in runner
+    assert "eval.eval_paper2_dc1_preflight" in runner
+    assert "eval/eval_coconut_composite_numerics.py" in runner
+    assert "training_authorized_by_this_packet" in runner
+
+
 def test_current_bootstrap_exposes_paper2_d0_prelaunch_target() -> None:
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
     cell = (ROOT / "colab/STAGE5_PAPER2_D0_PRELAUNCH_CELL.py").read_text(encoding="utf-8")

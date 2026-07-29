@@ -1,9 +1,14 @@
 from __future__ import annotations
 
 from eval.eval_coconut_composite_numerics import (
+    HORIZONTAL_STEPS,
     adjacent_finite_difference_pass,
     select_precision_policy,
 )
+
+
+def test_rg11_covers_the_full_locked_k_range_without_exceeding_it() -> None:
+    assert HORIZONTAL_STEPS == (1, 2, 3)
 
 
 def test_rg4_requires_two_adjacent_original_criterion_passes() -> None:

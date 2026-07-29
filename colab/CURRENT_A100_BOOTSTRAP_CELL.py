@@ -138,6 +138,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3_short_sha"
 #   "paper2_d0_expert_choice_rung0" - CPU-only frozen OOF expert-choice budget re-score.
 #   "paper2_dc0_eval_b_prepare" - fresh document-disjoint EVAL-B plus one 7B cache pass.
 #   "paper2_dc0_depth_by_append" - forward-only M7 mechanism comparison on spent-once EVAL-B.
+#   "paper2_dc1_preflight" - DEV-C plus no-training DC1-P and RG-4/RG-11.
 #   "paper2_d0_prelock_publish_resume" - publish completed Drive-backed D0 lock receipts without inference.
 #   "paper2_d0_prelock" - authorized density probe, corpus freeze, and preregistration lock only.
 TARGET = os.environ.get("STAGE5_CURRENT_A100_TARGET", "preflight")
@@ -199,6 +200,22 @@ TARGETS = {
             "bridge adaptation unauthorized",
             "registered k0 anchor cached path drift disclosed resumable batch ETA",
             "colab/run_stage5_paper2_dc0_depth_by_append.py",
+        ],
+        "env": {},
+    },
+    "paper2_dc1_preflight": {
+        "path": "colab/STAGE5_PAPER2_DC1_PREFLIGHT_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_DC1_PREFLIGHT_VERSION",
+            "paper2_dc1_preflight_v1",
+            "no training no optimizer no checkpoint writes and EVAL-C untouched",
+            "DEV-C 500000 tokens 50 50 sources document disjoint from D0 and EVAL-B",
+            "scale interpolation slot attention position id fragility proxy",
+            "horizontal append k <= 3 asserted and vertical loops fixed L=1",
+            "stage-C-ready control readout logged but never routes execution",
+            "RG-4 adjacent epsilon stability and RG-11 k 1 2 3 precision policy",
+            "DC1 preregistration remains required before any training",
+            "colab/run_stage5_paper2_dc1_preflight.py",
         ],
         "env": {},
     },

@@ -7,6 +7,7 @@ import torch
 from transformers import Qwen2Config, Qwen2ForCausalLM
 
 from models.coconut_composite import (
+    MAX_HORIZONTAL_APPEND_STEPS,
     CoconutRecurrentQwen,
     DepthByAppendOutput,
     HorizontalIdentityBridge,
@@ -123,6 +124,107 @@ def test_m7_read_at_t_query_has_causal_transient_accounting() -> None:
     assert result.evicted_slots == 4
 
 
+def test_horizontal_step_cap_is_enforced_on_both_execution_paths() -> None:
+    model = tiny_composite().eval()
+    with pytest.raises(ValueError, match="k <= 3"):
+        model(
+            **batch(horizontal_steps=MAX_HORIZONTAL_APPEND_STEPS + 1),
+            horizontal_steps=MAX_HORIZONTAL_APPEND_STEPS + 1,
+            max_loops=1,
+        )
+    with pytest.raises(ValueError, match="k <= 3"):
+        model.depth_by_append(
+            input_ids=torch.tensor([[2, 3, 4]], dtype=torch.long),
+            append_steps=MAX_HORIZONTAL_APPEND_STEPS + 1,
+            feedback_mode="raw",
+        )
+
+
+def test_stage_c_ready_depth_by_append_control_readout_does_not_route() -> None:
+    model = tiny_composite().eval()
+    result = model.depth_by_append(
+        input_ids=torch.tensor([[2, 3, 4]], dtype=torch.long),
+        append_steps=2,
+        feedback_mode="raw",
+        control_token_ids=(17, 18),
+    )
+    assert result.control_logits is not None
+    assert result.control_logits.shape == (1, 2, 3, 2)
+    assert result.requested_append_steps == 2
+    assert result.diagnostics["control_readout_enabled"] is True
+    assert result.diagnostics["control_routing_enabled"] is False
+
+
+def test_training_path_exposes_control_logits_without_enabling_routing() -> None:
+    model = tiny_composite().eval()
+    output = model(
+        **batch(horizontal_steps=2),
+        horizontal_steps=2,
+        max_loops=1,
+        horizontal_control_token_ids=(17, 18),
+    )
+    assert output.horizontal_control_logits is not None
+    assert output.horizontal_control_logits.shape == (1, 3, 2)
+    assert output.executed_horizontal_steps == 2
+    assert output.diagnostics["control_readout_enabled"] is True
+    assert output.diagnostics["control_routing_enabled"] is False
+
+
+def test_dc1_preflight_supports_bounded_scaled_feedback_and_position_ablation() -> None:
+    model = tiny_composite().eval()
+    inputs = torch.tensor([[2, 3, 4]], dtype=torch.long)
+    scaled = model.depth_by_append(
+        input_ids=inputs,
+        append_steps=1,
+        feedback_mode="scaled",
+        reference_rms=0.02,
+        feedback_scale=10.0,
+        slot_position_mode="superposed",
+    )
+    assert scaled.diagnostics["slot_position_mode"] == "superposed"
+    assert scaled.diagnostics["feedback_scale"] == 10.0
+    assert scaled.diagnostics["injected_rms_mean"] == pytest.approx(0.2, rel=1e-4)
+
+
+def test_dc1_preflight_rejects_invalid_scale_or_position_mode() -> None:
+    model = tiny_composite().eval()
+    inputs = torch.tensor([[2, 3, 4]], dtype=torch.long)
+    with pytest.raises(ValueError, match="positive feedback_scale"):
+        model.depth_by_append(
+            input_ids=inputs,
+            append_steps=1,
+            feedback_mode="scaled",
+            reference_rms=0.02,
+            feedback_scale=0.0,
+        )
+    with pytest.raises(ValueError, match="slot_position_mode"):
+        model.depth_by_append(
+            input_ids=inputs,
+            append_steps=1,
+            feedback_mode="raw",
+            slot_position_mode="invalid",
+        )
+
+
+def test_dc1_slot_attention_profile_separates_prefix_prior_slots_and_self() -> None:
+    model = tiny_composite().eval()
+    result = model.depth_by_append(
+        input_ids=torch.tensor([[2, 3, 4]], dtype=torch.long),
+        append_steps=2,
+        feedback_mode="raw",
+        capture_slot_attentions=True,
+    )
+    profiles = result.diagnostics["slot_attention_profiles"]
+    assert len(profiles) == 2 * 2  # two decision positions, two slots each
+    assert profiles[0]["slot_step"] == 1
+    assert profiles[1]["slot_step"] == 2
+    assert len(profiles[0]["layers"]) == 4
+    for layer in profiles[1]["layers"]:
+        assert layer["prefix_mass"] + layer["prior_slot_mass"] + layer["self_mass"] == pytest.approx(
+            1.0, abs=1e-5
+        )
+
+
 def tiny_composite(*, dtype: torch.dtype = torch.float32) -> CoconutRecurrentQwen:
     torch.manual_seed(20260725)
     config = Qwen2Config(
@@ -137,6 +239,7 @@ def tiny_composite(*, dtype: torch.dtype = torch.float32) -> CoconutRecurrentQwe
         tie_word_embeddings=False,
         use_cache=False,
     )
+    config._attn_implementation = "eager"
     base = Qwen2ForCausalLM(config).to(dtype=dtype)
     recurrent = RecurrentQwenForCausalLM(base, layer_split=LayerSplit(1, 3))
     return CoconutRecurrentQwen(recurrent, latent_token_id=LATENT_ID)

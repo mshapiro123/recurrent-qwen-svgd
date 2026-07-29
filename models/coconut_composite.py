@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+from contextlib import contextmanager
 from dataclasses import dataclass, field
 from typing import Any, Iterable, Optional
 
@@ -12,6 +13,9 @@ from torch import nn
 
 from .lora import LoRALinear
 from .recurrent_wrapper import RecurrentQwenForCausalLM, RecurrentQwenOutput
+
+
+MAX_HORIZONTAL_APPEND_STEPS = 3
 
 
 class HorizontalIdentityBridge(nn.Module):
@@ -39,6 +43,7 @@ class CompositeCoconutOutput:
     recurrent_output: RecurrentQwenOutput
     input_embeddings: torch.Tensor
     horizontal_fed_states: tuple[torch.Tensor, ...] = ()
+    horizontal_control_logits: Optional[torch.Tensor] = None
     recurrent_application_states: tuple[tuple[torch.Tensor, ...], ...] = ()
     requested_horizontal_steps: int = 0
     executed_horizontal_steps: int = 0
@@ -65,6 +70,7 @@ class DepthByAppendOutput:
     readout_grid_applications: int = 0
     diagnostics: dict[str, Any] = field(default_factory=dict)
     real_logits: Optional[torch.Tensor] = None
+    control_logits: Optional[torch.Tensor] = None
 
     def assert_accounting(self) -> dict[str, Any]:
         expected_feedback = self.requested_append_steps * self.executed_decision_positions
@@ -142,6 +148,59 @@ def _cache_length(cache: Any) -> int:
     return int(cache.get_seq_length())
 
 
+def _slot_attention_profile(
+    attentions: tuple[torch.Tensor, ...] | None,
+    *,
+    prefix_length: int,
+    prior_slots: int,
+    slot_step: int,
+    source_position: int,
+) -> dict[str, Any]:
+    if not attentions:
+        raise RuntimeError("slot attention capture requested but no attentions were returned")
+    layers = []
+    for layer_index, attention in enumerate(attentions):
+        values = attention.detach().float()
+        prefix_mass = values[..., :prefix_length].sum(dim=-1).mean()
+        prior_mass = (
+            values[..., prefix_length : prefix_length + prior_slots].sum(dim=-1).mean()
+            if prior_slots
+            else values.new_zeros(())
+        )
+        self_mass = values[..., prefix_length + prior_slots :].sum(dim=-1).mean()
+        layers.append(
+            {
+                "layer_index": layer_index,
+                "prefix_mass": float(prefix_mass.cpu()),
+                "prior_slot_mass": float(prior_mass.cpu()),
+                "self_mass": float(self_mass.cpu()),
+            }
+        )
+    return {
+        "source_position": int(source_position),
+        "slot_step": int(slot_step),
+        "layers": layers,
+    }
+
+
+@contextmanager
+def _capture_attention_weights(layers: Iterable[nn.Module]):
+    captured: list[torch.Tensor] = []
+    handles = []
+
+    def hook(_module: nn.Module, _inputs: tuple[Any, ...], output: Any) -> None:
+        if isinstance(output, tuple) and len(output) > 1 and torch.is_tensor(output[1]):
+            captured.append(output[1])
+
+    try:
+        for layer in layers:
+            handles.append(layer.self_attn.register_forward_hook(hook))
+        yield captured
+    finally:
+        for handle in handles:
+            handle.remove()
+
+
 class CoconutRecurrentQwen(nn.Module):
     """Compose horizontal hidden-state feedback with vertical recurrent depth.
 
@@ -179,6 +238,7 @@ class CoconutRecurrentQwen(nn.Module):
         raw_feedback: bool = False,
         horizontal_state_additions: Optional[dict[int, torch.Tensor]] = None,
         output_attentions: bool = False,
+        horizontal_control_token_ids: Optional[tuple[int, int]] = None,
     ) -> CompositeCoconutOutput:
         if input_ids.dim() != 2:
             raise ValueError("composite input_ids must be [batch, sequence]")
@@ -186,6 +246,8 @@ class CoconutRecurrentQwen(nn.Module):
             raise ValueError(f"execution_mode must be one of {sorted(self.MODES)}")
         if int(horizontal_steps) < 0:
             raise ValueError("horizontal_steps must be nonnegative")
+        if int(horizontal_steps) > MAX_HORIZONTAL_APPEND_STEPS:
+            raise ValueError("horizontal execution requires k <= 3")
         if int(max_loops) < 1:
             raise ValueError("max_loops must be positive")
         if attention_mask is None:
@@ -200,11 +262,19 @@ class CoconutRecurrentQwen(nn.Module):
                 output_attentions=output_attentions,
                 return_dict=True,
             )
+            control_logits = None
+            if horizontal_control_token_ids is not None:
+                from training.composite_training_design import extract_horizontal_control_logits
+
+                control_logits = extract_horizontal_control_logits(
+                    output.logits[:, -1].float(), horizontal_control_token_ids
+                ).unsqueeze(1)
             return CompositeCoconutOutput(
                 loss=output.loss,
                 logits=output.logits,
                 recurrent_output=output,
                 input_embeddings=self.recurrent.qwen.embed_tokens(input_ids),
+                horizontal_control_logits=control_logits,
                 requested_horizontal_steps=0,
                 executed_horizontal_steps=0,
                 vertical_loops=int(max_loops),
@@ -212,6 +282,10 @@ class CoconutRecurrentQwen(nn.Module):
                 total_grid_applications=int(max_loops),
                 requested_execution_mode=execution_mode,
                 executed_execution_mode="recompute",
+                diagnostics={
+                    "control_readout_enabled": horizontal_control_token_ids is not None,
+                    "control_routing_enabled": False,
+                },
             )
 
         positions = _control_positions(input_ids, self.latent_token_id, int(horizontal_steps))
@@ -228,6 +302,8 @@ class CoconutRecurrentQwen(nn.Module):
                 raise ValueError("sliced cache is permitted only for one vertical loop")
             if self.training and getattr(self.recurrent.qwen, "gradient_checkpointing", False):
                 raise ValueError("sliced cache is forbidden while gradient checkpointing is active")
+            if horizontal_control_token_ids is not None:
+                raise ValueError("horizontal control readout is supported only on recompute")
             return self._forward_sliced_cache(
                 input_embeddings=input_embeddings,
                 attention_mask=attention_mask,
@@ -236,6 +312,7 @@ class CoconutRecurrentQwen(nn.Module):
                 raw_feedback=raw_feedback,
                 horizontal_state_additions=horizontal_state_additions or {},
                 output_attentions=output_attentions,
+                horizontal_control_token_ids=horizontal_control_token_ids,
             )
         return self._forward_recompute(
             input_embeddings=input_embeddings,
@@ -246,6 +323,7 @@ class CoconutRecurrentQwen(nn.Module):
             raw_feedback=raw_feedback,
             horizontal_state_additions=horizontal_state_additions or {},
             output_attentions=output_attentions,
+            horizontal_control_token_ids=horizontal_control_token_ids,
         )
 
     def _feedback(
@@ -272,6 +350,10 @@ class CoconutRecurrentQwen(nn.Module):
         read_at_t_query: bool = False,
         capture_real_logits: bool = False,
         prediction_vocab_size: int | None = None,
+        control_token_ids: tuple[int, int] | None = None,
+        feedback_scale: float | None = None,
+        slot_position_mode: str = "advance",
+        capture_slot_attentions: bool = False,
     ) -> DepthByAppendOutput:
         """Run transient per-position feedback slots with exact cache eviction.
 
@@ -287,10 +369,20 @@ class CoconutRecurrentQwen(nn.Module):
             raise ValueError("depth-by-append requires [batch, sequence>=2] input ids")
         if int(append_steps) < 0:
             raise ValueError("append_steps must be nonnegative")
-        if feedback_mode not in {"raw", "rms_matched", "neutral"}:
-            raise ValueError("feedback_mode must be raw, rms_matched, or neutral")
-        if feedback_mode == "rms_matched" and (reference_rms is None or reference_rms <= 0):
-            raise ValueError("rms_matched feedback requires a positive reference_rms")
+        if int(append_steps) > MAX_HORIZONTAL_APPEND_STEPS:
+            raise ValueError("depth-by-append requires k <= 3")
+        if control_token_ids is not None:
+            from training.composite_training_design import extract_horizontal_control_logits
+        if feedback_mode not in {"raw", "rms_matched", "scaled", "neutral"}:
+            raise ValueError("feedback_mode must be raw, rms_matched, scaled, or neutral")
+        if feedback_mode in {"rms_matched", "scaled"} and (
+            reference_rms is None or reference_rms <= 0
+        ):
+            raise ValueError(f"{feedback_mode} feedback requires a positive reference_rms")
+        if feedback_mode == "scaled" and (feedback_scale is None or feedback_scale <= 0):
+            raise ValueError("scaled feedback requires a positive feedback_scale")
+        if slot_position_mode not in {"advance", "superposed"}:
+            raise ValueError("slot_position_mode must be advance or superposed")
         if feedback_mode == "neutral" and neutral_token_id is None:
             raise ValueError("neutral feedback requires neutral_token_id")
         if int(append_steps) == 0 and read_at_t_query:
@@ -329,8 +421,19 @@ class CoconutRecurrentQwen(nn.Module):
                         hidden.square().mean(dim=-1).sqrt().mean().cpu()
                     ),
                     "injected_rms_mean": None,
+                    "control_readout_enabled": control_token_ids is not None,
+                    "control_routing_enabled": False,
+                    "feedback_scale": feedback_scale,
+                    "slot_position_mode": slot_position_mode,
                 },
                 real_logits=logits.cpu() if capture_real_logits else None,
+                control_logits=(
+                    extract_horizontal_control_logits(
+                        registered.logits[:, :-1].float(), control_token_ids
+                    ).cpu().unsqueeze(2)
+                    if control_token_ids is not None
+                    else None
+                ),
             )
             result.assert_accounting()
             return result
@@ -342,9 +445,11 @@ class CoconutRecurrentQwen(nn.Module):
         injected_rms: list[float] = []
         cache_lengths_after_eviction: list[int] = []
         real_position_ids: list[int] = []
+        control_logits: list[torch.Tensor] = []
         feedback_slots = 0
         readout_slots = 0
         eviction_assertions = 0
+        slot_attention_profiles: list[dict[str, Any]] = []
 
         for position in range(sequence - 1):
             expected_prefix = position
@@ -374,6 +479,11 @@ class CoconutRecurrentQwen(nn.Module):
             if capture_real_logits:
                 real_logits.append(base_logits.cpu())
             step_predictions = [base_logits.argmax(dim=-1).cpu()]
+            step_control_logits = (
+                [extract_horizontal_control_logits(output.logits[:, -1].float(), control_token_ids)]
+                if control_token_ids is not None
+                else []
+            )
             state = output.final_post_norm_hidden[:, 0, -1]
             fed_rms.append(float(state.float().square().mean().sqrt().cpu()))
 
@@ -385,31 +495,50 @@ class CoconutRecurrentQwen(nn.Module):
                     slot_embedding = self.recurrent.qwen.embed_tokens(slot_ids)
                 else:
                     slot = self.horizontal_bridge(state)
-                    if feedback_mode == "rms_matched":
+                    if feedback_mode in {"rms_matched", "scaled"}:
                         observed = slot.float().square().mean(dim=-1, keepdim=True).sqrt().clamp_min(1e-8)
-                        slot = slot * (float(reference_rms) / observed).to(dtype=slot.dtype)
+                        target_rms = float(reference_rms) * (
+                            float(feedback_scale) if feedback_mode == "scaled" else 1.0
+                        )
+                        slot = slot * (target_rms / observed).to(dtype=slot.dtype)
                     slot_embedding = slot.unsqueeze(1)
                 injected_rms.append(
                     float(slot_embedding.float().square().mean().sqrt().cpu())
                 )
                 cache_position = base_length + step - 1
-                slot_output = self.recurrent(
-                    inputs_embeds=slot_embedding,
-                    attention_mask=torch.ones(
-                        (batch, cache_position + 1), dtype=torch.long, device=device
-                    ),
-                    position_ids=torch.full(
-                        (batch, 1), position + step, dtype=torch.long, device=device
-                    ),
-                    cache_position=torch.tensor([cache_position], dtype=torch.long, device=device),
-                    past_key_values=cache,
-                    max_loops=1,
-                    use_cache=True,
-                    return_dict=True,
-                )
+                with _capture_attention_weights(
+                    self.recurrent.qwen.layers if capture_slot_attentions else ()
+                ) as captured_attentions:
+                    slot_output = self.recurrent(
+                        inputs_embeds=slot_embedding,
+                        attention_mask=torch.ones(
+                            (batch, cache_position + 1), dtype=torch.long, device=device
+                        ),
+                        position_ids=torch.full(
+                            (batch, 1),
+                            position if slot_position_mode == "superposed" else position + step,
+                            dtype=torch.long,
+                            device=device,
+                        ),
+                        cache_position=torch.tensor([cache_position], dtype=torch.long, device=device),
+                        past_key_values=cache,
+                        max_loops=1,
+                        use_cache=True,
+                        return_dict=True,
+                    )
                 if slot_output.final_post_norm_hidden is None:
                     raise RuntimeError("M7 feedback pass did not expose final post-norm hidden state")
                 feedback_slots += batch
+                if capture_slot_attentions:
+                    slot_attention_profiles.append(
+                        _slot_attention_profile(
+                            tuple(captured_attentions),
+                            prefix_length=base_length,
+                            prior_slots=step - 1,
+                            slot_step=step,
+                            source_position=position,
+                        )
+                    )
                 state = slot_output.final_post_norm_hidden[:, 0, -1]
                 if read_at_t_query:
                     query_cache_position = cache_position + 1
@@ -435,6 +564,12 @@ class CoconutRecurrentQwen(nn.Module):
                         .argmax(dim=-1)
                         .cpu()
                     )
+                    if control_token_ids is not None:
+                        step_control_logits.append(
+                            extract_horizontal_control_logits(
+                                query_output.logits[:, -1].float(), control_token_ids
+                            )
+                        )
                     readout_slots += batch
                     cache.crop(query_cache_position)
                     if _cache_length(cache) != query_cache_position:
@@ -446,6 +581,12 @@ class CoconutRecurrentQwen(nn.Module):
                         .argmax(dim=-1)
                         .cpu()
                     )
+                    if control_token_ids is not None:
+                        step_control_logits.append(
+                            extract_horizontal_control_logits(
+                                slot_output.logits[:, -1].float(), control_token_ids
+                            )
+                        )
 
             cache.crop(base_length)
             if _cache_length(cache) != base_length:
@@ -453,6 +594,8 @@ class CoconutRecurrentQwen(nn.Module):
             cache_lengths_after_eviction.append(_cache_length(cache))
             eviction_assertions += batch
             predictions.append(torch.stack(step_predictions, dim=-1))
+            if control_token_ids is not None:
+                control_logits.append(torch.stack(step_control_logits, dim=1).cpu())
 
         result = DepthByAppendOutput(
             predictions=torch.stack(predictions, dim=1),
@@ -481,8 +624,15 @@ class CoconutRecurrentQwen(nn.Module):
                 "injected_rms_mean": sum(injected_rms) / len(injected_rms)
                 if injected_rms
                 else None,
+                "control_readout_enabled": control_token_ids is not None,
+                "control_routing_enabled": False,
+                "feedback_scale": feedback_scale,
+                "slot_position_mode": slot_position_mode,
+                "slot_attention_capture_enabled": bool(capture_slot_attentions),
+                "slot_attention_profiles": slot_attention_profiles,
             },
             real_logits=torch.stack(real_logits, dim=1) if real_logits else None,
+            control_logits=torch.stack(control_logits, dim=1) if control_logits else None,
         )
         result.assert_accounting()
         if result.diagnostics["real_position_ids"] != result.diagnostics["expected_real_position_ids"]:
@@ -500,12 +650,17 @@ class CoconutRecurrentQwen(nn.Module):
         raw_feedback: bool,
         horizontal_state_additions: dict[int, torch.Tensor],
         output_attentions: bool,
+        horizontal_control_token_ids: Optional[tuple[int, int]],
     ) -> CompositeCoconutOutput:
+        if horizontal_control_token_ids is not None:
+            from training.composite_training_design import extract_horizontal_control_logits
+
         working = input_embeddings
         fed_states: list[torch.Tensor] = []
         grid: list[tuple[torch.Tensor, ...]] = []
         prefix_rms: list[float] = []
         embedding_rms: list[float] = []
+        decision_control_logits: list[torch.Tensor] = []
         for step, position in enumerate(positions, start=1):
             applications: list[torch.Tensor] = []
             prefix = working[:, :position]
@@ -521,6 +676,12 @@ class CoconutRecurrentQwen(nn.Module):
             )
             if output.final_post_norm_hidden is None:
                 raise RuntimeError("recurrent wrapper did not expose post-norm hidden states")
+            if horizontal_control_token_ids is not None:
+                decision_control_logits.append(
+                    extract_horizontal_control_logits(
+                        output.logits[:, -1].float(), horizontal_control_token_ids
+                    )
+                )
             fed = output.final_post_norm_hidden[:, 0, -1]
             if fed.requires_grad:
                 fed.retain_grad()
@@ -550,12 +711,23 @@ class CoconutRecurrentQwen(nn.Module):
             recurrent_application_sink=final_applications,
         )
         grid.append(tuple(final_applications))
+        if horizontal_control_token_ids is not None:
+            decision_control_logits.append(
+                extract_horizontal_control_logits(
+                    final.logits[:, positions[-1]].float(), horizontal_control_token_ids
+                )
+            )
         return CompositeCoconutOutput(
             loss=final.loss,
             logits=final.logits,
             recurrent_output=final,
             input_embeddings=input_embeddings,
             horizontal_fed_states=tuple(fed_states),
+            horizontal_control_logits=(
+                torch.stack(decision_control_logits, dim=1)
+                if decision_control_logits
+                else None
+            ),
             recurrent_application_states=tuple(grid),
             requested_horizontal_steps=len(positions),
             executed_horizontal_steps=len(fed_states),
@@ -567,6 +739,8 @@ class CoconutRecurrentQwen(nn.Module):
             diagnostics={
                 "fed_hidden_rms": prefix_rms,
                 "placeholder_embedding_rms": embedding_rms,
+                "control_readout_enabled": horizontal_control_token_ids is not None,
+                "control_routing_enabled": False,
             },
         )
 
@@ -580,6 +754,7 @@ class CoconutRecurrentQwen(nn.Module):
         raw_feedback: bool,
         horizontal_state_additions: dict[int, torch.Tensor],
         output_attentions: bool,
+        horizontal_control_token_ids: Optional[tuple[int, int]],
     ) -> CompositeCoconutOutput:
         from transformers.cache_utils import DynamicCache
 

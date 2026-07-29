@@ -29,6 +29,7 @@ from training.internal_think_token_runtime import (  # noqa: E402
 
 
 EPSILONS = (0.1, 0.03, 0.01, 0.003, 0.001, 0.0003, 0.0001)
+HORIZONTAL_STEPS = (1, 2, 3)
 FIXED_PROMPTS = (
     "Follow the transition table and return the final symbol. Input: A.",
     "Apply the mapping twice and return only the resulting letter. Start: B.",
@@ -60,10 +61,11 @@ def make_prompt_batch(
     prompt: str,
     latent_token_id: int,
     device: str,
+    horizontal_steps: int = 1,
 ) -> dict[str, torch.Tensor]:
     prefix = list(tokenizer(prompt, add_special_tokens=True)["input_ids"])[:48]
     suffix = list(tokenizer(" Answer: A", add_special_tokens=False)["input_ids"])
-    ids = prefix + [int(latent_token_id)] + suffix
+    ids = prefix + [int(latent_token_id)] * int(horizontal_steps) + suffix
     input_ids = torch.tensor([ids], dtype=torch.long, device=device)
     labels = torch.full_like(input_ids, -100)
     labels[:, -1] = input_ids[:, -1]
@@ -90,6 +92,7 @@ def fed_gradient(
     inputs: dict[str, torch.Tensor],
     *,
     autocast_bf16: bool,
+    horizontal_steps: int,
 ) -> tuple[torch.Tensor, bool]:
     device_type = inputs["input_ids"].device.type
     context = (
@@ -98,8 +101,14 @@ def fed_gradient(
         else nullcontext()
     )
     with context:
-        output = model(**inputs, horizontal_steps=1, max_loops=1, execution_mode="recompute")
-        gradient = torch.autograd.grad(output.loss, output.horizontal_fed_states[0])[0]
+        output = model(
+            **inputs,
+            horizontal_steps=int(horizontal_steps),
+            max_loops=1,
+            execution_mode="recompute",
+        )
+        gradients = torch.autograd.grad(output.loss, output.horizontal_fed_states)
+        gradient = torch.cat([value.reshape(value.shape[0], -1) for value in gradients], dim=-1)
     finite = bool(
         torch.isfinite(output.loss)
         and torch.isfinite(gradient).all()
@@ -169,32 +178,41 @@ def finite_difference_sweep(
 
 def run_followup(args: argparse.Namespace) -> dict[str, Any]:
     tokenizer, fp32_model, latent_token_id = load_composite(args)
-    batches = [
-        make_prompt_batch(
-            tokenizer,
-            prompt=prompt,
-            latent_token_id=latent_token_id,
-            device=args.device,
-        )
-        for prompt in FIXED_PROMPTS
-    ]
+    batches_by_steps = {
+        steps: [
+            make_prompt_batch(
+                tokenizer,
+                prompt=prompt,
+                latent_token_id=latent_token_id,
+                device=args.device,
+                horizontal_steps=steps,
+            )
+            for prompt in FIXED_PROMPTS
+        ]
+        for steps in HORIZONTAL_STEPS
+    }
     fd = finite_difference_sweep(
         fp32_model,
-        batches[0],
+        batches_by_steps[1][0],
         hidden_size=fp32_model.recurrent.bridge.hidden_size,
         seed=args.seed,
     )
-    fp32_gradients: list[torch.Tensor] = []
-    autocast_gradients: list[torch.Tensor] = []
-    fp32_finite: list[bool] = []
-    autocast_finite: list[bool] = []
-    for batch in batches:
-        gradient, finite = fed_gradient(fp32_model, batch, autocast_bf16=False)
-        fp32_gradients.append(gradient)
-        fp32_finite.append(finite)
-        gradient, finite = fed_gradient(fp32_model, batch, autocast_bf16=True)
-        autocast_gradients.append(gradient)
-        autocast_finite.append(finite)
+    fp32_gradients: dict[int, list[torch.Tensor]] = {steps: [] for steps in HORIZONTAL_STEPS}
+    autocast_gradients: dict[int, list[torch.Tensor]] = {steps: [] for steps in HORIZONTAL_STEPS}
+    fp32_finite: dict[int, list[bool]] = {steps: [] for steps in HORIZONTAL_STEPS}
+    autocast_finite: dict[int, list[bool]] = {steps: [] for steps in HORIZONTAL_STEPS}
+    for steps, batches in batches_by_steps.items():
+        for batch in batches:
+            gradient, finite = fed_gradient(
+                fp32_model, batch, autocast_bf16=False, horizontal_steps=steps
+            )
+            fp32_gradients[steps].append(gradient)
+            fp32_finite[steps].append(finite)
+            gradient, finite = fed_gradient(
+                fp32_model, batch, autocast_bf16=True, horizontal_steps=steps
+            )
+            autocast_gradients[steps].append(gradient)
+            autocast_finite[steps].append(finite)
 
     del fp32_model
     gc.collect()
@@ -203,36 +221,61 @@ def run_followup(args: argparse.Namespace) -> dict[str, Any]:
 
     tokenizer_bf16, bf16_model, latent_token_id_bf16 = load_composite(args)
     bf16_model.to(dtype=torch.bfloat16)
-    bf16_gradients: list[torch.Tensor] = []
-    bf16_finite: list[bool] = []
-    for prompt in FIXED_PROMPTS:
-        batch = make_prompt_batch(
-            tokenizer_bf16,
-            prompt=prompt,
-            latent_token_id=latent_token_id_bf16,
-            device=args.device,
-        )
-        gradient, finite = fed_gradient(bf16_model, batch, autocast_bf16=False)
-        bf16_gradients.append(gradient)
-        bf16_finite.append(finite)
+    bf16_gradients: dict[int, list[torch.Tensor]] = {steps: [] for steps in HORIZONTAL_STEPS}
+    bf16_finite: dict[int, list[bool]] = {steps: [] for steps in HORIZONTAL_STEPS}
+    for steps in HORIZONTAL_STEPS:
+        for prompt in FIXED_PROMPTS:
+            batch = make_prompt_batch(
+                tokenizer_bf16,
+                prompt=prompt,
+                latent_token_id=latent_token_id_bf16,
+                device=args.device,
+                horizontal_steps=steps,
+            )
+            gradient, finite = fed_gradient(
+                bf16_model, batch, autocast_bf16=False, horizontal_steps=steps
+            )
+            bf16_gradients[steps].append(gradient)
+            bf16_finite[steps].append(finite)
 
     def policy_receipt(
-        gradients: list[torch.Tensor],
-        finite: list[bool],
+        gradients: dict[int, list[torch.Tensor]],
+        finite: dict[int, list[bool]],
     ) -> dict[str, Any]:
-        examples = [
-            {
-                "index": index,
-                "gradient_cosine_to_fp32": gradient_cosine(fp32_gradients[index], gradient),
-                "finite": bool(finite[index]),
-            }
-            for index, gradient in enumerate(gradients)
-        ]
+        examples = []
+        for steps in HORIZONTAL_STEPS:
+            for index, gradient in enumerate(gradients[steps]):
+                examples.append(
+                    {
+                        "horizontal_steps": steps,
+                        "index": index,
+                        "gradient_cosine_to_fp32": gradient_cosine(
+                            fp32_gradients[steps][index], gradient
+                        ),
+                        "finite": bool(finite[steps][index]),
+                    }
+                )
         for row in examples:
             row["passes"] = row["finite"] and row["gradient_cosine_to_fp32"] >= 0.99
         return {
             "threshold": 0.99,
             "examples": examples,
+            "horizontal_steps": list(HORIZONTAL_STEPS),
+            "by_horizontal_steps": {
+                str(steps): {
+                    "minimum_cosine": min(
+                        row["gradient_cosine_to_fp32"]
+                        for row in examples
+                        if row["horizontal_steps"] == steps
+                    ),
+                    "all_examples_pass": all(
+                        row["passes"]
+                        for row in examples
+                        if row["horizontal_steps"] == steps
+                    ),
+                }
+                for steps in HORIZONTAL_STEPS
+            },
             "minimum_cosine": min(row["gradient_cosine_to_fp32"] for row in examples),
             "all_examples_pass": all(row["passes"] for row in examples),
         }
