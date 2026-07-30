@@ -1506,6 +1506,8 @@ def test_current_bootstrap_exposes_dc1_read_only_followups() -> None:
     assert "eval.eval_paper2_dc1_scale_response" in scale_runner
     assert "EVAL-C and EVAL-B remain untouched" in parity
     assert "EVAL-C and EVAL-B remain untouched" in scale
+    assert 'shutil.which("nvidia-smi")' in parity
+    assert 'shutil.which("nvidia-smi")' in scale
 
 
 def test_current_bootstrap_exposes_paper2_d0_prelaunch_target() -> None:

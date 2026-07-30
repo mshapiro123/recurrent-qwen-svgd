@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -16,6 +17,7 @@ STAGE5_PAPER2_DC1_SCALE_RESPONSE_VERSION = "paper2_dc1_scale_response_v1"
 # Safety marker: final hidden cosine to fed state and registered k0 state
 # Safety marker: optional layerwise residual cosine at raw and 10x
 # Safety marker: EVAL-C and EVAL-B remain untouched
+# Safety marker: fail clear before launch when Colab has no NVIDIA GPU runtime
 REPO = "mshapiro123/recurrent-qwen-svgd"
 ROOT = Path("/content/recurrent-qwen-svgd")
 REF = os.environ.get("STAGE5_BOOTSTRAP_REF", "main")
@@ -33,6 +35,10 @@ def run(command: list[str], cwd: Path | None = None) -> None:
 
 if not Path("/content/drive/MyDrive").is_dir():
     drive.mount("/content/drive", force_remount=False, timeout_ms=240_000)
+assert shutil.which("nvidia-smi"), (
+    "No NVIDIA GPU runtime is attached. In Colab choose Runtime > Change runtime type > "
+    "L4 GPU, reconnect, and rerun this cell. No experiment work has started."
+)
 run(["nvidia-smi"], Path("/content"))
 memory = int(subprocess.check_output(["nvidia-smi", "--query-gpu=memory.total", "--format=csv,noheader,nounits"], text=True).splitlines()[0])
 assert memory >= 22000, f"DC1 scale probe requires L4-class memory; observed {memory} MiB."
