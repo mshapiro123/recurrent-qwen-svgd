@@ -106,6 +106,16 @@ def aggregate_attention_profiles(
     }
 
 
+def assert_frozen_instance_unchanged(
+    model: Any, *, before: str, instance: str
+) -> str:
+    """Verify one loaded model instance against its own pre-evaluation state."""
+    after = parameter_fingerprint(model)
+    if before != after:
+        raise RuntimeError(f"DC1-P mutated frozen {instance} parameters")
+    return after
+
+
 def scale_sweep_reading(rows: list[dict[str, Any]]) -> dict[str, Any]:
     deltas = [int(row["transition"]["net_correct_delta"]) for row in rows]
     monotone = all(left <= right for left, right in zip(deltas, deltas[1:]))
@@ -288,6 +298,9 @@ def main() -> int:
             "counters": counters,
         }
 
+    sdpa_after = assert_frozen_instance_unchanged(
+        composite, before=before, instance="SDPA checkpoint or identity bridge"
+    )
     del composite, wrapper
     gc.collect()
     if torch.cuda.is_available():
@@ -304,6 +317,7 @@ def main() -> int:
     attention_composite = CoconutRecurrentQwen(
         attention_wrapper, latent_token_id=int(attention_resize.control_token_ids[2])
     ).eval()
+    attention_before = parameter_fingerprint(attention_composite)
     attention = {}
     for stratum in ("general", "code"):
         stratum_rows = [
@@ -332,9 +346,11 @@ def main() -> int:
             ),
         )
 
-    after = parameter_fingerprint(attention_composite)
-    if before != after:
-        raise RuntimeError("DC1-P mutated the frozen checkpoint or identity bridge")
+    attention_after = assert_frozen_instance_unchanged(
+        attention_composite,
+        before=attention_before,
+        instance="eager-attention checkpoint or identity bridge",
+    )
     dc0 = json.loads(Path(args.dc0_summary).read_text(encoding="utf-8"))
     summary = {
         "kind": "paper2_dc1_preflight",
@@ -345,6 +361,13 @@ def main() -> int:
         "evaluation_c_touched": False,
         "checkpoint_sha256": args.expected_checkpoint_sha256,
         "checkpoint_mutated": False,
+        "parameter_integrity": {
+            "sdpa_before": before,
+            "sdpa_after": sdpa_after,
+            "eager_before": attention_before,
+            "eager_after": attention_after,
+            "instances_checked_independently": True,
+        },
         "dev_c": {
             "data_jsonl_sha256": sha256_file(args.data_jsonl),
             "selected_rows": len(selected_rows),

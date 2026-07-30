@@ -1,6 +1,10 @@
 from __future__ import annotations
 
 import pytest
+import torch
+
+from eval.eval_paper2_dc0_depth_by_append import parameter_fingerprint
+from eval.eval_paper2_dc1_preflight import assert_frozen_instance_unchanged
 
 from training.paper2_dc1 import (
     DEV_C_TOKENS,
@@ -54,3 +58,18 @@ def test_dc1_preflight_is_descriptive_and_does_not_authorize_training() -> None:
         "dc1_preregistration_locked_to_drive_with_sha256",
     ]
 
+
+def test_dc1_parameter_integrity_is_scoped_to_each_loaded_instance() -> None:
+    first = torch.nn.Linear(3, 2, bias=False)
+    second = torch.nn.Linear(3, 2, bias=False)
+    first_before = parameter_fingerprint(first)
+    second_before = parameter_fingerprint(second)
+
+    assert first_before != second_before
+    assert_frozen_instance_unchanged(first, before=first_before, instance="first")
+    assert_frozen_instance_unchanged(second, before=second_before, instance="second")
+
+    with torch.no_grad():
+        second.weight[0, 0].add_(1.0)
+    with pytest.raises(RuntimeError, match="mutated frozen second parameters"):
+        assert_frozen_instance_unchanged(second, before=second_before, instance="second")
