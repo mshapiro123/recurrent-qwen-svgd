@@ -139,6 +139,8 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3_short_sha"
 #   "paper2_dc0_eval_b_prepare" - fresh document-disjoint EVAL-B plus one 7B cache pass.
 #   "paper2_dc0_depth_by_append" - forward-only M7 mechanism comparison on spent-once EVAL-B.
 #   "paper2_dc1_preflight" - DEV-C plus no-training DC1-P and RG-4/RG-11.
+#   "paper2_dc1_parity_ledger" - read-only population-matched pre/post-D0 loop ledger.
+#   "paper2_dc1_scale_response" - read-only residual-stream scale/cosine probe.
 #   "paper2_d0_prelock_publish_resume" - publish completed Drive-backed D0 lock receipts without inference.
 #   "paper2_d0_prelock" - authorized density probe, corpus freeze, and preregistration lock only.
 TARGET = os.environ.get("STAGE5_CURRENT_A100_TARGET", "preflight")
@@ -216,6 +218,33 @@ TARGETS = {
             "RG-4 adjacent epsilon stability and RG-11 k 1 2 3 precision policy",
             "DC1 preregistration remains required before any training",
             "colab/run_stage5_paper2_dc1_preflight.py",
+        ],
+        "env": {},
+    },
+    "paper2_dc1_parity_ledger": {
+        "path": "colab/STAGE5_PAPER2_DC1_PARITY_LEDGER_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_DC1_PARITY_LEDGER_VERSION",
+            "paper2_dc1_parity_ledger_v1",
+            "read-only pre post D0 population parity no optimizer no training",
+            "legacy rejected-only floor forces exact same-row DEV-C fallback",
+            "accepted rejected split is defined by each checkpoint depth-1 agreement",
+            "EVAL-C and EVAL-B remain untouched",
+            "colab/run_stage5_paper2_dc1_parity_ledger.py",
+        ],
+        "env": {},
+    },
+    "paper2_dc1_scale_response": {
+        "path": "colab/STAGE5_PAPER2_DC1_SCALE_RESPONSE_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_DC1_SCALE_RESPONSE_VERSION",
+            "paper2_dc1_scale_response_v1",
+            "read-only residual-stream scale response no optimizer no training",
+            "same 113 DEV-C rows with raw 1.5x and 2x extensions",
+            "final hidden cosine to fed state and registered k0 state",
+            "optional layerwise residual cosine at raw and 10x",
+            "EVAL-C and EVAL-B remain untouched",
+            "colab/run_stage5_paper2_dc1_scale_response.py",
         ],
         "env": {},
     },

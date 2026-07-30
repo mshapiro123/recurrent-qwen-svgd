@@ -1491,6 +1491,23 @@ def test_current_bootstrap_exposes_dc1_preflight_without_training_authority() ->
     assert "training_authorized_by_this_packet" in runner
 
 
+def test_current_bootstrap_exposes_dc1_read_only_followups() -> None:
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    parity = (ROOT / "colab/STAGE5_PAPER2_DC1_PARITY_LEDGER_CELL.py").read_text(encoding="utf-8")
+    scale = (ROOT / "colab/STAGE5_PAPER2_DC1_SCALE_RESPONSE_CELL.py").read_text(encoding="utf-8")
+    parity_runner = (ROOT / "colab/run_stage5_paper2_dc1_parity_ledger.py").read_text(encoding="utf-8")
+    scale_runner = (ROOT / "colab/run_stage5_paper2_dc1_scale_response.py").read_text(encoding="utf-8")
+
+    assert '"paper2_dc1_parity_ledger"' in bootstrap
+    assert '"paper2_dc1_scale_response"' in bootstrap
+    assert "read-only pre post D0 population parity no optimizer no training" in parity
+    assert "read-only residual-stream scale response no optimizer no training" in scale
+    assert "eval.eval_paper2_dc1_parity_ledger" in parity_runner
+    assert "eval.eval_paper2_dc1_scale_response" in scale_runner
+    assert "EVAL-C and EVAL-B remain untouched" in parity
+    assert "EVAL-C and EVAL-B remain untouched" in scale
+
+
 def test_current_bootstrap_exposes_paper2_d0_prelaunch_target() -> None:
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
     cell = (ROOT / "colab/STAGE5_PAPER2_D0_PRELAUNCH_CELL.py").read_text(encoding="utf-8")

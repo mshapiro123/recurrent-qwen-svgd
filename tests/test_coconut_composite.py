@@ -558,3 +558,33 @@ def test_rg12_pilot_is_not_implicitly_authorized() -> None:
 
     assert model.horizontal_bridge.delta.weight.requires_grad
     assert not hasattr(model, "rg12_training_loss_floor")
+
+
+def test_depth_by_append_state_diagnostics_are_opt_in_and_aligned() -> None:
+    model = tiny_composite().eval()
+    inputs = batch(0)["input_ids"][:, :4]
+    baseline = model.depth_by_append(
+        input_ids=inputs,
+        append_steps=0,
+        feedback_mode="raw",
+        prediction_vocab_size=model.recurrent.config.vocab_size,
+        capture_state_diagnostics=True,
+    )
+    assert baseline.position_hidden_states is not None
+    result = model.depth_by_append(
+        input_ids=inputs,
+        append_steps=1,
+        feedback_mode="raw",
+        prediction_vocab_size=model.recurrent.config.vocab_size,
+        capture_state_diagnostics=True,
+        reference_position_states=baseline.position_hidden_states,
+        capture_layerwise_state_diagnostics=True,
+    )
+
+    assert result.slot_cosine_to_fed is not None
+    assert result.slot_cosine_to_k0 is not None
+    assert result.slot_layer_cosine_to_fed is not None
+    assert result.slot_cosine_to_fed.shape == (1, inputs.shape[1] - 1, 1)
+    assert result.slot_cosine_to_k0.shape == result.slot_cosine_to_fed.shape
+    assert result.slot_layer_cosine_to_fed.shape[:3] == result.slot_cosine_to_fed.shape
+    assert torch.isfinite(result.slot_layer_cosine_to_fed).all()

@@ -228,7 +228,7 @@ Two items listed as outstanding in the July 29 strategy documents had already la
 - Pre-D0 floor transition `1 -> 2`: 7,419 helps, 599 hurts, net `+6,820`, harm/help `0.0807` over 53,389 positions.
 - Post-D0 reference: 8,564 helps, 30,008 hurts, net `-21,444`, harm/help `3.504`.
 
-The pre-D0 decomposition materially scopes the story: the severe harm asymmetry did not exist on the pre-D0 floor. It emerged on the post-D0 substrate. It is therefore not support for an architecture-wide claim that additional recurrent depth is intrinsically destructive. DC1 deliberately uses the post-D0 checkpoint and asks whether the horizontal interface can be domesticated on that installed substrate.
+**Correction, 2026-07-30:** the two ledgers above are not population-matched. The pre-D0 counts cover the 53,389 loop-1 rejection positions, while the post-D0 reference covers a full roughly 200,000-position partition. Because almost all possible depth-1 hurts occur among accepted positions, these receipts do not establish whether the severe harm asymmetry was absent before D0 or emerged after D0. That causal sentence is quarantined pending the read-only parity ledger. The only supported cross-era statement is that recovery on loop-1 rejections was similar; neither benign pre-D0 behavior nor post-D0 emergence is established by these unmatched counts.
 
 The status language in `COMPOSITE_TRAINING_DESIGN_20260729.md` and `STRATEGY_ADDENDUM_DC1_ROADMAP_20260729.md` that still calls these two receipts outstanding is stale and should be corrected during preregistration reconciliation.
 

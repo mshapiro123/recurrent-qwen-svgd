@@ -71,6 +71,10 @@ class DepthByAppendOutput:
     diagnostics: dict[str, Any] = field(default_factory=dict)
     real_logits: Optional[torch.Tensor] = None
     control_logits: Optional[torch.Tensor] = None
+    position_hidden_states: Optional[torch.Tensor] = None
+    slot_cosine_to_fed: Optional[torch.Tensor] = None
+    slot_cosine_to_k0: Optional[torch.Tensor] = None
+    slot_layer_cosine_to_fed: Optional[torch.Tensor] = None
 
     def assert_accounting(self) -> dict[str, Any]:
         expected_feedback = self.requested_append_steps * self.executed_decision_positions
@@ -354,6 +358,9 @@ class CoconutRecurrentQwen(nn.Module):
         feedback_scale: float | None = None,
         slot_position_mode: str = "advance",
         capture_slot_attentions: bool = False,
+        capture_state_diagnostics: bool = False,
+        reference_position_states: torch.Tensor | None = None,
+        capture_layerwise_state_diagnostics: bool = False,
     ) -> DepthByAppendOutput:
         """Run transient per-position feedback slots with exact cache eviction.
 
@@ -387,6 +394,8 @@ class CoconutRecurrentQwen(nn.Module):
             raise ValueError("neutral feedback requires neutral_token_id")
         if int(append_steps) == 0 and read_at_t_query:
             raise ValueError("read_at_t_query requires at least one appended feedback slot")
+        if capture_layerwise_state_diagnostics and not capture_state_diagnostics:
+            raise ValueError("layerwise state diagnostics require state diagnostics")
 
         batch, sequence = input_ids.shape
         device = input_ids.device
@@ -427,6 +436,7 @@ class CoconutRecurrentQwen(nn.Module):
                     "slot_position_mode": slot_position_mode,
                 },
                 real_logits=logits.cpu() if capture_real_logits else None,
+                position_hidden_states=hidden.cpu() if capture_state_diagnostics else None,
                 control_logits=(
                     extract_horizontal_control_logits(
                         registered.logits[:, :-1].float(), control_token_ids
@@ -450,6 +460,19 @@ class CoconutRecurrentQwen(nn.Module):
         readout_slots = 0
         eviction_assertions = 0
         slot_attention_profiles: list[dict[str, Any]] = []
+        slot_cosines_to_fed: list[torch.Tensor] = []
+        slot_cosines_to_k0: list[torch.Tensor] = []
+        slot_layer_cosines_to_fed: list[torch.Tensor] = []
+
+        if capture_state_diagnostics:
+            expected = (batch, sequence - 1, self.horizontal_bridge.hidden_size)
+            if reference_position_states is None or tuple(reference_position_states.shape) != expected:
+                raise ValueError(
+                    "state diagnostics require reference_position_states shaped "
+                    f"{expected}; observed="
+                    f"{None if reference_position_states is None else tuple(reference_position_states.shape)}"
+                )
+            reference_position_states = reference_position_states.to(device=device)
 
         for position in range(sequence - 1):
             expected_prefix = position
@@ -486,6 +509,9 @@ class CoconutRecurrentQwen(nn.Module):
             )
             state = output.final_post_norm_hidden[:, 0, -1]
             fed_rms.append(float(state.float().square().mean().sqrt().cpu()))
+            position_cosines_to_fed: list[torch.Tensor] = []
+            position_cosines_to_k0: list[torch.Tensor] = []
+            position_layer_cosines: list[torch.Tensor] = []
 
             for step in range(1, int(append_steps) + 1):
                 if feedback_mode == "neutral":
@@ -525,6 +551,7 @@ class CoconutRecurrentQwen(nn.Module):
                         max_loops=1,
                         use_cache=True,
                         return_dict=True,
+                        output_hidden_states=capture_layerwise_state_diagnostics,
                     )
                 if slot_output.final_post_norm_hidden is None:
                     raise RuntimeError("M7 feedback pass did not expose final post-norm hidden state")
@@ -540,6 +567,32 @@ class CoconutRecurrentQwen(nn.Module):
                         )
                     )
                 state = slot_output.final_post_norm_hidden[:, 0, -1]
+                if capture_state_diagnostics:
+                    fed_direction = slot_embedding[:, 0].float()
+                    final_direction = state.float()
+                    k0_direction = reference_position_states[:, position].float()
+                    position_cosines_to_fed.append(
+                        F.cosine_similarity(final_direction, fed_direction, dim=-1).cpu()
+                    )
+                    position_cosines_to_k0.append(
+                        F.cosine_similarity(final_direction, k0_direction, dim=-1).cpu()
+                    )
+                    if capture_layerwise_state_diagnostics:
+                        if slot_output.hidden_states is None:
+                            raise RuntimeError(
+                                "layerwise state diagnostics requested but hidden states are absent"
+                            )
+                        layer_states = torch.stack(
+                            [hidden[:, -1].float() for hidden in slot_output.hidden_states],
+                            dim=1,
+                        )
+                        position_layer_cosines.append(
+                            F.cosine_similarity(
+                                layer_states,
+                                fed_direction.unsqueeze(1),
+                                dim=-1,
+                            ).cpu()
+                        )
                 if read_at_t_query:
                     query_cache_position = cache_position + 1
                     query_output = self.recurrent(
@@ -594,6 +647,13 @@ class CoconutRecurrentQwen(nn.Module):
             cache_lengths_after_eviction.append(_cache_length(cache))
             eviction_assertions += batch
             predictions.append(torch.stack(step_predictions, dim=-1))
+            if capture_state_diagnostics:
+                slot_cosines_to_fed.append(torch.stack(position_cosines_to_fed, dim=1))
+                slot_cosines_to_k0.append(torch.stack(position_cosines_to_k0, dim=1))
+                if capture_layerwise_state_diagnostics:
+                    slot_layer_cosines_to_fed.append(
+                        torch.stack(position_layer_cosines, dim=1)
+                    )
             if control_token_ids is not None:
                 control_logits.append(torch.stack(step_control_logits, dim=1).cpu())
 
@@ -633,6 +693,21 @@ class CoconutRecurrentQwen(nn.Module):
             },
             real_logits=torch.stack(real_logits, dim=1) if real_logits else None,
             control_logits=torch.stack(control_logits, dim=1) if control_logits else None,
+            slot_cosine_to_fed=(
+                torch.stack(slot_cosines_to_fed, dim=1)
+                if slot_cosines_to_fed
+                else None
+            ),
+            slot_cosine_to_k0=(
+                torch.stack(slot_cosines_to_k0, dim=1)
+                if slot_cosines_to_k0
+                else None
+            ),
+            slot_layer_cosine_to_fed=(
+                torch.stack(slot_layer_cosines_to_fed, dim=1)
+                if slot_layer_cosines_to_fed
+                else None
+            ),
         )
         result.assert_accounting()
         if result.diagnostics["real_position_ids"] != result.diagnostics["expected_real_position_ids"]:
