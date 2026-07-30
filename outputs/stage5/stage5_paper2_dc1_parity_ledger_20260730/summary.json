@@ -1,0 +1,211 @@
+{
+  "case_applied": "legacy_D0_floor_predictions_are_rejected_only",
+  "coverage_audit": {
+    "all_position_rows_present": false,
+    "floor_private_rows_sha256": "525efd031469c68ff7e7d238ead38c1c9818b9f8d25ddaf2ecc059e2db6ba11b",
+    "rejected_positions": 53389,
+    "saved_rows_key": "rejected_only_rows_or_legacy_floor_payload"
+  },
+  "evaluation_c_touched": false,
+  "kind": "paper2_dc1_pre_post_d0_parity_ledger",
+  "optimizer_steps": 0,
+  "paired_comparison": {
+    "post_d0_net": -5325,
+    "pre_d0_net": -6625,
+    "pre_minus_post_net": -1300,
+    "scope": "descriptive DEV-C diagnostic; not a registered headline surface"
+  },
+  "population": {
+    "data_jsonl_sha256": "05bca2ee3ba71421296b2e31a0439746eb9c1b0e15e2cea4471be202ab6ac29d",
+    "evaluation_c_touched": false,
+    "partition": "DEV-C reusable development surface",
+    "positions": 50108,
+    "row_identical_pre_post": true,
+    "rows": 113,
+    "teacher_cache_summary_sha256": "bf6c0762221d07294fc6f45da0f5791a0241c4466d45b1efbb09d4b7fa3be5f4",
+    "teacher_targets_identical_pre_post": true
+  },
+  "post_d0": {
+    "integrity": {
+      "argmax_cells": 150324,
+      "checkpoint_mutated": false,
+      "checkpoint_sha256": "8245cabfe7639dcd442c19e03496623b9d59eec31b39e253e08fd6f78b1086cf",
+      "tie_cells": 5529,
+      "tie_policy": "fp32 logits; exact ties choose the lowest token id",
+      "tie_rate": 0.036780554003352756
+    },
+    "transition_1_to_2": {
+      "all_positions": {
+        "after_accuracy": 0.615390755967111,
+        "after_correct": 30836,
+        "before_accuracy": 0.7216612117825497,
+        "before_correct": 36161,
+        "harm_to_help_ratio": 3.5564090254440712,
+        "helps": 2083,
+        "hurts": 7408,
+        "net_correct_delta": -5325,
+        "neutral": 40617,
+        "positions": 50108
+      },
+      "depth1_accepted": {
+        "after_accuracy": 0.795138408782943,
+        "after_correct": 28753,
+        "before_accuracy": 1.0,
+        "before_correct": 36161,
+        "harm_to_help_ratio": null,
+        "helps": 0,
+        "hurts": 7408,
+        "net_correct_delta": -7408,
+        "neutral": 28753,
+        "positions": 36161
+      },
+      "depth1_rejected": {
+        "after_accuracy": 0.1493511149351115,
+        "after_correct": 2083,
+        "before_accuracy": 0.0,
+        "before_correct": 0,
+        "harm_to_help_ratio": 0.0,
+        "helps": 2083,
+        "hurts": 0,
+        "net_correct_delta": 2083,
+        "neutral": 11864,
+        "positions": 13947
+      },
+      "split_definition": "depth-1 prediction agrees with the cached 7B greedy token",
+      "transition": "1_to_2"
+    },
+    "transition_2_to_3": {
+      "all_positions": {
+        "after_accuracy": 0.4596671190229105,
+        "after_correct": 23033,
+        "before_accuracy": 0.615390755967111,
+        "before_correct": 30836,
+        "harm_to_help_ratio": 12.147142857142857,
+        "helps": 700,
+        "hurts": 8503,
+        "net_correct_delta": -7803,
+        "neutral": 40905,
+        "positions": 50108
+      },
+      "depth1_accepted": {
+        "after_accuracy": 0.582312436049888,
+        "after_correct": 21057,
+        "before_accuracy": 0.795138408782943,
+        "before_correct": 28753,
+        "harm_to_help_ratio": 40.265306122448976,
+        "helps": 196,
+        "hurts": 7892,
+        "net_correct_delta": -7696,
+        "neutral": 28073,
+        "positions": 36161
+      },
+      "depth1_rejected": {
+        "after_accuracy": 0.14167921416792142,
+        "after_correct": 1976,
+        "before_accuracy": 0.1493511149351115,
+        "before_correct": 2083,
+        "harm_to_help_ratio": 1.2123015873015872,
+        "helps": 504,
+        "hurts": 611,
+        "net_correct_delta": -107,
+        "neutral": 12832,
+        "positions": 13947
+      },
+      "split_definition": "depth-1 prediction agrees with the cached 7B greedy token",
+      "transition": "2_to_3"
+    }
+  },
+  "pre_d0": {
+    "integrity": {
+      "argmax_cells": 150324,
+      "checkpoint_mutated": false,
+      "checkpoint_sha256": "93d2e5f9a941bbe79a0b2fc3f9bf43d582bf054990c14b1a93ff67024140062d",
+      "tie_cells": 5055,
+      "tie_policy": "fp32 logits; exact ties choose the lowest token id",
+      "tie_rate": 0.03362736489183364
+    },
+    "transition_1_to_2": {
+      "all_positions": {
+        "after_accuracy": 0.5904446395785105,
+        "after_correct": 29586,
+        "before_accuracy": 0.7226590564380937,
+        "before_correct": 36211,
+        "harm_to_help_ratio": 4.4433471933471935,
+        "helps": 1924,
+        "hurts": 8549,
+        "net_correct_delta": -6625,
+        "neutral": 39635,
+        "positions": 50108
+      },
+      "depth1_accepted": {
+        "after_accuracy": 0.7639115185993206,
+        "after_correct": 27662,
+        "before_accuracy": 1.0,
+        "before_correct": 36211,
+        "harm_to_help_ratio": null,
+        "helps": 0,
+        "hurts": 8549,
+        "net_correct_delta": -8549,
+        "neutral": 27662,
+        "positions": 36211
+      },
+      "depth1_rejected": {
+        "after_accuracy": 0.1384471468662301,
+        "after_correct": 1924,
+        "before_accuracy": 0.0,
+        "before_correct": 0,
+        "harm_to_help_ratio": 0.0,
+        "helps": 1924,
+        "hurts": 0,
+        "net_correct_delta": 1924,
+        "neutral": 11973,
+        "positions": 13897
+      },
+      "split_definition": "depth-1 prediction agrees with the cached 7B greedy token",
+      "transition": "1_to_2"
+    },
+    "transition_2_to_3": {
+      "all_positions": {
+        "after_accuracy": 0.43831324339426836,
+        "after_correct": 21963,
+        "before_accuracy": 0.5904446395785105,
+        "before_correct": 29586,
+        "harm_to_help_ratio": 14.120481927710843,
+        "helps": 581,
+        "hurts": 8204,
+        "net_correct_delta": -7623,
+        "neutral": 41323,
+        "positions": 50108
+      },
+      "depth1_accepted": {
+        "after_accuracy": 0.5591118720830687,
+        "after_correct": 20246,
+        "before_accuracy": 0.7639115185993206,
+        "before_correct": 27662,
+        "harm_to_help_ratio": 41.972375690607734,
+        "helps": 181,
+        "hurts": 7597,
+        "net_correct_delta": -7416,
+        "neutral": 28433,
+        "positions": 36211
+      },
+      "depth1_rejected": {
+        "after_accuracy": 0.12355184572209829,
+        "after_correct": 1717,
+        "before_accuracy": 0.1384471468662301,
+        "before_correct": 1924,
+        "harm_to_help_ratio": 1.5175,
+        "helps": 400,
+        "hurts": 607,
+        "net_correct_delta": -207,
+        "neutral": 12890,
+        "positions": 13897
+      },
+      "split_definition": "depth-1 prediction agrees with the cached 7B greedy token",
+      "transition": "2_to_3"
+    }
+  },
+  "status": "complete_exact_dev_c_fallback_branch",
+  "training_started": false,
+  "ungated_fixed_depth2_pre_d0_net_utility": -6625
+}
