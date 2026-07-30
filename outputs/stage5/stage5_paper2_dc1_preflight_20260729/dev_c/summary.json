@@ -1,0 +1,45 @@
+{
+  "data": {
+    "document_id_list_sha256": "11d9786f639e39e9006a62f21974839e682463604c61dd229da8e6578dd16888",
+    "document_id_sha256": "11d9786f639e39e9006a62f21974839e682463604c61dd229da8e6578dd16888",
+    "documents": 432,
+    "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_dc1_preflight_20260729/private/dev_c/dev_c.jsonl",
+    "rows": 1171,
+    "sha256": "05bca2ee3ba71421296b2e31a0439746eb9c1b0e15e2cea4471be202ab6ac29d",
+    "tokens": 500000
+  },
+  "document_disjointness": {
+    "document_disjoint": true,
+    "documents": 432,
+    "overlap_count": 0,
+    "partition": "dev_c",
+    "prior_documents": 1786
+  },
+  "evaluation_c_touched": false,
+  "kind": "paper2_dc1_dev_c_freeze",
+  "mix": {
+    "code": 0.5,
+    "general": 0.5
+  },
+  "optimizer_steps": 0,
+  "private_document_manifest_sha256": "1816d9e953280cfb335c23de80292b64e36270599c3b4d273474b25f2e476caf",
+  "seed": 20260729,
+  "source_revisions": {
+    "drafter": "7ae557604adf67be50417f59c2c2f167def9a775",
+    "fineweb": "87f09149ef4734204d70ed1d046ddc9ca3f2b8f9",
+    "stack_smol_main": "4a6938ce94446f324c6629e7de00ac591710044b",
+    "stack_smol_pinned": "4a6938ce94446f324c6629e7de00ac591710044b",
+    "teacher_14b": "cf98f3b3bbb457ad9e2bb7baf9a0125b6b88caa8",
+    "teacher_7b": "a09a35458c702b33eeacc393d103063234e8bc28"
+  },
+  "status": "complete_reusable_development_only",
+  "teacher": {
+    "acceptance_rate": 0.7292599267484449,
+    "accepted_positions": 363776,
+    "model": "Qwen/Qwen2.5-7B-Instruct",
+    "passes": 1,
+    "rejected_positions": 135053,
+    "revision": "a09a35458c702b33eeacc393d103063234e8bc28"
+  },
+  "training_started": false
+}

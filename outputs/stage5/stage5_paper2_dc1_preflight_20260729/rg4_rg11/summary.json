@@ -1,0 +1,433 @@
+{
+  "checkpoint_written": false,
+  "declared_future_precision_policy": "full_fp32",
+  "environment": {
+    "device": "cuda",
+    "gpu": "NVIDIA L4",
+    "python": "3.12.13",
+    "torch": "2.11.0+cu128",
+    "transformers": "5.13.1"
+  },
+  "execution_mode": "recompute_only",
+  "kind": "coconut_composite_numerical_followup",
+  "model_name": "Qwen/Qwen2.5-0.5B-Instruct",
+  "rg11_precision_policies": {
+    "fp32_master_bf16_autocast": {
+      "all_examples_pass": false,
+      "by_horizontal_steps": {
+        "1": {
+          "all_examples_pass": false,
+          "minimum_cosine": 0.9589013457298279
+        },
+        "2": {
+          "all_examples_pass": false,
+          "minimum_cosine": 0.9587846398353577
+        },
+        "3": {
+          "all_examples_pass": false,
+          "minimum_cosine": 0.9700283408164978
+        }
+      },
+      "examples": [
+        {
+          "finite": true,
+          "gradient_cosine_to_fp32": 0.9934530258178711,
+          "horizontal_steps": 1,
+          "index": 0,
+          "passes": true
+        },
+        {
+          "finite": true,
+          "gradient_cosine_to_fp32": 0.9885787963867188,
+          "horizontal_steps": 1,
+          "index": 1,
+          "passes": false
+        },
+        {
+          "finite": true,
+          "gradient_cosine_to_fp32": 0.9589013457298279,
+          "horizontal_steps": 1,
+          "index": 2,
+          "passes": false
+        },
+        {
+          "finite": true,
+          "gradient_cosine_to_fp32": 0.9860213994979858,
+          "horizontal_steps": 1,
+          "index": 3,
+          "passes": false
+        },
+        {
+          "finite": true,
+          "gradient_cosine_to_fp32": 0.9897112846374512,
+          "horizontal_steps": 2,
+          "index": 0,
+          "passes": false
+        },
+        {
+          "finite": true,
+          "gradient_cosine_to_fp32": 0.9587846398353577,
+          "horizontal_steps": 2,
+          "index": 1,
+          "passes": false
+        },
+        {
+          "finite": true,
+          "gradient_cosine_to_fp32": 0.9709228277206421,
+          "horizontal_steps": 2,
+          "index": 2,
+          "passes": false
+        },
+        {
+          "finite": true,
+          "gradient_cosine_to_fp32": 0.9883425831794739,
+          "horizontal_steps": 2,
+          "index": 3,
+          "passes": false
+        },
+        {
+          "finite": true,
+          "gradient_cosine_to_fp32": 0.9869673848152161,
+          "horizontal_steps": 3,
+          "index": 0,
+          "passes": false
+        },
+        {
+          "finite": true,
+          "gradient_cosine_to_fp32": 0.9700283408164978,
+          "horizontal_steps": 3,
+          "index": 1,
+          "passes": false
+        },
+        {
+          "finite": true,
+          "gradient_cosine_to_fp32": 0.9896632432937622,
+          "horizontal_steps": 3,
+          "index": 2,
+          "passes": false
+        },
+        {
+          "finite": true,
+          "gradient_cosine_to_fp32": 0.9862617254257202,
+          "horizontal_steps": 3,
+          "index": 3,
+          "passes": false
+        }
+      ],
+      "horizontal_steps": [
+        1,
+        2,
+        3
+      ],
+      "minimum_cosine": 0.9587846398353577,
+      "threshold": 0.99
+    },
+    "full_bf16": {
+      "all_examples_pass": false,
+      "by_horizontal_steps": {
+        "1": {
+          "all_examples_pass": false,
+          "minimum_cosine": 0.9641668796539307
+        },
+        "2": {
+          "all_examples_pass": false,
+          "minimum_cosine": 0.980330228805542
+        },
+        "3": {
+          "all_examples_pass": false,
+          "minimum_cosine": 0.977810263633728
+        }
+      },
+      "examples": [
+        {
+          "finite": true,
+          "gradient_cosine_to_fp32": 0.9835836291313171,
+          "horizontal_steps": 1,
+          "index": 0,
+          "passes": false
+        },
+        {
+          "finite": true,
+          "gradient_cosine_to_fp32": 0.986973226070404,
+          "horizontal_steps": 1,
+          "index": 1,
+          "passes": false
+        },
+        {
+          "finite": true,
+          "gradient_cosine_to_fp32": 0.9641668796539307,
+          "horizontal_steps": 1,
+          "index": 2,
+          "passes": false
+        },
+        {
+          "finite": true,
+          "gradient_cosine_to_fp32": 0.9823373556137085,
+          "horizontal_steps": 1,
+          "index": 3,
+          "passes": false
+        },
+        {
+          "finite": true,
+          "gradient_cosine_to_fp32": 0.9847494959831238,
+          "horizontal_steps": 2,
+          "index": 0,
+          "passes": false
+        },
+        {
+          "finite": true,
+          "gradient_cosine_to_fp32": 0.980330228805542,
+          "horizontal_steps": 2,
+          "index": 1,
+          "passes": false
+        },
+        {
+          "finite": true,
+          "gradient_cosine_to_fp32": 0.9850679039955139,
+          "horizontal_steps": 2,
+          "index": 2,
+          "passes": false
+        },
+        {
+          "finite": true,
+          "gradient_cosine_to_fp32": 0.9878184795379639,
+          "horizontal_steps": 2,
+          "index": 3,
+          "passes": false
+        },
+        {
+          "finite": true,
+          "gradient_cosine_to_fp32": 0.977810263633728,
+          "horizontal_steps": 3,
+          "index": 0,
+          "passes": false
+        },
+        {
+          "finite": true,
+          "gradient_cosine_to_fp32": 0.9887796640396118,
+          "horizontal_steps": 3,
+          "index": 1,
+          "passes": false
+        },
+        {
+          "finite": true,
+          "gradient_cosine_to_fp32": 0.989075243473053,
+          "horizontal_steps": 3,
+          "index": 2,
+          "passes": false
+        },
+        {
+          "finite": true,
+          "gradient_cosine_to_fp32": 0.9856840372085571,
+          "horizontal_steps": 3,
+          "index": 3,
+          "passes": false
+        }
+      ],
+      "horizontal_steps": [
+        1,
+        2,
+        3
+      ],
+      "minimum_cosine": 0.9641668796539307,
+      "threshold": 0.99
+    },
+    "full_fp32": {
+      "all_examples_pass": true,
+      "by_horizontal_steps": {
+        "1": {
+          "all_examples_pass": true,
+          "minimum_cosine": 0.9999998807907104
+        },
+        "2": {
+          "all_examples_pass": true,
+          "minimum_cosine": 1.0000001192092896
+        },
+        "3": {
+          "all_examples_pass": true,
+          "minimum_cosine": 0.9999998211860657
+        }
+      },
+      "examples": [
+        {
+          "finite": true,
+          "gradient_cosine_to_fp32": 1.0000001192092896,
+          "horizontal_steps": 1,
+          "index": 0,
+          "passes": true
+        },
+        {
+          "finite": true,
+          "gradient_cosine_to_fp32": 1.0,
+          "horizontal_steps": 1,
+          "index": 1,
+          "passes": true
+        },
+        {
+          "finite": true,
+          "gradient_cosine_to_fp32": 1.0,
+          "horizontal_steps": 1,
+          "index": 2,
+          "passes": true
+        },
+        {
+          "finite": true,
+          "gradient_cosine_to_fp32": 0.9999998807907104,
+          "horizontal_steps": 1,
+          "index": 3,
+          "passes": true
+        },
+        {
+          "finite": true,
+          "gradient_cosine_to_fp32": 1.0000001192092896,
+          "horizontal_steps": 2,
+          "index": 0,
+          "passes": true
+        },
+        {
+          "finite": true,
+          "gradient_cosine_to_fp32": 1.000000238418579,
+          "horizontal_steps": 2,
+          "index": 1,
+          "passes": true
+        },
+        {
+          "finite": true,
+          "gradient_cosine_to_fp32": 1.0000001192092896,
+          "horizontal_steps": 2,
+          "index": 2,
+          "passes": true
+        },
+        {
+          "finite": true,
+          "gradient_cosine_to_fp32": 1.0000001192092896,
+          "horizontal_steps": 2,
+          "index": 3,
+          "passes": true
+        },
+        {
+          "finite": true,
+          "gradient_cosine_to_fp32": 0.9999998807907104,
+          "horizontal_steps": 3,
+          "index": 0,
+          "passes": true
+        },
+        {
+          "finite": true,
+          "gradient_cosine_to_fp32": 0.9999998211860657,
+          "horizontal_steps": 3,
+          "index": 1,
+          "passes": true
+        },
+        {
+          "finite": true,
+          "gradient_cosine_to_fp32": 0.9999998807907104,
+          "horizontal_steps": 3,
+          "index": 2,
+          "passes": true
+        },
+        {
+          "finite": true,
+          "gradient_cosine_to_fp32": 0.9999999403953552,
+          "horizontal_steps": 3,
+          "index": 3,
+          "passes": true
+        }
+      ],
+      "horizontal_steps": [
+        1,
+        2,
+        3
+      ],
+      "minimum_cosine": 0.9999998211860657,
+      "threshold": 0.99
+    }
+  },
+  "rg12": {
+    "authorized": false,
+    "reason": "C track remains design-stage; engineering follow-up cannot authorize training",
+    "run": false
+  },
+  "rg4_epsilon_stability": {
+    "adjacent_stability": {
+      "adjacent_epsilons": [
+        0.1,
+        0.03
+      ],
+      "passed": true
+    },
+    "analytic_directional_derivative": -0.01104392297565937,
+    "epsilons": [
+      {
+        "absolute_error": 3.7439167499542236e-07,
+        "analytic_directional_derivative": -0.01104392297565937,
+        "epsilon": 0.1,
+        "finite_difference_directional_derivative": -0.011043548583984375,
+        "passes_original_criterion": true,
+        "sign_matches": true,
+        "tolerance": 0.0011043548583984375
+      },
+      {
+        "absolute_error": 0.00020148605108261108,
+        "analytic_directional_derivative": -0.01104392297565937,
+        "epsilon": 0.03,
+        "finite_difference_directional_derivative": -0.011245409026741982,
+        "passes_original_criterion": true,
+        "sign_matches": true,
+        "tolerance": 0.0011245409026741982
+      },
+      {
+        "absolute_error": 0.00032864324748516083,
+        "analytic_directional_derivative": -0.01104392297565937,
+        "epsilon": 0.01,
+        "finite_difference_directional_derivative": -0.011372566223144531,
+        "passes_original_criterion": true,
+        "sign_matches": true,
+        "tolerance": 0.0011372566223144531
+      },
+      {
+        "absolute_error": 0.0008770059794187546,
+        "analytic_directional_derivative": -0.01104392297565937,
+        "epsilon": 0.003,
+        "finite_difference_directional_derivative": -0.011920928955078125,
+        "passes_original_criterion": true,
+        "sign_matches": true,
+        "tolerance": 0.0011920928955078125
+      },
+      {
+        "absolute_error": 0.0018306802958250046,
+        "analytic_directional_derivative": -0.01104392297565937,
+        "epsilon": 0.001,
+        "finite_difference_directional_derivative": -0.012874603271484375,
+        "passes_original_criterion": false,
+        "sign_matches": true,
+        "tolerance": 0.0012874603271484375
+      },
+      {
+        "absolute_error": 0.017401751596480608,
+        "analytic_directional_derivative": -0.01104392297565937,
+        "epsilon": 0.0003,
+        "finite_difference_directional_derivative": 0.0063578286208212376,
+        "passes_original_criterion": false,
+        "sign_matches": false,
+        "tolerance": 0.0006357828620821238
+      },
+      {
+        "absolute_error": 0.039023978635668755,
+        "analytic_directional_derivative": -0.01104392297565937,
+        "epsilon": 0.0001,
+        "finite_difference_directional_derivative": -0.050067901611328125,
+        "passes_original_criterion": false,
+        "sign_matches": true,
+        "tolerance": 0.0050067901611328125
+      }
+    ],
+    "passed": true
+  },
+  "sliced_cache": {
+    "authorized": false,
+    "disposition": "retired_after_rg5_strict_equivalence_failure"
+  },
+  "status": "engineering_preflight_passed",
+  "training_performed": false
+}
