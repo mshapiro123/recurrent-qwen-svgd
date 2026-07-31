@@ -141,6 +141,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3_short_sha"
 #   "paper2_dc0_depth_by_append" - forward-only M7 mechanism comparison on spent-once EVAL-B.
 #   "paper2_dc1_preflight" - DEV-C plus no-training DC1-P and RG-4/RG-11.
 #   "paper2_dc1_eval_c_freeze" - pre-lock EVAL-C freeze and sole 7B cache pass.
+#   "paper2_dc1_stage_a" - locked bridge-only training and single EVAL-C verdict.
 #   "paper2_dc1_parity_ledger" - read-only population-matched pre/post-D0 loop ledger.
 #   "paper2_dc1_scale_response" - read-only residual-stream scale/cosine probe.
 #   "paper2_d0_prelock_publish_resume" - publish completed Drive-backed D0 lock receipts without inference.
@@ -234,6 +235,21 @@ TARGETS = {
             "read-once EVAL-C scoring remains unspent after cache construction",
             "tests/test_paper2_dc1_preflight.py",
             "colab/run_stage5_paper2_dc1_eval_c_freeze.py",
+        ],
+        "env": {},
+    },
+    "paper2_dc1_stage_a": {
+        "path": "colab/STAGE5_PAPER2_DC1_STAGE_A_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_DC1_STAGE_A_VERSION",
+            "paper2_dc1_stage_a_v1",
+            "locked_before_training commit d25b3d0e before runner construction",
+            "full fp32 bridge-only AdamW 2000 steps forced k1 L1 recompute only",
+            "exact allowlist horizontal_bridge.delta.weight and frozen hash assertions",
+            "single read-once EVAL-C pass immutable cache all five registered arms",
+            "verdict script eval/eval_paper2_dc1_stage_a_verdict.py 10000 row bootstraps seed 20260730",
+            "Drive checkpoint resume and training receipt publishes before EVAL-C",
+            "colab/run_stage5_paper2_dc1_stage_a.py",
         ],
         "env": {},
     },

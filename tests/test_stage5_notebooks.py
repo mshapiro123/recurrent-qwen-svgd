@@ -1517,6 +1517,36 @@ def test_current_bootstrap_exposes_paper2_dc1_eval_c_freeze_target() -> None:
     assert "read_once_scoring_spent" in policy
 
 
+def test_current_bootstrap_exposes_paper2_dc1_stage_a_target() -> None:
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(
+        encoding="utf-8"
+    )
+    cell = (ROOT / "colab/STAGE5_PAPER2_DC1_STAGE_A_CELL.py").read_text(
+        encoding="utf-8"
+    )
+    runner = (ROOT / "colab/run_stage5_paper2_dc1_stage_a.py").read_text(
+        encoding="utf-8"
+    )
+    training = (ROOT / "training/train_paper2_dc1_stage_a.py").read_text(
+        encoding="utf-8"
+    )
+    evaluator = (ROOT / "eval/eval_paper2_dc1_stage_a.py").read_text(
+        encoding="utf-8"
+    )
+
+    assert '"paper2_dc1_stage_a"' in bootstrap
+    assert "paper2_dc1_stage_a_v1" in cell
+    assert "A100-80GB-class GPU" in cell
+    assert "d25b3d0e" in cell and "d25b3d0e" in runner
+    assert "training receipt publishes before EVAL-C" in cell
+    assert "training.train_paper2_dc1_stage_a" in runner
+    assert "eval.eval_paper2_dc1_stage_a" in runner
+    assert "full fp32" in training
+    assert "assert_only_allowlist_gradients" in training
+    assert "immutable_scoring_cache.jsonl" in evaluator
+    assert "arm_specific_rescoring_performed" in evaluator
+
+
 def test_current_bootstrap_exposes_dc1_read_only_followups() -> None:
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
     parity = (ROOT / "colab/STAGE5_PAPER2_DC1_PARITY_LEDGER_CELL.py").read_text(encoding="utf-8")
