@@ -144,6 +144,9 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3_short_sha"
 #   "paper2_dc1_stage_a" - locked bridge-only training and single EVAL-C verdict.
 #   "paper2_dc1_parity_ledger" - read-only population-matched pre/post-D0 loop ledger.
 #   "paper2_dc1_scale_response" - read-only residual-stream scale/cosine probe.
+#   "paper2_phase2_oracle_overlap" - CPU-only Stage A oracle and hurt-overlap cache receipt.
+#   "paper2_phase2_v1_v2" - DEV-C-only empirical gain diagnostics; no training.
+#   "paper2_phase2_eval_de_freeze" - score-blind EVAL-D/E and own-base feature freeze.
 #   "paper2_d0_prelock_publish_resume" - publish completed Drive-backed D0 lock receipts without inference.
 #   "paper2_d0_prelock" - authorized density probe, corpus freeze, and preregistration lock only.
 TARGET = os.environ.get("STAGE5_CURRENT_A100_TARGET", "preflight")
@@ -169,6 +172,44 @@ if TARGET == "traced_sft_scale64_benchmark" and os.environ.get(
     TARGET = "traced_sft_direct_preservation_probe"
 
 TARGETS = {
+    "paper2_phase2_oracle_overlap": {
+        "path": "colab/STAGE5_PAPER2_PHASE2_ORACLE_OVERLAP_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_PHASE2_ORACLE_OVERLAP_VERSION",
+            "paper2_phase2_oracle_overlap_v1",
+            "cache-only Stage A oracle and hurt overlap no model no scoring no training",
+            "EVAL-C read-once scoring remains spent and is never reexecuted",
+            "position tensors remain private aggregate receipt only",
+            "colab/run_stage5_paper2_phase2_oracle_overlap.py",
+        ],
+        "env": {},
+    },
+    "paper2_phase2_v1_v2": {
+        "path": "colab/STAGE5_PAPER2_PHASE2_V1_V2_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_PHASE2_V1_V2_VERSION",
+            "paper2_phase2_v1_v2_v1",
+            "DEV-C only V1 V2 centered finite-difference JVP no optimizer no training",
+            "sampled directional gain is not a certified Lipschitz upper bound",
+            "gamma 0.05 rho 0.8 c 0.01 0.02 0.05",
+            "pre-D0 and post-D0 block iterates 1 through 4",
+            "colab/run_stage5_paper2_phase2_v1_v2.py",
+        ],
+        "env": {},
+    },
+    "paper2_phase2_eval_de_freeze": {
+        "path": "colab/STAGE5_PAPER2_PHASE2_EVAL_DE_FREEZE_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_PHASE2_EVAL_DE_FREEZE_VERSION",
+            "paper2_phase2_eval_de_freeze_v1",
+            "fresh EVAL-D EVAL-E 200000 tokens each document disjoint and score blind",
+            "one Qwen2.5 7B cache pass per partition no 14B no optimizer no training",
+            "own-base boundary features layers 6 18 24 bfloat16 private and hash only public",
+            "read-once scoring remains unspent for both confirmation partitions",
+            "colab/run_stage5_paper2_phase2_eval_de_freeze.py",
+        ],
+        "env": {},
+    },
     "paper2_d0_expert_choice_rung0": {
         "path": "colab/STAGE5_PAPER2_D0_EXPERT_CHOICE_RUNG0_CELL.py",
         "markers": [

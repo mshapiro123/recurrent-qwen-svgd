@@ -1567,3 +1567,33 @@ Colab/Drive backups for selected runs.
   label dry run are authorized; D1 training remains unauthorized. Documents:
   `docs/PAPER2_D0_BANKING_AMENDMENT_20260727.md` and
   `docs/PAPER2_D1_CAUSAL_ALLOCATION_AUDIT_SPEC_20260727.md`.
+- 2026-07-31 DC1 Stage A bridge-only adaptation: the sole trainable tensor was
+  `horizontal_bridge.delta.weight` (`802,816` parameters), optimized for 2,000
+  full-fp32 AdamW steps under forced `k=1`. Frozen parameters remained
+  hash-identical and the inactive `k=0` path was bit-identical. On the single
+  read-once EVAL-C pass, trained append improved over untrained append by
+  `13,402` net positions, with helps `7,799` versus `6,431` and hurts `31,837`
+  versus `43,871`. Its normalized utility remained `-0.12047`, bootstrap 95%
+  CI `[-0.12553, -0.11531]`; the `27.43%` hurts reduction missed the `50%`
+  partial-domestication requirement. Registered verdict `none`; consequence
+  `transient_append_retires`; EVAL-C scoring spent; final checkpoint archival
+  only. Receipt: `docs/PAPER2_DC1_STAGE_A_RESULT_HANDOFF_20260731.md`.
+- 2026-07-31 Paper Two Phase-2 opening: Stage A's verdict and scoped retirement
+  remain unchanged. Mark's explicit program-level override opens two new lines
+  under new locks: DC2 bounded-correction sidecar arbitration and D1
+  utility-labeled in-place control. The theory audit is binding design context;
+  amendments A1-A4 bind all builds. Only four no-training jobs are authorized:
+  V1 expressivity, V2 block iteration gain, immutable-cache oracle/overlap
+  post-processing, and EVAL-D/E generation plus frozen own-base feature caches.
+  No exploration window or Phase-2 training is open. Governing documents:
+  `docs/PAPER_TWO_PHASE2_PROGRAM_DECISION_AND_DESIGN_20260731.md`,
+  `docs/THEORETICAL_FOUNDATIONS_AUDIT_20260731.md`, and
+  `docs/STRATEGY_TO_CODING_AGENT_PHASE2_OPENING_20260731.md`.
+- 2026-07-31 Phase-2 pre-window build: implemented three independently
+  resumable no-training targets covering the four authorized jobs: CPU-only
+  Stage A oracle/hurt-overlap cache post-processing; DEV-C V1 margin/gain and
+  V2 pre/post-D0 block-gain diagnostics; and score-blind, document-disjoint
+  EVAL-D/E generation with one 7B cache pass and private own-base boundary
+  features. Random JVP gains are explicitly non-certifying, with a targeted
+  margin-gradient diagnostic added. No DC2 or D1 training window opened.
+  Build receipt: `docs/PAPER2_PHASE2_PREWINDOW_BUILD_HANDOFF_20260731.md`.

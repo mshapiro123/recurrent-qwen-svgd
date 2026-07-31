@@ -1,8 +1,8 @@
 # Project Status: Deterministic Program Closed
 
-**Canonical date:** July 27, 2026
+**Canonical date:** July 31, 2026
 **Part 1 status:** closed
-**Part 2 status:** Arm G is closed on the tested frozen re-entry interface; both T1-lite attempts remain registered negatives, while D0 mixed training erased their descriptive preservation cost; D0 is banked as `not_recoverable_at_pilot_scale` for its misaligned binary disagreement target, and a read-only causal allocation audit is authorized to construct utility-aligned D1 labels; the COCONUT composite remains in integrity engineering
+**Part 2 status:** Phase 1 is banked. DC1 Stage A is a registered negative (`none`) and retires the tested bridge-only linear transient append. Mark's 2026-07-31 program-level override opens two separately locked Phase-2 lines, DC2 arbitrated recurrence and D1 utility-labeled in-place control. Only the four no-training pre-window jobs are currently authorized; no exploration window is open.
 
 This page is the short status index. It replaces the earlier June recovery narrative, which became stale after the loop-closure repair, synthetic mechanism installation, Phase A dense-control comparison, and inverse-task boundary program.
 
@@ -30,6 +30,11 @@ This page is the short status index. It replaces the earlier June recovery narra
 - [D1 causal allocation audit specification](PAPER2_D1_CAUSAL_ALLOCATION_AUDIT_SPEC_20260727.md)
 - [Superseded D0 Draft 1 scaffold](PAPER2_D0_SPECULATIVE_DEPTH_PREREGISTRATION_DRAFT_20260723.md)
 - [COCONUT integrity result](COCONUT_COMPOSITE_PREFLIGHT_HANDOFF_20260725.md)
+- [DC1 Stage A registered result](PAPER2_DC1_STAGE_A_RESULT_HANDOFF_20260731.md)
+- [Phase-2 program decision and design](PAPER_TWO_PHASE2_PROGRAM_DECISION_AND_DESIGN_20260731.md)
+- [Phase-2 theoretical foundations audit](THEORETICAL_FOUNDATIONS_AUDIT_20260731.md)
+- [Phase-2 opening handoff](STRATEGY_TO_CODING_AGENT_PHASE2_OPENING_20260731.md)
+- [Phase-2 pre-window build handoff](PAPER2_PHASE2_PREWINDOW_BUILD_HANDOFF_20260731.md)
 - [Experiment log](EXPERIMENT_LOG.md)
 
 ## Established
@@ -132,11 +137,30 @@ horizontal graph is connected and correctly accounted, but finite-difference
 stability and the bf16 precision policy require bounded follow-up. Sliced
 cache is retired. RG-12 remains unauthorized.
 
+DC0 and DC1-P then established that transient latent append was signal-bearing
+but unsafe. DC1 Stage A trained only the `802,816`-parameter horizontal linear
+bridge for 2,000 fp32 AdamW steps and evaluated once on untouched EVAL-C. The
+trained bridge improved net utility by `13,402` positions relative to the
+untrained append, increased helps from `6,431` to `7,799`, and reduced hurts
+from `43,871` to `31,837`. It nevertheless remained strongly net harmful:
+`u = -0.12047`, row-cluster bootstrap 95% CI `[-0.12553, -0.11531]`. Hurts fell
+only `27.43%`, below the `50%` partial-domestication requirement. The registered
+verdict is `none`; EVAL-C read-once scoring is spent; the tested transient
+append retires and its checkpoint is archival only.
+
+The registered Stage A consequence remains unchanged. Mark's 2026-07-31
+program-level decision opens DC2 and D1 as new lines under new locks. The
+theory audit is binding design context: amendments A1-A4 govern every build,
+V1-V2 precede any exploration window, and the separability of improvable from
+fragile positions is the common interpretive frame.
+
 ## Active Queue
 
-1. Run the read-only A100 D0 causal allocation audit and 100,000-position D1 utility-label dry run. The same hardware class and exact banked-anchor replay check protect rare argmax transition labels from cross-hardware drift. Do not train D1.
-2. Draft D1 only after the audit lands. Its preregistration must include label-to-objective alignment, an explicit loop cost, a policy-level accepted-position guardrail, and fixed-depth/oracle comparators.
-3. Continue COCONUT only through the RG-4 epsilon-stability and RG-11 precision-policy diagnostic. RG-12 and all training remain unauthorized.
+1. Run V1 on dev material: oracle-help margin distribution plus empirical local upper-stack gain, with bound-compatible fractions for `c = 0.01, 0.02, 0.05`, `rho = 0.8`, and the audit-consistent initial `gamma = 0.05` recorded explicitly.
+2. Run V2: pretrained-block JVP gain distributions at iterates 1 through 4 on dev states, on the pre-D0 and post-D0 checkpoints when resource-compatible.
+3. Formalize the trained/untrained append oracle receipts and the trained-append versus in-place hurt-position overlap from the immutable Stage A cache. This is post-processing, not EVAL-C rescoring.
+4. Generate document-disjoint EVAL-D and EVAL-E at 0.2M source tokens each and cache frozen own-base features in the same pass. Freeze hashes and do not expose scores.
+5. Open neither DC2 nor D1 exploration until V1 and V2 land and strategy reviews them. No phase-2 training is currently authorized.
 
 Closed pending that decision: additional Phase G sweeps, coverage, selection,
 LPRM, per-trajectory halting, particles, SVGD, the intra-block oracle probe,

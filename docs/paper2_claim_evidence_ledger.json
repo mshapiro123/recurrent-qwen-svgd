@@ -1,15 +1,28 @@
 {
   "schema_version": 1,
   "program": "paper2_causal_control_of_recurrent_computation",
-  "status": "t1_lite_two_registered_negatives_replicated_raw_causal_control_d0_prelock_authorized_coconut_engineering",
-  "canonical_date": "2026-07-25",
+  "status": "phase1_banked_dc1_stage_a_none_phase2_pre_window_verification_only",
+  "canonical_date": "2026-07-31",
   "active_queue": {
-    "program_goal": "useful_natural_data_model_in_qwen_series",
+    "program_goal": "causal_arbitration_at_append_and_dispatch_interfaces",
     "p0": "completed_uncitable_adapter_loss_calibration",
     "t1": "two_registered_negatives_raw_endpoints_replicate_exact_in_support_causal_control_with_small_preservation_cost",
-    "d0": "run_density_and_corpus_lock_then_author_post_lock_launcher_no_labeling_or_training_before_lock",
-    "coconut": "integrity_engineering_rg4_rg11_followup_only_rg12_unauthorized",
-    "paper_two_packaging": "deferred_until_t1_lite_and_any_later_authorized_d0_readout"
+    "d0": "banked_not_recoverable_at_pilot_scale_binary_disagreement_target",
+    "dc1_stage_a": "registered_none_transient_append_retires_checkpoint_archival_eval_c_spent",
+    "phase2": "v1_v2_oracle_overlap_and_eval_d_e_generation_only_no_training",
+    "dc2": "window_closed_pending_v1_v2_strategy_review",
+    "d1": "window_closed_pending_v1_v2_strategy_review",
+    "paper_two_packaging": "proceeds_on_banked_phase1_results"
+  },
+  "artifact_map": {
+    "dc1_stage_a_handoff": "docs/PAPER2_DC1_STAGE_A_RESULT_HANDOFF_20260731.md",
+    "dc1_stage_a_figure": "docs/figures/paper2_dc1_stage_a_result_20260731.svg",
+    "dc1_stage_a_summary": "outputs/stage5/stage5_paper2_dc1_stage_a_20260730/summary.json",
+    "dc1_stage_a_verdict": "outputs/stage5/stage5_paper2_dc1_stage_a_20260730/eval_c_result/verdict.json",
+    "phase2_design": "docs/PAPER_TWO_PHASE2_PROGRAM_DECISION_AND_DESIGN_20260731.md",
+    "phase2_theory_audit": "docs/THEORETICAL_FOUNDATIONS_AUDIT_20260731.md",
+    "phase2_opening_handoff": "docs/STRATEGY_TO_CODING_AGENT_PHASE2_OPENING_20260731.md",
+    "phase2_prewindow_build": "docs/PAPER2_PHASE2_PREWINDOW_BUILD_HANDOFF_20260731.md"
   },
   "claims": [
     {
@@ -276,6 +289,56 @@
       ]
     },
     {
+      "id": "dc1_stage_a_bridge_only_transient_append",
+      "status": "registered_negative",
+      "claim": "Bridge-only linear adaptation materially reduced transient-append damage but did not make one forced appended step safe or reach the partial-domestication band.",
+      "scope": "Post-D0 frozen substrate, identity-plus-linear bridge only, forced k=1, 2,000 full-fp32 AdamW steps, one seed, cached Qwen2.5-7B teacher-token agreement on read-once EVAL-C",
+      "metrics": {
+        "scored_positions": 199532,
+        "trained_helps": 7799,
+        "trained_hurts": 31837,
+        "trained_net": -24038,
+        "trained_normalized_utility": -0.12047190425595894,
+        "bootstrap_ci_lower": -0.1255266030017333,
+        "bootstrap_ci_upper": -0.11531178213577856,
+        "untrained_helps": 6431,
+        "untrained_hurts": 43871,
+        "untrained_net": -37440,
+        "hurts_reduction": 0.2743042100704338,
+        "partial_required_hurts_reduction": 0.5,
+        "registered_verdict": "none",
+        "registered_consequence": "transient_append_retires",
+        "read_once_scoring_spent": true
+      },
+      "program_override": "Mark's 2026-07-31 Phase-2 decision opens DC2 and D1 as new separately locked programs; it does not alter this claim, verdict, consequence, or scope.",
+      "evidence": [
+        {
+          "path": "outputs/stage5/stage5_paper2_dc1_stage_a_20260730/eval_c_result/verdict.json",
+          "locator": "registered verdict, bands, bootstrap interval, and consequence"
+        },
+        {
+          "path": "outputs/stage5/stage5_paper2_dc1_stage_a_20260730/eval_c_result/summary.json",
+          "locator": "pooled and code/general arm tables plus integrity receipts"
+        },
+        {
+          "path": "docs/PAPER2_DC1_STAGE_A_RESULT_HANDOFF_20260731.md",
+          "locator": "complete design, result, interpretation, limitations, and queue consequence"
+        },
+        {
+          "path": "docs/PAPER_TWO_PHASE2_PROGRAM_DECISION_AND_DESIGN_20260731.md",
+          "locator": "program-level override with Stage A scope unchanged"
+        }
+      ],
+      "do_not_claim": [
+        "Stage A qualified or partially domesticated transient append",
+        "the result was a near miss",
+        "the bridge learned nothing",
+        "transient append is universally impossible",
+        "teacher agreement is semantic correctness",
+        "Stage B opened from the Stage A result"
+      ]
+    },
+    {
       "id": "speculative_depth_d0",
       "status": "not_recoverable_at_pilot_scale",
       "claim": "Under one 4,000-step seed, binary teacher-disagreement targets did not produce deployment-useful adaptive depth; the target omitted accepted-position harm and labeled many causally unactionable rejections as continue.",
@@ -326,6 +389,8 @@
     "oracle_intrablock_control_before_post_t1_decision",
     "pooled_head_halting",
     "rank_ladders",
-    "natural_trace_training_before_t1_pass"
+    "natural_trace_training_before_t1_pass",
+    "dc1_stage_a_rescue_sweep_or_old_stage_b",
+    "phase2_training_before_v1_v2_and_strategy_review"
   ]
 }
