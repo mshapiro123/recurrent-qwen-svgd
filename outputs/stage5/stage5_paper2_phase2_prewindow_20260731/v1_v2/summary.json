@@ -1,0 +1,281 @@
+{
+  "do_not_claim": [
+    "sampled directional gain is a certified Lipschitz upper bound",
+    "bound-compatible positions are guaranteed reachable",
+    "absence of sampled gain above one proves contraction",
+    "V1 or V2 is a confirmatory result"
+  ],
+  "frozen_evaluation_partitions_touched": [],
+  "kind": "paper2_phase2_v1_v2",
+  "optimizer_steps": 0,
+  "sources": {
+    "dev_data_sha256": "05bca2ee3ba71421296b2e31a0439746eb9c1b0e15e2cea4471be202ab6ac29d",
+    "post_d0_checkpoint_sha256": "8245cabfe7639dcd442c19e03496623b9d59eec31b39e253e08fd6f78b1086cf",
+    "pre_d0_checkpoint_sha256": "93d2e5f9a941bbe79a0b2fc3f9bf43d582bf054990c14b1a93ff67024140062d",
+    "stage_a_bridge_checkpoint_sha256": "5f2f2d89d26642e16c0e4640ea01fa79a408c25bdf71794e6235948ed96ce0cb",
+    "teacher_cache_summary_sha256": "bf6c0762221d07294fc6f45da0f5791a0241c4466d45b1efbb09d4b7fa3be5f4"
+  },
+  "status": "complete_no_training_dev_only",
+  "training_started": false,
+  "v1": {
+    "bound_compatible_fraction_using_sampled_max_gain": {
+      "0.01": {
+        "compatible": 77,
+        "empirical_bound": {
+          "count": 128,
+          "max": 104.47392889650189,
+          "mean": 2.2541627838622516,
+          "median": 0.5926902433324881,
+          "min": 0.2836310837463284,
+          "p10": 0.36776799986685893,
+          "p90": 1.1925437060451747,
+          "p95": 1.5809079308273948
+        },
+        "fraction": 0.6015625,
+        "positions": 128
+      },
+      "0.02": {
+        "compatible": 104,
+        "empirical_bound": {
+          "count": 128,
+          "max": 208.94785779300378,
+          "mean": 4.508325567724503,
+          "median": 1.1853804866649762,
+          "min": 0.5672621674926568,
+          "p10": 0.7355359997337179,
+          "p90": 2.3850874120903494,
+          "p95": 3.1618158616547896
+        },
+        "fraction": 0.8125,
+        "positions": 128
+      },
+      "0.05": {
+        "compatible": 125,
+        "empirical_bound": {
+          "count": 128,
+          "max": 522.3696444825094,
+          "mean": 11.27081391931126,
+          "median": 2.963451216662441,
+          "min": 1.4181554187316423,
+          "p10": 1.838839999334295,
+          "p90": 5.962718530225873,
+          "p95": 7.904539654136975
+        },
+        "fraction": 0.9765625,
+        "positions": 128
+      }
+    },
+    "constants": {
+      "c_values": [
+        0.01,
+        0.02,
+        0.05
+      ],
+      "gamma": 0.05,
+      "hidden_size": 896,
+      "rho": 0.8
+    },
+    "dev_rows": 128,
+    "first_order_margin_compatible_fraction": {
+      "0.01": {
+        "compatible": 6,
+        "empirical_bound": {
+          "count": 128,
+          "max": 10.518779206899406,
+          "mean": 0.219071756871243,
+          "median": 0.04759652763395074,
+          "min": 0.0039989394013270054,
+          "p10": 0.021121912246888884,
+          "p90": 0.11432212401467848,
+          "p95": 0.16014449090238497
+        },
+        "fraction": 0.046875,
+        "positions": 128
+      },
+      "0.02": {
+        "compatible": 18,
+        "empirical_bound": {
+          "count": 128,
+          "max": 21.037558413798813,
+          "mean": 0.438143513742486,
+          "median": 0.09519305526790148,
+          "min": 0.007997878802654011,
+          "p10": 0.04224382449377777,
+          "p90": 0.22864424802935696,
+          "p95": 0.32028898180476995
+        },
+        "fraction": 0.140625,
+        "positions": 128
+      },
+      "0.05": {
+        "compatible": 41,
+        "empirical_bound": {
+          "count": 128,
+          "max": 52.593896034497035,
+          "mean": 1.0953587843562154,
+          "median": 0.23798263816975368,
+          "min": 0.01999469700663503,
+          "p10": 0.10560956123444443,
+          "p90": 0.5716106200733924,
+          "p95": 0.8007224545119248
+        },
+        "fraction": 0.3203125,
+        "positions": 128
+      }
+    },
+    "margin_distribution_all_oracle_helps": {
+      "count": 2388,
+      "max": 11.590877532958984,
+      "mean": 0.7408475314752141,
+      "median": 0.517082691192627,
+      "min": 0.0004405975341796875,
+      "p10": 0.07878704071044922,
+      "p90": 1.6927917480468757,
+      "p95": 2.120858669281006
+    },
+    "margin_distribution_probed": {
+      "count": 128,
+      "max": 3.1837263107299805,
+      "mean": 0.6995589807629585,
+      "median": 0.5187516212463379,
+      "min": 0.010068893432617188,
+      "p10": 0.08587150573730469,
+      "p90": 1.7339196205139158,
+      "p95": 2.0631975173950194
+    },
+    "method_caveat": "Centered finite-difference JVP probes provide sampled directional gains, not a certified Lipschitz upper bound. Fractions are empirical bound compatibility and do not guarantee reachability. The targeted margin-gradient calculation is an exact local first-order diagnostic, not a finite-radius guarantee.",
+    "oracle_help_positions": 2388,
+    "position_matched_probe_sample": 128,
+    "sampled_max_directional_gain": {
+      "count": 128,
+      "max": 91.24957275390625,
+      "mean": 23.075688645243645,
+      "median": 19.172825813293457,
+      "min": 9.501382827758789,
+      "p10": 12.34334077835083,
+      "p90": 35.25648040771484,
+      "p95": 45.60920791625975
+    },
+    "state_rms": {
+      "count": 128,
+      "max": 56.95608139038086,
+      "mean": 1.2872976725921035,
+      "median": 0.41051580011844635,
+      "min": 0.3171132504940033,
+      "p10": 0.37585116922855377,
+      "p90": 0.4723852872848511,
+      "p95": 0.49185075908899306
+    },
+    "targeted_margin_gradient_l2": {
+      "count": 128,
+      "max": 7.488698482513428,
+      "mean": 1.872415347956121,
+      "median": 1.5415629148483276,
+      "min": 0.14298471808433533,
+      "p10": 0.7213482975959778,
+      "p90": 3.225240397453308,
+      "p95": 4.531374216079701
+    }
+  },
+  "v2": {
+    "checkpoints": {
+      "post_d0": {
+        "by_iterate": {
+          "1": {
+            "count": 64,
+            "max": 1.4482371807098389,
+            "mean": 0.7410487527959049,
+            "median": 0.6910205781459808,
+            "min": 0.4090251624584198,
+            "p10": 0.479027059674263,
+            "p90": 1.106532979011536,
+            "p95": 1.223082387447357
+          },
+          "2": {
+            "count": 64,
+            "max": 0.7003269195556641,
+            "mean": 0.5667109545320272,
+            "median": 0.566499650478363,
+            "min": 0.3827302157878876,
+            "p10": 0.46427425742149353,
+            "p90": 0.6761994302272797,
+            "p95": 0.6976093113422394
+          },
+          "3": {
+            "count": 64,
+            "max": 0.64704430103302,
+            "mean": 0.5547943850979209,
+            "median": 0.5526034832000732,
+            "min": 0.4531868100166321,
+            "p10": 0.4928811311721802,
+            "p90": 0.6166703045368195,
+            "p95": 0.6257624864578246
+          },
+          "4": {
+            "count": 64,
+            "max": 0.6622340679168701,
+            "mean": 0.5646324125118554,
+            "median": 0.5589618682861328,
+            "min": 0.47680115699768066,
+            "p10": 0.5067401766777039,
+            "p90": 0.6251659572124482,
+            "p95": 0.6346658140420913
+          }
+        },
+        "checkpoint_sha256": "8245cabfe7639dcd442c19e03496623b9d59eec31b39e253e08fd6f78b1086cf",
+        "random_probes_per_row_iterate": 2,
+        "rows": 32
+      },
+      "pre_d0": {
+        "by_iterate": {
+          "1": {
+            "count": 64,
+            "max": 1.450269341468811,
+            "mean": 0.7398863979615271,
+            "median": 0.6894623935222626,
+            "min": 0.4078867435455322,
+            "p10": 0.4773606687784195,
+            "p90": 1.1051316022872926,
+            "p95": 1.2161499619483946
+          },
+          "2": {
+            "count": 64,
+            "max": 0.7043766975402832,
+            "mean": 0.5666514914482832,
+            "median": 0.56407830119133,
+            "min": 0.38375377655029297,
+            "p10": 0.46389640867710114,
+            "p90": 0.6760391354560852,
+            "p95": 0.6993572235107421
+          },
+          "3": {
+            "count": 64,
+            "max": 0.6473209261894226,
+            "mean": 0.5548504488542676,
+            "median": 0.5523950159549713,
+            "min": 0.4542767405509949,
+            "p10": 0.49365721344947816,
+            "p90": 0.6165561079978943,
+            "p95": 0.6248479068279266
+          },
+          "4": {
+            "count": 64,
+            "max": 0.6624976992607117,
+            "mean": 0.564901230391115,
+            "median": 0.5592699944972992,
+            "min": 0.4770885109901428,
+            "p10": 0.5076862275600433,
+            "p90": 0.6263979196548461,
+            "p95": 0.6351151376962662
+          }
+        },
+        "checkpoint_sha256": "93d2e5f9a941bbe79a0b2fc3f9bf43d582bf054990c14b1a93ff67024140062d",
+        "random_probes_per_row_iterate": 2,
+        "rows": 32
+      }
+    },
+    "map": "recurrent block only, without bridge or coda",
+    "method_caveat": "Each value is a centered finite-difference directional JVP gain. Values above one establish an expanding sampled direction; values below one do not certify contraction.",
+    "state_position": "last causal position of each deterministic dev prefix"
+  }
+}
