@@ -1,0 +1,43 @@
+{
+  "data_jsonl_sha256": "04a68f41b3a7858d185da5d37fdc5a6db35b37804a892e218a4d932898d13f58",
+  "document_disjointness": {
+    "document_disjoint": true,
+    "documents": 164,
+    "overlap_count": 0,
+    "partition": "eval_c",
+    "prior_documents": 2218
+  },
+  "kind": "paper2_dc1_eval_c_freeze",
+  "manifest_sha256": "7813d9502b06c89ba210191d4bb29ec52d217ee7177ff9397469c85831bc0123",
+  "mix": {
+    "code": 0.5,
+    "general": 0.5
+  },
+  "optimizer_steps": 0,
+  "read_log": [
+    {
+      "interpretive_scoring": false,
+      "purpose": "single-pass teacher cache construction before scoring"
+    }
+  ],
+  "read_once_scoring_spent": false,
+  "scores_exposed": false,
+  "seed": 20260730,
+  "source_revisions": {
+    "drafter": "7ae557604adf67be50417f59c2c2f167def9a775",
+    "fineweb": "87f09149ef4734204d70ed1d046ddc9ca3f2b8f9",
+    "stack_smol_main": "4a6938ce94446f324c6629e7de00ac591710044b",
+    "stack_smol_pinned": "4a6938ce94446f324c6629e7de00ac591710044b",
+    "teacher_14b": "cf98f3b3bbb457ad9e2bb7baf9a0125b6b88caa8",
+    "teacher_7b": "a09a35458c702b33eeacc393d103063234e8bc28"
+  },
+  "status": "complete_unread_unscored",
+  "teacher": {
+    "model": "Qwen/Qwen2.5-7B-Instruct",
+    "passes": 1,
+    "revision": "a09a35458c702b33eeacc393d103063234e8bc28"
+  },
+  "teacher_cache_sha256": "67404785a93cc1337bdebea3d05c8b6094e20be4645e23687866281e4d89d44d",
+  "tokens": 200000,
+  "training_started": false
+}
