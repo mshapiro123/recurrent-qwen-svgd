@@ -1,9 +1,9 @@
 # Handoff: DC1 Stage A Bridge-Only Interface Adaptation Result
 
-**Date:** 2026-07-31  
-**Run:** `stage5_paper2_dc1_stage_a_20260730`  
-**Registered verdict:** `none`  
-**Registered consequence:** `transient_append_retires`
+- **Date:** 2026-07-31
+- **Run:** `stage5_paper2_dc1_stage_a_20260730`
+- **Registered verdict:** `none`
+- **Registered consequence:** `transient_append_retires`
 
 ## 0. Executive conclusion
 
@@ -221,7 +221,8 @@ ceiling. This is not a threshold-noise case: the confidence interval is tight,
 fully negative, and about 11.3 percentage points below the permitted
 qualification lower-bound floor at its nearest edge.
 
-**Registered verdict:** `none`.  
+**Registered verdict:** `none`.
+
 **Registered consequence:** `transient_append_retires`.
 
 ## 7. Scientific interpretation
@@ -389,4 +390,3 @@ line.
 ### Figure
 
 - `docs/figures/paper2_dc1_stage_a_result_20260731.svg`
-
