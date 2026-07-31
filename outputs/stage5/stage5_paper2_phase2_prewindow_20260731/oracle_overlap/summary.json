@@ -1,0 +1,171 @@
+{
+  "by_stratum": {
+    "code": {
+      "inplace_depth2": {
+        "after_correct": 69709,
+        "before_correct": 81432,
+        "helps": 2840,
+        "hurts": 14563,
+        "net": -11723,
+        "oracle_accuracy": 0.8446034657285747,
+        "oracle_correct": 84272,
+        "oracle_gain": 2840,
+        "scored_positions": 99777
+      },
+      "scored_positions": 99777,
+      "trained_append": {
+        "after_correct": 73170,
+        "before_correct": 81432,
+        "helps": 2630,
+        "hurts": 10892,
+        "net": -8262,
+        "oracle_accuracy": 0.8424987722621445,
+        "oracle_correct": 84062,
+        "oracle_gain": 2630,
+        "scored_positions": 99777
+      },
+      "trained_append_vs_inplace_hurts": {
+        "inplace_contained_in_trained": 0.33770514317104994,
+        "inplace_hurts": 14563,
+        "intersection": 4918,
+        "jaccard": 0.23947022447290256,
+        "trained_contained_in_inplace": 0.45152405435181786,
+        "trained_hurts": 10892,
+        "union": 20537
+      },
+      "untrained_append": {
+        "after_correct": 68560,
+        "before_correct": 81432,
+        "helps": 2303,
+        "hurts": 15175,
+        "net": -12872,
+        "oracle_accuracy": 0.8392214638644176,
+        "oracle_correct": 83735,
+        "oracle_gain": 2303,
+        "scored_positions": 99777
+      }
+    },
+    "general": {
+      "inplace_depth2": {
+        "after_correct": 58392,
+        "before_correct": 66659,
+        "helps": 5096,
+        "hurts": 13363,
+        "net": -8267,
+        "oracle_accuracy": 0.7193123151721719,
+        "oracle_correct": 71755,
+        "oracle_gain": 5096,
+        "scored_positions": 99755
+      },
+      "scored_positions": 99755,
+      "trained_append": {
+        "after_correct": 50883,
+        "before_correct": 66659,
+        "helps": 5169,
+        "hurts": 20945,
+        "net": -15776,
+        "oracle_accuracy": 0.7200441080647586,
+        "oracle_correct": 71828,
+        "oracle_gain": 5169,
+        "scored_positions": 99755
+      },
+      "trained_append_vs_inplace_hurts": {
+        "inplace_contained_in_trained": 0.5890144428646262,
+        "inplace_hurts": 13363,
+        "intersection": 7871,
+        "jaccard": 0.2977266709535878,
+        "trained_contained_in_inplace": 0.3757937455239914,
+        "trained_hurts": 20945,
+        "union": 26437
+      },
+      "untrained_append": {
+        "after_correct": 42091,
+        "before_correct": 66659,
+        "helps": 4128,
+        "hurts": 28696,
+        "net": -24568,
+        "oracle_accuracy": 0.7096085409252669,
+        "oracle_correct": 70787,
+        "oracle_gain": 4128,
+        "scored_positions": 99755
+      }
+    },
+    "pooled": {
+      "inplace_depth2": {
+        "after_correct": 128101,
+        "before_correct": 148091,
+        "helps": 7936,
+        "hurts": 27926,
+        "net": -19990,
+        "oracle_accuracy": 0.7819647976264459,
+        "oracle_correct": 156027,
+        "oracle_gain": 7936,
+        "scored_positions": 199532
+      },
+      "scored_positions": 199532,
+      "trained_append": {
+        "after_correct": 124053,
+        "before_correct": 148091,
+        "helps": 7799,
+        "hurts": 31837,
+        "net": -24038,
+        "oracle_accuracy": 0.7812781909668625,
+        "oracle_correct": 155890,
+        "oracle_gain": 7799,
+        "scored_positions": 199532
+      },
+      "trained_append_vs_inplace_hurts": {
+        "inplace_contained_in_trained": 0.4579603237126692,
+        "inplace_hurts": 27926,
+        "intersection": 12789,
+        "jaccard": 0.2722569932302976,
+        "trained_contained_in_inplace": 0.4017024217105883,
+        "trained_hurts": 31837,
+        "union": 46974
+      },
+      "untrained_append": {
+        "after_correct": 110651,
+        "before_correct": 148091,
+        "helps": 6431,
+        "hurts": 43871,
+        "net": -37440,
+        "oracle_accuracy": 0.7744221478259127,
+        "oracle_correct": 154522,
+        "oracle_gain": 6431,
+        "scored_positions": 199532
+      }
+    }
+  },
+  "do_not_claim": [
+    "oracle routing is deployable",
+    "teacher-token agreement is semantic correctness",
+    "the hurt sets are identical unless the overlap statistics establish it"
+  ],
+  "evaluation_c_read_once_scoring_spent": true,
+  "kind": "paper2_phase2_oracle_overlap",
+  "model_loaded": false,
+  "scoring_reexecuted": false,
+  "source_note": "Position overlap is reconstructed from the private Stage A per-batch prediction tensors; the immutable aggregate JSONL alone is insufficient.",
+  "sources": {
+    "data_jsonl_sha256": "04a68f41b3a7858d185da5d37fdc5a6db35b37804a892e218a4d932898d13f58",
+    "immutable_scoring_cache_receipt_sha256": "e7c74a0bbb898c46d7fc764026ea9a450b0c1294d7edac9db7adc7f6a6563ce9",
+    "immutable_scoring_cache_sha256": "bd40c743b1f9ec28c44a9f4d49c483e888bcb2b66de746c2277ffc9583f56502",
+    "inplace_cache": {
+      "batch_files": 468,
+      "manifest_sha256": "8f5780cdd94a72a105936460eac185f9aafa7605f2034f3bacf716bed396d1e9",
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_dc1_stage_a_20260730/private/eval_c_result/arm_batches/inplace_locked_init"
+    },
+    "teacher_cache_summary_sha256": "67404785a93cc1337bdebea3d05c8b6094e20be4645e23687866281e4d89d44d",
+    "trained_cache": {
+      "batch_files": 155,
+      "manifest_sha256": "906ddceb539c6a9329740e906eb92249290b1516440b088fafcd842a1403a814",
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_dc1_stage_a_20260730/private/eval_c_result/arm_batches/trained_5f2f2d89d26642e1/trained_append_k1"
+    },
+    "untrained_cache": {
+      "batch_files": 155,
+      "manifest_sha256": "18daf9e46c71fc3ab165259b7cf79342a0825d29a9052b50f962e587d50a4eeb",
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_dc1_stage_a_20260730/private/eval_c_result/arm_batches/untrained_identity/untrained_append_k1"
+    }
+  },
+  "status": "complete_exploratory_cache_postprocessing"
+}
