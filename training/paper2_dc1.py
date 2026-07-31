@@ -10,6 +10,7 @@ from training.composite_training_design import COMPOSITE_TRAINING_POLICY
 
 DEV_C_SEED = 20260729
 DEV_C_TOKENS = 500_000
+EVAL_C_SEED = 20260730
 EVAL_C_TOKENS = 200_000
 PREFLIGHT_POSITION_BUDGET = 50_000
 STRATUM_FRACTIONS = {"general": 0.5, "code": 0.5}
@@ -41,6 +42,47 @@ def assert_dc1_document_disjoint(
         "documents": len(current),
         "prior_documents": len(prior_document_ids),
         "overlap_count": 0,
+    }
+
+
+def eval_c_freeze_receipt(
+    *,
+    source_revisions: dict[str, Any],
+    data_jsonl_sha256: str,
+    private_manifest_sha256: str,
+    teacher_cache_sha256: str,
+    disjointness: dict[str, Any],
+    teacher_model: str,
+    teacher_revision: str,
+) -> dict[str, Any]:
+    """Build the hash-only public receipt without exposing EVAL-C outcomes."""
+
+    return {
+        "kind": "paper2_dc1_eval_c_freeze",
+        "status": "complete_unread_unscored",
+        "seed": EVAL_C_SEED,
+        "tokens": EVAL_C_TOKENS,
+        "source_revisions": dict(source_revisions),
+        "mix": dict(STRATUM_FRACTIONS),
+        "data_jsonl_sha256": str(data_jsonl_sha256),
+        "manifest_sha256": str(private_manifest_sha256),
+        "teacher_cache_sha256": str(teacher_cache_sha256),
+        "document_disjointness": dict(disjointness),
+        "teacher": {
+            "model": str(teacher_model),
+            "revision": str(teacher_revision),
+            "passes": 1,
+        },
+        "read_log": [
+            {
+                "purpose": "single-pass teacher cache construction before scoring",
+                "interpretive_scoring": False,
+            }
+        ],
+        "scores_exposed": False,
+        "read_once_scoring_spent": False,
+        "training_started": False,
+        "optimizer_steps": 0,
     }
 
 

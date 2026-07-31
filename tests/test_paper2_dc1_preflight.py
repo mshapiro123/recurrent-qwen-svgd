@@ -8,10 +8,12 @@ from eval.eval_paper2_dc1_preflight import assert_frozen_instance_unchanged
 
 from training.paper2_dc1 import (
     DEV_C_TOKENS,
+    EVAL_C_SEED,
     EVAL_C_TOKENS,
     PREFLIGHT_POSITION_BUDGET,
     assert_dc1_document_disjoint,
     dc1_preflight_spec,
+    eval_c_freeze_receipt,
     scale_interpolation_schedule,
 )
 
@@ -19,6 +21,7 @@ from training.paper2_dc1 import (
 def test_dc1_partition_and_probe_sizes_are_locked() -> None:
     assert DEV_C_TOKENS == 500_000
     assert EVAL_C_TOKENS == 200_000
+    assert EVAL_C_SEED == 20260730
     assert PREFLIGHT_POSITION_BUDGET == 50_000
 
 
@@ -73,3 +76,24 @@ def test_dc1_parameter_integrity_is_scoped_to_each_loaded_instance() -> None:
         second.weight[0, 0].add_(1.0)
     with pytest.raises(RuntimeError, match="mutated frozen second parameters"):
         assert_frozen_instance_unchanged(second, before=second_before, instance="second")
+
+
+def test_eval_c_public_freeze_receipt_is_hash_only_and_unspent() -> None:
+    receipt = eval_c_freeze_receipt(
+        source_revisions={"general": "frozen", "code": "frozen"},
+        data_jsonl_sha256="a" * 64,
+        private_manifest_sha256="b" * 64,
+        teacher_cache_sha256="c" * 64,
+        disjointness={"document_disjoint": True, "overlap_count": 0},
+        teacher_model="teacher",
+        teacher_revision="revision",
+    )
+
+    assert receipt["status"] == "complete_unread_unscored"
+    assert receipt["scores_exposed"] is False
+    assert receipt["read_once_scoring_spent"] is False
+    assert receipt["training_started"] is False
+    assert receipt["optimizer_steps"] == 0
+    serialized = str(receipt)
+    for prohibited in ("accepted_positions", "rejected_positions", "accuracy", "agreement"):
+        assert prohibited not in serialized

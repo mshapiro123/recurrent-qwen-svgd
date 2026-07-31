@@ -1491,6 +1491,32 @@ def test_current_bootstrap_exposes_dc1_preflight_without_training_authority() ->
     assert "training_authorized_by_this_packet" in runner
 
 
+def test_current_bootstrap_exposes_paper2_dc1_eval_c_freeze_target() -> None:
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(
+        encoding="utf-8"
+    )
+    cell = (ROOT / "colab/STAGE5_PAPER2_DC1_EVAL_C_FREEZE_CELL.py").read_text(
+        encoding="utf-8"
+    )
+    runner = (ROOT / "colab/run_stage5_paper2_dc1_eval_c_freeze.py").read_text(
+        encoding="utf-8"
+    )
+    evaluator = (ROOT / "eval/prepare_paper2_dc1_eval_c.py").read_text(
+        encoding="utf-8"
+    )
+    policy = (ROOT / "training/paper2_dc1.py").read_text(encoding="utf-8")
+
+    assert '"paper2_dc1_eval_c_freeze"' in bootstrap
+    assert "paper2_dc1_eval_c_freeze_v1" in cell
+    assert "no scoring no optimizer no training" in cell
+    assert "read-once EVAL-C scoring remains unspent" in cell
+    assert "eval.prepare_paper2_dc1_eval_c" in runner
+    assert "prior_eval_b" in runner and "prior_dev_c" in runner
+    assert "eval_c_freeze_receipt" in evaluator
+    assert "scores_exposed" in policy
+    assert "read_once_scoring_spent" in policy
+
+
 def test_current_bootstrap_exposes_dc1_read_only_followups() -> None:
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
     parity = (ROOT / "colab/STAGE5_PAPER2_DC1_PARITY_LEDGER_CELL.py").read_text(encoding="utf-8")

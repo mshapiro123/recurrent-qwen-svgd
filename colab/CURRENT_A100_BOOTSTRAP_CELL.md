@@ -140,6 +140,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3_short_sha"
 #   "paper2_dc0_eval_b_prepare" - fresh document-disjoint EVAL-B plus one 7B cache pass.
 #   "paper2_dc0_depth_by_append" - forward-only M7 mechanism comparison on spent-once EVAL-B.
 #   "paper2_dc1_preflight" - DEV-C plus no-training DC1-P and RG-4/RG-11.
+#   "paper2_dc1_eval_c_freeze" - pre-lock EVAL-C freeze and sole 7B cache pass.
 #   "paper2_dc1_parity_ledger" - read-only population-matched pre/post-D0 loop ledger.
 #   "paper2_dc1_scale_response" - read-only residual-stream scale/cosine probe.
 #   "paper2_d0_prelock_publish_resume" - publish completed Drive-backed D0 lock receipts without inference.
@@ -219,6 +220,20 @@ TARGETS = {
             "RG-4 adjacent epsilon stability and RG-11 k 1 2 3 precision policy",
             "DC1 preregistration remains required before any training",
             "colab/run_stage5_paper2_dc1_preflight.py",
+        ],
+        "env": {},
+    },
+    "paper2_dc1_eval_c_freeze": {
+        "path": "colab/STAGE5_PAPER2_DC1_EVAL_C_FREEZE_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_DC1_EVAL_C_FREEZE_VERSION",
+            "paper2_dc1_eval_c_freeze_v1",
+            "pre-lock EVAL-C freeze only no scoring no optimizer no training",
+            "fresh 200000 token EVAL-C 50 50 sources disjoint from D0 EVAL-B DEV-C",
+            "one Qwen2.5 7B teacher pass no 14B and hash-only public receipt",
+            "read-once EVAL-C scoring remains unspent after cache construction",
+            "tests/test_paper2_dc1_preflight.py",
+            "colab/run_stage5_paper2_dc1_eval_c_freeze.py",
         ],
         "env": {},
     },
