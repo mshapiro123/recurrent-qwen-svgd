@@ -1,0 +1,40 @@
+{
+  "bootstrap": {
+    "ci": 0.95,
+    "cluster": "eval_c_source_row",
+    "lower": -0.1255266030017333,
+    "replicates": 10000,
+    "rows": 468,
+    "seed": 20260730,
+    "upper": -0.11531178213577856
+  },
+  "consequence": "transient_append_retires",
+  "criteria": {
+    "no_material_improvement_threshold_met": true,
+    "partial_domestication": false,
+    "qualifies": false
+  },
+  "immutable_cache_sha256": "bd40c743b1f9ec28c44a9f4d49c483e888bcb2b66de746c2277ffc9583f56502",
+  "kind": "paper2_dc1_stage_a_registered_verdict",
+  "prereg_sha256": "d9f6dfa55b16715c00cdf2126a8c483c8c53ca0b63dac8c474c92875a02c66ef",
+  "trained_append": {
+    "helps": 7799,
+    "hurts": 31837,
+    "net": -24038,
+    "scored_positions": 199532,
+    "u": -0.12047190425595894
+  },
+  "trained_vs_untrained": {
+    "helps_ratio": 1.2127196392473953,
+    "hurts_ratio": 0.7256957899295662,
+    "hurts_reduction": 0.2743042100704338
+  },
+  "untrained_append": {
+    "helps": 6431,
+    "hurts": 43871,
+    "net": -37440,
+    "scored_positions": 199532,
+    "u": -0.18763907543652145
+  },
+  "verdict": "none"
+}
