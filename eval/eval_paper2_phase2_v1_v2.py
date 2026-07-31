@@ -556,7 +556,7 @@ def main() -> int:
             gamma=args.gamma,
             rho=args.rho,
         ),
-        "first_order_margin_compatible_fraction": bound_compatible_fractions(
+        "first_order_compatibility_using_margin_gradient_norm": bound_compatible_fractions(
             margins=margins,
             sampled_max_gains=margin_gradients,
             state_rms=rms_values,

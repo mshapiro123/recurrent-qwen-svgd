@@ -1597,3 +1597,13 @@ Colab/Drive backups for selected runs.
   features. Random JVP gains are explicitly non-certifying, with a targeted
   margin-gradient diagnostic added. No DC2 or D1 training window opened.
   Build receipt: `docs/PAPER2_PHASE2_PREWINDOW_BUILD_HANDOFF_20260731.md`.
+- 2026-07-31 V1 correction and V1b authorization: sampled directional gains
+  are recorded as empirical lower samples of local maximum gain, never as a
+  Lipschitz upper bound. Exact wrong-versus-teacher margin-gradient norms have
+  precedence in the local first-order reading. A separate DEV-only V1b target
+  is prepared to apply teacher-favoring tube-boundary perturbations at 2,000
+  oracle-help and 2,000 preserve-control positions, reporting first-order pair
+  crossing, realized pair crossing, realized teacher-token top-1 flips, and
+  all-other-position collateral effects for `c = 0.01, 0.02, 0.05`. It has no
+  optimizer, touches no frozen evaluation slice, and opens no training window.
+  Governing amendment: `docs/STRATEGY_ADDENDUM_PHASE2_V1B_20260731.md`.

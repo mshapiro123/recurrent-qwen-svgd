@@ -35,6 +35,7 @@ This page is the short status index. It replaces the earlier June recovery narra
 - [Phase-2 theoretical foundations audit](THEORETICAL_FOUNDATIONS_AUDIT_20260731.md)
 - [Phase-2 opening handoff](STRATEGY_TO_CODING_AGENT_PHASE2_OPENING_20260731.md)
 - [Phase-2 pre-window build handoff](PAPER2_PHASE2_PREWINDOW_BUILD_HANDOFF_20260731.md)
+- [Phase-2 V1 terminology and V1b addendum](STRATEGY_ADDENDUM_PHASE2_V1B_20260731.md)
 - [Experiment log](EXPERIMENT_LOG.md)
 
 ## Established
@@ -156,9 +157,9 @@ fragile positions is the common interpretive frame.
 
 ## Active Queue
 
-1. Run V1 on dev material: oracle-help margin distribution plus empirical local upper-stack gain, with bound-compatible fractions for `c = 0.01, 0.02, 0.05`, `rho = 0.8`, and the audit-consistent initial `gamma = 0.05` recorded explicitly.
+1. Run V1 on dev material: oracle-help margin distribution plus empirical local upper-stack gain, with bound-compatible fractions for `c = 0.01, 0.02, 0.05`, `rho = 0.8`, and the audit-consistent initial `gamma = 0.05` recorded explicitly. The sampled gain is not a Lipschitz upper bound; exact margin-gradient first-order compatibility has interpretive precedence. Then run the separately receipted DEV-only V1b finite-perturbation and collateral check authorized on 2026-07-31.
 2. Run V2: pretrained-block JVP gain distributions at iterates 1 through 4 on dev states, on the pre-D0 and post-D0 checkpoints when resource-compatible.
-3. Formalize the trained/untrained append oracle receipts and the trained-append versus in-place hurt-position overlap from the immutable Stage A cache. This is post-processing, not EVAL-C rescoring.
+3. Completed: formalize the trained/untrained append oracle receipts and the trained-append versus in-place hurt-position overlap from the immutable Stage A cache. This was post-processing, not EVAL-C rescoring. Public receipt: `outputs/stage5/stage5_paper2_phase2_prewindow_20260731/oracle_overlap/summary.json`.
 4. Generate document-disjoint EVAL-D and EVAL-E at 0.2M source tokens each and cache frozen own-base features in the same pass. Freeze hashes and do not expose scores.
 5. Open neither DC2 nor D1 exploration until V1 and V2 land and strategy reviews them. No phase-2 training is currently authorized.
 

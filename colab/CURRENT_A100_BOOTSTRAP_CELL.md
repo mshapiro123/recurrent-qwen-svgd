@@ -146,6 +146,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3_short_sha"
 #   "paper2_dc1_scale_response" - read-only residual-stream scale/cosine probe.
 #   "paper2_phase2_oracle_overlap" - CPU-only Stage A oracle and hurt-overlap cache receipt.
 #   "paper2_phase2_v1_v2" - DEV-C-only empirical gain diagnostics; no training.
+#   "paper2_phase2_v1b" - DEV-C-only finite perturbation and collateral check.
 #   "paper2_phase2_eval_de_freeze" - score-blind EVAL-D/E and own-base feature freeze.
 #   "paper2_d0_prelock_publish_resume" - publish completed Drive-backed D0 lock receipts without inference.
 #   "paper2_d0_prelock" - authorized density probe, corpus freeze, and preregistration lock only.
@@ -194,6 +195,18 @@ TARGETS = {
             "gamma 0.05 rho 0.8 c 0.01 0.02 0.05",
             "pre-D0 and post-D0 block iterates 1 through 4",
             "colab/run_stage5_paper2_phase2_v1_v2.py",
+        ],
+        "env": {},
+    },
+    "paper2_phase2_v1b": {
+        "path": "colab/STAGE5_PAPER2_PHASE2_V1B_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_PHASE2_V1B_VERSION",
+            "paper2_phase2_v1b_v1",
+            "DEV-only finite perturbation causal check no optimizer no training",
+            "teacher flip pair crossing and collateral damage reported separately",
+            "preserve controls use teacher-favoring strongest-competitor margins",
+            "colab/run_stage5_paper2_phase2_v1b.py",
         ],
         "env": {},
     },
