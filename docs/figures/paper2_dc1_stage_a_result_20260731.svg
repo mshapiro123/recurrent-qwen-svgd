@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="700" viewBox="0 0 1200 700" role="img" aria-labelledby="title desc">
+  <title id="title">DC1 Stage A bridge-only adaptation result</title>
+  <desc id="desc">Two-panel chart. Left: normalized net utility relative to the registered k0 baseline for trained append, untrained append, and in-place depth anchors. Right: helps and hurts for untrained and trained append. Training improves the append path but remains net harmful and misses the registered partial-domestication threshold.</desc>
+  <rect width="1200" height="700" fill="#ffffff"/>
+  <style>
+    text { font-family: Arial, Helvetica, sans-serif; fill: #17202a; letter-spacing: 0; }
+    .title { font-size: 28px; font-weight: 700; }
+    .subtitle { font-size: 16px; fill: #52606d; }
+    .panel-title { font-size: 19px; font-weight: 700; }
+    .label { font-size: 15px; }
+    .value { font-size: 14px; font-weight: 700; }
+    .tick { font-size: 13px; fill: #657786; }
+    .note { font-size: 14px; fill: #52606d; }
+    .grid { stroke: #d9e2ec; stroke-width: 1; }
+    .axis { stroke: #7b8794; stroke-width: 1.2; }
+  </style>
+
+  <text x="60" y="48" class="title">Bridge training reduced damage, but one forced append remained unsafe</text>
+  <text x="60" y="76" class="subtitle">Untouched EVAL-C, 199,532 scored positions; teacher-token agreement against cached Qwen2.5-7B targets</text>
+
+  <rect x="45" y="105" width="620" height="485" rx="6" fill="#f8fafc" stroke="#d9e2ec"/>
+  <text x="70" y="140" class="panel-title">A. Net utility relative to no extra step</text>
+  <text x="70" y="164" class="subtitle">Percentage points; zero is the registered safety target</text>
+
+  <!-- Left panel plot: x=-30..0 mapped to 190..620 -->
+  <line x1="190" y1="190" x2="190" y2="520" class="grid"/>
+  <line x1="333.3" y1="190" x2="333.3" y2="520" class="grid"/>
+  <line x1="476.7" y1="190" x2="476.7" y2="520" class="grid"/>
+  <line x1="620" y1="190" x2="620" y2="520" stroke="#2f855a" stroke-width="2.5"/>
+  <text x="190" y="545" text-anchor="middle" class="tick">-30</text>
+  <text x="333.3" y="545" text-anchor="middle" class="tick">-20</text>
+  <text x="476.7" y="545" text-anchor="middle" class="tick">-10</text>
+  <text x="620" y="545" text-anchor="middle" class="tick">0</text>
+  <text x="620" y="181" text-anchor="end" class="note">qualifies</text>
+
+  <text x="175" y="226" text-anchor="end" class="label">In-place d3</text>
+  <rect x="253.3" y="205" width="366.7" height="30" fill="#9aa5b1"/>
+  <text x="263" y="226" class="value" fill="#ffffff">-25.59</text>
+
+  <text x="175" y="291" text-anchor="end" class="label">Untrained append</text>
+  <rect x="351.1" y="270" width="268.9" height="30" fill="#c53030"/>
+  <text x="361" y="291" class="value" fill="#ffffff">-18.76</text>
+
+  <text x="175" y="356" text-anchor="end" class="label">Trained append</text>
+  <rect x="447.3" y="335" width="172.7" height="30" fill="#d69e2e"/>
+  <text x="457" y="356" class="value" fill="#17202a">-12.05</text>
+
+  <text x="175" y="421" text-anchor="end" class="label">In-place d2</text>
+  <rect x="476.4" y="400" width="143.6" height="30" fill="#718096"/>
+  <text x="486" y="421" class="value" fill="#ffffff">-10.02</text>
+
+  <text x="70" y="575" class="note">Trained append bootstrap 95% CI: [-12.55, -11.53] points</text>
+
+  <rect x="690" y="105" width="465" height="485" rx="6" fill="#f8fafc" stroke="#d9e2ec"/>
+  <text x="715" y="140" class="panel-title">B. What bridge training changed</text>
+  <text x="715" y="164" class="subtitle">Transition counts versus the same k=0 baseline</text>
+
+  <!-- Right panel plot: y=0..45000 mapped 500..200 -->
+  <line x1="760" y1="500" x2="1120" y2="500" class="axis"/>
+  <line x1="760" y1="400" x2="1120" y2="400" class="grid"/>
+  <line x1="760" y1="300" x2="1120" y2="300" class="grid"/>
+  <line x1="760" y1="200" x2="1120" y2="200" class="grid"/>
+  <text x="750" y="505" text-anchor="end" class="tick">0</text>
+  <text x="750" y="405" text-anchor="end" class="tick">15k</text>
+  <text x="750" y="305" text-anchor="end" class="tick">30k</text>
+  <text x="750" y="205" text-anchor="end" class="tick">45k</text>
+
+  <rect x="800" y="457.1" width="55" height="42.9" fill="#2b6cb0"/>
+  <rect x="865" y="207.5" width="55" height="292.5" fill="#c53030"/>
+  <text x="827.5" y="447" text-anchor="middle" class="value">6,431</text>
+  <text x="892.5" y="197" text-anchor="middle" class="value">43,871</text>
+  <text x="860" y="530" text-anchor="middle" class="label">Untrained</text>
+
+  <rect x="970" y="448.0" width="55" height="52.0" fill="#2b6cb0"/>
+  <rect x="1035" y="287.8" width="55" height="212.2" fill="#d69e2e"/>
+  <text x="997.5" y="438" text-anchor="middle" class="value">7,799</text>
+  <text x="1062.5" y="278" text-anchor="middle" class="value">31,837</text>
+  <text x="1030" y="530" text-anchor="middle" class="label">Trained</text>
+
+  <rect x="790" y="554" width="14" height="14" fill="#2b6cb0"/>
+  <text x="812" y="566" class="note">helps</text>
+  <rect x="880" y="554" width="14" height="14" fill="#c53030"/>
+  <text x="902" y="566" class="note">hurts, untrained</text>
+  <rect x="1030" y="554" width="14" height="14" fill="#d69e2e"/>
+  <text x="1052" y="566" class="note">hurts, trained</text>
+
+  <rect x="60" y="615" width="1080" height="56" rx="4" fill="#fff7e6" stroke="#e0a82e"/>
+  <text x="80" y="640" class="label" font-weight="700">Registered reading: NONE</text>
+  <text x="80" y="662" class="note">Hurts fell 27.43%, below the 50% partial-domestication requirement; consequence: transient append retires.</text>
+</svg>
