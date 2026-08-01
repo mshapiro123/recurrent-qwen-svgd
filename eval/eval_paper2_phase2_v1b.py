@@ -21,6 +21,7 @@ if str(ROOT) not in sys.path:
 
 from eval.cache_speculative_depth_d0_teachers import load_drafter, read_jsonl  # noqa: E402
 from eval.eval_reentry_drift import prepare_recurrent_inputs, run_recurrent_block  # noqa: E402
+from eval.eval_paper2_phase2_v1_v2 import quantile_summary  # noqa: E402
 from eval.eval_speculative_depth_d0_floor import load_partition_cache  # noqa: E402
 from training.speculative_depth_d0_corpus import sha256_file  # noqa: E402
 
@@ -146,6 +147,21 @@ def aggregate_intervention_records(
             "future_prediction_changes": future_changes,
             "future_prediction_change_rate": _ratio(
                 future_changes, future_positions
+            ),
+            "radius": quantile_summary(
+                [float(row["radius"]) for row in rows if "radius" in row]
+            ),
+            "state_rms": quantile_summary(
+                [float(row["state_rms"]) for row in rows if "state_rms" in row]
+            ),
+            "gradient_l2": quantile_summary(
+                [float(row["gradient_l2"]) for row in rows if "gradient_l2" in row]
+            ),
+            "margin_before": quantile_summary(
+                [float(row["margin_before"]) for row in rows if "margin_before" in row]
+            ),
+            "margin_after": quantile_summary(
+                [float(row["margin_after"]) for row in rows if "margin_after" in row]
             ),
         }
         if cohort == "oracle_help":

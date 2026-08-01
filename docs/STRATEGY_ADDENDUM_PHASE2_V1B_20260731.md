@@ -49,6 +49,9 @@ on the same row. Pair crossing and teacher-token top-1 are separate because a
 third competitor can remain above the teacher even after the original pair
 crosses. The causally exposed suffix is also reported separately, and any
 change before the perturbed position is a fatal causal-contract violation.
+The receipt includes radius, state-RMS, gradient-norm, and pre/post-margin
+distributions by cohort, radius, and stratum so heavy-tailed permitted
+perturbations cannot disappear inside pooled flip or collateral rates.
 
 A matched-size preserve control uses positions where both the baseline and
 trained append paths are teacher-correct. Its strongest non-teacher competitor
