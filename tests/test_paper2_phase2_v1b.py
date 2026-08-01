@@ -2,7 +2,10 @@ from __future__ import annotations
 
 import math
 
+import torch
+
 from eval.eval_paper2_phase2_v1b import (
+    _load_append_predictions,
     aggregate_intervention_records,
     deterministic_position_sample,
     tube_radius,
@@ -92,3 +95,22 @@ def test_intervention_aggregate_separates_pair_crossing_and_teacher_flip() -> No
     control = summary["preserve_control"]["0.05"]
     assert control["target_preservation_rate"] == 1.0
     assert control["collateral_hurt_rate"] == 0.0
+
+
+def test_append_loader_consumes_locked_prefix_and_ignores_trailing_cache(tmp_path) -> None:
+    for batch_number, indices in ((1, [0, 1]), (2, [2, 3]), (3, [4, 5])):
+        torch.save(
+            {
+                "indices": indices,
+                "predictions": torch.tensor(
+                    [[[batch_number, batch_number + 10]]] * len(indices)
+                ),
+            },
+            tmp_path / f"batch_{batch_number:06d}.pt",
+        )
+
+    loaded = _load_append_predictions(cache_dir=tmp_path, rows=4, batch_size=2)
+
+    assert len(loaded) == 4
+    assert loaded[0].tolist() == [[1, 11]]
+    assert loaded[3].tolist() == [[2, 12]]

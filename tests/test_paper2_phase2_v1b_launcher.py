@@ -16,6 +16,7 @@ def test_v1b_bootstrap_target_is_separate_and_safety_marked() -> None:
         "paper2_phase2_v1b_v1",
         "DEV-only finite perturbation causal check no optimizer no training",
         "teacher flip pair crossing and collateral damage reported separately",
+        "locked V1 append cache prefix ignores trailing historical batches",
     ):
         assert marker in bootstrap
 

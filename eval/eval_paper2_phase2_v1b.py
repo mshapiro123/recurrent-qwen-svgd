@@ -199,12 +199,22 @@ def _load_append_predictions(
     *, cache_dir: Path, rows: int, batch_size: int
 ) -> list[torch.Tensor]:
     outputs: list[torch.Tensor | None] = [None] * int(rows)
-    paths = sorted(cache_dir.glob("batch_*.pt"))
     expected_batches = math.ceil(int(rows) / int(batch_size))
-    if len(paths) != expected_batches:
+    paths = [
+        cache_dir / f"batch_{batch_number:06d}.pt"
+        for batch_number in range(1, expected_batches + 1)
+    ]
+    missing = [str(path) for path in paths if not path.is_file()]
+    if missing:
         raise FileNotFoundError(
-            f"V1 append cache has {len(paths)} batches; expected {expected_batches}"
+            "V1 append cache is missing locked-prefix batches: " + json.dumps(missing)
         )
+    extras = sorted(set(cache_dir.glob("batch_*.pt")) - set(paths))
+    print(
+        f"phase2_v1b_append_cache locked_batches={len(paths)} "
+        f"ignored_trailing_batches={len(extras)}",
+        flush=True,
+    )
     for path in paths:
         payload = torch.load(path, map_location="cpu", weights_only=False)
         for local, row_index in enumerate(payload["indices"]):
@@ -632,6 +642,13 @@ def main() -> int:
         for index in selected_indices
     ]
     append_dir = v1_private / "v1/append_predictions/trained_append_k1"
+    expected_append_paths = [
+        append_dir / f"batch_{batch_number:06d}.pt"
+        for batch_number in range(
+            1,
+            math.ceil(len(rows) / int(v1_config["append_batch_size"])) + 1,
+        )
+    ]
     append_grids = _load_append_predictions(
         cache_dir=append_dir,
         rows=len(rows),
@@ -705,7 +722,7 @@ def main() -> int:
         "v1_config_sha256": sha256_file(v1_private / "config.json"),
         "v1_help_records_sha256": sha256_file(registered_help_path),
         "v1_append_cache_manifest_sha256": _manifest_sha256(
-            sorted(append_dir.glob("batch_*.pt"))
+            expected_append_paths
         ),
         "sample_size_per_cohort": args.sample_size,
         "sample_seed": args.sample_seed,

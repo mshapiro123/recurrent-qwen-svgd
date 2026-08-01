@@ -205,6 +205,7 @@ TARGETS = {
             "DEV-only finite perturbation causal check no optimizer no training",
             "teacher flip pair crossing and collateral damage reported separately",
             "preserve controls use teacher-favoring strongest-competitor margins",
+            "locked V1 append cache prefix ignores trailing historical batches",
             "colab/run_stage5_paper2_phase2_v1b.py",
         ],
         "env": {},

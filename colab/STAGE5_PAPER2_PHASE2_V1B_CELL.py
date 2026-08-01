@@ -15,6 +15,7 @@ STAGE5_PAPER2_PHASE2_V1B_VERSION = "paper2_phase2_v1b_v1"
 # Safety marker: DEV-only finite perturbation causal check no optimizer no training
 # Safety marker: teacher flip pair crossing and collateral damage reported separately
 # Safety marker: preserve controls use teacher-favoring strongest-competitor margins
+# Safety marker: locked V1 append cache prefix ignores trailing historical batches
 # Safety marker: colab/run_stage5_paper2_phase2_v1b.py
 REPO = "mshapiro123/recurrent-qwen-svgd"
 ROOT = Path("/content/recurrent-qwen-svgd")
