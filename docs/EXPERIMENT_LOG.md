@@ -1619,3 +1619,15 @@ Colab/Drive backups for selected runs.
   than generic explosion. Authorized next: DEV-only V1c at `c = 0.075, 0.10,
   0.15` and a CPU-only RMS-tail/cap audit over existing V1b private records.
   E1 remains unlocked and no training window is open.
+- 2026-08-02 Phase-2 V1c and RMS-tail audit landing: V1c extended the same
+  DEV-only cohorts to `c = 0.075, 0.10, 0.15`. At `c = 0.15`, the exact
+  first-order pair-crossing prediction was `65.20%`, realized pair crossing
+  was `64.85%`, and realized teacher-token top-1 flipping was `60.85%`.
+  Oracle-help collateral hurt was `262/930625 = 0.0282%`; preserve-target
+  retention was `1997/2000 = 99.85%`. The CPU-only RMS audit found median
+  state RMS `0.4058`, p99 `0.5509`, and maximum `58.49`; the top 1% tail had
+  about `65.3x` the non-tail hurt rate and contributed `42/109` audited
+  harms. It recommends a p99 state-RMS cap of `0.5508932316303252`. No
+  training or frozen-slice contact occurred. E1 remains unopened pending the
+  strategy choice between conservative `c = 0.10` and capped `c = 0.15`.
+  Handoff: `docs/PAPER2_PHASE2_V1C_RMS_AUDIT_HANDOFF_20260802.md`.

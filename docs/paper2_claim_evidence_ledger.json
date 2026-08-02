@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "program": "paper2_causal_control_of_recurrent_computation",
-  "status": "phase1_banked_phase2_v1b_v2_banked_v1c_rms_audit_authorized",
+  "status": "phase1_banked_phase2_v1b_v1c_v2_rms_audit_banked_e1_radius_cap_review",
   "canonical_date": "2026-08-02",
   "active_queue": {
     "program_goal": "causal_arbitration_at_append_and_dispatch_interfaces",
@@ -9,8 +9,8 @@
     "t1": "two_registered_negatives_raw_endpoints_replicate_exact_in_support_causal_control_with_small_preservation_cost",
     "d0": "banked_not_recoverable_at_pilot_scale_binary_disagreement_target",
     "dc1_stage_a": "registered_none_transient_append_retires_checkpoint_archival_eval_c_spent",
-    "phase2": "v1b_v2_banked_v1c_radius_extension_and_cpu_rms_audit_only_no_training",
-    "dc2": "window_closed_pending_v1c_rms_audit_and_e1_lock_review",
+    "phase2": "v1b_v1c_v2_and_rms_audit_banked_dev_only_no_training",
+    "dc2": "window_closed_pending_e1_radius_cap_review",
     "d1": "window_closed_pending_phase2_strategy_review",
     "paper_two_packaging": "proceeds_on_banked_phase1_results"
   },
@@ -24,7 +24,11 @@
     "phase2_opening_handoff": "docs/STRATEGY_TO_CODING_AGENT_PHASE2_OPENING_20260731.md",
     "phase2_prewindow_build": "docs/PAPER2_PHASE2_PREWINDOW_BUILD_HANDOFF_20260731.md",
     "phase2_v1_v2_summary": "outputs/stage5/stage5_paper2_phase2_prewindow_20260731/v1_v2/summary.json",
-    "phase2_v1b_summary": "outputs/stage5/stage5_paper2_phase2_prewindow_20260731/v1b/summary.json"
+    "phase2_v1b_summary": "outputs/stage5/stage5_paper2_phase2_prewindow_20260731/v1b/summary.json",
+    "phase2_v1c_summary": "outputs/stage5/stage5_paper2_phase2_prewindow_20260731/v1c/summary.json",
+    "phase2_v1b_rms_audit_summary": "outputs/stage5/stage5_paper2_phase2_prewindow_20260731/v1b_rms_audit/summary.json",
+    "phase2_v1c_rms_handoff": "docs/PAPER2_PHASE2_V1C_RMS_AUDIT_HANDOFF_20260802.md",
+    "phase2_v1c_figure": "docs/figures/paper2_phase2_v1c_radius_extension_20260802.svg"
   },
   "claims": [
     {
@@ -51,6 +55,57 @@
         "the direct-logit residual path shares this ceiling",
         "local oracle perturbations are a deployable learned controller",
         "DEV-only results confirm frozen-slice performance"
+      ]
+    },
+    {
+      "id": "phase2_v1c_bounded_writeback_radius_extension",
+      "status": "supported_bounded_dev_only",
+      "claim": "At c=0.15, the exact local margin-gradient direction made the teacher token top-1 on 60.85% of oracle-help positions while realized pair crossing remained within 0.35 percentage points of its first-order prediction; collateral hurt remained rare but preserve retention fell to 99.85%.",
+      "scope": "DEV-C only, same 2,000 oracle-help and 2,000 preserve-control positions as V1b, corrected batch-matched neutral, bounded bridge-writeback path, c values 0.075/0.10/0.15, no training",
+      "metrics": {
+        "c_0p15_first_order_pair_cross_rate": 0.652,
+        "c_0p15_realized_pair_cross_rate": 0.6485,
+        "c_0p15_teacher_flip_rate": 0.6085,
+        "c_0p15_oracle_help_collateral_hurt_rate": 0.00028153122901276027,
+        "c_0p15_preserve_target_retention_rate": 0.9985
+      },
+      "evidence": [
+        {
+          "path": "outputs/stage5/stage5_paper2_phase2_prewindow_20260731/v1c/summary.json",
+          "locator": "results.pooled at c=0.15"
+        }
+      ],
+      "do_not_claim": [
+        "V1c perturbations are a deployable controller",
+        "pair crossing guarantees the teacher token is top-1",
+        "local finite perturbations establish global reachability",
+        "DEV-only results confirm frozen-slice performance"
+      ]
+    },
+    {
+      "id": "phase2_v1b_rms_tail_risk",
+      "status": "descriptive_dev_only",
+      "claim": "The V1b hidden-state RMS distribution has an extreme upper tail that disproportionately concentrates collateral harm, supporting a p99 state-RMS cap before a larger-radius bridge-writeback training window is locked.",
+      "scope": "CPU-only post-processing of 12,000 existing finite V1b records representing 4,000 unique DEV positions; no model inference or training",
+      "metrics": {
+        "state_rms_median": 0.405761,
+        "state_rms_p99": 0.5508932316303252,
+        "state_rms_max": 58.4901,
+        "top_1pct_hurt_rate": 0.00236247,
+        "non_tail_hurt_rate": 0.0000361601,
+        "tail_to_non_tail_hurt_rate_ratio": 65.3,
+        "recommended_p99_cap": 0.5508932316303252
+      },
+      "evidence": [
+        {
+          "path": "outputs/stage5/stage5_paper2_phase2_prewindow_20260731/v1b_rms_audit/summary.json",
+          "locator": "state_rms, top_1pct, non_tail_max_c_rates, cap_recommendation"
+        }
+      ],
+      "do_not_claim": [
+        "all high-RMS positions are attention sinks",
+        "the recommended cap has already been causally evaluated",
+        "the RMS tail explains all collateral harm"
       ]
     },
     {

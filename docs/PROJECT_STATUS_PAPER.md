@@ -2,7 +2,7 @@
 
 **Canonical date:** August 2, 2026
 **Part 1 status:** closed
-**Part 2 status:** Phase 1 is banked. DC1 Stage A is a registered negative (`none`). V1b and V2 are now banked as DEV-only diagnostics. V1c and the CPU-only RMS-tail audit are authorized; E1 remains unlocked and no Phase-2 training window is open.
+**Part 2 status:** Phase 1 is banked. DC1 Stage A is a registered negative (`none`). V1b, V1c, V2, and the CPU-only RMS-tail audit are banked as DEV-only diagnostics. E1 remains unlocked pending the radius-cap decision; no Phase-2 training window is open.
 
 This page is the short status index. It replaces the earlier June recovery narrative, which became stale after the loop-closure repair, synthetic mechanism installation, Phase A dense-control comparison, and inverse-task boundary program.
 
@@ -160,12 +160,12 @@ fragile positions is the common interpretive frame.
 
 ## Active Queue
 
-1. Run V1c on the same V1b DEV cohorts at `c = 0.075, 0.10, 0.15`, preserving the corrected matched-neutral method. Report the full oracle-help cohort as primary and compatibility strata as secondary. This is a finite-radius extension for the bounded bridge-writeback path only.
-2. Run the CPU-only V1b RMS-tail audit over existing private records. Stratify state RMS, original margin, gradient norm, content stratum, and sequence position; keep per-row outlier identities private; recommend either a p99 cap or a fixed multiple of median RMS.
+1. Banked: V1c extended the same V1b DEV cohorts to `c = 0.075, 0.10, 0.15`. At `c = 0.15`, first-order pair crossing was `65.20%`, realized pair crossing was `64.85%`, and teacher-token top-1 flipping was `60.85%`. Oracle collateral hurt was `262/930625 = 0.0282%`; preserve retention was `1997/2000 = 99.85%`.
+2. Banked: the CPU-only V1b RMS audit found state-RMS median `0.4058`, p99 `0.5509`, and maximum `58.49`. The top 1% tail had about `65.3x` the non-tail collateral-hurt rate and contributed `42/109` audited harms. Recommendation: p99 state-RMS cap `0.5508932316303252`.
 3. Banked: V1b validated the exact first-order pair-crossing diagnostic at `c <= 0.05`, but bounded writeback changed the top-1 token at only `595/2000 = 29.75%` of oracle-help positions at `c = 0.05`. Oracle-help collateral harms were `75/930625 = 0.0081%`; all `2000/2000` preserve positions remained correct.
 4. Banked: V2 found median contraction at all four iterates, with some expanding sampled directions at iterate one. The operative failure description is directional off-manifold drift without norm instability, not generic explosion.
 5. Keep the E-stage accounting split: the V1b/V1c ceiling binds the bounded bridge-writeback path only. The direct-logit residual drafter path remains margin-unbounded and is judged against acceptance baselines.
-6. Do not lock E1 constants, RMS cap, or gates until V1c and the RMS audit land and strategy reviews both. No Phase-2 training is currently authorized.
+6. Do not lock E1 constants, RMS cap, or gates until strategy reviews the completed V1c and RMS-audit receipts. Decision pending: uncapped `c = 0.10` versus `c = 0.15` with the p99 RMS cap and a DEV-only capped-radius confirmation. No Phase-2 training is currently authorized.
 
 Closed pending that decision: additional Phase G sweeps, coverage, selection,
 LPRM, per-trajectory halting, particles, SVGD, the intra-block oracle probe,
