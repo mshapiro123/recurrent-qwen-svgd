@@ -1,0 +1,599 @@
+{
+  "absolute_original_margin": {
+    "max": 19.01353645324707,
+    "median": 1.2497978210449219,
+    "min": 0.00045013427734375,
+    "p25": 0.44699716567993164,
+    "p75": 3.5641250610351562,
+    "p90": 7.145011329650878,
+    "p95": 9.024126434326162,
+    "p99": 11.6542219543457
+  },
+  "cap_recommendation": {
+    "attention_sink_fraction_in_top_1pct": 0.475,
+    "form": "p99_state_rms_cap",
+    "reason": "top RMS tail is position-concentrated or has disproportionate collateral harm",
+    "value": 0.5508932316303252
+  },
+  "content_strata": {
+    "code": {
+      "collateral_hurt_rate": 5.164579902506817e-05,
+      "collateral_hurts": 44,
+      "collateral_positions": 851957,
+      "pair_cross_rate": 0.12743461324429606,
+      "records": 1797,
+      "teacher_flip_rate": 0.12242626599888703
+    },
+    "general": {
+      "collateral_hurt_rate": 6.380737632903402e-05,
+      "collateral_hurts": 65,
+      "collateral_positions": 1018691,
+      "pair_cross_rate": 0.1761234679981843,
+      "records": 2203,
+      "teacher_flip_rate": 0.1702224239673173
+    }
+  },
+  "gradient_l2": {
+    "max": 34.98252868652344,
+    "median": 1.7309821844100952,
+    "min": 0.13315512239933014,
+    "p25": 1.133321464061737,
+    "p75": 2.7808262705802917,
+    "p90": 4.339162492752075,
+    "p95": 5.769602727890012,
+    "p99": 10.700775671005202
+  },
+  "kind": "paper2_phase2_v1b_rms_audit",
+  "method_notes": [
+    "The audit uses existing corrected matched-neutral V1b records and performs no model inference.",
+    "RMS, margin, and gradient strata are descriptive and do not alter V1c constants.",
+    "Token-level outlier rows remain private; the public receipt contains aggregate token counts only."
+  ],
+  "model_inference_started": false,
+  "non_tail_max_c_rates": {
+    "collateral_hurt_rate": 3.616011916648227e-05,
+    "collateral_hurts": 67,
+    "collateral_positions": 1852870,
+    "pair_cross_rate": 0.151010101010101,
+    "records": 3960,
+    "teacher_flip_rate": 0.14545454545454545
+  },
+  "quantile_strata": {
+    "gradient_l2": [
+      {
+        "cohorts": {
+          "oracle_help": 570,
+          "preserve_control": 430
+        },
+        "positions": 1000,
+        "quantile_range": [
+          0.0,
+          0.25
+        ],
+        "strata": {
+          "code": 352,
+          "general": 648
+        },
+        "value_range": [
+          0.13315512239933014,
+          1.133321464061737
+        ]
+      },
+      {
+        "cohorts": {
+          "oracle_help": 499,
+          "preserve_control": 501
+        },
+        "positions": 1000,
+        "quantile_range": [
+          0.25,
+          0.5
+        ],
+        "strata": {
+          "code": 428,
+          "general": 572
+        },
+        "value_range": [
+          1.133321464061737,
+          1.7309821844100952
+        ]
+      },
+      {
+        "cohorts": {
+          "oracle_help": 493,
+          "preserve_control": 507
+        },
+        "positions": 1000,
+        "quantile_range": [
+          0.5,
+          0.75
+        ],
+        "strata": {
+          "code": 487,
+          "general": 513
+        },
+        "value_range": [
+          1.7309821844100952,
+          2.7808262705802917
+        ]
+      },
+      {
+        "cohorts": {
+          "oracle_help": 284,
+          "preserve_control": 316
+        },
+        "positions": 600,
+        "quantile_range": [
+          0.75,
+          0.9
+        ],
+        "strata": {
+          "code": 304,
+          "general": 296
+        },
+        "value_range": [
+          2.7808262705802917,
+          4.339162492752075
+        ]
+      },
+      {
+        "cohorts": {
+          "oracle_help": 73,
+          "preserve_control": 127
+        },
+        "positions": 200,
+        "quantile_range": [
+          0.9,
+          0.95
+        ],
+        "strata": {
+          "code": 102,
+          "general": 98
+        },
+        "value_range": [
+          4.339162492752075,
+          5.769602727890012
+        ]
+      },
+      {
+        "cohorts": {
+          "oracle_help": 63,
+          "preserve_control": 97
+        },
+        "positions": 160,
+        "quantile_range": [
+          0.95,
+          0.99
+        ],
+        "strata": {
+          "code": 98,
+          "general": 62
+        },
+        "value_range": [
+          5.769602727890012,
+          10.700775671005202
+        ]
+      },
+      {
+        "cohorts": {
+          "oracle_help": 18,
+          "preserve_control": 22
+        },
+        "positions": 40,
+        "quantile_range": [
+          0.99,
+          1.0
+        ],
+        "strata": {
+          "code": 26,
+          "general": 14
+        },
+        "value_range": [
+          10.700775671005202,
+          34.98252868652344
+        ]
+      }
+    ],
+    "margin_before": [
+      {
+        "cohorts": {
+          "oracle_help": 897,
+          "preserve_control": 103
+        },
+        "positions": 1000,
+        "quantile_range": [
+          0.0,
+          0.25
+        ],
+        "strata": {
+          "code": 332,
+          "general": 668
+        },
+        "value_range": [
+          0.00045013427734375,
+          0.44699716567993164
+        ]
+      },
+      {
+        "cohorts": {
+          "oracle_help": 719,
+          "preserve_control": 281
+        },
+        "positions": 1000,
+        "quantile_range": [
+          0.25,
+          0.5
+        ],
+        "strata": {
+          "code": 360,
+          "general": 640
+        },
+        "value_range": [
+          0.44699716567993164,
+          1.2497978210449219
+        ]
+      },
+      {
+        "cohorts": {
+          "oracle_help": 370,
+          "preserve_control": 630
+        },
+        "positions": 1000,
+        "quantile_range": [
+          0.5,
+          0.75
+        ],
+        "strata": {
+          "code": 398,
+          "general": 602
+        },
+        "value_range": [
+          1.2497978210449219,
+          3.5641250610351562
+        ]
+      },
+      {
+        "cohorts": {
+          "oracle_help": 14,
+          "preserve_control": 586
+        },
+        "positions": 600,
+        "quantile_range": [
+          0.75,
+          0.9
+        ],
+        "strata": {
+          "code": 367,
+          "general": 233
+        },
+        "value_range": [
+          3.5641250610351562,
+          7.145011329650878
+        ]
+      },
+      {
+        "cohorts": {
+          "preserve_control": 200
+        },
+        "positions": 200,
+        "quantile_range": [
+          0.9,
+          0.95
+        ],
+        "strata": {
+          "code": 163,
+          "general": 37
+        },
+        "value_range": [
+          7.145011329650878,
+          9.024126434326162
+        ]
+      },
+      {
+        "cohorts": {
+          "preserve_control": 160
+        },
+        "positions": 160,
+        "quantile_range": [
+          0.95,
+          0.99
+        ],
+        "strata": {
+          "code": 141,
+          "general": 19
+        },
+        "value_range": [
+          9.024126434326162,
+          11.6542219543457
+        ]
+      },
+      {
+        "cohorts": {
+          "preserve_control": 40
+        },
+        "positions": 40,
+        "quantile_range": [
+          0.99,
+          1.0
+        ],
+        "strata": {
+          "code": 36,
+          "general": 4
+        },
+        "value_range": [
+          11.6542219543457,
+          19.01353645324707
+        ]
+      }
+    ],
+    "state_rms": [
+      {
+        "cohorts": {
+          "oracle_help": 465,
+          "preserve_control": 535
+        },
+        "positions": 1000,
+        "quantile_range": [
+          0.0,
+          0.25
+        ],
+        "strata": {
+          "code": 644,
+          "general": 356
+        },
+        "value_range": [
+          0.30961596965789795,
+          0.3807279244065285
+        ]
+      },
+      {
+        "cohorts": {
+          "oracle_help": 509,
+          "preserve_control": 491
+        },
+        "positions": 1000,
+        "quantile_range": [
+          0.25,
+          0.5
+        ],
+        "strata": {
+          "code": 490,
+          "general": 510
+        },
+        "value_range": [
+          0.3807279244065285,
+          0.40576139092445374
+        ]
+      },
+      {
+        "cohorts": {
+          "oracle_help": 516,
+          "preserve_control": 484
+        },
+        "positions": 1000,
+        "quantile_range": [
+          0.5,
+          0.75
+        ],
+        "strata": {
+          "code": 360,
+          "general": 640
+        },
+        "value_range": [
+          0.40576139092445374,
+          0.4341529533267021
+        ]
+      },
+      {
+        "cohorts": {
+          "oracle_help": 287,
+          "preserve_control": 313
+        },
+        "positions": 600,
+        "quantile_range": [
+          0.75,
+          0.9
+        ],
+        "strata": {
+          "code": 177,
+          "general": 423
+        },
+        "value_range": [
+          0.4341529533267021,
+          0.4639537900686264
+        ]
+      },
+      {
+        "cohorts": {
+          "oracle_help": 105,
+          "preserve_control": 95
+        },
+        "positions": 200,
+        "quantile_range": [
+          0.9,
+          0.95
+        ],
+        "strata": {
+          "code": 54,
+          "general": 146
+        },
+        "value_range": [
+          0.4639537900686264,
+          0.48824566602706904
+        ]
+      },
+      {
+        "cohorts": {
+          "oracle_help": 95,
+          "preserve_control": 65
+        },
+        "positions": 160,
+        "quantile_range": [
+          0.95,
+          0.99
+        ],
+        "strata": {
+          "code": 46,
+          "general": 114
+        },
+        "value_range": [
+          0.48824566602706904,
+          0.5508932316303252
+        ]
+      },
+      {
+        "cohorts": {
+          "oracle_help": 23,
+          "preserve_control": 17
+        },
+        "positions": 40,
+        "quantile_range": [
+          0.99,
+          1.0
+        ],
+        "strata": {
+          "code": 26,
+          "general": 14
+        },
+        "value_range": [
+          0.5508932316303252,
+          58.49006271362305
+        ]
+      }
+    ]
+  },
+  "records": {
+    "finite_perturbation": 12000,
+    "unique_positions": 4000
+  },
+  "sequence_position": {
+    "early_quartile": {
+      "collateral_hurt_rate": 6.52381074425031e-05,
+      "collateral_hurts": 28,
+      "collateral_positions": 429197,
+      "pair_cross_rate": 0.19912472647702406,
+      "records": 914,
+      "teacher_flip_rate": 0.19146608315098468
+    },
+    "late_quartile": {
+      "collateral_hurt_rate": 2.3645337139516088e-05,
+      "collateral_hurts": 11,
+      "collateral_positions": 465208,
+      "pair_cross_rate": 0.12562814070351758,
+      "records": 995,
+      "teacher_flip_rate": 0.12361809045226131
+    },
+    "middle_half": {
+      "collateral_hurt_rate": 2.721575499121245e-05,
+      "collateral_hurts": 26,
+      "collateral_positions": 955329,
+      "pair_cross_rate": 0.13643031784841075,
+      "records": 2045,
+      "teacher_flip_rate": 0.13056234718826407
+    },
+    "position_0": {
+      "collateral_hurt_rate": 0.004721870321317517,
+      "collateral_hurts": 41,
+      "collateral_positions": 8683,
+      "pair_cross_rate": 0.8947368421052632,
+      "records": 19,
+      "teacher_flip_rate": 0.8947368421052632
+    },
+    "positions_1_3": {
+      "collateral_hurt_rate": 0.0002452783909737552,
+      "collateral_hurts": 3,
+      "collateral_positions": 12231,
+      "pair_cross_rate": 0.5185185185185185,
+      "records": 27,
+      "teacher_flip_rate": 0.48148148148148145
+    }
+  },
+  "sources": {
+    "data_jsonl_sha256": "05bca2ee3ba71421296b2e31a0439746eb9c1b0e15e2cea4471be202ab6ac29d",
+    "private_detail_sha256": "06a2dec1cbf20202cfea6642530a30110b414763597e5f539f5ade45e980c2bd",
+    "v1_config_sha256": "90af2e6ae2b4bdb0422005a16c1491936e749618756ae82ae4cf0fe8a9d9b2a7",
+    "v1b_private_config_sha256": "925cdafdd1412152f6f6a6e7a132807aa006ff6f872104fa1124db7594df8a9f",
+    "v1b_summary_sha256": "751df517abfb37fb736af3ea7f46c53c470dc6496dd46270b72c7041384cc186"
+  },
+  "state_rms": {
+    "max": 58.49006271362305,
+    "median": 0.40576139092445374,
+    "min": 0.30961596965789795,
+    "p25": 0.3807279244065285,
+    "p75": 0.4341529533267021,
+    "p90": 0.4639537900686264,
+    "p95": 0.48824566602706904,
+    "p99": 0.5508932316303252
+  },
+  "status": "complete_cpu_only_existing_records",
+  "top_1pct_rms": {
+    "cohorts": {
+      "oracle_help": 23,
+      "preserve_control": 17
+    },
+    "max_c_rates": {
+      "collateral_hurt_rate": 0.002362470469119136,
+      "collateral_hurts": 42,
+      "collateral_positions": 17778,
+      "pair_cross_rate": 0.475,
+      "records": 40,
+      "teacher_flip_rate": 0.475
+    },
+    "position_buckets": {
+      "early_quartile": 10,
+      "late_quartile": 4,
+      "middle_half": 7,
+      "position_0": 19
+    },
+    "positions": 40,
+    "strata": {
+      "code": 26,
+      "general": 14
+    },
+    "token_ids": {
+      "10076": 2,
+      "13": 1,
+      "1379": 1,
+      "15": 1,
+      "15730": 1,
+      "2": 1,
+      "310": 2,
+      "32168": 1,
+      "34": 1,
+      "3838": 1,
+      "465": 1,
+      "503": 2,
+      "50860": 1,
+      "510": 1,
+      "52956": 1,
+      "700": 1,
+      "756": 1,
+      "806": 1,
+      "82376": 1,
+      "9623": 1
+    },
+    "token_text": {
+      "\",\u010a": 1,
+      "#": 1,
+      "(is": 1,
+      ".": 1,
+      ".module": 2,
+      "0": 1,
+      ":\u010a": 1,
+      "C": 1,
+      "What": 1,
+      "_counter": 1,
+      "ter": 1,
+      "\u00c5\u00ab": 1,
+      "\u0120CWE": 1,
+      "\u0120his": 1,
+      "\u0120out": 1,
+      "\u0120renewable": 1,
+      "\u0120size": 1,
+      "\u0120symbolism": 1,
+      "\u0120\u0120\u0120\u0120\u0120\u0120\u0120\u0120\u0120\u0120\u0120": 2,
+      "\u0120\u0120\u0120\u0120\u0120\u0120\u0120\u0120\u0120\u0120\u0120\u0120\u0120\u0120\u0120\u0120\u0120\u0120\u0120": 2
+    }
+  },
+  "training_started": false
+}
