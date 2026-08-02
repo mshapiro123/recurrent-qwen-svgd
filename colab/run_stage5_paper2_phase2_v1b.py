@@ -105,7 +105,9 @@ def main() -> int:
     checkpoint = resolve_checkpoint()
     v1_summary = resolve_v1_summary()
     output = RUN_DIR / "v1b/summary.json"
-    private = DRIVE_RUN / "private/v1b"
+    # V1 used a cross-batch baseline for collateral comparisons. Preserve those
+    # failed-run rows and start a methodologically distinct cache namespace.
+    private = DRIVE_RUN / "private/v1b_neutral_v2"
     run(
         [
             sys.executable,

@@ -79,6 +79,64 @@ def _ratio(numerator: int, denominator: int) -> float | None:
     return numerator / denominator if denominator else None
 
 
+def compare_paired_predictions(
+    *,
+    registered: torch.Tensor,
+    neutral: torch.Tensor,
+    perturbed: torch.Tensor,
+    teacher: torch.Tensor,
+    position: int,
+) -> dict[str, Any]:
+    """Compare a perturbation with an unmodified, batch-shape-matched forward."""
+    lengths = {int(value.numel()) for value in (registered, neutral, perturbed, teacher)}
+    if len(lengths) != 1:
+        raise ValueError("paired prediction tensors must have equal lengths")
+    if not 0 <= int(position) < int(teacher.numel()):
+        raise ValueError("intervention position is outside the scored sequence")
+
+    position = int(position)
+    neutral_correct = neutral.eq(teacher)
+    perturbed_correct = perturbed.eq(teacher)
+    causal_prefix_changes = int(perturbed[:position].ne(neutral[:position]).sum())
+    if causal_prefix_changes:
+        raise RuntimeError(
+            "V1b causal contract failed against the batch-matched neutral: "
+            "a perturbation changed a prior position"
+        )
+
+    collateral = torch.ones(int(teacher.numel()), dtype=torch.bool)
+    collateral[position] = False
+    future = torch.arange(int(teacher.numel())) > position
+    before_other = neutral_correct[collateral]
+    after_other = perturbed_correct[collateral]
+    before_future = neutral_correct[future]
+    after_future = perturbed_correct[future]
+    return {
+        "neutral_vs_registered_prediction_changes": int(neutral.ne(registered).sum()),
+        "neutral_vs_registered_prefix_changes": int(
+            neutral[:position].ne(registered[:position]).sum()
+        ),
+        "neutral_vs_registered_target_changed": bool(
+            neutral[position] != registered[position]
+        ),
+        "target_correct_before": bool(neutral_correct[position]),
+        "target_correct_after": bool(perturbed_correct[position]),
+        "collateral_positions": int(collateral.sum()),
+        "collateral_helps": int((~before_other & after_other).sum()),
+        "collateral_hurts": int((before_other & ~after_other).sum()),
+        "collateral_prediction_changes": int(
+            perturbed[collateral].ne(neutral[collateral]).sum()
+        ),
+        "causal_prefix_prediction_changes": causal_prefix_changes,
+        "future_positions": int(future.sum()),
+        "future_helps": int((~before_future & after_future).sum()),
+        "future_hurts": int((before_future & ~after_future).sum()),
+        "future_prediction_changes": int(
+            perturbed[future].ne(neutral[future]).sum()
+        ),
+    }
+
+
 def aggregate_intervention_records(
     records: Sequence[dict[str, Any]],
 ) -> dict[str, dict[str, dict[str, Any]]]:
@@ -105,6 +163,20 @@ def aggregate_intervention_records(
         future_hurts = sum(int(row.get("future_hurts", 0)) for row in rows)
         future_changes = sum(
             int(row.get("future_prediction_changes", 0)) for row in rows
+        )
+        neutral_registered_changes = sum(
+            int(row.get("neutral_vs_registered_prediction_changes", 0))
+            for row in rows
+        )
+        neutral_registered_positions = sum(
+            int(row.get("scored_positions", 0)) for row in rows
+        )
+        neutral_registered_prefix_changes = sum(
+            int(row.get("neutral_vs_registered_prefix_changes", 0))
+            for row in rows
+        )
+        neutral_registered_prefix_positions = sum(
+            int(row.get("position", 0)) for row in rows
         )
         first_order_rate = _ratio(first_order, positions)
         pair_cross_rate = _ratio(pair_cross, positions)
@@ -138,6 +210,20 @@ def aggregate_intervention_records(
             ),
             "causal_prefix_prediction_changes": sum(
                 int(row.get("causal_prefix_prediction_changes", 0)) for row in rows
+            ),
+            "neutral_vs_registered_prediction_changes": neutral_registered_changes,
+            "neutral_vs_registered_prediction_change_rate": _ratio(
+                neutral_registered_changes,
+                neutral_registered_positions,
+            ),
+            "neutral_vs_registered_prefix_changes": neutral_registered_prefix_changes,
+            "neutral_vs_registered_prefix_change_rate": _ratio(
+                neutral_registered_prefix_changes,
+                neutral_registered_prefix_positions,
+            ),
+            "neutral_vs_registered_target_changes": sum(
+                bool(row.get("neutral_vs_registered_target_changed", False))
+                for row in rows
             ),
             "future_positions": future_positions,
             "future_helps": future_helps,
@@ -458,7 +544,6 @@ def _row_interventions(
             position_chunk=logit_position_chunk,
         )[0]
     teacher = teacher.long().cpu()
-    baseline_correct = baseline_predictions.eq(teacher)
     hidden_size = int(hidden.shape[-1])
     prepared: list[dict[str, Any]] = []
     for record, gradient, computed_margin in zip(
@@ -501,9 +586,47 @@ def _row_interventions(
                 }
             )
 
+    neutral_predictions_by_size: dict[int, torch.Tensor] = {}
+
+    def neutral_predictions(batch_size: int) -> torch.Tensor:
+        cached = neutral_predictions_by_size.get(int(batch_size))
+        if cached is not None:
+            return cached
+        neutral_states = hidden.expand(int(batch_size), -1, -1).clone()
+        neutral_mask, neutral_positions, neutral_rotary = _batch_context(
+            wrapper,
+            hidden=neutral_states,
+            attention_mask=attention,
+            base_position_ids=position_ids,
+            cache_position=cache_position,
+        )
+        with torch.no_grad():
+            neutral_coda = _upper_stack_hidden(
+                wrapper,
+                neutral_states,
+                causal_mask=neutral_mask,
+                position_ids=neutral_positions,
+                cache_position=cache_position,
+                position_embeddings=neutral_rotary,
+            )
+            observed = _predictions_from_coda(
+                wrapper,
+                neutral_coda,
+                scored_positions=len(teacher),
+                vocab_size=vocab_size,
+                position_chunk=logit_position_chunk,
+            )
+        if int(batch_size) > 1 and bool(observed[1:].ne(observed[:1]).any()):
+            raise RuntimeError(
+                "V1b batch-matched neutral controls disagree across identical rows"
+            )
+        neutral_predictions_by_size[int(batch_size)] = observed
+        return observed
+
     outputs: list[dict[str, Any]] = []
     for start in range(0, len(prepared), int(perturbation_batch)):
         batch_rows = prepared[start : start + int(perturbation_batch)]
+        neutral_batch = neutral_predictions(len(batch_rows))
         states = hidden.expand(len(batch_rows), -1, -1).clone()
         for local, item in enumerate(batch_rows):
             position = int(item["record"]["position"])
@@ -546,21 +669,13 @@ def _row_interventions(
             record = item["record"]
             position = int(record["position"])
             predicted = predictions[local]
-            after_correct = predicted.eq(teacher)
-            collateral = torch.ones(len(teacher), dtype=torch.bool)
-            collateral[position] = False
-            before_other = baseline_correct[collateral]
-            after_other = after_correct[collateral]
-            prefix_changes = int(
-                predicted[:position].ne(baseline_predictions[:position]).sum()
+            comparison = compare_paired_predictions(
+                registered=baseline_predictions,
+                neutral=neutral_batch[local],
+                perturbed=predicted,
+                teacher=teacher,
+                position=position,
             )
-            if prefix_changes:
-                raise RuntimeError(
-                    "V1b causal contract failed: a perturbation changed a prior position"
-                )
-            future = torch.arange(len(teacher)) > position
-            before_future = baseline_correct[future]
-            after_future = after_correct[future]
             wrong_id = int(record["wrong_token_id"])
             teacher_id = int(record["teacher_token_id"])
             realized_margin = float(
@@ -586,21 +701,8 @@ def _row_interventions(
                     "realized_pair_cross": (
                         float(record["margin"]) > 0.0 and realized_margin <= 0.0
                     ),
-                    "target_correct_before": bool(baseline_correct[position]),
-                    "target_correct_after": bool(after_correct[position]),
-                    "collateral_positions": int(collateral.sum()),
-                    "collateral_helps": int((~before_other & after_other).sum()),
-                    "collateral_hurts": int((before_other & ~after_other).sum()),
-                    "collateral_prediction_changes": int(
-                        predicted[collateral].ne(baseline_predictions[collateral]).sum()
-                    ),
-                    "causal_prefix_prediction_changes": prefix_changes,
-                    "future_positions": int(future.sum()),
-                    "future_helps": int((~before_future & after_future).sum()),
-                    "future_hurts": int((before_future & ~after_future).sum()),
-                    "future_prediction_changes": int(
-                        predicted[future].ne(baseline_predictions[future]).sum()
-                    ),
+                    "scored_positions": len(teacher),
+                    **comparison,
                 }
             )
     return outputs
@@ -751,6 +853,7 @@ def main() -> int:
         "rho": args.rho,
         "perturbation_batch": args.perturbation_batch,
         "logit_position_chunk": args.logit_position_chunk,
+        "comparison_baseline": "same_shape_same_batch_index_neutral_v2",
     }
     config_path = private / "config.json"
     if config_path.exists():
@@ -852,6 +955,7 @@ def main() -> int:
             "Realized pair crossing and realized teacher-token top-1 flip are reported separately.",
             "Collateral counts cover every other scored causal position on the same row.",
             "Causally exposed future-position collateral is reported separately so structurally unchanged prefix positions do not dilute the rate.",
+            "Perturbed predictions are compared with an unmodified forward at the same batch size and batch index; differences from the registered batch-1 path are reported separately as numerical-kernel sensitivity.",
             "Preserve controls are baseline-and-trained-append correct and receive a teacher-favoring perturbation against their strongest non-teacher competitor.",
         ],
         "do_not_claim": [

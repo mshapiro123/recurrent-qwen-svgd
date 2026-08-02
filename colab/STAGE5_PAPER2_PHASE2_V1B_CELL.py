@@ -11,11 +11,12 @@ from pathlib import Path
 from google.colab import drive, userdata
 
 
-STAGE5_PAPER2_PHASE2_V1B_VERSION = "paper2_phase2_v1b_v1"
+STAGE5_PAPER2_PHASE2_V1B_VERSION = "paper2_phase2_v1b_v2"
 # Safety marker: DEV-only finite perturbation causal check no optimizer no training
 # Safety marker: teacher flip pair crossing and collateral damage reported separately
 # Safety marker: preserve controls use teacher-favoring strongest-competitor margins
 # Safety marker: locked length-grouped V1 append cache contract validates batch indices
+# Safety marker: batch-matched neutral control separates causal effects from kernel-shape variation
 # Safety marker: colab/run_stage5_paper2_phase2_v1b.py
 REPO = "mshapiro123/recurrent-qwen-svgd"
 ROOT = Path("/content/recurrent-qwen-svgd")

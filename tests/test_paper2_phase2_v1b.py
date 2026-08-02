@@ -2,14 +2,51 @@ from __future__ import annotations
 
 import math
 
+import pytest
 import torch
 
 from eval.eval_paper2_phase2_v1b import (
     _load_append_predictions,
+    compare_paired_predictions,
     aggregate_intervention_records,
     deterministic_position_sample,
     tube_radius,
 )
+
+
+def test_paired_comparison_separates_batch_shape_drift_from_causal_change() -> None:
+    teacher = torch.tensor([3, 4, 5, 6])
+    registered = torch.tensor([1, 4, 8, 6])
+    neutral = torch.tensor([2, 4, 8, 6])
+    perturbed = torch.tensor([2, 4, 5, 6])
+
+    observed = compare_paired_predictions(
+        registered=registered,
+        neutral=neutral,
+        perturbed=perturbed,
+        teacher=teacher,
+        position=2,
+    )
+
+    assert observed["neutral_vs_registered_prediction_changes"] == 1
+    assert observed["neutral_vs_registered_prefix_changes"] == 1
+    assert observed["causal_prefix_prediction_changes"] == 0
+    assert observed["target_correct_before"] is False
+    assert observed["target_correct_after"] is True
+
+
+def test_paired_comparison_rejects_a_true_prior_position_change() -> None:
+    with pytest.raises(
+        RuntimeError,
+        match="batch-matched neutral",
+    ):
+        compare_paired_predictions(
+            registered=torch.tensor([1, 2, 3]),
+            neutral=torch.tensor([1, 2, 3]),
+            perturbed=torch.tensor([9, 2, 3]),
+            teacher=torch.tensor([1, 2, 4]),
+            position=2,
+        )
 
 
 def test_tube_radius_matches_governing_formula() -> None:

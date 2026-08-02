@@ -13,10 +13,11 @@ def test_v1b_bootstrap_target_is_separate_and_safety_marked() -> None:
     for marker in (
         "paper2_phase2_v1b",
         "STAGE5_PAPER2_PHASE2_V1B_CELL.py",
-        "paper2_phase2_v1b_v1",
+        "paper2_phase2_v1b_v2",
         "DEV-only finite perturbation causal check no optimizer no training",
         "teacher flip pair crossing and collateral damage reported separately",
         "locked length-grouped V1 append cache contract validates batch indices",
+        "batch-matched neutral control separates causal effects from kernel-shape variation",
     ):
         assert marker in bootstrap
 
@@ -31,3 +32,4 @@ def test_v1b_launcher_requires_completed_v1_and_no_optimizer() -> None:
     assert 'STAGE5_PHASE2_V1B_SAMPLE_SIZE", "2000"' in runner
     assert "torch.optim" not in runner
     assert "training/train_" not in runner
+    assert 'private/v1b_neutral_v2' in runner

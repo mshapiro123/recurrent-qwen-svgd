@@ -202,11 +202,12 @@ TARGETS = {
         "path": "colab/STAGE5_PAPER2_PHASE2_V1B_CELL.py",
         "markers": [
             "STAGE5_PAPER2_PHASE2_V1B_VERSION",
-            "paper2_phase2_v1b_v1",
+            "paper2_phase2_v1b_v2",
             "DEV-only finite perturbation causal check no optimizer no training",
             "teacher flip pair crossing and collateral damage reported separately",
             "preserve controls use teacher-favoring strongest-competitor margins",
             "locked length-grouped V1 append cache contract validates batch indices",
+            "batch-matched neutral control separates causal effects from kernel-shape variation",
             "colab/run_stage5_paper2_phase2_v1b.py",
         ],
         "env": {},
