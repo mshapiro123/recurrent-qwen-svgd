@@ -1607,3 +1607,15 @@ Colab/Drive backups for selected runs.
   all-other-position collateral effects for `c = 0.01, 0.02, 0.05`. It has no
   optimizer, touches no frozen evaluation slice, and opens no training window.
   Governing amendment: `docs/STRATEGY_ADDENDUM_PHASE2_V1B_20260731.md`.
+- 2026-08-02 Phase-2 V1b/V2 banking and V1c pivot: corrected matched-neutral
+  V1b measured `595/2000 = 29.75%` teacher-token flips on oracle-help
+  positions at `c = 0.05`, versus `618/2000` first-order pair crossings and
+  `617/2000` realized pair crossings. Oracle-help collateral harms were
+  `75/930625 = 0.0081%`; all `2000/2000` preserve positions remained correct.
+  This is a strong local ceiling for the bounded bridge-writeback path, not
+  for the separate direct-logit residual path. V2 was median-contractive at
+  all four sampled iterates but included expanding directions at iterate one,
+  supporting directional off-manifold drift without norm instability rather
+  than generic explosion. Authorized next: DEV-only V1c at `c = 0.075, 0.10,
+  0.15` and a CPU-only RMS-tail/cap audit over existing V1b private records.
+  E1 remains unlocked and no training window is open.

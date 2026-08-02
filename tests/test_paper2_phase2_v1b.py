@@ -7,9 +7,11 @@ import torch
 
 from eval.eval_paper2_phase2_v1b import (
     _load_append_predictions,
+    aggregate_by_first_order_distance_quantile,
     compare_paired_predictions,
     aggregate_intervention_records,
     deterministic_position_sample,
+    parse_c_values,
     tube_radius,
 )
 
@@ -58,6 +60,14 @@ def test_tube_radius_matches_governing_formula() -> None:
         rho=0.8,
     )
     assert math.isclose(observed, 0.1)
+
+
+def test_parse_c_values_locks_order_and_rejects_duplicates() -> None:
+    assert parse_c_values("0.075,0.10,0.15") == (0.075, 0.1, 0.15)
+    with pytest.raises(ValueError, match="strictly increasing"):
+        parse_c_values("0.10,0.075")
+    with pytest.raises(ValueError, match="strictly increasing"):
+        parse_c_values("0.10,0.10")
 
 
 def test_deterministic_position_sample_is_seeded_and_cohort_specific() -> None:
@@ -132,6 +142,38 @@ def test_intervention_aggregate_separates_pair_crossing_and_teacher_flip() -> No
     control = summary["preserve_control"]["0.05"]
     assert control["target_preservation_rate"] == 1.0
     assert control["collateral_hurt_rate"] == 0.0
+
+
+def test_first_order_distance_quantiles_cover_full_primary_population() -> None:
+    records = []
+    for position in range(8):
+        for c_value in (0.05, 0.10):
+            records.append(
+                {
+                    "cohort": "oracle_help",
+                    "row_index": position,
+                    "position": position,
+                    "c_value": c_value,
+                    "gradient_l2": 1.0,
+                    "margin_before": float(position + 1),
+                    "margin_after": 0.0,
+                    "radius": c_value,
+                    "state_rms": 1.0,
+                    "first_order_predicted_pair_cross": False,
+                    "realized_pair_cross": False,
+                    "target_correct_before": False,
+                    "target_correct_after": False,
+                    "collateral_positions": 1,
+                    "collateral_helps": 0,
+                    "collateral_hurts": 0,
+                    "collateral_prediction_changes": 0,
+                    "position": position,
+                    "scored_positions": 10,
+                }
+            )
+    observed = aggregate_by_first_order_distance_quantile(records)["oracle_help"]
+    assert [observed[f"q{index}"]["unique_positions"] for index in range(1, 5)] == [2, 2, 2, 2]
+    assert sum(observed[f"q{index}"]["results"]["0.05"]["positions"] for index in range(1, 5)) == 8
 
 
 def test_append_loader_consumes_locked_prefix_and_ignores_trailing_cache(tmp_path) -> None:

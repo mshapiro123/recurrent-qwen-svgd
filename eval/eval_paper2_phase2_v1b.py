@@ -30,6 +30,15 @@ from training.speculative_depth_d0_corpus import sha256_file  # noqa: E402
 C_VALUES = (0.01, 0.02, 0.05)
 
 
+def parse_c_values(raw: str) -> tuple[float, ...]:
+    values = tuple(float(part.strip()) for part in raw.split(",") if part.strip())
+    if not values or any(not math.isfinite(value) or value <= 0 for value in values):
+        raise ValueError("c values must be finite and positive")
+    if any(right <= left for left, right in zip(values, values[1:])):
+        raise ValueError("c values must be strictly increasing")
+    return values
+
+
 def tube_radius(
     *,
     c_value: float,
@@ -263,6 +272,49 @@ def aggregate_intervention_records(
             cell["target_preservation_rate"] = target_after_rate
         result[cohort][c_key] = cell
     return dict(result)
+
+
+def aggregate_by_first_order_distance_quantile(
+    records: Sequence[dict[str, Any]],
+) -> dict[str, dict[str, Any]]:
+    """Stratify each cohort by the pre-perturbation local crossing distance."""
+    by_cohort: dict[str, dict[tuple[int, int], float]] = defaultdict(dict)
+    for row in records:
+        cohort = str(row["cohort"])
+        key = (int(row["row_index"]), int(row["position"]))
+        distance = abs(float(row["margin_before"])) / max(
+            float(row["gradient_l2"]), 1e-12
+        )
+        existing = by_cohort[cohort].get(key)
+        if existing is not None and not math.isclose(existing, distance, abs_tol=1e-9):
+            raise RuntimeError("first-order distance changed across V1b radii")
+        by_cohort[cohort][key] = distance
+
+    output: dict[str, dict[str, Any]] = {}
+    for cohort, distance_by_key in sorted(by_cohort.items()):
+        ordered = sorted(distance_by_key.items(), key=lambda item: (item[1], item[0]))
+        quantile_by_key = {
+            key: min(3, index * 4 // len(ordered))
+            for index, (key, _distance) in enumerate(ordered)
+        }
+        cells: dict[str, Any] = {}
+        for quantile in range(4):
+            keys = {key for key, value in quantile_by_key.items() if value == quantile}
+            selected = [
+                row
+                for row in records
+                if str(row["cohort"]) == cohort
+                and (int(row["row_index"]), int(row["position"])) in keys
+            ]
+            distances = [distance_by_key[key] for key in keys]
+            cells[f"q{quantile + 1}"] = {
+                "unique_positions": len(keys),
+                "distance_min": min(distances),
+                "distance_max": max(distances),
+                "results": aggregate_intervention_records(selected)[cohort],
+            }
+        output[cohort] = cells
+    return output
 
 
 def _write_json(path: Path, payload: Any) -> None:
@@ -725,13 +777,37 @@ def main() -> int:
     parser.add_argument("--logit_position_chunk", type=int, default=16)
     parser.add_argument("--gamma", type=float, default=0.05)
     parser.add_argument("--rho", type=float, default=0.8)
+    parser.add_argument("--c_values", default="0.01,0.02,0.05")
+    parser.add_argument(
+        "--receipt_kind", default="paper2_phase2_v1b_finite_perturbation"
+    )
+    parser.add_argument("--prior_v1b_summary")
     args = parser.parse_args()
+    c_values = parse_c_values(args.c_values)
 
     if sha256_file(args.checkpoint) != args.checkpoint_sha256:
         raise RuntimeError("V1b post-D0 checkpoint SHA-256 mismatch")
     v1_summary = json.loads(Path(args.v1_summary).read_text(encoding="utf-8"))
     if v1_summary.get("status") != "complete_no_training_dev_only":
         raise RuntimeError("V1b requires a completed V1/V2 receipt")
+    prior_v1b_sha256 = None
+    if args.prior_v1b_summary:
+        prior_v1b = json.loads(
+            Path(args.prior_v1b_summary).read_text(encoding="utf-8")
+        )
+        if (
+            prior_v1b.get("kind")
+            != "paper2_phase2_v1b_finite_perturbation"
+            or prior_v1b.get("status") != "complete_no_training_dev_only"
+        ):
+            raise RuntimeError("V1c requires the completed canonical V1b receipt")
+        if (
+            int(prior_v1b["sample"]["seed"]) != int(args.sample_seed)
+            or int(prior_v1b["sample"]["positions_per_cohort"])
+            != int(args.sample_size)
+        ):
+            raise RuntimeError("V1c must use the same sample seed and cohort size as V1b")
+        prior_v1b_sha256 = sha256_file(args.prior_v1b_summary)
     first_order_source_key = (
         "first_order_compatibility_using_margin_gradient_norm"
         if "first_order_compatibility_using_margin_gradient_norm"
@@ -836,7 +912,7 @@ def main() -> int:
     private = Path(args.private_dir)
     private.mkdir(parents=True, exist_ok=True)
     config = {
-        "kind": "paper2_phase2_v1b_private_config",
+        "kind": f"{args.receipt_kind}_private_config",
         "data_jsonl_sha256": sha256_file(args.data_jsonl),
         "teacher_cache_summary_sha256": sha256_file(args.teacher_cache_summary),
         "checkpoint_sha256": args.checkpoint_sha256,
@@ -848,13 +924,15 @@ def main() -> int:
         ),
         "sample_size_per_cohort": args.sample_size,
         "sample_seed": args.sample_seed,
-        "c_values": list(C_VALUES),
+        "c_values": list(c_values),
         "gamma": args.gamma,
         "rho": args.rho,
         "perturbation_batch": args.perturbation_batch,
         "logit_position_chunk": args.logit_position_chunk,
         "comparison_baseline": "same_shape_same_batch_index_neutral_v2",
     }
+    if prior_v1b_sha256 is not None:
+        config["prior_v1b_summary_sha256"] = prior_v1b_sha256
     config_path = private / "config.json"
     if config_path.exists():
         if json.loads(config_path.read_text(encoding="utf-8")) != config:
@@ -868,7 +946,7 @@ def main() -> int:
         row_path = row_dir / f"row_{row_index:05d}.json"
         if row_path.exists():
             row_outputs = json.loads(row_path.read_text(encoding="utf-8"))
-            expected = len(by_row[row_index]) * len(C_VALUES)
+            expected = len(by_row[row_index]) * len(c_values)
             if len(row_outputs) != expected:
                 raise RuntimeError(
                     f"V1b cached row {row_index} has {len(row_outputs)} records; "
@@ -883,7 +961,7 @@ def main() -> int:
                 vocab_size=resize.original_tokenizer_size,
                 gamma=args.gamma,
                 rho=args.rho,
-                c_values=C_VALUES,
+                c_values=c_values,
                 perturbation_batch=args.perturbation_batch,
                 logit_position_chunk=args.logit_position_chunk,
             )
@@ -891,10 +969,10 @@ def main() -> int:
         outputs.extend(row_outputs)
         print(
             f"phase2_v1b_progress rows={number}/{len(by_row)} "
-            f"records={len(outputs)}/{len(selected) * len(C_VALUES)}",
+            f"records={len(outputs)}/{len(selected) * len(c_values)}",
             flush=True,
         )
-    expected_records = len(selected) * len(C_VALUES)
+    expected_records = len(selected) * len(c_values)
     if len(outputs) != expected_records:
         raise RuntimeError(
             f"V1b record count {len(outputs)} != expected {expected_records}"
@@ -903,7 +981,7 @@ def main() -> int:
         raise RuntimeError("V1b unexpectedly populated a model-parameter gradient")
 
     public = {
-        "kind": "paper2_phase2_v1b_finite_perturbation",
+        "kind": args.receipt_kind,
         "status": "complete_no_training_dev_only",
         "training_started": False,
         "optimizer_steps": 0,
@@ -923,9 +1001,18 @@ def main() -> int:
                 )
                 for cohort in ("oracle_help", "preserve_control")
             },
+            "position_key_sha256": hashlib.sha256(
+                json.dumps(
+                    sorted(
+                        (str(row["cohort"]), int(row["row_index"]), int(row["position"]))
+                        for row in selected
+                    ),
+                    separators=(",", ":"),
+                ).encode("utf-8")
+            ).hexdigest(),
         },
         "constants": {
-            "c_values": list(C_VALUES),
+            "c_values": list(c_values),
             "gamma": args.gamma,
             "rho": args.rho,
             "radius_formula": "gamma*c*RMS(h0)*sqrt(d)/(1-rho)",
@@ -938,6 +1025,9 @@ def main() -> int:
         },
         "results": {
             "pooled": aggregate_intervention_records(outputs),
+            "by_first_order_distance_quantile": (
+                aggregate_by_first_order_distance_quantile(outputs)
+            ),
             "by_stratum": {
                 stratum: aggregate_intervention_records(
                     [row for row in outputs if str(row["stratum"]) == stratum]
@@ -957,6 +1047,8 @@ def main() -> int:
             "Causally exposed future-position collateral is reported separately so structurally unchanged prefix positions do not dilute the rate.",
             "Perturbed predictions are compared with an unmodified forward at the same batch size and batch index; differences from the registered batch-1 path are reported separately as numerical-kernel sensitivity.",
             "Preserve controls are baseline-and-trained-append correct and receive a teacher-favoring perturbation against their strongest non-teacher competitor.",
+            "Full oracle-help is primary; first-order-distance quartiles are a preregistered secondary analysis and never redefine the population.",
+            "This receipt measures the bounded bridge-writeback path only; it does not bound the separate direct-logit residual drafter path.",
         ],
         "do_not_claim": [
             "V1b perturbations are a deployable controller",

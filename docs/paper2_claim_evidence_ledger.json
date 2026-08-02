@@ -1,17 +1,17 @@
 {
   "schema_version": 1,
   "program": "paper2_causal_control_of_recurrent_computation",
-  "status": "phase1_banked_dc1_stage_a_none_phase2_pre_window_verification_only",
-  "canonical_date": "2026-07-31",
+  "status": "phase1_banked_phase2_v1b_v2_banked_v1c_rms_audit_authorized",
+  "canonical_date": "2026-08-02",
   "active_queue": {
     "program_goal": "causal_arbitration_at_append_and_dispatch_interfaces",
     "p0": "completed_uncitable_adapter_loss_calibration",
     "t1": "two_registered_negatives_raw_endpoints_replicate_exact_in_support_causal_control_with_small_preservation_cost",
     "d0": "banked_not_recoverable_at_pilot_scale_binary_disagreement_target",
     "dc1_stage_a": "registered_none_transient_append_retires_checkpoint_archival_eval_c_spent",
-    "phase2": "v1_v2_oracle_overlap_and_eval_d_e_generation_only_no_training",
-    "dc2": "window_closed_pending_v1_v2_strategy_review",
-    "d1": "window_closed_pending_v1_v2_strategy_review",
+    "phase2": "v1b_v2_banked_v1c_radius_extension_and_cpu_rms_audit_only_no_training",
+    "dc2": "window_closed_pending_v1c_rms_audit_and_e1_lock_review",
+    "d1": "window_closed_pending_phase2_strategy_review",
     "paper_two_packaging": "proceeds_on_banked_phase1_results"
   },
   "artifact_map": {
@@ -22,9 +22,61 @@
     "phase2_design": "docs/PAPER_TWO_PHASE2_PROGRAM_DECISION_AND_DESIGN_20260731.md",
     "phase2_theory_audit": "docs/THEORETICAL_FOUNDATIONS_AUDIT_20260731.md",
     "phase2_opening_handoff": "docs/STRATEGY_TO_CODING_AGENT_PHASE2_OPENING_20260731.md",
-    "phase2_prewindow_build": "docs/PAPER2_PHASE2_PREWINDOW_BUILD_HANDOFF_20260731.md"
+    "phase2_prewindow_build": "docs/PAPER2_PHASE2_PREWINDOW_BUILD_HANDOFF_20260731.md",
+    "phase2_v1_v2_summary": "outputs/stage5/stage5_paper2_phase2_prewindow_20260731/v1_v2/summary.json",
+    "phase2_v1b_summary": "outputs/stage5/stage5_paper2_phase2_prewindow_20260731/v1b/summary.json"
   },
   "claims": [
+    {
+      "id": "phase2_v1b_bounded_writeback_local_reach",
+      "status": "supported_bounded_dev_only",
+      "claim": "At the most permissive original tube radius, the exact local margin-gradient direction crossed the wrong-versus-teacher pair margin at essentially its first-order predicted rate, but changed the top-1 output to the teacher token at only 29.75% of oracle-help positions; collateral damage was rare and all preserve controls remained correct.",
+      "scope": "DEV-C only, 2,000 oracle-help and 2,000 preserve-control positions, corrected batch-matched neutral, bounded bridge-writeback path, c values 0.01/0.02/0.05",
+      "metrics": {
+        "c_0p05_first_order_pair_cross_rate": 0.309,
+        "c_0p05_realized_pair_cross_rate": 0.3085,
+        "c_0p05_teacher_flip_rate": 0.2975,
+        "c_0p05_oracle_help_collateral_hurt_rate": 0.00008059100067159168,
+        "c_0p05_preserve_positions_retained": 2000,
+        "c_0p05_preserve_positions_total": 2000
+      },
+      "evidence": [
+        {
+          "path": "outputs/stage5/stage5_paper2_phase2_prewindow_20260731/v1b/summary.json",
+          "locator": "results.pooled at c=0.05"
+        }
+      ],
+      "do_not_claim": [
+        "the bounded bridge-writeback path reaches all oracle-help positions",
+        "the direct-logit residual path shares this ceiling",
+        "local oracle perturbations are a deployable learned controller",
+        "DEV-only results confirm frozen-slice performance"
+      ]
+    },
+    {
+      "id": "phase2_v2_block_iteration_gain",
+      "status": "descriptive_dev_only",
+      "claim": "The recurrent block was median-contractive at all four sampled iterates, while a minority of sampled directions expanded at the first iterate; the observed harm is therefore framed as directional off-manifold drift without norm instability, not generic explosive dynamics.",
+      "scope": "DEV-C, centered finite-difference random directions, 32 rows and two probes per row/iterate, pre-D0 and post-D0 checkpoints",
+      "metrics": {
+        "post_d0_iterate_1_median_gain": 0.6910205781459808,
+        "post_d0_iterate_1_max_gain": 1.4482371807098389,
+        "post_d0_iterate_2_median_gain": 0.566499650478363,
+        "post_d0_iterate_3_median_gain": 0.5526034832000732,
+        "post_d0_iterate_4_median_gain": 0.5589618682861328
+      },
+      "evidence": [
+        {
+          "path": "outputs/stage5/stage5_paper2_phase2_prewindow_20260731/v1_v2/summary.json",
+          "locator": "v2.checkpoints pre_d0 and post_d0"
+        }
+      ],
+      "do_not_claim": [
+        "all directions contract",
+        "sampled directional gains are certified operator-norm bounds",
+        "harm is caused by exploding recurrent norms"
+      ]
+    },
     {
       "id": "guided_width_initial_exploratory",
       "status": "exploratory_non_identifying",

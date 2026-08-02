@@ -1,8 +1,8 @@
 # Project Status: Deterministic Program Closed
 
-**Canonical date:** July 31, 2026
+**Canonical date:** August 2, 2026
 **Part 1 status:** closed
-**Part 2 status:** Phase 1 is banked. DC1 Stage A is a registered negative (`none`) and retires the tested bridge-only linear transient append. Mark's 2026-07-31 program-level override opens two separately locked Phase-2 lines, DC2 arbitrated recurrence and D1 utility-labeled in-place control. Only the four no-training pre-window jobs are currently authorized; no exploration window is open.
+**Part 2 status:** Phase 1 is banked. DC1 Stage A is a registered negative (`none`). V1b and V2 are now banked as DEV-only diagnostics. V1c and the CPU-only RMS-tail audit are authorized; E1 remains unlocked and no Phase-2 training window is open.
 
 This page is the short status index. It replaces the earlier June recovery narrative, which became stale after the loop-closure repair, synthetic mechanism installation, Phase A dense-control comparison, and inverse-task boundary program.
 
@@ -65,6 +65,9 @@ The disposable loop-position test cleared its trained-position prerequisite but 
 The natural N20 verbal branching substrate passed: `389/512 = 75.98%`, with every depth at least `62.5%`. The N24 symbolic substrate narrowly missed: `355/512 = 69.34%`, with depth 3 at `52.34%`.
 
 ## Part 2 Record
+
+Arm G is closed on the tested frozen re-entry interface. Its registered
+`NO-CHANNEL` and `BOTH_FAIL` verdicts remain unchanged by the Phase-2 work.
 
 The initial guided-width run is exploratory and non-identifying because its
 2,048 training rows contained no repeated-prompt target groups. It failed the
@@ -157,11 +160,12 @@ fragile positions is the common interpretive frame.
 
 ## Active Queue
 
-1. Run V1 on dev material: oracle-help margin distribution plus empirical local upper-stack gain, with bound-compatible fractions for `c = 0.01, 0.02, 0.05`, `rho = 0.8`, and the audit-consistent initial `gamma = 0.05` recorded explicitly. The sampled gain is not a Lipschitz upper bound; exact margin-gradient first-order compatibility has interpretive precedence. Then run the separately receipted DEV-only V1b finite-perturbation and collateral check authorized on 2026-07-31.
-2. Run V2: pretrained-block JVP gain distributions at iterates 1 through 4 on dev states, on the pre-D0 and post-D0 checkpoints when resource-compatible.
-3. Completed: formalize the trained/untrained append oracle receipts and the trained-append versus in-place hurt-position overlap from the immutable Stage A cache. This was post-processing, not EVAL-C rescoring. Public receipt: `outputs/stage5/stage5_paper2_phase2_prewindow_20260731/oracle_overlap/summary.json`.
-4. Generate document-disjoint EVAL-D and EVAL-E at 0.2M source tokens each and cache frozen own-base features in the same pass. Freeze hashes and do not expose scores.
-5. Open neither DC2 nor D1 exploration until V1 and V2 land and strategy reviews them. No phase-2 training is currently authorized.
+1. Run V1c on the same V1b DEV cohorts at `c = 0.075, 0.10, 0.15`, preserving the corrected matched-neutral method. Report the full oracle-help cohort as primary and compatibility strata as secondary. This is a finite-radius extension for the bounded bridge-writeback path only.
+2. Run the CPU-only V1b RMS-tail audit over existing private records. Stratify state RMS, original margin, gradient norm, content stratum, and sequence position; keep per-row outlier identities private; recommend either a p99 cap or a fixed multiple of median RMS.
+3. Banked: V1b validated the exact first-order pair-crossing diagnostic at `c <= 0.05`, but bounded writeback changed the top-1 token at only `595/2000 = 29.75%` of oracle-help positions at `c = 0.05`. Oracle-help collateral harms were `75/930625 = 0.0081%`; all `2000/2000` preserve positions remained correct.
+4. Banked: V2 found median contraction at all four iterates, with some expanding sampled directions at iterate one. The operative failure description is directional off-manifold drift without norm instability, not generic explosion.
+5. Keep the E-stage accounting split: the V1b/V1c ceiling binds the bounded bridge-writeback path only. The direct-logit residual drafter path remains margin-unbounded and is judged against acceptance baselines.
+6. Do not lock E1 constants, RMS cap, or gates until V1c and the RMS audit land and strategy reviews both. No Phase-2 training is currently authorized.
 
 Closed pending that decision: additional Phase G sweeps, coverage, selection,
 LPRM, per-trajectory halting, particles, SVGD, the intra-block oracle probe,

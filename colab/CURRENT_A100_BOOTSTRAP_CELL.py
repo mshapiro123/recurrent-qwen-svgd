@@ -146,6 +146,8 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3_short_sha"
 #   "paper2_phase2_oracle_overlap" - CPU-only Stage A oracle and hurt-overlap cache receipt.
 #   "paper2_phase2_v1_v2" - DEV-C-only empirical gain diagnostics; no training.
 #   "paper2_phase2_v1b" - DEV-C-only finite perturbation and collateral check.
+#   "paper2_phase2_v1c" - DEV-C-only larger-radius paired extension; no training.
+#   "paper2_phase2_v1b_rms_audit" - CPU-only audit of existing V1b private rows.
 #   "paper2_phase2_eval_de_freeze" - score-blind EVAL-D/E and own-base feature freeze.
 #   "paper2_d0_prelock_publish_resume" - publish completed Drive-backed D0 lock receipts without inference.
 #   "paper2_d0_prelock" - authorized density probe, corpus freeze, and preregistration lock only.
@@ -208,6 +210,30 @@ TARGETS = {
             "locked length-grouped V1 append cache contract validates batch indices",
             "batch-matched neutral control separates causal effects from kernel-shape variation",
             "colab/run_stage5_paper2_phase2_v1b.py",
+        ],
+        "env": {},
+    },
+    "paper2_phase2_v1c": {
+        "path": "colab/STAGE5_PAPER2_PHASE2_V1C_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_PHASE2_V1C_VERSION",
+            "paper2_phase2_v1c_v1",
+            "c 0.075 0.10 0.15 matched neutral no optimizer no training",
+            "same V1b sample seed and cohorts paired radius extension",
+            "full oracle-help primary compatibility strata secondary",
+            "colab/run_stage5_paper2_phase2_v1c.py",
+        ],
+        "env": {},
+    },
+    "paper2_phase2_v1b_rms_audit": {
+        "path": "colab/STAGE5_PAPER2_PHASE2_V1B_RMS_AUDIT_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_PHASE2_V1B_RMS_AUDIT_VERSION",
+            "paper2_phase2_v1b_rms_audit_v1",
+            "CPU only existing private V1b records no model inference no training",
+            "p99 or fixed multiple median cap recommendation",
+            "public token aggregates private per-row outlier identities",
+            "colab/run_stage5_paper2_phase2_v1b_rms_audit.py",
         ],
         "env": {},
     },
