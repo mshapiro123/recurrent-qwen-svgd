@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+import numpy as np
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -28,6 +29,8 @@ def main() -> None:
         for c_value, value in summary["results"]["pooled"]["preserve_control"].items()
     }
     c_values = sorted(cells)
+    x_positions = np.arange(len(c_values), dtype=float)
+    x_labels = [f"{value:.3f}" for value in c_values]
 
     plt.rcParams.update(
         {
@@ -37,66 +40,96 @@ def main() -> None:
             "axes.spines.right": False,
         }
     )
-    figure, axes = plt.subplots(1, 3, figsize=(12.2, 3.55))
+    figure, axes = plt.subplots(1, 3, figsize=(12.2, 4.15))
     colors = {"prediction": "#6B7280", "pair": "#2563EB", "flip": "#D94841"}
 
+    # Dodge the almost identical pair-crossing series so neither can hide the
+    # other. The x-axis remains categorical and labels preserve the true c.
+    series_offset = 0.08
     axes[0].plot(
-        c_values,
+        x_positions - series_offset,
         [100 * cells[c]["first_order_predicted_pair_cross_rate"] for c in c_values],
         marker="o",
+        markerfacecolor="white",
+        markeredgewidth=1.5,
+        linestyle="--",
         color=colors["prediction"],
         label="First-order pair prediction",
+        zorder=3,
     )
     axes[0].plot(
-        c_values,
+        x_positions,
         [100 * cells[c]["realized_pair_cross_rate"] for c in c_values],
         marker="s",
         color=colors["pair"],
         label="Realized pair crossing",
+        zorder=2,
     )
     axes[0].plot(
-        c_values,
+        x_positions + series_offset,
         [100 * cells[c]["realized_teacher_flip_rate"] for c in c_values],
         marker="^",
         color=colors["flip"],
         label="Teacher-token top-1 flip",
+        zorder=4,
     )
     axes[0].set(title="A. Reach grows with radius", xlabel="Tube constant c", ylabel="Oracle-help positions (%)")
+    axes[0].set_xticks(x_positions, labels=x_labels)
     axes[0].set_ylim(0, 72)
     axes[0].grid(axis="y", alpha=0.2)
     axes[0].legend(frameon=False, fontsize=7.5, loc="upper left")
+    axes[0].text(
+        0.98,
+        0.04,
+        "Pair prediction vs realized: max gap 0.35 pp",
+        transform=axes[0].transAxes,
+        ha="right",
+        va="bottom",
+        fontsize=7.2,
+        color="#4B5563",
+    )
 
     axes[1].plot(
-        c_values,
+        x_positions,
         [100 * cells[c]["collateral_hurt_rate"] for c in c_values],
         marker="o",
         color="#D97706",
         label="Oracle-help collateral hurt",
     )
     axes[1].plot(
-        c_values,
+        x_positions,
         [100 * preserve[c]["collateral_hurt_rate"] for c in c_values],
         marker="s",
         color="#7C3AED",
         label="Preserve-control collateral hurt",
     )
     axes[1].set(title="B. Collateral remains rare", xlabel="Tube constant c", ylabel="Collateral hurt rate (%)")
+    axes[1].set_xticks(x_positions, labels=x_labels)
     axes[1].grid(axis="y", alpha=0.2)
     right = axes[1].twinx()
     right.spines["top"].set_visible(False)
     right.plot(
-        c_values,
+        x_positions,
         [100 * preserve[c]["target_preservation_rate"] for c in c_values],
         marker="^",
         linestyle="--",
         color="#111827",
-        label="Target retained",
+        label="Preserve target retained (right axis)",
     )
-    right.set_ylabel("Preserve target retained (%)")
+    right.set_ylabel("")
     right.set_ylim(99.75, 100.02)
     handles, labels = axes[1].get_legend_handles_labels()
     handles2, labels2 = right.get_legend_handles_labels()
-    axes[1].legend(handles + handles2, labels + labels2, frameon=False, fontsize=7.2, loc="upper left")
+    axes[1].legend(
+        handles + handles2,
+        labels + labels2,
+        frameon=False,
+        fontsize=7.2,
+        loc="upper center",
+        bbox_to_anchor=(0.5, -0.26),
+        ncol=1,
+        borderaxespad=0,
+    )
 
     quartiles = v1c["results"]["by_first_order_distance_quantile"]["oracle_help"]
     names = ["Q1\nclosest", "Q2", "Q3", "Q4\nfarthest"]
@@ -112,7 +145,7 @@ def main() -> None:
         fontsize=11,
         y=1.03,
     )
-    figure.tight_layout()
+    figure.tight_layout(rect=(0, 0.20, 1, 1))
     FIGURE.parent.mkdir(parents=True, exist_ok=True)
     figure.savefig(FIGURE.with_suffix(".svg"), bbox_inches="tight")
     figure.savefig(FIGURE.with_suffix(".png"), dpi=180, bbox_inches="tight")
