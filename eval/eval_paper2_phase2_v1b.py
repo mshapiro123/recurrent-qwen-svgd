@@ -20,6 +20,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from eval.cache_speculative_depth_d0_teachers import load_drafter, read_jsonl  # noqa: E402
+from eval.eval_paper2_dc0_depth_by_append import group_batches  # noqa: E402
 from eval.eval_reentry_drift import prepare_recurrent_inputs, run_recurrent_block  # noqa: E402
 from eval.eval_paper2_phase2_v1_v2 import quantile_summary  # noqa: E402
 from eval.eval_speculative_depth_d0_floor import load_partition_cache  # noqa: E402
@@ -195,14 +196,25 @@ def _manifest_sha256(paths: Sequence[Path]) -> str:
     return digest.hexdigest()
 
 
+def _expected_append_cache_paths(
+    *, cache_dir: Path, rows: Sequence[dict[str, Any]], batch_size: int
+) -> list[tuple[Path, list[int]]]:
+    batches = group_batches(rows, int(batch_size))
+    return [
+        (cache_dir / f"batch_{batch_number:06d}.pt", indices)
+        for batch_number, indices in enumerate(batches, start=1)
+    ]
+
+
 def _load_append_predictions(
-    *, cache_dir: Path, rows: int, batch_size: int
+    *, cache_dir: Path, rows: Sequence[dict[str, Any]], batch_size: int
 ) -> list[torch.Tensor]:
-    outputs: list[torch.Tensor | None] = [None] * int(rows)
-    expected_batches = math.ceil(int(rows) / int(batch_size))
+    outputs: list[torch.Tensor | None] = [None] * len(rows)
+    expected = _expected_append_cache_paths(
+        cache_dir=cache_dir, rows=rows, batch_size=batch_size
+    )
     paths = [
-        cache_dir / f"batch_{batch_number:06d}.pt"
-        for batch_number in range(1, expected_batches + 1)
+        path for path, _indices in expected
     ]
     missing = [str(path) for path in paths if not path.is_file()]
     if missing:
@@ -215,8 +227,15 @@ def _load_append_predictions(
         f"ignored_trailing_batches={len(extras)}",
         flush=True,
     )
-    for path in paths:
+    for path, expected_indices in expected:
         payload = torch.load(path, map_location="cpu", weights_only=False)
+        observed_indices = [int(index) for index in payload["indices"]]
+        if observed_indices != [int(index) for index in expected_indices]:
+            raise RuntimeError(
+                f"V1 append cache batch {path.name} indices differ from the "
+                f"length-grouped contract: observed={observed_indices}, "
+                f"expected={expected_indices}"
+            )
         for local, row_index in enumerate(payload["indices"]):
             outputs[int(row_index)] = payload["predictions"][local]
     if any(value is None for value in outputs):
@@ -643,15 +662,16 @@ def main() -> int:
     ]
     append_dir = v1_private / "v1/append_predictions/trained_append_k1"
     expected_append_paths = [
-        append_dir / f"batch_{batch_number:06d}.pt"
-        for batch_number in range(
-            1,
-            math.ceil(len(rows) / int(v1_config["append_batch_size"])) + 1,
+        path
+        for path, _indices in _expected_append_cache_paths(
+            cache_dir=append_dir,
+            rows=rows,
+            batch_size=int(v1_config["append_batch_size"]),
         )
     ]
     append_grids = _load_append_predictions(
         cache_dir=append_dir,
-        rows=len(rows),
+        rows=rows,
         batch_size=int(v1_config["append_batch_size"]),
     )
 

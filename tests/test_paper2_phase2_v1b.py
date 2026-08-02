@@ -98,7 +98,18 @@ def test_intervention_aggregate_separates_pair_crossing_and_teacher_flip() -> No
 
 
 def test_append_loader_consumes_locked_prefix_and_ignores_trailing_cache(tmp_path) -> None:
-    for batch_number, indices in ((1, [0, 1]), (2, [2, 3]), (3, [4, 5])):
+    rows = [
+        {"input_ids": [1, 2, 3]},
+        {"input_ids": [1, 2]},
+        {"input_ids": [1, 2, 3]},
+        {"input_ids": [1]},
+    ]
+    for batch_number, indices in (
+        (1, [0, 2]),
+        (2, [1]),
+        (3, [3]),
+        (4, [4]),
+    ):
         torch.save(
             {
                 "indices": indices,
@@ -109,8 +120,8 @@ def test_append_loader_consumes_locked_prefix_and_ignores_trailing_cache(tmp_pat
             tmp_path / f"batch_{batch_number:06d}.pt",
         )
 
-    loaded = _load_append_predictions(cache_dir=tmp_path, rows=4, batch_size=2)
+    loaded = _load_append_predictions(cache_dir=tmp_path, rows=rows, batch_size=2)
 
     assert len(loaded) == 4
     assert loaded[0].tolist() == [[1, 11]]
-    assert loaded[3].tolist() == [[2, 12]]
+    assert loaded[3].tolist() == [[3, 13]]
