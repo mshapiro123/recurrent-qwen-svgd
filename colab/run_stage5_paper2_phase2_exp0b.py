@@ -1,0 +1,87 @@
+"""Run and publish DEV-only Experiment 0B flow-path screening."""
+
+from __future__ import annotations
+
+import json
+import os
+import shutil
+import subprocess
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+RUN_ID = "stage5_paper2_phase2_exp0b_20260804"
+EXP0A_ID = "stage5_paper2_phase2_exp0a_20260804"
+STAGE0A_ID = "stage5_paper2_phase2_stage0a_20260803"
+RUN_DIR = ROOT / "outputs/stage5" / RUN_ID
+EXP0A_SUMMARY = ROOT / "outputs/stage5" / EXP0A_ID / "summary.json"
+DRIVE_EXP0A = Path(
+    f"/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/{EXP0A_ID}"
+)
+DRIVE_STAGE0A = Path(
+    f"/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/{STAGE0A_ID}"
+)
+DRIVE_RUN = Path(
+    f"/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/{RUN_ID}"
+)
+DRIVE_EXP0A_SUMMARY = DRIVE_EXP0A / "receipts/exp0a_summary.json"
+
+
+def run(command: list[str]) -> None:
+    print("$", " ".join(command), flush=True)
+    subprocess.run(command, cwd=ROOT, env=os.environ.copy(), check=True)
+
+
+def publish(path: Path) -> str:
+    run(["git", "pull", "--rebase", "--autostash", "origin", "main"])
+    run(["git", "add", "-f", "--", path.relative_to(ROOT).as_posix()])
+    if subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=ROOT).returncode:
+        run(["git", "commit", "-m", "Record Phase-2 Experiment 0B [skip ci]"])
+        run(["git", "push", "origin", "main"])
+    return subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
+
+
+def main() -> int:
+    # Safety marker: DEV-C only interpolation and serial-flow geometry screening
+    exp0a_summary = EXP0A_SUMMARY if EXP0A_SUMMARY.is_file() else DRIVE_EXP0A_SUMMARY
+    if not exp0a_summary.is_file():
+        raise FileNotFoundError(
+            f"Experiment 0B prerequisite is missing from GitHub and Drive: {exp0a_summary}"
+        )
+    output = RUN_DIR / "summary.json"
+    output_private = DRIVE_RUN / "private/exp0b"
+    run(
+        [
+            sys.executable,
+            "-u",
+            "-m",
+            "eval.eval_paper2_phase2_exp0b",
+            "--exp0a_summary",
+            str(exp0a_summary),
+            "--exp0a_private",
+            str(DRIVE_EXP0A / "private/exp0a"),
+            "--stage0a_private",
+            str(DRIVE_STAGE0A / "private/stage0a"),
+            "--output_private",
+            str(output_private),
+            "--output_summary",
+            str(output),
+            "--device",
+            os.environ.get("DEVICE", "cuda"),
+        ]
+    )
+    summary = json.loads(output.read_text(encoding="utf-8"))
+    if summary.get("backbone_training_started") or summary.get("backbone_parameters_mutated"):
+        raise RuntimeError("Experiment 0B mutated the frozen backbone")
+    if summary.get("frozen_evaluation_partitions_touched"):
+        raise RuntimeError("Experiment 0B touched a frozen evaluation partition")
+    receipt_dir = DRIVE_RUN / "receipts"
+    receipt_dir.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(output, receipt_dir / "exp0b_summary.json")
+    commit = publish(output)
+    print(json.dumps({"status": summary["status"], "publish_commit": commit}, indent=2))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

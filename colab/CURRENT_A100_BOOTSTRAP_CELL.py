@@ -149,6 +149,9 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3_short_sha"
 #   "paper2_phase2_v1c" - DEV-C-only larger-radius paired extension; no training.
 #   "paper2_phase2_v1d" - DEV-C-only RMS-capped c=0.15 confirmation; no training.
 #   "paper2_phase2_stage0a" - DEV-C sparse lattice and 14B teacher states; A100-80GB, no training.
+#   "paper2_phase2_stage0a_repair" - CPU-only finite-metric repair from cached Stage 0A shards.
+#   "paper2_phase2_exp0a" - A100 DEV-only canonicalizer and partial-whitening screening.
+#   "paper2_phase2_exp0b" - L4-or-larger DEV-only interpolation and serial-flow screening.
 #   "paper2_phase2_v1b_rms_audit" - CPU-only audit of existing V1b private rows.
 #   "paper2_phase2_eval_de_freeze" - score-blind EVAL-D/E and own-base feature freeze.
 #   "paper2_d0_prelock_publish_resume" - publish completed Drive-backed D0 lock receipts without inference.
@@ -252,6 +255,41 @@ TARGETS = {
             "automatic local-scratch cache with Drive-backed durable resume shards",
             "tests/test_paper2_phase2_stage0a.py",
             "colab/run_stage5_paper2_phase2_stage0a.py",
+        ],
+        "env": {},
+    },
+    "paper2_phase2_stage0a_repair": {
+        "path": "colab/STAGE5_PAPER2_PHASE2_STAGE0A_REPAIR_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_PHASE2_STAGE0A_REPAIR_VERSION",
+            "paper2_phase2_stage0a_repair_v1",
+            "CPU-only cached lattice repair no model inference no training",
+            "tests/test_paper2_phase2_stage0ab.py",
+            "colab/run_stage5_paper2_phase2_stage0a_repair.py",
+        ],
+        "env": {},
+    },
+    "paper2_phase2_exp0a": {
+        "path": "colab/STAGE5_PAPER2_PHASE2_EXP0A_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_PHASE2_EXP0A_VERSION",
+            "paper2_phase2_exp0a_v1",
+            "DEV-only canonicalizer and whitening screening no backbone training",
+            "shared PCA basis alpha 0 0.5 1 single eigenvalue floor no second epsilon",
+            "tests/test_paper2_phase2_stage0ab.py",
+            "colab/run_stage5_paper2_phase2_exp0a.py",
+        ],
+        "env": {},
+    },
+    "paper2_phase2_exp0b": {
+        "path": "colab/STAGE5_PAPER2_PHASE2_EXP0B_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_PHASE2_EXP0B_VERSION",
+            "paper2_phase2_exp0b_v1",
+            "DEV-only interpolation and serial-flow geometry screening",
+            "affine targets no persistent-state renormalization loop cap four",
+            "tests/test_paper2_phase2_stage0ab.py",
+            "colab/run_stage5_paper2_phase2_exp0b.py",
         ],
         "env": {},
     },
