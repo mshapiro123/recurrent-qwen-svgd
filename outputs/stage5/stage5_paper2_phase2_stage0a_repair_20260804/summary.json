@@ -1,0 +1,995 @@
+{
+  "do_not_claim": [
+    "the clipped coarse KL is an exact full-vocabulary KL",
+    "development-only lattice metrics are confirmatory evidence",
+    "teacher agreement is correctness"
+  ],
+  "frozen_evaluation_partitions_touched": [],
+  "full_logit_audit": {
+    "student_0p5b:finite_log_max_abs_error": {
+      "count": 2000,
+      "finite_count": 2000,
+      "finite_max": 7.919033050537109,
+      "finite_mean": 0.10671049096831117,
+      "finite_median": 0.049681663513183594,
+      "finite_min": 0.0,
+      "finite_p10": 0.016477012634277345,
+      "finite_p90": 0.06232128143310547,
+      "finite_p95": 0.06319904327392577,
+      "nan_count": 0,
+      "negative_infinity_count": 0,
+      "positive_infinity_count": 0
+    },
+    "student_0p5b:probability_max_abs_error": {
+      "count": 2000,
+      "finite_count": 2000,
+      "finite_max": 0.014467224478721619,
+      "finite_mean": 3.096154829828483e-05,
+      "finite_median": 9.5367431640625e-07,
+      "finite_min": 5.6756852093598625e-14,
+      "finite_p10": 6.2639408326958804e-09,
+      "finite_p90": 9.517007856629791e-06,
+      "finite_p95": 1.8982589244842476e-05,
+      "nan_count": 0,
+      "negative_infinity_count": 0,
+      "positive_infinity_count": 0
+    },
+    "student_0p5b:support_mismatch_fraction": {
+      "count": 2000,
+      "finite_count": 2000,
+      "finite_max": 0.6937798857688904,
+      "finite_mean": 0.024324002340435982,
+      "finite_median": 0.0,
+      "finite_min": 0.0,
+      "finite_p10": 0.0,
+      "finite_p90": 0.0,
+      "finite_p95": 0.0,
+      "nan_count": 0,
+      "negative_infinity_count": 0,
+      "positive_infinity_count": 0
+    },
+    "teacher_14b:finite_log_max_abs_error": {
+      "count": 2000,
+      "finite_count": 2000,
+      "finite_max": 8.291168212890625,
+      "finite_mean": 0.3413201906681061,
+      "finite_median": 0.125,
+      "finite_min": 0.0,
+      "finite_p10": 0.0625,
+      "finite_p90": 0.25,
+      "finite_p95": 1.2414752960205073,
+      "nan_count": 0,
+      "negative_infinity_count": 0,
+      "positive_infinity_count": 0
+    },
+    "teacher_14b:probability_max_abs_error": {
+      "count": 2000,
+      "finite_count": 2000,
+      "finite_max": 0.05322837829589844,
+      "finite_mean": 0.004010560836761462,
+      "finite_median": 0.0004400312900543213,
+      "finite_min": 1.144828555685231e-17,
+      "finite_p10": 4.76837158203125e-07,
+      "finite_p90": 0.015415833890438102,
+      "finite_p95": 0.023638007044792173,
+      "nan_count": 0,
+      "negative_infinity_count": 0,
+      "positive_infinity_count": 0
+    },
+    "teacher_14b:support_mismatch_fraction": {
+      "count": 2000,
+      "finite_count": 2000,
+      "finite_max": 0.6973995566368103,
+      "finite_mean": 0.07288909262418747,
+      "finite_median": 0.0,
+      "finite_min": 0.0,
+      "finite_p10": 0.0,
+      "finite_p90": 0.45299145579338074,
+      "finite_p95": 0.5601374506950378,
+      "nan_count": 0,
+      "negative_infinity_count": 0,
+      "positive_infinity_count": 0
+    },
+    "teacher_32b:finite_log_max_abs_error": {
+      "count": 2000,
+      "finite_count": 2000,
+      "finite_max": 9.415103912353516,
+      "finite_mean": 0.335162914828863,
+      "finite_median": 0.125,
+      "finite_min": 0.0,
+      "finite_p10": 0.06181011199951172,
+      "finite_p90": 0.18750085830688476,
+      "finite_p95": 0.5956123352050684,
+      "nan_count": 0,
+      "negative_infinity_count": 0,
+      "positive_infinity_count": 0
+    },
+    "teacher_32b:probability_max_abs_error": {
+      "count": 2000,
+      "finite_count": 2000,
+      "finite_max": 0.05204039812088013,
+      "finite_mean": 0.003762646270233926,
+      "finite_median": 0.00023871660232543945,
+      "finite_min": 2.978326131828138e-16,
+      "finite_p10": 1.1920928955078125e-07,
+      "finite_p90": 0.015056583285331744,
+      "finite_p95": 0.023914860934019073,
+      "nan_count": 0,
+      "negative_infinity_count": 0,
+      "positive_infinity_count": 0
+    },
+    "teacher_32b:support_mismatch_fraction": {
+      "count": 2000,
+      "finite_count": 2000,
+      "finite_max": 0.7117117047309875,
+      "finite_mean": 0.0721204599738121,
+      "finite_median": 0.0,
+      "finite_min": 0.0,
+      "finite_p10": 0.0,
+      "finite_p90": 0.4412910491228107,
+      "finite_p95": 0.5601374506950378,
+      "nan_count": 0,
+      "negative_infinity_count": 0,
+      "positive_infinity_count": 0
+    },
+    "teacher_7b:finite_log_max_abs_error": {
+      "count": 2000,
+      "finite_count": 2000,
+      "finite_max": 8.436380386352539,
+      "finite_mean": 0.2332420246214606,
+      "finite_median": 0.050899505615234375,
+      "finite_min": 0.0,
+      "finite_p10": 0.0011136531829833987,
+      "finite_p90": 0.09342422485351565,
+      "finite_p95": 0.2615358352661115,
+      "nan_count": 0,
+      "negative_infinity_count": 0,
+      "positive_infinity_count": 0
+    },
+    "teacher_7b:probability_max_abs_error": {
+      "count": 2000,
+      "finite_count": 2000,
+      "finite_max": 0.013995528221130371,
+      "finite_mean": 4.96652886708643e-05,
+      "finite_median": 4.76837158203125e-07,
+      "finite_min": 7.382532683308073e-19,
+      "finite_p10": 3.4781365343405924e-09,
+      "finite_p90": 5.298256874084496e-05,
+      "finite_p95": 0.0002182900905609129,
+      "nan_count": 0,
+      "negative_infinity_count": 0,
+      "positive_infinity_count": 0
+    },
+    "teacher_7b:support_mismatch_fraction": {
+      "count": 2000,
+      "finite_count": 2000,
+      "finite_max": 0.7016317248344421,
+      "finite_mean": 0.05496106821298599,
+      "finite_median": 0.0,
+      "finite_min": 0.0,
+      "finite_p10": 0.0,
+      "finite_p90": 0.37285510003566785,
+      "finite_p95": 0.5077866464853286,
+      "nan_count": 0,
+      "negative_infinity_count": 0,
+      "positive_infinity_count": 0
+    }
+  },
+  "kind": "paper2_phase2_stage0a_metric_repair",
+  "metrics": {
+    "normalized_teacher_agreement": {
+      "count": 200000,
+      "finite_count": 200000,
+      "finite_max": 1.0,
+      "finite_mean": 0.942336162018379,
+      "finite_median": 0.9754372819444963,
+      "finite_min": 0.07893331415826887,
+      "finite_p10": 0.8467873316097819,
+      "finite_p90": 0.9999407979210444,
+      "finite_p95": 0.9999922884222984,
+      "nan_count": 0,
+      "negative_infinity_count": 0,
+      "positive_infinity_count": 0
+    },
+    "scale_coherence_probability_cosine": {
+      "count": 35153,
+      "finite_count": 35153,
+      "finite_max": 1.0,
+      "finite_mean": -0.34008545391378014,
+      "finite_median": -0.4970896244049072,
+      "finite_min": -1.0,
+      "finite_p10": -0.9595370054244995,
+      "finite_p90": 0.6111310005187988,
+      "finite_p95": 0.853533947467804,
+      "nan_count": 0,
+      "negative_infinity_count": 0,
+      "positive_infinity_count": 0
+    },
+    "student_gap_coarse_kl_clipped": {
+      "count": 200000,
+      "finite_count": 200000,
+      "finite_max": 15.639019012451172,
+      "finite_mean": 0.5520078999746527,
+      "finite_median": 0.24048347026109695,
+      "finite_min": -3.2332332366991068e-09,
+      "finite_p10": 0.0013757920125499368,
+      "finite_p90": 1.437454211711884,
+      "finite_p95": 2.1729763627052274,
+      "nan_count": 0,
+      "negative_infinity_count": 0,
+      "positive_infinity_count": 0
+    },
+    "student_support_miss_mass": {
+      "count": 200000,
+      "finite_count": 200000,
+      "finite_max": 0.09605727344751358,
+      "finite_mean": 3.8156707766833206e-06,
+      "finite_median": 0.0,
+      "finite_min": 0.0,
+      "finite_p10": 0.0,
+      "finite_p90": 0.0,
+      "finite_p95": 0.0,
+      "nan_count": 0,
+      "negative_infinity_count": 0,
+      "positive_infinity_count": 0
+    },
+    "teachability_student_topk": {
+      "count": 200000,
+      "finite_count": 200000,
+      "finite_max": 1.0000001192092896,
+      "finite_mean": 0.957762582578557,
+      "finite_median": 0.9975316524505615,
+      "finite_min": 1.5793071725056507e-05,
+      "finite_p10": 0.8714466631412506,
+      "finite_p90": 0.9999968409538269,
+      "finite_p95": 0.9999993443489075,
+      "nan_count": 0,
+      "negative_infinity_count": 0,
+      "positive_infinity_count": 0
+    }
+  },
+  "optimizer_steps": 0,
+  "repair_scope": "finite-support coarse KL with explicit support-miss mass; probability-space scale coherence; finite-only log-error summaries with support mismatch counts",
+  "samples": 200000,
+  "shards": [
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000000_000008.pt",
+      "samples": 992,
+      "sha256": "6fd8b73191596392a7348fa255e0504e143e202acec6965c354a0bc63560c402"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000008_000016.pt",
+      "samples": 1664,
+      "sha256": "874f558ad1067a714844a862ff129df53acd74b5e481891af60661b8087403bd"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000016_000024.pt",
+      "samples": 1228,
+      "sha256": "9dff6b71d689935a0568e3b6cd574c6325e081cc37434ad8cb91b86fc751777d"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000024_000032.pt",
+      "samples": 1400,
+      "sha256": "27489d18ebceb978f8666e807300430e174c51215364cf2f225e129d8ae14112"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000032_000040.pt",
+      "samples": 1564,
+      "sha256": "a5c3a631f83c135a84d0d1b4d77070277704d124f43b9a5e145e2c2a212b43af"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000040_000048.pt",
+      "samples": 1564,
+      "sha256": "006dddf603f0f22b43508c220bebd17a31a736c6301e66d5955b1b2e6a36b624"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000048_000056.pt",
+      "samples": 1328,
+      "sha256": "c55801a51ac4e39565fd948ceee2864bbdcdce8127ffffebc1591e202487e366"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000056_000064.pt",
+      "samples": 1108,
+      "sha256": "36011907ed4a6c2e96a69ebe0c9dd9bbe54c0ff5e8e8f4fca6b9c4aa253b46ba"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000064_000072.pt",
+      "samples": 1468,
+      "sha256": "2c3d7ad3c612d37d9ee305cc1c5893abcb107a16b790ee1717d3d9f9af56919d"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000072_000080.pt",
+      "samples": 1448,
+      "sha256": "7c333f4c3dfd30c42bea41bc427a8bc1c9d082246c3353a660544ad8151c1ecc"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000080_000088.pt",
+      "samples": 1596,
+      "sha256": "3553aedb75b2631a1ebb653d483123ac577793432b79069af73aff6826152317"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000088_000096.pt",
+      "samples": 1428,
+      "sha256": "34abc19cd0209ed0925eba5916b5b5e12503b285f0ffc3dc627888f68ba33179"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000096_000104.pt",
+      "samples": 1624,
+      "sha256": "7bc202eb3994bc2e64b97593cb0478b00c24c3abed33e6e4b4e5da5d18eebc36"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000104_000112.pt",
+      "samples": 1424,
+      "sha256": "dcb00386e31d097bea7d3877d7d1a17aa8660b8e2f8f82617edb93522b0812e3"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000112_000120.pt",
+      "samples": 1328,
+      "sha256": "cf162149a4d1de6b302cbea06f3c9a3507f1f82f329a286491da181bdf03fed2"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000120_000128.pt",
+      "samples": 1460,
+      "sha256": "15552cd3c9f6c782916f4c53a8a1691c48756b95f2ab47e5413906f43bdf88fb"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000128_000136.pt",
+      "samples": 1304,
+      "sha256": "9fffca6d365293d620adca8f54229accb2f70a73c570e9d532f9b959d5603ada"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000136_000144.pt",
+      "samples": 972,
+      "sha256": "42f73e525637aa9de998708568c230605db557dede7e1292cd841bb6239e69b4"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000144_000152.pt",
+      "samples": 1348,
+      "sha256": "27a689d9d38a679d0f3575d82dc9e9c2279390c592c4175346fe4b5eb8a669f9"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000152_000160.pt",
+      "samples": 1448,
+      "sha256": "76065fc7ac744bfd3dc373f2359b8247b6239544818ec035230d9c273e1880e1"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000160_000168.pt",
+      "samples": 1360,
+      "sha256": "b29f89df5397486bdb136d858d5c01a50bde290ed5cb830d1127ac12ca249b46"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000168_000176.pt",
+      "samples": 1428,
+      "sha256": "c9ddcdc6d4f7077ecd4d1862f947f2e96d2c0d7551155c338d523080e3cfaab5"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000176_000184.pt",
+      "samples": 1424,
+      "sha256": "100df8de5b13ca0fde2fa721fe5d91ae270da41dfb9c221aba83a0b3ae93dc5a"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000184_000192.pt",
+      "samples": 1376,
+      "sha256": "a0b24f5e4c2081e822a2b63444abfff8fb09234e2090cfc82c91b1b67c892a1c"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000192_000200.pt",
+      "samples": 1292,
+      "sha256": "72b5f943b60f9f59d6a48b5a52f87b2020e3982c5552e279a0305cf2630eaecc"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000200_000208.pt",
+      "samples": 1356,
+      "sha256": "6f999f38b8cf856a3179462ed91a77b7f2a46265f3ce25e9a18d0dbea27b3b4f"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000208_000216.pt",
+      "samples": 1348,
+      "sha256": "c149e9b53500b856bec7232baaea709a1a2a6a1bcd2ff0feb2f97295e011a05e"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000216_000224.pt",
+      "samples": 1084,
+      "sha256": "97bfe1b3d644f8de89922a3854b73a6781d75d342026b4067278ac6141f0533b"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000224_000232.pt",
+      "samples": 1224,
+      "sha256": "bf23265cedbdf172785fb444013c317cefc44f8261fe499be2b288bf92fb2240"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000232_000240.pt",
+      "samples": 1268,
+      "sha256": "db57915bfb0b6c81409b5be8bfa445a69870f2dd499e1c623830d45478680c7f"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000240_000248.pt",
+      "samples": 1164,
+      "sha256": "bad9000b05ea858b3cfdd76895c22abdd9fa1d0b96ba0808cfaefea24894b384"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000248_000256.pt",
+      "samples": 1232,
+      "sha256": "3d2a0d4f96dea64ab3fa695cfded543131e8a3d16de7a12c64cc5567589079c8"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000256_000264.pt",
+      "samples": 1188,
+      "sha256": "8d3a6c1a7414fbff6025c129198010b9e889662312dddcd36778b40bbe0ac963"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000264_000272.pt",
+      "samples": 1428,
+      "sha256": "30c74dd0212f175d96b276cf6c3565c5d3d0fcbd60f135ec140d855828fc3a4a"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000272_000280.pt",
+      "samples": 1704,
+      "sha256": "49f52b5e1171c254f536b869ddeb1c8f1e22e9cbc1a04d2d1ad24ec097a227a5"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000280_000288.pt",
+      "samples": 1320,
+      "sha256": "6f62affaffd88523c14c424c9af6f0abe8b5187e44d93ea3c79ac8bd4f4c9d69"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000288_000296.pt",
+      "samples": 1576,
+      "sha256": "4c993f897d8c98776c386a4e67a869609b456edb1f34290a11fb15f6b5e4dd82"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000296_000304.pt",
+      "samples": 1512,
+      "sha256": "3b99bd8fb37e122ebca0aa3c7fc458311ed3936b9b8b711c9eaa7865269ff50c"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000304_000312.pt",
+      "samples": 1464,
+      "sha256": "f3b28fb8066a663fadbfcbdd98f9e371f749c5c598db78b38241709379e62b70"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000312_000320.pt",
+      "samples": 1512,
+      "sha256": "4dfb35f9db53509a7f86ed25b35bbbb699e070b70900ccf7a3ba055745b5ea12"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000320_000328.pt",
+      "samples": 1448,
+      "sha256": "b1008c9313e65e1f508d2456f9bed803d1da710cbf5c4df3343ae211910b054d"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000328_000336.pt",
+      "samples": 1532,
+      "sha256": "093d9e4dd0b2bfdf4fcdc5c28d57632fe782585522a189860a474b57109f3b1e"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000336_000344.pt",
+      "samples": 1372,
+      "sha256": "2a55122319b3f6839bb7c68d921f2b4431b2a9355190ee791a6046ec959ed743"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000344_000352.pt",
+      "samples": 1300,
+      "sha256": "62c09d2f442cf293f131f5bf2b44c39cd2f04272f21d871fbe95d19b5e132282"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000352_000360.pt",
+      "samples": 1112,
+      "sha256": "d67aa7817ef07c84323bdb2a3059c54d0c2a19207a002b8530c31658e85ccaa1"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000360_000368.pt",
+      "samples": 1516,
+      "sha256": "24204413279d749d1c0136943db5abe0835848b03c3b33f2c849925b73b5e039"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000368_000376.pt",
+      "samples": 1364,
+      "sha256": "8244617887da1c00d33b31bc4117872278632b498a9bab4ca81ae2b085fa9958"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000376_000384.pt",
+      "samples": 1496,
+      "sha256": "51686a4fee0abfb151d5869501e956bbc2bdbc3ba40e69b5d76935b90e501cfd"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000384_000392.pt",
+      "samples": 944,
+      "sha256": "a889980c01692720ca00ea0c374be5a41f7c92e6fa39563c40b0a3fa8c92d9cc"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000392_000400.pt",
+      "samples": 1456,
+      "sha256": "f132e6786ed4990597bbf9eeaf964a18ecc18875c9910060807fd1a5566797ec"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000400_000408.pt",
+      "samples": 1468,
+      "sha256": "6a3c4e6e12a1fefeb10f30cd4a3aaf6815d598650bf5c682fe759d1c6b25f291"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000408_000416.pt",
+      "samples": 1212,
+      "sha256": "4386e27613813b08234fc346fa5dac66131a56e0dfd49ced43bcdbebe9a2c8d3"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000416_000424.pt",
+      "samples": 1432,
+      "sha256": "2b013881b691a062388acb08b93d2ed7c076db4abe9825c61a089a638de7b1c2"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000424_000432.pt",
+      "samples": 1188,
+      "sha256": "49a94b091aa37e43e3c64ff0e438b5105a88266e3e7ae21fc363ecb419e6dcf5"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000432_000440.pt",
+      "samples": 1468,
+      "sha256": "bf4c73e134be6592984c3c0a182c622669735c2b5ff60d7ab8fa7a9e58328ca6"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000440_000448.pt",
+      "samples": 1344,
+      "sha256": "62e05d4321c380bf09e23144aa0564ebefe1161f779d849dcfaeac65c300909d"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000448_000456.pt",
+      "samples": 1220,
+      "sha256": "da422d6dda73bbff0b0c41ce94e5d7776854aa984bfa5b91a34c6b0fdfced95d"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000456_000464.pt",
+      "samples": 1492,
+      "sha256": "4856a30a9f9906561bfd45cf39a600713b00c5e2c168b5a8054603ad9f27420a"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000464_000472.pt",
+      "samples": 1244,
+      "sha256": "018c1461daa0552a8c9aa024086c20df6c98eeb33e533d09484ec621ebf906c3"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000472_000480.pt",
+      "samples": 1268,
+      "sha256": "42450385271de40ce95ce13684a400bf6b3582f46a78455452614643d184c9b9"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000480_000488.pt",
+      "samples": 1520,
+      "sha256": "012decfd5f58291b7a48f7140036e559e601c27a64d190ff4ff57dd32b971704"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000488_000496.pt",
+      "samples": 1220,
+      "sha256": "fd99cd0ef13b6252a7f7c43de1e0f0aa6c4666a34f4f8b517c9ff56216db3e8f"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000496_000504.pt",
+      "samples": 1428,
+      "sha256": "e477d9d156ea175a42f405ecd2e60802bbed0389283f3b7f78f4472818c75111"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000504_000512.pt",
+      "samples": 1420,
+      "sha256": "ef7f7d38788fac1802d7fa3edfc65c792a8609394c49c89ca323ea66c1b77bea"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000512_000520.pt",
+      "samples": 1460,
+      "sha256": "2b8588d959ecc7c4673b0d4334e15eed558d4926bd9f51ca914f718e11aa7239"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000520_000528.pt",
+      "samples": 1380,
+      "sha256": "57bef0f2123d0d25e4855ed6f190a54084cfc81898ee2ce0be6d893a65374ba3"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000528_000536.pt",
+      "samples": 1332,
+      "sha256": "82e22aebe3b88817c5310e5ce71d6e92171f7b130c24239abb48e172cb86dc13"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000536_000544.pt",
+      "samples": 1368,
+      "sha256": "90235c385def5f85b44492d1676c93e0a9a0c3f81f74310552704776efd8a2e0"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000544_000552.pt",
+      "samples": 1360,
+      "sha256": "094709e1c89f18c0be8c3e07ae5c7b7bc9c2a2084e44cb2a272dc18f849b360d"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000552_000560.pt",
+      "samples": 1352,
+      "sha256": "ccdd17f8a49bfc1d24e7b05b21c0161481cff1c473950bdea4f034798935069f"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000560_000568.pt",
+      "samples": 1584,
+      "sha256": "4470995e4b7e863bf0748f6d697fc5065b005c69fde4681357d3cefef59fafa7"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000568_000576.pt",
+      "samples": 1644,
+      "sha256": "aa750aa602d18a6d48677beb241e9dcc217f98287c6e19b868d177d3a62e7ee9"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000576_000584.pt",
+      "samples": 1348,
+      "sha256": "e048746c06f66160a337451a331e6814999e854c7e8f266da172e8acd2546c0e"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000584_000592.pt",
+      "samples": 1472,
+      "sha256": "feaf8acda8c8a995f3b08f3ad5aa4211dd7b108bf037727219419add8121c1a7"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000592_000600.pt",
+      "samples": 1348,
+      "sha256": "efae2e8025680f34e92010f3499130cbc1578dea88dac4b6855cd4cc017df34c"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000600_000608.pt",
+      "samples": 1600,
+      "sha256": "2cd68ee29fb506398841c7f5583c67c836c0859b7a2f2575081d938ec1b0eff1"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000608_000616.pt",
+      "samples": 1108,
+      "sha256": "b53bf2d62e081f254567da67236bb425ea3ca15bcf57073c959cff1ee7a60371"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000616_000624.pt",
+      "samples": 1312,
+      "sha256": "e2fef86258e9e25eeadee22f51a134a7373d12b6a230d573eb853b2d419d6619"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000624_000632.pt",
+      "samples": 1376,
+      "sha256": "96482f7bb7778d401fe77a5c75157ba0b53f86b6bda7dfd1cc47f6b883f1e6b6"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000632_000640.pt",
+      "samples": 1420,
+      "sha256": "814bcd97dc9a8e9871f0efd7a860732f1e1763fbf21c93ddc4d58f9533f3d31a"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000640_000648.pt",
+      "samples": 1648,
+      "sha256": "d965fbadcabb7e701683054f49ca3ac8a569b8ef5d470a03b4734d07f1b60052"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000648_000656.pt",
+      "samples": 1252,
+      "sha256": "38943f68d7dc3cc8528447e584db7224423c76032e3479fb50b3510c43854ad0"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000656_000664.pt",
+      "samples": 1652,
+      "sha256": "5be6a4a18fbd904f5884c8fe5038e9e6d428b28c09b47373d5b4b289501912ae"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000664_000672.pt",
+      "samples": 1220,
+      "sha256": "2d7b038b6dad3e66eb2eb83034df81f358f406ead2c2645c6a1ce0d4d39b16d1"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000672_000680.pt",
+      "samples": 1476,
+      "sha256": "4538a322410b777d39b2ff98ced1e7f2b31f6f19bef5037f4e29c6e917b38e05"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000680_000688.pt",
+      "samples": 1108,
+      "sha256": "6e4b635a87064d2a1b150563618156380563b99ba2532107ea5fade2f0021f12"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000688_000696.pt",
+      "samples": 1188,
+      "sha256": "f097ff119e7af20cc17558a484dff25136519f4d6be170cdf7b14629c23911f8"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000696_000704.pt",
+      "samples": 1112,
+      "sha256": "a50e4cceed756966e84b7f8d7bd7318110d01797fdcaba22591a6897d97f976b"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000704_000712.pt",
+      "samples": 1488,
+      "sha256": "c482a57348ef80d059c64366faf2cf810ba7625200db352226fdab2c5fa39742"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000712_000720.pt",
+      "samples": 1160,
+      "sha256": "e5bed80f7a74c789113eaedd7d5b4effa3a1066ac51bc505d2019805ec558f29"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000720_000728.pt",
+      "samples": 1048,
+      "sha256": "bc80939316fd066f3732df637f89b7e2890852478d8f3f22e43e577f1350729c"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000728_000736.pt",
+      "samples": 1344,
+      "sha256": "556f68ed0c5bbe473076fe825be3d7a6ee0c29c478ab1d95fd1cc8e7a10f29b2"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000736_000744.pt",
+      "samples": 1340,
+      "sha256": "82320f99ea5bc838f09296b6dcac14ccad0fd72915101e2eaa9d3d0169eff4bb"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000744_000752.pt",
+      "samples": 1012,
+      "sha256": "bd1f1ef104055e457fa71f68b563a9dfb81341f8b5e3ecb3480ed2fe10e91e14"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000752_000760.pt",
+      "samples": 1432,
+      "sha256": "f60cccfaca7fdc53ffef3e09b35647f2cd6a602f48a9e9aacc7f2fdf1a9ff667"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000760_000768.pt",
+      "samples": 1364,
+      "sha256": "81272adabceb5c15e8acdc7d01acf3720d1a1babe57339bee807263d03c14fa0"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000768_000776.pt",
+      "samples": 1380,
+      "sha256": "a8e9702af8383abaeb08b802d5cf538b006cb2b5a7bba42c14bd80ba4dadd75f"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000776_000784.pt",
+      "samples": 1312,
+      "sha256": "ae53611720cb3d0b4d4f3ad4c78bfc0cd2764b996322a6608efff079618983ec"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000784_000792.pt",
+      "samples": 1528,
+      "sha256": "df45d39c666ee7836c8eae6af251fbc8d0d03109a114e6c3c23d5397b2b9a7f1"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000792_000800.pt",
+      "samples": 1120,
+      "sha256": "6293745a798434590f968bcf37babaa58ea0894683277873b27a368db65c4505"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000800_000808.pt",
+      "samples": 1288,
+      "sha256": "5c9996fe3fff460fa5a1631d214595473398cf431a23bd6117d5ffa2ca0378a2"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000808_000816.pt",
+      "samples": 1252,
+      "sha256": "b5d45f661fc4c38e45dea11b8090c92bc6442f74ff63b8f1aa15efabef49fa04"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000816_000824.pt",
+      "samples": 1128,
+      "sha256": "e7f068db7e8a6b7d717184482624ef78b351f45510d50b26fb340c1119501430"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000824_000832.pt",
+      "samples": 1548,
+      "sha256": "ab4f0b58d11c5c9e43f2ed21c04149f3c5372c9eb42f267793ee6eedc0f842ab"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000832_000840.pt",
+      "samples": 1288,
+      "sha256": "763c57c36859d75fa6860bfab99700af2cfd07fa9b2a4bdc334b021f603f1c37"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000840_000848.pt",
+      "samples": 1532,
+      "sha256": "dc1773a4a86823e75e824b45536e43da4f0b74ffd090d693af3acad47881ebee"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000848_000856.pt",
+      "samples": 1416,
+      "sha256": "f4ebd7194e11c5f7e57d35a179fa3a55763d2d0e972e09d1966873a4d6d3798b"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000856_000864.pt",
+      "samples": 1224,
+      "sha256": "2fb52aa239fccd836aeff14e060f72fbe38ef74ea8f515fe8b4bd3483d12f62f"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000864_000872.pt",
+      "samples": 1216,
+      "sha256": "e15a375a2df6b4c616f27f0299df3dc986cfdee1ed39620c79000904736399c7"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000872_000880.pt",
+      "samples": 1440,
+      "sha256": "ff2eb907dd65fcb445ea951bbc3bf0d053493f3329f8a93fd624ac6fafa9dbed"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000880_000888.pt",
+      "samples": 1476,
+      "sha256": "3eca7b14dfdeaa6ec6704bcd00836311e1e15424e25d928501ea9c5e7c168058"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000888_000896.pt",
+      "samples": 1524,
+      "sha256": "4b86633221d7cddd0a775e8917f830b63fa0d313bbc99e5b1bcde6913ae444c7"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000896_000904.pt",
+      "samples": 1140,
+      "sha256": "bd1b6c9bdffa251f04880b1b9c8055c1ce1fc6bda4189e480c63c07e5abe4c86"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000904_000912.pt",
+      "samples": 1648,
+      "sha256": "a572287c2b95db36e2119e441a6c13808bf92f142259df9a90701cddda205583"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000912_000920.pt",
+      "samples": 1404,
+      "sha256": "b951545bec296f591ec16d17abcb9bda227b57978e4b6f1c86fcd35687c83e4b"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000920_000928.pt",
+      "samples": 1176,
+      "sha256": "d895ee3eba1fc8c64215a18dcde0222fdbfb97dc6b5ee919bc0076725606e45a"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000928_000936.pt",
+      "samples": 1512,
+      "sha256": "0087a29cf26b29d9069cb9f420577672abc8aff30efb20424b615b537433eac8"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000936_000944.pt",
+      "samples": 1436,
+      "sha256": "d274a890d747ec92dfce4fedad665f3e0251f5961d7adc5bee4c7a59a7b7c9ef"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000944_000952.pt",
+      "samples": 1560,
+      "sha256": "43f8e96f3384d739acacfd6f76bad004a763a43875ee458c48ce5ba3c0e88011"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000952_000960.pt",
+      "samples": 1436,
+      "sha256": "d2d04bb1111b9a59d20d9e31f8ccd2c88748cee46ed5e2b124bb70b51f085990"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000960_000968.pt",
+      "samples": 1428,
+      "sha256": "3eb4990bee254679527b92a61007351c0cd86c7c0d5b09993c688c93ccb23d1a"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000968_000976.pt",
+      "samples": 1248,
+      "sha256": "35d247bcb3636a61d322b0e79e5859dcc28a55c7eefdb7de5d169e1abadb7194"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000976_000984.pt",
+      "samples": 1152,
+      "sha256": "cb6e9c3a1921b9a842c1d1ff52c04c33954fe100d567e41a7e68bac753a5b049"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000984_000992.pt",
+      "samples": 1400,
+      "sha256": "99ad8c48c94e774363b9585c375f546cb727dfcd333fe512095006604939209b"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_000992_001000.pt",
+      "samples": 1224,
+      "sha256": "d635800f7f50eedf34903a13c15161257f3b387c840c9e28643b02b7e5351e87"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_001000_001008.pt",
+      "samples": 1308,
+      "sha256": "7602737e1b9d911249e056bff5caf89524980087edca47a670a811e43fa20125"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_001008_001016.pt",
+      "samples": 1376,
+      "sha256": "466b7dafb6ab107fee8c297a1b64a30ae588d7b99f55290953eb2d7f81441066"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_001016_001024.pt",
+      "samples": 1528,
+      "sha256": "caf5dbaeb8d9cca6f2265bc9aaa1c17094850bdae77a9261f271b9f04abc0847"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_001024_001032.pt",
+      "samples": 1592,
+      "sha256": "1605a6e099c90c2adda20ecf9f1a9fd542286e573f86ff3ff2806315478cf4cd"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_001032_001040.pt",
+      "samples": 1328,
+      "sha256": "cfbcfa44d6fe5b225d5974b582e816e87846adf8c2f5c89b64f222b73146c9a8"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_001040_001048.pt",
+      "samples": 1560,
+      "sha256": "013ae7283caf58d4c62b41eb6d1c197b7e43d03a8e2e3927f914cd186a69728b"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_001048_001056.pt",
+      "samples": 1552,
+      "sha256": "be783748a4637d9f33391f7a4111922df431277076db2460e477d5a8050bac49"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_001056_001064.pt",
+      "samples": 1576,
+      "sha256": "f584fb12e083be8db0bf864d2a28be03125d04a75d64f81ae076de3ad8268525"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_001064_001072.pt",
+      "samples": 1084,
+      "sha256": "b1b073beb286f33649ab7e7f88ddacf97635122fe96f18a4614a69244fe6fc26"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_001072_001080.pt",
+      "samples": 1344,
+      "sha256": "146a7a0e79787186d3b7bf87a70071ca2cf6b450df96cbe0dc28cdd4060910be"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_001080_001088.pt",
+      "samples": 1348,
+      "sha256": "02b8674b10b79ef38f78dd6af7ce4967ca3d3811e696a29c9b13d0ce45267cc8"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_001088_001096.pt",
+      "samples": 1280,
+      "sha256": "170c2527de89abb943003e935cc911454a4c3b5eabc403d2a8dbbba5c006043a"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_001096_001104.pt",
+      "samples": 1604,
+      "sha256": "713ef9405d04d747b0194cf9f726b906fff218d2e865ea62af58a62fed5cafc3"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_001104_001112.pt",
+      "samples": 1024,
+      "sha256": "35a41f2736e075072064dfc25a3792a8b9b24789546d0f3d2d094557d8ffaf7f"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_001112_001120.pt",
+      "samples": 1436,
+      "sha256": "a484dc187db48c6e8087350d831aaa324194324931672ceb3ed0808e63d6e85b"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_001120_001128.pt",
+      "samples": 1256,
+      "sha256": "8a0aa4d565c8a51144c01bfe631d04a9a10ea338dd8f72e9ca7f6a32fbfcaa6f"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_001128_001136.pt",
+      "samples": 1460,
+      "sha256": "e9a951117b9aed80d5ebd1f4c3881d0ca68a1937aa3b165e6a4809d11331806a"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_001136_001144.pt",
+      "samples": 1456,
+      "sha256": "8db0e55eea2b1d89ccbaab37409df5d1c97a36697b0aeb0fa1e2007fa1e4e1e0"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_001144_001152.pt",
+      "samples": 1532,
+      "sha256": "f206a578ef1af1c1c953230a37f963d161744c4e361e7e0a6b2898f0085851f3"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_001152_001160.pt",
+      "samples": 1484,
+      "sha256": "54cde44befa5dda0812d52005e0ce84d5053a9d9d2206caec9d5d9684cc414a8"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_001160_001168.pt",
+      "samples": 1160,
+      "sha256": "d7230ff0f2db76ddbbbf6c3ce7fac16a4d7231fb4baf49a1e00d14b4f0366ed2"
+    },
+    {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_repair_20260804/private/repaired_metrics_v2/rows_001168_001171.pt",
+      "samples": 548,
+      "sha256": "ff295e6a4aad3c179c68bbbe9bd0cd7a409dfa7a6ed26106561bb8e0ca0bf60a"
+    }
+  ],
+  "source_summary": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_paper2_phase2_stage0a_20260803/summary.json",
+  "source_summary_sha256": "f6e83574ab3b42a4f9fb9c17bb88ff0ae831fc58f3d67aca093b25c4ce824680",
+  "status": "complete_development_only",
+  "training_started": false
+}
