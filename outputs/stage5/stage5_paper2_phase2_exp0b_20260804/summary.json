@@ -1,0 +1,1298 @@
+{
+  "alpha_selected": false,
+  "backbone_parameters_mutated": false,
+  "backbone_training_started": false,
+  "do_not_claim": [
+    "Experiment 0B selects the final alpha",
+    "linear probe-path smoothness proves a trained recurrent module will follow the path",
+    "the disposable DEV flow pilot is an E1 result",
+    "development-only interpolation metrics generalize to frozen evaluation data"
+  ],
+  "elapsed_seconds": 59.55838418006897,
+  "flow_betas": [
+    0.5,
+    0.6,
+    1.0
+  ],
+  "flow_pilot_training_started": true,
+  "frozen_evaluation_partitions_touched": [],
+  "geometry_contract": {
+    "affine_interpolation": true,
+    "loop_cap": 4,
+    "rms_normalization_scope": "module inputs and innovations only",
+    "target_or_persistent_state_renormalization": false
+  },
+  "kind": "paper2_phase2_exp0b_flow_path_screening",
+  "methods": {
+    "pca": {
+      "0.0": {
+        "path": {
+          "mean_kl_change_start_to_stop": -0.5036354660987854,
+          "monotonic_improvement_fraction": 0.5040249824523926,
+          "off_manifold_norm_contraction_midpoint": 0.8177587389945984,
+          "probe_path_second_difference_rms": 6.701638426420686e-07,
+          "tau": {
+            "0.0": {
+              "future_topk_kl": {
+                "count": 8323,
+                "finite_count": 8323,
+                "finite_max": 19.6144962310791,
+                "finite_mean": 5.683628252702387,
+                "finite_median": 5.197000980377197,
+                "finite_min": 0.040376871824264526,
+                "finite_p10": 2.155392551422119,
+                "finite_p90": 9.923459243774415,
+                "finite_p95": 11.409005165100094,
+                "nan_count": 0,
+                "negative_infinity_count": 0,
+                "positive_infinity_count": 0
+              },
+              "hidden_cosine_to_target_mean": 0.5138574838638306,
+              "state_rms": 1.042939305305481
+            },
+            "0.25": {
+              "future_topk_kl": {
+                "count": 8323,
+                "finite_count": 8323,
+                "finite_max": 17.879913330078125,
+                "finite_mean": 5.438021351152832,
+                "finite_median": 4.986922740936279,
+                "finite_min": 0.04270811378955841,
+                "finite_p10": 2.0241894721984863,
+                "finite_p90": 9.531131172180176,
+                "finite_p95": 10.933129215240477,
+                "nan_count": 0,
+                "negative_infinity_count": 0,
+                "positive_infinity_count": 0
+              },
+              "hidden_cosine_to_target_mean": 0.5490130186080933,
+              "state_rms": 0.9044322371482849
+            },
+            "0.5": {
+              "future_topk_kl": {
+                "count": 8323,
+                "finite_count": 8323,
+                "finite_max": 18.661598205566406,
+                "finite_mean": 5.270307295795145,
+                "finite_median": 4.811232089996338,
+                "finite_min": 0.036489710211753845,
+                "finite_p10": 1.956709408760071,
+                "finite_p90": 9.264598274230957,
+                "finite_p95": 10.58627243041992,
+                "nan_count": 0,
+                "negative_infinity_count": 0,
+                "positive_infinity_count": 0
+              },
+              "hidden_cosine_to_target_mean": 0.5728331804275513,
+              "state_rms": 0.8531863689422607
+            },
+            "0.75": {
+              "future_topk_kl": {
+                "count": 8323,
+                "finite_count": 8323,
+                "finite_max": 20.06406593322754,
+                "finite_mean": 5.184922526225629,
+                "finite_median": 4.706987380981445,
+                "finite_min": 0.033542048186063766,
+                "finite_p10": 1.8914913654327394,
+                "finite_p90": 9.10680446624756,
+                "finite_p95": 10.464605331420898,
+                "nan_count": 0,
+                "negative_infinity_count": 0,
+                "positive_infinity_count": 0
+              },
+              "hidden_cosine_to_target_mean": 0.5830745697021484,
+              "state_rms": 0.9041629433631897
+            },
+            "1.0": {
+              "future_topk_kl": {
+                "count": 8323,
+                "finite_count": 8323,
+                "finite_max": 21.31040382385254,
+                "finite_mean": 5.179992815461956,
+                "finite_median": 4.707601070404053,
+                "finite_min": 0.036388568580150604,
+                "finite_p10": 1.860436844825745,
+                "finite_p90": 9.163087463378906,
+                "finite_p95": 10.526793956756592,
+                "nan_count": 0,
+                "negative_infinity_count": 0,
+                "positive_infinity_count": 0
+              },
+              "hidden_cosine_to_target_mean": 0.5800879001617432,
+              "state_rms": 1.0424721240997314
+            }
+          }
+        },
+        "serial_flow_trainability": {
+          "checkpoint": {
+            "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_exp0b_20260804/private/exp0b/pca_alpha_0.0_flow.pt",
+            "sha256": "9e713711ee21d7fdc3eaa0927e4c00509051f2f4bcd458d6cd6003eb18a90a9d"
+          },
+          "loss_first": 1.0839202404022217,
+          "loss_last": 0.7773500680923462,
+          "loss_last_100_mean": 0.7506323152780533,
+          "optimizer_steps": 600,
+          "probe_after": {
+            "future_topk_kl_mean": 5.406387805938721,
+            "future_topk_kl_median": 5.014209747314453,
+            "hidden_cosine_mean": 0.5504088997840881,
+            "normalized_hidden_mse_mean": 0.7027406096458435,
+            "observed_token_accuracy": 0.04561824729891957,
+            "observed_token_topk_coverage": 0.9867947178871549,
+            "samples": 1666,
+            "teacher_top1_agreement": 0.05162064825930372
+          },
+          "probe_before": {
+            "future_topk_kl_mean": 5.654877662658691,
+            "future_topk_kl_median": 5.161448001861572,
+            "hidden_cosine_mean": 0.517270565032959,
+            "normalized_hidden_mse_mean": 0.7477787137031555,
+            "observed_token_accuracy": 0.03961584633853541,
+            "observed_token_topk_coverage": 0.9867947178871549,
+            "samples": 1666,
+            "teacher_top1_agreement": 0.042617046818727494
+          },
+          "train_anchors": 6657,
+          "validation_anchors": 1666,
+          "validation_mse_after": 0.9007090330123901,
+          "validation_mse_before": 1.4383232593536377,
+          "validation_mse_ratio": 0.6262215375900269
+        }
+      },
+      "0.5": {
+        "path": {
+          "mean_kl_change_start_to_stop": -0.5036788582801819,
+          "monotonic_improvement_fraction": 0.5043854117393494,
+          "off_manifold_norm_contraction_midpoint": 0.8128159642219543,
+          "probe_path_second_difference_rms": 6.691938665426278e-07,
+          "tau": {
+            "0.0": {
+              "future_topk_kl": {
+                "count": 8323,
+                "finite_count": 8323,
+                "finite_max": 19.6144962310791,
+                "finite_mean": 5.683694700678137,
+                "finite_median": 5.195931434631348,
+                "finite_min": 0.04036952182650566,
+                "finite_p10": 2.155392551422119,
+                "finite_p90": 9.923456954956055,
+                "finite_p95": 11.409005546569821,
+                "nan_count": 0,
+                "negative_infinity_count": 0,
+                "positive_infinity_count": 0
+              },
+              "hidden_cosine_to_target_mean": 0.5138569474220276,
+              "state_rms": 0.9961411356925964
+            },
+            "0.25": {
+              "future_topk_kl": {
+                "count": 8323,
+                "finite_count": 8323,
+                "finite_max": 17.879913330078125,
+                "finite_mean": 5.437991999877476,
+                "finite_median": 4.986921787261963,
+                "finite_min": 0.042707495391368866,
+                "finite_p10": 2.028211069107056,
+                "finite_p90": 9.531128120422363,
+                "finite_p95": 10.933123207092283,
+                "nan_count": 0,
+                "negative_infinity_count": 0,
+                "positive_infinity_count": 0
+              },
+              "hidden_cosine_to_target_mean": 0.5490126609802246,
+              "state_rms": 0.8600781559944153
+            },
+            "0.5": {
+              "future_topk_kl": {
+                "count": 8323,
+                "finite_count": 8323,
+                "finite_max": 18.661598205566406,
+                "finite_mean": 5.2703072992281585,
+                "finite_median": 4.81123161315918,
+                "finite_min": 0.036489710211753845,
+                "finite_p10": 1.9567196369171143,
+                "finite_p90": 9.26461410522461,
+                "finite_p95": 10.586298179626462,
+                "nan_count": 0,
+                "negative_infinity_count": 0,
+                "positive_infinity_count": 0
+              },
+              "hidden_cosine_to_target_mean": 0.5728329420089722,
+              "state_rms": 0.8094907999038696
+            },
+            "0.75": {
+              "future_topk_kl": {
+                "count": 8323,
+                "finite_count": 8323,
+                "finite_max": 20.06406593322754,
+                "finite_mean": 5.184916693119261,
+                "finite_median": 4.706984519958496,
+                "finite_min": 0.03354181721806526,
+                "finite_p10": 1.8915755271911623,
+                "finite_p90": 9.10680446624756,
+                "finite_p95": 10.464606189727784,
+                "nan_count": 0,
+                "negative_infinity_count": 0,
+                "positive_infinity_count": 0
+              },
+              "hidden_cosine_to_target_mean": 0.5830744504928589,
+              "state_rms": 0.8596043586730957
+            },
+            "1.0": {
+              "future_topk_kl": {
+                "count": 8323,
+                "finite_count": 8323,
+                "finite_max": 21.31040382385254,
+                "finite_mean": 5.180015845206134,
+                "finite_median": 4.7074995040893555,
+                "finite_min": 0.036458294838666916,
+                "finite_p10": 1.8604039192199708,
+                "finite_p90": 9.163082885742188,
+                "finite_p95": 10.52680425643921,
+                "nan_count": 0,
+                "negative_infinity_count": 0,
+                "positive_infinity_count": 0
+              },
+              "hidden_cosine_to_target_mean": 0.5800876617431641,
+              "state_rms": 0.9953227639198303
+            }
+          }
+        },
+        "serial_flow_trainability": {
+          "checkpoint": {
+            "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_exp0b_20260804/private/exp0b/pca_alpha_0.5_flow.pt",
+            "sha256": "b51700fd63b81a31509ddb2d6e7fa1007ef8fde9d1fff3cebf08536fbd337ae5"
+          },
+          "loss_first": 1.0462501049041748,
+          "loss_last": 0.749370276927948,
+          "loss_last_100_mean": 0.7227512985467911,
+          "optimizer_steps": 600,
+          "probe_after": {
+            "future_topk_kl_mean": 5.434476375579834,
+            "future_topk_kl_median": 5.041379451751709,
+            "hidden_cosine_mean": 0.5503518581390381,
+            "normalized_hidden_mse_mean": 0.702677845954895,
+            "observed_token_accuracy": 0.045018007202881155,
+            "observed_token_topk_coverage": 0.9867947178871549,
+            "samples": 1666,
+            "teacher_top1_agreement": 0.05222088835534214
+          },
+          "probe_before": {
+            "future_topk_kl_mean": 5.654889106750488,
+            "future_topk_kl_median": 5.161451816558838,
+            "hidden_cosine_mean": 0.5172698497772217,
+            "normalized_hidden_mse_mean": 0.7477790713310242,
+            "observed_token_accuracy": 0.03961584633853541,
+            "observed_token_topk_coverage": 0.9867947178871549,
+            "samples": 1666,
+            "teacher_top1_agreement": 0.042617046818727494
+          },
+          "train_anchors": 6657,
+          "validation_anchors": 1666,
+          "validation_mse_after": 0.8392367362976074,
+          "validation_mse_before": 1.3474668264389038,
+          "validation_mse_ratio": 0.6228255033493042
+        }
+      },
+      "1.0": {
+        "path": {
+          "mean_kl_change_start_to_stop": -0.5036419034004211,
+          "monotonic_improvement_fraction": 0.5041451454162598,
+          "off_manifold_norm_contraction_midpoint": 0.8088122606277466,
+          "probe_path_second_difference_rms": 6.726259584866057e-07,
+          "tau": {
+            "0.0": {
+              "future_topk_kl": {
+                "count": 8323,
+                "finite_count": 8323,
+                "finite_max": 19.6144962310791,
+                "finite_mean": 5.6836779657619285,
+                "finite_median": 5.197013854980469,
+                "finite_min": 0.04036897048354149,
+                "finite_p10": 2.1553879737854005,
+                "finite_p90": 9.92345962524414,
+                "finite_p95": 11.409005165100094,
+                "nan_count": 0,
+                "negative_infinity_count": 0,
+                "positive_infinity_count": 0
+              },
+              "hidden_cosine_to_target_mean": 0.5138567090034485,
+              "state_rms": 0.9756143689155579
+            },
+            "0.25": {
+              "future_topk_kl": {
+                "count": 8323,
+                "finite_count": 8323,
+                "finite_max": 17.879913330078125,
+                "finite_mean": 5.4379297763746575,
+                "finite_median": 4.986921787261963,
+                "finite_min": 0.04270799085497856,
+                "finite_p10": 2.028211069107056,
+                "finite_p90": 9.53112506866455,
+                "finite_p95": 10.933201217651366,
+                "nan_count": 0,
+                "negative_infinity_count": 0,
+                "positive_infinity_count": 0
+              },
+              "hidden_cosine_to_target_mean": 0.5490123629570007,
+              "state_rms": 0.8393584489822388
+            },
+            "0.5": {
+              "future_topk_kl": {
+                "count": 8323,
+                "finite_count": 8323,
+                "finite_max": 18.661598205566406,
+                "finite_mean": 5.270313535570905,
+                "finite_median": 4.811154842376709,
+                "finite_min": 0.03648976981639862,
+                "finite_p10": 1.9567196369171143,
+                "finite_p90": 9.264548492431642,
+                "finite_p95": 10.586299037933347,
+                "nan_count": 0,
+                "negative_infinity_count": 0,
+                "positive_infinity_count": 0
+              },
+              "hidden_cosine_to_target_mean": 0.5728325843811035,
+              "state_rms": 0.788496732711792
+            },
+            "0.75": {
+              "future_topk_kl": {
+                "count": 8323,
+                "finite_count": 8323,
+                "finite_max": 20.06406593322754,
+                "finite_mean": 5.184879829106953,
+                "finite_median": 4.706981182098389,
+                "finite_min": 0.033541589975357056,
+                "finite_p10": 1.8915755271911623,
+                "finite_p90": 9.10680446624756,
+                "finite_p95": 10.464605331420898,
+                "nan_count": 0,
+                "negative_infinity_count": 0,
+                "positive_infinity_count": 0
+              },
+              "hidden_cosine_to_target_mean": 0.5830740928649902,
+              "state_rms": 0.8387115001678467
+            },
+            "1.0": {
+              "future_topk_kl": {
+                "count": 8323,
+                "finite_count": 8323,
+                "finite_max": 21.31040382385254,
+                "finite_mean": 5.180036077906302,
+                "finite_median": 4.7074995040893555,
+                "finite_min": 0.036458294838666916,
+                "finite_p10": 1.8604352951049807,
+                "finite_p90": 9.163087463378906,
+                "finite_p95": 10.526804447174072,
+                "nan_count": 0,
+                "negative_infinity_count": 0,
+                "positive_infinity_count": 0
+              },
+              "hidden_cosine_to_target_mean": 0.580087423324585,
+              "state_rms": 0.9745010137557983
+            }
+          }
+        },
+        "serial_flow_trainability": {
+          "checkpoint": {
+            "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_exp0b_20260804/private/exp0b/pca_alpha_1.0_flow.pt",
+            "sha256": "ddc8a5419f182f22cfd61f845817080b89e7ede6bb8a6663808644c66da2ae91"
+          },
+          "loss_first": 1.0324320793151855,
+          "loss_last": 0.7405626773834229,
+          "loss_last_100_mean": 0.7138397562503814,
+          "optimizer_steps": 600,
+          "probe_after": {
+            "future_topk_kl_mean": 5.459165096282959,
+            "future_topk_kl_median": 5.040907382965088,
+            "hidden_cosine_mean": 0.5499967932701111,
+            "normalized_hidden_mse_mean": 0.7031405568122864,
+            "observed_token_accuracy": 0.045018007202881155,
+            "observed_token_topk_coverage": 0.9867947178871549,
+            "samples": 1666,
+            "teacher_top1_agreement": 0.05282112845138055
+          },
+          "probe_before": {
+            "future_topk_kl_mean": 5.654849529266357,
+            "future_topk_kl_median": 5.161416053771973,
+            "hidden_cosine_mean": 0.5172696113586426,
+            "normalized_hidden_mse_mean": 0.7477784752845764,
+            "observed_token_accuracy": 0.03961584633853541,
+            "observed_token_topk_coverage": 0.9867947178871549,
+            "samples": 1666,
+            "teacher_top1_agreement": 0.042617046818727494
+          },
+          "train_anchors": 6657,
+          "validation_anchors": 1666,
+          "validation_mse_after": 0.819118320941925,
+          "validation_mse_before": 1.3199235200881958,
+          "validation_mse_ratio": 0.6205801367759705
+        }
+      }
+    },
+    "predictive_rrr": {
+      "0.0": {
+        "path": {
+          "mean_kl_change_start_to_stop": -0.6941902041435242,
+          "monotonic_improvement_fraction": 0.549321174621582,
+          "off_manifold_norm_contraction_midpoint": 0.7451208829879761,
+          "probe_path_second_difference_rms": 5.311867425916716e-07,
+          "tau": {
+            "0.0": {
+              "future_topk_kl": {
+                "count": 8323,
+                "finite_count": 8323,
+                "finite_max": 22.23829460144043,
+                "finite_mean": 5.644477835778385,
+                "finite_median": 5.151605606079102,
+                "finite_min": 0.01657135598361492,
+                "finite_p10": 2.035430335998535,
+                "finite_p90": 9.924434852600099,
+                "finite_p95": 11.518983078002927,
+                "nan_count": 0,
+                "negative_infinity_count": 0,
+                "positive_infinity_count": 0
+              },
+              "hidden_cosine_to_target_mean": 0.5445281267166138,
+              "state_rms": 0.14158517122268677
+            },
+            "0.25": {
+              "future_topk_kl": {
+                "count": 8323,
+                "finite_count": 8323,
+                "finite_max": 20.41278076171875,
+                "finite_mean": 5.337343301684037,
+                "finite_median": 4.881482124328613,
+                "finite_min": 0.022891059517860413,
+                "finite_p10": 1.8335628271102906,
+                "finite_p90": 9.549352264404297,
+                "finite_p95": 11.099531173706055,
+                "nan_count": 0,
+                "negative_infinity_count": 0,
+                "positive_infinity_count": 0
+              },
+              "hidden_cosine_to_target_mean": 0.5689049959182739,
+              "state_rms": 0.11517795920372009
+            },
+            "0.5": {
+              "future_topk_kl": {
+                "count": 8323,
+                "finite_count": 8323,
+                "finite_max": 18.44972038269043,
+                "finite_mean": 5.11503123728688,
+                "finite_median": 4.650104999542236,
+                "finite_min": 0.03895309939980507,
+                "finite_p10": 1.6286991357803344,
+                "finite_p90": 9.328255081176758,
+                "finite_p95": 10.816296100616453,
+                "nan_count": 0,
+                "negative_infinity_count": 0,
+                "positive_infinity_count": 0
+              },
+              "hidden_cosine_to_target_mean": 0.5853005647659302,
+              "state_rms": 0.10470263659954071
+            },
+            "0.75": {
+              "future_topk_kl": {
+                "count": 8323,
+                "finite_count": 8323,
+                "finite_max": 17.919736862182617,
+                "finite_mean": 4.986899617187044,
+                "finite_median": 4.518856048583984,
+                "finite_min": 0.023023180663585663,
+                "finite_p10": 1.4220521211624146,
+                "finite_p90": 9.268192481994628,
+                "finite_p95": 10.777183055877686,
+                "nan_count": 0,
+                "negative_infinity_count": 0,
+                "positive_infinity_count": 0
+              },
+              "hidden_cosine_to_target_mean": 0.5928124189376831,
+              "state_rms": 0.11461413651704788
+            },
+            "1.0": {
+              "future_topk_kl": {
+                "count": 8323,
+                "finite_count": 8323,
+                "finite_max": 18.98898696899414,
+                "finite_mean": 4.9502875974398926,
+                "finite_median": 4.453871250152588,
+                "finite_min": 0.008706663735210896,
+                "finite_p10": 1.302748990058899,
+                "finite_p90": 9.393162918090821,
+                "finite_p95": 10.87474536895752,
+                "nan_count": 0,
+                "negative_infinity_count": 0,
+                "positive_infinity_count": 0
+              },
+              "hidden_cosine_to_target_mean": 0.5912599563598633,
+              "state_rms": 0.14066709578037262
+            }
+          }
+        },
+        "serial_flow_trainability": {
+          "checkpoint": {
+            "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_exp0b_20260804/private/exp0b/predictive_rrr_alpha_0.0_flow.pt",
+            "sha256": "42c087d6e7a1cddab0c7a98b9f26da92c65f739c6dcb10bac8cc24e4e3bf2585"
+          },
+          "loss_first": 0.1800081431865692,
+          "loss_last": 0.12987403571605682,
+          "loss_last_100_mean": 0.12703195177018642,
+          "optimizer_steps": 600,
+          "probe_after": {
+            "future_topk_kl_mean": 6.037288188934326,
+            "future_topk_kl_median": 5.57466983795166,
+            "hidden_cosine_mean": 0.5153506994247437,
+            "normalized_hidden_mse_mean": 0.7791473269462585,
+            "observed_token_accuracy": 0.04141656662665066,
+            "observed_token_topk_coverage": 0.9867947178871549,
+            "samples": 1666,
+            "teacher_top1_agreement": 0.04921968787515006
+          },
+          "probe_before": {
+            "future_topk_kl_mean": 5.679923057556152,
+            "future_topk_kl_median": 5.201438903808594,
+            "hidden_cosine_mean": 0.5457496047019958,
+            "normalized_hidden_mse_mean": 0.7139168381690979,
+            "observed_token_accuracy": 0.04801920768307323,
+            "observed_token_topk_coverage": 0.9867947178871549,
+            "samples": 1666,
+            "teacher_top1_agreement": 0.057623049219687875
+          },
+          "train_anchors": 6657,
+          "validation_anchors": 1666,
+          "validation_mse_after": 0.01816762425005436,
+          "validation_mse_before": 0.036212362349033356,
+          "validation_mse_ratio": 0.501696765422821
+        }
+      },
+      "0.5": {
+        "path": {
+          "mean_kl_change_start_to_stop": -0.7124019861221313,
+          "monotonic_improvement_fraction": 0.5525651574134827,
+          "off_manifold_norm_contraction_midpoint": 0.7699486017227173,
+          "probe_path_second_difference_rms": 5.344962232811667e-07,
+          "tau": {
+            "0.0": {
+              "future_topk_kl": {
+                "count": 8323,
+                "finite_count": 8323,
+                "finite_max": 22.238222122192383,
+                "finite_mean": 5.647314702990264,
+                "finite_median": 5.149235248565674,
+                "finite_min": 0.014375048689544201,
+                "finite_p10": 2.045185089111328,
+                "finite_p90": 9.9482328414917,
+                "finite_p95": 11.553161239624021,
+                "nan_count": 0,
+                "negative_infinity_count": 0,
+                "positive_infinity_count": 0
+              },
+              "hidden_cosine_to_target_mean": 0.5435831546783447,
+              "state_rms": 0.2846478521823883
+            },
+            "0.25": {
+              "future_topk_kl": {
+                "count": 8323,
+                "finite_count": 8323,
+                "finite_max": 20.381235122680664,
+                "finite_mean": 5.3313321515357845,
+                "finite_median": 4.867410659790039,
+                "finite_min": 0.022905336692929268,
+                "finite_p10": 1.8217376232147218,
+                "finite_p90": 9.551380729675293,
+                "finite_p95": 11.082851123809814,
+                "nan_count": 0,
+                "negative_infinity_count": 0,
+                "positive_infinity_count": 0
+              },
+              "hidden_cosine_to_target_mean": 0.5688948631286621,
+              "state_rms": 0.23620562255382538
+            },
+            "0.5": {
+              "future_topk_kl": {
+                "count": 8323,
+                "finite_count": 8323,
+                "finite_max": 18.425586700439453,
+                "finite_mean": 5.102860573560598,
+                "finite_median": 4.635733604431152,
+                "finite_min": 0.038357287645339966,
+                "finite_p10": 1.6220486164093018,
+                "finite_p90": 9.317996215820314,
+                "finite_p95": 10.800609016418457,
+                "nan_count": 0,
+                "negative_infinity_count": 0,
+                "positive_infinity_count": 0
+              },
+              "hidden_cosine_to_target_mean": 0.5858885645866394,
+              "state_rms": 0.21735750138759613
+            },
+            "0.75": {
+              "future_topk_kl": {
+                "count": 8323,
+                "finite_count": 8323,
+                "finite_max": 17.829761505126953,
+                "finite_mean": 4.97209462449899,
+                "finite_median": 4.505666255950928,
+                "finite_min": 0.022648051381111145,
+                "finite_p10": 1.4142662048339847,
+                "finite_p90": 9.255757904052734,
+                "finite_p95": 10.781458282470702,
+                "nan_count": 0,
+                "negative_infinity_count": 0,
+                "positive_infinity_count": 0
+              },
+              "hidden_cosine_to_target_mean": 0.5935447812080383,
+              "state_rms": 0.23532521724700928
+            },
+            "1.0": {
+              "future_topk_kl": {
+                "count": 8323,
+                "finite_count": 8323,
+                "finite_max": 18.87277603149414,
+                "finite_mean": 4.934912724036732,
+                "finite_median": 4.4381513595581055,
+                "finite_min": 0.008443191647529602,
+                "finite_p10": 1.2872779369354248,
+                "finite_p90": 9.382505798339844,
+                "finite_p95": 10.869957447051998,
+                "nan_count": 0,
+                "negative_infinity_count": 0,
+                "positive_infinity_count": 0
+              },
+              "hidden_cosine_to_target_mean": 0.5916917324066162,
+              "state_rms": 0.2831856608390808
+            }
+          }
+        },
+        "serial_flow_trainability": {
+          "checkpoint": {
+            "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_exp0b_20260804/private/exp0b/predictive_rrr_alpha_0.5_flow.pt",
+            "sha256": "dc16682589dfd8c7de1b495bd223edccf6086faef63438ef0e2d164ec478f737"
+          },
+          "loss_first": 0.23423828184604645,
+          "loss_last": 0.1749933660030365,
+          "loss_last_100_mean": 0.16900855392217637,
+          "optimizer_steps": 600,
+          "probe_after": {
+            "future_topk_kl_mean": 5.513030529022217,
+            "future_topk_kl_median": 5.064806938171387,
+            "hidden_cosine_mean": 0.5613898634910583,
+            "normalized_hidden_mse_mean": 0.6901541948318481,
+            "observed_token_accuracy": 0.046218487394957986,
+            "observed_token_topk_coverage": 0.9867947178871549,
+            "samples": 1666,
+            "teacher_top1_agreement": 0.05282112845138055
+          },
+          "probe_before": {
+            "future_topk_kl_mean": 5.680545806884766,
+            "future_topk_kl_median": 5.216130256652832,
+            "hidden_cosine_mean": 0.5449312329292297,
+            "normalized_hidden_mse_mean": 0.7153681516647339,
+            "observed_token_accuracy": 0.04801920768307323,
+            "observed_token_topk_coverage": 0.9867947178871549,
+            "samples": 1666,
+            "teacher_top1_agreement": 0.05822328931572629
+          },
+          "train_anchors": 6657,
+          "validation_anchors": 1666,
+          "validation_mse_after": 0.07157004624605179,
+          "validation_mse_before": 0.13478952646255493,
+          "validation_mse_ratio": 0.5309762954711914
+        }
+      },
+      "1.0": {
+        "path": {
+          "mean_kl_change_start_to_stop": -0.7131577134132385,
+          "monotonic_improvement_fraction": 0.5511233806610107,
+          "off_manifold_norm_contraction_midpoint": 0.7958536744117737,
+          "probe_path_second_difference_rms": 5.372209557208407e-07,
+          "tau": {
+            "0.0": {
+              "future_topk_kl": {
+                "count": 8323,
+                "finite_count": 8323,
+                "finite_max": 22.238222122192383,
+                "finite_mean": 5.647732620404222,
+                "finite_median": 5.150805473327637,
+                "finite_min": 0.014371611177921295,
+                "finite_p10": 2.046523904800415,
+                "finite_p90": 9.943578720092773,
+                "finite_p95": 11.552934741973875,
+                "nan_count": 0,
+                "negative_infinity_count": 0,
+                "positive_infinity_count": 0
+              },
+              "hidden_cosine_to_target_mean": 0.5435492396354675,
+              "state_rms": 0.8940466642379761
+            },
+            "0.25": {
+              "future_topk_kl": {
+                "count": 8323,
+                "finite_count": 8323,
+                "finite_max": 20.38123321533203,
+                "finite_mean": 5.33108726619983,
+                "finite_median": 4.864293575286865,
+                "finite_min": 0.022905312478542328,
+                "finite_p10": 1.8241364479064943,
+                "finite_p90": 9.553198432922363,
+                "finite_p95": 11.08335733413696,
+                "nan_count": 0,
+                "negative_infinity_count": 0,
+                "positive_infinity_count": 0
+              },
+              "hidden_cosine_to_target_mean": 0.5688920617103577,
+              "state_rms": 0.7595860958099365
+            },
+            "0.5": {
+              "future_topk_kl": {
+                "count": 8323,
+                "finite_count": 8323,
+                "finite_max": 18.549657821655273,
+                "finite_mean": 5.102568719029394,
+                "finite_median": 4.634653568267822,
+                "finite_min": 0.0383625365793705,
+                "finite_p10": 1.6238667011260988,
+                "finite_p90": 9.317972946166993,
+                "finite_p95": 10.801808834075928,
+                "nan_count": 0,
+                "negative_infinity_count": 0,
+                "positive_infinity_count": 0
+              },
+              "hidden_cosine_to_target_mean": 0.5859054923057556,
+              "state_rms": 0.7086164355278015
+            },
+            "0.75": {
+              "future_topk_kl": {
+                "count": 8323,
+                "finite_count": 8323,
+                "finite_max": 17.829761505126953,
+                "finite_mean": 4.971885549345862,
+                "finite_median": 4.505030155181885,
+                "finite_min": 0.022642197087407112,
+                "finite_p10": 1.418549919128418,
+                "finite_p90": 9.262949562072754,
+                "finite_p95": 10.780789566040037,
+                "nan_count": 0,
+                "negative_infinity_count": 0,
+                "positive_infinity_count": 0
+              },
+              "hidden_cosine_to_target_mean": 0.5935659408569336,
+              "state_rms": 0.758167564868927
+            },
+            "1.0": {
+              "future_topk_kl": {
+                "count": 8323,
+                "finite_count": 8323,
+                "finite_max": 18.86691665649414,
+                "finite_mean": 4.934574921136389,
+                "finite_median": 4.431220054626465,
+                "finite_min": 0.008443158119916916,
+                "finite_p10": 1.2860299825668335,
+                "finite_p90": 9.3773775100708,
+                "finite_p95": 10.871195888519287,
+                "nan_count": 0,
+                "negative_infinity_count": 0,
+                "positive_infinity_count": 0
+              },
+              "hidden_cosine_to_target_mean": 0.5917021036148071,
+              "state_rms": 0.8916353583335876
+            }
+          }
+        },
+        "serial_flow_trainability": {
+          "checkpoint": {
+            "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_exp0b_20260804/private/exp0b/predictive_rrr_alpha_1.0_flow.pt",
+            "sha256": "de41d99b7ad601ea5768966773588d47fad0e060aafafe97685b5094c240d5df"
+          },
+          "loss_first": 0.7909461259841919,
+          "loss_last": 0.5844107866287231,
+          "loss_last_100_mean": 0.5634588664770126,
+          "optimizer_steps": 600,
+          "probe_after": {
+            "future_topk_kl_mean": 5.4516377449035645,
+            "future_topk_kl_median": 5.051799297332764,
+            "hidden_cosine_mean": 0.5650860667228699,
+            "normalized_hidden_mse_mean": 0.6850709915161133,
+            "observed_token_accuracy": 0.04921968787515006,
+            "observed_token_topk_coverage": 0.9867947178871549,
+            "samples": 1666,
+            "teacher_top1_agreement": 0.05582232893157263
+          },
+          "probe_before": {
+            "future_topk_kl_mean": 5.68075704574585,
+            "future_topk_kl_median": 5.202956199645996,
+            "hidden_cosine_mean": 0.5449011921882629,
+            "normalized_hidden_mse_mean": 0.7154263854026794,
+            "observed_token_accuracy": 0.047418967587034816,
+            "observed_token_topk_coverage": 0.9867947178871549,
+            "samples": 1666,
+            "teacher_top1_agreement": 0.05822328931572629
+          },
+          "train_anchors": 6657,
+          "validation_anchors": 1666,
+          "validation_mse_after": 0.7063758969306946,
+          "validation_mse_before": 1.1901843547821045,
+          "validation_mse_ratio": 0.5935012698173523
+        }
+      }
+    },
+    "tucker_predictive": {
+      "0.0": {
+        "path": {
+          "mean_kl_change_start_to_stop": -0.7481028437614441,
+          "monotonic_improvement_fraction": 0.5536465048789978,
+          "off_manifold_norm_contraction_midpoint": 0.742632269859314,
+          "probe_path_second_difference_rms": 5.351240588424844e-07,
+          "tau": {
+            "0.0": {
+              "future_topk_kl": {
+                "count": 8323,
+                "finite_count": 8323,
+                "finite_max": 21.345975875854492,
+                "finite_mean": 5.662384061058879,
+                "finite_median": 5.179052352905273,
+                "finite_min": 0.01487564668059349,
+                "finite_p10": 2.0580358982086184,
+                "finite_p90": 9.942166137695313,
+                "finite_p95": 11.609979343414304,
+                "nan_count": 0,
+                "negative_infinity_count": 0,
+                "positive_infinity_count": 0
+              },
+              "hidden_cosine_to_target_mean": 0.5427390336990356,
+              "state_rms": 0.14144191145896912
+            },
+            "0.25": {
+              "future_topk_kl": {
+                "count": 8323,
+                "finite_count": 8323,
+                "finite_max": 18.985843658447266,
+                "finite_mean": 5.3368605099966215,
+                "finite_median": 4.8595075607299805,
+                "finite_min": 0.016871316358447075,
+                "finite_p10": 1.8355160713195802,
+                "finite_p90": 9.515172386169434,
+                "finite_p95": 11.043395423889157,
+                "nan_count": 0,
+                "negative_infinity_count": 0,
+                "positive_infinity_count": 0
+              },
+              "hidden_cosine_to_target_mean": 0.5675609111785889,
+              "state_rms": 0.11487820744514465
+            },
+            "0.5": {
+              "future_topk_kl": {
+                "count": 8323,
+                "finite_count": 8323,
+                "finite_max": 17.525094985961914,
+                "finite_mean": 5.100044936700361,
+                "finite_median": 4.660639762878418,
+                "finite_min": 0.05232219025492668,
+                "finite_p10": 1.6005059242248536,
+                "finite_p90": 9.247691154479982,
+                "finite_p95": 10.859556007385246,
+                "nan_count": 0,
+                "negative_infinity_count": 0,
+                "positive_infinity_count": 0
+              },
+              "hidden_cosine_to_target_mean": 0.5842541456222534,
+              "state_rms": 0.10435942560434341
+            },
+            "0.75": {
+              "future_topk_kl": {
+                "count": 8323,
+                "finite_count": 8323,
+                "finite_max": 17.489633560180664,
+                "finite_mean": 4.96060390412632,
+                "finite_median": 4.519099235534668,
+                "finite_min": 0.042398806661367416,
+                "finite_p10": 1.4259275436401369,
+                "finite_p90": 9.19281463623047,
+                "finite_p95": 10.764398765563964,
+                "nan_count": 0,
+                "negative_infinity_count": 0,
+                "positive_infinity_count": 0
+              },
+              "hidden_cosine_to_target_mean": 0.5919575095176697,
+              "state_rms": 0.11440050601959229
+            },
+            "1.0": {
+              "future_topk_kl": {
+                "count": 8323,
+                "finite_count": 8323,
+                "finite_max": 18.632518768310547,
+                "finite_mean": 4.914281256903766,
+                "finite_median": 4.452958106994629,
+                "finite_min": 0.02632060833275318,
+                "finite_p10": 1.2885849475860598,
+                "finite_p90": 9.2544095993042,
+                "finite_p95": 10.763113784790036,
+                "nan_count": 0,
+                "negative_infinity_count": 0,
+                "positive_infinity_count": 0
+              },
+              "hidden_cosine_to_target_mean": 0.5905171632766724,
+              "state_rms": 0.1406654268503189
+            }
+          }
+        },
+        "serial_flow_trainability": {
+          "checkpoint": {
+            "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_exp0b_20260804/private/exp0b/tucker_predictive_alpha_0.0_flow.pt",
+            "sha256": "e1d491af2fc3d6a5823c7d58ccd25db61fa13da2311020b5cf9552f45cf40dee"
+          },
+          "loss_first": 0.1824442446231842,
+          "loss_last": 0.1320796012878418,
+          "loss_last_100_mean": 0.129053003937006,
+          "optimizer_steps": 600,
+          "probe_after": {
+            "future_topk_kl_mean": 5.928979396820068,
+            "future_topk_kl_median": 5.390484809875488,
+            "hidden_cosine_mean": 0.5396744012832642,
+            "normalized_hidden_mse_mean": 0.749160647392273,
+            "observed_token_accuracy": 0.0468187274909964,
+            "observed_token_topk_coverage": 0.9867947178871549,
+            "samples": 1666,
+            "teacher_top1_agreement": 0.05582232893157263
+          },
+          "probe_before": {
+            "future_topk_kl_mean": 5.684428691864014,
+            "future_topk_kl_median": 5.233059883117676,
+            "hidden_cosine_mean": 0.5450880527496338,
+            "normalized_hidden_mse_mean": 0.7156347632408142,
+            "observed_token_accuracy": 0.05102040816326531,
+            "observed_token_topk_coverage": 0.9867947178871549,
+            "samples": 1666,
+            "teacher_top1_agreement": 0.060024009603841535
+          },
+          "train_anchors": 6657,
+          "validation_anchors": 1666,
+          "validation_mse_after": 0.017982034012675285,
+          "validation_mse_before": 0.03626913204789162,
+          "validation_mse_ratio": 0.4957944452762604
+        }
+      },
+      "0.5": {
+        "path": {
+          "mean_kl_change_start_to_stop": -0.7663736939430237,
+          "monotonic_improvement_fraction": 0.553766667842865,
+          "off_manifold_norm_contraction_midpoint": 0.7650148868560791,
+          "probe_path_second_difference_rms": 5.378907417252776e-07,
+          "tau": {
+            "0.0": {
+              "future_topk_kl": {
+                "count": 8323,
+                "finite_count": 8323,
+                "finite_max": 21.45572280883789,
+                "finite_mean": 5.665825370845753,
+                "finite_median": 5.186969757080078,
+                "finite_min": 0.01414925791323185,
+                "finite_p10": 2.062623643875122,
+                "finite_p90": 9.962894248962403,
+                "finite_p95": 11.605485153198241,
+                "nan_count": 0,
+                "negative_infinity_count": 0,
+                "positive_infinity_count": 0
+              },
+              "hidden_cosine_to_target_mean": 0.5418819785118103,
+              "state_rms": 0.28571686148643494
+            },
+            "0.25": {
+              "future_topk_kl": {
+                "count": 8323,
+                "finite_count": 8323,
+                "finite_max": 19.05426025390625,
+                "finite_mean": 5.33111574865473,
+                "finite_median": 4.847092628479004,
+                "finite_min": 0.013259170576930046,
+                "finite_p10": 1.8343745231628419,
+                "finite_p90": 9.521029090881347,
+                "finite_p95": 11.031503486633298,
+                "nan_count": 0,
+                "negative_infinity_count": 0,
+                "positive_infinity_count": 0
+              },
+              "hidden_cosine_to_target_mean": 0.5676177144050598,
+              "state_rms": 0.2362661510705948
+            },
+            "0.5": {
+              "future_topk_kl": {
+                "count": 8323,
+                "finite_count": 8323,
+                "finite_max": 17.49372673034668,
+                "finite_mean": 5.087708181828156,
+                "finite_median": 4.642862319946289,
+                "finite_min": 0.03959982469677925,
+                "finite_p10": 1.5901046752929688,
+                "finite_p90": 9.234528732299806,
+                "finite_p95": 10.839412975311278,
+                "nan_count": 0,
+                "negative_infinity_count": 0,
+                "positive_infinity_count": 0
+              },
+              "hidden_cosine_to_target_mean": 0.5848792791366577,
+              "state_rms": 0.2170504629611969
+            },
+            "0.75": {
+              "future_topk_kl": {
+                "count": 8323,
+                "finite_count": 8323,
+                "finite_max": 17.479846954345703,
+                "finite_mean": 4.945607395486166,
+                "finite_median": 4.497213840484619,
+                "finite_min": 0.03742372989654541,
+                "finite_p10": 1.4111098527908326,
+                "finite_p90": 9.187991523742676,
+                "finite_p95": 10.75276184082031,
+                "nan_count": 0,
+                "negative_infinity_count": 0,
+                "positive_infinity_count": 0
+              },
+              "hidden_cosine_to_target_mean": 0.5926916599273682,
+              "state_rms": 0.23558808863162994
+            },
+            "1.0": {
+              "future_topk_kl": {
+                "count": 8323,
+                "finite_count": 8323,
+                "finite_max": 18.622426986694336,
+                "finite_mean": 4.899451674323493,
+                "finite_median": 4.430424690246582,
+                "finite_min": 0.02388801984488964,
+                "finite_p10": 1.282782006263733,
+                "finite_p90": 9.222807693481446,
+                "finite_p95": 10.763572406768798,
+                "nan_count": 0,
+                "negative_infinity_count": 0,
+                "positive_infinity_count": 0
+              },
+              "hidden_cosine_to_target_mean": 0.5909134745597839,
+              "state_rms": 0.284594863653183
+            }
+          }
+        },
+        "serial_flow_trainability": {
+          "checkpoint": {
+            "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_exp0b_20260804/private/exp0b/tucker_predictive_alpha_0.5_flow.pt",
+            "sha256": "b24ec255110ad64d7adba4eb028670961325d7d6506cc8a5cca1736effa768ae"
+          },
+          "loss_first": 0.2393491268157959,
+          "loss_last": 0.17967045307159424,
+          "loss_last_100_mean": 0.17368286445736886,
+          "optimizer_steps": 600,
+          "probe_after": {
+            "future_topk_kl_mean": 5.507166385650635,
+            "future_topk_kl_median": 5.044621467590332,
+            "hidden_cosine_mean": 0.5610199570655823,
+            "normalized_hidden_mse_mean": 0.6926828026771545,
+            "observed_token_accuracy": 0.043817527010804325,
+            "observed_token_topk_coverage": 0.9867947178871549,
+            "samples": 1666,
+            "teacher_top1_agreement": 0.05342136854741897
+          },
+          "probe_before": {
+            "future_topk_kl_mean": 5.686681270599365,
+            "future_topk_kl_median": 5.227232456207275,
+            "hidden_cosine_mean": 0.5443545579910278,
+            "normalized_hidden_mse_mean": 0.716941237449646,
+            "observed_token_accuracy": 0.05102040816326531,
+            "observed_token_topk_coverage": 0.9867947178871549,
+            "samples": 1666,
+            "teacher_top1_agreement": 0.05942376950780312
+          },
+          "train_anchors": 6657,
+          "validation_anchors": 1666,
+          "validation_mse_after": 0.07279175519943237,
+          "validation_mse_before": 0.1376160830259323,
+          "validation_mse_ratio": 0.5289480090141296
+        }
+      },
+      "1.0": {
+        "path": {
+          "mean_kl_change_start_to_stop": -0.7671939134597778,
+          "monotonic_improvement_fraction": 0.553286075592041,
+          "off_manifold_norm_contraction_midpoint": 0.7872473001480103,
+          "probe_path_second_difference_rms": 5.380214815886575e-07,
+          "tau": {
+            "0.0": {
+              "future_topk_kl": {
+                "count": 8323,
+                "finite_count": 8323,
+                "finite_max": 21.458036422729492,
+                "finite_mean": 5.666157581935639,
+                "finite_median": 5.181771755218506,
+                "finite_min": 0.014147440902888775,
+                "finite_p10": 2.0616611003875733,
+                "finite_p90": 9.965106773376466,
+                "finite_p95": 11.60796890258789,
+                "nan_count": 0,
+                "negative_infinity_count": 0,
+                "positive_infinity_count": 0
+              },
+              "hidden_cosine_to_target_mean": 0.5418510437011719,
+              "state_rms": 0.9009163975715637
+            },
+            "0.25": {
+              "future_topk_kl": {
+                "count": 8323,
+                "finite_count": 8323,
+                "finite_max": 19.05426788330078,
+                "finite_mean": 5.331088905578883,
+                "finite_median": 4.846248626708984,
+                "finite_min": 0.013259099796414375,
+                "finite_p10": 1.8365648984909058,
+                "finite_p90": 9.5181095123291,
+                "finite_p95": 11.034075546264644,
+                "nan_count": 0,
+                "negative_infinity_count": 0,
+                "positive_infinity_count": 0
+              },
+              "hidden_cosine_to_target_mean": 0.5676172971725464,
+              "state_rms": 0.760237455368042
+            },
+            "0.5": {
+              "future_topk_kl": {
+                "count": 8323,
+                "finite_count": 8323,
+                "finite_max": 17.49372673034668,
+                "finite_mean": 5.087494524224212,
+                "finite_median": 4.641937732696533,
+                "finite_min": 0.03960169479250908,
+                "finite_p10": 1.5900278091430664,
+                "finite_p90": 9.232486152648928,
+                "finite_p95": 10.839000511169433,
+                "nan_count": 0,
+                "negative_infinity_count": 0,
+                "positive_infinity_count": 0
+              },
+              "hidden_cosine_to_target_mean": 0.5848976373672485,
+              "state_rms": 0.7067291140556335
+            },
+            "0.75": {
+              "future_topk_kl": {
+                "count": 8323,
+                "finite_count": 8323,
+                "finite_max": 17.4766902923584,
+                "finite_mean": 4.945229607716043,
+                "finite_median": 4.49722957611084,
+                "finite_min": 0.03870321065187454,
+                "finite_p10": 1.4148291110992433,
+                "finite_p90": 9.187784957885743,
+                "finite_p95": 10.74640941619873,
+                "nan_count": 0,
+                "negative_infinity_count": 0,
+                "positive_infinity_count": 0
+              },
+              "hidden_cosine_to_target_mean": 0.5927132368087769,
+              "state_rms": 0.7590556740760803
+            },
+            "1.0": {
+              "future_topk_kl": {
+                "count": 8323,
+                "finite_count": 8323,
+                "finite_max": 18.625356674194336,
+                "finite_mean": 4.898963650654288,
+                "finite_median": 4.431234359741211,
+                "finite_min": 0.02388802170753479,
+                "finite_p10": 1.2769234895706179,
+                "finite_p90": 9.223729705810547,
+                "finite_p95": 10.763997650146482,
+                "nan_count": 0,
+                "negative_infinity_count": 0,
+                "positive_infinity_count": 0
+              },
+              "hidden_cosine_to_target_mean": 0.5909231305122375,
+              "state_rms": 0.8989211916923523
+            }
+          }
+        },
+        "serial_flow_trainability": {
+          "checkpoint": {
+            "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_exp0b_20260804/private/exp0b/tucker_predictive_alpha_1.0_flow.pt",
+            "sha256": "561d4368f40f7b5abdc656d76321fb6b1515dfe7d73ea7500018e660c06752d3"
+          },
+          "loss_first": 0.8199151158332825,
+          "loss_last": 0.6079164743423462,
+          "loss_last_100_mean": 0.5850802725553512,
+          "optimizer_steps": 600,
+          "probe_after": {
+            "future_topk_kl_mean": 5.498864650726318,
+            "future_topk_kl_median": 5.075013637542725,
+            "hidden_cosine_mean": 0.5633337497711182,
+            "normalized_hidden_mse_mean": 0.6884884238243103,
+            "observed_token_accuracy": 0.043817527010804325,
+            "observed_token_topk_coverage": 0.9867947178871549,
+            "samples": 1666,
+            "teacher_top1_agreement": 0.05342136854741897
+          },
+          "probe_before": {
+            "future_topk_kl_mean": 5.686618804931641,
+            "future_topk_kl_median": 5.226466178894043,
+            "hidden_cosine_mean": 0.5443274974822998,
+            "normalized_hidden_mse_mean": 0.7169948816299438,
+            "observed_token_accuracy": 0.05102040816326531,
+            "observed_token_topk_coverage": 0.9867947178871549,
+            "samples": 1666,
+            "teacher_top1_agreement": 0.05942376950780312
+          },
+          "train_anchors": 6657,
+          "validation_anchors": 1666,
+          "validation_mse_after": 0.733772337436676,
+          "validation_mse_before": 1.2519205808639526,
+          "validation_mse_ratio": 0.5861173272132874
+        }
+      }
+    }
+  },
+  "optimizer_steps": 5400,
+  "screening_survivors": [
+    {
+      "alpha": 0.0,
+      "method": "pca"
+    },
+    {
+      "alpha": 0.5,
+      "method": "pca"
+    },
+    {
+      "alpha": 1.0,
+      "method": "pca"
+    },
+    {
+      "alpha": 0.0,
+      "method": "predictive_rrr"
+    },
+    {
+      "alpha": 0.5,
+      "method": "predictive_rrr"
+    },
+    {
+      "alpha": 1.0,
+      "method": "predictive_rrr"
+    },
+    {
+      "alpha": 0.0,
+      "method": "tucker_predictive"
+    },
+    {
+      "alpha": 0.5,
+      "method": "tucker_predictive"
+    },
+    {
+      "alpha": 1.0,
+      "method": "tucker_predictive"
+    }
+  ],
+  "selection_deferred_until_matched_built_module_pilots": true,
+  "source_exp0a_summary_sha256": "ffb49b48fa20bbe686a16d9c0e7402c64438a21c4bba5a567034fa54fe07b4b7",
+  "status": "complete_development_only",
+  "tau_grid": [
+    0.0,
+    0.25,
+    0.5,
+    0.75,
+    1.0
+  ]
+}
