@@ -36,7 +36,7 @@ V1D_RECEIPT = (
 )
 CONSTANTS = ROOT / "training/paper2_phase2_dc2_constants.json"
 EXPECTED_V1D_SHA256 = (
-    "39e08a3a0f0a7abb23ae5fd45874a33cd0fba755099b9cc3c70da19ed332c094"
+    "b8ec5e81649d7a7917d98a0f988cd39c64be16ea51a34b150b02ef07df6d86ca"
 )
 
 

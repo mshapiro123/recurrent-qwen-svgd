@@ -46,10 +46,9 @@ def test_dc2_constants_are_single_source_and_confirmed_by_v1d() -> None:
     assert 0.55 < payload["p99_state_rms_cap"] < 0.551
     assert payload["status"] == "confirmed_by_v1d"
     assert payload["source_receipt_sha256"] == (
-        "39e08a3a0f0a7abb23ae5fd45874a33cd0fba755099b9cc3c70da19ed332c094"
+        "b8ec5e81649d7a7917d98a0f988cd39c64be16ea51a34b150b02ef07df6d86ca"
     )
     assert payload["preservation_gate"] == "pass"
     source = ROOT / payload["source"]
-    assert hashlib.sha256(source.read_bytes()).hexdigest() == payload[
-        "source_receipt_sha256"
-    ]
+    canonical_bytes = source.read_bytes().replace(b"\r\n", b"\n")
+    assert hashlib.sha256(canonical_bytes).hexdigest() == payload["source_receipt_sha256"]

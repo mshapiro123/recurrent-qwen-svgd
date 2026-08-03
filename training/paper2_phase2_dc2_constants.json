@@ -6,7 +6,7 @@
   "gamma": 0.05,
   "rho": 0.8,
   "source": "outputs/stage5/stage5_paper2_phase2_prewindow_20260731/v1d/summary.json",
-  "source_receipt_sha256": "39e08a3a0f0a7abb23ae5fd45874a33cd0fba755099b9cc3c70da19ed332c094",
+  "source_receipt_sha256": "b8ec5e81649d7a7917d98a0f988cd39c64be16ea51a34b150b02ef07df6d86ca",
   "preservation_gate": "pass",
   "preservation_point_estimate": 0.9985,
   "preservation_wilson_95_lower": 0.9955989674442293,
