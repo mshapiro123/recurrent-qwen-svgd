@@ -299,10 +299,11 @@ TARGETS = {
         "path": "colab/STAGE5_PAPER2_PHASE2_ARBITRATION_BUILD_CELL.py",
         "markers": [
             "STAGE5_PAPER2_PHASE2_ARBITRATION_BUILD_VERSION",
-            "paper2_phase2_arbitration_build_v3",
+            "paper2_phase2_arbitration_build_v4",
             "CPU high RAM cached canonicalizer arbitration and loss-free student build",
             "three common SVD seeds paired mixture arbitration no optimizer no training",
             "chunked layer pooling supports Colab 51 GiB high RAM CPU",
+            "Drive status receipt and child failure tail preserve diagnostics",
             "tests/test_paper2_phase2_arbitration.py",
             "tests/test_paper2_dc2_student.py",
             "colab/run_stage5_paper2_phase2_arbitration_build.py",

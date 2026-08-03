@@ -7,6 +7,9 @@ import os
 import shutil
 import subprocess
 import sys
+import time
+import traceback
+from collections import deque
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -23,9 +26,50 @@ DRIVE_RUN = Path(
 )
 
 
+def write_status(status: str, **details: object) -> None:
+    path = DRIVE_RUN / "receipts/status.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_suffix(".json.tmp")
+    temporary.write_text(
+        json.dumps(
+            {
+                "kind": "paper2_phase2_arbitration_build_status",
+                "status": status,
+                "updated_at_unix": time.time(),
+                **details,
+            },
+            indent=2,
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    temporary.replace(path)
+    print(f"phase2_status status={status} details={details}", flush=True)
+
+
 def run(command: list[str]) -> None:
     print("$", " ".join(command), flush=True)
-    subprocess.run(command, cwd=ROOT, env=os.environ.copy(), check=True)
+    tail: deque[str] = deque(maxlen=240)
+    process = subprocess.Popen(
+        command,
+        cwd=ROOT,
+        env=os.environ.copy(),
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        bufsize=1,
+    )
+    assert process.stdout is not None
+    for line in process.stdout:
+        print(line, end="", flush=True)
+        tail.append(line.rstrip())
+    returncode = process.wait()
+    if returncode:
+        print("child_process_failure_tail_begin", flush=True)
+        print("\n".join(tail), flush=True)
+        print("child_process_failure_tail_end", flush=True)
+        raise subprocess.CalledProcessError(returncode, command)
 
 
 def publish() -> str:
@@ -39,30 +83,48 @@ def publish() -> str:
 
 def main() -> int:
     # Safety marker: CPU high RAM cached canonicalizer arbitration and loss-free student build
-    if not EXP0A_SUMMARY.is_file():
-        raise FileNotFoundError(EXP0A_SUMMARY)
-    if not STAGE0A_PRIVATE.is_dir():
-        raise FileNotFoundError(STAGE0A_PRIVATE)
+    required = [
+        EXP0A_SUMMARY,
+        STAGE0A_PRIVATE / "sample_manifest.jsonl",
+        STAGE0A_PRIVATE / "model_cache/teacher_14b/summary.json",
+    ]
+    for path in required:
+        print(f"phase2_preflight path={path} exists={path.exists()}", flush=True)
+    missing = [str(path) for path in required if not path.exists()]
+    if missing:
+        raise FileNotFoundError(f"missing Phase-2 arbitration inputs: {missing}")
     RUN_DIR.mkdir(parents=True, exist_ok=True)
     private = DRIVE_RUN / "private"
     arbitration = RUN_DIR / "canonicalizer_arbitration_summary.json"
     build = RUN_DIR / "student_build_summary.json"
     # Fail fast on the checkpoint-integrated identity battery before the six
     # expensive cached SVD fits, and preserve its receipt immediately.
-    run(
-        [
-            sys.executable,
-            "-m",
-            "eval.eval_paper2_dc2_student_build",
-            "--output_summary",
-            str(build),
-            "--model_name",
-            "Qwen/Qwen2.5-0.5B-Instruct",
-        ]
-    )
     receipt_dir = DRIVE_RUN / "receipts"
     receipt_dir.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(build, receipt_dir / build.name)
+    drive_build = receipt_dir / build.name
+    if drive_build.is_file():
+        payload = json.loads(drive_build.read_text(encoding="utf-8"))
+        if payload.get("status") == "complete_build_only_no_losses":
+            shutil.copy2(drive_build, build)
+            print(f"phase2_build_resume path={drive_build}", flush=True)
+        else:
+            raise RuntimeError(f"invalid existing build receipt: {drive_build}")
+    else:
+        write_status("student_build_start")
+        run(
+            [
+                sys.executable,
+                "-u",
+                "-m",
+                "eval.eval_paper2_dc2_student_build",
+                "--output_summary",
+                str(build),
+                "--model_name",
+                "Qwen/Qwen2.5-0.5B-Instruct",
+            ]
+        )
+        shutil.copy2(build, drive_build)
+    write_status("arbitration_start", completed_fit_artifacts=len(list((private / "canonicalizer").glob("*.pt"))))
     run(
         [
             sys.executable,
@@ -100,10 +162,25 @@ def main() -> int:
     summary_path.write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     for path in (arbitration, build, summary_path):
         shutil.copy2(path, receipt_dir / path.name)
+    write_status("publishing")
     commit = publish()
+    write_status("complete", publish_commit=commit)
     print(json.dumps({"status": summary["status"], "publish_commit": commit}, indent=2))
     return 0
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    try:
+        raise SystemExit(main())
+    except BaseException as exc:
+        if not isinstance(exc, SystemExit) or exc.code not in (None, 0):
+            try:
+                write_status(
+                    "failed",
+                    exception_type=type(exc).__name__,
+                    exception=str(exc),
+                    traceback=traceback.format_exc(),
+                )
+            except Exception as status_error:
+                print(f"status_write_failed={status_error!r}", flush=True)
+        raise

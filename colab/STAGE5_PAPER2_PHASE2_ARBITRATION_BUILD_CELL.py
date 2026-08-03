@@ -5,15 +5,17 @@ from __future__ import annotations
 import os
 import subprocess
 import sys
+from collections import deque
 from pathlib import Path
 
 import psutil
 from google.colab import drive, userdata
 
-STAGE5_PAPER2_PHASE2_ARBITRATION_BUILD_VERSION = "paper2_phase2_arbitration_build_v3"
+STAGE5_PAPER2_PHASE2_ARBITRATION_BUILD_VERSION = "paper2_phase2_arbitration_build_v4"
 # Safety marker: CPU high RAM cached canonicalizer arbitration and loss-free student build
 # Safety marker: three common SVD seeds paired mixture arbitration no optimizer no training
 # Safety marker: chunked layer pooling supports Colab 51 GiB high RAM CPU
+# Safety marker: Drive status receipt and child failure tail preserve diagnostics
 REPO = "mshapiro123/recurrent-qwen-svgd"
 ROOT = Path("/content/recurrent-qwen-svgd")
 REF = os.environ.get("STAGE5_BOOTSTRAP_REF", "main").strip() or "main"
@@ -26,7 +28,26 @@ os.environ["HF_TOKEN"] = HF
 
 def run(command: list[str], cwd: Path | None = None) -> None:
     print("$", " ".join(command).replace(GH, "****"), flush=True)
-    subprocess.run(command, cwd=cwd or ROOT, env=os.environ.copy(), check=True)
+    tail: deque[str] = deque(maxlen=240)
+    process = subprocess.Popen(
+        command,
+        cwd=cwd or ROOT,
+        env=os.environ.copy(),
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        bufsize=1,
+    )
+    assert process.stdout is not None
+    for line in process.stdout:
+        print(line, end="", flush=True)
+        tail.append(line.rstrip())
+    returncode = process.wait()
+    if returncode:
+        print("launcher_child_failure_tail_begin", flush=True)
+        print("\n".join(tail), flush=True)
+        print("launcher_child_failure_tail_end", flush=True)
+        raise subprocess.CalledProcessError(returncode, command)
 
 
 if not Path("/content/drive/MyDrive").is_dir():
