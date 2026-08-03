@@ -47,6 +47,22 @@ def main() -> int:
     private = DRIVE_RUN / "private"
     arbitration = RUN_DIR / "canonicalizer_arbitration_summary.json"
     build = RUN_DIR / "student_build_summary.json"
+    # Fail fast on the checkpoint-integrated identity battery before the six
+    # expensive cached SVD fits, and preserve its receipt immediately.
+    run(
+        [
+            sys.executable,
+            "-m",
+            "eval.eval_paper2_dc2_student_build",
+            "--output_summary",
+            str(build),
+            "--model_name",
+            "Qwen/Qwen2.5-0.5B-Instruct",
+        ]
+    )
+    receipt_dir = DRIVE_RUN / "receipts"
+    receipt_dir.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(build, receipt_dir / build.name)
     run(
         [
             sys.executable,
@@ -61,17 +77,6 @@ def main() -> int:
             str(private / "canonicalizer"),
             "--output_summary",
             str(arbitration),
-        ]
-    )
-    run(
-        [
-            sys.executable,
-            "-m",
-            "eval.eval_paper2_dc2_student_build",
-            "--output_summary",
-            str(build),
-            "--model_name",
-            "Qwen/Qwen2.5-0.5B-Instruct",
         ]
     )
     arbitration_payload = json.loads(arbitration.read_text(encoding="utf-8"))
@@ -93,8 +98,6 @@ def main() -> int:
     }
     summary_path = RUN_DIR / "summary.json"
     summary_path.write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    receipt_dir = DRIVE_RUN / "receipts"
-    receipt_dir.mkdir(parents=True, exist_ok=True)
     for path in (arbitration, build, summary_path):
         shutil.copy2(path, receipt_dir / path.name)
     commit = publish()
