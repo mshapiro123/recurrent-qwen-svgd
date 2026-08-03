@@ -1,0 +1,539 @@
+{
+  "conditional_nonlinear_ablations": {
+    "attention_pooling": "build-ready_trigger_held",
+    "deterministic_autoencoder": "build-ready_trigger_held",
+    "rule": "run only if deterministic linear models show underfitting; they are not part of the default v1 path without that evidence",
+    "triggered": false
+  },
+  "do_not_claim": [
+    "Experiment 0A selects the final alpha before matched module pilots",
+    "development-only probe fidelity is downstream task quality",
+    "top-k conditional KL is full-vocabulary KL",
+    "a final 200k refit has a document-disjoint performance estimate"
+  ],
+  "elapsed_seconds": 838.70995926857,
+  "frozen_evaluation_partitions_touched": [],
+  "geometry": {
+    "alphas": [
+      0.0,
+      0.5,
+      1.0
+    ],
+    "available_future_slots": 4,
+    "internal_rank": 256,
+    "latent_dim": 128,
+    "n_slots": 8,
+    "persistent_state_renormalization": false,
+    "shared_frozen_pca_basis": true,
+    "single_eigenvalue_floor": {
+      "eps_abs": 1e-08,
+      "tau": 0.0001
+    },
+    "unavailable_span_slots": 4
+  },
+  "holdout_targets": {
+    "bytes": 367546976,
+    "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_exp0a_20260804/private/exp0a/holdout_targets.pt",
+    "sha256": "8257914bfc297691695086abdfd56fe3b6f8247eae31e929b1640f9b428cf64d"
+  },
+  "kind": "paper2_phase2_exp0a_canonicalizer_screening",
+  "methods": {
+    "pca": {
+      "alpha": {
+        "0.0": {
+          "alpha": 0.0,
+          "canonical_condition_number": 6.494916915893555,
+          "future_topk_kl_mean": 5.149233341217041,
+          "future_topk_kl_median": 4.703596115112305,
+          "gradient_audit": {
+            "coefficient_of_variation": 0.05281572416424751,
+            "coordinate_rms": {
+              "count": 128,
+              "finite_count": 128,
+              "finite_max": 0.8253741264343262,
+              "finite_mean": 0.7512208842672408,
+              "finite_median": 0.7529250681400299,
+              "finite_min": 0.6676589250564575,
+              "finite_p10": 0.6981956362724304,
+              "finite_p90": 0.8038806438446044,
+              "finite_p95": 0.8091459959745407,
+              "nan_count": 0,
+              "negative_infinity_count": 0,
+              "positive_infinity_count": 0
+            },
+            "max_to_median": 1.0971617698669434
+          },
+          "hidden_cosine_mean": 0.577796220779419,
+          "normalized_hidden_mse_mean": 0.6706751585006714,
+          "observed_token_accuracy": 0.07461251952421002,
+          "observed_token_topk_coverage": 0.9792442628859787,
+          "samples": 33292,
+          "teacher_top1_agreement": 0.07686531298810526
+        },
+        "0.5": {
+          "alpha": 0.5,
+          "canonical_condition_number": 2.5485126972198486,
+          "future_topk_kl_mean": 5.149204254150391,
+          "future_topk_kl_median": 4.703593730926514,
+          "gradient_audit": {
+            "coefficient_of_variation": 0.021484725177288055,
+            "coordinate_rms": {
+              "count": 128,
+              "finite_count": 128,
+              "finite_max": 0.7842485904693604,
+              "finite_mean": 0.7514182580634952,
+              "finite_median": 0.752554714679718,
+              "finite_min": 0.7167404294013977,
+              "finite_p10": 0.7300254106521606,
+              "finite_p90": 0.7714356064796448,
+              "finite_p95": 0.7773036062717438,
+              "nan_count": 0,
+              "negative_infinity_count": 0,
+              "positive_infinity_count": 0
+            },
+            "max_to_median": 1.0423014163970947
+          },
+          "hidden_cosine_mean": 0.577796220779419,
+          "normalized_hidden_mse_mean": 0.6706750392913818,
+          "observed_token_accuracy": 0.07461251952421002,
+          "observed_token_topk_coverage": 0.9792442628859787,
+          "samples": 33292,
+          "teacher_top1_agreement": 0.07686531298810526
+        },
+        "1.0": {
+          "alpha": 1.0,
+          "canonical_condition_number": 1.0,
+          "future_topk_kl_mean": 5.149213790893555,
+          "future_topk_kl_median": 4.7031707763671875,
+          "gradient_audit": {
+            "coefficient_of_variation": 0.023116208612918854,
+            "coordinate_rms": {
+              "count": 128,
+              "finite_count": 128,
+              "finite_max": 0.7658631205558777,
+              "finite_mean": 0.7493169116787612,
+              "finite_median": 0.7547750174999237,
+              "finite_min": 0.6526464819908142,
+              "finite_p10": 0.7363117218017579,
+              "finite_p90": 0.7604575276374816,
+              "finite_p95": 0.760877189040184,
+              "nan_count": 0,
+              "negative_infinity_count": 0,
+              "positive_infinity_count": 0
+            },
+            "max_to_median": 1.0147360563278198
+          },
+          "hidden_cosine_mean": 0.5777962803840637,
+          "normalized_hidden_mse_mean": 0.6706748008728027,
+          "observed_token_accuracy": 0.07458248227802475,
+          "observed_token_topk_coverage": 0.9792442628859787,
+          "samples": 33292,
+          "teacher_top1_agreement": 0.07683527574191998
+        }
+      },
+      "artifact": {
+        "bytes": 50055065,
+        "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_exp0a_20260804/private/exp0a/pca.pt",
+        "sha256": "a4764ace967d39c83bbceccf460cfb3ad59e9c780b2adffffd7f02620d24af73"
+      },
+      "final_condition": {
+        "effective": 6.551539421081543,
+        "floor": 0.5072417259216309,
+        "raw": 6.551539421081543,
+        "zero_eigenvalue_count": 0
+      },
+      "final_fit": {
+        "internal_rank": 256,
+        "pca_singular_values": {
+          "count": 256,
+          "finite_count": 256,
+          "finite_max": 4260.86865234375,
+          "finite_mean": 837.5007661581039,
+          "finite_median": 709.612060546875,
+          "finite_min": 438.8570556640625,
+          "finite_p10": 504.25242614746094,
+          "finite_p90": 1279.5894165039062,
+          "finite_p95": 1562.0196533203125,
+          "nan_count": 0,
+          "negative_infinity_count": 0,
+          "positive_infinity_count": 0
+        }
+      },
+      "final_refit_samples": 200000,
+      "holdout_endpoints": {
+        "bytes": 68250590,
+        "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_exp0a_20260804/private/exp0a/pca_holdout_raw_endpoints.pt",
+        "sha256": "21742777afb4e24a07ca7d60ad3f65dcf06f93ed79a000c848d31139e1fd2c8e"
+      },
+      "layer_weights": [
+        0.3333333432674408,
+        0.3333333432674408,
+        0.3333333432674408
+      ],
+      "method": "pca",
+      "probe_parameter_count": 660480,
+      "projection_multiply_adds_per_sample": 5242880,
+      "screening_condition": {
+        "effective": 6.494916915893555,
+        "floor": 0.5091022849082947,
+        "raw": 6.494916915893555,
+        "zero_eigenvalue_count": 0
+      },
+      "screening_fit": {
+        "internal_rank": 256,
+        "pca_singular_values": {
+          "count": 256,
+          "finite_count": 256,
+          "finite_max": 3863.15234375,
+          "finite_mean": 766.3010288476944,
+          "finite_median": 648.3279113769531,
+          "finite_min": 402.8085632324219,
+          "finite_p10": 460.90260314941406,
+          "finite_p90": 1175.7327270507812,
+          "finite_p95": 1443.508544921875,
+          "nan_count": 0,
+          "negative_infinity_count": 0,
+          "positive_infinity_count": 0
+        }
+      }
+    },
+    "predictive_rrr": {
+      "alpha": {
+        "0.0": {
+          "alpha": 0.0,
+          "canonical_condition_number": 10000.0,
+          "future_topk_kl_mean": 4.737475395202637,
+          "future_topk_kl_median": 4.215221881866455,
+          "gradient_audit": {
+            "coefficient_of_variation": 1.1969915628433228,
+            "coordinate_rms": {
+              "count": 128,
+              "finite_count": 128,
+              "finite_max": 0.4838396906852722,
+              "finite_mean": 0.09356620747414013,
+              "finite_median": 0.04708163160830736,
+              "finite_min": 3.3817159419413656e-06,
+              "finite_p10": 0.0050883000716567045,
+              "finite_p90": 0.2636655658483505,
+              "finite_p95": 0.3295474544167517,
+              "nan_count": 0,
+              "negative_infinity_count": 0,
+              "positive_infinity_count": 0
+            },
+            "max_to_median": 17.10244369506836
+          },
+          "hidden_cosine_mean": 0.6274449825286865,
+          "normalized_hidden_mse_mean": 0.610671877861023,
+          "observed_token_accuracy": 0.16868917457647484,
+          "observed_token_topk_coverage": 0.9792442628859787,
+          "samples": 33292,
+          "teacher_top1_agreement": 0.15505226480836237
+        },
+        "0.5": {
+          "alpha": 0.5,
+          "canonical_condition_number": 100.0,
+          "future_topk_kl_mean": 4.725978851318359,
+          "future_topk_kl_median": 4.201699256896973,
+          "gradient_audit": {
+            "coefficient_of_variation": 0.6332835555076599,
+            "coordinate_rms": {
+              "count": 128,
+              "finite_count": 128,
+              "finite_max": 0.5046436190605164,
+              "finite_mean": 0.22657899554320693,
+              "finite_median": 0.2209509015083313,
+              "finite_min": 4.047732363687828e-05,
+              "finite_p10": 0.06090421602129936,
+              "finite_p90": 0.4200201004743576,
+              "finite_p95": 0.4433618620038032,
+              "nan_count": 0,
+              "negative_infinity_count": 0,
+              "positive_infinity_count": 0
+            },
+            "max_to_median": 2.867567539215088
+          },
+          "hidden_cosine_mean": 0.6275811791419983,
+          "normalized_hidden_mse_mean": 0.6106863021850586,
+          "observed_token_accuracy": 0.1693199567463655,
+          "observed_token_topk_coverage": 0.9792442628859787,
+          "samples": 33292,
+          "teacher_top1_agreement": 0.15559293523969722
+        },
+        "1.0": {
+          "alpha": 1.0,
+          "canonical_condition_number": 1.0,
+          "future_topk_kl_mean": 4.725697994232178,
+          "future_topk_kl_median": 4.201841354370117,
+          "gradient_audit": {
+            "coefficient_of_variation": 0.10641562193632126,
+            "coordinate_rms": {
+              "count": 128,
+              "finite_count": 128,
+              "finite_max": 0.5839014649391174,
+              "finite_mean": 0.5270662468030878,
+              "finite_median": 0.5202350318431854,
+              "finite_min": 0.0004844917275477201,
+              "finite_p10": 0.5017974495887756,
+              "finite_p90": 0.5769746601581573,
+              "finite_p95": 0.5791396468877792,
+              "nan_count": 0,
+              "negative_infinity_count": 0,
+              "positive_infinity_count": 0
+            },
+            "max_to_median": 1.1224265098571777
+          },
+          "hidden_cosine_mean": 0.6275829076766968,
+          "normalized_hidden_mse_mean": 0.6106918454170227,
+          "observed_token_accuracy": 0.1694100684849213,
+          "observed_token_topk_coverage": 0.9792442628859787,
+          "samples": 33292,
+          "teacher_top1_agreement": 0.15568304697825303
+        }
+      },
+      "artifact": {
+        "bytes": 50056406,
+        "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_exp0a_20260804/private/exp0a/predictive_rrr.pt",
+        "sha256": "3db1fc821e30cb941fd12553dd3a68e9df7b157f91e67972d16c5f205b22eec1"
+      },
+      "final_condition": {
+        "effective": 10000.0,
+        "floor": 4.863481080974452e-05,
+        "raw": 52872.796875,
+        "zero_eigenvalue_count": 1
+      },
+      "final_fit": {
+        "internal_rank": 256,
+        "pca_singular_values": {
+          "count": 256,
+          "finite_count": 256,
+          "finite_max": 4260.86669921875,
+          "finite_mean": 837.2653445005417,
+          "finite_median": 709.7011413574219,
+          "finite_min": 436.8935241699219,
+          "finite_p10": 504.5608367919922,
+          "finite_p90": 1279.5922241210938,
+          "finite_p95": 1562.0004577636719,
+          "nan_count": 0,
+          "negative_infinity_count": 0,
+          "positive_infinity_count": 0
+        }
+      },
+      "final_refit_samples": 200000,
+      "holdout_endpoints": {
+        "bytes": 68250689,
+        "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_exp0a_20260804/private/exp0a/predictive_rrr_holdout_raw_endpoints.pt",
+        "sha256": "6163e5cf08822adea40d87dcf4d1fa2a085af25e35fc0549cd13bb5af8480bba"
+      },
+      "layer_weights": [
+        0.3333333432674408,
+        0.3333333432674408,
+        0.3333333432674408
+      ],
+      "method": "predictive_rrr",
+      "probe_parameter_count": 660480,
+      "projection_multiply_adds_per_sample": 5242880,
+      "screening_condition": {
+        "effective": 10000.0,
+        "floor": 4.871936107520014e-05,
+        "raw": 44500.29296875,
+        "zero_eigenvalue_count": 1
+      },
+      "screening_fit": {
+        "internal_rank": 256,
+        "pca_singular_values": {
+          "count": 256,
+          "finite_count": 256,
+          "finite_max": 3863.17236328125,
+          "finite_mean": 766.1542432308197,
+          "finite_median": 649.2870178222656,
+          "finite_min": 396.2884216308594,
+          "finite_p10": 461.3974914550781,
+          "finite_p90": 1175.7335205078125,
+          "finite_p95": 1443.5181884765625,
+          "nan_count": 0,
+          "negative_infinity_count": 0,
+          "positive_infinity_count": 0
+        }
+      }
+    },
+    "tucker_predictive": {
+      "alpha": {
+        "0.0": {
+          "alpha": 0.0,
+          "canonical_condition_number": 10000.0,
+          "future_topk_kl_mean": 4.7342305183410645,
+          "future_topk_kl_median": 4.197815418243408,
+          "gradient_audit": {
+            "coefficient_of_variation": 1.1896864175796509,
+            "coordinate_rms": {
+              "count": 128,
+              "finite_count": 128,
+              "finite_max": 0.4841780960559845,
+              "finite_mean": 0.09438395810339983,
+              "finite_median": 0.0456659821793437,
+              "finite_min": 2.3923594199004583e-06,
+              "finite_p10": 0.005177676118910313,
+              "finite_p90": 0.2608671814203262,
+              "finite_p95": 0.33098526746034607,
+              "nan_count": 0,
+              "negative_infinity_count": 0,
+              "positive_infinity_count": 0
+            },
+            "max_to_median": 17.910350799560547
+          },
+          "hidden_cosine_mean": 0.6264075040817261,
+          "normalized_hidden_mse_mean": 0.6126596331596375,
+          "observed_token_accuracy": 0.17749008770875885,
+          "observed_token_topk_coverage": 0.9792442628859787,
+          "samples": 33292,
+          "teacher_top1_agreement": 0.16123993752252794
+        },
+        "0.5": {
+          "alpha": 0.5,
+          "canonical_condition_number": 100.0,
+          "future_topk_kl_mean": 4.722522735595703,
+          "future_topk_kl_median": 4.184584617614746,
+          "gradient_audit": {
+            "coefficient_of_variation": 0.6295397877693176,
+            "coordinate_rms": {
+              "count": 128,
+              "finite_count": 128,
+              "finite_max": 0.5055729150772095,
+              "finite_mean": 0.22919013891046802,
+              "finite_median": 0.21869471669197083,
+              "finite_min": 2.8757338441209868e-05,
+              "finite_p10": 0.062238222733139996,
+              "finite_p90": 0.4211892157793045,
+              "finite_p95": 0.4475097730755805,
+              "nan_count": 0,
+              "negative_infinity_count": 0,
+              "positive_infinity_count": 0
+            },
+            "max_to_median": 2.9306745529174805
+          },
+          "hidden_cosine_mean": 0.6265074014663696,
+          "normalized_hidden_mse_mean": 0.6127387881278992,
+          "observed_token_accuracy": 0.17911209900276343,
+          "observed_token_topk_coverage": 0.9792442628859787,
+          "samples": 33292,
+          "teacher_top1_agreement": 0.16235131563138291
+        },
+        "1.0": {
+          "alpha": 1.0,
+          "canonical_condition_number": 1.0,
+          "future_topk_kl_mean": 4.72217321395874,
+          "future_topk_kl_median": 4.184574127197266,
+          "gradient_audit": {
+            "coefficient_of_variation": 0.10594070702791214,
+            "coordinate_rms": {
+              "count": 128,
+              "finite_count": 128,
+              "finite_max": 0.586454451084137,
+              "finite_mean": 0.5304356662109058,
+              "finite_median": 0.5223906636238098,
+              "finite_min": 0.0003456773702055216,
+              "finite_p10": 0.509851485490799,
+              "finite_p90": 0.5806029081344605,
+              "finite_p95": 0.5836204886436462,
+              "nan_count": 0,
+              "negative_infinity_count": 0,
+              "positive_infinity_count": 0
+            },
+            "max_to_median": 1.1226516962051392
+          },
+          "hidden_cosine_mean": 0.6265081167221069,
+          "normalized_hidden_mse_mean": 0.6127460598945618,
+          "observed_token_accuracy": 0.17911209900276343,
+          "observed_token_topk_coverage": 0.9792442628859787,
+          "samples": 33292,
+          "teacher_top1_agreement": 0.16244142736993872
+        }
+      },
+      "artifact": {
+        "bytes": 50056475,
+        "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_exp0a_20260804/private/exp0a/tucker_predictive.pt",
+        "sha256": "b73c04e8e1c19c2fe0d1ff003de1f6eb0d25bf225a22715ad4c28d8a317d5fd3"
+      },
+      "final_condition": {
+        "effective": 10000.0,
+        "floor": 4.7922392695909366e-05,
+        "raw": 53779.79296875,
+        "zero_eigenvalue_count": 1
+      },
+      "final_fit": {
+        "internal_rank": 256,
+        "pca_singular_values": {
+          "count": 256,
+          "finite_count": 256,
+          "finite_max": 4334.32421875,
+          "finite_mean": 959.7808594703674,
+          "finite_median": 823.3523864746094,
+          "finite_min": 493.2620849609375,
+          "finite_p10": 572.4875793457031,
+          "finite_p90": 1456.59814453125,
+          "finite_p95": 1780.3626098632812,
+          "nan_count": 0,
+          "negative_infinity_count": 0,
+          "positive_infinity_count": 0
+        }
+      },
+      "final_refit_samples": 200000,
+      "holdout_endpoints": {
+        "bytes": 68250716,
+        "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_exp0a_20260804/private/exp0a/tucker_predictive_holdout_raw_endpoints.pt",
+        "sha256": "4bfcf062b805843593c63fcc472a7397bb8faa4f25c3a891cecc7e12031ff5c8"
+      },
+      "layer_weights": [
+        0.5840215682983398,
+        0.3323609232902527,
+        0.08361753076314926
+      ],
+      "method": "tucker_predictive",
+      "probe_parameter_count": 660480,
+      "projection_multiply_adds_per_sample": 5242880,
+      "screening_condition": {
+        "effective": 10000.0,
+        "floor": 4.7897287004161626e-05,
+        "raw": 44595.59375,
+        "zero_eigenvalue_count": 1
+      },
+      "screening_fit": {
+        "internal_rank": 256,
+        "pca_singular_values": {
+          "count": 256,
+          "finite_count": 256,
+          "finite_max": 3950.115234375,
+          "finite_mean": 877.4053624868393,
+          "finite_median": 750.0379943847656,
+          "finite_min": 450.4820556640625,
+          "finite_p10": 522.9750061035156,
+          "finite_p90": 1332.5082397460938,
+          "finite_p95": 1631.11767578125,
+          "nan_count": 0,
+          "negative_infinity_count": 0,
+          "positive_infinity_count": 0
+        }
+      }
+    }
+  },
+  "optimizer_steps": 0,
+  "screening_survivors": [
+    "pca",
+    "predictive_rrr",
+    "tucker_predictive"
+  ],
+  "source_manifest_sha256": "43edbb74c5edf84dc5e6512dbe4beb1bbbf0f4df31b2c6830714ce2c8fc7ba93",
+  "source_repair_summary_sha256": "7ee733f81751ec1db8c46fb9ea51149796b5b71f9b48a6d45574cb8f77676e6e",
+  "source_stage0a_summary_sha256": "f6e83574ab3b42a4f9fb9c17bb88ff0ae831fc58f3d67aca093b25c4ce824680",
+  "split": {
+    "calibration_documents": 356,
+    "calibration_samples": 166708,
+    "document_disjoint": true,
+    "fit_count_resolution": "document-disjoint screening fit uses the calibration subset; final candidate refit uses all 200000 DEV-C boundary samples and is never scored as held-out evidence",
+    "holdout_documents": 76,
+    "holdout_samples": 33292,
+    "seed": 20260804
+  },
+  "status": "complete_development_only",
+  "training_started": false
+}
