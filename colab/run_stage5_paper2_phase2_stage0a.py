@@ -251,16 +251,34 @@ def main() -> int:
                 f"{summary['full_logit_audit'][model_key]['samples']} != {expected_audit}"
             )
         score_summary = summary["union_scores"][model_key]
-        if score_summary["topk_equivalence_max_abs_error"] > score_summary[
-            "topk_equivalence_tolerance"
-        ]:
-            raise RuntimeError(f"Stage 0A {model_key} union scorer failed equivalence")
-        if score_summary["topk_probability_max_abs_error"] > score_summary[
-            "topk_probability_tolerance"
+        if score_summary.get("status") != "complete":
+            raise RuntimeError(
+                f"Stage 0A {model_key} union scorer did not complete"
+            )
+        if score_summary.get("topk_equivalence_role") != (
+            "discarded_pre_anchor_reconstruction_diagnostic"
+        ):
+            raise RuntimeError(
+                f"Stage 0A {model_key} union scorer has an unknown equivalence role"
+            )
+        if score_summary.get("topk_values_source") != (
+            "cached_forward_pass_anchor_simplex_reconciled"
+        ):
+            raise RuntimeError(
+                f"Stage 0A {model_key} union scorer lost its cached-forward anchor"
+            )
+        if score_summary["maximum_mass_overflow"] > score_summary[
+            "mass_projection_max_overflow"
         ]:
             raise RuntimeError(
-                f"Stage 0A {model_key} union scorer failed probability equivalence"
+                f"Stage 0A {model_key} union scorer exceeded its mass projection bound"
             )
+    if "approximately rescored cross-model candidates" not in summary["lattice"][
+        "candidate_space"
+    ]:
+        raise RuntimeError("Stage 0A receipt misstates sparse reconstruction precision")
+    if not summary.get("sparse_reconstruction_scope"):
+        raise RuntimeError("Stage 0A receipt omitted sparse reconstruction scope")
     receipt_dir = DRIVE_RUN / "receipts"
     receipt_dir.mkdir(parents=True, exist_ok=True)
     shutil.copy2(output, receipt_dir / "stage0a_summary.json")
