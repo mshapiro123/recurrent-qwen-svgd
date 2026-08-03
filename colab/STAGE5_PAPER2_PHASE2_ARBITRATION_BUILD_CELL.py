@@ -11,11 +11,12 @@ from pathlib import Path
 import psutil
 from google.colab import drive, userdata
 
-STAGE5_PAPER2_PHASE2_ARBITRATION_BUILD_VERSION = "paper2_phase2_arbitration_build_v4"
+STAGE5_PAPER2_PHASE2_ARBITRATION_BUILD_VERSION = "paper2_phase2_arbitration_build_v5"
 # Safety marker: CPU high RAM cached canonicalizer arbitration and loss-free student build
 # Safety marker: three common SVD seeds paired mixture arbitration no optimizer no training
 # Safety marker: chunked layer pooling supports Colab 51 GiB high RAM CPU
 # Safety marker: Drive status receipt and child failure tail preserve diagnostics
+# Safety marker: exp0a summary CLI destination matches arbitration function
 REPO = "mshapiro123/recurrent-qwen-svgd"
 ROOT = Path("/content/recurrent-qwen-svgd")
 REF = os.environ.get("STAGE5_BOOTSTRAP_REF", "main").strip() or "main"

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 import torch
 
@@ -7,6 +9,7 @@ from eval.eval_paper2_phase2_canonicalizer_arbitration import (
     arbitration_decision,
     eigenvalue_floor_support,
     paired_bootstrap_ci,
+    parse_args,
 )
 from eval.eval_paper2_phase2_exp0a import _pool
 
@@ -60,3 +63,24 @@ def test_chunked_layer_pool_matches_direct_formula() -> None:
     normalized = values * torch.rsqrt(values.square().mean(dim=-1, keepdim=True) + 1e-6)
     expected = (normalized * (weights / weights.sum()).view(1, 3, 1)).sum(dim=1)
     assert torch.equal(observed, expected)
+
+
+def test_cli_names_bind_to_run_arbitration_parameters() -> None:
+    args = parse_args(
+        [
+            "--stage0a_private",
+            "stage0a",
+            "--exp0a_summary",
+            "exp0a.json",
+            "--output_private",
+            "private",
+            "--output_summary",
+            "summary.json",
+        ]
+    )
+    assert vars(args) == {
+        "stage0a_private": Path("stage0a"),
+        "exp0a_summary_path": Path("exp0a.json"),
+        "output_private": Path("private"),
+        "output_summary": Path("summary.json"),
+    }

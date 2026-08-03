@@ -599,13 +599,15 @@ def run_arbitration(
     return result
 
 
-def parse_args() -> argparse.Namespace:
+def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--stage0a_private", type=Path, required=True)
-    parser.add_argument("--exp0a_summary", type=Path, required=True)
+    parser.add_argument(
+        "--exp0a_summary", dest="exp0a_summary_path", type=Path, required=True
+    )
     parser.add_argument("--output_private", type=Path, required=True)
     parser.add_argument("--output_summary", type=Path, required=True)
-    return parser.parse_args()
+    return parser.parse_args(argv)
 
 
 def main() -> int:
