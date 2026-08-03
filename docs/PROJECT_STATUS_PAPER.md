@@ -1,8 +1,8 @@
 # Project Status: Deterministic Program Closed
 
-**Canonical date:** August 2, 2026
+**Canonical date:** August 3, 2026
 **Part 1 status:** closed
-**Part 2 status:** Phase 1 is banked. DC1 Stage A is a registered negative (`none`). V1b, V1c, V2, and the CPU-only RMS-tail audit are banked as DEV-only diagnostics. E1 remains unlocked pending the radius-cap decision; no Phase-2 training window is open.
+**Part 2 status:** Phase 1 is banked. DC1 Stage A is a registered negative (`none`). V1b, V1c, V2, and the CPU-only RMS-tail audit are banked as DEV-only diagnostics. Strategy selected `c = 0.15` with the p99 RMS cap and authorized the DEV-only V1d confirmation, which is built but unrun. E1 remains locked; no Phase-2 training window is open.
 
 This page is the short status index. It replaces the earlier June recovery narrative, which became stale after the loop-closure repair, synthetic mechanism installation, Phase A dense-control comparison, and inverse-task boundary program.
 
@@ -36,6 +36,9 @@ This page is the short status index. It replaces the earlier June recovery narra
 - [Phase-2 opening handoff](STRATEGY_TO_CODING_AGENT_PHASE2_OPENING_20260731.md)
 - [Phase-2 pre-window build handoff](PAPER2_PHASE2_PREWINDOW_BUILD_HANDOFF_20260731.md)
 - [Phase-2 V1 terminology and V1b addendum](STRATEGY_ADDENDUM_PHASE2_V1B_20260731.md)
+- [Phase-2 V1c banking and V1d authorization](STRATEGY_TO_CODING_AGENT_V1C_BANK_V05_20260803.md)
+- [DC2 E1 implementation specification](DC2_E1_IMPLEMENTATION_SPEC_20260803.md)
+- [Latent microstep governing design v0.6.1](LATENT_MICROSTEP_FLOW_DISTILLATION_STRATEGY_HANDOFF_V0.6.1_20260803.md)
 - [Experiment log](EXPERIMENT_LOG.md)
 
 ## Established
@@ -165,7 +168,7 @@ fragile positions is the common interpretive frame.
 3. Banked: V1b validated the exact first-order pair-crossing diagnostic at `c <= 0.05`, but bounded writeback changed the top-1 token at only `595/2000 = 29.75%` of oracle-help positions at `c = 0.05`. Oracle-help collateral harms were `75/930625 = 0.0081%`; all `2000/2000` preserve positions remained correct.
 4. Banked: V2 found median contraction at all four iterates, with some expanding sampled directions at iterate one. The operative failure description is directional off-manifold drift without norm instability, not generic explosion.
 5. Keep the E-stage accounting split: the V1b/V1c ceiling binds the bounded bridge-writeback path only. The direct-logit residual drafter path remains margin-unbounded and is judged against acceptance baselines.
-6. Do not lock E1 constants, RMS cap, or gates until strategy reviews the completed V1c and RMS-audit receipts. Decision pending: uncapped `c = 0.10` versus `c = 0.15` with the p99 RMS cap and a DEV-only capped-radius confirmation. No Phase-2 training is currently authorized.
+6. Strategy selected `c = 0.15` with p99 state-RMS cap `0.5508932316303252`. Run V1d on the same V1c cohorts before E1 lock. Diagnostic preservation requires point retention at least `0.997` and a 95% Wilson lower bound at least `0.990`; reach after capping is measured, not inferred. No Phase-2 training is currently authorized.
 
 Closed pending that decision: additional Phase G sweeps, coverage, selection,
 LPRM, per-trajectory halting, particles, SVGD, the intra-block oracle probe,

@@ -147,6 +147,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3_short_sha"
 #   "paper2_phase2_v1_v2" - DEV-C-only empirical gain diagnostics; no training.
 #   "paper2_phase2_v1b" - DEV-C-only finite perturbation and collateral check.
 #   "paper2_phase2_v1c" - DEV-C-only larger-radius paired extension; no training.
+#   "paper2_phase2_v1d" - DEV-C-only RMS-capped c=0.15 confirmation; no training.
 #   "paper2_phase2_v1b_rms_audit" - CPU-only audit of existing V1b private rows.
 #   "paper2_phase2_eval_de_freeze" - score-blind EVAL-D/E and own-base feature freeze.
 #   "paper2_d0_prelock_publish_resume" - publish completed Drive-backed D0 lock receipts without inference.
@@ -222,6 +223,19 @@ TARGETS = {
             "same V1b sample seed and cohorts paired radius extension",
             "full oracle-help primary compatibility strata secondary",
             "colab/run_stage5_paper2_phase2_v1c.py",
+        ],
+        "env": {},
+    },
+    "paper2_phase2_v1d": {
+        "path": "colab/STAGE5_PAPER2_PHASE2_V1D_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_PHASE2_V1D_VERSION",
+            "paper2_phase2_v1d_v1",
+            "c 0.15 p99 RMS cap matched V1c cohorts no optimizer no training",
+            "raw and effective state RMS logged separately",
+            "diagnostic preservation point 0.997 Wilson 95 lower 0.990",
+            "constants file hash carried in receipt E1 remains locked",
+            "colab/run_stage5_paper2_phase2_v1d.py",
         ],
         "env": {},
     },

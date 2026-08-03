@@ -1631,3 +1631,14 @@ Colab/Drive backups for selected runs.
   training or frozen-slice contact occurred. E1 remains unopened pending the
   strategy choice between conservative `c = 0.10` and capped `c = 0.15`.
   Handoff: `docs/PAPER2_PHASE2_V1C_RMS_AUDIT_HANDOFF_20260802.md`.
+- 2026-08-03 Phase-2 V1d authorization and DC2 design reconciliation:
+  strategy selected `c = 0.15` with the p99 state-RMS cap
+  `0.5508932316303252` and required one same-cohort DEV-only confirmation
+  before E1 lock. The implementation reuses the corrected V1b/V1c evaluator,
+  logs raw and effective RMS separately, carries the single constants-file hash,
+  and evaluates preservation at the locked diagnostic-scale point floor `0.997`
+  plus 95% Wilson lower floor `0.990`. The governing v0.6.1 design now uses one
+  stored effective eigenvalue spectrum with no second epsilon, a shared PCA
+  basis across alpha arms, affine unnormalized flow states, and post-build
+  matched DEV pilots before alpha selection. V1d is built but unrun; no training
+  window or E1 lock opened.

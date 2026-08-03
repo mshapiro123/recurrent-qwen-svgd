@@ -1,0 +1,10 @@
+{
+  "kind": "paper2_phase2_dc2_bounded_writeback_constants",
+  "version": "v1d_provisional_20260803",
+  "tube_c": 0.15,
+  "p99_state_rms_cap": 0.5508932316303252,
+  "gamma": 0.05,
+  "rho": 0.8,
+  "source": "STRATEGY_TO_CODING_AGENT_V1C_BANK_V05_20260803.md",
+  "status": "provisional_pending_v1d"
+}

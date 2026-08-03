@@ -1,16 +1,16 @@
 {
   "schema_version": 1,
   "program": "paper2_causal_control_of_recurrent_computation",
-  "status": "phase1_banked_phase2_v1b_v1c_v2_rms_audit_banked_e1_radius_cap_review",
-  "canonical_date": "2026-08-02",
+  "status": "phase1_banked_phase2_v1d_built_unrun_e1_locked",
+  "canonical_date": "2026-08-03",
   "active_queue": {
     "program_goal": "causal_arbitration_at_append_and_dispatch_interfaces",
     "p0": "completed_uncitable_adapter_loss_calibration",
     "t1": "two_registered_negatives_raw_endpoints_replicate_exact_in_support_causal_control_with_small_preservation_cost",
     "d0": "banked_not_recoverable_at_pilot_scale_binary_disagreement_target",
     "dc1_stage_a": "registered_none_transient_append_retires_checkpoint_archival_eval_c_spent",
-    "phase2": "v1b_v1c_v2_and_rms_audit_banked_dev_only_no_training",
-    "dc2": "window_closed_pending_e1_radius_cap_review",
+    "phase2": "v1b_v1c_v2_and_rms_audit_banked_v1d_built_unrun_dev_only_no_training",
+    "dc2": "window_closed_c_0p15_p99_cap_selected_pending_v1d_0a_0b_and_e1_lock",
     "d1": "window_closed_pending_phase2_strategy_review",
     "paper_two_packaging": "proceeds_on_banked_phase1_results"
   },
@@ -28,7 +28,11 @@
     "phase2_v1c_summary": "outputs/stage5/stage5_paper2_phase2_prewindow_20260731/v1c/summary.json",
     "phase2_v1b_rms_audit_summary": "outputs/stage5/stage5_paper2_phase2_prewindow_20260731/v1b_rms_audit/summary.json",
     "phase2_v1c_rms_handoff": "docs/PAPER2_PHASE2_V1C_RMS_AUDIT_HANDOFF_20260802.md",
-    "phase2_v1c_figure": "docs/figures/paper2_phase2_v1c_radius_extension_20260802.svg"
+    "phase2_v1c_figure": "docs/figures/paper2_phase2_v1c_radius_extension_20260802.svg",
+    "phase2_v1d_constants": "training/paper2_phase2_dc2_constants.json",
+    "phase2_v1d_strategy": "docs/STRATEGY_TO_CODING_AGENT_V1C_BANK_V05_20260803.md",
+    "dc2_e1_implementation_spec": "docs/DC2_E1_IMPLEMENTATION_SPEC_20260803.md",
+    "latent_microstep_governing_design": "docs/LATENT_MICROSTEP_FLOW_DISTILLATION_STRATEGY_HANDOFF_V0.6.1_20260803.md"
   },
   "claims": [
     {

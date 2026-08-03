@@ -60,6 +60,37 @@ def tube_radius(
     )
 
 
+def capped_state_rms(state_rms: float, cap: float | None) -> tuple[float, bool]:
+    """Apply the registered population cap without changing the measured raw RMS."""
+    value = float(state_rms)
+    if not math.isfinite(value) or value < 0:
+        raise ValueError("state RMS must be finite and nonnegative")
+    if cap is None:
+        return value, False
+    cap_value = float(cap)
+    if not math.isfinite(cap_value) or cap_value <= 0:
+        raise ValueError("state RMS cap must be finite and positive")
+    return min(value, cap_value), value > cap_value
+
+
+def wilson_lower_bound(
+    successes: int,
+    total: int,
+    z: float = 1.959963984540054,
+) -> float:
+    """Two-sided normal-quantile Wilson lower confidence bound."""
+    if not 0 <= int(successes) <= int(total) or int(total) <= 0:
+        raise ValueError("Wilson inputs must satisfy 0 <= successes <= total")
+    if not math.isfinite(float(z)) or float(z) <= 0:
+        raise ValueError("Wilson z must be finite and positive")
+    n = float(total)
+    p = float(successes) / n
+    z2 = float(z) ** 2
+    center = p + z2 / (2.0 * n)
+    spread = float(z) * math.sqrt((p * (1.0 - p) + z2 / (4.0 * n)) / n)
+    return (center - spread) / (1.0 + z2 / n)
+
+
 def deterministic_position_sample(
     records: Sequence[dict[str, Any]],
     *,
@@ -249,6 +280,16 @@ def aggregate_intervention_records(
             ),
             "state_rms": quantile_summary(
                 [float(row["state_rms"]) for row in rows if "state_rms" in row]
+            ),
+            "effective_state_rms": quantile_summary(
+                [
+                    float(row.get("effective_state_rms", row["state_rms"]))
+                    for row in rows
+                    if "state_rms" in row
+                ]
+            ),
+            "state_rms_capped_positions": sum(
+                bool(row.get("state_rms_was_capped", False)) for row in rows
             ),
             "gradient_l2": quantile_summary(
                 [float(row["gradient_l2"]) for row in rows if "gradient_l2" in row]
@@ -535,6 +576,7 @@ def _row_interventions(
     gamma: float,
     rho: float,
     c_values: Sequence[float],
+    state_rms_cap: float | None,
     perturbation_batch: int,
     logit_position_chunk: int,
 ) -> list[dict[str, Any]]:
@@ -606,6 +648,9 @@ def _row_interventions(
             raise RuntimeError("V1b encountered a zero or non-finite margin gradient")
         position = int(record["position"])
         state_rms = float(hidden[0, position].float().square().mean().sqrt().cpu())
+        effective_state_rms, state_rms_was_capped = capped_state_rms(
+            state_rms, state_rms_cap
+        )
         observed_margin = float(record["margin"])
         if not math.isfinite(computed_margin):
             raise RuntimeError("V1b margin is non-finite")
@@ -618,7 +663,7 @@ def _row_interventions(
         for c_value in c_values:
             radius = tube_radius(
                 c_value=float(c_value),
-                state_rms=state_rms,
+                state_rms=effective_state_rms,
                 hidden_size=hidden_size,
                 gamma=gamma,
                 rho=rho,
@@ -628,6 +673,8 @@ def _row_interventions(
                     "record": record,
                     "gradient_l2": norm,
                     "state_rms": state_rms,
+                    "effective_state_rms": effective_state_rms,
+                    "state_rms_was_capped": state_rms_was_capped,
                     "radius": radius,
                     "delta": -float(radius) * unit,
                     "first_order_predicted_pair_cross": (
@@ -744,6 +791,8 @@ def _row_interventions(
                     "c_value": float(item["c_value"]),
                     "radius": float(item["radius"]),
                     "state_rms": float(item["state_rms"]),
+                    "effective_state_rms": float(item["effective_state_rms"]),
+                    "state_rms_was_capped": bool(item["state_rms_was_capped"]),
                     "gradient_l2": float(item["gradient_l2"]),
                     "margin_before": float(record["margin"]),
                     "margin_after": realized_margin,
@@ -778,6 +827,7 @@ def main() -> int:
     parser.add_argument("--gamma", type=float, default=0.05)
     parser.add_argument("--rho", type=float, default=0.8)
     parser.add_argument("--c_values", default="0.01,0.02,0.05")
+    parser.add_argument("--state_rms_cap", type=float)
     parser.add_argument(
         "--receipt_kind", default="paper2_phase2_v1b_finite_perturbation"
     )
@@ -931,6 +981,8 @@ def main() -> int:
         "logit_position_chunk": args.logit_position_chunk,
         "comparison_baseline": "same_shape_same_batch_index_neutral_v2",
     }
+    if args.state_rms_cap is not None:
+        config["state_rms_cap"] = args.state_rms_cap
     if prior_v1b_sha256 is not None:
         config["prior_v1b_summary_sha256"] = prior_v1b_sha256
     config_path = private / "config.json"
@@ -962,6 +1014,7 @@ def main() -> int:
                 gamma=args.gamma,
                 rho=args.rho,
                 c_values=c_values,
+                state_rms_cap=args.state_rms_cap,
                 perturbation_batch=args.perturbation_batch,
                 logit_position_chunk=args.logit_position_chunk,
             )
@@ -1015,7 +1068,10 @@ def main() -> int:
             "c_values": list(c_values),
             "gamma": args.gamma,
             "rho": args.rho,
-            "radius_formula": "gamma*c*RMS(h0)*sqrt(d)/(1-rho)",
+            "state_rms_cap": args.state_rms_cap,
+            "radius_formula": "gamma*c*min(RMS(h0), state_rms_cap)*sqrt(d)/(1-rho)"
+            if args.state_rms_cap is not None
+            else "gamma*c*RMS(h0)*sqrt(d)/(1-rho)",
         },
         "v1_terminology_reconciliation": {
             "source_key": first_order_source_key,
@@ -1049,6 +1105,7 @@ def main() -> int:
             "Preserve controls are baseline-and-trained-append correct and receive a teacher-favoring perturbation against their strongest non-teacher competitor.",
             "Full oracle-help is primary; first-order-distance quartiles are a preregistered secondary analysis and never redefine the population.",
             "This receipt measures the bounded bridge-writeback path only; it does not bound the separate direct-logit residual drafter path.",
+            "When state_rms_cap is set, raw RMS remains logged while the radius uses min(raw RMS, cap).",
         ],
         "do_not_claim": [
             "V1b perturbations are a deployable controller",

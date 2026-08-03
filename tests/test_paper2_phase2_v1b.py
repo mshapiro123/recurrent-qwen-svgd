@@ -8,12 +8,25 @@ import torch
 from eval.eval_paper2_phase2_v1b import (
     _load_append_predictions,
     aggregate_by_first_order_distance_quantile,
+    capped_state_rms,
     compare_paired_predictions,
     aggregate_intervention_records,
     deterministic_position_sample,
     parse_c_values,
     tube_radius,
+    wilson_lower_bound,
 )
+
+
+def test_capped_state_rms_preserves_raw_contract() -> None:
+    assert capped_state_rms(0.4, 0.55) == (0.4, False)
+    assert capped_state_rms(58.0, 0.55) == (0.55, True)
+    assert capped_state_rms(0.4, None) == (0.4, False)
+
+
+def test_wilson_lower_bound_matches_locked_v1d_scale() -> None:
+    observed = wilson_lower_bound(1997, 2000)
+    assert 0.995 < observed < 0.996
 
 
 def test_paired_comparison_separates_batch_shape_drift_from_causal_change() -> None:
