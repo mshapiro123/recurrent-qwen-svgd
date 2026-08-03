@@ -255,6 +255,12 @@ def main() -> int:
             "topk_equivalence_tolerance"
         ]:
             raise RuntimeError(f"Stage 0A {model_key} union scorer failed equivalence")
+        if score_summary["topk_probability_max_abs_error"] > score_summary[
+            "topk_probability_tolerance"
+        ]:
+            raise RuntimeError(
+                f"Stage 0A {model_key} union scorer failed probability equivalence"
+            )
     receipt_dir = DRIVE_RUN / "receipts"
     receipt_dir.mkdir(parents=True, exist_ok=True)
     shutil.copy2(output, receipt_dir / "stage0a_summary.json")

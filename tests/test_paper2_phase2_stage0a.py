@@ -9,6 +9,7 @@ import torch
 
 from eval.cache_paper2_phase2_stage0a import (
     _score_candidates,
+    apply_authoritative_topk,
     completed_union_score_shard,
 )
 from colab.run_stage5_paper2_phase2_stage0a import select_local_scratch
@@ -175,6 +176,7 @@ def test_stage0a_launcher_and_runner_enforce_resume_and_no_training_contracts() 
     assert "torch.optim" not in runner
     assert "training/train_" not in runner
     assert "completed_model_shard" in evaluator
+    assert "stage0a_union_resume_complete" in evaluator
     assert "atomic_torch_save" in evaluator
     assert "teacher_forward_passes" in evaluator
     assert "frozen_evaluation_partitions_touched" in evaluator
@@ -220,6 +222,7 @@ def test_completed_union_score_shard_validates_its_union_source(tmp_path: Path) 
     torch.save(
         {
             "kind": "paper2_phase2_stage0a_union_score_shard",
+            "score_schema_version": 2,
             "model_key": "teacher_7b",
             "row_start": 0,
             "row_stop": 8,
@@ -241,6 +244,25 @@ def test_completed_union_score_shard_validates_its_union_source(tmp_path: Path) 
         row_stop=8,
         union_sha256="different",
     )
+
+
+def test_authoritative_topk_replaces_kernel_drift_and_recomputes_tail() -> None:
+    candidate = torch.log(torch.tensor([0.50, 0.25, 0.10, 0.05]))
+    union_ids = torch.tensor([1, 3, 5, 8])
+    union_mask = torch.tensor([True, True, True, True])
+    cached_ids = torch.tensor([1, 5])
+    cached = torch.log(torch.tensor([0.48, 0.12]))
+    corrected, tail, diagnostics = apply_authoritative_topk(
+        candidate_log_probs=candidate,
+        union_ids=union_ids,
+        union_mask=union_mask,
+        cached_topk_ids=cached_ids,
+        cached_topk_log_probs=cached,
+    )
+    assert torch.equal(corrected[[0, 2]], cached)
+    assert diagnostics["log_probability_max_abs_error"] > 0
+    assert diagnostics["probability_max_abs_error"] == pytest.approx(0.02)
+    assert corrected.exp().sum() + tail.exp() == pytest.approx(1.0)
 
 
 def test_stage0a_prefers_large_named_local_scratch(tmp_path: Path) -> None:

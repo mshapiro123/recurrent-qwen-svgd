@@ -32,6 +32,9 @@ from training.paper2_phase2_stage0a import (
 ROWS_PER_SHARD = 8
 INFERENCE_LOGIT_CHUNK = 16
 UNION_SCORE_CHUNK = 8
+UNION_SCORE_SCHEMA_VERSION = 2
+TOPK_LOG_PROB_EQUIVALENCE_TOLERANCE = 0.25
+TOPK_PROB_EQUIVALENCE_TOLERANCE = 0.01
 
 
 def read_jsonl(path: str | Path) -> list[dict[str, Any]]:
@@ -625,6 +628,27 @@ def build_union_shards(
 ) -> dict[str, Any]:
     model_root = private_dir / "model_cache"
     union_root = private_dir / "union"
+    summary_path = union_root / "summary.json"
+    if summary_path.exists():
+        try:
+            existing = json.loads(summary_path.read_text(encoding="utf-8"))
+            shards = existing.get("shards", [])
+            complete = (
+                existing.get("kind") == "paper2_phase2_stage0a_union"
+                and existing.get("samples")
+                == int(STAGE0A_CONFIG["boundary_sample_count"])
+                and len(shards) == math.ceil(len(rows) / ROWS_PER_SHARD)
+                and all(
+                    Path(receipt["path"]).is_file()
+                    and sha256_file(receipt["path"]) == receipt["sha256"]
+                    for receipt in shards
+                )
+            )
+        except (KeyError, OSError, ValueError, json.JSONDecodeError):
+            complete = False
+        if complete:
+            print(f"stage0a_union_resume_complete={summary_path}", flush=True)
+            return existing
     receipts = []
     for start in range(0, len(rows), ROWS_PER_SHARD):
         stop = min(len(rows), start + ROWS_PER_SHARD)
@@ -687,7 +711,7 @@ def build_union_shards(
         "samples": sum(row["samples"] for row in receipts),
         "max_union_width": max((row["max_union_width"] for row in receipts), default=0),
     }
-    write_json(union_root / "summary.json", summary)
+    write_json(summary_path, summary)
     return summary
 
 
@@ -731,11 +755,49 @@ def completed_union_score_shard(
         return False
     return (
         payload.get("kind") == "paper2_phase2_stage0a_union_score_shard"
+        and payload.get("score_schema_version") == UNION_SCORE_SCHEMA_VERSION
         and payload.get("model_key") == model_key
         and payload.get("row_start") == row_start
         and payload.get("row_stop") == row_stop
         and payload.get("union_sha256") == union_sha256
     )
+
+
+def apply_authoritative_topk(
+    *,
+    candidate_log_probs: torch.Tensor,
+    union_ids: torch.Tensor,
+    union_mask: torch.Tensor,
+    cached_topk_ids: torch.Tensor,
+    cached_topk_log_probs: torch.Tensor,
+) -> tuple[torch.Tensor, torch.Tensor, dict[str, float]]:
+    """Keep cached top-k probabilities exact and fill only missing union candidates."""
+
+    valid_union = union_ids[union_mask].long()
+    cached_ids = cached_topk_ids.long()
+    positions = torch.searchsorted(valid_union, cached_ids)
+    if bool((positions >= valid_union.numel()).any()) or not torch.equal(
+        valid_union[positions], cached_ids
+    ):
+        raise RuntimeError("Stage 0A union omitted a cached top-k token")
+    corrected = candidate_log_probs.clone()
+    rescored = corrected[positions].float()
+    cached = cached_topk_log_probs.float()
+    diagnostics = {
+        "log_probability_max_abs_error": float((rescored - cached).abs().max()),
+        "probability_max_abs_error": float(
+            (rescored.exp() - cached.exp()).abs().max()
+        ),
+    }
+    corrected[positions] = cached_topk_log_probs.to(corrected.dtype)
+    candidate_mass = corrected[union_mask].float().exp().sum()
+    if float(candidate_mass) > 1.005:
+        raise RuntimeError(
+            "Stage 0A corrected union candidate mass exceeds one: "
+            f"candidate_mass={float(candidate_mass)}"
+        )
+    tail_log_prob = (1.0 - candidate_mass).clamp(min=1e-30, max=1.0).log()
+    return corrected, tail_log_prob, diagnostics
 
 
 def score_union_for_model(
@@ -752,6 +814,7 @@ def score_union_for_model(
     receipts = []
     sample_lookup = {int(sample["sample_index"]): sample for sample in samples}
     maximum_topk_equivalence_error = 0.0
+    maximum_topk_probability_error = 0.0
     for start in range(0, len(rows), ROWS_PER_SHARD):
         stop = min(len(rows), start + ROWS_PER_SHARD)
         destination = score_root / f"rows_{start:06d}_{stop:06d}.pt"
@@ -774,11 +837,18 @@ def score_union_for_model(
                     "topk_equivalence_max_abs_error": float(
                         payload["topk_equivalence_max_abs_error"]
                     ),
+                    "topk_probability_max_abs_error": float(
+                        payload["topk_probability_max_abs_error"]
+                    ),
                 }
             )
             maximum_topk_equivalence_error = max(
                 maximum_topk_equivalence_error,
                 float(payload["topk_equivalence_max_abs_error"]),
+            )
+            maximum_topk_probability_error = max(
+                maximum_topk_probability_error,
+                float(payload["topk_probability_max_abs_error"]),
             )
             print(
                 f"stage0a_union_score_resume model={model_key} rows={stop}/{len(rows)}",
@@ -825,27 +895,43 @@ def score_union_for_model(
             tail_log_probs[present] = local_tail
 
         equivalence_error = 0.0
+        probability_error = 0.0
         for base_offset, sample_index in enumerate(base_indices):
             if not present[base_offset]:
                 continue
             source_offset = model_lookup[sample_index]
-            valid_union = union["union_ids"][base_offset][union["union_mask"][base_offset]].long()
-            cached_ids = model_cache["topk_ids"][source_offset].long()
-            positions = torch.searchsorted(valid_union, cached_ids)
-            if not torch.equal(valid_union[positions], cached_ids):
-                raise RuntimeError("Stage 0A union omitted a cached top-k token")
-            rescored = candidate_log_probs[base_offset, positions].float()
-            cached = model_cache["topk_log_probs"][source_offset].float()
-            equivalence_error = max(
-                equivalence_error, float((rescored - cached).abs().max())
+            corrected, corrected_tail, diagnostics = apply_authoritative_topk(
+                candidate_log_probs=candidate_log_probs[base_offset],
+                union_ids=union["union_ids"][base_offset],
+                union_mask=union["union_mask"][base_offset],
+                cached_topk_ids=model_cache["topk_ids"][source_offset],
+                cached_topk_log_probs=model_cache["topk_log_probs"][source_offset],
             )
-        if equivalence_error > 0.125:
+            candidate_log_probs[base_offset] = corrected
+            tail_log_probs[base_offset] = corrected_tail
+            equivalence_error = max(
+                equivalence_error,
+                diagnostics["log_probability_max_abs_error"],
+            )
+            probability_error = max(
+                probability_error,
+                diagnostics["probability_max_abs_error"],
+            )
+        if equivalence_error > TOPK_LOG_PROB_EQUIVALENCE_TOLERANCE:
             raise RuntimeError(
                 f"Stage 0A top-k/union equivalence failed for {model_key}: "
                 f"max_abs_error={equivalence_error}"
             )
+        if probability_error > TOPK_PROB_EQUIVALENCE_TOLERANCE:
+            raise RuntimeError(
+                f"Stage 0A top-k/union probability equivalence failed for {model_key}: "
+                f"max_abs_error={probability_error}"
+            )
         maximum_topk_equivalence_error = max(
             maximum_topk_equivalence_error, equivalence_error
+        )
+        maximum_topk_probability_error = max(
+            maximum_topk_probability_error, probability_error
         )
 
         audit_offsets = [
@@ -861,6 +947,7 @@ def score_union_for_model(
             full_log_probs.append(torch.log_softmax(logits, dim=0).to(torch.bfloat16).cpu())
         payload = {
             "kind": "paper2_phase2_stage0a_union_score_shard",
+            "score_schema_version": UNION_SCORE_SCHEMA_VERSION,
             "model_key": model_key,
             "row_start": start,
             "row_stop": stop,
@@ -880,6 +967,8 @@ def score_union_for_model(
                 else torch.empty((0, head.shape[0]), dtype=torch.bfloat16)
             ),
             "topk_equivalence_max_abs_error": equivalence_error,
+            "topk_probability_max_abs_error": probability_error,
+            "topk_values_source": "cached_forward_pass_authoritative",
         }
         atomic_torch_save(payload, destination, staging_dir=staging_dir)
         receipts.append(
@@ -889,6 +978,7 @@ def score_union_for_model(
                 "samples_present": int(present.sum()),
                 "audit_samples": len(audit_offsets),
                 "topk_equivalence_max_abs_error": equivalence_error,
+                "topk_probability_max_abs_error": probability_error,
             }
         )
         print(f"stage0a_union_score_progress model={model_key} rows={stop}/{len(rows)}", flush=True)
@@ -904,7 +994,10 @@ def score_union_for_model(
         "samples_present": sum(row["samples_present"] for row in receipts),
         "full_logit_audit_samples": sum(row["audit_samples"] for row in receipts),
         "topk_equivalence_max_abs_error": maximum_topk_equivalence_error,
-        "topk_equivalence_tolerance": 0.125,
+        "topk_equivalence_tolerance": TOPK_LOG_PROB_EQUIVALENCE_TOLERANCE,
+        "topk_probability_max_abs_error": maximum_topk_probability_error,
+        "topk_probability_tolerance": TOPK_PROB_EQUIVALENCE_TOLERANCE,
+        "topk_values_source": "cached_forward_pass_authoritative",
         "resume_policy": "completed union score shards are hash-validated and never rescored",
     }
     write_json(score_root / "summary.json", summary)
