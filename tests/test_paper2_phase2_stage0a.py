@@ -222,7 +222,7 @@ def test_completed_union_score_shard_validates_its_union_source(tmp_path: Path) 
     torch.save(
         {
             "kind": "paper2_phase2_stage0a_union_score_shard",
-            "score_schema_version": 3,
+            "score_schema_version": 4,
             "model_key": "teacher_7b",
             "row_start": 0,
             "row_stop": 8,
@@ -262,6 +262,8 @@ def test_authoritative_topk_replaces_kernel_drift_and_recomputes_tail() -> None:
     assert torch.equal(corrected[[0, 2]], cached)
     assert diagnostics["log_probability_max_abs_error"] > 0
     assert diagnostics["probability_max_abs_error"] == pytest.approx(0.02)
+    assert diagnostics["topk_mass_overflow"] == 0.0
+    assert diagnostics["topk_mass_projection_scale"] == 1.0
     assert diagnostics["mass_overflow"] == 0.0
     assert diagnostics["extra_mass_projection_scale"] == 1.0
     assert corrected.exp().sum() + tail.exp() == pytest.approx(1.0)
@@ -298,6 +300,24 @@ def test_authoritative_topk_rejects_large_sparse_mass_projection() -> None:
             cached_topk_ids=torch.tensor([1]),
             cached_topk_log_probs=torch.log(torch.tensor([0.60])),
         )
+
+
+def test_authoritative_topk_reconciles_bfloat_rounding_overflow() -> None:
+    cached = torch.log(torch.tensor([0.60, 0.4055]))
+    corrected, tail, diagnostics = apply_authoritative_topk(
+        candidate_log_probs=torch.log(torch.tensor([0.59, 0.001, 0.40])),
+        union_ids=torch.tensor([1, 3, 5]),
+        union_mask=torch.tensor([True, True, True]),
+        cached_topk_ids=torch.tensor([1, 5]),
+        cached_topk_log_probs=cached,
+    )
+
+    assert diagnostics["raw_topk_mass"] == pytest.approx(1.0055)
+    assert diagnostics["topk_mass_overflow"] == pytest.approx(0.0055, abs=1e-6)
+    assert diagnostics["topk_mass_projection_scale"] == pytest.approx(1.0 / 1.0055)
+    assert corrected[[0, 2]].exp().sum() == pytest.approx(1.0)
+    assert float(corrected[1].exp()) < 1e-6
+    assert corrected.exp().sum() + tail.exp() == pytest.approx(1.0)
 
 
 def test_stage0a_prefers_large_named_local_scratch(tmp_path: Path) -> None:

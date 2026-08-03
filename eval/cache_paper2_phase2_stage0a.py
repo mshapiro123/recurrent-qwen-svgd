@@ -32,7 +32,7 @@ from training.paper2_phase2_stage0a import (
 ROWS_PER_SHARD = 8
 INFERENCE_LOGIT_CHUNK = 16
 UNION_SCORE_CHUNK = 8
-UNION_SCORE_SCHEMA_VERSION = 3
+UNION_SCORE_SCHEMA_VERSION = 4
 TOPK_LOG_PROB_EQUIVALENCE_TOLERANCE = 0.25
 TOPK_PROB_EQUIVALENCE_TOLERANCE = 0.01
 SPARSE_MASS_PROJECTION_MAX_OVERFLOW = 0.05
@@ -772,12 +772,14 @@ def apply_authoritative_topk(
     cached_topk_ids: torch.Tensor,
     cached_topk_log_probs: torch.Tensor,
 ) -> tuple[torch.Tensor, torch.Tensor, dict[str, float]]:
-    """Keep cached top-k exact and reconcile approximate extras on the simplex.
+    """Anchor to cached top-k and reconcile the sparse distribution on the simplex.
 
     The extra union candidates are rescored from bfloat16 cached hidden states and
-    LM-head weights, while top-k values come from the original model forward. If
-    their mixed mass exceeds one, the KL projection with fixed top-k coordinates
-    scales only the approximate extras into the authoritative residual mass.
+    LM-head weights, while top-k values come from the original model forward. The
+    cached top-k log probabilities are themselves bfloat16, so their rounded mass
+    may slightly exceed one. In that case a proportional simplex projection keeps
+    their relative probabilities; any remaining overflow then scales only the
+    approximate extras into the residual mass.
     """
 
     valid_union = union_ids[union_mask].long()
@@ -801,12 +803,18 @@ def apply_authoritative_topk(
     topk_mask = torch.zeros_like(union_mask, dtype=torch.bool)
     topk_mask[positions] = True
     extra_mask = union_mask & ~topk_mask
-    topk_mass = cached.exp().sum()
-    if float(topk_mass) > 1.005:
+    raw_topk_mass = cached.exp().sum()
+    topk_mass_overflow = max(0.0, float(raw_topk_mass - 1.0))
+    if topk_mass_overflow > SPARSE_MASS_PROJECTION_MAX_OVERFLOW:
         raise RuntimeError(
-            "Stage 0A authoritative cached top-k mass exceeds one: "
-            f"topk_mass={float(topk_mass)}"
+            "Stage 0A cached top-k mass projection is too large: "
+            f"overflow={topk_mass_overflow} raw_topk_mass={float(raw_topk_mass)}"
         )
+    topk_projection_scale = 1.0
+    if topk_mass_overflow > 0.0:
+        topk_projection_scale = float(1.0 / raw_topk_mass)
+        corrected[positions] += math.log(topk_projection_scale)
+    topk_mass = corrected[positions].exp().sum()
     available_extra_mass = (1.0 - topk_mass).clamp(min=0.0)
     raw_extra_mass = corrected[extra_mask].exp().sum()
     raw_candidate_mass = topk_mass + raw_extra_mass
@@ -830,6 +838,9 @@ def apply_authoritative_topk(
     diagnostics.update(
         {
             "raw_candidate_mass": float(raw_candidate_mass),
+            "raw_topk_mass": float(raw_topk_mass),
+            "topk_mass_overflow": topk_mass_overflow,
+            "topk_mass_projection_scale": topk_projection_scale,
             "mass_overflow": mass_overflow,
             "extra_mass_projection_scale": projection_scale,
         }
@@ -853,6 +864,9 @@ def score_union_for_model(
     maximum_topk_equivalence_error = 0.0
     maximum_topk_probability_error = 0.0
     maximum_mass_overflow = 0.0
+    maximum_topk_mass_overflow = 0.0
+    minimum_topk_mass_projection_scale = 1.0
+    topk_projected_sample_count = 0
     minimum_extra_mass_projection_scale = 1.0
     projected_sample_count = 0
     for start in range(0, len(rows), ROWS_PER_SHARD):
@@ -881,6 +895,15 @@ def score_union_for_model(
                         payload["topk_probability_max_abs_error"]
                     ),
                     "maximum_mass_overflow": float(payload["maximum_mass_overflow"]),
+                    "maximum_topk_mass_overflow": float(
+                        payload["maximum_topk_mass_overflow"]
+                    ),
+                    "minimum_topk_mass_projection_scale": float(
+                        payload["minimum_topk_mass_projection_scale"]
+                    ),
+                    "topk_projected_sample_count": int(
+                        payload["topk_projected_sample_count"]
+                    ),
                     "minimum_extra_mass_projection_scale": float(
                         payload["minimum_extra_mass_projection_scale"]
                     ),
@@ -897,6 +920,17 @@ def score_union_for_model(
             )
             maximum_mass_overflow = max(
                 maximum_mass_overflow, float(payload["maximum_mass_overflow"])
+            )
+            maximum_topk_mass_overflow = max(
+                maximum_topk_mass_overflow,
+                float(payload["maximum_topk_mass_overflow"]),
+            )
+            minimum_topk_mass_projection_scale = min(
+                minimum_topk_mass_projection_scale,
+                float(payload["minimum_topk_mass_projection_scale"]),
+            )
+            topk_projected_sample_count += int(
+                payload["topk_projected_sample_count"]
             )
             minimum_extra_mass_projection_scale = min(
                 minimum_extra_mass_projection_scale,
@@ -950,6 +984,9 @@ def score_union_for_model(
         equivalence_error = 0.0
         probability_error = 0.0
         shard_maximum_mass_overflow = 0.0
+        shard_maximum_topk_mass_overflow = 0.0
+        shard_minimum_topk_projection_scale = 1.0
+        shard_topk_projected_sample_count = 0
         shard_minimum_projection_scale = 1.0
         shard_projected_sample_count = 0
         for base_offset, sample_index in enumerate(base_indices):
@@ -976,6 +1013,16 @@ def score_union_for_model(
             shard_maximum_mass_overflow = max(
                 shard_maximum_mass_overflow, diagnostics["mass_overflow"]
             )
+            shard_maximum_topk_mass_overflow = max(
+                shard_maximum_topk_mass_overflow,
+                diagnostics["topk_mass_overflow"],
+            )
+            shard_minimum_topk_projection_scale = min(
+                shard_minimum_topk_projection_scale,
+                diagnostics["topk_mass_projection_scale"],
+            )
+            if diagnostics["topk_mass_projection_scale"] < 1.0:
+                shard_topk_projected_sample_count += 1
             shard_minimum_projection_scale = min(
                 shard_minimum_projection_scale,
                 diagnostics["extra_mass_projection_scale"],
@@ -1001,6 +1048,14 @@ def score_union_for_model(
         maximum_mass_overflow = max(
             maximum_mass_overflow, shard_maximum_mass_overflow
         )
+        maximum_topk_mass_overflow = max(
+            maximum_topk_mass_overflow, shard_maximum_topk_mass_overflow
+        )
+        minimum_topk_mass_projection_scale = min(
+            minimum_topk_mass_projection_scale,
+            shard_minimum_topk_projection_scale,
+        )
+        topk_projected_sample_count += shard_topk_projected_sample_count
         minimum_extra_mass_projection_scale = min(
             minimum_extra_mass_projection_scale, shard_minimum_projection_scale
         )
@@ -1040,8 +1095,11 @@ def score_union_for_model(
             ),
             "topk_equivalence_max_abs_error": equivalence_error,
             "topk_probability_max_abs_error": probability_error,
-            "topk_values_source": "cached_forward_pass_authoritative",
+            "topk_values_source": "cached_forward_pass_anchor_simplex_reconciled",
             "maximum_mass_overflow": shard_maximum_mass_overflow,
+            "maximum_topk_mass_overflow": shard_maximum_topk_mass_overflow,
+            "minimum_topk_mass_projection_scale": shard_minimum_topk_projection_scale,
+            "topk_projected_sample_count": shard_topk_projected_sample_count,
             "minimum_extra_mass_projection_scale": shard_minimum_projection_scale,
             "projected_sample_count": shard_projected_sample_count,
             "mass_reconciliation": "fixed-topk KL projection of approximate extras",
@@ -1056,6 +1114,9 @@ def score_union_for_model(
                 "topk_equivalence_max_abs_error": equivalence_error,
                 "topk_probability_max_abs_error": probability_error,
                 "maximum_mass_overflow": shard_maximum_mass_overflow,
+                "maximum_topk_mass_overflow": shard_maximum_topk_mass_overflow,
+                "minimum_topk_mass_projection_scale": shard_minimum_topk_projection_scale,
+                "topk_projected_sample_count": shard_topk_projected_sample_count,
                 "minimum_extra_mass_projection_scale": shard_minimum_projection_scale,
                 "projected_sample_count": shard_projected_sample_count,
             }
@@ -1076,8 +1137,11 @@ def score_union_for_model(
         "topk_equivalence_tolerance": TOPK_LOG_PROB_EQUIVALENCE_TOLERANCE,
         "topk_probability_max_abs_error": maximum_topk_probability_error,
         "topk_probability_tolerance": TOPK_PROB_EQUIVALENCE_TOLERANCE,
-        "topk_values_source": "cached_forward_pass_authoritative",
+        "topk_values_source": "cached_forward_pass_anchor_simplex_reconciled",
         "maximum_mass_overflow": maximum_mass_overflow,
+        "maximum_topk_mass_overflow": maximum_topk_mass_overflow,
+        "minimum_topk_mass_projection_scale": minimum_topk_mass_projection_scale,
+        "topk_projected_sample_count": topk_projected_sample_count,
         "mass_projection_max_overflow": SPARSE_MASS_PROJECTION_MAX_OVERFLOW,
         "minimum_extra_mass_projection_scale": minimum_extra_mass_projection_scale,
         "projected_sample_count": projected_sample_count,
