@@ -10,9 +10,10 @@ from pathlib import Path
 import psutil
 from google.colab import drive, userdata
 
-STAGE5_PAPER2_PHASE2_ARBITRATION_BUILD_VERSION = "paper2_phase2_arbitration_build_v2"
+STAGE5_PAPER2_PHASE2_ARBITRATION_BUILD_VERSION = "paper2_phase2_arbitration_build_v3"
 # Safety marker: CPU high RAM cached canonicalizer arbitration and loss-free student build
 # Safety marker: three common SVD seeds paired mixture arbitration no optimizer no training
+# Safety marker: chunked layer pooling supports Colab 51 GiB high RAM CPU
 REPO = "mshapiro123/recurrent-qwen-svgd"
 ROOT = Path("/content/recurrent-qwen-svgd")
 REF = os.environ.get("STAGE5_BOOTSTRAP_REF", "main").strip() or "main"
@@ -31,8 +32,12 @@ def run(command: list[str], cwd: Path | None = None) -> None:
 if not Path("/content/drive/MyDrive").is_dir():
     drive.mount("/content/drive", force_remount=False, timeout_ms=240_000)
 ram_gib = psutil.virtual_memory().total / 2**30
-assert ram_gib >= 100, (
-    f"Canonicalizer refit requires a Colab high-RAM CPU runtime (>=100 GiB); observed {ram_gib:.1f} GiB."
+available_gib = psutil.virtual_memory().available / 2**30
+print(f"cpu_memory_preflight total_gib={ram_gib:.1f} available_gib={available_gib:.1f}", flush=True)
+assert ram_gib >= 45 and available_gib >= 32, (
+    "Canonicalizer refit requires Colab's high-RAM CPU tier with at least "
+    f"45 GiB total and 32 GiB currently available; observed total={ram_gib:.1f}, "
+    f"available={available_gib:.1f}."
 )
 url = f"https://x-access-token:{GH}@github.com/{REPO}.git"
 if ROOT.exists():

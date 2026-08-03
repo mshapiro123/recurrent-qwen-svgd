@@ -8,6 +8,7 @@ from eval.eval_paper2_phase2_canonicalizer_arbitration import (
     eigenvalue_floor_support,
     paired_bootstrap_ci,
 )
+from eval.eval_paper2_phase2_exp0a import _pool
 
 
 def test_paired_bootstrap_is_deterministic_and_paired() -> None:
@@ -48,3 +49,14 @@ def test_floor_support_counts_clamped_eigenvalues() -> None:
     assert report["at_floor_count"] == 2
     assert report["floored_fraction"] == pytest.approx(0.5)
     assert report["raw_fraction_recoverable"] is False
+
+
+def test_chunked_layer_pool_matches_direct_formula() -> None:
+    torch.manual_seed(23)
+    states = torch.randn(11, 3, 7).to(torch.bfloat16)
+    weights = torch.tensor([0.584, 0.332, 0.084])
+    observed = _pool(states, weights, chunk_size=3)
+    values = states.float()
+    normalized = values * torch.rsqrt(values.square().mean(dim=-1, keepdim=True) + 1e-6)
+    expected = (normalized * (weights / weights.sum()).view(1, 3, 1)).sum(dim=1)
+    assert torch.equal(observed, expected)

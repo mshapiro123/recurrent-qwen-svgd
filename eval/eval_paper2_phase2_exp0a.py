@@ -98,10 +98,22 @@ def load_stage0a_arrays(private_dir: Path) -> dict[str, Any]:
     }
 
 
-def _pool(states: torch.Tensor, weights: torch.Tensor) -> torch.Tensor:
-    normalized = _rms_unit(states.float())
+def _pool(
+    states: torch.Tensor, weights: torch.Tensor, *, chunk_size: int = 2048
+) -> torch.Tensor:
+    """Pool layer states without materializing the full fp32 three-layer cache."""
+
+    if states.ndim != 3 or weights.numel() != states.shape[1]:
+        raise ValueError("states and layer weights do not align")
     weights = weights.float() / weights.float().sum()
-    return (normalized * weights.view(1, -1, 1)).sum(dim=1)
+    pooled = torch.empty(
+        (states.shape[0], states.shape[2]), dtype=torch.float32, device=states.device
+    )
+    for start in range(0, states.shape[0], int(chunk_size)):
+        stop = min(states.shape[0], start + int(chunk_size))
+        normalized = _rms_unit(states[start:stop].float())
+        pooled[start:stop] = (normalized * weights.view(1, -1, 1)).sum(dim=1)
+    return pooled
 
 
 def _fit_tucker_weights(
