@@ -1660,3 +1660,9 @@ Colab/Drive backups for selected runs.
   The local loss-free build assertion battery passed all 17 contracts and measured
   `1,184,917` new trainable parameters, replacing the implementation spec's rough
   `2.5-3.5M` estimate for this concrete v1 build; this is a build fact, not a quality result.
+  Drive policy receipts: the V1d handoff is Drive
+  `1zH20VEuuc4myQl9pvFgv56iQ4tNXa4iQ`, 4,233 bytes, SHA-256
+  `405e40c21019b43d8f188af8d7a274e9b479fe9def0ce9bab2c4200059062785`;
+  the matched-alpha pilot protocol draft is Drive
+  `1mWEsqjPii6CvB8bkGR0GQtlvezq7GljL`, 5,192 bytes, SHA-256
+  `4c8b6f24e25062ecd6096077360d8b5912763c33ed0da07b3d79815a09cb2f3f`.
