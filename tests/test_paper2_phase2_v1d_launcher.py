@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 
@@ -35,7 +36,7 @@ def test_v1d_runner_locks_cap_cohorts_and_statistical_reading() -> None:
     assert "training/train_" not in runner
 
 
-def test_dc2_constants_are_single_source_and_provisional() -> None:
+def test_dc2_constants_are_single_source_and_confirmed_by_v1d() -> None:
     payload = json.loads(
         (ROOT / "training/paper2_phase2_dc2_constants.json").read_text(
             encoding="utf-8"
@@ -43,4 +44,12 @@ def test_dc2_constants_are_single_source_and_provisional() -> None:
     )
     assert payload["tube_c"] == 0.15
     assert 0.55 < payload["p99_state_rms_cap"] < 0.551
-    assert payload["status"] == "provisional_pending_v1d"
+    assert payload["status"] == "confirmed_by_v1d"
+    assert payload["source_receipt_sha256"] == (
+        "39e08a3a0f0a7abb23ae5fd45874a33cd0fba755099b9cc3c70da19ed332c094"
+    )
+    assert payload["preservation_gate"] == "pass"
+    source = ROOT / payload["source"]
+    assert hashlib.sha256(source.read_bytes()).hexdigest() == payload[
+        "source_receipt_sha256"
+    ]

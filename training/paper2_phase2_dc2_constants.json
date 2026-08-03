@@ -1,10 +1,16 @@
 {
   "kind": "paper2_phase2_dc2_bounded_writeback_constants",
-  "version": "v1d_provisional_20260803",
+  "version": "v1d_confirmed_20260803",
   "tube_c": 0.15,
   "p99_state_rms_cap": 0.5508932316303252,
   "gamma": 0.05,
   "rho": 0.8,
-  "source": "STRATEGY_TO_CODING_AGENT_V1C_BANK_V05_20260803.md",
-  "status": "provisional_pending_v1d"
+  "source": "outputs/stage5/stage5_paper2_phase2_prewindow_20260731/v1d/summary.json",
+  "source_receipt_sha256": "39e08a3a0f0a7abb23ae5fd45874a33cd0fba755099b9cc3c70da19ed332c094",
+  "preservation_gate": "pass",
+  "preservation_point_estimate": 0.9985,
+  "preservation_wilson_95_lower": 0.9955989674442293,
+  "oracle_help_teacher_flip_rate": 0.6045,
+  "oracle_help_pair_cross_rate": 0.645,
+  "status": "confirmed_by_v1d"
 }

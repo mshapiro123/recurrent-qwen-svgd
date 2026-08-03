@@ -61,6 +61,36 @@ def test_current_bootstrap_target_markers_exist_in_launcher_files() -> None:
     assert failures == []
 
 
+def test_current_bootstrap_exposes_paper2_phase2_stage0a_target() -> None:
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(
+        encoding="utf-8"
+    )
+    bootstrap_md = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(
+        encoding="utf-8"
+    )
+    cell = (ROOT / "colab/STAGE5_PAPER2_PHASE2_STAGE0A_CELL.py").read_text(
+        encoding="utf-8"
+    )
+    runner = (ROOT / "colab/run_stage5_paper2_phase2_stage0a.py").read_text(
+        encoding="utf-8"
+    )
+    evaluator = (ROOT / "eval/cache_paper2_phase2_stage0a.py").read_text(
+        encoding="utf-8"
+    )
+
+    for text in (bootstrap, bootstrap_md):
+        assert "paper2_phase2_stage0a" in text
+        assert "colab/STAGE5_PAPER2_PHASE2_STAGE0A_CELL.py" in text
+        assert "minimum_vram_mib=70000" in text
+        assert "DEV-C only sparse lattice and teacher states no optimizer no training" in text
+    assert "A100-SXM4-80GB" in cell
+    assert "tests/test_paper2_phase2_stage0a.py" in cell
+    assert "private/stage0a" in runner
+    assert "completed_model_shard" in evaluator
+    assert "completed_union_score_shard" in evaluator
+    assert "topk_equivalence_max_abs_error" in evaluator
+
+
 def test_current_bootstrap_preserves_planner_supplied_target_env() -> None:
     text = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
 
