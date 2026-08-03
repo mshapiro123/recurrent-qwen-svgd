@@ -14,6 +14,7 @@ from eval.eval_paper2_phase2_exp0a import (
     _transform,
 )
 from training.paper2_phase2_stage0ab import (
+    WHITEN_EPS_ABS,
     CanonicalizerTransform,
     SharedResidualFlowPilot,
     affine_interpolate,
@@ -24,6 +25,12 @@ from training.paper2_phase2_stage0ab import (
     probability_scale_coherence,
     safe_coarse_lattice_metrics,
 )
+
+
+def test_future_whitening_default_and_health_assertion() -> None:
+    assert WHITEN_EPS_ABS == 1e-6
+    with pytest.raises(ValueError, match="fit-health"):
+        effective_eigenvalues(torch.tensor([1e-4, 1e-8]))
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -132,6 +139,24 @@ def test_anchor_targets_fill_four_future_slots_and_leave_span_slots_masked() -> 
     assert targets.shape == (1, 8, 4)
     assert mask.tolist() == [[True, True, True, True, False, False, False, False]]
     assert torch.count_nonzero(targets[:, 4:]) == 0
+
+
+def test_anchor_target_construction_is_gradient_isolated() -> None:
+    topk_ids = torch.arange(16).view(4, 4)
+    topk_log_probs = torch.randn(4, 4, requires_grad=True)
+    middle_states = torch.randn(4, 6, requires_grad=True)
+    targets, _mask = build_anchor_targets(
+        topk_ids=topk_ids,
+        topk_log_probs=topk_log_probs,
+        middle_states=middle_states,
+        horizons=torch.tensor([1, 2, 3, 4]),
+        anchor_indices=torch.zeros(4, dtype=torch.long),
+        anchor_count=1,
+        latent_dim=4,
+        n_slots=8,
+        seed=9,
+    )
+    assert not targets.requires_grad
 
 
 def test_affine_interpolation_does_not_renormalize_the_path() -> None:

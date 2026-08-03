@@ -1,16 +1,16 @@
 {
   "schema_version": 1,
   "program": "paper2_causal_control_of_recurrent_computation",
-  "status": "phase1_banked_phase2_v1d_built_unrun_e1_locked",
-  "canonical_date": "2026-08-03",
+  "status": "phase1_banked_phase2_v1d_exp0ab_banked_arbitration_and_build_prepared_e1_held",
+  "canonical_date": "2026-08-04",
   "active_queue": {
     "program_goal": "causal_arbitration_at_append_and_dispatch_interfaces",
     "p0": "completed_uncitable_adapter_loss_calibration",
     "t1": "two_registered_negatives_raw_endpoints_replicate_exact_in_support_causal_control_with_small_preservation_cost",
     "d0": "banked_not_recoverable_at_pilot_scale_binary_disagreement_target",
     "dc1_stage_a": "registered_none_transient_append_retires_checkpoint_archival_eval_c_spent",
-    "phase2": "v1b_v1c_v2_and_rms_audit_banked_v1d_built_unrun_dev_only_no_training",
-    "dc2": "window_closed_c_0p15_p99_cap_selected_pending_v1d_0a_0b_and_e1_lock",
+    "phase2": "v1d_exp0a_exp0b_banked_canonicalizer_arbitration_and_loss_free_build_prepared_no_training",
+    "dc2": "window_closed_pending_canonicalizer_arbitration_pilot_protocol_matched_pilots_alpha_selection_and_resource_note",
     "d1": "window_closed_pending_phase2_strategy_review",
     "paper_two_packaging": "proceeds_on_banked_phase1_results"
   },
@@ -30,8 +30,12 @@
     "phase2_v1c_rms_handoff": "docs/PAPER2_PHASE2_V1C_RMS_AUDIT_HANDOFF_20260802.md",
     "phase2_v1c_figure": "docs/figures/paper2_phase2_v1c_radius_extension_20260802.svg",
     "phase2_v1d_constants": "training/paper2_phase2_dc2_constants.json",
-    "phase2_v1d_strategy": "docs/STRATEGY_TO_CODING_AGENT_V1C_BANK_V05_20260803.md",
-    "dc2_e1_implementation_spec": "docs/DC2_E1_IMPLEMENTATION_SPEC_20260803.md",
+    "phase2_v1d_summary": "outputs/stage5/stage5_paper2_phase2_prewindow_20260731/v1d/summary.json",
+    "phase2_v1d_handoff": "docs/PAPER2_PHASE2_V1D_CAPPED_RADIUS_HANDOFF_20260804.md",
+    "phase2_v1d_strategy": "docs/STRATEGY_TO_CODING_AGENT_V1C_BANK_V05_20260803_r3.md",
+    "phase2_exp0ab_strategy_response": "docs/STRATEGY_TO_CODING_AGENT_EXP0AB_BANK_20260804_r2.md",
+    "phase2_matched_alpha_pilot_protocol_draft": "docs/PAPER2_PHASE2_MATCHED_ALPHA_PILOT_PROTOCOL_DRAFT_20260804.md",
+    "dc2_e1_implementation_spec": "docs/DC2_E1_IMPLEMENTATION_SPEC_20260803_r3.md",
     "latent_microstep_governing_design": "docs/LATENT_MICROSTEP_FLOW_DISTILLATION_STRATEGY_HANDOFF_V0.6.1_20260803.md"
   },
   "claims": [
@@ -110,6 +114,38 @@
         "all high-RMS positions are attention sinks",
         "the recommended cap has already been causally evaluated",
         "the RMS tail explains all collateral harm"
+      ]
+    },
+    {
+      "id": "phase2_v1d_capped_radius_confirmation",
+      "status": "supported_bounded_dev_only",
+      "claim": "At c=0.15 with the p99 state-RMS cap, local teacher-directed bridge writeback retained 60.45% teacher-token top-1 reach while passing the diagnostic-scale preservation criterion at 1997/2000 controls.",
+      "scope": "DEV-C only, 2000 oracle-help and 2000 preserve-control positions, exact local teacher-token margin-gradient direction, capped bridge-writeback path, no training",
+      "metrics": {
+        "first_order_pair_cross_rate": 0.6485,
+        "realized_pair_cross_rate": 0.645,
+        "realized_teacher_flip_rate": 0.6045,
+        "preserve_retention_rate": 0.9985,
+        "preserve_wilson_95_lower": 0.9955989674442293,
+        "oracle_help_collateral_hurt_rate": 0.00016655473472128947,
+        "state_rms_cap": 0.5508932316303252,
+        "c": 0.15
+      },
+      "evidence": [
+        {
+          "path": "outputs/stage5/stage5_paper2_phase2_prewindow_20260731/v1d/summary.json",
+          "locator": "v1d_reach_after_cap and v1d_preservation_reading"
+        },
+        {
+          "path": "docs/PAPER2_PHASE2_V1D_CAPPED_RADIUS_HANDOFF_20260804.md",
+          "locator": "design, results, interpretation, and limits"
+        }
+      ],
+      "do_not_claim": [
+        "the oracle gradient direction is deployable",
+        "pair crossing guarantees global teacher-token top-1",
+        "local finite perturbations establish global reachability",
+        "DEV-only results confirm frozen-slice performance"
       ]
     },
     {

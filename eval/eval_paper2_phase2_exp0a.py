@@ -164,20 +164,28 @@ def _fit_projector(
 
 def _canonical_statistics(
     x: torch.Tensor, teacher_mean: torch.Tensor, projector: torch.Tensor
-) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, dict[str, float]]:
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, dict[str, Any]]:
     raw = ((x - teacher_mean) @ projector).view(-1, N_SLOTS, LATENT_DIM)
     canonical_mean = raw.mean(dim=0)
     centered = raw - canonical_mean
     flat = centered.reshape(-1, LATENT_DIM)
-    covariance = flat.T @ flat / max(1, flat.shape[0] - 1)
+    covariance = torch.zeros(
+        (LATENT_DIM, LATENT_DIM), dtype=torch.float64, device=flat.device
+    )
+    for start in range(0, flat.shape[0], 8192):
+        chunk = flat[start : start + 8192].double()
+        covariance.add_(chunk.T @ chunk)
+    covariance.div_(max(1, flat.shape[0] - 1))
     eigenvalues, basis = torch.linalg.eigh(covariance)
     order = torch.argsort(eigenvalues, descending=True)
-    raw_eigenvalues = eigenvalues[order].clamp_min(0)
-    basis = basis[:, order]
+    raw_eigenvalues = eigenvalues[order].clamp_min(0).float()
+    basis = basis[:, order].float()
     effective = effective_eigenvalues(
         raw_eigenvalues, tau=WHITEN_TAU, eps_abs=WHITEN_EPS_ABS
     )
     positive = raw_eigenvalues[raw_eigenvalues > 0]
+    floor = max(float(raw_eigenvalues.max()) * WHITEN_TAU, WHITEN_EPS_ABS)
+    floored = raw_eigenvalues < floor
     condition = {
         "raw": (
             float(raw_eigenvalues.max() / positive.min()) if positive.numel() else None
@@ -185,6 +193,13 @@ def _canonical_statistics(
         "zero_eigenvalue_count": int(raw_eigenvalues.eq(0).sum()),
         "effective": float(effective.max() / effective.min()),
         "floor": float(effective.min()),
+        "floored_count": int(floored.sum()),
+        "floored_fraction": float(floored.float().mean()),
+        "rank": int(raw_eigenvalues.numel()),
+        "fit_accumulation_dtype": "float64",
+        "fit_health_relative_floor_exceeds_absolute": bool(
+            WHITEN_TAU * float(raw_eigenvalues.max()) > WHITEN_EPS_ABS
+        ),
     }
     return canonical_mean, basis, effective, condition
 

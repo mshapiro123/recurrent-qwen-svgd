@@ -1640,5 +1640,23 @@ Colab/Drive backups for selected runs.
   plus 95% Wilson lower floor `0.990`. The governing v0.6.1 design now uses one
   stored effective eigenvalue spectrum with no second epsilon, a shared PCA
   basis across alpha arms, affine unnormalized flow states, and post-build
-  matched DEV pilots before alpha selection. V1d is built but unrun; no training
+  matched DEV pilots before alpha selection. V1d subsequently landed and is
+  banked in `docs/PAPER2_PHASE2_V1D_CAPPED_RADIUS_HANDOFF_20260804.md`: capped
+  `c = 0.15` realized 1209/2000 teacher-token flips, retained 1997/2000
+  preserve controls, and passed its diagnostic preservation rule. No training
   window or E1 lock opened.
+- 2026-08-04 Phase-2 0A/0B strategy reconciliation and build authorization:
+  the governing r2 strategy response is stored at
+  `docs/STRATEGY_TO_CODING_AGENT_EXP0AB_BANK_20260804_r2.md`. Build-only work is
+  authorized; matched pilots remain held. Code adds the loss-free student
+  modules, masked-slot loss/rank contracts, fp64 future whitening fits with the
+  `eps_abs = 1e-6` health assertion, and a high-RAM CPU arbitration target. The
+  implementation audit found that legacy `tucker_predictive` is predictive RRR
+  after a learned layer mixture, not a distinct Tucker factorization; the new
+  target refits uniform- and learned-mixture RRR under the same three SVD seeds,
+  reports fit spread against the prior 0.68-point edge, and then applies the
+  locked paired-bootstrap and parsimony rule. E1 remains held pending that receipt, a locked
+  pilot protocol, matched pilots, alpha selection, and the resource note.
+  The local loss-free build assertion battery passed all 17 contracts and measured
+  `1,184,917` new trainable parameters, replacing the implementation spec's rough
+  `2.5-3.5M` estimate for this concrete v1 build; this is a build fact, not a quality result.

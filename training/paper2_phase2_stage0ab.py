@@ -12,7 +12,7 @@ from torch import nn
 
 
 WHITEN_TAU = 1e-4
-WHITEN_EPS_ABS = 1e-8
+WHITEN_EPS_ABS = 1e-6
 WHITEN_ALPHAS = (0.0, 0.5, 1.0)
 
 
@@ -181,7 +181,12 @@ def effective_eigenvalues(
         raise ValueError("eigenvalues must be a nonempty rank-one tensor")
     if bool((values < 0).any()):
         raise ValueError("covariance eigenvalues cannot be negative")
-    floor = max(float(values.max()) * float(tau), float(eps_abs))
+    relative_floor = float(values.max()) * float(tau)
+    if relative_floor <= float(eps_abs):
+        raise ValueError(
+            "whitening fit-health assertion failed: tau * lambda_max must exceed eps_abs"
+        )
+    floor = max(relative_floor, float(eps_abs))
     return values.clamp_min(floor)
 
 
@@ -260,6 +265,7 @@ def _token_sketch(
     return result
 
 
+@torch.no_grad()
 def build_anchor_targets(
     *,
     topk_ids: torch.Tensor,

@@ -152,6 +152,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3_short_sha"
 #   "paper2_phase2_stage0a_repair" - CPU-only finite-metric repair from cached Stage 0A shards.
 #   "paper2_phase2_exp0a" - A100 DEV-only canonicalizer and partial-whitening screening.
 #   "paper2_phase2_exp0b" - L4-or-larger DEV-only interpolation and serial-flow screening.
+#   "paper2_phase2_arbitration_build" - high-RAM CPU canonicalizer arbitration and loss-free student build.
 #   "paper2_phase2_v1b_rms_audit" - CPU-only audit of existing V1b private rows.
 #   "paper2_phase2_eval_de_freeze" - score-blind EVAL-D/E and own-base feature freeze.
 #   "paper2_d0_prelock_publish_resume" - publish completed Drive-backed D0 lock receipts without inference.
@@ -290,6 +291,19 @@ TARGETS = {
             "affine targets no persistent-state renormalization loop cap four",
             "tests/test_paper2_phase2_stage0ab.py",
             "colab/run_stage5_paper2_phase2_exp0b.py",
+        ],
+        "env": {},
+    },
+    "paper2_phase2_arbitration_build": {
+        "path": "colab/STAGE5_PAPER2_PHASE2_ARBITRATION_BUILD_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_PHASE2_ARBITRATION_BUILD_VERSION",
+            "paper2_phase2_arbitration_build_v2",
+            "CPU high RAM cached canonicalizer arbitration and loss-free student build",
+            "three common SVD seeds paired mixture arbitration no optimizer no training",
+            "tests/test_paper2_phase2_arbitration.py",
+            "tests/test_paper2_dc2_student.py",
+            "colab/run_stage5_paper2_phase2_arbitration_build.py",
         ],
         "env": {},
     },
