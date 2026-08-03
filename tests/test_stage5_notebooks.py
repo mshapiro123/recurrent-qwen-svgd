@@ -83,6 +83,7 @@ def test_current_bootstrap_exposes_paper2_phase2_stage0a_target() -> None:
         assert "colab/STAGE5_PAPER2_PHASE2_STAGE0A_CELL.py" in text
         assert "minimum_vram_mib=70000" in text
         assert "DEV-C only sparse lattice and teacher states no optimizer no training" in text
+        assert "automatic local-scratch cache with Drive-backed durable resume shards" in text
     assert "A100-SXM4-80GB" in cell
     assert "tests/test_paper2_phase2_stage0a.py" in cell
     assert "private/stage0a" in runner

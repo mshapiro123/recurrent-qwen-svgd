@@ -17,6 +17,7 @@ STAGE5_PAPER2_PHASE2_STAGE0A_VERSION = "paper2_phase2_stage0a_v1"
 # Safety marker: DEV-C only sparse lattice and teacher states no optimizer no training
 # Safety marker: 200000 boundary samples layers 16 32 44 one-based post-block
 # Safety marker: one logical forward pass per pinned model completed shards never replayed
+# Safety marker: automatic local-scratch cache with Drive-backed durable resume shards
 # Safety marker: tests/test_paper2_phase2_stage0a.py
 # Safety marker: colab/run_stage5_paper2_phase2_stage0a.py
 REPO = "mshapiro123/recurrent-qwen-svgd"

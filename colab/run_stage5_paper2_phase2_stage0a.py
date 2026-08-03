@@ -38,6 +38,7 @@ CONSTANTS = ROOT / "training/paper2_phase2_dc2_constants.json"
 EXPECTED_V1D_SHA256 = (
     "b8ec5e81649d7a7917d98a0f988cd39c64be16ea51a34b150b02ef07df6d86ca"
 )
+MINIMUM_SCRATCH_BYTES = 300 * 1024**3
 
 
 def run(command: list[str]) -> None:
@@ -86,6 +87,84 @@ def status_event(status: str, **details: Any) -> None:
         print(f"stage0a_status_write_failed={error!r}", flush=True)
 
 
+def select_local_scratch(df_output: str) -> Path | None:
+    """Select the large ephemeral disk, preferring a mount named local-scratch."""
+
+    candidates: list[tuple[bool, int, Path]] = []
+    for line in df_output.splitlines()[1:]:
+        fields = line.split()
+        if len(fields) < 4:
+            continue
+        _source, target, size_text, available_text = fields[-4:]
+        try:
+            size = int(size_text)
+            available = int(available_text)
+        except ValueError:
+            continue
+        path = Path(target)
+        if size < MINIMUM_SCRATCH_BYTES:
+            continue
+        if target == "/" or target.startswith("/content/drive"):
+            continue
+        if not path.is_dir() or not os.access(path, os.W_OK):
+            continue
+        named_scratch = "scratch" in target.lower()
+        candidates.append((named_scratch, available, path))
+    if not candidates:
+        return None
+    candidates.sort(key=lambda row: (row[0], row[1]), reverse=True)
+    return candidates[0][2]
+
+
+def configure_local_scratch() -> dict[str, Any]:
+    override = os.environ.get("STAGE5_PHASE2_STAGE0A_LOCAL_SCRATCH", "").strip()
+    if override:
+        mount = Path(override)
+        if not mount.is_dir() or not os.access(mount, os.W_OK):
+            raise RuntimeError(f"Configured Stage 0A scratch is not writable: {mount}")
+    else:
+        listing = subprocess.check_output(
+            ["df", "-B1", "--output=source,target,size,avail"], text=True
+        )
+        mount = select_local_scratch(listing)
+    if mount is None:
+        fallback = Path("/content/stage0a_scratch")
+        fallback.mkdir(parents=True, exist_ok=True)
+        mount = fallback
+        selected_large_local_scratch = False
+    else:
+        selected_large_local_scratch = True
+    job_root = mount / RUN_ID
+    directories = {
+        "job_root": job_root,
+        "hf_home": job_root / "huggingface",
+        "torch_home": job_root / "torch",
+        "xdg_cache_home": job_root / "xdg-cache",
+        "tmpdir": job_root / "tmp",
+        "staging_dir": job_root / "staging",
+    }
+    for path in directories.values():
+        path.mkdir(parents=True, exist_ok=True)
+    os.environ["HF_HOME"] = str(directories["hf_home"])
+    os.environ["HF_HUB_CACHE"] = str(directories["hf_home"] / "hub")
+    os.environ["TORCH_HOME"] = str(directories["torch_home"])
+    os.environ["XDG_CACHE_HOME"] = str(directories["xdg_cache_home"])
+    os.environ["TMPDIR"] = str(directories["tmpdir"])
+    os.environ["STAGE5_PHASE2_STAGE0A_STAGING"] = str(directories["staging_dir"])
+    usage = shutil.disk_usage(mount)
+    receipt = {
+        "mount": str(mount),
+        "selected_large_local_scratch": selected_large_local_scratch,
+        "total_bytes": usage.total,
+        "free_bytes_at_start": usage.free,
+        "ephemeral": True,
+        "durable_resume_store": str(DRIVE_RUN / "private/stage0a"),
+        "paths": {key: str(value) for key, value in directories.items()},
+    }
+    print("stage0a_local_scratch:", json.dumps(receipt, sort_keys=True), flush=True)
+    return receipt
+
+
 def validate_inputs() -> None:
     if not DEV_C.is_file():
         raise FileNotFoundError(f"Stage 0A DEV-C input is missing: {DEV_C}")
@@ -117,12 +196,14 @@ def publish(path: Path) -> str:
 def main() -> int:
     validate_inputs()
     DRIVE_RUN.mkdir(parents=True, exist_ok=True)
+    scratch = configure_local_scratch()
     output = RUN_DIR / "summary.json"
     private = DRIVE_RUN / "private/stage0a"
     status_event(
         "started_or_resumed",
         data_sha256=STAGE0A_CONFIG["data_sha256"],
         private_dir=str(private),
+        local_scratch=scratch,
         training_started=False,
         optimizer_steps=0,
     )
@@ -149,6 +230,8 @@ def main() -> int:
         ]
     )
     summary = json.loads(output.read_text(encoding="utf-8"))
+    summary["runtime_storage"] = scratch
+    write_json(output, summary)
     if summary.get("status") != "complete_development_only":
         raise RuntimeError("Stage 0A did not produce its completion receipt")
     if summary.get("training_started") or summary.get("optimizer_steps"):

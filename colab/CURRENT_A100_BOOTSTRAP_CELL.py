@@ -249,6 +249,7 @@ TARGETS = {
             "A100-SXM4-80GB sequential model loads and Drive-resumable shards",
             "DEV-C only sparse lattice and teacher states no optimizer no training",
             "200000 boundary samples layers 16 32 44 one-based post-block",
+            "automatic local-scratch cache with Drive-backed durable resume shards",
             "tests/test_paper2_phase2_stage0a.py",
             "colab/run_stage5_paper2_phase2_stage0a.py",
         ],

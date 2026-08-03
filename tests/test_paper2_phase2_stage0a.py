@@ -11,6 +11,7 @@ from eval.cache_paper2_phase2_stage0a import (
     _score_candidates,
     completed_union_score_shard,
 )
+from colab.run_stage5_paper2_phase2_stage0a import select_local_scratch
 from training.paper2_phase2_stage0a import (
     STAGE0A_CONFIG,
     build_sparse_union,
@@ -240,3 +241,19 @@ def test_completed_union_score_shard_validates_its_union_source(tmp_path: Path) 
         row_stop=8,
         union_sha256="different",
     )
+
+
+def test_stage0a_prefers_large_named_local_scratch(tmp_path: Path) -> None:
+    root = tmp_path / "content"
+    scratch = tmp_path / "local-scratch"
+    root.mkdir()
+    scratch.mkdir()
+    gib = 1024**3
+    listing = "\n".join(
+        [
+            "Filesystem Mounted-on 1B-blocks Avail",
+            f"overlay {root} {235 * gib} {70 * gib}",
+            f"/dev/nvme1n1 {scratch} {368 * gib} {360 * gib}",
+        ]
+    )
+    assert select_local_scratch(listing) == scratch
