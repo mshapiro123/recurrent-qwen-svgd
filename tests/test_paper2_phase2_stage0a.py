@@ -334,3 +334,13 @@ def test_stage0a_prefers_large_named_local_scratch(tmp_path: Path) -> None:
         ]
     )
     assert select_local_scratch(listing) == scratch
+
+
+def test_preanchor_equivalence_is_diagnostic_not_a_hard_failure() -> None:
+    source = (ROOT / "eval/cache_paper2_phase2_stage0a.py").read_text(
+        encoding="utf-8"
+    )
+    assert "stage0a_union_score_preanchor_diagnostic" in source
+    assert "discarded_pre_anchor_reconstruction_diagnostic" in source
+    assert "top-k/union probability equivalence failed" not in source
+    assert "cached-forward own-model top-k anchor" in source

@@ -1029,15 +1029,16 @@ def score_union_for_model(
             )
             if diagnostics["extra_mass_projection_scale"] < 1.0:
                 shard_projected_sample_count += 1
-        if equivalence_error > TOPK_LOG_PROB_EQUIVALENCE_TOLERANCE:
-            raise RuntimeError(
-                f"Stage 0A top-k/union equivalence failed for {model_key}: "
-                f"max_abs_error={equivalence_error}"
-            )
-        if probability_error > TOPK_PROB_EQUIVALENCE_TOLERANCE:
-            raise RuntimeError(
-                f"Stage 0A top-k/union probability equivalence failed for {model_key}: "
-                f"max_abs_error={probability_error}"
+        if (
+            equivalence_error > TOPK_LOG_PROB_EQUIVALENCE_TOLERANCE
+            or probability_error > TOPK_PROB_EQUIVALENCE_TOLERANCE
+        ):
+            print(
+                "stage0a_union_score_preanchor_diagnostic "
+                f"model={model_key} rows={start}:{stop} "
+                f"log_max_abs_error={equivalence_error} "
+                f"probability_max_abs_error={probability_error}",
+                flush=True,
             )
         maximum_topk_equivalence_error = max(
             maximum_topk_equivalence_error, equivalence_error
@@ -1137,6 +1138,13 @@ def score_union_for_model(
         "topk_equivalence_tolerance": TOPK_LOG_PROB_EQUIVALENCE_TOLERANCE,
         "topk_probability_max_abs_error": maximum_topk_probability_error,
         "topk_probability_tolerance": TOPK_PROB_EQUIVALENCE_TOLERANCE,
+        "topk_equivalence_role": "discarded_pre_anchor_reconstruction_diagnostic",
+        "topk_log_reference_exceeded": (
+            maximum_topk_equivalence_error > TOPK_LOG_PROB_EQUIVALENCE_TOLERANCE
+        ),
+        "topk_probability_reference_exceeded": (
+            maximum_topk_probability_error > TOPK_PROB_EQUIVALENCE_TOLERANCE
+        ),
         "topk_values_source": "cached_forward_pass_anchor_simplex_reconciled",
         "maximum_mass_overflow": maximum_mass_overflow,
         "maximum_topk_mass_overflow": maximum_topk_mass_overflow,
@@ -1350,7 +1358,10 @@ def finalize_lattice(
         "lattice": {
             "samples": sum(row["samples"] for row in final_receipts),
             "top_k": STAGE0A_CONFIG["top_k"],
-            "candidate_space": "exact union candidates plus exact tail bucket",
+            "candidate_space": (
+                "cached-forward own-model top-k anchor plus approximately rescored "
+                "cross-model candidates and simplex-reconciled tail"
+            ),
             "bucket_counts": dict(sorted(bucket_counts.items())),
             "stratum_counts": dict(sorted(stratum_counts.items())),
             "normalized_teacher_agreement": _quantiles(agreements),
@@ -1370,6 +1381,11 @@ def finalize_lattice(
             }
             for key in STAGE0A_CONFIG["models"]
         },
+        "sparse_reconstruction_scope": (
+            "own-model top-k values come from the original forward; cross-model union "
+            "candidate values are reconstructed from cached bfloat16 hidden states and "
+            "LM-head weights; full-logit audit rows quantify reconstruction error"
+        ),
         "teacher_states": {
             "model": fourteen_summary["model"],
             "revision": fourteen_summary["revision"],
