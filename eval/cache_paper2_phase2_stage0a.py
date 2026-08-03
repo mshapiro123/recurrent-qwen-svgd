@@ -32,9 +32,10 @@ from training.paper2_phase2_stage0a import (
 ROWS_PER_SHARD = 8
 INFERENCE_LOGIT_CHUNK = 16
 UNION_SCORE_CHUNK = 8
-UNION_SCORE_SCHEMA_VERSION = 2
+UNION_SCORE_SCHEMA_VERSION = 3
 TOPK_LOG_PROB_EQUIVALENCE_TOLERANCE = 0.25
 TOPK_PROB_EQUIVALENCE_TOLERANCE = 0.01
+SPARSE_MASS_PROJECTION_MAX_OVERFLOW = 0.05
 
 
 def read_jsonl(path: str | Path) -> list[dict[str, Any]]:
@@ -736,7 +737,7 @@ def _score_candidates(
         del embeddings, logits, log_probs
     candidate_mass = torch.where(candidate_mask, output.exp(), torch.zeros_like(output)).sum(dim=-1)
     tail_mass = (1.0 - candidate_mass).clamp(min=1e-30, max=1.0)
-    return output.to(torch.bfloat16), tail_mass.log()
+    return output, tail_mass.log()
 
 
 def completed_union_score_shard(
@@ -771,7 +772,13 @@ def apply_authoritative_topk(
     cached_topk_ids: torch.Tensor,
     cached_topk_log_probs: torch.Tensor,
 ) -> tuple[torch.Tensor, torch.Tensor, dict[str, float]]:
-    """Keep cached top-k probabilities exact and fill only missing union candidates."""
+    """Keep cached top-k exact and reconcile approximate extras on the simplex.
+
+    The extra union candidates are rescored from bfloat16 cached hidden states and
+    LM-head weights, while top-k values come from the original model forward. If
+    their mixed mass exceeds one, the KL projection with fixed top-k coordinates
+    scales only the approximate extras into the authoritative residual mass.
+    """
 
     valid_union = union_ids[union_mask].long()
     cached_ids = cached_topk_ids.long()
@@ -780,7 +787,7 @@ def apply_authoritative_topk(
         valid_union[positions], cached_ids
     ):
         raise RuntimeError("Stage 0A union omitted a cached top-k token")
-    corrected = candidate_log_probs.clone()
+    corrected = candidate_log_probs.float().clone()
     rescored = corrected[positions].float()
     cached = cached_topk_log_probs.float()
     diagnostics = {
@@ -789,14 +796,44 @@ def apply_authoritative_topk(
             (rescored.exp() - cached.exp()).abs().max()
         ),
     }
-    corrected[positions] = cached_topk_log_probs.to(corrected.dtype)
-    candidate_mass = corrected[union_mask].float().exp().sum()
-    if float(candidate_mass) > 1.005:
+    corrected[positions] = cached
+
+    topk_mask = torch.zeros_like(union_mask, dtype=torch.bool)
+    topk_mask[positions] = True
+    extra_mask = union_mask & ~topk_mask
+    topk_mass = cached.exp().sum()
+    if float(topk_mass) > 1.005:
         raise RuntimeError(
-            "Stage 0A corrected union candidate mass exceeds one: "
-            f"candidate_mass={float(candidate_mass)}"
+            "Stage 0A authoritative cached top-k mass exceeds one: "
+            f"topk_mass={float(topk_mass)}"
         )
+    available_extra_mass = (1.0 - topk_mass).clamp(min=0.0)
+    raw_extra_mass = corrected[extra_mask].exp().sum()
+    raw_candidate_mass = topk_mass + raw_extra_mass
+    mass_overflow = max(0.0, float(raw_candidate_mass - 1.0))
+    if mass_overflow > SPARSE_MASS_PROJECTION_MAX_OVERFLOW:
+        raise RuntimeError(
+            "Stage 0A sparse union mass projection is too large: "
+            f"overflow={mass_overflow} raw_candidate_mass={float(raw_candidate_mass)}"
+        )
+    projection_scale = 1.0
+    if float(raw_extra_mass) > float(available_extra_mass) and extra_mask.any():
+        if float(available_extra_mass) <= 0.0:
+            corrected[extra_mask] = float("-inf")
+            projection_scale = 0.0
+        else:
+            projection_scale = float(available_extra_mass / raw_extra_mass)
+            corrected[extra_mask] += math.log(projection_scale)
+
+    candidate_mass = corrected[union_mask].exp().sum()
     tail_log_prob = (1.0 - candidate_mass).clamp(min=1e-30, max=1.0).log()
+    diagnostics.update(
+        {
+            "raw_candidate_mass": float(raw_candidate_mass),
+            "mass_overflow": mass_overflow,
+            "extra_mass_projection_scale": projection_scale,
+        }
+    )
     return corrected, tail_log_prob, diagnostics
 
 
@@ -815,6 +852,9 @@ def score_union_for_model(
     sample_lookup = {int(sample["sample_index"]): sample for sample in samples}
     maximum_topk_equivalence_error = 0.0
     maximum_topk_probability_error = 0.0
+    maximum_mass_overflow = 0.0
+    minimum_extra_mass_projection_scale = 1.0
+    projected_sample_count = 0
     for start in range(0, len(rows), ROWS_PER_SHARD):
         stop = min(len(rows), start + ROWS_PER_SHARD)
         destination = score_root / f"rows_{start:06d}_{stop:06d}.pt"
@@ -840,6 +880,11 @@ def score_union_for_model(
                     "topk_probability_max_abs_error": float(
                         payload["topk_probability_max_abs_error"]
                     ),
+                    "maximum_mass_overflow": float(payload["maximum_mass_overflow"]),
+                    "minimum_extra_mass_projection_scale": float(
+                        payload["minimum_extra_mass_projection_scale"]
+                    ),
+                    "projected_sample_count": int(payload["projected_sample_count"]),
                 }
             )
             maximum_topk_equivalence_error = max(
@@ -850,6 +895,14 @@ def score_union_for_model(
                 maximum_topk_probability_error,
                 float(payload["topk_probability_max_abs_error"]),
             )
+            maximum_mass_overflow = max(
+                maximum_mass_overflow, float(payload["maximum_mass_overflow"])
+            )
+            minimum_extra_mass_projection_scale = min(
+                minimum_extra_mass_projection_scale,
+                float(payload["minimum_extra_mass_projection_scale"]),
+            )
+            projected_sample_count += int(payload["projected_sample_count"])
             print(
                 f"stage0a_union_score_resume model={model_key} rows={stop}/{len(rows)}",
                 flush=True,
@@ -879,7 +932,7 @@ def score_union_for_model(
             entropy[base_offset] = model_cache["entropy"][source_offset]
             greedy[base_offset] = model_cache["topk_ids"][source_offset, 0]
         candidate_log_probs = torch.full(
-            union["union_ids"].shape, float("-inf"), dtype=torch.bfloat16
+            union["union_ids"].shape, float("-inf"), dtype=torch.float32
         )
         tail_log_probs = torch.full((len(base_indices),), float("-inf"), dtype=torch.float32)
         if present.any():
@@ -896,6 +949,9 @@ def score_union_for_model(
 
         equivalence_error = 0.0
         probability_error = 0.0
+        shard_maximum_mass_overflow = 0.0
+        shard_minimum_projection_scale = 1.0
+        shard_projected_sample_count = 0
         for base_offset, sample_index in enumerate(base_indices):
             if not present[base_offset]:
                 continue
@@ -917,6 +973,15 @@ def score_union_for_model(
                 probability_error,
                 diagnostics["probability_max_abs_error"],
             )
+            shard_maximum_mass_overflow = max(
+                shard_maximum_mass_overflow, diagnostics["mass_overflow"]
+            )
+            shard_minimum_projection_scale = min(
+                shard_minimum_projection_scale,
+                diagnostics["extra_mass_projection_scale"],
+            )
+            if diagnostics["extra_mass_projection_scale"] < 1.0:
+                shard_projected_sample_count += 1
         if equivalence_error > TOPK_LOG_PROB_EQUIVALENCE_TOLERANCE:
             raise RuntimeError(
                 f"Stage 0A top-k/union equivalence failed for {model_key}: "
@@ -933,6 +998,13 @@ def score_union_for_model(
         maximum_topk_probability_error = max(
             maximum_topk_probability_error, probability_error
         )
+        maximum_mass_overflow = max(
+            maximum_mass_overflow, shard_maximum_mass_overflow
+        )
+        minimum_extra_mass_projection_scale = min(
+            minimum_extra_mass_projection_scale, shard_minimum_projection_scale
+        )
+        projected_sample_count += shard_projected_sample_count
 
         audit_offsets = [
             offset
@@ -969,6 +1041,10 @@ def score_union_for_model(
             "topk_equivalence_max_abs_error": equivalence_error,
             "topk_probability_max_abs_error": probability_error,
             "topk_values_source": "cached_forward_pass_authoritative",
+            "maximum_mass_overflow": shard_maximum_mass_overflow,
+            "minimum_extra_mass_projection_scale": shard_minimum_projection_scale,
+            "projected_sample_count": shard_projected_sample_count,
+            "mass_reconciliation": "fixed-topk KL projection of approximate extras",
         }
         atomic_torch_save(payload, destination, staging_dir=staging_dir)
         receipts.append(
@@ -979,6 +1055,9 @@ def score_union_for_model(
                 "audit_samples": len(audit_offsets),
                 "topk_equivalence_max_abs_error": equivalence_error,
                 "topk_probability_max_abs_error": probability_error,
+                "maximum_mass_overflow": shard_maximum_mass_overflow,
+                "minimum_extra_mass_projection_scale": shard_minimum_projection_scale,
+                "projected_sample_count": shard_projected_sample_count,
             }
         )
         print(f"stage0a_union_score_progress model={model_key} rows={stop}/{len(rows)}", flush=True)
@@ -998,6 +1077,11 @@ def score_union_for_model(
         "topk_probability_max_abs_error": maximum_topk_probability_error,
         "topk_probability_tolerance": TOPK_PROB_EQUIVALENCE_TOLERANCE,
         "topk_values_source": "cached_forward_pass_authoritative",
+        "maximum_mass_overflow": maximum_mass_overflow,
+        "mass_projection_max_overflow": SPARSE_MASS_PROJECTION_MAX_OVERFLOW,
+        "minimum_extra_mass_projection_scale": minimum_extra_mass_projection_scale,
+        "projected_sample_count": projected_sample_count,
+        "mass_reconciliation": "fixed-topk KL projection of approximate extras",
         "resume_policy": "completed union score shards are hash-validated and never rescored",
     }
     write_json(score_root / "summary.json", summary)

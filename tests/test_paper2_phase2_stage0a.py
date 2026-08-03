@@ -222,7 +222,7 @@ def test_completed_union_score_shard_validates_its_union_source(tmp_path: Path) 
     torch.save(
         {
             "kind": "paper2_phase2_stage0a_union_score_shard",
-            "score_schema_version": 2,
+            "score_schema_version": 3,
             "model_key": "teacher_7b",
             "row_start": 0,
             "row_stop": 8,
@@ -262,7 +262,42 @@ def test_authoritative_topk_replaces_kernel_drift_and_recomputes_tail() -> None:
     assert torch.equal(corrected[[0, 2]], cached)
     assert diagnostics["log_probability_max_abs_error"] > 0
     assert diagnostics["probability_max_abs_error"] == pytest.approx(0.02)
+    assert diagnostics["mass_overflow"] == 0.0
+    assert diagnostics["extra_mass_projection_scale"] == 1.0
     assert corrected.exp().sum() + tail.exp() == pytest.approx(1.0)
+
+
+def test_authoritative_topk_projects_only_approximate_extra_mass() -> None:
+    candidate = torch.log(torch.tensor([0.62, 0.24, 0.16, 0.04]))
+    union_ids = torch.tensor([1, 3, 5, 8])
+    union_mask = torch.tensor([True, True, True, True])
+    cached_ids = torch.tensor([1, 5])
+    cached = torch.log(torch.tensor([0.60, 0.15]))
+    corrected, tail, diagnostics = apply_authoritative_topk(
+        candidate_log_probs=candidate,
+        union_ids=union_ids,
+        union_mask=union_mask,
+        cached_topk_ids=cached_ids,
+        cached_topk_log_probs=cached,
+    )
+
+    assert torch.equal(corrected[[0, 2]], cached)
+    assert diagnostics["raw_candidate_mass"] == pytest.approx(1.03)
+    assert diagnostics["mass_overflow"] == pytest.approx(0.03)
+    assert diagnostics["extra_mass_projection_scale"] == pytest.approx(0.25 / 0.28)
+    assert corrected[[1, 3]].exp().sum() == pytest.approx(0.25)
+    assert corrected.exp().sum() + tail.exp() == pytest.approx(1.0)
+
+
+def test_authoritative_topk_rejects_large_sparse_mass_projection() -> None:
+    with pytest.raises(RuntimeError, match="mass projection is too large"):
+        apply_authoritative_topk(
+            candidate_log_probs=torch.log(torch.tensor([0.60, 0.35, 0.20])),
+            union_ids=torch.tensor([1, 3, 5]),
+            union_mask=torch.tensor([True, True, True]),
+            cached_topk_ids=torch.tensor([1]),
+            cached_topk_log_probs=torch.log(torch.tensor([0.60])),
+        )
 
 
 def test_stage0a_prefers_large_named_local_scratch(tmp_path: Path) -> None:
