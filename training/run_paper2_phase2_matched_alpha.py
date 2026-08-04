@@ -107,6 +107,19 @@ def _load_trainable_state(module: nn.Module, payload: dict[str, torch.Tensor]) -
             value.copy_(payload[name].to(device=value.device, dtype=value.dtype))
 
 
+def _resume_has_no_optimizer_update(saved: dict[str, Any]) -> bool:
+    optimizer_state = saved.get("optimizer", {}).get("state", {})
+    history = list(saved.get("history", []))
+    return (
+        int(saved.get("step", -1)) <= 1
+        and not optimizer_state
+        and not saved.get("trust_history")
+        and not saved.get("clip_events")
+        and len(history) == 1
+        and int(history[0].get("step", -1)) == 0
+    )
+
+
 def _parallel_receipts(summary: dict[str, Any], key: str) -> list[dict[str, Any]]:
     return list(summary["model_caches"][key]["shards"])
 
@@ -772,8 +785,8 @@ def run_arm(
         if saved["alpha"] != alpha or saved["seed"] != seed or saved["initial_hash"] != initial_hash:
             raise RuntimeError(f"resume metadata mismatch for {arm}")
         if saved.get("loss_mask_contract") != LOSS_MASK_CONTRACT:
-            if int(saved["step"]) != 0:
-                raise RuntimeError(f"incompatible post-step-zero resume for {arm}")
+            if not _resume_has_no_optimizer_update(saved):
+                raise RuntimeError(f"incompatible resume with possible optimizer update for {arm}")
             print(f"matched_alpha_recompute_invalid_step_zero arm={arm}", flush=True)
         else:
             _load_trainable_state(module, saved["trainable_state"])

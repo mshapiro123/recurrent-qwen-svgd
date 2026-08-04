@@ -3246,7 +3246,7 @@ def test_phase2_matched_alpha_target_is_wired_and_guarded(tmp_path) -> None:
         assert "colab/STAGE5_PAPER2_PHASE2_MATCHED_ALPHA_CELL.py" in text
         assert "14B functional probe uses the hashed 14B LM head" in text
 
-    assert "paper2_phase2_matched_alpha_v6" in cell
+    assert "paper2_phase2_matched_alpha_v7" in cell
     assert "vram_gib >= 35" in cell
     assert "A100 40GB cached-state sparse-logit path" in cell
     assert "allowed=(0, 2)" in cell

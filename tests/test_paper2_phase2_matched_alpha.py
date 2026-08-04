@@ -26,6 +26,7 @@ from training.run_paper2_phase2_matched_alpha import (
     _grow_last_dim,
     _gradient_atlas,
     _losses,
+    _resume_has_no_optimizer_update,
     sha256_lf_file,
 )
 
@@ -152,6 +153,19 @@ def test_variable_candidate_width_growth_preserves_rows_and_pads_safely() -> Non
     assert torch.equal(grown_log_probs[..., :2], log_probs)
     assert torch.isneginf(grown_log_probs[..., 2:]).all()
     assert _grow_last_dim(grown_ids, 3, -1) is grown_ids
+
+
+def test_preupdate_step_one_resume_is_recomputed_but_optimizer_state_fails_closed() -> None:
+    saved = {
+        "step": 1,
+        "optimizer": {"state": {}, "param_groups": []},
+        "history": [{"step": 0}],
+        "trust_history": [],
+        "clip_events": [],
+    }
+    assert _resume_has_no_optimizer_update(saved)
+    saved["optimizer"]["state"] = {0: {"step": 1}}
+    assert not _resume_has_no_optimizer_update(saved)
 
 
 def test_trust_saturation_requires_strict_majority_of_full_window() -> None:
