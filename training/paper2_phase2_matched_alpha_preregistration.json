@@ -1,0 +1,66 @@
+{
+  "kind": "paper2_phase2_matched_alpha_preregistration",
+  "status": "locked_before_training",
+  "date": "2026-08-04",
+  "protocol_path": "docs/PAPER2_PHASE2_MATCHED_ALPHA_PILOT_PROTOCOL_DRAFT_20260804.md",
+  "lock_commit_policy": "git_commit_containing_this_file",
+  "canonicalizer": {
+    "method": "learned_mixture_rrr",
+    "seed": 20260814,
+    "sha256": "53215130a75c929def4bcc4b81ba9187d90a7b6fe2b1502391518d45c09476e3"
+  },
+  "alphas": [0.0, 0.5, 1.0],
+  "seeds": [0, 1],
+  "steps": 1000,
+  "extension_steps": 2000,
+  "batch_size": 128,
+  "evaluation_every": 100,
+  "optimizer": {
+    "name": "AdamW",
+    "learning_rate": 0.0003,
+    "weight_decay": 0.01,
+    "linear_warmup_steps": 100,
+    "exclude_from_weight_decay": ["biases", "RMSNorm_gains", "learnable_scalars"]
+  },
+  "loss_weights": {
+    "final_ce": 1.0,
+    "preserve_kl": 0.1,
+    "flow": 1.0,
+    "functional_probe_kl": 0.5,
+    "cumulative_kl": 1.0,
+    "trust": 0.01
+  },
+  "module_clip_norms": {"refiner": 1.0, "bridge": 0.5, "heads": 1.0},
+  "trust": {
+    "maximum": 0.5,
+    "post_warmup_window": 100,
+    "maximum_nonzero_steps": 50,
+    "denominator": "max(rms(z_k),rms(stop_gradient(Z_T)))+1e-6"
+  },
+  "adequacy": {
+    "minimum_runs": 4,
+    "total_runs": 6,
+    "flow_improvement_from_step_100": 0.20,
+    "gate_open_above_initialization": true,
+    "one_resume_extension_only": true
+  },
+  "quality": {
+    "point_retention_floor": 0.997,
+    "wilson_95_lower_floor": 0.990,
+    "two_consecutive_failures_abort": true
+  },
+  "equivalence_relative_band": 0.02,
+  "equivalence_default_alpha": 0.5,
+  "refinement": {"upper": 0.75, "lower": 0.25},
+  "constants_lf_sha256": "87965cf6ab1768962fccac6d2598477832b95e1ab9128c465afa23da68d4f076",
+  "frozen_data": {
+    "data_sha256": "05bca2ee3ba71421296b2e31a0439746eb9c1b0e15e2cea4471be202ab6ac29d",
+    "sample_manifest_sha256": "43edbb74c5edf84dc5e6512dbe4beb1bbbf0f4df31b2c6830714ce2c8fc7ba93",
+    "position_key_sha256": "4b66fce9817fe499718506e9206005c5bf3876bc999f6bb5062b36a9fbb81490",
+    "student_lm_head_sha256": "c8df8c518c4ac72777279d843142774e449e1fa344df2c08ee6ab1e5535fbd2d"
+  },
+  "parameter_counts": {"frozen_probe": 660480, "student_module": 1184917},
+  "training_partition": "DEV-C_train_hash_split",
+  "evaluation_partition": "DEV-C_fixed_document_isolated_hash_split",
+  "frozen_confirmatory_partitions_touched": []
+}
