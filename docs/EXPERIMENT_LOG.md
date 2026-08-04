@@ -1666,3 +1666,31 @@ Colab/Drive backups for selected runs.
   the matched-alpha pilot protocol draft is Drive
   `1mWEsqjPii6CvB8bkGR0GQtlvezq7GljL`, 5,192 bytes, SHA-256
   `4c8b6f24e25062ecd6096077360d8b5912763c33ed0da07b3d79815a09cb2f3f`.
+- 2026-08-04 Phase-2 canonicalizer arbitration and loss-free student build:
+  the corrected common-seed comparison selected learned-mixture RRR over
+  uniform-mixture RRR. Across randomized-SVD seeds `20260814`, `20260824`, and
+  `20260834`, learned-minus-uniform teacher top-1 agreement was `+0.724`,
+  `+0.664`, and `+0.556` percentage points. The seed-averaged paired delta was
+  `+0.648` points, bootstrap 95% CI `[+0.523, +0.777]`, positive in code and
+  general text; maximum within-arm seed range was only `0.228` points versus
+  the preregistered `0.680`-point fit-noise threshold. Future KL also favored
+  the learned mixture by `-0.0180`, 95% CI `[-0.0225, -0.0135]`. Exact refits
+  placed `22.66-23.44%` of the 128-dimensional whitening eigenspectrum at the
+  floor; this is whitening support, not a direct rank audit of the 256-component
+  RRR map. The checkpoint-integrated loss-free DC2 student added `1,184,917`
+  trainable parameters and passed exact zero-loop identity, frozen-base hash,
+  four-step cap, masked-slot, trust-region, and Stage-C-read assertions with no
+  optimizer, loss, training, or frozen-evaluation contact. Matched alpha pilots
+  remain held pending protocol and resource-note lock. Handoff:
+  `docs/PAPER2_PHASE2_CANONICALIZER_ARBITRATION_BUILD_HANDOFF_20260804.md`.
+  Receipts:
+  `outputs/stage5/stage5_paper2_phase2_arbitration_build_20260804/summary.json`,
+  `outputs/stage5/stage5_paper2_phase2_arbitration_build_20260804/canonicalizer_arbitration_summary.json`,
+  and
+  `outputs/stage5/stage5_paper2_phase2_arbitration_build_20260804/student_build_summary.json`.
+  The raw-Markdown handoff is mirrored under the standing Drive policy as file
+  `1wldFvnBm1EnLnih5hr3_e03YarDvPYqk`, `14,842` bytes, SHA-256
+  `dc3c40bed3aafc99430ea973b2190995ec674f4a5296665e34cef01a36325e95`.
+  The seed-control figure is Drive file
+  `1Ms6lVe1MPu9lDRZaTU7cNxLrVwysyQcj`, `20,350` bytes, SHA-256
+  `665d3522eaa2c8dd7ac2556b16ed1713c0956b43a61abd416fedfa7c43c40f60`.
