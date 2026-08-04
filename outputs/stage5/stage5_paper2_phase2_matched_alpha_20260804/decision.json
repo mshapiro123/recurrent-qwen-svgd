@@ -70,7 +70,7 @@
     }
   },
   "protocol_lock_commit": "cf6747264e48e2de657eb2a1646f1e7c4f152ea5",
-  "reason": "adequacy_failed_after_registered_extension",
+  "reason": "one_or_more_arms_aborted_before_adequacy",
   "refinement_required": null,
   "selected_alpha": null,
   "status": "no_selection"

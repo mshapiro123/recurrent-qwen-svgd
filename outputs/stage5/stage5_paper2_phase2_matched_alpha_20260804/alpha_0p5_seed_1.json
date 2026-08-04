@@ -3,7 +3,7 @@
   "alpha": 0.5,
   "checkpoint": {
     "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_matched_alpha_20260804/private/pilots/alpha_0p5_seed_1/resume.pt",
-    "sha256": "93709a472639129099fdb3b80189fb0f4c45d92d1144ade5d2cacb2bbd383540"
+    "sha256": "5b2931b431ba63376167aaddde0b9f0b39914cdeab959e5cb09970cd56175222"
   },
   "clip_events": {},
   "final": {
@@ -242,7 +242,8 @@
     }
   ],
   "kind": "paper2_phase2_matched_alpha_arm",
-  "launcher_commit": "e573454a35c8b17868c934aca35aaba0350bbfaa",
+  "launcher_commit": "3a24c7f5e674c0b3960e05efc4d1b614622312c5",
+  "loss_mask_contract": "masked_sparse_candidates_plus_tail_v1",
   "non_alpha_initialization_sha256": "7c667e193c9ce73366a4a0ca11191f084dd452ed7e6da90d9dcc3fbc5d654692",
   "protocol_lock_commit": "cf6747264e48e2de657eb2a1646f1e7c4f152ea5",
   "seed": 1,
