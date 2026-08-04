@@ -1,0 +1,77 @@
+{
+  "adequacy_precondition_met": false,
+  "comparisons": {
+    "0_vs_0.5": {
+      "between_seed_spread_exceeds_arm_difference": true,
+      "equivalent": true,
+      "interval_inside_band": true,
+      "mean_difference": 0.0,
+      "paired_bootstrap_95_interval": [
+        0.0,
+        0.0
+      ],
+      "relative_equivalence_band": [
+        -0.04239143371582031,
+        0.04239143371582031
+      ]
+    },
+    "1_vs_0.5": {
+      "between_seed_spread_exceeds_arm_difference": true,
+      "equivalent": true,
+      "interval_inside_band": true,
+      "mean_difference": 0.0,
+      "paired_bootstrap_95_interval": [
+        0.0,
+        0.0
+      ],
+      "relative_equivalence_band": [
+        -0.04239143371582031,
+        0.04239143371582031
+      ]
+    }
+  },
+  "kind": "paper2_phase2_matched_alpha_decision",
+  "pooled": {
+    "0": {
+      "mean_accepted_length": 2.1195716857910156,
+      "mean_clip_fraction": 0.0,
+      "mean_flow_validation_loss": 0.0946736785450152,
+      "mean_gradient_cv": 2.229026595751445,
+      "seed_means": [
+        2.1195714473724365,
+        2.119572162628174
+      ],
+      "seed_spread": 7.152557373046875e-07,
+      "valid": false
+    },
+    "0.5": {
+      "mean_accepted_length": 2.1195716857910156,
+      "mean_clip_fraction": 0.0,
+      "mean_flow_validation_loss": 0.11596577147406245,
+      "mean_gradient_cv": 2.200461268424988,
+      "seed_means": [
+        2.1195714473724365,
+        2.119572162628174
+      ],
+      "seed_spread": 7.152557373046875e-07,
+      "valid": false
+    },
+    "1": {
+      "mean_accepted_length": 2.1195716857910156,
+      "mean_clip_fraction": 0.0,
+      "mean_flow_validation_loss": 0.30555949324653264,
+      "mean_gradient_cv": 2.029728790124257,
+      "seed_means": [
+        2.1195714473724365,
+        2.119572162628174
+      ],
+      "seed_spread": 7.152557373046875e-07,
+      "valid": false
+    }
+  },
+  "protocol_lock_commit": "cf6747264e48e2de657eb2a1646f1e7c4f152ea5",
+  "reason": "adequacy_failed_after_registered_extension",
+  "refinement_required": null,
+  "selected_alpha": null,
+  "status": "no_selection"
+}
