@@ -1,0 +1,234 @@
+{
+  "calibration_metrics_by_seed": {
+    "concat_rrr": [
+      {
+        "future_kl": 4.5184431076049805,
+        "teacher_top1_agreement": 0.16342346370220184
+      },
+      {
+        "future_kl": 4.528886795043945,
+        "teacher_top1_agreement": 0.163771390914917
+      },
+      {
+        "future_kl": 4.523218631744385,
+        "teacher_top1_agreement": 0.16489911079406738
+      }
+    ],
+    "learned_mixture_rrr": [
+      {
+        "future_kl": 4.503822326660156,
+        "teacher_top1_agreement": 0.16790436208248138
+      },
+      {
+        "future_kl": 4.498922348022461,
+        "teacher_top1_agreement": 0.16605082154273987
+      },
+      {
+        "future_kl": 4.501532077789307,
+        "teacher_top1_agreement": 0.16857019066810608
+      }
+    ]
+  },
+  "calibration_minus_holdout_gap": {
+    "concat_rrr": {
+      "calibration_minus_holdout_future_kl": -0.2125690778096514,
+      "calibration_minus_holdout_teacher_top1_agreement": 0.009209339817364992
+    },
+    "learned_mixture_rrr": {
+      "calibration_minus_holdout_future_kl": -0.2290782928466797,
+      "calibration_minus_holdout_teacher_top1_agreement": 0.00887174904346466
+    }
+  },
+  "canonicalizer_decision": {
+    "authorize_tucker_layer_rank_2": false,
+    "max_within_arm_agreement_range": 0.002703353762626648,
+    "max_within_concat_agreement_range": 0.002703353762626648,
+    "max_within_learned_agreement_range": 0.0011414140462875366,
+    "primary": "learned_mixture_rrr",
+    "reason": "concat_fit_spread_exceeds_0p25pp_noise_gate",
+    "swap_branch_expired": true
+  },
+  "do_not_claim": [
+    "concat_rrr is a deterministic exact-LAPACK fit",
+    "common seeds cancel sketch noise across differently shaped inputs",
+    "concat_rrr universally upper-bounds every possible Tucker training procedure",
+    "development-only probe agreement is downstream verified acceptance",
+    "the layer-mode bound selects whitening alpha"
+  ],
+  "elapsed_seconds": 1001.4328119754791,
+  "fit_variability": {
+    "concat_teacher_top1_agreement": [
+      0.15318995714187622,
+      0.1553826779127121,
+      0.15589331090450287
+    ],
+    "concat_within_arm_range": 0.002703353762626648,
+    "learned_teacher_top1_agreement": [
+      0.15805599093437195,
+      0.15919740498065948,
+      0.15865673124790192
+    ],
+    "learned_within_arm_range": 0.0011414140462875366,
+    "max_within_arm_range": 0.002703353762626648,
+    "spread_gate_pass": false
+  },
+  "frozen_evaluation_partitions_touched": [],
+  "governing_addendum": {
+    "drive_id": "1LL8djMUG9o17iS4ctMTRCQ_T4jn7mXy1",
+    "r1_dense_lapack_route_superseded": true,
+    "revision": "r2"
+  },
+  "holdout_metrics_by_seed": {
+    "concat_rrr": [
+      {
+        "future_kl": 4.752213001251221,
+        "teacher_top1_agreement": 0.15318995714187622
+      },
+      {
+        "future_kl": 4.723983287811279,
+        "teacher_top1_agreement": 0.1553826779127121
+      },
+      {
+        "future_kl": 4.732059478759766,
+        "teacher_top1_agreement": 0.15589331090450287
+      }
+    ],
+    "learned_mixture_rrr": [
+      {
+        "future_kl": 4.739765644073486,
+        "teacher_top1_agreement": 0.15805599093437195
+      },
+      {
+        "future_kl": 4.708338260650635,
+        "teacher_top1_agreement": 0.15919740498065948
+      },
+      {
+        "future_kl": 4.743407726287842,
+        "teacher_top1_agreement": 0.15865673124790192
+      }
+    ]
+  },
+  "kind": "paper2_phase2_layer_mode_bound",
+  "locked_constants": {
+    "alpha": 0.5,
+    "bootstrap_replicates": 10000,
+    "bootstrap_seed": 20260804,
+    "fit_seeds": [
+      20260814,
+      20260824,
+      20260834
+    ],
+    "rank": 256,
+    "spread_gate": 0.0025,
+    "swap_ci_lower_bound": 0.005
+  },
+  "optimizer_steps": 0,
+  "paired_holdout": {
+    "by_stratum": {
+      "code": {
+        "delta_future_kl": 0.03498108685016632,
+        "delta_teacher_top1_agreement": -0.0068574328906834126,
+        "rows": 11812
+      },
+      "general": {
+        "delta_future_kl": -0.010586077347397804,
+        "delta_teacher_top1_agreement": -0.0021415269002318382,
+        "rows": 21480
+      }
+    },
+    "delta_definition": "concat_rrr_minus_learned_mixture_rrr",
+    "future_kl": {
+      "ci95_high": 0.011463424167323925,
+      "ci95_low": -0.0001152045645750189,
+      "mean": 0.005581150997735454,
+      "replicates": 10000,
+      "rows": 33292,
+      "seed": 20261205
+    },
+    "teacher_top1_agreement": {
+      "ci95_high": -0.0023829547378632805,
+      "ci95_low": -0.005226480736178223,
+      "mean": -0.003814730145575177,
+      "replicates": 10000,
+      "rows": 33292,
+      "seed": 20261204
+    }
+  },
+  "resource_plan": {
+    "dense_covariance_bytes_fp64": 1887436800,
+    "dense_covariance_formation_mac_proxy": 39331351756800,
+    "dense_covariance_materialized": false,
+    "dense_eigendecomposition_flop_proxy": 3623878656000,
+    "design_matrix_bytes_fp32": 10242539520,
+    "expected_relative_cost_vs_5120_width_fit": 3.0,
+    "fit_seeds": [
+      20260814,
+      20260824,
+      20260834
+    ],
+    "method": "randomized_low_rank_svd_streamed_design",
+    "rank": 256,
+    "rows": 166708,
+    "strategy_revision": "layer_mode_bound_r2_lapack_route_superseded",
+    "width": 15360
+  },
+  "selected_artifact": {
+    "arm": "learned_mixture_rrr",
+    "bytes": 23975548,
+    "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_arbitration_build_20260804/private/canonicalizer/learned_mixture_rrr_seed_20260814.pt",
+    "selection_seed": 20260814,
+    "selection_seed_rule": "first preregistered fit seed fixed before results",
+    "sha256": "53215130a75c929def4bcc4b81ba9187d90a7b6fe2b1502391518d45c09476e3"
+  },
+  "selected_projector_rank_spectrum": {
+    "energy_rank": {
+      "0.5": 11,
+      "0.9": 51,
+      "0.95": 70,
+      "0.99": 122
+    },
+    "entropy_effective_rank": 50.18790817260742,
+    "numerical_rank_rtol_1e_6": 256,
+    "singular_value_count": 1024,
+    "top_32_singular_values": [
+      0.6334021091461182,
+      0.5347191691398621,
+      0.47907310724258423,
+      0.45282065868377686,
+      0.38923513889312744,
+      0.36830469965934753,
+      0.3621433675289154,
+      0.3454689383506775,
+      0.3323746621608734,
+      0.31766384840011597,
+      0.29897481203079224,
+      0.29207614064216614,
+      0.28866416215896606,
+      0.2792065143585205,
+      0.2706780731678009,
+      0.26025933027267456,
+      0.25401705503463745,
+      0.2502549886703491,
+      0.23766212165355682,
+      0.23539215326309204,
+      0.22926849126815796,
+      0.22351135313510895,
+      0.22095975279808044,
+      0.21280838549137115,
+      0.20854559540748596,
+      0.20436237752437592,
+      0.1947760134935379,
+      0.19043654203414917,
+      0.1884693205356598,
+      0.18431305885314941,
+      0.17715288698673248,
+      0.17440636456012726
+    ]
+  },
+  "source_hashes": {
+    "arbitration_summary": "b3c75c6ac8f8038c952314b9d30a82f959151bc5191ee35e7aa38ea65a58eb01",
+    "exp0a_summary": "ffb49b48fa20bbe686a16d9c0e7402c64438a21c4bba5a567034fa54fe07b4b7"
+  },
+  "status": "complete_development_only_no_training",
+  "training_started": false
+}

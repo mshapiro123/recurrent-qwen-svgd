@@ -1,0 +1,40 @@
+{
+  "canonicalizer_decision": {
+    "authorize_tucker_layer_rank_2": false,
+    "max_within_arm_agreement_range": 0.002703353762626648,
+    "max_within_concat_agreement_range": 0.002703353762626648,
+    "max_within_learned_agreement_range": 0.0011414140462875366,
+    "primary": "learned_mixture_rrr",
+    "reason": "concat_fit_spread_exceeds_0p25pp_noise_gate",
+    "swap_branch_expired": true
+  },
+  "fit_variability": {
+    "concat_teacher_top1_agreement": [
+      0.15318995714187622,
+      0.1553826779127121,
+      0.15589331090450287
+    ],
+    "concat_within_arm_range": 0.002703353762626648,
+    "learned_teacher_top1_agreement": [
+      0.15805599093437195,
+      0.15919740498065948,
+      0.15865673124790192
+    ],
+    "learned_within_arm_range": 0.0011414140462875366,
+    "max_within_arm_range": 0.002703353762626648,
+    "spread_gate_pass": false
+  },
+  "kind": "paper2_phase2_layer_mode_bound_bundle",
+  "optimizer_steps": 0,
+  "receipt": "outputs/stage5/stage5_paper2_phase2_layer_mode_bound_20260804/layer_mode_bound_summary.json",
+  "selected_artifact": {
+    "arm": "learned_mixture_rrr",
+    "bytes": 23975548,
+    "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_arbitration_build_20260804/private/canonicalizer/learned_mixture_rrr_seed_20260814.pt",
+    "selection_seed": 20260814,
+    "selection_seed_rule": "first preregistered fit seed fixed before results",
+    "sha256": "53215130a75c929def4bcc4b81ba9187d90a7b6fe2b1502391518d45c09476e3"
+  },
+  "status": "complete_cpu_only_no_training",
+  "training_started": false
+}
