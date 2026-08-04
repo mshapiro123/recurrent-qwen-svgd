@@ -12,7 +12,7 @@ import torch
 from google.colab import drive, userdata
 
 
-STAGE5_PAPER2_PHASE2_MATCHED_ALPHA_VERSION = "paper2_phase2_matched_alpha_v4"
+STAGE5_PAPER2_PHASE2_MATCHED_ALPHA_VERSION = "paper2_phase2_matched_alpha_v5"
 # Safety marker: locked six-arm DEV-only alpha 0 0.5 1 seeds 0 1 matched pilots
 # Safety marker: zero-loop bit identity frozen LM heads K at most four and document isolation asserted
 # Safety marker: 14B functional probe uses the hashed 14B LM head not the student tied embedding
@@ -22,6 +22,7 @@ STAGE5_PAPER2_PHASE2_MATCHED_ALPHA_VERSION = "paper2_phase2_matched_alpha_v4"
 # Safety marker: A100 40GB cached-state sparse-logit path minimum 35 GiB visible VRAM
 # Safety marker: LF-normalized constants hash and canonicalizer verified before scratch staging
 # Safety marker: standalone runner import smoke tested outside repository Python path
+# Safety marker: variable sparse-union widths padded with masked sentinel values
 REPO = "mshapiro123/recurrent-qwen-svgd"
 ROOT = Path("/content/recurrent-qwen-svgd")
 REF = os.environ.get("STAGE5_BOOTSTRAP_REF", "main").strip() or "main"

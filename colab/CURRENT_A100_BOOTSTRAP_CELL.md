@@ -331,7 +331,7 @@ TARGETS = {
         "path": "colab/STAGE5_PAPER2_PHASE2_MATCHED_ALPHA_CELL.py",
         "markers": [
             "STAGE5_PAPER2_PHASE2_MATCHED_ALPHA_VERSION",
-            "paper2_phase2_matched_alpha_v4",
+            "paper2_phase2_matched_alpha_v5",
             "locked six-arm DEV-only alpha 0 0.5 1 seeds 0 1 matched pilots",
             "zero-loop bit identity frozen LM heads K at most four and document isolation asserted",
             "14B functional probe uses the hashed 14B LM head not the student tied embedding",
@@ -341,6 +341,7 @@ TARGETS = {
             "A100 40GB cached-state sparse-logit path minimum 35 GiB visible VRAM",
             "LF-normalized constants hash and canonicalizer verified before scratch staging",
             "standalone runner import smoke tested outside repository Python path",
+            "variable sparse-union widths padded with masked sentinel values",
             "tests/test_paper2_phase2_matched_alpha.py",
             "colab/run_stage5_paper2_phase2_matched_alpha.py",
         ],

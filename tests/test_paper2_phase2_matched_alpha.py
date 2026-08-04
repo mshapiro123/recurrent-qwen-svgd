@@ -22,6 +22,7 @@ from training.paper2_phase2_matched_alpha import (
 )
 from training.run_paper2_phase2_matched_alpha import (
     _assert_zero_loop_identity,
+    _grow_last_dim,
     _gradient_atlas,
     _losses,
     sha256_lf_file,
@@ -124,6 +125,20 @@ def test_registered_constants_hash_matches_lf_normalized_file() -> None:
     assert sha256_lf_file(root / "training/paper2_phase2_dc2_constants.json") == protocol[
         "constants_lf_sha256"
     ]
+
+
+def test_variable_candidate_width_growth_preserves_rows_and_pads_safely() -> None:
+    ids = torch.tensor([[[3, 7]]], dtype=torch.int32)
+    mask = torch.tensor([[[True, True]]])
+    log_probs = torch.tensor([[[-0.2, -1.7]]], dtype=torch.float32)
+    grown_ids = _grow_last_dim(ids, 4, -1)
+    grown_mask = _grow_last_dim(mask, 4, False)
+    grown_log_probs = _grow_last_dim(log_probs, 4, float("-inf"))
+    assert grown_ids.tolist() == [[[3, 7, -1, -1]]]
+    assert grown_mask.tolist() == [[[True, True, False, False]]]
+    assert torch.equal(grown_log_probs[..., :2], log_probs)
+    assert torch.isneginf(grown_log_probs[..., 2:]).all()
+    assert _grow_last_dim(grown_ids, 3, -1) is grown_ids
 
 
 def test_trust_saturation_requires_strict_majority_of_full_window() -> None:

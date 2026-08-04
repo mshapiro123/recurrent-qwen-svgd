@@ -117,6 +117,19 @@ def _local_source(path: str, stage0a_private: Path) -> Path:
     return stage0a_private / normalized.split(marker, 1)[1]
 
 
+def _grow_last_dim(value: torch.Tensor, width: int, fill: int | float | bool) -> torch.Tensor:
+    if width <= value.shape[-1]:
+        return value
+    grown = torch.full(
+        (*value.shape[:-1], width),
+        fill,
+        dtype=value.dtype,
+        device=value.device,
+    )
+    grown[..., : value.shape[-1]] = value
+    return grown
+
+
 def build_pilot_cache(
     *,
     stage0a_summary_path: Path,
@@ -167,11 +180,15 @@ def build_pilot_cache(
     candidates = int(first_lattice["union_ids"].shape[1])
     student_hidden = torch.empty((anchors, 4, 896), dtype=torch.bfloat16)
     teacher_h4_states = torch.empty((anchors, 3, 5120), dtype=torch.bfloat16)
-    candidate_ids = torch.empty((anchors, 4, candidates), dtype=torch.int32)
-    candidate_mask = torch.empty((anchors, 4, candidates), dtype=torch.bool)
-    base_log_probs = torch.empty((anchors, 4, candidates), dtype=torch.bfloat16)
+    candidate_ids = torch.full((anchors, 4, candidates), -1, dtype=torch.int32)
+    candidate_mask = torch.zeros((anchors, 4, candidates), dtype=torch.bool)
+    base_log_probs = torch.full(
+        (anchors, 4, candidates), float("-inf"), dtype=torch.bfloat16
+    )
     base_tail = torch.empty((anchors, 4), dtype=torch.bfloat16)
-    teacher_log_probs = torch.empty((anchors, 4, candidates), dtype=torch.bfloat16)
+    teacher_log_probs = torch.full(
+        (anchors, 4, candidates), float("-inf"), dtype=torch.bfloat16
+    )
     teacher_tail = torch.empty((anchors, 4), dtype=torch.bfloat16)
     teacher_topk_ids = torch.empty((anchors, 4, 128), dtype=torch.int32)
     teacher_topk_log_probs = torch.empty((anchors, 4, 128), dtype=torch.bfloat16)
@@ -192,6 +209,20 @@ def build_pilot_cache(
         lattice = torch.load(paths[0], map_location="cpu", weights_only=False)
         student = _load_flat_shard(paths[1])
         teacher = _load_flat_shard(paths[2])
+        shard_candidates = int(lattice["union_ids"].shape[1])
+        if shard_candidates > candidates:
+            print(
+                f"matched_alpha_cache_grow old_width={candidates} new_width={shard_candidates} "
+                f"shard={shard_number}",
+                flush=True,
+            )
+            candidate_ids = _grow_last_dim(candidate_ids, shard_candidates, -1)
+            candidate_mask = _grow_last_dim(candidate_mask, shard_candidates, False)
+            base_log_probs = _grow_last_dim(base_log_probs, shard_candidates, float("-inf"))
+            teacher_log_probs = _grow_last_dim(
+                teacher_log_probs, shard_candidates, float("-inf")
+            )
+            candidates = shard_candidates
         indices = lattice["sample_indices"].long()
         if not torch.equal(indices, student["sample_indices"].long()) or not torch.equal(
             indices, teacher["sample_indices"].long()
@@ -200,17 +231,17 @@ def build_pilot_cache(
         anchor = sample_anchor.index_select(0, indices)
         horizon = sample_horizon.index_select(0, indices) - 1
         student_hidden[anchor, horizon] = student["final_hidden_bfloat16"]
-        candidate_ids[anchor, horizon] = lattice["union_ids"].to(torch.int32)
-        candidate_mask[anchor, horizon] = lattice["union_mask"]
-        base_log_probs[anchor, horizon] = lattice["model_candidate_log_probs"]["student_0p5b"].to(
-            torch.bfloat16
-        )
+        candidate_ids[anchor, horizon, :shard_candidates] = lattice["union_ids"].to(torch.int32)
+        candidate_mask[anchor, horizon, :shard_candidates] = lattice["union_mask"]
+        base_log_probs[anchor, horizon, :shard_candidates] = lattice[
+            "model_candidate_log_probs"
+        ]["student_0p5b"].to(torch.bfloat16)
         base_tail[anchor, horizon] = lattice["model_tail_log_probs"]["student_0p5b"].to(
             torch.bfloat16
         )
-        teacher_log_probs[anchor, horizon] = lattice["model_candidate_log_probs"]["teacher_14b"].to(
-            torch.bfloat16
-        )
+        teacher_log_probs[anchor, horizon, :shard_candidates] = lattice[
+            "model_candidate_log_probs"
+        ]["teacher_14b"].to(torch.bfloat16)
         teacher_tail[anchor, horizon] = lattice["model_tail_log_probs"]["teacher_14b"].to(
             torch.bfloat16
         )
