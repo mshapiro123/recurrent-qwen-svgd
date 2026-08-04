@@ -1,0 +1,211 @@
+{
+  "arms": [
+    {
+      "acceptance_oracle_retention": 0.9982631534355673,
+      "alpha": 0.0,
+      "always_on_acceptance_delta": -0.0005301245837472379,
+      "arm": "alpha_0p0_seed_0",
+      "baseline_correct_horizon_decisions": 23606,
+      "negative_accepted_length_mass": 17.56145668029785,
+      "oracle_acceptance_delta": 0.0016565839760005474,
+      "oracle_gain_over_always_on": 0.0021867085597477853,
+      "oracle_selected_fraction": 0.469929039478302,
+      "oracle_selected_rows": 3774,
+      "positive_accepted_length_mass": 13.304025650024414,
+      "positive_to_negative_mass_ratio": 0.7575695964304694,
+      "quality_loss_rows_among_acceptance_oracle": 41,
+      "quality_safe_oracle_acceptance_delta": 0.0016312721418216825,
+      "quality_safe_oracle_gain_over_always_on": 0.0021613967255689204,
+      "quality_safe_oracle_retention": 1.0,
+      "quality_safe_selected_fraction": 0.46482381224632263,
+      "quality_safe_selected_rows": 3733,
+      "rows": 8031,
+      "seed": 0,
+      "source": {
+        "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_matched_alpha_audit_20260804/private/exact_abort_rows/alpha_0p0_seed_0_exact_step_0500_rows.pt",
+        "sha256": "72c44cf876ea56d1e5a5a24413937814453ba849a5abd0d031b739c318cdc063"
+      },
+      "terminal_step": 500
+    },
+    {
+      "acceptance_oracle_retention": 0.9987291366601712,
+      "alpha": 0.0,
+      "always_on_acceptance_delta": -0.0030858772806823254,
+      "arm": "alpha_0p0_seed_1",
+      "baseline_correct_horizon_decisions": 23606,
+      "negative_accepted_length_mass": 88.66014099121094,
+      "oracle_acceptance_delta": 0.00795386079698801,
+      "oracle_gain_over_always_on": 0.011039738077670336,
+      "oracle_selected_fraction": 0.46943095326423645,
+      "oracle_selected_rows": 3770,
+      "positive_accepted_length_mass": 63.87745666503906,
+      "positive_to_negative_mass_ratio": 0.7204754690314712,
+      "quality_loss_rows_among_acceptance_oracle": 30,
+      "quality_safe_oracle_acceptance_delta": 0.007901153527200222,
+      "quality_safe_oracle_gain_over_always_on": 0.010987030807882547,
+      "quality_safe_oracle_retention": 1.0,
+      "quality_safe_selected_fraction": 0.46569544076919556,
+      "quality_safe_selected_rows": 3740,
+      "rows": 8031,
+      "seed": 1,
+      "source": {
+        "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_matched_alpha_audit_20260804/private/exact_abort_rows/alpha_0p0_seed_1_exact_step_0600_rows.pt",
+        "sha256": "704c1de9aef97062b58240a64158030258ef807eff7d10bfb12a7adc3dd8797f"
+      },
+      "terminal_step": 600
+    },
+    {
+      "acceptance_oracle_retention": 0.9990256714394645,
+      "alpha": 0.5,
+      "always_on_acceptance_delta": -0.003038350958377123,
+      "arm": "alpha_0p5_seed_0",
+      "baseline_correct_horizon_decisions": 23606,
+      "negative_accepted_length_mass": 68.226806640625,
+      "oracle_acceptance_delta": 0.005457080435007811,
+      "oracle_gain_over_always_on": 0.008495431393384933,
+      "oracle_selected_fraction": 0.46208441257476807,
+      "oracle_selected_rows": 3711,
+      "positive_accepted_length_mass": 43.82581329345703,
+      "positive_to_negative_mass_ratio": 0.642354749567912,
+      "quality_loss_rows_among_acceptance_oracle": 23,
+      "quality_safe_oracle_acceptance_delta": 0.005415990017354488,
+      "quality_safe_oracle_gain_over_always_on": 0.008454340975731611,
+      "quality_safe_oracle_retention": 1.0,
+      "quality_safe_selected_fraction": 0.4592205286026001,
+      "quality_safe_selected_rows": 3688,
+      "rows": 8031,
+      "seed": 0,
+      "source": {
+        "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_matched_alpha_audit_20260804/private/exact_abort_rows/alpha_0p5_seed_0_exact_step_0193_rows.pt",
+        "sha256": "4ed6b7cceb7c9a2e9103cb438e63f253a984d546071b9841c380b811b21303db"
+      },
+      "terminal_step": 193
+    },
+    {
+      "acceptance_oracle_retention": 0.9991527577734475,
+      "alpha": 0.5,
+      "always_on_acceptance_delta": -0.0019243002170696855,
+      "arm": "alpha_0p5_seed_1",
+      "baseline_correct_horizon_decisions": 23606,
+      "negative_accepted_length_mass": 45.79576873779297,
+      "oracle_acceptance_delta": 0.003778073936700821,
+      "oracle_gain_over_always_on": 0.005702374153770506,
+      "oracle_selected_fraction": 0.47901880741119385,
+      "oracle_selected_rows": 3847,
+      "positive_accepted_length_mass": 30.341711044311523,
+      "positive_to_negative_mass_ratio": 0.6625439834416846,
+      "quality_loss_rows_among_acceptance_oracle": 20,
+      "quality_safe_oracle_acceptance_delta": 0.003747770329937339,
+      "quality_safe_oracle_gain_over_always_on": 0.005672070547007024,
+      "quality_safe_oracle_retention": 1.0,
+      "quality_safe_selected_fraction": 0.47652846574783325,
+      "quality_safe_selected_rows": 3827,
+      "rows": 8031,
+      "seed": 1,
+      "source": {
+        "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_matched_alpha_audit_20260804/private/exact_abort_rows/alpha_0p5_seed_1_exact_step_0184_rows.pt",
+        "sha256": "2ce70fd933afce301a1605193dd8c79d6211466db11d8efc1dffc8759532e48a"
+      },
+      "terminal_step": 184
+    },
+    {
+      "acceptance_oracle_retention": 0.9989409472168093,
+      "alpha": 1.0,
+      "always_on_acceptance_delta": -0.0026474494952708483,
+      "arm": "alpha_1p0_seed_0",
+      "baseline_correct_horizon_decisions": 23606,
+      "negative_accepted_length_mass": 63.977413177490234,
+      "oracle_acceptance_delta": 0.005318858195096254,
+      "oracle_gain_over_always_on": 0.007966307690367103,
+      "oracle_selected_fraction": 0.4628315269947052,
+      "oracle_selected_rows": 3717,
+      "positive_accepted_length_mass": 42.71575164794922,
+      "positive_to_negative_mass_ratio": 0.6676692527321235,
+      "quality_loss_rows_among_acceptance_oracle": 25,
+      "quality_safe_oracle_acceptance_delta": 0.005298015661537647,
+      "quality_safe_oracle_gain_over_always_on": 0.007945465156808496,
+      "quality_safe_oracle_retention": 1.0,
+      "quality_safe_selected_fraction": 0.45971858501434326,
+      "quality_safe_selected_rows": 3692,
+      "rows": 8031,
+      "seed": 0,
+      "source": {
+        "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_matched_alpha_audit_20260804/private/exact_abort_rows/alpha_1p0_seed_0_exact_step_0146_rows.pt",
+        "sha256": "757e3a855806a9b22605d8175223e050c15f4c6ecdf3abc52021426ef4e27d9e"
+      },
+      "terminal_step": 146
+    },
+    {
+      "acceptance_oracle_retention": 0.9989409472168093,
+      "alpha": 1.0,
+      "always_on_acceptance_delta": -0.002438066527247429,
+      "arm": "alpha_1p0_seed_1",
+      "baseline_correct_horizon_decisions": 23606,
+      "negative_accepted_length_mass": 58.338134765625,
+      "oracle_acceptance_delta": 0.004826052114367485,
+      "oracle_gain_over_always_on": 0.007264118641614914,
+      "oracle_selected_fraction": 0.47528326511383057,
+      "oracle_selected_rows": 3817,
+      "positive_accepted_length_mass": 38.758026123046875,
+      "positive_to_negative_mass_ratio": 0.6643686206073998,
+      "quality_loss_rows_among_acceptance_oracle": 25,
+      "quality_safe_oracle_acceptance_delta": 0.004807612393051386,
+      "quality_safe_oracle_gain_over_always_on": 0.007245678920298815,
+      "quality_safe_oracle_retention": 1.0,
+      "quality_safe_selected_fraction": 0.472170352935791,
+      "quality_safe_selected_rows": 3792,
+      "rows": 8031,
+      "seed": 1,
+      "source": {
+        "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_matched_alpha_audit_20260804/private/exact_abort_rows/alpha_1p0_seed_1_exact_step_0146_rows.pt",
+        "sha256": "f00396439216d53f76a36fb0f08af864d014b540ddb861e5f3d09d70e7ed7cae"
+      },
+      "terminal_step": 146
+    }
+  ],
+  "by_alpha": {
+    "0.0": {
+      "mean_always_on_acceptance_delta": -0.0018080009322147816,
+      "mean_oracle_acceptance_delta": 0.004805222386494279,
+      "mean_oracle_selected_fraction": 0.4696799963712692,
+      "mean_quality_safe_oracle_acceptance_delta": 0.004766212834510952,
+      "seeds": [
+        0,
+        1
+      ]
+    },
+    "0.5": {
+      "mean_always_on_acceptance_delta": -0.002481325587723404,
+      "mean_oracle_acceptance_delta": 0.004617577185854316,
+      "mean_oracle_selected_fraction": 0.47055160999298096,
+      "mean_quality_safe_oracle_acceptance_delta": 0.004581880173645914,
+      "seeds": [
+        0,
+        1
+      ]
+    },
+    "1.0": {
+      "mean_always_on_acceptance_delta": -0.0025427580112591386,
+      "mean_oracle_acceptance_delta": 0.00507245515473187,
+      "mean_oracle_selected_fraction": 0.4690573960542679,
+      "mean_quality_safe_oracle_acceptance_delta": 0.0050528140272945166,
+      "seeds": [
+        0,
+        1
+      ]
+    }
+  },
+  "do_not_claim": [
+    "oracle headroom is achievable by available inference-time features",
+    "cached teacher-forced accepted length is serving throughput",
+    "row-level hindsight selection is confirmation evidence"
+  ],
+  "frozen_evaluation_partitions_touched": [],
+  "kind": "paper2_phase2_oracle_selector_headroom",
+  "model_inference_runs": 0,
+  "optimizer_steps": 0,
+  "quality_safe_rule": "use sidecar iff accepted length improves and no baseline-correct horizon becomes wrong",
+  "scope": "DEV-only cached teacher-forced accepted length; perfect hindsight selector; ceiling, not a deployable router result",
+  "selection_rule": "use sidecar iff its banked row accepted length exceeds zero-loop",
+  "status": "complete_cpu_only_existing_rows"
+}
