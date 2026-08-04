@@ -48,6 +48,12 @@ def sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
+def sha256_lf_file(path: Path) -> str:
+    """Hash text bytes after canonicalizing checkout line endings to LF."""
+    payload = path.read_bytes().replace(b"\r\n", b"\n").replace(b"\r", b"\n")
+    return hashlib.sha256(payload).hexdigest()
+
+
 def write_json(path: Path, payload: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_suffix(path.suffix + ".tmp")
@@ -918,7 +924,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     root = Path(__file__).resolve().parents[1]
     protocol = _assert_lock(root)
     constants_path = root / "training/paper2_phase2_dc2_constants.json"
-    if sha256_file(constants_path) != protocol["constants_lf_sha256"]:
+    if sha256_lf_file(constants_path) != protocol["constants_lf_sha256"]:
         raise RuntimeError("V1d constants file does not match the preregistration")
     constants = json.loads(constants_path.read_text(encoding="utf-8"))
     if not torch.cuda.is_available() or torch.cuda.get_device_properties(0).total_memory < 35 * 2**30:

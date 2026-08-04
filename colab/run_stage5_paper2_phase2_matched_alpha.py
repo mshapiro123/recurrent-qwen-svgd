@@ -12,6 +12,8 @@ import traceback
 from collections import deque
 from pathlib import Path
 
+from training.run_paper2_phase2_matched_alpha import sha256_file, sha256_lf_file
+
 
 ROOT = Path(__file__).resolve().parents[1]
 RUN_ID = "stage5_paper2_phase2_matched_alpha_20260804"
@@ -27,6 +29,8 @@ DRIVE_CANONICALIZER = (
     / ARBITRATION_ID
     / "private/canonicalizer/learned_mixture_rrr_seed_20260814.pt"
 )
+PROTOCOL = ROOT / "training/paper2_phase2_matched_alpha_preregistration.json"
+CONSTANTS = ROOT / "training/paper2_phase2_dc2_constants.json"
 
 
 def write_status(status: str, **details: object) -> None:
@@ -75,6 +79,24 @@ def run(command: list[str]) -> None:
         print("\n".join(tail), flush=True)
         print("matched_alpha_child_failure_tail_end", flush=True)
         raise subprocess.CalledProcessError(returncode, command)
+
+
+def validate_locked_inputs() -> None:
+    protocol = json.loads(PROTOCOL.read_text(encoding="utf-8"))
+    constants_lf = sha256_lf_file(CONSTANTS)
+    canonicalizer_sha = sha256_file(DRIVE_CANONICALIZER)
+    observed = {
+        "constants_lf_sha256": constants_lf,
+        "canonicalizer_sha256": canonicalizer_sha,
+    }
+    print(
+        f"matched_alpha_locked_input_preflight observed={json.dumps(observed, sort_keys=True)}",
+        flush=True,
+    )
+    if constants_lf != protocol["constants_lf_sha256"]:
+        raise RuntimeError("V1d constants LF hash does not match the preregistration")
+    if canonicalizer_sha != protocol["canonicalizer"]["sha256"]:
+        raise RuntimeError("canonicalizer hash does not match the preregistration")
 
 
 def stage_inputs() -> tuple[Path, Path, Path]:
@@ -167,6 +189,7 @@ def main() -> int:
     if missing:
         raise FileNotFoundError(f"missing matched-alpha inputs: {missing}")
     RUN_DIR.mkdir(parents=True, exist_ok=True)
+    validate_locked_inputs()
     write_status("staging_inputs")
     stage0a, canonicalizer, cache = stage_inputs()
     write_status("training_initial_grid")

@@ -24,6 +24,7 @@ from training.run_paper2_phase2_matched_alpha import (
     _assert_zero_loop_identity,
     _gradient_atlas,
     _losses,
+    sha256_lf_file,
 )
 
 
@@ -100,6 +101,29 @@ def test_runner_accepts_a100_40gb_floor_as_documented() -> None:
     ).read_text(encoding="utf-8")
     assert "35 * 2**30" in source
     assert "cached-state sparse-logit pilots require" in source
+
+
+def test_locked_constants_hash_is_checkout_line_ending_independent(tmp_path) -> None:
+    lf = tmp_path / "lf.json"
+    crlf = tmp_path / "crlf.json"
+    lf.write_bytes(b'{\n  "value": 1\n}\n')
+    crlf.write_bytes(b'{\r\n  "value": 1\r\n}\r\n')
+    assert sha256_lf_file(lf) == sha256_lf_file(crlf)
+
+
+def test_registered_constants_hash_matches_lf_normalized_file() -> None:
+    import json
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[1]
+    protocol = json.loads(
+        (root / "training/paper2_phase2_matched_alpha_preregistration.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert sha256_lf_file(root / "training/paper2_phase2_dc2_constants.json") == protocol[
+        "constants_lf_sha256"
+    ]
 
 
 def test_trust_saturation_requires_strict_majority_of_full_window() -> None:
