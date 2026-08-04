@@ -14,6 +14,7 @@ from training.paper2_phase2_matched_alpha import (
     distribution_overlap,
     document_partition,
     expected_accepted_length,
+    masked_sparse_kl,
     normalize_sparse_with_tail,
     paired_bootstrap_interval,
     practical_equivalence,
@@ -61,6 +62,18 @@ def test_sparse_normalization_includes_tail_and_masks_padding() -> None:
     assert normalized.shape == (1, 1, 3)
     assert torch.allclose(normalized.exp().sum(-1), torch.ones(1, 1))
     assert float(normalized[0, 0, 1]) == float("-inf")
+
+
+def test_masked_sparse_kl_excludes_negative_infinity_padding_and_has_finite_gradient() -> None:
+    target = torch.tensor([[[-0.4, float("-inf"), -1.1]]])
+    predicted = torch.tensor([[[-0.7, float("-inf"), -0.7]]], requires_grad=True)
+    mask = torch.tensor([[[True, False]]])
+    value = masked_sparse_kl(target, predicted, mask).mean()
+    assert torch.isfinite(value)
+    value.backward()
+    assert predicted.grad is not None
+    assert torch.isfinite(predicted.grad).all()
+    assert float(predicted.grad[0, 0, 1]) == 0.0
 
 
 def test_quality_gate_uses_point_and_wilson_floors() -> None:
@@ -219,6 +232,38 @@ def test_decision_defaults_to_half_inside_equivalence(tmp_path) -> None:
     assert result["selected_alpha"] == 0.5
 
 
+def test_decision_names_aborted_arms_instead_of_claiming_extension(tmp_path) -> None:
+    arms = []
+    for alpha in (0.0, 0.5, 1.0):
+        for seed in (0, 1):
+            rows_path = tmp_path / f"aborted_{alpha}_{seed}.pt"
+            torch.save({"accepted_length": torch.ones(4)}, rows_path)
+            digest = hashlib.sha256(rows_path.read_bytes()).hexdigest()
+            arms.append(
+                {
+                    "alpha": alpha,
+                    "seed": seed,
+                    "status": "aborted",
+                    "final": {"quality_noninferior": False, "flow_validation_loss": 1.0},
+                    "final_rows": {"path": str(rows_path), "sha256": digest},
+                    "gradient_atlases": [
+                        {"module_gradient_norm_cv": {"refiner": 1.0, "bridge": 1.0, "heads": 1.0}}
+                    ],
+                    "clip_events": {"refiner": 0.0, "bridge": 0.0, "heads": 0.0},
+                }
+            )
+    result = decide(
+        {
+            "protocol_lock_commit": "cf6747264e48e2de657eb2a1646f1e7c4f152ea5",
+            "adequacy_precondition_met": False,
+            "extended_once": False,
+            "arms": arms,
+        },
+        bootstrap_draws=20,
+    )
+    assert result["reason"] == "one_or_more_arms_aborted_before_adequacy"
+
+
 def test_sparse_training_path_uses_teacher_width_and_emits_atlas() -> None:
     torch.manual_seed(8)
     student_embedding = nn.Embedding(31, 16)
@@ -227,11 +272,13 @@ def test_sparse_training_path_uses_teacher_width_and_emits_atlas() -> None:
     teacher_embedding.weight.requires_grad_(False)
     module = Phase2StudentModules(tied_embedding=student_embedding, hidden_size=16)
     candidates = torch.randint(0, 31, (2, 4, 5))
+    candidate_mask = torch.ones(2, 4, 5, dtype=torch.bool)
+    candidate_mask[..., -1] = False
     batch = {
         "hidden": torch.randn(2, 4, 16),
         "target_scratch": torch.randn(2, 8, 128),
         "candidate_ids": candidates,
-        "candidate_mask": torch.ones(2, 4, 5, dtype=torch.bool),
+        "candidate_mask": candidate_mask,
         "base_candidates": torch.log_softmax(torch.randn(2, 4, 6), -1)[..., :5],
         "base_tail": torch.log_softmax(torch.randn(2, 4, 6), -1)[..., 5],
         "teacher_candidates": torch.log_softmax(torch.randn(2, 4, 6), -1)[..., :5],

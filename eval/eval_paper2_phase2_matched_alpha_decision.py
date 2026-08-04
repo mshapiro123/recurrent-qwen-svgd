@@ -118,7 +118,12 @@ def decide(summary: dict[str, Any], *, bootstrap_draws: int = 10_000) -> dict[st
         "status": "no_selection",
     }
     if not summary["adequacy_precondition_met"]:
-        result["reason"] = "adequacy_failed_after_registered_extension"
+        if any(arm["status"] != "complete" for arm in summary["arms"]):
+            result["reason"] = "one_or_more_arms_aborted_before_adequacy"
+        elif summary.get("extended_once"):
+            result["reason"] = "adequacy_failed_after_registered_extension"
+        else:
+            result["reason"] = "adequacy_failed_before_registered_extension"
         return result
     if "0.5" not in valid:
         result["reason"] = "registered_default_failed_quality_or_assertions"

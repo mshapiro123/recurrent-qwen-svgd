@@ -28,6 +28,7 @@ from training.paper2_phase2_matched_alpha import (
     distribution_overlap,
     document_partition,
     expected_accepted_length,
+    masked_sparse_kl,
     normalize_sparse_with_tail,
     quality_noninferior,
     summarize_clip_fractions,
@@ -38,6 +39,7 @@ from training.paper2_phase2_matched_alpha import (
 
 BETAS = (0.5,)
 PROTOCOL_RELATIVE = Path("training/paper2_phase2_matched_alpha_preregistration.json")
+LOSS_MASK_CONTRACT = "masked_sparse_candidates_plus_tail_v1"
 
 
 def sha256_file(path: Path) -> str:
@@ -357,11 +359,14 @@ def _losses(
     )
     teacher_argmax = target_log.argmax(dim=-1)
     final_ce = F.nll_loss(bridge_log.reshape(-1, bridge_log.shape[-1]), teacher_argmax.reshape(-1))
-    teacher_prob = target_log.exp()
-    cumulative_kl = (teacher_prob * (target_log - draft_log)).sum(dim=-1).mean()
+    cumulative_kl = masked_sparse_kl(
+        target_log, draft_log, batch["candidate_mask"]
+    ).mean()
     base_top = base_log.argmax(dim=-1)
     preserve = base_top.eq(teacher_argmax)
-    preserve_kl_rows = (base_log.exp() * (base_log - bridge_log)).sum(dim=-1)
+    preserve_kl_rows = masked_sparse_kl(
+        base_log, bridge_log, batch["candidate_mask"]
+    )
     preserve_kl = preserve_kl_rows[preserve].mean() if bool(preserve.any()) else preserve_kl_rows.mean() * 0
 
     start = output.flow.states[0]
@@ -766,22 +771,28 @@ def run_arm(
         saved = torch.load(checkpoint, map_location="cpu", weights_only=False)
         if saved["alpha"] != alpha or saved["seed"] != seed or saved["initial_hash"] != initial_hash:
             raise RuntimeError(f"resume metadata mismatch for {arm}")
-        _load_trainable_state(module, saved["trainable_state"])
-        optimizer.load_state_dict(saved["optimizer"])
-        step = int(saved["step"])
-        history = list(saved["history"])
-        gradient_atlases = list(saved.get("gradient_atlases", []))
-        trust_history = list(saved["trust_history"])
-        clip_events = list(saved["clip_events"])
-        generator.set_state(saved["batch_generator_state"])
-        _restore_rng(saved["rng"])
-        print(f"matched_alpha_resume arm={arm} step={step}", flush=True)
+        if saved.get("loss_mask_contract") != LOSS_MASK_CONTRACT:
+            if int(saved["step"]) != 0:
+                raise RuntimeError(f"incompatible post-step-zero resume for {arm}")
+            print(f"matched_alpha_recompute_invalid_step_zero arm={arm}", flush=True)
+        else:
+            _load_trainable_state(module, saved["trainable_state"])
+            optimizer.load_state_dict(saved["optimizer"])
+            step = int(saved["step"])
+            history = list(saved["history"])
+            gradient_atlases = list(saved.get("gradient_atlases", []))
+            trust_history = list(saved["trust_history"])
+            clip_events = list(saved["clip_events"])
+            generator.set_state(saved["batch_generator_state"])
+            _restore_rng(saved["rng"])
+            print(f"matched_alpha_resume arm={arm} step={step}", flush=True)
     decoder, decoder_bias = _decoder_for_alpha(cache, alpha=alpha, device=device)
 
     def save() -> None:
         payload = {
             "kind": "paper2_phase2_matched_alpha_resume",
             "protocol_lock_commit": PROTOCOL_LOCK_COMMIT,
+            "loss_mask_contract": LOSS_MASK_CONTRACT,
             "alpha": alpha,
             "seed": seed,
             "step": step,
@@ -911,6 +922,7 @@ def run_arm(
         "step": step,
         "target_steps": target_steps,
         "protocol_lock_commit": PROTOCOL_LOCK_COMMIT,
+        "loss_mask_contract": LOSS_MASK_CONTRACT,
         "launcher_commit": _git_head(Path(__file__).resolve().parents[1]),
         "source_hashes": source_hashes,
         "non_alpha_initialization_sha256": initial_hash,

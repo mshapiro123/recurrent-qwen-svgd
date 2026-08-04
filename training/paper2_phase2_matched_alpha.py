@@ -50,6 +50,32 @@ def normalize_sparse_with_tail(
     return torch.log_softmax(joined, dim=-1)
 
 
+def masked_sparse_kl(
+    target_log_probs: torch.Tensor,
+    predicted_log_probs: torch.Tensor,
+    candidate_mask: torch.Tensor,
+) -> torch.Tensor:
+    if target_log_probs.shape != predicted_log_probs.shape:
+        raise ValueError("target and predicted sparse distributions must share shape")
+    if target_log_probs.shape[:-1] != candidate_mask.shape[:-1]:
+        raise ValueError("candidate mask leading dimensions do not align")
+    if target_log_probs.shape[-1] != candidate_mask.shape[-1] + 1:
+        raise ValueError("sparse distribution must contain candidates plus one tail")
+    support = torch.cat(
+        [
+            candidate_mask.bool(),
+            torch.ones((*candidate_mask.shape[:-1], 1), dtype=torch.bool, device=candidate_mask.device),
+        ],
+        dim=-1,
+    )
+    safe_target = torch.where(support, target_log_probs, torch.zeros_like(target_log_probs))
+    safe_predicted = torch.where(
+        support, predicted_log_probs, torch.zeros_like(predicted_log_probs)
+    )
+    probability = torch.where(support, safe_target.exp(), torch.zeros_like(safe_target))
+    return (probability * (safe_target - safe_predicted)).sum(dim=-1)
+
+
 def distribution_overlap(target_log_probs: torch.Tensor, draft_log_probs: torch.Tensor) -> torch.Tensor:
     if target_log_probs.shape != draft_log_probs.shape:
         raise ValueError("target and draft distributions must share shape")
