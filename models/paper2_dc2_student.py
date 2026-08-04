@@ -389,6 +389,7 @@ class ResidualDraftHead(nn.Module):
         previous_logits: torch.Tensor,
         scratch: torch.Tensor,
         control_state: torch.Tensor,
+        candidate_ids: Optional[torch.Tensor] = None,
     ) -> DraftHeadOutput:
         if previous_logits.shape[1] != self.horizons:
             raise ValueError("previous logits do not match registered horizon count")
@@ -396,7 +397,17 @@ class ResidualDraftHead(nn.Module):
         hidden_updates = torch.stack(
             [up(F.silu(down(pooled))) for down, up in zip(self.down, self.up)], dim=1
         )
-        delta = hidden_updates @ self.tied_embedding.weight.T
+        if candidate_ids is None:
+            delta = hidden_updates @ self.tied_embedding.weight.T
+        else:
+            if candidate_ids.shape[:2] != previous_logits.shape[:2]:
+                raise ValueError("candidate ids must match batch and horizon dimensions")
+            if candidate_ids.shape != previous_logits.shape:
+                raise ValueError("candidate ids and sparse logits must share shape")
+            candidate_embeddings = self.tied_embedding(
+                candidate_ids.clamp(min=0, max=self.tied_embedding.num_embeddings - 1)
+            )
+            delta = torch.einsum("bhd,bhcd->bhc", hidden_updates, candidate_embeddings)
         gates = torch.sigmoid(self.write_gate(control_state))
         return DraftHeadOutput(
             logits=previous_logits + gates.unsqueeze(-1) * delta,
@@ -470,6 +481,7 @@ class Phase2StudentModules(nn.Module):
         position_bucket: Optional[torch.Tensor] = None,
         target_scratch: Optional[torch.Tensor] = None,
         apply_trust_penalty: bool = False,
+        candidate_ids: Optional[torch.Tensor] = None,
     ) -> Phase2StudentOutput:
         if steps < 0 or steps > self.max_steps:
             raise ValueError(f"requested steps violate loop cap {self.max_steps}")
@@ -508,6 +520,7 @@ class Phase2StudentModules(nn.Module):
                 previous_logits=previous_logits,
                 scratch=flow.state,
                 control_state=control,
+                candidate_ids=candidate_ids,
             )
         else:
             zero_delta = torch.zeros_like(previous_logits)

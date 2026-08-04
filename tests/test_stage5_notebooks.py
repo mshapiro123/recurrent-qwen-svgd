@@ -3223,6 +3223,40 @@ def test_phase2_layer_mode_bound_target_is_wired_and_guarded() -> None:
     assert "SWAP_CI_LOWER_BOUND = 0.005" in evaluator
 
 
+def test_phase2_matched_alpha_target_is_wired_and_guarded() -> None:
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    bootstrap_md = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")
+    cell = (ROOT / "colab/STAGE5_PAPER2_PHASE2_MATCHED_ALPHA_CELL.py").read_text(
+        encoding="utf-8"
+    )
+    runner = (ROOT / "colab/run_stage5_paper2_phase2_matched_alpha.py").read_text(
+        encoding="utf-8"
+    )
+    trainer = (ROOT / "training/run_paper2_phase2_matched_alpha.py").read_text(
+        encoding="utf-8"
+    )
+    decision = (ROOT / "eval/eval_paper2_phase2_matched_alpha_decision.py").read_text(
+        encoding="utf-8"
+    )
+
+    for text in (bootstrap, bootstrap_md):
+        assert "paper2_phase2_matched_alpha" in text
+        assert "colab/STAGE5_PAPER2_PHASE2_MATCHED_ALPHA_CELL.py" in text
+        assert "14B functional probe uses the hashed 14B LM head" in text
+
+    assert "paper2_phase2_matched_alpha_v1" in cell
+    assert "vram_gib >= 70" in cell
+    assert "allowed=(0, 2)" in cell
+    assert 'RUN_ID = "stage5_paper2_phase2_matched_alpha_20260804"' in runner
+    assert "/content/local-scratch" in runner
+    assert '"training_registered_refinement"' in runner
+    assert "_assert_zero_loop_identity" in trainer
+    assert "teacher_embedding" in trainer
+    assert "_gradient_atlas" in trainer
+    assert "paired_bootstrap_interval" in decision
+    assert '"refinement_required"' in decision
+
+
 def test_gradient_path_audit_target_is_wired_and_guarded() -> None:
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
     bootstrap_md = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")
