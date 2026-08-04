@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import os
 import shutil
 import subprocess
@@ -11,9 +12,6 @@ import time
 import traceback
 from collections import deque
 from pathlib import Path
-
-from training.run_paper2_phase2_matched_alpha import sha256_file, sha256_lf_file
-
 
 ROOT = Path(__file__).resolve().parents[1]
 RUN_ID = "stage5_paper2_phase2_matched_alpha_20260804"
@@ -31,6 +29,19 @@ DRIVE_CANONICALIZER = (
 )
 PROTOCOL = ROOT / "training/paper2_phase2_matched_alpha_preregistration.json"
 CONSTANTS = ROOT / "training/paper2_phase2_dc2_constants.json"
+
+
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for block in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+
+def sha256_lf_file(path: Path) -> str:
+    payload = path.read_bytes().replace(b"\r\n", b"\n").replace(b"\r", b"\n")
+    return hashlib.sha256(payload).hexdigest()
 
 
 def write_status(status: str, **details: object) -> None:
