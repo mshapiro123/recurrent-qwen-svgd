@@ -1,0 +1,652 @@
+{
+  "canonicalizer_decision": {
+    "fallback": "uniform_mixture_rrr",
+    "primary": "learned_mixture_rrr",
+    "reason": "agreement_ci_excludes_zero_positive_and_sign_is_consistent"
+  },
+  "decomposition_choice": {
+    "exact_lapack_used": false,
+    "method": "common-seed randomized low-rank SVD with three-seed spread",
+    "reason": "exact decomposition of the 166708-by-5120 fit matrix is not practical for the authorized cached CPU job"
+  },
+  "do_not_claim": [
+    "the legacy tucker_predictive arm used a distinct Tucker factorization",
+    "the legacy 0.68-point edge was a mixture effect before seed-controlled arbitration",
+    "the canonicalizer arbitration selects whitening alpha",
+    "development-only probe agreement is downstream acceptance",
+    "legacy effective-floor mass alone recovers strict raw-below-floor counts"
+  ],
+  "elapsed_seconds": 913.423713684082,
+  "fit_variability": {
+    "comparable_to_prior_0p68pp_edge": false,
+    "delta_learned_minus_uniform_by_seed": [
+      0.007238984107971191,
+      0.006638228893280029,
+      0.005556881427764893
+    ],
+    "delta_range": 0.0016821026802062988,
+    "max_within_arm_range": 0.002282842993736267,
+    "teacher_top1_agreement_by_arm": {
+      "learned_mixture_rrr": [
+        0.15805599093437195,
+        0.15919740498065948,
+        0.15865673124790192
+      ],
+      "uniform_mixture_rrr": [
+        0.15081700682640076,
+        0.15255917608737946,
+        0.15309984982013702
+      ]
+    },
+    "within_arm_ranges": {
+      "learned_mixture_rrr": 0.0011414140462875366,
+      "uniform_mixture_rrr": 0.002282842993736267
+    }
+  },
+  "floored_fraction_audit": {
+    "learned_mixture_rrr": [
+      {
+        "at_floor_count": 30,
+        "condition_receipt": {
+          "effective": 10000.0,
+          "fit_accumulation_dtype": "float64",
+          "fit_health_relative_floor_exceeds_absolute": true,
+          "floor": 3.6651024856837466e-05,
+          "floored_count": 30,
+          "floored_fraction": 0.234375,
+          "rank": 128,
+          "raw": 31260562948096.0,
+          "zero_eigenvalue_count": 0
+        },
+        "effective_floor": 3.665102422237396e-05,
+        "floored_fraction": 0.234375,
+        "legacy_receipt_scope": "effective clamp-image mass; exact raw fraction recomputed in refit",
+        "rank": 128,
+        "raw_fraction_recoverable": true,
+        "seed": 20260814
+      },
+      {
+        "at_floor_count": 30,
+        "condition_receipt": {
+          "effective": 10000.0,
+          "fit_accumulation_dtype": "float64",
+          "fit_health_relative_floor_exceeds_absolute": true,
+          "floor": 3.6816145438933745e-05,
+          "floored_count": 30,
+          "floored_fraction": 0.234375,
+          "rank": 128,
+          "raw": 31223579672576.0,
+          "zero_eigenvalue_count": 0
+        },
+        "effective_floor": 3.681614696979523e-05,
+        "floored_fraction": 0.234375,
+        "legacy_receipt_scope": "effective clamp-image mass; exact raw fraction recomputed in refit",
+        "rank": 128,
+        "raw_fraction_recoverable": true,
+        "seed": 20260824
+      },
+      {
+        "at_floor_count": 29,
+        "condition_receipt": {
+          "effective": 10000.0,
+          "fit_accumulation_dtype": "float64",
+          "fit_health_relative_floor_exceeds_absolute": true,
+          "floor": 3.6734447348862886e-05,
+          "floored_count": 29,
+          "floored_fraction": 0.2265625,
+          "rank": 128,
+          "raw": 31193814794240.0,
+          "zero_eigenvalue_count": 0
+        },
+        "effective_floor": 3.6734446883201604e-05,
+        "floored_fraction": 0.2265625,
+        "legacy_receipt_scope": "effective clamp-image mass; exact raw fraction recomputed in refit",
+        "rank": 128,
+        "raw_fraction_recoverable": true,
+        "seed": 20260834
+      }
+    ],
+    "learned_mixture_rrr_legacy": {
+      "at_floor_count": 34,
+      "effective_floor": 4.7897288203239444e-05,
+      "floored_fraction": 0.265625,
+      "legacy_receipt_scope": "effective clamp-image mass; exact raw fraction recomputed in refit",
+      "rank": 128,
+      "raw_fraction_recoverable": false
+    },
+    "predictive_rrr_legacy": {
+      "at_floor_count": 34,
+      "effective_floor": 4.871936142444611e-05,
+      "floored_fraction": 0.265625,
+      "legacy_receipt_scope": "effective clamp-image mass; exact raw fraction recomputed in refit",
+      "rank": 128,
+      "raw_fraction_recoverable": false
+    },
+    "uniform_mixture_rrr": [
+      {
+        "at_floor_count": 29,
+        "condition_receipt": {
+          "effective": 10000.0,
+          "fit_accumulation_dtype": "float64",
+          "fit_health_relative_floor_exceeds_absolute": true,
+          "floor": 3.7244630220811814e-05,
+          "floored_count": 29,
+          "floored_fraction": 0.2265625,
+          "rank": 128,
+          "raw": 30357734817792.0,
+          "zero_eigenvalue_count": 0
+        },
+        "effective_floor": 3.724462985992432e-05,
+        "floored_fraction": 0.2265625,
+        "legacy_receipt_scope": "effective clamp-image mass; exact raw fraction recomputed in refit",
+        "rank": 128,
+        "raw_fraction_recoverable": true,
+        "seed": 20260814
+      },
+      {
+        "at_floor_count": 29,
+        "condition_receipt": {
+          "effective": 10000.0,
+          "fit_accumulation_dtype": "float64",
+          "fit_health_relative_floor_exceeds_absolute": true,
+          "floor": 3.7126483221072704e-05,
+          "floored_count": 29,
+          "floored_fraction": 0.2265625,
+          "rank": 128,
+          "raw": 31358902599680.0,
+          "zero_eigenvalue_count": 0
+        },
+        "effective_floor": 3.712648153305054e-05,
+        "floored_fraction": 0.2265625,
+        "legacy_receipt_scope": "effective clamp-image mass; exact raw fraction recomputed in refit",
+        "rank": 128,
+        "raw_fraction_recoverable": true,
+        "seed": 20260824
+      },
+      {
+        "at_floor_count": 29,
+        "condition_receipt": {
+          "effective": 10000.0,
+          "fit_accumulation_dtype": "float64",
+          "fit_health_relative_floor_exceeds_absolute": true,
+          "floor": 3.712497709784657e-05,
+          "floored_count": 29,
+          "floored_fraction": 0.2265625,
+          "rank": 128,
+          "raw": 29905492377600.0,
+          "zero_eigenvalue_count": 0
+        },
+        "effective_floor": 3.712497651576996e-05,
+        "floored_fraction": 0.2265625,
+        "legacy_receipt_scope": "effective clamp-image mass; exact raw fraction recomputed in refit",
+        "rank": 128,
+        "raw_fraction_recoverable": true,
+        "seed": 20260834
+      }
+    ]
+  },
+  "frozen_evaluation_partitions_touched": [],
+  "kind": "paper2_phase2_canonicalizer_arbitration",
+  "learned_layer_mixture": [
+    0.5840215682983398,
+    0.3323609232902527,
+    0.08361753076314926
+  ],
+  "legacy_mixture_rrr_vs_uniform_rrr": {
+    "by_stratum": {
+      "code": {
+        "delta_future_kl": -0.047490570694208145,
+        "delta_teacher_top1_agreement": 0.007280731573700905,
+        "rows": 11812
+      },
+      "general": {
+        "delta_future_kl": 0.02081451192498207,
+        "delta_teacher_top1_agreement": 0.006145251449197531,
+        "rows": 21480
+      }
+    },
+    "delta_definition": "candidate_minus_uniform_predictive_rrr; lower future_kl is better",
+    "future_kl": {
+      "ci95_high": 0.0033507860338944056,
+      "ci95_low": -0.010569485638431327,
+      "mean": -0.003420126116730097,
+      "replicates": 10000,
+      "rows": 33292,
+      "seed": 20260805
+    },
+    "locked_rule_decision": {
+      "fallback": "uniform_mixture_rrr",
+      "primary": "learned_mixture_rrr",
+      "reason": "agreement_ci_excludes_zero_positive_and_sign_is_consistent"
+    },
+    "sign_consistent_positive_agreement": true,
+    "teacher_top1_agreement": {
+      "ci95_high": 0.008530577916616605,
+      "ci95_low": 0.00453562417397573,
+      "mean": 0.0065481196683888025,
+      "replicates": 10000,
+      "rows": 33292,
+      "seed": 20260804
+    }
+  },
+  "locked_analysis_constants": {
+    "bootstrap_replicates": 10000,
+    "bootstrap_seed": 20260804,
+    "document_disjoint_holdout": true,
+    "eps_abs_future_fits": 1e-06,
+    "fit_noise_comparable_operationalization": "maximum within-arm three-seed agreement range >= 0.0068",
+    "fit_seeds": [
+      20260814,
+      20260824,
+      20260834
+    ],
+    "primary_alpha": 0.5,
+    "prior_edge_teacher_top1": 0.0068,
+    "tau": 0.0001
+  },
+  "optimizer_steps": 0,
+  "seed_averaged_pair": {
+    "by_stratum": {
+      "code": {
+        "delta_future_kl": -0.030472155660390854,
+        "delta_teacher_top1_agreement": 0.007986227981746197,
+        "rows": 11812
+      },
+      "general": {
+        "delta_future_kl": -0.011195615865290165,
+        "delta_teacher_top1_agreement": 0.005648665130138397,
+        "rows": 21480
+      }
+    },
+    "delta_definition": "candidate_minus_uniform_predictive_rrr; lower future_kl is better",
+    "future_kl": {
+      "ci95_high": -0.013548961515435113,
+      "ci95_low": -0.022508663876717835,
+      "mean": -0.018034931366164252,
+      "replicates": 10000,
+      "rows": 33292,
+      "seed": 20261005
+    },
+    "locked_rule_decision": {
+      "fallback": "uniform_mixture_rrr",
+      "primary": "learned_mixture_rrr",
+      "reason": "agreement_ci_excludes_zero_positive_and_sign_is_consistent"
+    },
+    "sign_consistent_positive_agreement": true,
+    "teacher_top1_agreement": {
+      "ci95_high": 0.00776963421747502,
+      "ci95_low": 0.005226480782526152,
+      "mean": 0.006478032677968247,
+      "replicates": 10000,
+      "rows": 33292,
+      "seed": 20261004
+    }
+  },
+  "seed_controlled_pairs": [
+    {
+      "comparison": {
+        "by_stratum": {
+          "code": {
+            "delta_future_kl": -0.02747703343629837,
+            "delta_teacher_top1_agreement": 0.007365391124039888,
+            "rows": 11812
+          },
+          "general": {
+            "delta_future_kl": -0.023875083774328232,
+            "delta_teacher_top1_agreement": 0.007169459946453571,
+            "rows": 21480
+          }
+        },
+        "delta_definition": "candidate_minus_uniform_predictive_rrr; lower future_kl is better",
+        "future_kl": {
+          "ci95_high": -0.01965728264401964,
+          "ci95_low": -0.030606680794259142,
+          "mean": -0.025153054636752607,
+          "replicates": 10000,
+          "rows": 33292,
+          "seed": 20260905
+        },
+        "locked_rule_decision": {
+          "fallback": "uniform_mixture_rrr",
+          "primary": "learned_mixture_rrr",
+          "reason": "agreement_ci_excludes_zero_positive_and_sign_is_consistent"
+        },
+        "sign_consistent_positive_agreement": true,
+        "teacher_top1_agreement": {
+          "ci95_high": 0.00907124834795146,
+          "ci95_low": 0.005376667067163283,
+          "mean": 0.007238976330650006,
+          "replicates": 10000,
+          "rows": 33292,
+          "seed": 20260904
+        }
+      },
+      "seed": 20260814
+    },
+    {
+      "comparison": {
+        "by_stratum": {
+          "code": {
+            "delta_future_kl": -0.034797899425029755,
+            "delta_teacher_top1_agreement": 0.008127328008413315,
+            "rows": 11812
+          },
+          "general": {
+            "delta_future_kl": -0.010809827595949173,
+            "delta_teacher_top1_agreement": 0.005819366779178381,
+            "rows": 21480
+          }
+        },
+        "delta_definition": "candidate_minus_uniform_predictive_rrr; lower future_kl is better",
+        "future_kl": {
+          "ci95_high": -0.014135070240405428,
+          "ci95_low": -0.024700388317531827,
+          "mean": -0.019320793732035137,
+          "replicates": 10000,
+          "rows": 33292,
+          "seed": 20260915
+        },
+        "locked_rule_decision": {
+          "fallback": "uniform_mixture_rrr",
+          "primary": "learned_mixture_rrr",
+          "reason": "agreement_ci_excludes_zero_positive_and_sign_is_consistent"
+        },
+        "sign_consistent_positive_agreement": true,
+        "teacher_top1_agreement": {
+          "ci95_high": 0.008471254355400686,
+          "ci95_low": 0.004775922143457888,
+          "mean": 0.006638231406944611,
+          "replicates": 10000,
+          "rows": 33292,
+          "seed": 20260914
+        }
+      },
+      "seed": 20260824
+    },
+    {
+      "comparison": {
+        "by_stratum": {
+          "code": {
+            "delta_future_kl": -0.029141530394554138,
+            "delta_teacher_top1_agreement": 0.008465967141091824,
+            "rows": 11812
+          },
+          "general": {
+            "delta_future_kl": 0.001098057720810175,
+            "delta_teacher_top1_agreement": 0.003957169596105814,
+            "rows": 21480
+          }
+        },
+        "delta_definition": "candidate_minus_uniform_predictive_rrr; lower future_kl is better",
+        "future_kl": {
+          "ci95_high": -0.004250430302800759,
+          "ci95_low": -0.014972061318095194,
+          "mean": -0.009630946728795492,
+          "replicates": 10000,
+          "rows": 33292,
+          "seed": 20260925
+        },
+        "locked_rule_decision": {
+          "fallback": "uniform_mixture_rrr",
+          "primary": "learned_mixture_rrr",
+          "reason": "agreement_ci_excludes_zero_positive_and_sign_is_consistent"
+        },
+        "sign_consistent_positive_agreement": true,
+        "teacher_top1_agreement": {
+          "ci95_high": 0.007269013576835276,
+          "ci95_low": 0.003874804757899796,
+          "mean": 0.005556890544274901,
+          "replicates": 10000,
+          "rows": 33292,
+          "seed": 20260924
+        }
+      },
+      "seed": 20260834
+    }
+  ],
+  "seed_controlled_refits": {
+    "learned_mixture_rrr": [
+      {
+        "artifact": {
+          "bytes": 23975548,
+          "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_arbitration_build_20260804/private/canonicalizer/learned_mixture_rrr_seed_20260814.pt",
+          "sha256": "53215130a75c929def4bcc4b81ba9187d90a7b6fe2b1502391518d45c09476e3"
+        },
+        "fit": {
+          "internal_rank": 256,
+          "pca_singular_values": {
+            "count": 256,
+            "finite_count": 256,
+            "finite_max": 3950.198974609375,
+            "finite_mean": 877.3552178144455,
+            "finite_median": 748.9879150390625,
+            "finite_min": 453.74859619140625,
+            "finite_p10": 521.98681640625,
+            "finite_p90": 1332.4838256835938,
+            "finite_p95": 1631.1304321289062,
+            "nan_count": 0,
+            "negative_infinity_count": 0,
+            "positive_infinity_count": 0
+          }
+        },
+        "future_kl": 4.739765644073486,
+        "screening_condition": {
+          "effective": 10000.0,
+          "fit_accumulation_dtype": "float64",
+          "fit_health_relative_floor_exceeds_absolute": true,
+          "floor": 3.6651024856837466e-05,
+          "floored_count": 30,
+          "floored_fraction": 0.234375,
+          "rank": 128,
+          "raw": 31260562948096.0,
+          "zero_eigenvalue_count": 0
+        },
+        "seed": 20260814,
+        "teacher_top1_agreement": 0.15805599093437195
+      },
+      {
+        "artifact": {
+          "bytes": 23975548,
+          "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_arbitration_build_20260804/private/canonicalizer/learned_mixture_rrr_seed_20260824.pt",
+          "sha256": "4f91b1ce06d2d1ee6989460826c69dc5781e86a11f4f099cae6091d4c0e6f124"
+        },
+        "fit": {
+          "internal_rank": 256,
+          "pca_singular_values": {
+            "count": 256,
+            "finite_count": 256,
+            "finite_max": 3950.19921875,
+            "finite_mean": 877.7557383775711,
+            "finite_median": 749.2920227050781,
+            "finite_min": 459.3619384765625,
+            "finite_p10": 525.7438049316406,
+            "finite_p90": 1332.4834594726562,
+            "finite_p95": 1631.13427734375,
+            "nan_count": 0,
+            "negative_infinity_count": 0,
+            "positive_infinity_count": 0
+          }
+        },
+        "future_kl": 4.708338260650635,
+        "screening_condition": {
+          "effective": 10000.0,
+          "fit_accumulation_dtype": "float64",
+          "fit_health_relative_floor_exceeds_absolute": true,
+          "floor": 3.6816145438933745e-05,
+          "floored_count": 30,
+          "floored_fraction": 0.234375,
+          "rank": 128,
+          "raw": 31223579672576.0,
+          "zero_eigenvalue_count": 0
+        },
+        "seed": 20260824,
+        "teacher_top1_agreement": 0.15919740498065948
+      },
+      {
+        "artifact": {
+          "bytes": 23975548,
+          "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_arbitration_build_20260804/private/canonicalizer/learned_mixture_rrr_seed_20260834.pt",
+          "sha256": "ea55752376c9373b964a042e4a862bb0ed3338d9dbfe84f984df206cfe2a32f5"
+        },
+        "fit": {
+          "internal_rank": 256,
+          "pca_singular_values": {
+            "count": 256,
+            "finite_count": 256,
+            "finite_max": 3950.198486328125,
+            "finite_mean": 877.5037487745285,
+            "finite_median": 748.7727966308594,
+            "finite_min": 457.5357666015625,
+            "finite_p10": 524.5664978027344,
+            "finite_p90": 1332.50537109375,
+            "finite_p95": 1631.1329650878906,
+            "nan_count": 0,
+            "negative_infinity_count": 0,
+            "positive_infinity_count": 0
+          }
+        },
+        "future_kl": 4.743407726287842,
+        "screening_condition": {
+          "effective": 10000.0,
+          "fit_accumulation_dtype": "float64",
+          "fit_health_relative_floor_exceeds_absolute": true,
+          "floor": 3.6734447348862886e-05,
+          "floored_count": 29,
+          "floored_fraction": 0.2265625,
+          "rank": 128,
+          "raw": 31193814794240.0,
+          "zero_eigenvalue_count": 0
+        },
+        "seed": 20260834,
+        "teacher_top1_agreement": 0.15865673124790192
+      }
+    ],
+    "uniform_mixture_rrr": [
+      {
+        "artifact": {
+          "bytes": 23975548,
+          "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_arbitration_build_20260804/private/canonicalizer/uniform_mixture_rrr_seed_20260814.pt",
+          "sha256": "3f58306dfdbdd150c04a59e95eedf0a948aec64568cb67f21b08a4f632b3cfc2"
+        },
+        "fit": {
+          "internal_rank": 256,
+          "pca_singular_values": {
+            "count": 256,
+            "finite_count": 256,
+            "finite_max": 3863.160888671875,
+            "finite_mean": 766.1310451030731,
+            "finite_median": 649.3352355957031,
+            "finite_min": 399.3598937988281,
+            "finite_p10": 459.4762268066406,
+            "finite_p90": 1175.7301635742188,
+            "finite_p95": 1443.527587890625,
+            "nan_count": 0,
+            "negative_infinity_count": 0,
+            "positive_infinity_count": 0
+          }
+        },
+        "future_kl": 4.764918327331543,
+        "screening_condition": {
+          "effective": 10000.0,
+          "fit_accumulation_dtype": "float64",
+          "fit_health_relative_floor_exceeds_absolute": true,
+          "floor": 3.7244630220811814e-05,
+          "floored_count": 29,
+          "floored_fraction": 0.2265625,
+          "rank": 128,
+          "raw": 30357734817792.0,
+          "zero_eigenvalue_count": 0
+        },
+        "seed": 20260814,
+        "teacher_top1_agreement": 0.15081700682640076
+      },
+      {
+        "artifact": {
+          "bytes": 23975548,
+          "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_arbitration_build_20260804/private/canonicalizer/uniform_mixture_rrr_seed_20260824.pt",
+          "sha256": "8ab69980ec8b9a6c469d20744c8269506cea20e8e2f7f471dcdf102c01047f7a"
+        },
+        "fit": {
+          "internal_rank": 256,
+          "pca_singular_values": {
+            "count": 256,
+            "finite_count": 256,
+            "finite_max": 3863.1640625,
+            "finite_mean": 766.3346719741821,
+            "finite_median": 649.1471557617188,
+            "finite_min": 401.8677978515625,
+            "finite_p10": 462.36541748046875,
+            "finite_p90": 1175.7352294921875,
+            "finite_p95": 1443.5299682617188,
+            "nan_count": 0,
+            "negative_infinity_count": 0,
+            "positive_infinity_count": 0
+          }
+        },
+        "future_kl": 4.727659225463867,
+        "screening_condition": {
+          "effective": 10000.0,
+          "fit_accumulation_dtype": "float64",
+          "fit_health_relative_floor_exceeds_absolute": true,
+          "floor": 3.7126483221072704e-05,
+          "floored_count": 29,
+          "floored_fraction": 0.2265625,
+          "rank": 128,
+          "raw": 31358902599680.0,
+          "zero_eigenvalue_count": 0
+        },
+        "seed": 20260824,
+        "teacher_top1_agreement": 0.15255917608737946
+      },
+      {
+        "artifact": {
+          "bytes": 23975548,
+          "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_arbitration_build_20260804/private/canonicalizer/uniform_mixture_rrr_seed_20260834.pt",
+          "sha256": "03f034f7589a6a304f764e5cd6674f172c61c9da247d8058d46c67483c655555"
+        },
+        "fit": {
+          "internal_rank": 256,
+          "pca_singular_values": {
+            "count": 256,
+            "finite_count": 256,
+            "finite_max": 3863.162353515625,
+            "finite_mean": 766.3147703409195,
+            "finite_median": 649.6727600097656,
+            "finite_min": 402.38104248046875,
+            "finite_p10": 461.2032470703125,
+            "finite_p90": 1175.7406616210938,
+            "finite_p95": 1443.527587890625,
+            "nan_count": 0,
+            "negative_infinity_count": 0,
+            "positive_infinity_count": 0
+          }
+        },
+        "future_kl": 4.7530388832092285,
+        "screening_condition": {
+          "effective": 10000.0,
+          "fit_accumulation_dtype": "float64",
+          "fit_health_relative_floor_exceeds_absolute": true,
+          "floor": 3.712497709784657e-05,
+          "floored_count": 29,
+          "floored_fraction": 0.2265625,
+          "rank": 128,
+          "raw": 29905492377600.0,
+          "zero_eigenvalue_count": 0
+        },
+        "seed": 20260834,
+        "teacher_top1_agreement": 0.15309984982013702
+      }
+    ]
+  },
+  "semantic_correction": {
+    "actual_estimator": "predictive_rrr_after_learned_layer_mixture",
+    "consequence": "paired same-seed mixture comparison governs canonicalizer arbitration",
+    "future_label": "learned_mixture_rrr",
+    "legacy_label": "tucker_predictive",
+    "legacy_seed_confound": true,
+    "separate_tucker_factorization_present": false
+  },
+  "source_exp0a_summary_sha256": "ffb49b48fa20bbe686a16d9c0e7402c64438a21c4bba5a567034fa54fe07b4b7",
+  "status": "complete_development_only",
+  "training_started": false
+}

@@ -1,0 +1,17 @@
+{
+  "canonicalizer_decision": {
+    "fallback": "uniform_mixture_rrr",
+    "primary": "learned_mixture_rrr",
+    "reason": "agreement_ci_excludes_zero_positive_and_sign_is_consistent"
+  },
+  "frozen_evaluation_partitions_touched": [],
+  "kind": "paper2_phase2_arbitration_build_bundle",
+  "optimizer_steps": 0,
+  "receipts": {
+    "canonicalizer_arbitration": "outputs/stage5/stage5_paper2_phase2_arbitration_build_20260804/canonicalizer_arbitration_summary.json",
+    "student_build": "outputs/stage5/stage5_paper2_phase2_arbitration_build_20260804/student_build_summary.json"
+  },
+  "status": "complete_cpu_only_no_training",
+  "student_build_status": "complete_build_only_no_losses",
+  "training_started": false
+}

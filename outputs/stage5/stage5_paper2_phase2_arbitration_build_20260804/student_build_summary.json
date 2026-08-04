@@ -1,0 +1,83 @@
+{
+  "architecture": {
+    "control_dim": 32,
+    "draft_rank": 64,
+    "hidden_size": 896,
+    "latent_dim": 128,
+    "max_steps": 4,
+    "n_slots": 8,
+    "new_trainable_parameter_count": 1184917,
+    "populated_future_slots": 4,
+    "reserved_masked_span_slots": 4,
+    "tied_embedding_parameter_count_excluded": 230272
+  },
+  "assertions": {
+    "bridge_output_nonzero_initialization": true,
+    "checkpoint_integrated_base_hash_unchanged": true,
+    "checkpoint_integrated_zero_loop_identity": true,
+    "direction_rmsnorm_gain_init_one": true,
+    "frozen_tied_embedding_hash_unchanged": true,
+    "frozen_tied_embedding_requires_grad_false": true,
+    "inactive_hidden_identity_exact": true,
+    "inactive_logits_identity_exact": true,
+    "k_cap_four": true,
+    "loss_surface_absent": true,
+    "masked_slots_excluded_from_effective_rank": true,
+    "masked_slots_excluded_from_loss": true,
+    "optimizer_absent": true,
+    "persistent_state_not_projected": true,
+    "position_zero_writeback_closed": true,
+    "softplus_scalar_magnitude": true,
+    "stage_c_control_read_exposed": true,
+    "training_steps_zero": true,
+    "trust_region_wired": true
+  },
+  "checkpoint_identity": {
+    "base_hash_unchanged": true,
+    "base_parameter_sha256_after": "e21c19e472d64adf1b160e2200414edc0cc23926a1be9e6606263ddde157aa2b",
+    "base_parameter_sha256_before": "e21c19e472d64adf1b160e2200414edc0cc23926a1be9e6606263ddde157aa2b",
+    "base_requires_grad_false": true,
+    "input_output_embedding_storage_tied": true,
+    "max_abs_hidden_difference": 0.0,
+    "max_abs_logits_difference": 0.0,
+    "model_name": "Qwen/Qwen2.5-0.5B-Instruct",
+    "tie_word_embeddings_policy": true,
+    "zero_loop_hidden_bit_identity": true,
+    "zero_loop_logits_bit_identity": true
+  },
+  "constants": {
+    "path": "training/paper2_phase2_dc2_constants.json",
+    "sha256": "4e56a43a6692a4c88e60c17cd5e12076f1a2f0c3c65b3027dfc3f0800ef558fc",
+    "source_receipt_sha256": "b8ec5e81649d7a7917d98a0f988cd39c64be16ea51a34b150b02ef07df6d86ca",
+    "version": "v1d_confirmed_20260803"
+  },
+  "do_not_claim": [
+    "the untrained student improves teacher agreement",
+    "build assertions establish matched-pilot quality"
+  ],
+  "frozen_evaluation_partitions_touched": [],
+  "frozen_tied_embedding_sha256": "43a263c42a8c5aaf509ad52c56277416ef118dcd9b4247df2d33dd5403f9a20d",
+  "initialization": {
+    "bridge_gate_logit": -4.0,
+    "bridge_p_out_std": 0.001,
+    "direction_gain": 1.0,
+    "initial_magnitude_mean": 0.018149929121136665,
+    "r_0_approx_0p018_over_rms_z0": [
+      0.8597755432128906,
+      0.857429027557373
+    ],
+    "r_0_measured": [
+      0.8601170182228088,
+      0.8574665188789368
+    ],
+    "rho": 0.95,
+    "softplus_magnitude_bias": -4.0,
+    "tube_c": 0.15,
+    "writeback_rms_cap": 0.5508932316303252
+  },
+  "kind": "paper2_dc2_student_build_assertion_receipt",
+  "losses_attached": [],
+  "optimizer_steps": 0,
+  "status": "complete_build_only_no_losses",
+  "training_started": false
+}
