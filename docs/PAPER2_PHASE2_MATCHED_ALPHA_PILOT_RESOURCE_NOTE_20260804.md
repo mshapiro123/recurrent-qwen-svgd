@@ -2,11 +2,15 @@
 
 Date: 2026-08-04
 
-- Runtime: one NVIDIA A100 80 GB; CUDA required. The runner rejects smaller or
-  CPU-only runtimes before restoring private tensors.
-- Expected peak: below 70 GB when full-vocabulary logits are evaluated in
-  horizon chunks. Cached teacher states remain on local scratch/CPU and are
-  staged to GPU by batch.
+- Runtime: NVIDIA A100 40 GB or larger; CUDA required. The original 80 GB
+  estimate was amended before training after the cached-state sparse-logit
+  implementation was measured structurally. See
+  `PAPER2_PHASE2_MATCHED_ALPHA_RUNTIME_AMENDMENT_20260804.md`. The runner
+  requires at least 35 GiB visible VRAM and rejects smaller or CPU-only
+  runtimes before restoring private tensors.
+- Expected peak: well below 35 GiB. This launcher never loads a transformer
+  backbone and scores only cached sparse candidate sets. Cached teacher states
+  remain on local scratch/CPU and are staged to GPU by batch.
 - Expected wall time: approximately 4-8 hours for six 1,000-step arms plus
   evaluations. The registered one-time 2,000-step extension can add a similar
   amount. This is an estimate, not a gate.

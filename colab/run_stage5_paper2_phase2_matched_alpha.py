@@ -39,6 +39,8 @@ def write_status(status: str, **details: object) -> None:
                 "kind": "paper2_phase2_matched_alpha_status",
                 "status": status,
                 "updated_at_unix": time.time(),
+                "gpu_name": os.environ.get("STAGE5_MATCHED_ALPHA_GPU_NAME"),
+                "gpu_vram_gib": os.environ.get("STAGE5_MATCHED_ALPHA_GPU_VRAM_GIB"),
                 **details,
             },
             indent=2,

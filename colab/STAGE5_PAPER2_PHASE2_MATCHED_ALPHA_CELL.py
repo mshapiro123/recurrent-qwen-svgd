@@ -1,4 +1,4 @@
-"""Colab A100-80GB launcher for the locked Phase-2 matched-alpha pilots."""
+"""Colab A100-40GB+ launcher for the locked Phase-2 matched-alpha pilots."""
 
 from __future__ import annotations
 
@@ -12,13 +12,14 @@ import torch
 from google.colab import drive, userdata
 
 
-STAGE5_PAPER2_PHASE2_MATCHED_ALPHA_VERSION = "paper2_phase2_matched_alpha_v1"
+STAGE5_PAPER2_PHASE2_MATCHED_ALPHA_VERSION = "paper2_phase2_matched_alpha_v2"
 # Safety marker: locked six-arm DEV-only alpha 0 0.5 1 seeds 0 1 matched pilots
 # Safety marker: zero-loop bit identity frozen LM heads K at most four and document isolation asserted
 # Safety marker: 14B functional probe uses the hashed 14B LM head not the student tied embedding
 # Safety marker: one registered extension and conditional alpha 0.25 or 0.75 refinement only
 # Safety marker: per-arm Drive resume plus local-scratch immutable Stage0A staging
 # Safety marker: paired bootstrap quality gate gradient atlas and scripted decision
+# Safety marker: A100 40GB cached-state sparse-logit path minimum 35 GiB visible VRAM
 REPO = "mshapiro123/recurrent-qwen-svgd"
 ROOT = Path("/content/recurrent-qwen-svgd")
 REF = os.environ.get("STAGE5_BOOTSTRAP_REF", "main").strip() or "main"
@@ -60,10 +61,13 @@ assert torch.cuda.is_available(), "Matched-alpha pilots require CUDA."
 properties = torch.cuda.get_device_properties(0)
 vram_gib = properties.total_memory / 2**30
 print(f"gpu_preflight name={properties.name} vram_gib={vram_gib:.1f}", flush=True)
-assert vram_gib >= 70, (
-    "Matched-alpha pilots require an A100 80GB class runtime; "
+assert properties.major >= 8, f"Matched-alpha pilots require Ampere-class CUDA or newer; observed {properties.name}."
+assert vram_gib >= 35, (
+    "Matched-alpha cached-state pilots require an A100 40GB or larger runtime; "
     f"observed {properties.name} with {vram_gib:.1f} GiB."
 )
+os.environ["STAGE5_MATCHED_ALPHA_GPU_NAME"] = properties.name
+os.environ["STAGE5_MATCHED_ALPHA_GPU_VRAM_GIB"] = f"{vram_gib:.3f}"
 url = f"https://x-access-token:{GH}@github.com/{REPO}.git"
 if ROOT.exists():
     run(["git", "remote", "set-url", "origin", url])

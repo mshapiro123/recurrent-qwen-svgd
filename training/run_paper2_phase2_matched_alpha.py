@@ -921,8 +921,10 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     if sha256_file(constants_path) != protocol["constants_lf_sha256"]:
         raise RuntimeError("V1d constants file does not match the preregistration")
     constants = json.loads(constants_path.read_text(encoding="utf-8"))
-    if not torch.cuda.is_available() or torch.cuda.get_device_properties(0).total_memory < 70 * 2**30:
-        raise RuntimeError("matched-alpha pilots require an A100-class GPU with at least 70 GiB VRAM")
+    if not torch.cuda.is_available() or torch.cuda.get_device_properties(0).total_memory < 35 * 2**30:
+        raise RuntimeError(
+            "cached-state sparse-logit pilots require an A100-class GPU with at least 35 GiB VRAM"
+        )
     cache = build_pilot_cache(
         stage0a_summary_path=args.stage0a_summary,
         stage0a_private=args.stage0a_private,

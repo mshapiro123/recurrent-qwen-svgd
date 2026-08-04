@@ -93,6 +93,15 @@ def test_optimizer_excludes_registered_gate_scalar_banks() -> None:
     assert id(module.bridge.rho_logits) in no_decay_ids
 
 
+def test_runner_accepts_a100_40gb_floor_as_documented() -> None:
+    source = (
+        __import__("pathlib").Path(__file__).resolve().parents[1]
+        / "training/run_paper2_phase2_matched_alpha.py"
+    ).read_text(encoding="utf-8")
+    assert "35 * 2**30" in source
+    assert "cached-state sparse-logit pilots require" in source
+
+
 def test_trust_saturation_requires_strict_majority_of_full_window() -> None:
     assert not trust_saturated([True] * 50 + [False] * 50)
     assert trust_saturated([True] * 51 + [False] * 49)
