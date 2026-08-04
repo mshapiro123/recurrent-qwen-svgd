@@ -3327,6 +3327,34 @@ def test_phase2_oracle_selector_headroom_target_is_wired_and_guarded() -> None:
     assert "stage5_paper2_phase2_oracle_selector_headroom_20260805" in runner
 
 
+def test_phase2_staged_a1_target_is_wired_and_guarded() -> None:
+    cell = (ROOT / "colab/STAGE5_PAPER2_PHASE2_STAGED_A1_CELL.py").read_text(
+        encoding="utf-8"
+    )
+    runner = (ROOT / "colab/run_stage5_paper2_phase2_staged_a1.py").read_text(
+        encoding="utf-8"
+    )
+    trainer = (ROOT / "training/run_paper2_phase2_staged_a1.py").read_text(
+        encoding="utf-8"
+    )
+    for bootstrap_path in (
+        ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py",
+        ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md",
+    ):
+        text = bootstrap_path.read_text(encoding="utf-8")
+        assert "paper2_phase2_staged_a1" in text
+        assert "colab/STAGE5_PAPER2_PHASE2_STAGED_A1_CELL.py" in text
+    assert "paper2_phase2_staged_a1_v1" in cell
+    assert "gradient-only 100-batch calibration with zero optimizer updates" in cell
+    assert "A1 ends for strategy review and cannot launch A2" in cell
+    assert "35" in cell and "vram_gib" in cell
+    assert 'RUN_ID = "stage5_paper2_phase2_staged_a1_20260805"' in runner
+    assert '"a2_launched": False' in trainer
+    assert "strategy_review_required_before_a2" in trainer
+    assert "counterfactual_bridge = module.bridge(" in trainer
+    assert "training.run_paper2_phase2_staged_a1" in runner
+
+
 def test_gradient_path_audit_target_is_wired_and_guarded() -> None:
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
     bootstrap_md = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")

@@ -158,6 +158,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3_short_sha"
 #   "paper2_phase2_matched_alpha" - locked A100-80GB DEV-only matched alpha pilots and decision.
 #   "paper2_phase2_matched_alpha_audit" - read-only L4 terminal-checkpoint and shaper audit.
 #   "paper2_phase2_oracle_selector_headroom" - CPU-only perfect-selector ceiling from banked rows.
+#   "paper2_phase2_staged_a1" - locked A100-40GB+ state-construction stage; stops before A2.
 #   "paper2_phase2_v1b_rms_audit" - CPU-only audit of existing V1b private rows.
 #   "paper2_phase2_eval_de_freeze" - score-blind EVAL-D/E and own-base feature freeze.
 #   "paper2_d0_prelock_publish_resume" - publish completed Drive-backed D0 lock receipts without inference.
@@ -365,6 +366,22 @@ TARGETS = {
             "per-step trust magnitudes marked unrecoverable rather than reconstructed",
             "tests/test_paper2_phase2_matched_alpha_audit.py",
             "colab/run_stage5_paper2_phase2_matched_alpha_audit.py",
+        ],
+        "env": {},
+    },
+    "paper2_phase2_staged_a1": {
+        "path": "colab/STAGE5_PAPER2_PHASE2_STAGED_A1_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_PHASE2_STAGED_A1_VERSION",
+            "paper2_phase2_staged_a1_v1",
+            "locked gradient-only 100-batch calibration with zero optimizer updates",
+            "A1 trains flow only and freezes initializer bridge control draft",
+            "execution gates closed with counterfactual preservation isolated from execution",
+            "static 60 20 20 gradient shares audited at step 200",
+            "trust observe-only endpoint-ratio catastrophe tripwire and generous clip ceiling",
+            "A1 ends for strategy review and cannot launch A2",
+            "tests/test_paper2_phase2_staged_repilot.py",
+            "colab/run_stage5_paper2_phase2_staged_a1.py",
         ],
         "env": {},
     },
