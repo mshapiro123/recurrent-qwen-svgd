@@ -32,7 +32,9 @@ layer-mode bound selected `learned_mixture_rrr`. None selected alpha.
 - Recurrent-gradient paths run in fp32. Loop cap is `K <= 4`.
 - V1d constants are banked: `c = 0.15`, state-RMS cap
   `0.5508932316303252`, constants LF SHA-256
-  `87965cf6ab1768962fccac6d2598477832b95e1ab9128c465afa23da68d4f076`.
+  `4e56a43a6692a4c88e60c17cd5e12076f1a2f0c3c65b3027dfc3f0800ef558fc`.
+  The before-training line-ending correction is recorded in
+  `docs/PAPER2_PHASE2_MATCHED_ALPHA_CONSTANTS_HASH_AMENDMENT_20260804.md`.
 - Frozen probe parameters: `660,480`. Student module parameters: `1,184,917`.
   Probe evidence is therefore interpreted with the recorded anti-compensation
   caveat, but the frozen probe is not refit.

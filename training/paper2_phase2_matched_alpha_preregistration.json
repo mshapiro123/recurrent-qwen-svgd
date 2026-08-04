@@ -52,7 +52,15 @@
   "equivalence_relative_band": 0.02,
   "equivalence_default_alpha": 0.5,
   "refinement": {"upper": 0.75, "lower": 0.25},
-  "constants_lf_sha256": "87965cf6ab1768962fccac6d2598477832b95e1ab9128c465afa23da68d4f076",
+  "constants_lf_sha256": "4e56a43a6692a4c88e60c17cd5e12076f1a2f0c3c65b3027dfc3f0800ef558fc",
+  "amendments": [
+    {
+      "date": "2026-08-04",
+      "kind": "checkout_line_ending_hash_correction",
+      "path": "docs/PAPER2_PHASE2_MATCHED_ALPHA_CONSTANTS_HASH_AMENDMENT_20260804.md",
+      "locked_before_training": true
+    }
+  ],
   "frozen_data": {
     "data_sha256": "05bca2ee3ba71421296b2e31a0439746eb9c1b0e15e2cea4471be202ab6ac29d",
     "sample_manifest_sha256": "43edbb74c5edf84dc5e6512dbe4beb1bbbf0f4df31b2c6830714ce2c8fc7ba93",
