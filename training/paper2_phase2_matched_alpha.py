@@ -50,6 +50,38 @@ def normalize_sparse_with_tail(
     return torch.log_softmax(joined, dim=-1)
 
 
+def reconstruct_sparse_residual_seed(
+    base_log_probs: torch.Tensor,
+    raw_candidate_logits: torch.Tensor,
+    candidate_mask: torch.Tensor,
+) -> torch.Tensor:
+    """Restore finite support erased by sparse-cache simplex projection.
+
+    Authoritative cached top-k probabilities remain unchanged. Valid candidates
+    projected to exact zero are reconstructed from the frozen LM-head logits,
+    using finite authoritative candidates to recover the row-wise additive
+    log-partition shift. Padding remains exactly negative infinity.
+    """
+
+    if base_log_probs.shape != raw_candidate_logits.shape:
+        raise ValueError("base log probabilities and raw candidate logits must align")
+    if base_log_probs.shape != candidate_mask.shape:
+        raise ValueError("candidate mask must match sparse candidate tensors")
+    finite_reference = candidate_mask.bool() & torch.isfinite(base_log_probs)
+    reference_count = finite_reference.sum(dim=-1, keepdim=True)
+    if bool((reference_count == 0).any()):
+        raise ValueError("every sparse row requires at least one finite reference candidate")
+    offsets = torch.where(
+        finite_reference,
+        raw_candidate_logits.float() - base_log_probs.float(),
+        torch.zeros_like(raw_candidate_logits, dtype=torch.float32),
+    )
+    row_shift = offsets.sum(dim=-1, keepdim=True) / reference_count.float()
+    reconstructed = raw_candidate_logits.float() - row_shift
+    seeded = torch.where(finite_reference, base_log_probs.float(), reconstructed)
+    return seeded.masked_fill(~candidate_mask.bool(), float("-inf"))
+
+
 def masked_sparse_kl(
     target_log_probs: torch.Tensor,
     predicted_log_probs: torch.Tensor,

@@ -19,6 +19,7 @@ from training.paper2_phase2_matched_alpha import (
     paired_bootstrap_interval,
     practical_equivalence,
     quality_noninferior,
+    reconstruct_sparse_residual_seed,
     trust_saturated,
 )
 from training.run_paper2_phase2_matched_alpha import (
@@ -85,6 +86,31 @@ def test_masked_sparse_kl_keeps_infinite_penalty_for_missing_positive_target_sup
     predicted = torch.tensor([[[float("-inf"), -0.7]]])
     value = masked_sparse_kl(target, predicted, torch.tensor([[[True]]]))
     assert torch.isposinf(value).all()
+
+
+def test_sparse_residual_seed_reconstructs_valid_zero_support_and_preserves_padding() -> None:
+    base = torch.tensor([[[-0.2, float("-inf"), -1.0, float("-inf")]]])
+    raw = torch.tensor([[[9.8, 8.8, 9.0, 7.0]]])
+    mask = torch.tensor([[[True, True, True, False]]])
+    seeded = reconstruct_sparse_residual_seed(base, raw, mask)
+    assert torch.allclose(seeded[..., :3], torch.tensor([[[-0.2, -1.2, -1.0]]]))
+    assert torch.isneginf(seeded[..., 3]).all()
+
+
+def test_sparse_residual_seed_is_identity_when_authoritative_support_is_finite() -> None:
+    base = torch.tensor([[[-0.2, -0.7, -1.0]]])
+    raw = torch.tensor([[[9.8, 9.3, 9.0]]])
+    mask = torch.ones_like(base, dtype=torch.bool)
+    assert torch.equal(reconstruct_sparse_residual_seed(base, raw, mask), base)
+
+
+def test_sparse_residual_seed_requires_a_finite_row_reference() -> None:
+    with pytest.raises(ValueError, match="finite reference"):
+        reconstruct_sparse_residual_seed(
+            torch.full((1, 1, 2), float("-inf")),
+            torch.zeros(1, 1, 2),
+            torch.ones(1, 1, 2, dtype=torch.bool),
+        )
 
 
 def test_quality_gate_uses_point_and_wilson_floors() -> None:
@@ -315,7 +341,7 @@ def test_sparse_training_path_uses_teacher_width_and_emits_atlas() -> None:
     # the teacher and base distributions. Their -inf log-probabilities contribute
     # exactly zero mass and must not turn the aggregate KL into NaN.
     batch["base_candidates"][..., 1] = float("-inf")
-    batch["teacher_candidates"][..., 1] = float("-inf")
+    batch["teacher_candidates"][..., 1] = -0.4
     decoder = torch.randn(128, 20)
     decoder_bias = torch.randn(20)
     losses, metrics = _losses(

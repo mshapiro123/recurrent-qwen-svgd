@@ -31,6 +31,7 @@ from training.paper2_phase2_matched_alpha import (
     masked_sparse_kl,
     normalize_sparse_with_tail,
     quality_noninferior,
+    reconstruct_sparse_residual_seed,
     summarize_clip_fractions,
     trust_saturated,
     wilson_lower,
@@ -39,7 +40,7 @@ from training.paper2_phase2_matched_alpha import (
 
 BETAS = (0.5,)
 PROTOCOL_RELATIVE = Path("training/paper2_phase2_matched_alpha_preregistration.json")
-LOSS_MASK_CONTRACT = "masked_sparse_candidates_plus_tail_v2_zero_target_safe"
+LOSS_MASK_CONTRACT = "masked_sparse_candidates_plus_tail_v3_finite_residual_seed"
 
 
 def sha256_file(path: Path) -> str:
@@ -343,9 +344,18 @@ def _losses(
     hidden = torch.cat([dummy, hidden4], dim=1)
     attention = torch.ones(hidden.shape[:2], dtype=torch.bool, device=hidden.device)
     attention[:, 0] = False
+    candidate_embeddings = embedding(batch["candidate_ids"].clamp_min(0)).float()
+    raw_base_candidate_logits = torch.einsum(
+        "bhd,bhcd->bhc", hidden4, candidate_embeddings
+    )
+    residual_seed_candidates = reconstruct_sparse_residual_seed(
+        batch["base_candidates"],
+        raw_base_candidate_logits,
+        batch["candidate_mask"],
+    ).detach()
     output = module(
         hidden=hidden,
-        previous_logits=batch["base_candidates"].float(),
+        previous_logits=residual_seed_candidates,
         steps=1,
         attention_mask=attention,
         position_bucket=batch["position_bucket"],
@@ -361,12 +371,11 @@ def _losses(
         batch["base_candidates"], batch["base_tail"], batch["candidate_mask"]
     ).detach()
 
-    candidate_embeddings = embedding(batch["candidate_ids"].clamp_min(0)).float()
     bridge_delta = torch.einsum(
         "bhd,bhcd->bhc", output.hidden[:, 1:].float() - hidden4, candidate_embeddings
     )
     bridge_log = normalize_sparse_with_tail(
-        batch["base_candidates"].float() + bridge_delta,
+        residual_seed_candidates + bridge_delta,
         batch["base_tail"],
         batch["candidate_mask"],
     )
@@ -835,6 +844,32 @@ def run_arm(
         value.requires_grad for value in teacher_embedding.parameters()
     ):
         raise RuntimeError("a frozen LM head unexpectedly requires gradients")
+    smoke_losses, _smoke_metrics = _losses(
+        module=module,
+        batch=identity_batch,
+        embedding=embedding,
+        teacher_embedding=teacher_embedding,
+        decoder=decoder,
+        decoder_bias=decoder_bias,
+    )
+    nonfinite_smoke = [
+        name for name, value in smoke_losses.items() if not bool(torch.isfinite(value))
+    ]
+    if nonfinite_smoke:
+        raise RuntimeError(
+            f"matched-alpha finite-loss preflight failed for {arm}: {nonfinite_smoke}"
+        )
+    reconstructed_support = int(
+        (
+            identity_batch["candidate_mask"]
+            & ~torch.isfinite(identity_batch["base_candidates"])
+        ).sum()
+    )
+    print(
+        f"matched_alpha_loss_preflight arm={arm} finite=1 "
+        f"reconstructed_support={reconstructed_support}",
+        flush=True,
+    )
     if step == 0 and not history:
         evaluation, rows = evaluate(
             module=module, cache=cache, indices=eval_indices, alpha=alpha,
