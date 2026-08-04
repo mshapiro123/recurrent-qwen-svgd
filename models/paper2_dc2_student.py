@@ -99,8 +99,11 @@ class ResidualFlowOutput:
     updates: tuple[torch.Tensor, ...]
     magnitudes: torch.Tensor
     update_ratios: torch.Tensor
+    state_update_ratios: torch.Tensor
+    endpoint_update_ratios: torch.Tensor
     initial_update_ratio: torch.Tensor
     trust_penalty: torch.Tensor
+    endpoint_reference_available: bool
 
 
 class SharedResidualFlow(nn.Module):
@@ -158,30 +161,65 @@ class SharedResidualFlow(nn.Module):
         ratio = _rms(update).mean(dim=1) / _rms(state).mean(dim=1).clamp_min(1e-6)
         return state + update, update, magnitude, ratio
 
-    def forward(self, state: torch.Tensor, context: torch.Tensor, *, steps: int) -> ResidualFlowOutput:
+    def forward(
+        self,
+        state: torch.Tensor,
+        context: torch.Tensor,
+        *,
+        steps: int,
+        target_state: Optional[torch.Tensor] = None,
+        apply_trust_penalty: bool = False,
+    ) -> ResidualFlowOutput:
         if state.shape[1:] != (self.n_slots, self.latent_dim):
             raise ValueError("state does not match registered scratch geometry")
         if steps < 0 or steps > self.max_steps:
             raise ValueError(f"requested steps violate loop cap {self.max_steps}")
+        if target_state is not None and target_state.shape != state.shape:
+            raise ValueError("target_state must match the registered scratch geometry")
+        if apply_trust_penalty and target_state is None:
+            raise ValueError("target_state is required when the trust penalty is active")
         current = state
         states = [state]
         updates: list[torch.Tensor] = []
         magnitudes: list[torch.Tensor] = []
-        ratios: list[torch.Tensor] = []
+        state_ratios: list[torch.Tensor] = []
+        endpoint_ratios: list[torch.Tensor] = []
+        endpoint_rms = (
+            _rms(target_state.detach()).mean(dim=1) if target_state is not None else None
+        )
         for index in range(steps):
-            current, update, magnitude, ratio = self.step(current, context, index)
+            current, update, magnitude, state_ratio = self.step(current, context, index)
             states.append(current)
             updates.append(update)
             magnitudes.append(magnitude)
-            ratios.append(ratio)
+            state_ratios.append(state_ratio)
+            if endpoint_rms is not None:
+                update_rms = _rms(update).mean(dim=1)
+                state_rms = _rms(states[-2]).mean(dim=1)
+                denominator = torch.maximum(state_rms, endpoint_rms) + 1e-6
+                endpoint_ratios.append(update_rms / denominator)
         if steps:
             magnitude_tensor = torch.stack(magnitudes, dim=1)
-            ratio_tensor = torch.stack(ratios, dim=1)
+            state_ratio_tensor = torch.stack(state_ratios, dim=1)
+            endpoint_ratio_tensor = (
+                torch.stack(endpoint_ratios, dim=1)
+                if endpoint_ratios
+                else state.new_zeros((state.shape[0], steps))
+            )
+            ratio_tensor = (
+                endpoint_ratio_tensor if target_state is not None else state_ratio_tensor
+            )
             initial_ratio = ratio_tensor[:, 0]
-            trust = F.relu(ratio_tensor - self.trust_max).square().sum(dim=1).mean()
+            trust = (
+                F.relu(endpoint_ratio_tensor - self.trust_max).square().sum(dim=1).mean()
+                if apply_trust_penalty
+                else state.new_zeros(())
+            )
         else:
             magnitude_tensor = state.new_zeros((state.shape[0], 0))
             ratio_tensor = state.new_zeros((state.shape[0], 0))
+            state_ratio_tensor = state.new_zeros((state.shape[0], 0))
+            endpoint_ratio_tensor = state.new_zeros((state.shape[0], 0))
             initial_ratio = state.new_zeros((state.shape[0],))
             trust = state.new_zeros(())
         return ResidualFlowOutput(
@@ -190,8 +228,11 @@ class SharedResidualFlow(nn.Module):
             updates=tuple(updates),
             magnitudes=magnitude_tensor,
             update_ratios=ratio_tensor,
+            state_update_ratios=state_ratio_tensor,
+            endpoint_update_ratios=endpoint_ratio_tensor,
             initial_update_ratio=initial_ratio,
             trust_penalty=self.trust_weight * trust,
+            endpoint_reference_available=target_state is not None,
         )
 
 
@@ -427,12 +468,20 @@ class Phase2StudentModules(nn.Module):
         steps: int,
         attention_mask: Optional[torch.Tensor] = None,
         position_bucket: Optional[torch.Tensor] = None,
+        target_scratch: Optional[torch.Tensor] = None,
+        apply_trust_penalty: bool = False,
     ) -> Phase2StudentOutput:
         if steps < 0 or steps > self.max_steps:
             raise ValueError(f"requested steps violate loop cap {self.max_steps}")
         scratch0 = self.initializer(hidden, attention_mask)
         context = hidden.float().mean(dim=1)
-        flow = self.flow(scratch0, context, steps=steps)
+        flow = self.flow(
+            scratch0,
+            context,
+            steps=steps,
+            target_state=target_scratch,
+            apply_trust_penalty=apply_trust_penalty,
+        )
         if flow.updates:
             innovation_norm = _rms(flow.updates[-1]).mean(dim=1)
         else:
@@ -478,4 +527,3 @@ class Phase2StudentModules(nn.Module):
             bridge=bridge,
             draft=draft,
         )
-

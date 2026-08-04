@@ -35,7 +35,14 @@ def test_residual_flow_uses_scalar_softplus_magnitude_without_state_projection()
     state = torch.randn(2, 8, 8) * 3.0
     context = torch.randn(2, 16)
 
-    output = module(state, context, steps=2)
+    endpoint = torch.randn_like(state)
+    output = module(
+        state,
+        context,
+        steps=2,
+        target_state=endpoint,
+        apply_trust_penalty=True,
+    )
 
     assert output.state.shape == state.shape
     assert output.magnitudes.shape == (2, 2)
@@ -53,6 +60,50 @@ def test_residual_flow_uses_scalar_softplus_magnitude_without_state_projection()
     )
     assert output.trust_penalty.ndim == 0
     assert output.initial_update_ratio.shape == (2,)
+    assert output.endpoint_update_ratios.shape == (2, 2)
+    assert output.state_update_ratios.shape == (2, 2)
+    assert output.endpoint_reference_available
+
+
+def test_endpoint_referenced_trust_uses_larger_state_or_detached_target_rms() -> None:
+    torch.manual_seed(29)
+    module = SharedResidualFlow(
+        latent_dim=8,
+        context_dim=16,
+        n_slots=8,
+        max_steps=4,
+        trust_max=0.5,
+        trust_weight=0.01,
+    )
+    state = torch.full((2, 8, 8), 0.02, requires_grad=True)
+    endpoint = torch.ones_like(state, requires_grad=True)
+    context = torch.randn(2, 16)
+
+    output = module(
+        state,
+        context,
+        steps=1,
+        target_state=endpoint,
+        apply_trust_penalty=True,
+    )
+
+    assert torch.all(output.state_update_ratios[:, 0] > 0.5)
+    assert torch.all(output.endpoint_update_ratios[:, 0] < 0.1)
+    assert torch.equal(output.update_ratios, output.endpoint_update_ratios)
+    assert float(output.trust_penalty.detach()) == 0.0
+    output.endpoint_update_ratios.sum().backward()
+    assert endpoint.grad is None
+
+
+def test_active_trust_penalty_requires_endpoint_target() -> None:
+    module = SharedResidualFlow(latent_dim=8, context_dim=16, n_slots=8, max_steps=4)
+    with pytest.raises(ValueError, match="target_state"):
+        module(
+            torch.randn(1, 8, 8),
+            torch.randn(1, 16),
+            steps=1,
+            apply_trust_penalty=True,
+        )
 
 
 def test_residual_flow_enforces_registered_loop_cap() -> None:

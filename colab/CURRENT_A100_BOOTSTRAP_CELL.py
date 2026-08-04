@@ -153,6 +153,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3_short_sha"
 #   "paper2_phase2_exp0a" - A100 DEV-only canonicalizer and partial-whitening screening.
 #   "paper2_phase2_exp0b" - L4-or-larger DEV-only interpolation and serial-flow screening.
 #   "paper2_phase2_arbitration_build" - high-RAM CPU canonicalizer arbitration and loss-free student build.
+#   "paper2_phase2_layer_mode_bound" - high-RAM CPU r2 concat-RRR layer-mode bound.
 #   "paper2_phase2_v1b_rms_audit" - CPU-only audit of existing V1b private rows.
 #   "paper2_phase2_eval_de_freeze" - score-blind EVAL-D/E and own-base feature freeze.
 #   "paper2_d0_prelock_publish_resume" - publish completed Drive-backed D0 lock receipts without inference.
@@ -307,6 +308,20 @@ TARGETS = {
             "tests/test_paper2_phase2_arbitration.py",
             "tests/test_paper2_dc2_student.py",
             "colab/run_stage5_paper2_phase2_arbitration_build.py",
+        ],
+        "env": {},
+    },
+    "paper2_phase2_layer_mode_bound": {
+        "path": "colab/STAGE5_PAPER2_PHASE2_LAYER_MODE_BOUND_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_PHASE2_LAYER_MODE_BOUND_VERSION",
+            "paper2_phase2_layer_mode_bound_v1",
+            "CPU high RAM cached concat RRR three common randomized SVD seeds no training",
+            "r2 supersedes dense LAPACK and forbids dense covariance materialization",
+            "0.25 point within-arm spread gate precedes 0.5 point paired CI swap rule",
+            "Drive per-seed resume cache and failure status preserve long CPU work",
+            "tests/test_paper2_phase2_layer_mode_bound.py",
+            "colab/run_stage5_paper2_phase2_layer_mode_bound.py",
         ],
         "env": {},
     },

@@ -3194,6 +3194,35 @@ def test_natural_surface_prepare_target_is_wired_and_guarded() -> None:
     assert 'prefix == "name:"' in active_eval
 
 
+def test_phase2_layer_mode_bound_target_is_wired_and_guarded() -> None:
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    bootstrap_md = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")
+    cell = (ROOT / "colab/STAGE5_PAPER2_PHASE2_LAYER_MODE_BOUND_CELL.py").read_text(
+        encoding="utf-8"
+    )
+    runner = (ROOT / "colab/run_stage5_paper2_phase2_layer_mode_bound.py").read_text(
+        encoding="utf-8"
+    )
+    evaluator = (ROOT / "eval/eval_paper2_phase2_layer_mode_bound.py").read_text(
+        encoding="utf-8"
+    )
+
+    for text in (bootstrap, bootstrap_md):
+        assert "paper2_phase2_layer_mode_bound" in text
+        assert "colab/STAGE5_PAPER2_PHASE2_LAYER_MODE_BOUND_CELL.py" in text
+        assert "r2 supersedes dense LAPACK and forbids dense covariance materialization" in text
+
+    assert "paper2_phase2_layer_mode_bound_v1" in cell
+    assert "tests/test_paper2_phase2_layer_mode_bound.py" in cell
+    assert "colab/run_stage5_paper2_phase2_layer_mode_bound.py" in cell
+    assert "learned_mixture_rrr_seed_{seed}.pt" in runner
+    assert "complete_cpu_only_no_training" in runner
+    assert "randomized_low_rank_svd_streamed_design" in evaluator
+    assert "dense_covariance_materialized" in evaluator
+    assert "SPREAD_GATE = 0.0025" in evaluator
+    assert "SWAP_CI_LOWER_BOUND = 0.005" in evaluator
+
+
 def test_gradient_path_audit_target_is_wired_and_guarded() -> None:
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
     bootstrap_md = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")

@@ -133,7 +133,14 @@ def run_build(output_summary: Path, *, model_name: str = "") -> dict[str, Any]:
     hidden = torch.randn(2, 12, hidden_size)
     previous_logits = torch.randn(2, 4, vocabulary_probe_size)
     inactive = module(hidden=hidden, previous_logits=previous_logits, steps=0)
-    active = module(hidden=hidden, previous_logits=previous_logits, steps=1)
+    endpoint_target = torch.randn(2, n_slots, latent_dim)
+    active = module(
+        hidden=hidden,
+        previous_logits=previous_logits,
+        steps=1,
+        target_scratch=endpoint_target,
+        apply_trust_penalty=True,
+    )
 
     slot_mask = torch.zeros(2, n_slots, dtype=torch.bool)
     slot_mask[:, :4] = True
@@ -147,9 +154,13 @@ def run_build(output_summary: Path, *, model_name: str = "") -> dict[str, Any]:
     effective_rank_reference = masked_effective_rank(active.scratch.detach(), slot_mask)
 
     initial_magnitude = float(active.flow.magnitudes[:, 0].mean().detach())
-    scratch_rms = active.flow.states[0].float().square().mean(dim=(1, 2)).sqrt()
-    measured_r0 = active.flow.initial_update_ratio.detach().cpu()
-    predicted_r0 = 0.01814992791780973 / scratch_rms
+    scratch_rms = active.flow.states[0].float().square().mean(dim=-1).add(1e-6).sqrt().mean(dim=1)
+    endpoint_rms = endpoint_target.float().square().mean(dim=-1).add(1e-6).sqrt().mean(dim=1)
+    measured_endpoint_r0 = active.flow.endpoint_update_ratios[:, 0].detach().cpu()
+    measured_state_r0 = active.flow.state_update_ratios[:, 0].detach().cpu()
+    predicted_endpoint_r0 = 0.01814992791780973 / (
+        torch.maximum(scratch_rms, endpoint_rms) + 1e-6
+    )
     frozen_after = _tensor_hash(list(tied_embedding.parameters()))
     assertions = {
         "k_cap_four": module.max_steps == 4 and module.flow.max_steps == 4,
@@ -170,6 +181,20 @@ def run_build(output_summary: Path, *, model_name: str = "") -> dict[str, Any]:
             atol=1e-3,
         ),
         "trust_region_wired": active.flow.trust_penalty.ndim == 0,
+        "trust_region_endpoint_referenced": (
+            active.flow.endpoint_reference_available
+            and torch.equal(active.flow.update_ratios, active.flow.endpoint_update_ratios)
+            and torch.allclose(
+                measured_endpoint_r0,
+                predicted_endpoint_r0,
+                atol=1e-5,
+                rtol=1e-4,
+            )
+        ),
+        "state_referenced_ratio_retained_as_telemetry": (
+            active.flow.state_update_ratios.shape == (2, 1)
+            and bool(torch.all(measured_state_r0 > measured_endpoint_r0))
+        ),
         "position_zero_writeback_closed": active.bridge.position_zero_gate_closed,
         "bridge_output_nonzero_initialization": bool(
             module.bridge.output_projection.weight.detach().abs().sum() > 0
@@ -211,8 +236,10 @@ def run_build(output_summary: Path, *, model_name: str = "") -> dict[str, Any]:
         "initialization": {
             "softplus_magnitude_bias": -4.0,
             "initial_magnitude_mean": initial_magnitude,
-            "r_0_measured": measured_r0.tolist(),
-            "r_0_approx_0p018_over_rms_z0": predicted_r0.tolist(),
+            "r_0_endpoint_referenced_measured": measured_endpoint_r0.tolist(),
+            "r_0_state_referenced_telemetry": measured_state_r0.tolist(),
+            "r_0_endpoint_formula_prediction": predicted_endpoint_r0.tolist(),
+            "trust_denominator": "max(RMS(z_k), RMS(stop_gradient(Z_T))) + eps",
             "direction_gain": 1.0,
             "bridge_p_out_std": 1e-3,
             "bridge_gate_logit": -4.0,
