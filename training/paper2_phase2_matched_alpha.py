@@ -68,11 +68,16 @@ def masked_sparse_kl(
         ],
         dim=-1,
     )
-    safe_target = torch.where(support, target_log_probs, torch.zeros_like(target_log_probs))
-    safe_predicted = torch.where(
-        support, predicted_log_probs, torch.zeros_like(predicted_log_probs)
+    positive_target = support & torch.isfinite(target_log_probs)
+    safe_target = torch.where(
+        positive_target, target_log_probs, torch.zeros_like(target_log_probs)
     )
-    probability = torch.where(support, safe_target.exp(), torch.zeros_like(safe_target))
+    safe_predicted = torch.where(
+        positive_target, predicted_log_probs, torch.zeros_like(predicted_log_probs)
+    )
+    probability = torch.where(
+        positive_target, safe_target.exp(), torch.zeros_like(safe_target)
+    )
     return (probability * (safe_target - safe_predicted)).sum(dim=-1)
 
 

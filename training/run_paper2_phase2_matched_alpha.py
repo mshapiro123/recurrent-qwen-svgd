@@ -39,7 +39,7 @@ from training.paper2_phase2_matched_alpha import (
 
 BETAS = (0.5,)
 PROTOCOL_RELATIVE = Path("training/paper2_phase2_matched_alpha_preregistration.json")
-LOSS_MASK_CONTRACT = "masked_sparse_candidates_plus_tail_v1"
+LOSS_MASK_CONTRACT = "masked_sparse_candidates_plus_tail_v2_zero_target_safe"
 
 
 def sha256_file(path: Path) -> str:

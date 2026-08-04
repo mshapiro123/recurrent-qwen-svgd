@@ -66,15 +66,25 @@ def test_sparse_normalization_includes_tail_and_masks_padding() -> None:
 
 
 def test_masked_sparse_kl_excludes_negative_infinity_padding_and_has_finite_gradient() -> None:
-    target = torch.tensor([[[-0.4, float("-inf"), -1.1]]])
-    predicted = torch.tensor([[[-0.7, float("-inf"), -0.7]]], requires_grad=True)
-    mask = torch.tensor([[[True, False]]])
+    target = torch.tensor([[[-0.4, float("-inf"), float("-inf"), -1.1]]])
+    predicted = torch.tensor(
+        [[[-0.7, float("-inf"), float("-inf"), -0.7]]], requires_grad=True
+    )
+    mask = torch.tensor([[[True, True, False]]])
     value = masked_sparse_kl(target, predicted, mask).mean()
     assert torch.isfinite(value)
     value.backward()
     assert predicted.grad is not None
     assert torch.isfinite(predicted.grad).all()
     assert float(predicted.grad[0, 0, 1]) == 0.0
+    assert float(predicted.grad[0, 0, 2]) == 0.0
+
+
+def test_masked_sparse_kl_keeps_infinite_penalty_for_missing_positive_target_support() -> None:
+    target = torch.tensor([[[-0.4, -1.1]]])
+    predicted = torch.tensor([[[float("-inf"), -0.7]]])
+    value = masked_sparse_kl(target, predicted, torch.tensor([[[True]]]))
+    assert torch.isposinf(value).all()
 
 
 def test_quality_gate_uses_point_and_wilson_floors() -> None:
@@ -301,6 +311,11 @@ def test_sparse_training_path_uses_teacher_width_and_emits_atlas() -> None:
         "teacher_topk_log_probs": torch.log_softmax(torch.randn(2, 4, 5), -1),
         "position_bucket": torch.tensor([1, 3]),
     }
+    # Sparse candidate unions may contain tokens with zero probability under both
+    # the teacher and base distributions. Their -inf log-probabilities contribute
+    # exactly zero mass and must not turn the aggregate KL into NaN.
+    batch["base_candidates"][..., 1] = float("-inf")
+    batch["teacher_candidates"][..., 1] = float("-inf")
     decoder = torch.randn(128, 20)
     decoder_bias = torch.randn(20)
     losses, metrics = _losses(
