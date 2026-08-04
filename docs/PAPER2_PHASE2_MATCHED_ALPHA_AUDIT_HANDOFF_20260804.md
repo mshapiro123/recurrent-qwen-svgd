@@ -127,24 +127,42 @@ The r3 tripwire-versus-shaper principle is supported by the evidence.
   observe-and-log mode. Their natural distributions must be measured before
   they are allowed to shape optimization.
 
-## 8. Recommended amendment
+## 8. Adopted staged amendment
 
-Choose the optimization-pressure amendment, implemented as one staged-training
-mechanism. Do not combine it with a trust projection, router redesign, or alpha
-grid in the same identifying run.
+Strategy adopted the optimization-pressure amendment as the one identifying
+change (Drive `1XjiWs4zQy7o_ygipy7oNA53BW-gMtP2u`, 8,574 bytes, SHA-256
+`17d6d67f0e25613cca30ab8a94d37e9cda044144b7e5948f1b48b12602288c1d`).
+It does not combine the repair with a trust projection, router redesign, or
+alpha grid.
 
-Recommended staged form:
+**Stage A1: state construction.** Arbitration/writeback/drafter gates are held
+closed. Active losses are flow, functional probe, and preserve KL. A 100-step
+calibration phase on the training partition sets static loss weights before
+the A1 weights freeze. The locked targets are flow at least 50% and probe at
+most 25% of refiner-path post-clip gradient norm. The Huber delta is the
+training-partition p75 of per-coordinate target-increment magnitude, computed
+for the alpha-0.5 arm before training. Coding recommends that calibration be
+gradient-only so it cannot alter the registered initialization, but this is a
+lock field rather than an inference from the strategy text.
 
-1. Hold arbitration gates closed while fitting the canonical flow.
-2. Use a stage-specific objective whose flow and functional-probe contributions
-   are empirically scale-balanced rather than left at the observed 94-98%
-   probe dominance.
-3. Freeze or sharply slow the fitted flow before opening the acceptance-facing
-   bridge and draft controls.
-4. Run trust and clipping in observation mode with generous catastrophe-only
-   limits, logging their natural distributions.
-5. Retain alpha 0.5 as an unselected design prior for this single identifying
-   re-pilot. Do not claim it was selected by the failed comparison.
+**Stage A2: state use.** Flow parameters are frozen, not merely slowed.
+Acceptance-facing losses and arbitration heads activate. The alpha-0.5 flow
+learned in A1 cannot co-adapt, so an A2 failure localizes to use. A flow
+learning-rate multiplier of 0.1 is held as a preregistered fallback only if A2
+evidence shows that frozen flow is misaligned with use.
+
+Trust has zero loss weight. Both ratios remain telemetry. The only trust
+tripwire is sustained ratio above 5 over a 100-step window. Per-module clip
+ceilings are set to approximately 10 times the calibration p99 norm; clip
+activation is telemetry with an alarm above 1% of steps, not a continuous
+optimizer shaper.
+
+The re-pilot uses alpha 0.5 only and seeds 0 and 1. Alpha remains unselected;
+the A35 matrix returns only after the repaired recipe qualifies. Exact A1/A2
+budgets, the extension allocation, whether calibration updates parameters, the
+static-weight solver, and the operational definition of sustained ratio remain
+transcription fields that must be resolved in the amended preregistration
+before its lock commit.
 
 Pre-register a slope-based budget reading: if acceptance and qualification are
 healthy but still improving at the planned endpoint, classify the result as
@@ -162,6 +180,12 @@ budget-limited rather than as a mechanism failure.
   positive mean and the present gate has no useful outcome correlation.
 - One staged optimization re-pilot is justified after its constants and
   catastrophe thresholds are empirically locked.
+- The oracle-selector ceiling is a CPU-only post-processing receipt. It prices
+  the benefit population but cannot authorize a router because it uses perfect
+  hindsight.
+- V1d is already complete, not missing: capped `c=0.15` produced 1,209/2,000
+  teacher-token top-1 flips and retained 1,997/2,000 controls. Its Drive receipt
+  is `1zH20VEuuc4myQl9pvFgv56iQ4tNXa4iQ`.
 
 ## 10. Canonical artifacts
 
@@ -170,6 +194,8 @@ budget-limited rather than as a mechanism failure.
 - six arm-level JSON files in the same directory
 - private exact-row tensors in the matching Drive artifact directory
 - result commit `cc78f823526a76b8aff3c5cb46f0adf4c6187056`
+- strategy response Drive `1XjiWs4zQy7o_ygipy7oNA53BW-gMtP2u`
+- `docs/PAPER2_PHASE2_V1D_CAPPED_RADIUS_HANDOFF_20260804.md`
 
 ## 11. Plain-language summary
 

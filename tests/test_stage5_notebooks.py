@@ -3307,6 +3307,26 @@ def test_phase2_matched_alpha_audit_target_is_wired_and_guarded() -> None:
     assert "endpoint_qualification_not_catastrophe" in evaluator
 
 
+def test_phase2_oracle_selector_headroom_target_is_wired_and_guarded() -> None:
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    bootstrap_md = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(
+        encoding="utf-8"
+    )
+    cell = (ROOT / "colab/STAGE5_PAPER2_PHASE2_ORACLE_SELECTOR_HEADROOM_CELL.py").read_text(
+        encoding="utf-8"
+    )
+    runner = (ROOT / "colab/run_stage5_paper2_phase2_oracle_selector_headroom.py").read_text(
+        encoding="utf-8"
+    )
+    for text in (bootstrap, bootstrap_md):
+        assert "paper2_phase2_oracle_selector_headroom" in text
+        assert "colab/STAGE5_PAPER2_PHASE2_ORACLE_SELECTOR_HEADROOM_CELL.py" in text
+        assert "CPU-only banked row post-processing no model inference no training" in text
+    assert "paper2_phase2_oracle_selector_headroom_v1" in cell
+    assert "nvidia-smi" not in cell
+    assert "stage5_paper2_phase2_oracle_selector_headroom_20260805" in runner
+
+
 def test_gradient_path_audit_target_is_wired_and_guarded() -> None:
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
     bootstrap_md = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")
