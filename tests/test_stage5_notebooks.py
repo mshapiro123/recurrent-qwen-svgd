@@ -3280,6 +3280,33 @@ def test_phase2_matched_alpha_target_is_wired_and_guarded(tmp_path) -> None:
     assert '"refinement_required"' in decision
 
 
+def test_phase2_matched_alpha_audit_target_is_wired_and_guarded() -> None:
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    bootstrap_md = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(
+        encoding="utf-8"
+    )
+    cell = (ROOT / "colab/STAGE5_PAPER2_PHASE2_MATCHED_ALPHA_AUDIT_CELL.py").read_text(
+        encoding="utf-8"
+    )
+    runner = (ROOT / "colab/run_stage5_paper2_phase2_matched_alpha_audit.py").read_text(
+        encoding="utf-8"
+    )
+    evaluator = (ROOT / "eval/eval_paper2_phase2_matched_alpha_audit.py").read_text(
+        encoding="utf-8"
+    )
+
+    for text in (bootstrap, bootstrap_md):
+        assert "paper2_phase2_matched_alpha_audit" in text
+        assert "colab/STAGE5_PAPER2_PHASE2_MATCHED_ALPHA_AUDIT_CELL.py" in text
+        assert "tripwires remain hard shapers observe until empirically grounded" in text
+    assert "paper2_phase2_matched_alpha_audit_v1" in cell
+    assert "vram_gib >= 20" in cell
+    assert "no model training ran" in cell
+    assert "model_parameter_updates=0" in runner
+    assert "exact_abort_evaluation" in evaluator
+    assert "endpoint_qualification_not_catastrophe" in evaluator
+
+
 def test_gradient_path_audit_target_is_wired_and_guarded() -> None:
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
     bootstrap_md = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")

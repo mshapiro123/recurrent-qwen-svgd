@@ -156,6 +156,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3_short_sha"
 #   "paper2_phase2_arbitration_build" - high-RAM CPU canonicalizer arbitration and loss-free student build.
 #   "paper2_phase2_layer_mode_bound" - high-RAM CPU r2 concat-RRR layer-mode bound.
 #   "paper2_phase2_matched_alpha" - locked A100-80GB DEV-only matched alpha pilots and decision.
+#   "paper2_phase2_matched_alpha_audit" - read-only L4 terminal-checkpoint and shaper audit.
 #   "paper2_phase2_v1b_rms_audit" - CPU-only audit of existing V1b private rows.
 #   "paper2_phase2_eval_de_freeze" - score-blind EVAL-D/E and own-base feature freeze.
 #   "paper2_d0_prelock_publish_resume" - publish completed Drive-backed D0 lock receipts without inference.
@@ -348,6 +349,21 @@ TARGETS = {
             "finite residual support reconstructed from frozen LM head before optimizer",
             "tests/test_paper2_phase2_matched_alpha.py",
             "colab/run_stage5_paper2_phase2_matched_alpha.py",
+        ],
+        "env": {},
+    },
+    "paper2_phase2_matched_alpha_audit": {
+        "path": "colab/STAGE5_PAPER2_PHASE2_MATCHED_ALPHA_AUDIT_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_PHASE2_MATCHED_ALPHA_AUDIT_VERSION",
+            "paper2_phase2_matched_alpha_audit_v1",
+            "read-only exact abort checkpoint audit no optimizer no parameter updates",
+            "DEV-only document-isolated rows no frozen E1 evaluation partition",
+            "tripwires remain hard shapers observe until empirically grounded",
+            "endpoint qualification is not relabeled as a catastrophe tripwire",
+            "per-step trust magnitudes marked unrecoverable rather than reconstructed",
+            "tests/test_paper2_phase2_matched_alpha_audit.py",
+            "colab/run_stage5_paper2_phase2_matched_alpha_audit.py",
         ],
         "env": {},
     },

@@ -439,6 +439,7 @@ def _losses(
         "target_log": target_log,
         "base_log": base_log,
         "flow_state": output.flow.state,
+        "flow_start": output.flow.states[0],
         "target_scratch": batch["target_scratch"],
         "draft_gate": output.draft.write_gates,
         "bridge_gate": output.bridge.gate.expand(hidden4.shape[0]),
@@ -639,7 +640,8 @@ def evaluate(
         for key in (
             "draft_log", "bridge_log", "target_log", "base_log", "draft_gate",
             "bridge_gate", "state_ratios", "endpoint_ratios", "probe_log",
-            "probe_target", "base_probe_log", "scratch", "flow_state", "target_scratch",
+            "probe_target", "base_probe_log", "scratch", "flow_state", "flow_start",
+            "target_scratch",
         ):
             accum.setdefault(key, []).append(metrics[key].detach().cpu())
     values = {key: torch.cat(parts) for key, parts in accum.items()}
@@ -735,12 +737,22 @@ def evaluate(
     rows = {
         "accepted_length": accepted,
         "base_accepted_length": base_accepted,
+        "acceptance_delta": accepted - base_accepted,
         "quality_correct": bridge_top.eq(target_top).float().mean(-1),
+        "base_correct_by_horizon": base_top.eq(target_top),
+        "bridge_correct_by_horizon": bridge_top.eq(target_top),
+        "draft_gate": values["draft_gate"],
+        "bridge_gate": values["bridge_gate"],
+        "state_ratio": values["state_ratios"],
+        "endpoint_ratio": values["endpoint_ratios"],
         "probe_kl": probe_kl_rows,
         "base_probe_kl": base_probe_kl_rows,
         "probe_top1": probe_top1_rows,
         "endpoint_error": endpoint_error_rows,
         "radial_drift": radial_drift_rows,
+        "flow_state": values["flow_state"][:, :4],
+        "flow_start": values["flow_start"][:, :4],
+        "target_scratch": values["target_scratch"][:, :4],
     }
     module.train()
     return summary, rows

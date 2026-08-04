@@ -404,7 +404,30 @@ progress. The existing checkpoints and row-level receipts can answer much of
 that without another full training run. E1 should wait for that diagnosis and
 one targeted amendment.
 
-## 12. Canonical artifacts
+## 12. Strategy r3 amendment of record
+
+Strategy revision r3 is the governing interpretation for the closure audit
+(Drive `1ByHrPod0MVjVzgrMQcBZub_PM3Mgp-gL`, 15,760 bytes, reported SHA-256
+`b4d8adfd...091012`; the full digest should be copied from Drive before any
+future preregistration cites it as an exact lock).
+
+It introduces a standing distinction between **tripwires** and **shapers**.
+Tripwires remain hard stops for genuine catastrophe, including non-finite
+loss, frozen-lineage mutation, and identity failure. Shapers, including trust
+rent and gradient clipping when their constants have not been empirically
+grounded, run in observe-and-log mode with only a generous catastrophe stop.
+The old `0.997` point-retention and `0.990` Wilson rules remain endpoint
+qualification criteria. They are not retrospectively relabeled as catastrophe
+tripwires. A future quality-collapse tripwire requires its own empirically
+grounded threshold.
+
+This amendment ratifies the pilot as a constrained-feasibility negative,
+authorizes the read-only exact-checkpoint, row-tradeoff, gradient-attribution,
+and loss-scale audits, and leaves alpha unselected and E1 blocked. It does not
+authorize a re-pilot. Any re-pilot must first lock one identifying amendment
+using the audit results and run ungrounded shapers in observation mode.
+
+## 13. Canonical artifacts
 
 - `docs/PAPER2_PHASE2_MATCHED_ALPHA_PILOT_PROTOCOL_DRAFT_20260804.md`
 - `training/paper2_phase2_matched_alpha_preregistration.json`
