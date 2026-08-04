@@ -1,0 +1,116 @@
+{
+  "kind": "paper2_phase2_staged_repilot_preregistration",
+  "status": "locked_before_training",
+  "date": "2026-08-05",
+  "protocol_path": "docs/PAPER2_PHASE2_STAGED_REPILOT_PROTOCOL_DRAFT_20260805.md",
+  "lock_commit_policy": "git_commit_containing_this_file",
+  "alpha": 0.5,
+  "seeds": [0, 1],
+  "batch_size": 128,
+  "evaluation_every": 100,
+  "calibration": {
+    "batches": 100,
+    "optimizer_updates": 0,
+    "measurement_first_batch": 50,
+    "measurement_last_batch": 100,
+    "gradient_accumulator_dtype": "float64",
+    "minimum_gradient_norm": 1e-12,
+    "static_within_stage": true,
+    "drift_alarm_ratio": 2.0,
+    "step_200_share_tolerance_absolute": 0.10
+  },
+  "a1": {
+    "nominal_steps": 1000,
+    "maximum_steps": 2000,
+    "trainable_modules": ["flow"],
+    "frozen_modules": ["initializer", "bridge", "control", "draft"],
+    "execution_gates_closed": true,
+    "target_gradient_shares": {
+      "flow": 0.60,
+      "functional_probe_kl": 0.20,
+      "counterfactual_preserve_kl": 0.20
+    },
+    "functional_probe_kl_minimum_improvement_nats": 0.10,
+    "flow_mse_must_improve": true,
+    "slope_relative_improvement_final_100": 0.005
+  },
+  "a2": {
+    "authorized_after_a1_strategy_gate_only": true,
+    "nominal_steps": 1000,
+    "maximum_steps": 2000,
+    "trainable_modules": ["bridge", "control", "draft"],
+    "frozen_modules": ["initializer", "flow"],
+    "target_gradient_shares": {
+      "final_ce": 0.35,
+      "cumulative_kl": 0.35,
+      "local_ce": 0.10,
+      "preserve_kl": 0.20
+    },
+    "oracle_headroom_minimum_relative": 0.02,
+    "accepted_length_slope_final_100": 0.002,
+    "draft_head_only_control": true,
+    "flow_learning_rate_fallback": 0.1
+  },
+  "optimizer": {
+    "name": "AdamW",
+    "learning_rate": 0.0003,
+    "weight_decay": 0.01,
+    "linear_warmup_steps": 100,
+    "exclude_from_weight_decay": ["biases", "RMSNorm_gains", "learnable_scalars"]
+  },
+  "huber_delta": {
+    "source": "training_partition_target_increment_absolute_coordinate_quantile",
+    "quantile": 0.75,
+    "computed_once_before_a1": true
+  },
+  "clip": {
+    "ceiling_multiplier_over_calibration_p99": 10.0,
+    "activation_alarm_fraction": 0.01,
+    "alarm_only": true
+  },
+  "trust": {
+    "penalty_weight": 0.0,
+    "endpoint_ratio_tripwire": 5.0,
+    "rolling_window": 100,
+    "maximum_exceeding_steps": 50,
+    "starts_after_optimizer_step": 100,
+    "state_ratio_telemetry_only": true
+  },
+  "quality": {
+    "point_retention_floor": 0.997,
+    "wilson_95_lower_floor": 0.990,
+    "two_consecutive_failures_abort": true,
+    "single_failure_warning": true
+  },
+  "canonicalizer": {
+    "method": "learned_mixture_rrr",
+    "alpha": 0.5,
+    "seed": 20260814,
+    "sha256": "53215130a75c929def4bcc4b81ba9187d90a7b6fe2b1502391518d45c09476e3"
+  },
+  "constants": {
+    "c": 0.15,
+    "state_rms_cap": 0.5508932316303252,
+    "lf_sha256": "4e56a43a6692a4c88e60c17cd5e12076f1a2f0c3c65b3027dfc3f0800ef558fc"
+  },
+  "frozen_data": {
+    "data_sha256": "05bca2ee3ba71421296b2e31a0439746eb9c1b0e15e2cea4471be202ab6ac29d",
+    "sample_manifest_sha256": "43edbb74c5edf84dc5e6512dbe4beb1bbbf0f4df31b2c6830714ce2c8fc7ba93",
+    "position_key_sha256": "4b66fce9817fe499718506e9206005c5bf3876bc999f6bb5062b36a9fbb81490",
+    "student_lm_head_sha256": "c8df8c518c4ac72777279d843142774e449e1fa344df2c08ee6ab1e5535fbd2d"
+  },
+  "strategy": {
+    "drive_id": "1IiaXH7n1Pi-YYIHaQUjs1L-VOFZvaQb3",
+    "bytes": 8872,
+    "sha256": "ce2bfa5772891f425fa662a778d58a63930a7642e2cf591868ccb06bbe079e6b"
+  },
+  "v1d": {
+    "drive_id": "1zH20VEuuc4myQl9pvFgv56iQ4tNXa4iQ",
+    "status": "pass_banked",
+    "teacher_top1_flips": [1209, 2000],
+    "preserve_retention": [1997, 2000],
+    "preserve_wilson_95_lower": 0.9956
+  },
+  "zero_loop_mean_accepted_length": 2.1195719242095947,
+  "frozen_confirmatory_partitions_touched": []
+}
