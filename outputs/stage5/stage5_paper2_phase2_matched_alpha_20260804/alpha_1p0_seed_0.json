@@ -3,7 +3,7 @@
   "alpha": 1.0,
   "checkpoint": {
     "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_matched_alpha_20260804/private/pilots/alpha_1p0_seed_0/resume.pt",
-    "sha256": "6db53ccad83893426599b607536eb86e3a91cc0a5076689b3993d20b883e44d1"
+    "sha256": "260e4f0d870d66fd00f4c92423e464ec1aa94a88cc290f2faf6f64918a67d3a1"
   },
   "clip_events": {},
   "final": {
@@ -21,11 +21,11 @@
     ],
     "flow_validation_loss": 0.3056918252555151,
     "losses": {
-      "cumulative_kl": NaN,
+      "cumulative_kl": Infinity,
       "final_ce": 1.0563452541828156,
       "flow": 0.3056918252555151,
       "functional_probe_kl": 5.7634559775155685,
-      "preserve_kl": NaN,
+      "preserve_kl": 2.2543157420220685e-06,
       "trust": 0.0
     },
     "mean_accepted_length": 2.1195714473724365,
@@ -194,11 +194,11 @@
       ],
       "flow_validation_loss": 0.3056918252555151,
       "losses": {
-        "cumulative_kl": NaN,
+        "cumulative_kl": Infinity,
         "final_ce": 1.0563452541828156,
         "flow": 0.3056918252555151,
         "functional_probe_kl": 5.7634559775155685,
-        "preserve_kl": NaN,
+        "preserve_kl": 2.2543157420220685e-06,
         "trust": 0.0
       },
       "mean_accepted_length": 2.1195714473724365,
@@ -242,8 +242,8 @@
     }
   ],
   "kind": "paper2_phase2_matched_alpha_arm",
-  "launcher_commit": "3a24c7f5e674c0b3960e05efc4d1b614622312c5",
-  "loss_mask_contract": "masked_sparse_candidates_plus_tail_v1",
+  "launcher_commit": "1bc076bfea2bfba93a89977896f66e3a8d78b133",
+  "loss_mask_contract": "masked_sparse_candidates_plus_tail_v2_zero_target_safe",
   "non_alpha_initialization_sha256": "730ee17126c69097437c4eb8e4d3c57d35a16294ae6da411e6c3ef316b22e642",
   "protocol_lock_commit": "cf6747264e48e2de657eb2a1646f1e7c4f152ea5",
   "seed": 0,
