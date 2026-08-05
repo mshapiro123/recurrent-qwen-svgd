@@ -161,6 +161,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3_short_sha"
 #   "paper2_phase2_a1_matched_estimator_audit" - read-only L4 audit of the A1 stop population mismatch.
 #   "paper2_phase2_staged_a1_resume" - amended A100-40GB+ continuation from audited step-200 checkpoints.
 #   "paper2_phase2_a2_calibration" - authorized zero-update A100-40GB+ A2 gradient calibration.
+#   "paper2_phase2_a2_amendment_prep" - CPU-only calibration reconciliation and unlocked amendment draft.
 #   "paper2_phase2_v1b_rms_audit" - CPU-only audit of existing V1b private rows.
 #   "paper2_phase2_eval_de_freeze" - score-blind EVAL-D/E and own-base feature freeze.
 #   "paper2_d0_prelock_publish_resume" - publish completed Drive-backed D0 lock receipts without inference.
@@ -438,6 +439,22 @@ TARGETS = {
             "strategy amendment required before A2 training",
             "tests/test_paper2_phase2_a2_calibration.py",
             "colab/run_stage5_paper2_phase2_a2_calibration.py",
+        ],
+        "env": {},
+    },
+    "paper2_phase2_a2_amendment_prep": {
+        "path": "colab/STAGE5_PAPER2_PHASE2_A2_AMENDMENT_PREP_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_PHASE2_A2_AMENDMENT_PREP_VERSION",
+            "paper2_phase2_a2_amendment_prep_v1",
+            "CPU-only public and private calibration receipt reconciliation",
+            "no model load no optimizer updates no A2 training",
+            "both 51-batch private receipts verified against public hashes",
+            "directional contract draft remains unlocked pending strategy review",
+            "legacy point shares are step-zero initialization only",
+            "V1d receipt rides with the amendment handoff",
+            "tests/test_paper2_phase2_a2_amendment_prep.py",
+            "colab/run_stage5_paper2_phase2_a2_amendment_prep.py",
         ],
         "env": {},
     },

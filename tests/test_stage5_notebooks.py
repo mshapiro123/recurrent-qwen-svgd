@@ -3428,6 +3428,29 @@ def test_phase2_a2_calibration_is_wired_and_guarded() -> None:
     assert "optimizer_updates" in runner
 
 
+def test_phase2_a2_amendment_prep_is_wired_and_guarded() -> None:
+    cell = (ROOT / "colab/STAGE5_PAPER2_PHASE2_A2_AMENDMENT_PREP_CELL.py").read_text(
+        encoding="utf-8"
+    )
+    runner = (ROOT / "colab/run_stage5_paper2_phase2_a2_amendment_prep.py").read_text(
+        encoding="utf-8"
+    )
+    for bootstrap_path in (
+        ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py",
+        ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md",
+    ):
+        text = bootstrap_path.read_text(encoding="utf-8")
+        assert "paper2_phase2_a2_amendment_prep" in text
+        assert "STAGE5_PAPER2_PHASE2_A2_AMENDMENT_PREP_CELL.py" in text
+        assert "no model load no optimizer updates no A2 training" in text
+    assert "paper2_phase2_a2_amendment_prep_v1" in cell
+    assert "directional contract draft remains unlocked pending strategy review" in cell
+    assert "nvidia-smi" not in cell
+    assert "torch.cuda" not in cell
+    assert 'RUN_ID = "stage5_paper2_phase2_a2_amendment_prep_20260805"' in runner
+    assert "strategy_lock_required" in runner
+
+
 def test_gradient_path_audit_target_is_wired_and_guarded() -> None:
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
     bootstrap_md = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")
