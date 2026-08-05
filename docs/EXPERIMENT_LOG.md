@@ -1694,3 +1694,18 @@ Colab/Drive backups for selected runs.
   The seed-control figure is Drive file
   `1Ms6lVe1MPu9lDRZaTU7cNxLrVwysyQcj`, `20,350` bytes, SHA-256
   `665d3522eaa2c8dd7ac2556b16ed1713c0956b43a61abd416fedfa7c43c40f60`.
+- 2026-08-05 Phase-2 staged A1 completion: after the matched-estimator audit
+  classified the first step-200 stop as `protocol_bug_not_registered_attempt`,
+  strategy locked a resume amendment using exact 51-batch training audits,
+  directional share inequalities, descriptive preserve share, no periodic
+  recalibration, and no automatic extension. Both seeds resumed from their
+  preserved step-200 checkpoints and completed step 1,000. Probe KL improved
+  by `1.3555` and `1.3157` nats against the `0.10`-nat gate; flow MSE fell by
+  `19.12%` and `19.16%`. Every matched audit at steps 200, 400, 600, 800, and
+  1,000 passed on every constituent batch. There were no trust-tripwire,
+  clipping, identity, frozen-lineage, or preservation failures. Both machine
+  verdicts are `a1_gate_candidate_pass`; A2 was not launched and remains closed
+  pending strategy banking plus review of its still-static `35/35/10/20` loss
+  share contract. Completion handoff:
+  `docs/PAPER2_PHASE2_STAGED_A1_COMPLETION_HANDOFF_20260805.md`. Summary:
+  `outputs/stage5/stage5_paper2_phase2_staged_a1_resume_20260805/summary.json`.

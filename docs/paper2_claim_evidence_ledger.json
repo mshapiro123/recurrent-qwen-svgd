@@ -1,16 +1,16 @@
 {
   "schema_version": 1,
   "program": "paper2_causal_control_of_recurrent_computation",
-  "status": "phase1_banked_phase2_arbitration_and_loss_free_build_banked_matched_alpha_pilot_lock_pending_e1_held",
-  "canonical_date": "2026-08-04",
+  "status": "phase1_banked_phase2_staged_a1_candidate_pass_awaiting_a2_strategy_gate",
+  "canonical_date": "2026-08-05",
   "active_queue": {
     "program_goal": "causal_arbitration_at_append_and_dispatch_interfaces",
     "p0": "completed_uncitable_adapter_loss_calibration",
     "t1": "two_registered_negatives_raw_endpoints_replicate_exact_in_support_causal_control_with_small_preservation_cost",
     "d0": "banked_not_recoverable_at_pilot_scale_binary_disagreement_target",
     "dc1_stage_a": "registered_none_transient_append_retires_checkpoint_archival_eval_c_spent",
-    "phase2": "v1d_exp0a_exp0b_arbitration_and_loss_free_build_banked_learned_mixture_rrr_selected_no_training",
-    "dc2": "window_closed_pending_pilot_protocol_lock_matched_pilots_alpha_selection_and_resource_note",
+    "phase2": "staged_a1_complete_two_seed_candidate_pass_strategy_gate_required",
+    "dc2": "a2_closed_pending_strategy_banking_and_objective_contract_review",
     "d1": "window_closed_pending_phase2_strategy_review",
     "paper_two_packaging": "proceeds_on_banked_phase1_results"
   },
@@ -41,9 +41,45 @@
     "phase2_arbitration_build_handoff": "docs/PAPER2_PHASE2_CANONICALIZER_ARBITRATION_BUILD_HANDOFF_20260804.md",
     "phase2_arbitration_figure": "docs/figures/paper2_phase2_canonicalizer_arbitration_20260804.svg",
     "dc2_e1_implementation_spec": "docs/DC2_E1_IMPLEMENTATION_SPEC_20260803_r3.md",
-    "latent_microstep_governing_design": "docs/LATENT_MICROSTEP_FLOW_DISTILLATION_STRATEGY_HANDOFF_V0.6.1_20260803.md"
+    "latent_microstep_governing_design": "docs/LATENT_MICROSTEP_FLOW_DISTILLATION_STRATEGY_HANDOFF_V0.6.1_20260803.md",
+    "phase2_staged_a1_completion_summary": "outputs/stage5/stage5_paper2_phase2_staged_a1_resume_20260805/summary.json",
+    "phase2_staged_a1_completion_handoff": "docs/PAPER2_PHASE2_STAGED_A1_COMPLETION_HANDOFF_20260805.md",
+    "phase2_staged_a1_completion_handoff_resource": "docs/PAPER2_PHASE2_STAGED_A1_COMPLETION_HANDOFF_RESOURCE_20260805.md",
+    "phase2_staged_a1_resume_amendment": "docs/PAPER2_PHASE2_STAGED_A1_RESUME_AMENDMENT_20260805.md"
   },
   "claims": [
+    {
+      "id": "phase2_staged_a1_state_construction",
+      "status": "candidate_pass_awaiting_strategy_gate",
+      "claim": "At alpha 0.5, the frozen-flow-only Stage A1 run completed 1000 optimizer steps in two seeds and exceeded both registered state-construction gates while satisfying the amended gradient inequalities at every matched audit; strategy banking is still required before A2 can open.",
+      "scope": "Document-isolated DEV diagnostics, alpha 0.5 only, seeds 0 and 1, flow-only training, executed bridge and draft gates closed, no frozen confirmatory partition contact",
+      "metrics": {
+        "seed_0_probe_kl_improvement_nats": 1.355470295876261,
+        "seed_1_probe_kl_improvement_nats": 1.315671473804617,
+        "seed_0_flow_mse_relative_reduction": 0.1911517805739442,
+        "seed_1_flow_mse_relative_reduction": 0.1915985700043611,
+        "matched_audit_joint_pass_fraction_all_steps_both_seeds": 1.0,
+        "gradient_clip_activations_both_seeds": 0,
+        "trust_tripwire_exceeding_steps_both_seeds": 0
+      },
+      "evidence": [
+        {
+          "path": "outputs/stage5/stage5_paper2_phase2_staged_a1_resume_20260805/summary.json",
+          "locator": "arms, histories, matched_share_audits, DEV audits, integrity checks, and strategy gate"
+        },
+        {
+          "path": "docs/PAPER2_PHASE2_STAGED_A1_COMPLETION_HANDOFF_20260805.md",
+          "locator": "design, exact two-seed results, interpretation, limitations, and A2 decision"
+        }
+      ],
+      "do_not_claim": [
+        "A1 establishes useful state use",
+        "alpha 0.5 was selected",
+        "DEV results are E1 confirmation evidence",
+        "speculative accepted length or serving throughput improved",
+        "A2 is authorized before strategy banks A1 and resolves its objective contract"
+      ]
+    },
     {
       "id": "phase2_canonicalizer_mixture_arbitration",
       "status": "supported_bounded_dev_only",
