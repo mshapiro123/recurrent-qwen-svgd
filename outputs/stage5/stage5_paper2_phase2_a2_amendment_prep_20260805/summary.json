@@ -1,0 +1,197 @@
+{
+  "a2_training_launched": false,
+  "amendment_draft": {
+    "a2_training_authorized": false,
+    "alpha": 0.5,
+    "automatic_lock_or_launch": false,
+    "clip_catastrophe_tripwire_by_seed": {
+      "0": 2.3620389630494447,
+      "1": 2.648981693767161
+    },
+    "directional_contract": {
+      "audit_steps": [
+        200,
+        400,
+        600,
+        800,
+        1000
+      ],
+      "individual_non_primary_share_maximum": 0.25,
+      "non_primary_losses": [
+        "final_ce",
+        "preserve_kl"
+      ],
+      "population": "matched_training_estimator_51_batches_x_128_seed_specific",
+      "preserve_kl_role": "descriptive_weight_fixed_from_calibration",
+      "primary_joint_share_minimum": 0.5,
+      "primary_losses": [
+        "cumulative_kl",
+        "local_ce"
+      ],
+      "step_zero_legacy_share_exception": true
+    },
+    "initialization_weights_by_seed": {
+      "0": {
+        "cumulative_kl": 2201.8315363546058,
+        "final_ce": 1.0,
+        "local_ce": 395.0116541409731,
+        "preserve_kl": 521.7796435629211
+      },
+      "1": {
+        "cumulative_kl": 1789.411575181737,
+        "final_ce": 1.0,
+        "local_ce": 303.9643794779331,
+        "preserve_kl": 467.10657754438176
+      }
+    },
+    "kind": "paper2_phase2_a2_amendment_draft_v1",
+    "optimizer_updates": 0,
+    "run_matrix_after_lock": [
+      "seed_0_full_a2",
+      "seed_0_draft_head_only_control",
+      "seed_1_full_a2",
+      "seed_1_draft_head_only_control"
+    ],
+    "seeds": [
+      0,
+      1
+    ],
+    "source_calibration_commit": "e4275e02",
+    "source_calibration_sha256": "01f5709aae9ce028a2dddaf406ecce2204532daa6a4be46154f77947eb1c162c",
+    "source_checkpoint_sha256_by_seed": {
+      "0": "823c1865878a86079a6423fabf432b6f1d36d431ec4381800846019882afb136",
+      "1": "a9c20510f6cf2561f6208fa8d1915626e2ec6e68a588228d3f0edd9cd0efde89"
+    },
+    "status": "draft_unlocked_strategy_review_required",
+    "strategy_authority_drive_id": "1CCIZqKgIvaveFit8IEOzcXfEcf-4YYWZ",
+    "unchanged_gates": {
+      "endpoint_quality_retained": true,
+      "full_system_must_beat_matched_draft_head_only": true,
+      "oracle_headroom_minimum_relative": 0.02
+    }
+  },
+  "arms": [
+    {
+      "a1_raw_norm_spread": 353253.3719005206,
+      "batch_numbers_verified": [
+        50,
+        100
+      ],
+      "candidate_clip_catastrophe_tripwire": 2.3620389630494447,
+      "initialization_weights": {
+        "cumulative_kl": 2201.8315363546058,
+        "final_ce": 1.0,
+        "local_ce": 395.0116541409731,
+        "preserve_kl": 521.7796435629211
+      },
+      "initialized_independent_shares": {
+        "cumulative_kl": 0.35000000000000003,
+        "final_ce": 0.35000000000000003,
+        "local_ce": 0.1,
+        "preserve_kl": 0.2
+      },
+      "legacy_initialization_meets_future_directional_contract": false,
+      "parameter_hashes_unchanged": true,
+      "pathology_found": false,
+      "primary_cosine": {
+        "fraction_below_minus_0p5": 0.0,
+        "maximum": 0.8121899557927001,
+        "mean": 0.7252873638372129,
+        "minimum": 0.60916502890404,
+        "pathology": false
+      },
+      "private_receipt": {
+        "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_a2_calibration_20260805/private/calibration/seed_0_batch_rows.json",
+        "sha256": "d46777ee626398756a2a4aa14a4517a0a6869a4bbc2aae231f6385a412ae1e04"
+      },
+      "raw_mean_gradient_norms": {
+        "cumulative_kl": 5.8304704586951666e-05,
+        "final_ce": 0.12837713727738922,
+        "local_ce": 9.285594917198032e-05,
+        "preserve_kl": 0.0001405926142644963
+      },
+      "raw_norm_spread": 2201.8315363546058,
+      "raw_norm_spread_pathology": false,
+      "rows_verified": 51,
+      "seed": 0,
+      "source_checkpoint": {
+        "path": "/content/recurrent-qwen-svgd-stage/stage5_paper2_phase2_a2_calibration_20260805/a1_seed_0_step_1000.pt",
+        "sha256": "823c1865878a86079a6423fabf432b6f1d36d431ec4381800846019882afb136",
+        "step": 1000
+      }
+    },
+    {
+      "a1_raw_norm_spread": 252610.292638537,
+      "batch_numbers_verified": [
+        50,
+        100
+      ],
+      "candidate_clip_catastrophe_tripwire": 2.648981693767161,
+      "initialization_weights": {
+        "cumulative_kl": 1789.411575181737,
+        "final_ce": 1.0,
+        "local_ce": 303.9643794779331,
+        "preserve_kl": 467.10657754438176
+      },
+      "initialized_independent_shares": {
+        "cumulative_kl": 0.35,
+        "final_ce": 0.35,
+        "local_ce": 0.10000000000000003,
+        "preserve_kl": 0.2
+      },
+      "legacy_initialization_meets_future_directional_contract": false,
+      "parameter_hashes_unchanged": true,
+      "pathology_found": false,
+      "primary_cosine": {
+        "fraction_below_minus_0p5": 0.0,
+        "maximum": 0.7881536655231889,
+        "mean": 0.7060617579146944,
+        "minimum": 0.6410077480193893,
+        "pathology": false
+      },
+      "private_receipt": {
+        "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_a2_calibration_20260805/private/calibration/seed_1_batch_rows.json",
+        "sha256": "9e0680eb0cb905b4893c0295e23f035c605c95c8e2114f57364842f001830387"
+      },
+      "raw_mean_gradient_norms": {
+        "cumulative_kl": 7.064280062441791e-05,
+        "final_ce": 0.12640904514058904,
+        "local_ce": 0.00011881941595327713,
+        "preserve_kl": 0.00015464081122572797
+      },
+      "raw_norm_spread": 1789.411575181737,
+      "raw_norm_spread_pathology": false,
+      "rows_verified": 51,
+      "seed": 1,
+      "source_checkpoint": {
+        "path": "/content/recurrent-qwen-svgd-stage/stage5_paper2_phase2_a2_calibration_20260805/a1_seed_1_step_1000.pt",
+        "sha256": "a9c20510f6cf2561f6208fa8d1915626e2ec6e68a588228d3f0edd9cd0efde89",
+        "step": 1000
+      }
+    }
+  ],
+  "calibration_summary": {
+    "path": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_paper2_phase2_a2_calibration_20260805/summary.json",
+    "sha256": "01f5709aae9ce028a2dddaf406ecce2204532daa6a4be46154f77947eb1c162c"
+  },
+  "frozen_confirmatory_partitions_touched": [],
+  "kind": "paper2_phase2_a2_amendment_prep_v1",
+  "launcher_commit": "35289cb7c8900912cca0f6d9846b8d427bff15ea",
+  "next_action": "strategy approves or revises draft before committed A2 amendment lock",
+  "optimizer_updates": 0,
+  "pathology_verdict": "clear_for_amendment_review",
+  "status": "complete_with_strategy_lock_required",
+  "v1d_receipt": {
+    "drive_id": "1zH20VEuuc4myQl9pvFgv56iQ4tNXa4iQ",
+    "preserve_retention": [
+      1997,
+      2000
+    ],
+    "preserve_wilson_95_lower": 0.9956,
+    "teacher_top1_flips": [
+      1209,
+      2000
+    ]
+  },
+  "verification_status": "two_seed_public_private_receipts_reconciled"
+}

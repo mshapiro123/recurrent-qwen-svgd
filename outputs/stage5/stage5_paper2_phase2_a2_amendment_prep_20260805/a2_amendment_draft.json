@@ -1,0 +1,70 @@
+{
+  "a2_training_authorized": false,
+  "alpha": 0.5,
+  "automatic_lock_or_launch": false,
+  "clip_catastrophe_tripwire_by_seed": {
+    "0": 2.3620389630494447,
+    "1": 2.648981693767161
+  },
+  "directional_contract": {
+    "audit_steps": [
+      200,
+      400,
+      600,
+      800,
+      1000
+    ],
+    "individual_non_primary_share_maximum": 0.25,
+    "non_primary_losses": [
+      "final_ce",
+      "preserve_kl"
+    ],
+    "population": "matched_training_estimator_51_batches_x_128_seed_specific",
+    "preserve_kl_role": "descriptive_weight_fixed_from_calibration",
+    "primary_joint_share_minimum": 0.5,
+    "primary_losses": [
+      "cumulative_kl",
+      "local_ce"
+    ],
+    "step_zero_legacy_share_exception": true
+  },
+  "initialization_weights_by_seed": {
+    "0": {
+      "cumulative_kl": 2201.8315363546058,
+      "final_ce": 1.0,
+      "local_ce": 395.0116541409731,
+      "preserve_kl": 521.7796435629211
+    },
+    "1": {
+      "cumulative_kl": 1789.411575181737,
+      "final_ce": 1.0,
+      "local_ce": 303.9643794779331,
+      "preserve_kl": 467.10657754438176
+    }
+  },
+  "kind": "paper2_phase2_a2_amendment_draft_v1",
+  "optimizer_updates": 0,
+  "run_matrix_after_lock": [
+    "seed_0_full_a2",
+    "seed_0_draft_head_only_control",
+    "seed_1_full_a2",
+    "seed_1_draft_head_only_control"
+  ],
+  "seeds": [
+    0,
+    1
+  ],
+  "source_calibration_commit": "e4275e02",
+  "source_calibration_sha256": "01f5709aae9ce028a2dddaf406ecce2204532daa6a4be46154f77947eb1c162c",
+  "source_checkpoint_sha256_by_seed": {
+    "0": "823c1865878a86079a6423fabf432b6f1d36d431ec4381800846019882afb136",
+    "1": "a9c20510f6cf2561f6208fa8d1915626e2ec6e68a588228d3f0edd9cd0efde89"
+  },
+  "status": "draft_unlocked_strategy_review_required",
+  "strategy_authority_drive_id": "1CCIZqKgIvaveFit8IEOzcXfEcf-4YYWZ",
+  "unchanged_gates": {
+    "endpoint_quality_retained": true,
+    "full_system_must_beat_matched_draft_head_only": true,
+    "oracle_headroom_minimum_relative": 0.02
+  }
+}
