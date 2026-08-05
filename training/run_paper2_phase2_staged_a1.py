@@ -31,11 +31,8 @@ from training.paper2_phase2_matched_alpha import (
 from training.paper2_phase2_staged_repilot import (
     PROTOCOL_LOCK_COMMIT,
     a1_gate,
-    a1_should_extend,
-    drift_alarm,
     realized_gradient_shares,
     relative_improvement,
-    shares_within_absolute_tolerance,
     solve_static_weights,
     trust_tripwire,
 )
@@ -56,6 +53,10 @@ from training.run_paper2_phase2_matched_alpha import (
 PROTOCOL_RELATIVE = Path("training/paper2_phase2_staged_repilot_preregistration.json")
 LOSS_MASK_CONTRACT = "masked_sparse_candidates_plus_tail_v3_finite_residual_seed"
 CALIBRATION_KIND = "paper2_phase2_staged_a1_calibration_v1"
+AMENDMENT_LOCK_COMMIT = "01ae5f28c0b52f4635dc15298bd07269bd853055"
+AUDIT_RECEIPT_RELATIVE = Path(
+    "outputs/stage5/stage5_paper2_phase2_a1_matched_estimator_audit_20260805/summary.json"
+)
 
 
 def _git_head(root: Path) -> str:
@@ -67,9 +68,22 @@ def _assert_lock(root: Path) -> dict[str, Any]:
     if registration.get("status") != "locked_before_training":
         raise RuntimeError("staged re-pilot registration is not locked")
     if subprocess.run(
-        ["git", "merge-base", "--is-ancestor", PROTOCOL_LOCK_COMMIT, "HEAD"], cwd=root
+        ["git", "merge-base", "--is-ancestor", AMENDMENT_LOCK_COMMIT, "HEAD"], cwd=root
     ).returncode:
-        raise RuntimeError(f"launcher does not descend from lock {PROTOCOL_LOCK_COMMIT}")
+        raise RuntimeError(f"launcher does not descend from amendment lock {AMENDMENT_LOCK_COMMIT}")
+    amendment = registration.get("resume_amendment_20260805", {})
+    if amendment.get("status") != "locked_before_resumed_training":
+        raise RuntimeError("A1 resume amendment is not locked")
+    audit_path = root / AUDIT_RECEIPT_RELATIVE
+    if not audit_path.is_file():
+        raise FileNotFoundError(f"missing matched-estimator audit receipt: {audit_path}")
+    if sha256_lf_file(audit_path) != amendment["audit_receipt_lf_sha256"]:
+        raise RuntimeError("matched-estimator audit receipt differs from the amendment lock")
+    audit = json.loads(audit_path.read_text(encoding="utf-8"))
+    if audit.get("decision") != "resume_saved_step_200" or not audit.get(
+        "resume_authorized"
+    ):
+        raise RuntimeError("matched-estimator audit did not authorize checkpoint resume")
     return registration
 
 
@@ -501,6 +515,132 @@ def _share_audit(
     return {"gradient_norms": norms, "shares": realized_gradient_shares(norms, weights)}
 
 
+def _calibration_measurement_batches(
+    train_indices: torch.Tensor, *, seed: int, registration: dict[str, Any]
+) -> list[torch.Tensor]:
+    generator = torch.Generator().manual_seed(seed + 34001)
+    batches = [
+        train_indices.index_select(
+            0,
+            torch.randint(
+                train_indices.numel(),
+                (int(registration["batch_size"]),),
+                generator=generator,
+            ),
+        )
+        for _ in range(int(registration["calibration"]["batches"]))
+    ]
+    start = int(registration["calibration"]["measurement_first_batch"]) - 1
+    stop = int(registration["calibration"]["measurement_last_batch"])
+    return batches[start:stop]
+
+
+def _fixed_dev_share_batches(
+    eval_indices: torch.Tensor, *, registration: dict[str, Any]
+) -> list[torch.Tensor]:
+    amendment = registration["resume_amendment_20260805"]
+    count = int(amendment["hard_share_estimator"]["measurement_batches"])
+    generator = torch.Generator().manual_seed(20260805)
+    return [
+        eval_indices.index_select(
+            0,
+            torch.randint(
+                eval_indices.numel(),
+                (int(registration["batch_size"]),),
+                generator=generator,
+            ),
+        )
+        for _ in range(count)
+    ]
+
+
+def _matched_share_audit(
+    *,
+    module: Phase2StudentModules,
+    batches: list[torch.Tensor],
+    cache: dict[str, Any],
+    embedding: nn.Embedding,
+    teacher_embedding: nn.Embedding,
+    decoder: torch.Tensor,
+    decoder_bias: torch.Tensor,
+    huber_delta: float,
+    weights: dict[str, float],
+    device: str,
+    seed: int,
+    step: int,
+    flow_minimum: float,
+    probe_maximum: float,
+    population: str,
+) -> dict[str, Any]:
+    module.train()
+    parameter_hash_before = _tensor_digest(dict(module.named_parameters()))
+    parameters = [value for value in module.flow.parameters() if value.requires_grad]
+    norm_rows = []
+    for batch_number, indices in enumerate(batches, start=1):
+        batch = _batch(cache, indices, alpha=0.5, device=device)
+        losses, _metrics = _a1_losses(
+            module=module,
+            batch=batch,
+            embedding=embedding,
+            teacher_embedding=teacher_embedding,
+            decoder=decoder,
+            decoder_bias=decoder_bias,
+            huber_delta=huber_delta,
+        )
+        norm_rows.append(_gradient_norms(_loss_gradients(losses, parameters)))
+        if batch_number == 1 or batch_number % 10 == 0 or batch_number == len(batches):
+            print(
+                f"staged_a1_matched_share seed={seed} step={step} "
+                f"batch={batch_number}/{len(batches)}",
+                flush=True,
+            )
+    names = list(norm_rows[0])
+    mean_norms = {
+        name: sum(row[name] for row in norm_rows) / len(norm_rows) for name in names
+    }
+    shares = realized_gradient_shares(mean_norms, weights)
+    batch_shares = [realized_gradient_shares(row, weights) for row in norm_rows]
+    contract = {
+        "flow_at_least_0p50": float(shares["flow"]) >= flow_minimum,
+        "probe_at_most_0p25": float(shares["functional_probe_kl"]) <= probe_maximum,
+    }
+    contract["joint"] = all(contract.values())
+    parameter_hash_after = _tensor_digest(dict(module.named_parameters()))
+    if parameter_hash_after != parameter_hash_before:
+        raise RuntimeError("matched share audit mutated A1 parameters")
+    return {
+        "kind": "paper2_phase2_staged_a1_matched_share_v1",
+        "step": step,
+        "seed": seed,
+        "population": population,
+        "batches": len(norm_rows),
+        "batch_size": int(batches[0].numel()),
+        "mean_gradient_norms": mean_norms,
+        "shares": shares,
+        "contract": contract,
+        "batch_contract_fraction": {
+            "flow_at_least_0p50": sum(
+                float(row["flow"]) >= flow_minimum for row in batch_shares
+            )
+            / len(batch_shares),
+            "probe_at_most_0p25": sum(
+                float(row["functional_probe_kl"]) <= probe_maximum for row in batch_shares
+            )
+            / len(batch_shares),
+            "joint": sum(
+                float(row["flow"]) >= flow_minimum
+                and float(row["functional_probe_kl"]) <= probe_maximum
+                for row in batch_shares
+            )
+            / len(batch_shares),
+        },
+        "counterfactual_preserve_share_role": "descriptive",
+        "optimizer_updates": 0,
+        "parameter_hash_before": parameter_hash_before,
+        "parameter_hash_after": parameter_hash_after,
+    }
+
+
 def _rng_state() -> dict[str, Any]:
     return {
         "python": random.getstate(),
@@ -529,12 +669,14 @@ def run_seed(
     output_dir: Path,
     private_dir: Path,
     source_hashes: dict[str, str],
+    audit_summary: dict[str, Any],
     device: str,
 ) -> dict[str, Any]:
     arm = f"alpha_0p5_seed_{seed}"
     arm_private = private_dir / arm
     arm_private.mkdir(parents=True, exist_ok=True)
-    checkpoint_path = arm_private / "a1_resume.pt"
+    source_checkpoint_path = arm_private / "a1_resume.pt"
+    checkpoint_path = arm_private / "a1_resume_amended.pt"
     calibration_path = arm_private / "a1_calibration.json"
     _seed_everything(seed)
     embedding = nn.Embedding.from_pretrained(embedding_weight.float(), freeze=True).to(device)
@@ -583,15 +725,32 @@ def run_seed(
     trust_history: list[bool] = []
     clip_events: list[bool] = []
     warnings: list[dict[str, Any]] = []
+    matched_share_audits: list[dict[str, Any]] = []
+    dev_share_audits: list[dict[str, Any]] = []
     step = 0
-    target_steps = int(registration["a1"]["nominal_steps"])
+    target_steps = int(registration["resume_amendment_20260805"]["stop_for_strategy_review_at_step"])
     extension_used = False
     abort_reason = None
+    resume_source = checkpoint_path if checkpoint_path.is_file() else source_checkpoint_path
 
-    if checkpoint_path.is_file():
-        saved = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
+    if not resume_source.is_file():
+        raise FileNotFoundError("A1 resume source checkpoint is missing")
+
+    if resume_source.is_file():
+        saved = torch.load(resume_source, map_location="cpu", weights_only=False)
         if saved["initial_trainable_hash"] != initial_trainable_hash:
             raise RuntimeError("A1 resume initialization mismatch")
+        if resume_source == source_checkpoint_path:
+            expected_source_sha = registration["resume_amendment_20260805"][
+                "resume_source_checkpoints"
+            ][f"seed_{seed}_sha256"]
+            observed_source_sha = sha256_file(source_checkpoint_path)
+            if observed_source_sha != expected_source_sha:
+                raise RuntimeError("pre-amendment step-200 checkpoint SHA mismatch")
+            if int(saved["step"]) != 200:
+                raise RuntimeError("amended resume must start from the audited step-200 checkpoint")
+        elif saved.get("amendment_lock_commit") != AMENDMENT_LOCK_COMMIT:
+            raise RuntimeError("amended checkpoint was written under a different lock")
         with torch.no_grad():
             current = dict(module.named_parameters())
             for name, value in saved["flow_state"].items():
@@ -600,18 +759,75 @@ def run_seed(
         generator.set_state(saved["batch_generator_state"])
         _restore_rng(saved["rng"])
         step = int(saved["step"])
-        target_steps = int(saved["target_steps"])
-        extension_used = bool(saved["extension_used"])
+        target_steps = int(
+            registration["resume_amendment_20260805"]["stop_for_strategy_review_at_step"]
+        )
+        extension_used = False
         history = list(saved["history"])
         trust_history = list(saved["trust_history"])
         clip_events = list(saved["clip_events"])
         warnings = list(saved["warnings"])
+        if resume_source == source_checkpoint_path:
+            warnings = [
+                {**warning, "lineage": "superseded_pre_amendment_contract"}
+                for warning in warnings
+            ]
+        matched_share_audits = list(saved.get("matched_share_audits", []))
+        dev_share_audits = list(saved.get("dev_share_audits", []))
         print(f"staged_a1_resume arm={arm} step={step} target={target_steps}", flush=True)
+
+    audit_arm = next(row for row in audit_summary["arms"] if int(row["seed"]) == seed)
+    audited_step_200 = audit_arm["checkpoints"]["step_200"]["training_matched_primary"]
+    audited_step_200_dev = audit_arm["checkpoints"]["step_200"][
+        "dev_population_shift_descriptive"
+    ]
+    if not matched_share_audits:
+        matched_share_audits.append(
+            {
+                "kind": "paper2_phase2_staged_a1_matched_share_external_audit_v1",
+                "step": 200,
+                "seed": seed,
+                "population": audit_summary["primary_population"],
+                "batches": int(audited_step_200["batches"]),
+                "batch_size": int(audited_step_200["batch_size"]),
+                "mean_gradient_norms": audited_step_200["mean_gradient_norms"],
+                "shares": audited_step_200["aggregate_shares"],
+                "contract": audited_step_200["aggregate_contract"],
+                "batch_contract_fraction": audited_step_200["batch_contract_fraction"],
+                "optimizer_updates": 0,
+                "audit_receipt_lf_sha256": registration["resume_amendment_20260805"][
+                    "audit_receipt_lf_sha256"
+                ],
+            }
+        )
+    if not dev_share_audits:
+        dev_share_audits.append(
+            {
+                "kind": "paper2_phase2_staged_a1_dev_share_external_audit_v1",
+                "step": 200,
+                "seed": seed,
+                "population": "fixed_51_batch_dev_population_shift_descriptive",
+                "batches": int(audited_step_200_dev["batches"]),
+                "batch_size": int(audited_step_200_dev["batch_size"]),
+                "mean_gradient_norms": audited_step_200_dev["mean_gradient_norms"],
+                "shares": audited_step_200_dev["aggregate_shares"],
+                "contract_descriptive": audited_step_200_dev["aggregate_contract"],
+                "batch_contract_fraction_descriptive": audited_step_200_dev[
+                    "batch_contract_fraction"
+                ],
+                "optimizer_updates": 0,
+                "verdict_role": "none",
+                "audit_receipt_lf_sha256": registration["resume_amendment_20260805"][
+                    "audit_receipt_lf_sha256"
+                ],
+            }
+        )
 
     def save() -> None:
         payload = {
-            "kind": "paper2_phase2_staged_a1_resume_v1",
+            "kind": "paper2_phase2_staged_a1_resume_amended_v2",
             "protocol_lock_commit": PROTOCOL_LOCK_COMMIT,
+            "amendment_lock_commit": AMENDMENT_LOCK_COMMIT,
             "loss_mask_contract": LOSS_MASK_CONTRACT,
             "seed": seed,
             "step": step,
@@ -629,12 +845,25 @@ def run_seed(
             "trust_history": trust_history,
             "clip_events": clip_events,
             "warnings": warnings,
+            "matched_share_audits": matched_share_audits,
+            "dev_share_audits": dev_share_audits,
+            "source_step_200_checkpoint": {
+                "path": str(source_checkpoint_path),
+                "sha256": registration["resume_amendment_20260805"][
+                    "resume_source_checkpoints"
+                ][f"seed_{seed}_sha256"],
+            },
             "batch_generator_state": generator.get_state(),
             "rng": _rng_state(),
         }
         temporary = checkpoint_path.with_suffix(".pt.tmp")
         torch.save(payload, temporary)
         temporary.replace(checkpoint_path)
+
+    matched_batches = _calibration_measurement_batches(
+        train_indices, seed=seed, registration=registration
+    )
+    dev_share_batches = _fixed_dev_share_batches(eval_indices, registration=registration)
 
     identity_batch = _batch(cache, eval_indices[:16], alpha=0.5, device=device)
     zero_loop_identity = _assert_zero_loop_identity(module=module, batch=identity_batch)
@@ -717,30 +946,121 @@ def run_seed(
                 huber_delta=huber_delta,
                 device=device,
             )
-            share_audit = _share_audit(
-                module=module,
-                batch=_batch(cache, eval_indices[:16], alpha=0.5, device=device),
-                embedding=embedding,
-                teacher_embedding=teacher_embedding,
-                decoder=decoder,
-                decoder_bias=decoder_bias,
-                huber_delta=huber_delta,
-                weights=weights,
+            hard_share_steps = set(
+                registration["resume_amendment_20260805"]["hard_share_estimator"][
+                    "optimizer_steps"
+                ]
             )
-            alarm = drift_alarm(
-                share_audit["shares"],
-                registration["a1"]["target_gradient_shares"],
-                ratio=float(registration["calibration"]["drift_alarm_ratio"]),
+            matched_share = None
+            if step in hard_share_steps:
+                matched_share = _matched_share_audit(
+                    module=module,
+                    batches=matched_batches,
+                    cache=cache,
+                    embedding=embedding,
+                    teacher_embedding=teacher_embedding,
+                    decoder=decoder,
+                    decoder_bias=decoder_bias,
+                    huber_delta=huber_delta,
+                    weights=weights,
+                    device=device,
+                    seed=seed,
+                    step=step,
+                    flow_minimum=float(
+                        registration["resume_amendment_20260805"]["hard_share_contract"][
+                            "flow_minimum"
+                        ]
+                    ),
+                    probe_maximum=float(
+                        registration["resume_amendment_20260805"]["hard_share_contract"][
+                            "functional_probe_kl_maximum"
+                        ]
+                    ),
+                    population="training_partition_exact_calibration_batches_50_through_100",
+                )
+                matched_share_audits.append(matched_share)
+                dev_share = _matched_share_audit(
+                    module=module,
+                    batches=dev_share_batches,
+                    cache=cache,
+                    embedding=embedding,
+                    teacher_embedding=teacher_embedding,
+                    decoder=decoder,
+                    decoder_bias=decoder_bias,
+                    huber_delta=huber_delta,
+                    weights=weights,
+                    device=device,
+                    seed=seed,
+                    step=step,
+                    flow_minimum=float(
+                        registration["resume_amendment_20260805"]["hard_share_contract"][
+                            "flow_minimum"
+                        ]
+                    ),
+                    probe_maximum=float(
+                        registration["resume_amendment_20260805"]["hard_share_contract"][
+                            "functional_probe_kl_maximum"
+                        ]
+                    ),
+                    population="fixed_51_batch_dev_population_shift_descriptive",
+                )
+                dev_share["verdict_role"] = "none"
+                dev_share["contract_descriptive"] = dev_share.pop("contract")
+                dev_share_audits.append(dev_share)
+                if not matched_share["contract"]["flow_at_least_0p50"]:
+                    abort_reason = "amended_flow_share_contract_miss"
+                elif not matched_share["contract"]["probe_at_most_0p25"]:
+                    abort_reason = "amended_probe_share_contract_miss_recalibration_review"
+
+            preserve_alarm_multiple = float(
+                registration["resume_amendment_20260805"]["preserve_loss_alarm"][
+                    "threshold_multiple_over_step_zero_dev"
+                ]
             )
-            if alarm:
-                warnings.append({"step": step, "kind": "gradient_share_drift"})
+            preserve_alarm_threshold = preserve_alarm_multiple * float(
+                history[0]["counterfactual_preserve_kl"]
+            )
+            preserve_alarm = float(evaluation["counterfactual_preserve_kl"]) > float(
+                preserve_alarm_threshold
+            )
+            if preserve_alarm:
+                warnings.append(
+                    {
+                        "step": step,
+                        "kind": "counterfactual_preserve_loss_value_alarm_log_only",
+                        "observed": float(evaluation["counterfactual_preserve_kl"]),
+                        "threshold": preserve_alarm_threshold,
+                    }
+                )
+            quality_tripwire_passed = (
+                float(evaluation["quality_retention"])
+                >= float(registration["quality"]["point_retention_floor"])
+                and float(evaluation["quality_wilson_95_lower"])
+                >= float(registration["quality"]["wilson_95_lower_floor"])
+                and bool(evaluation["quality_noninferior"])
+            )
+            previous_quality_failed = bool(
+                history and history[-1].get("quality_tripwire_passed") is False
+            )
+            if not quality_tripwire_passed:
+                warnings.append({"step": step, "kind": "quality_tripwire_single_failure"})
+                if previous_quality_failed:
+                    abort_reason = "quality_tripwire_two_consecutive_failures"
             evaluation.update(
                 {
                     "step": step,
                     "learning_rate": learning_rate,
                     "total_training_loss": float(total.detach()),
-                    "realized_gradient_shares": share_audit["shares"],
-                    "gradient_share_drift_alarm": alarm,
+                    "matched_realized_gradient_shares": (
+                        matched_share["shares"] if matched_share is not None else None
+                    ),
+                    "matched_gradient_share_contract": (
+                        matched_share["contract"] if matched_share is not None else None
+                    ),
+                    "counterfactual_preserve_share_role": "descriptive",
+                    "counterfactual_preserve_loss_alarm_log_only": preserve_alarm,
+                    "counterfactual_preserve_loss_alarm_threshold": preserve_alarm_threshold,
+                    "quality_tripwire_passed": quality_tripwire_passed,
                     "clip_active_fraction": sum(clip_events) / len(clip_events),
                     "flow_loss_relative_improvement_from_previous_eval": relative_improvement(
                         float(history[-1]["flow_loss"]), float(evaluation["flow_loss"])
@@ -755,36 +1075,7 @@ def run_seed(
                 f"clip_fraction={evaluation['clip_active_fraction']:.4f}",
                 flush=True,
             )
-            if step == 200 and not shares_within_absolute_tolerance(
-                share_audit["shares"],
-                registration["a1"]["target_gradient_shares"],
-                tolerance=float(
-                    registration["calibration"]["step_200_share_tolerance_absolute"]
-                ),
-            ):
-                abort_reason = "static_weight_contract_miss"
             save()
-            if step == int(registration["a1"]["nominal_steps"]) and abort_reason is None:
-                initial = history[0]
-                gate_passed = a1_gate(
-                    initial_probe_kl=float(initial["functional_probe_kl"]),
-                    final_probe_kl=float(evaluation["functional_probe_kl"]),
-                    initial_flow_mse=float(initial["flow_mse"]),
-                    final_flow_mse=float(evaluation["flow_mse"]),
-                    minimum_probe_improvement=float(
-                        registration["a1"]["functional_probe_kl_minimum_improvement_nats"]
-                    ),
-                )
-                by_step = {int(row["step"]): row for row in history}
-                if a1_should_extend(
-                    gate_passed=gate_passed,
-                    step_900_flow_loss=float(by_step[900]["flow_loss"]),
-                    step_1000_flow_loss=float(by_step[1000]["flow_loss"]),
-                ):
-                    target_steps = int(registration["a1"]["maximum_steps"])
-                    extension_used = True
-                    print(f"staged_a1_extension arm={arm} target={target_steps}", flush=True)
-                    save()
 
     save()
     initial = history[0]
@@ -799,20 +1090,22 @@ def run_seed(
         ),
     )
     if abort_reason:
-        verdict = "protocol_bug" if abort_reason == "static_weight_contract_miss" else "blocked"
+        verdict = "blocked"
     elif not gate_passed:
-        verdict = "a1_negative"
-    elif extension_used and len(history) >= 2 and relative_improvement(
-        float(history[-2]["flow_loss"]), float(final["flow_loss"])
-    ) > float(registration["a1"]["slope_relative_improvement_final_100"]):
-        verdict = "a1_pass_budget_limited"
+        verdict = "a1_gate_candidate_negative"
     else:
-        verdict = "a1_pass"
+        verdict = "a1_gate_candidate_pass"
     final_frozen_hash = _frozen_hash(module)
     if final_frozen_hash != initial_frozen_hash:
         raise RuntimeError("A1 mutated a stage-frozen parameter")
+    source_checkpoint_sha = sha256_file(source_checkpoint_path)
+    expected_source_checkpoint_sha = registration["resume_amendment_20260805"][
+        "resume_source_checkpoints"
+    ][f"seed_{seed}_sha256"]
+    if source_checkpoint_sha != expected_source_checkpoint_sha:
+        raise RuntimeError("original step-200 checkpoint changed during amended training")
     result = {
-        "kind": "paper2_phase2_staged_a1_arm",
+        "kind": "paper2_phase2_staged_a1_resume_amended_arm_v2",
         "status": "complete" if abort_reason is None else "blocked_with_receipts",
         "verdict": verdict,
         "abort_reason": abort_reason,
@@ -822,6 +1115,7 @@ def run_seed(
         "target_steps": target_steps,
         "extension_used": extension_used,
         "protocol_lock_commit": PROTOCOL_LOCK_COMMIT,
+        "amendment_lock_commit": AMENDMENT_LOCK_COMMIT,
         "launcher_commit": _git_head(Path(__file__).resolve().parents[1]),
         "source_hashes": source_hashes,
         "calibration": calibration,
@@ -839,6 +1133,17 @@ def run_seed(
         "trust_exceeding_steps": sum(trust_history),
         "trust_observed_steps": len(trust_history),
         "warnings": warnings,
+        "matched_share_audits": matched_share_audits,
+        "dev_share_audits": dev_share_audits,
+        "resume_lineage": {
+            "steps_0_through_200_contract": "superseded_symmetric_band",
+            "conformance_reestablished_by": str(AUDIT_RECEIPT_RELATIVE),
+            "source_checkpoint": {
+                "path": str(source_checkpoint_path),
+                "sha256": source_checkpoint_sha,
+            },
+            "source_checkpoint_preserved": True,
+        },
         "checkpoint": {"path": str(checkpoint_path), "sha256": sha256_file(checkpoint_path)},
     }
     write_json(output_dir / f"{arm}.json", result)
@@ -848,6 +1153,7 @@ def run_seed(
 def run(args: argparse.Namespace) -> dict[str, Any]:
     root = Path(__file__).resolve().parents[1]
     registration = _assert_lock(root)
+    audit_summary = json.loads((root / AUDIT_RECEIPT_RELATIVE).read_text(encoding="utf-8"))
     constants_path = root / "training/paper2_phase2_dc2_constants.json"
     if sha256_lf_file(constants_path) != registration["constants"]["lf_sha256"]:
         raise RuntimeError("V1d constants file does not match the staged registration")
@@ -921,16 +1227,18 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             output_dir=args.output_dir,
             private_dir=args.private_dir,
             source_hashes=source_hashes,
+            audit_summary=audit_summary,
             device=args.device,
         )
         for seed in registration["seeds"]
     ]
     summary = {
-        "kind": "paper2_phase2_staged_a1",
+        "kind": "paper2_phase2_staged_a1_resume_amended_v2",
         "status": "complete_with_strategy_gate_required"
         if all(arm["status"] == "complete" for arm in arms)
         else "blocked_with_receipts",
         "protocol_lock_commit": PROTOCOL_LOCK_COMMIT,
+        "amendment_lock_commit": AMENDMENT_LOCK_COMMIT,
         "launcher_commit": _git_head(root),
         "train_anchors": int(train_indices.numel()),
         "evaluation_anchors": int(eval_indices.numel()),
@@ -938,6 +1246,8 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         "arms": arms,
         "a2_launched": False,
         "strategy_review_required_before_a2": True,
+        "automatic_extension_disabled": True,
+        "prior_run_classification": "protocol_bug_not_registered_attempt",
         "frozen_confirmatory_partitions_touched": [],
         "do_not_claim": [
             "A1 state construction establishes useful state use",

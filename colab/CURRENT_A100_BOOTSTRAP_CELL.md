@@ -160,6 +160,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3_short_sha"
 #   "paper2_phase2_oracle_selector_headroom" - CPU-only perfect-selector ceiling from banked rows.
 #   "paper2_phase2_staged_a1" - locked A100-40GB+ state-construction stage; stops before A2.
 #   "paper2_phase2_a1_matched_estimator_audit" - read-only L4 audit of the A1 stop population mismatch.
+#   "paper2_phase2_staged_a1_resume" - amended A100-40GB+ continuation from audited step-200 checkpoints.
 #   "paper2_phase2_v1b_rms_audit" - CPU-only audit of existing V1b private rows.
 #   "paper2_phase2_eval_de_freeze" - score-blind EVAL-D/E and own-base feature freeze.
 #   "paper2_d0_prelock_publish_resume" - publish completed Drive-backed D0 lock receipts without inference.
@@ -400,6 +401,24 @@ TARGETS = {
             "emits resume_saved_step_200 or fresh_rerun_required without launching training",
             "tests/test_paper2_phase2_a1_matched_estimator_audit.py",
             "colab/run_stage5_paper2_phase2_a1_matched_estimator_audit.py",
+        ],
+        "env": {},
+    },
+    "paper2_phase2_staged_a1_resume": {
+        "path": "colab/STAGE5_PAPER2_PHASE2_STAGED_A1_RESUME_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_PHASE2_STAGED_A1_RESUME_VERSION",
+            "paper2_phase2_staged_a1_resume_v1",
+            "amendment lock committed before resumed optimizer steps",
+            "exact audited step-200 source checkpoints copied and preserved",
+            "matched 51-by-128 training estimator owns hard share verdicts",
+            "flow at least 0.50 and probe at most 0.25 inequality contract",
+            "preserve share descriptive and preserve loss alarm log only",
+            "fixed weights no periodic or automatic recalibration",
+            "stop at step 1000 for strategy review no automatic extension",
+            "A2 remains closed and cannot launch from this target",
+            "tests/test_paper2_phase2_staged_a1_resume.py",
+            "colab/run_stage5_paper2_phase2_staged_a1_resume.py",
         ],
         "env": {},
     },

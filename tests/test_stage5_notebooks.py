@@ -3381,6 +3381,29 @@ def test_phase2_a1_matched_estimator_audit_is_wired() -> None:
     assert 'RUN_ID = "stage5_paper2_phase2_a1_matched_estimator_audit_20260805"' in runner
 
 
+def test_phase2_staged_a1_resume_is_wired_and_guarded() -> None:
+    cell = (ROOT / "colab/STAGE5_PAPER2_PHASE2_STAGED_A1_RESUME_CELL.py").read_text(
+        encoding="utf-8"
+    )
+    runner = (ROOT / "colab/run_stage5_paper2_phase2_staged_a1_resume.py").read_text(
+        encoding="utf-8"
+    )
+    for bootstrap_path in (
+        ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py",
+        ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md",
+    ):
+        text = bootstrap_path.read_text(encoding="utf-8")
+        assert "paper2_phase2_staged_a1_resume" in text
+        assert "STAGE5_PAPER2_PHASE2_STAGED_A1_RESUME_CELL.py" in text
+        assert "matched 51-by-128 training estimator owns hard share verdicts" in text
+    assert "paper2_phase2_staged_a1_resume_v1" in cell
+    assert "stop at step 1000 for strategy review no automatic extension" in cell
+    assert "A2 remains closed and cannot launch from this target" in cell
+    assert "35" in cell and "vram_gib" in cell
+    assert 'RUN_ID = "stage5_paper2_phase2_staged_a1_resume_20260805"' in runner
+    assert "stage_resume_lineage" in runner
+
+
 def test_gradient_path_audit_target_is_wired_and_guarded() -> None:
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
     bootstrap_md = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")
