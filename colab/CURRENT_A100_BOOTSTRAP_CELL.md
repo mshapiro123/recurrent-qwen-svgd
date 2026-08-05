@@ -163,6 +163,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3_short_sha"
 #   "paper2_phase2_staged_a1_resume" - amended A100-40GB+ continuation from audited step-200 checkpoints.
 #   "paper2_phase2_a2_calibration" - authorized zero-update A100-40GB+ A2 gradient calibration.
 #   "paper2_phase2_a2_amendment_prep" - CPU-only calibration reconciliation and unlocked amendment draft.
+#   "paper2_phase2_a2" - locked A100-40GB+ full-versus-draft-only state-use matrix.
 #   "paper2_phase2_v1b_rms_audit" - CPU-only audit of existing V1b private rows.
 #   "paper2_phase2_eval_de_freeze" - score-blind EVAL-D/E and own-base feature freeze.
 #   "paper2_d0_prelock_publish_resume" - publish completed Drive-backed D0 lock receipts without inference.
@@ -456,6 +457,26 @@ TARGETS = {
             "V1d receipt rides with the amendment handoff",
             "tests/test_paper2_phase2_a2_amendment_prep.py",
             "colab/run_stage5_paper2_phase2_a2_amendment_prep.py",
+        ],
+        "env": {},
+    },
+    "paper2_phase2_a2": {
+        "path": "colab/STAGE5_PAPER2_PHASE2_A2_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_PHASE2_A2_VERSION",
+            "paper2_phase2_a2_v1",
+            "A2 amendment lock committed before every optimizer update",
+            "exact four-run matrix full and draft-only controls seeds zero and one",
+            "controls execute no learned flow and no bridge writeback",
+            "controls train cumulative KL and local CE only",
+            "aggregate primary share hard audit on matched 51-by-128 training estimator",
+            "marginal miss warns then same-bound repeat stops gross miss stops immediately",
+            "catastrophe gradient threshold observes and stops without clipping",
+            "single pair-matched extension to two thousand steps only",
+            "oracle headroom superiority endpoint quality correlation monotonicity verdict",
+            "V1d receipt attached to A2 result handoff",
+            "tests/test_paper2_phase2_a2.py",
+            "colab/run_stage5_paper2_phase2_a2.py",
         ],
         "env": {},
     },
