@@ -1,0 +1,229 @@
+{
+  "abort_reason": null,
+  "active_training_losses": [
+    "cumulative_kl",
+    "local_ce"
+  ],
+  "arm": "draft_only_control",
+  "checkpoint": {
+    "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_a2_20260805/private/a2/seed_1_draft_only_control/resume.pt",
+    "sha256": "78c817bea3909ad5d13028fa917ce07540dfe5d20dd46190ad8821b33132b3a1"
+  },
+  "directional_audits": [],
+  "final": {
+    "acceptance_delta": -1.1940451258851681e-05,
+    "baseline_correct": 23606,
+    "control_executed_path_bit_exact": true,
+    "correlations": {
+      "probe_kl_vs_accepted_length": 0.3339213728904724,
+      "probe_kl_vs_probe_top1": -0.2904202938079834,
+      "probe_top1_vs_accepted_length": 0.011183285154402256
+    },
+    "learning_rate": 0.0003,
+    "losses": {
+      "cumulative_kl": 0.5561984219248333,
+      "final_ce": 1.0583872227441697,
+      "local_ce": 1.0583971748276362,
+      "preserve_kl": 0.0
+    },
+    "mean_accepted_length": 2.1195600032806396,
+    "mean_bridge_gate": 0.0,
+    "mean_draft_gate": 0.04986356571316719,
+    "mean_overlap_by_horizon": [
+      0.7394232153892517,
+      0.733948290348053,
+      0.7340026497840881,
+      0.7360768914222717
+    ],
+    "mean_probe_kl": 5.598283767700195,
+    "probe_top1": 0.037230730056762695,
+    "quality_noninferior": true,
+    "quality_safe_oracle_acceptance_delta": 5.26748517586384e-05,
+    "quality_safe_oracle_headroom_relative": 2.4851646295645886e-05,
+    "quality_safe_oracle_selected_fraction": 0.505914568901062,
+    "retained_correct": 23606,
+    "retention": 1.0,
+    "retention_wilson_95_lower": 0.999837294171272,
+    "step": 200,
+    "train_total_loss": 1573.360107421875,
+    "trained_monotonicity": {
+      "gate_closed": {
+        "accepted_improvement_rows": 0,
+        "final_quality_worsened_fraction": null
+      },
+      "gate_open": {
+        "accepted_improvement_rows": 4063,
+        "final_quality_worsened_fraction": 0.0
+      }
+    },
+    "zero_loop_mean_accepted_length": 2.1195719242095947
+  },
+  "final_rows": {
+    "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_a2_20260805/private/a2/seed_1_draft_only_control/rows_step_0200.pt",
+    "sha256": "a2d07b1de1d6f3533978aec110214d5f1809fe0c3bb4964a6ba2569f503aa69b"
+  },
+  "frozen_parameter_hash_after": "50a4baf2d0a151a00bdfe20083f505e39c12ec97517cea2eb29af1c512d83461",
+  "frozen_parameter_hash_before": "50a4baf2d0a151a00bdfe20083f505e39c12ec97517cea2eb29af1c512d83461",
+  "history": [
+    {
+      "acceptance_delta": -6.389288955688244e-07,
+      "baseline_correct": 23606,
+      "control_executed_path_bit_exact": true,
+      "correlations": {
+        "probe_kl_vs_accepted_length": 0.33389776945114136,
+        "probe_kl_vs_probe_top1": -0.2904202938079834,
+        "probe_top1_vs_accepted_length": 0.011214658617973328
+      },
+      "losses": {
+        "cumulative_kl": 0.5562067942486869,
+        "final_ce": 1.0583872227441697,
+        "local_ce": 1.0583881366820562,
+        "preserve_kl": 0.0
+      },
+      "mean_accepted_length": 2.1195709705352783,
+      "mean_bridge_gate": 0.0,
+      "mean_draft_gate": 0.02931222692131996,
+      "mean_overlap_by_horizon": [
+        0.7394274473190308,
+        0.7339485883712769,
+        0.7340031266212463,
+        0.7360790967941284
+      ],
+      "mean_probe_kl": 5.598283767700195,
+      "probe_top1": 0.037230730056762695,
+      "quality_noninferior": true,
+      "quality_safe_oracle_acceptance_delta": 4.239625468471786e-06,
+      "quality_safe_oracle_headroom_relative": 2.0002272251519733e-06,
+      "quality_safe_oracle_selected_fraction": 0.46345412731170654,
+      "retained_correct": 23606,
+      "retention": 1.0,
+      "retention_wilson_95_lower": 0.999837294171272,
+      "step": 0,
+      "trained_monotonicity": {
+        "gate_closed": {
+          "accepted_improvement_rows": 3722,
+          "final_quality_worsened_fraction": 0.0
+        },
+        "gate_open": {
+          "accepted_improvement_rows": 0,
+          "final_quality_worsened_fraction": null
+        }
+      },
+      "zero_loop_mean_accepted_length": 2.1195719242095947
+    },
+    {
+      "acceptance_delta": -1.3771963267572573e-06,
+      "baseline_correct": 23606,
+      "control_executed_path_bit_exact": true,
+      "correlations": {
+        "probe_kl_vs_accepted_length": 0.3338995575904846,
+        "probe_kl_vs_probe_top1": -0.2904202938079834,
+        "probe_top1_vs_accepted_length": 0.011212208308279514
+      },
+      "learning_rate": 0.0003,
+      "losses": {
+        "cumulative_kl": 0.556205905146069,
+        "final_ce": 1.0583872227441697,
+        "local_ce": 1.0583891901705,
+        "preserve_kl": 0.0
+      },
+      "mean_accepted_length": 2.119570255279541,
+      "mean_bridge_gate": 0.0,
+      "mean_draft_gate": 0.030037814751267433,
+      "mean_overlap_by_horizon": [
+        0.739427387714386,
+        0.7339485287666321,
+        0.7340026497840881,
+        0.7360789775848389
+      ],
+      "mean_probe_kl": 5.598283767700195,
+      "probe_top1": 0.037230730056762695,
+      "quality_noninferior": true,
+      "quality_safe_oracle_acceptance_delta": 6.666728495474672e-06,
+      "quality_safe_oracle_headroom_relative": 3.1453183632637275e-06,
+      "quality_safe_oracle_selected_fraction": 0.47528326511383057,
+      "retained_correct": 23606,
+      "retention": 1.0,
+      "retention_wilson_95_lower": 0.999837294171272,
+      "step": 100,
+      "train_total_loss": 1399.033447265625,
+      "trained_monotonicity": {
+        "gate_closed": {
+          "accepted_improvement_rows": 0,
+          "final_quality_worsened_fraction": null
+        },
+        "gate_open": {
+          "accepted_improvement_rows": 3817,
+          "final_quality_worsened_fraction": 0.0
+        }
+      },
+      "zero_loop_mean_accepted_length": 2.1195719242095947
+    },
+    {
+      "acceptance_delta": -1.1940451258851681e-05,
+      "baseline_correct": 23606,
+      "control_executed_path_bit_exact": true,
+      "correlations": {
+        "probe_kl_vs_accepted_length": 0.3339213728904724,
+        "probe_kl_vs_probe_top1": -0.2904202938079834,
+        "probe_top1_vs_accepted_length": 0.011183285154402256
+      },
+      "learning_rate": 0.0003,
+      "losses": {
+        "cumulative_kl": 0.5561984219248333,
+        "final_ce": 1.0583872227441697,
+        "local_ce": 1.0583971748276362,
+        "preserve_kl": 0.0
+      },
+      "mean_accepted_length": 2.1195600032806396,
+      "mean_bridge_gate": 0.0,
+      "mean_draft_gate": 0.04986356571316719,
+      "mean_overlap_by_horizon": [
+        0.7394232153892517,
+        0.733948290348053,
+        0.7340026497840881,
+        0.7360768914222717
+      ],
+      "mean_probe_kl": 5.598283767700195,
+      "probe_top1": 0.037230730056762695,
+      "quality_noninferior": true,
+      "quality_safe_oracle_acceptance_delta": 5.26748517586384e-05,
+      "quality_safe_oracle_headroom_relative": 2.4851646295645886e-05,
+      "quality_safe_oracle_selected_fraction": 0.505914568901062,
+      "retained_correct": 23606,
+      "retention": 1.0,
+      "retention_wilson_95_lower": 0.999837294171272,
+      "step": 200,
+      "train_total_loss": 1573.360107421875,
+      "trained_monotonicity": {
+        "gate_closed": {
+          "accepted_improvement_rows": 0,
+          "final_quality_worsened_fraction": null
+        },
+        "gate_open": {
+          "accepted_improvement_rows": 4063,
+          "final_quality_worsened_fraction": 0.0
+        }
+      },
+      "zero_loop_mean_accepted_length": 2.1195719242095947
+    }
+  ],
+  "kind": "paper2_phase2_a2_arm_v1",
+  "seed": 1,
+  "source_a1_checkpoint": {
+    "path": "/content/recurrent-qwen-svgd-stage/stage5_paper2_phase2_a2_20260805/a1_seed_1_step_1000.pt",
+    "sha256": "a9c20510f6cf2561f6208fa8d1915626e2ec6e68a588228d3f0edd9cd0efde89"
+  },
+  "static_loss_weights": {
+    "cumulative_kl": 1789.411575181737,
+    "local_ce": 303.9643794779331
+  },
+  "status": "complete",
+  "step": 200,
+  "target_steps": 200,
+  "training_row_schedule": {
+    "batches": 200,
+    "seed": 20260805,
+    "sha256": "532a01f4fbed30154a4b04dfe3bdafdde5c808fefec8419199827cdcebf826ec"
+  }
+}
