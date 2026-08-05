@@ -183,5 +183,91 @@
     ],
     "strategy_review_required_before_a2_training": true
   },
+  "a2_lock_amendment_20260805": {
+    "status": "locked_before_a2_training",
+    "document": "docs/PAPER2_PHASE2_A2_LOCK_AMENDMENT_20260805.md",
+    "strategy_resolution": {
+      "drive_id": "17Am977A9iCg0-QYfEc0wUZHwN4ZYAVe1",
+      "bytes": 5381,
+      "sha256": "ca530b0153761d143b2f1c4f518e39ceadda67da8142cf5ae6d5279912587818"
+    },
+    "source_receipts": {
+      "calibration_summary": "outputs/stage5/stage5_paper2_phase2_a2_calibration_20260805/summary.json",
+      "calibration_summary_sha256": "78476476407becb39e3ec5402a7403457ebd189dfe5afa180040296305b686ff",
+      "calibration_result_commit": "e4275e02",
+      "amendment_preparation_commit": "d5c9bbbc"
+    },
+    "run_matrix": [
+      {"seed": 0, "arm": "full_a2"},
+      {"seed": 0, "arm": "draft_only_control"},
+      {"seed": 1, "arm": "full_a2"},
+      {"seed": 1, "arm": "draft_only_control"}
+    ],
+    "common_training_row_seed": 20260805,
+    "a1_checkpoint_sha256_by_seed": {
+      "0": "823c1865878a86079a6423fabf432b6f1d36d431ec4381800846019882afb136",
+      "1": "a9c20510f6cf2561f6208fa8d1915626e2ec6e68a588228d3f0edd9cd0efde89"
+    },
+    "full_a2_static_weights_by_seed": {
+      "0": {"final_ce": 1.0, "cumulative_kl": 2201.8315363546058, "local_ce": 395.0116541409731, "preserve_kl": 521.7796435629211},
+      "1": {"final_ce": 1.0, "cumulative_kl": 1789.411575181737, "local_ce": 303.9643794779331, "preserve_kl": 467.10657754438176}
+    },
+    "catastrophe_gradient_norm_by_seed": {
+      "0": 2.3620389630494447,
+      "1": 2.648981693767161
+    },
+    "control": {
+      "trainable_modules": ["control", "draft"],
+      "frozen_modules": ["initializer", "flow", "bridge"],
+      "state_source": "frozen_initializer_output",
+      "flow_calls": 0,
+      "bridge_writeback_calls": 0,
+      "training_losses": ["cumulative_kl", "local_ce"],
+      "evaluation_only_losses": ["final_ce", "preserve_kl"],
+      "executed_hidden_path_bit_exact": true
+    },
+    "directional_audit": {
+      "population": "training_partition",
+      "batch_size": 128,
+      "measurement_batches": 51,
+      "batch_numbers_one_based": [50, 100],
+      "seed_rule": "seed_plus_34001",
+      "audit_steps": [200, 400, 600, 800, 1000],
+      "extension_cadence": 200,
+      "primary_losses": ["cumulative_kl", "local_ce"],
+      "non_primary_losses": ["final_ce", "preserve_kl"],
+      "primary_target_minimum": 0.50,
+      "non_primary_target_maximum": 0.25,
+      "marginal_primary_range": [0.40, 0.50],
+      "marginal_non_primary_range": [0.25, 0.35],
+      "marginal_stop_after_consecutive_same_bound": 2,
+      "gross_primary_below": 0.40,
+      "gross_non_primary_above": 0.35,
+      "step_zero_is_contract_event": false,
+      "per_batch_distribution_required_on_miss": true
+    },
+    "gradient_norm_policy": "no_clipping_catastrophe_tripwire_before_update",
+    "extension": {
+      "nominal_steps": 1000,
+      "maximum_steps": 2000,
+      "single_extension_only": true,
+      "pair_budget_matched": true,
+      "full_arm_oracle_headroom_minimum_relative": 0.02,
+      "full_arm_accepted_length_slope_final_100": 0.002
+    },
+    "positive_verdict": {
+      "quality_safe_oracle_headroom_minimum_relative": 0.02,
+      "full_mean_accepted_length_strictly_greater_than_matched_control": true,
+      "endpoint_quality_noninferior": true
+    },
+    "required_descriptive_outputs": [
+      "probe_kl_probe_top1_acceptance_correlations",
+      "trained_module_monotonicity",
+      "paired_row_differences",
+      "directional_audit_distributions",
+      "v1d_receipt"
+    ],
+    "vocabulary_if_extension_exhausted": "budget-limited"
+  },
   "frozen_confirmatory_partitions_touched": []
 }
