@@ -12,7 +12,7 @@ import torch
 from google.colab import drive, userdata
 
 
-STAGE5_PAPER2_PHASE2_A2_RESUME_VERSION = "paper2_phase2_a2_resume_v1"
+STAGE5_PAPER2_PHASE2_A2_RESUME_VERSION = "paper2_phase2_a2_resume_v2"
 # Safety marker: stopping-semantics-only resume amendment locked before updates
 # Safety marker: all four exact step-two-hundred checkpoints asserted by SHA256
 # Safety marker: historical full-arm quality abort is the only clearable abort
@@ -22,6 +22,8 @@ STAGE5_PAPER2_PHASE2_A2_RESUME_VERSION = "paper2_phase2_a2_resume_v1"
 # Safety marker: negative three-evaluation retention slope warns without stopping
 # Safety marker: optimizer losses rows directional contract extension and verdict unchanged
 # Safety marker: V1d receipt attached to A2 completion handoff
+# Safety marker: executed schedule counts optimizer updates only
+# Safety marker: rejected pre-update batch is preserved as tripwire evidence
 REPO = "mshapiro123/recurrent-qwen-svgd"
 ROOT = Path("/content/recurrent-qwen-svgd")
 REF = os.environ.get("STAGE5_BOOTSTRAP_REF", "main").strip() or "main"

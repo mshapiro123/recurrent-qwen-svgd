@@ -58,6 +58,43 @@ ARM_KIND = "paper2_phase2_a2_arm_v1"
 LOSSES = ("final_ce", "cumulative_kl", "local_ce", "preserve_kl")
 PRIMARY = ("cumulative_kl", "local_ce")
 NON_PRIMARY = ("final_ce", "preserve_kl")
+PREUPDATE_ABORT_REASONS = frozenset(
+    {"nonfinite_loss", "nonfinite_gradient", "catastrophe_gradient_norm_tripwire"}
+)
+
+
+def reconcile_executed_schedule(
+    *,
+    step: int,
+    batch_hashes: list[str],
+    abort_reason: str | None,
+    preupdate_attempts: list[dict[str, Any]] | None = None,
+) -> tuple[list[str], list[dict[str, Any]]]:
+    """Repair the legacy schedule definition without clearing a safety stop.
+
+    A schedule entry means that an optimizer update consumed the batch. Older
+    A2 code appended before the pre-update tripwires, so an aborted attempt can
+    leave exactly one excess hash. No other mismatch is repairable.
+    """
+    attempts = list(preupdate_attempts or [])
+    if len(batch_hashes) == step:
+        return list(batch_hashes), attempts
+    if len(batch_hashes) == step + 1 and abort_reason in PREUPDATE_ABORT_REASONS:
+        rejected_hash = batch_hashes[-1]
+        attempts.append(
+            {
+                "row_hash": rejected_hash,
+                "abort_reason": abort_reason,
+                "optimizer_update_applied": False,
+                "recovered_from_legacy_schedule": True,
+            }
+        )
+        return list(batch_hashes[:-1]), attempts
+    raise RuntimeError(
+        "unrepairable A2 training schedule state: "
+        f"step={step} executed_batch_hashes={len(batch_hashes)} "
+        f"abort_reason={abort_reason!r}"
+    )
 
 
 def _git_head(root: Path) -> str:
@@ -471,6 +508,7 @@ def run_arm(
     consecutive_quality_failures = 0
     previous_marginal: list[str] = []
     batch_hashes: list[str] = []
+    preupdate_attempts: list[dict[str, Any]] = []
     resume_lineage: dict[str, Any] | None = None
     if resume_path.is_file():
         observed_resume_sha = sha256_file(resume_path)
@@ -488,8 +526,21 @@ def run_arm(
         abort_reason = saved.get("abort_reason")
         consecutive_quality_failures = int(saved["consecutive_quality_failures"])
         previous_marginal = list(saved["previous_marginal"])
-        batch_hashes = list(saved["batch_hashes"])
-        batch_generator.set_state(saved["batch_generator_state"])
+        saved_batch_hashes = list(saved["batch_hashes"])
+        preupdate_attempts = list(saved.get("preupdate_attempts", []))
+        batch_hashes, preupdate_attempts = reconcile_executed_schedule(
+            step=step,
+            batch_hashes=saved_batch_hashes,
+            abort_reason=abort_reason,
+            preupdate_attempts=preupdate_attempts,
+        )
+        legacy_schedule_repaired = len(batch_hashes) != len(saved_batch_hashes)
+        if legacy_schedule_repaired:
+            batch_generator.manual_seed(int(lock["common_training_row_seed"]))
+            for _ in range(step):
+                torch.randint(train_indices.numel(), (128,), generator=batch_generator)
+        else:
+            batch_generator.set_state(saved["batch_generator_state"])
         _restore_rng(saved["rng"])
         if resume_from_step200:
             resume_lock = registration["a2_step200_resume_amendment_20260805"]
@@ -518,6 +569,8 @@ def run_arm(
                 if prior_lineage.get("source_sha256") != expected_source_sha:
                     raise RuntimeError(f"A2 resume lineage mismatch for {name}")
                 resume_lineage = dict(prior_lineage)
+            if legacy_schedule_repaired:
+                resume_lineage["legacy_preupdate_schedule_repaired"] = True
         print(f"a2_resume arm={name} step={step}", flush=True)
 
     frozen_before = _tensor_digest(
@@ -544,6 +597,7 @@ def run_arm(
             "consecutive_quality_failures": consecutive_quality_failures,
             "previous_marginal": previous_marginal,
             "batch_hashes": batch_hashes,
+            "preupdate_attempts": preupdate_attempts,
             "batch_generator_state": batch_generator.get_state(),
             "rng": _rng_state(),
             "resume_lineage": resume_lineage,
@@ -568,30 +622,56 @@ def run_arm(
         selected = train_indices.index_select(
             0, torch.randint(train_indices.numel(), (128,), generator=batch_generator)
         )
-        batch_hashes.append(
-            hashlib.sha256(selected.cpu().contiguous().numpy().tobytes()).hexdigest()
-        )
+        selected_hash = hashlib.sha256(
+            selected.cpu().contiguous().numpy().tobytes()
+        ).hexdigest()
         batch = _batch(cache, selected, alpha=0.5, device=device)
         losses, _ = _forward(module=module, batch=batch, embedding=embedding, arm=arm)
         total = sum(weights[name_] * losses[name_] for name_ in active_losses)
         if not bool(torch.isfinite(total)):
             abort_reason = "nonfinite_loss"
+            preupdate_attempts.append(
+                {
+                    "row_hash": selected_hash,
+                    "abort_reason": abort_reason,
+                    "optimizer_update_applied": False,
+                }
+            )
             break
         optimizer.zero_grad(set_to_none=True)
         total.backward()
         gradients = [value.grad for value in trainable.values()]
         if any(gradient is not None and not bool(torch.isfinite(gradient).all()) for gradient in gradients):
             abort_reason = "nonfinite_gradient"
+            preupdate_attempts.append(
+                {
+                    "row_hash": selected_hash,
+                    "abort_reason": abort_reason,
+                    "optimizer_update_applied": False,
+                }
+            )
             break
         total_norm = _grad_norm(gradients, list(trainable.values()))
         if total_norm > float(lock["catastrophe_gradient_norm_by_seed"][str(seed)]):
             abort_reason = "catastrophe_gradient_norm_tripwire"
+            preupdate_attempts.append(
+                {
+                    "row_hash": selected_hash,
+                    "abort_reason": abort_reason,
+                    "optimizer_update_applied": False,
+                    "observed_gradient_norm": total_norm,
+                    "gradient_norm_threshold": float(
+                        lock["catastrophe_gradient_norm_by_seed"][str(seed)]
+                    ),
+                }
+            )
             break
         next_step = step + 1
         learning_rate = 3e-4 * min(1.0, next_step / 100.0)
         for group in optimizer.param_groups:
             group["lr"] = learning_rate
         optimizer.step()
+        batch_hashes.append(selected_hash)
         step = next_step
 
         if arm == "full_a2" and step % 200 == 0:
@@ -713,7 +793,9 @@ def run_arm(
             "seed": int(lock["common_training_row_seed"]),
             "batches": len(batch_hashes),
             "sha256": hashlib.sha256("\n".join(batch_hashes).encode("ascii")).hexdigest(),
+            "definition": "optimizer_updates_only",
         },
+        "preupdate_attempts": preupdate_attempts,
         "history": history,
         "directional_audits": audits,
         "final": final,
@@ -730,7 +812,10 @@ def run_arm(
 
 def _pair_summary(full: dict[str, Any], control: dict[str, Any], private_dir: Path) -> dict[str, Any]:
     if full["training_row_schedule"] != control["training_row_schedule"]:
-        raise RuntimeError("full and control arms did not receive the identical training rows")
+        raise RuntimeError(
+            "full and control arms did not receive the identical executed training rows: "
+            f"full={full['training_row_schedule']} control={control['training_row_schedule']}"
+        )
     full_rows = torch.load(Path(full["final_rows"]["path"]), map_location="cpu", weights_only=False)
     control_rows = torch.load(Path(control["final_rows"]["path"]), map_location="cpu", weights_only=False)
     difference = full_rows["accepted_length"].float() - control_rows["accepted_length"].float()
@@ -741,6 +826,9 @@ def _pair_summary(full: dict[str, Any], control: dict[str, Any], private_dir: Pa
         control_mean=float(control["final"]["mean_accepted_length"]),
         quality_noninferior=bool(full["final"]["quality_noninferior"]),
     )
+    metric_verdict = verdict["verdict"]
+    if full["status"] != "complete" or control["status"] != "complete":
+        verdict["verdict"] = "blocked"
     return {
         "seed": int(full["seed"]),
         "steps": int(full["step"]),
@@ -755,6 +843,7 @@ def _pair_summary(full: dict[str, Any], control: dict[str, Any], private_dir: Pa
             "distribution": _distribution(difference.tolist()),
         },
         "relative_quality_safe_oracle_headroom": relative,
+        "metric_verdict_without_completion_status": metric_verdict,
         **verdict,
     }
 

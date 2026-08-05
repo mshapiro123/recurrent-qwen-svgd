@@ -16,7 +16,11 @@ from training.paper2_phase2_a2 import (
     retention_slope_latest,
     should_extend,
 )
-from training.run_paper2_phase2_a2 import _forward, _set_trainable
+from training.run_paper2_phase2_a2 import (
+    _forward,
+    _set_trainable,
+    reconcile_executed_schedule,
+)
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -117,6 +121,43 @@ def test_retention_slope_uses_latest_three_evaluations() -> None:
         {"step": 300, "retention": 0.994},
     ]
     assert retention_slope_latest(history, evaluations=3) < 0
+
+
+def test_legacy_preupdate_abort_is_removed_from_executed_schedule() -> None:
+    schedule, attempts = reconcile_executed_schedule(
+        step=2,
+        batch_hashes=["trained-a", "trained-b", "rejected-c"],
+        abort_reason="catastrophe_gradient_norm_tripwire",
+    )
+    assert schedule == ["trained-a", "trained-b"]
+    assert attempts == [
+        {
+            "row_hash": "rejected-c",
+            "abort_reason": "catastrophe_gradient_norm_tripwire",
+            "optimizer_update_applied": False,
+            "recovered_from_legacy_schedule": True,
+        }
+    ]
+
+
+def test_schedule_repair_fails_closed_for_non_tripwire_mismatch() -> None:
+    with pytest.raises(RuntimeError, match="unrepairable A2 training schedule state"):
+        reconcile_executed_schedule(
+            step=2,
+            batch_hashes=["trained-a", "trained-b", "extra-c"],
+            abort_reason="quality_trajectory_two_consecutive_evaluations",
+        )
+
+
+def test_schedule_repair_preserves_exact_executed_schedule() -> None:
+    schedule, attempts = reconcile_executed_schedule(
+        step=2,
+        batch_hashes=["trained-a", "trained-b"],
+        abort_reason=None,
+        preupdate_attempts=[{"row_hash": "old-rejected"}],
+    )
+    assert schedule == ["trained-a", "trained-b"]
+    assert attempts == [{"row_hash": "old-rejected"}]
 
 
 def test_draft_only_control_has_no_bridge_or_flow_gradient_and_unchanged_path() -> None:

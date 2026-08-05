@@ -3491,9 +3491,11 @@ def test_phase2_a2_resume_is_wired_and_guarded() -> None:
         assert "paper2_phase2_a2_resume" in text
         assert "STAGE5_PAPER2_PHASE2_A2_RESUME_CELL.py" in text
         assert "all four exact step-two-hundred checkpoints asserted by SHA256" in text
-    assert "paper2_phase2_a2_resume_v1" in cell
+    assert "paper2_phase2_a2_resume_v2" in cell
     assert "STAGE5_PHASE2_A2_RESUME_MODE" in cell
     assert "in-flight point tripwire is step-zero retention minus 0.003" in cell
+    assert "executed schedule counts optimizer updates only" in cell
+    assert "rejected pre-update batch is preserved as tripwire evidence" in cell
     assert "--resume_from_step200" in runner
     assert '"stage5_paper2_phase2_a2_resume_20260805"' in runner
 

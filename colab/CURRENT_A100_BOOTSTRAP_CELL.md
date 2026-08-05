@@ -485,7 +485,7 @@ TARGETS = {
         "path": "colab/STAGE5_PAPER2_PHASE2_A2_RESUME_CELL.py",
         "markers": [
             "STAGE5_PAPER2_PHASE2_A2_RESUME_VERSION",
-            "paper2_phase2_a2_resume_v1",
+            "paper2_phase2_a2_resume_v2",
             "stopping-semantics-only resume amendment locked before updates",
             "all four exact step-two-hundred checkpoints asserted by SHA256",
             "historical full-arm quality abort is the only clearable abort",
@@ -495,6 +495,8 @@ TARGETS = {
             "negative three-evaluation retention slope warns without stopping",
             "optimizer losses rows directional contract extension and verdict unchanged",
             "V1d receipt attached to A2 completion handoff",
+            "executed schedule counts optimizer updates only",
+            "rejected pre-update batch is preserved as tripwire evidence",
             "tests/test_paper2_phase2_a2.py",
             "colab/run_stage5_paper2_phase2_a2.py",
         ],
