@@ -53,19 +53,20 @@ The full A2 directional contract is evaluated only on the registered matched
 200 steps during an extension. Step-zero 35/35/10/20 shares remain an
 initialization record and are not a contract event.
 
-- Primary losses are cumulative KL and local CE. Each must carry at least 50%
-  of its relevant parameter-group gradient share.
+- The primary share is the aggregate contribution of cumulative KL and local CE.
+  It must carry at least 50% of the four-loss independent-gradient share.
 - Non-primary losses are final CE and preserve KL. Each must carry at most 25%
   of its relevant parameter-group gradient share.
-- A marginal miss is a primary share in [40%, 50%) or a non-primary share in
+- A marginal miss is the aggregate primary share in [40%, 50%) or a non-primary share in
   (25%, 35%]. It warns and records the per-batch distribution. Two consecutive
   marginal misses at the same bound stop the run with receipts.
-- A gross miss is a primary share below 40% or any non-primary share above 35%.
+- A gross miss is the aggregate primary share below 40% or any non-primary share above 35%.
   It stops immediately with receipts.
 
-The draft/control and bridge parameter groups are audited separately because
-the losses are structurally disjoint across those groups. Zero gradients outside
-a loss's relevant group are expected and are not pooled into the share.
+The receipt also reports draft/control and bridge parameter-group gradients.
+Zero gradients outside a loss's relevant group are structurally expected. The
+hard directional classification uses the registered four-loss independent-gradient
+shares, with cumulative KL and local CE summed before applying the primary bound.
 
 ## 4. Tripwires and extension
 

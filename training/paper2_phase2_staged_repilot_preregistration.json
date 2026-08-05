@@ -235,6 +235,7 @@
       "audit_steps": [200, 400, 600, 800, 1000],
       "extension_cadence": 200,
       "primary_losses": ["cumulative_kl", "local_ce"],
+      "primary_share_aggregation": "sum_before_classification",
       "non_primary_losses": ["final_ce", "preserve_kl"],
       "primary_target_minimum": 0.50,
       "non_primary_target_maximum": 0.25,
