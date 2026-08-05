@@ -158,6 +158,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3_short_sha"
 #   "paper2_phase2_matched_alpha_audit" - read-only L4 terminal-checkpoint and shaper audit.
 #   "paper2_phase2_oracle_selector_headroom" - CPU-only perfect-selector ceiling from banked rows.
 #   "paper2_phase2_staged_a1" - locked A100-40GB+ state-construction stage; stops before A2.
+#   "paper2_phase2_a1_matched_estimator_audit" - read-only L4 audit of the A1 stop population mismatch.
 #   "paper2_phase2_v1b_rms_audit" - CPU-only audit of existing V1b private rows.
 #   "paper2_phase2_eval_de_freeze" - score-blind EVAL-D/E and own-base feature freeze.
 #   "paper2_d0_prelock_publish_resume" - publish completed Drive-backed D0 lock receipts without inference.
@@ -381,6 +382,23 @@ TARGETS = {
             "A1 ends for strategy review and cannot launch A2",
             "tests/test_paper2_phase2_staged_repilot.py",
             "colab/run_stage5_paper2_phase2_staged_a1.py",
+        ],
+        "env": {},
+    },
+    "paper2_phase2_a1_matched_estimator_audit": {
+        "path": "colab/STAGE5_PAPER2_PHASE2_A1_MATCHED_ESTIMATOR_AUDIT_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_PHASE2_A1_MATCHED_ESTIMATOR_AUDIT_VERSION",
+            "paper2_phase2_a1_matched_estimator_audit_v1",
+            "read-only exact 51-batch calibration estimator reconstruction",
+            "initialization and saved step-200 checkpoints for both seeds",
+            "training population owns hard flow and probe share inequalities",
+            "fixed 51-batch DEV population-shift check is descriptive only",
+            "bootstrap intervals and per-batch contract frequencies",
+            "zero optimizer updates and model hashes before and after every measurement",
+            "emits resume_saved_step_200 or fresh_rerun_required without launching training",
+            "tests/test_paper2_phase2_a1_matched_estimator_audit.py",
+            "colab/run_stage5_paper2_phase2_a1_matched_estimator_audit.py",
         ],
         "env": {},
     },

@@ -3355,6 +3355,32 @@ def test_phase2_staged_a1_target_is_wired_and_guarded() -> None:
     assert "training.run_paper2_phase2_staged_a1" in runner
 
 
+def test_phase2_a1_matched_estimator_audit_is_wired() -> None:
+    cell = (
+        ROOT / "colab/STAGE5_PAPER2_PHASE2_A1_MATCHED_ESTIMATOR_AUDIT_CELL.py"
+    ).read_text(encoding="utf-8")
+    runner = (
+        ROOT / "colab/run_stage5_paper2_phase2_a1_matched_estimator_audit.py"
+    ).read_text(encoding="utf-8")
+    audit = (
+        ROOT / "eval/eval_paper2_phase2_a1_matched_estimator_audit.py"
+    ).read_text(encoding="utf-8")
+    for bootstrap_path in (
+        ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py",
+        ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md",
+    ):
+        text = bootstrap_path.read_text(encoding="utf-8")
+        assert "paper2_phase2_a1_matched_estimator_audit" in text
+        assert "STAGE5_PAPER2_PHASE2_A1_MATCHED_ESTIMATOR_AUDIT_CELL.py" in text
+        assert "read-only exact 51-batch calibration estimator reconstruction" in text
+    assert "paper2_phase2_a1_matched_estimator_audit_v1" in cell
+    assert "torch.optim" not in audit
+    assert "resume_saved_step_200" in audit
+    assert "fresh_rerun_required" in audit
+    assert "optimizer_updates" in audit
+    assert 'RUN_ID = "stage5_paper2_phase2_a1_matched_estimator_audit_20260805"' in runner
+
+
 def test_gradient_path_audit_target_is_wired_and_guarded() -> None:
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
     bootstrap_md = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")
