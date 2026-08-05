@@ -52,3 +52,17 @@ def test_staged_protocol_has_no_open_lock_blockers() -> None:
     assert "Status: `locked_before_training`" in protocol
     assert "[LOCK-BLOCKER]" not in protocol
     assert "A1 launcher contains no path that can enter A2" in protocol
+
+
+def test_a1_resume_amendment_restores_inequality_contract() -> None:
+    amendment = _registration()["resume_amendment_20260805"]
+    assert amendment["status"] == "locked_before_resumed_training"
+    assert amendment["audit_decision"] == "resume_saved_step_200"
+    assert amendment["hard_share_estimator"]["measurement_batches"] == 51
+    assert amendment["hard_share_estimator"]["optimizer_steps"] == [200, 400, 600, 800, 1000]
+    assert amendment["hard_share_contract"]["flow_minimum"] == 0.50
+    assert amendment["hard_share_contract"]["functional_probe_kl_maximum"] == 0.25
+    assert amendment["hard_share_contract"]["counterfactual_preserve_share"] == "descriptive"
+    assert amendment["periodic_recalibration"] is False
+    assert amendment["automatic_extension_disabled"] is True
+    assert amendment["a2_launched"] is False
