@@ -271,4 +271,46 @@
     "vocabulary_if_extension_exhausted": "budget-limited"
   },
   "frozen_confirmatory_partitions_touched": []
+  ,
+  "a2_step200_resume_amendment_20260805": {
+    "status": "locked_before_a2_resumed_training",
+    "document": "docs/PAPER2_PHASE2_A2_STEP200_RESUME_AMENDMENT_20260805.md",
+    "strategy_resolution": {
+      "drive_id": "16aIjqnCOT0LzzXYoI7rihUVK2ydpsn1G",
+      "bytes": 6269,
+      "sha256": "62355265df2055df6480a9618c5f83694678f5e146d056f07bc6073bb963cff7",
+      "document": "docs/STRATEGY_TO_CODING_AGENT_A2_STOP_RESOLUTION_20260805.md"
+    },
+    "source_result": {
+      "commit": "10f3a3df34672b02ab82cf0c63d378be32bd489f",
+      "summary": "outputs/stage5/stage5_paper2_phase2_a2_20260805/summary.json",
+      "classification": "protocol_stop_at_step_200"
+    },
+    "resume_step": 200,
+    "resume_all_four": true,
+    "source_resume_sha256_by_arm": {
+      "seed_0_full_a2": "75e335fe9771c2dce13d48f9cd68275509dded8f6ca320b086def1f45b6376b4",
+      "seed_0_draft_only_control": "3e85af090ac6e19833358dfa2f5d1891be5e898856318e07aa01fb4880aa7c29",
+      "seed_1_full_a2": "1cf8b3d3cdc80ba3f58aa30b7b3619aebfa2c3af08e881fba7222e721b0690d4",
+      "seed_1_draft_only_control": "78c817bea3909ad5d13028fa917ce07540dfe5d20dd46190ad8821b33132b3a1"
+    },
+    "resumable_abort": {
+      "arm": "full_a2",
+      "reason": "quality_noninferiority_two_consecutive_evaluations",
+      "step": 200,
+      "reset_obsolete_consecutive_failure_counter": true
+    },
+    "quality": {
+      "endpoint_point_retention_floor": 0.997,
+      "endpoint_wilson_95_lower_floor": 0.990,
+      "endpoint_steps": [1000, 2000],
+      "during_training_point_drop_from_step_zero": 0.003,
+      "during_training_point_drop_consecutive_evaluations": 2,
+      "during_training_wilson_95_lower_floor": 0.990,
+      "during_training_wilson_failure_immediate_stop": true,
+      "negative_slope_window_evaluations": 3,
+      "negative_slope_action": "warning_only"
+    },
+    "scope": "stopping_semantics_only"
+  }
 }
