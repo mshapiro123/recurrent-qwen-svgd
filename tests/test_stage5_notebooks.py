@@ -3404,6 +3404,30 @@ def test_phase2_staged_a1_resume_is_wired_and_guarded() -> None:
     assert "stage_resume_lineage" in runner
 
 
+def test_phase2_a2_calibration_is_wired_and_guarded() -> None:
+    cell = (ROOT / "colab/STAGE5_PAPER2_PHASE2_A2_CALIBRATION_CELL.py").read_text(
+        encoding="utf-8"
+    )
+    runner = (ROOT / "colab/run_stage5_paper2_phase2_a2_calibration.py").read_text(
+        encoding="utf-8"
+    )
+    for bootstrap_path in (
+        ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py",
+        ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md",
+    ):
+        text = bootstrap_path.read_text(encoding="utf-8")
+        assert "paper2_phase2_a2_calibration" in text
+        assert "STAGE5_PAPER2_PHASE2_A2_CALIBRATION_CELL.py" in text
+        assert "zero optimizer updates and no A2 training from this target" in text
+    assert "paper2_phase2_a2_calibration_v1" in cell
+    assert "actual A2 graph bridge control and draft only" in cell
+    assert "legacy 35 35 10 20 shares are initialization targets only" in cell
+    assert "35" in cell and "vram_gib" in cell
+    assert 'RUN_ID = "stage5_paper2_phase2_a2_calibration_20260805"' in runner
+    assert "stage_static_inputs" in runner
+    assert "optimizer_updates" in runner
+
+
 def test_gradient_path_audit_target_is_wired_and_guarded() -> None:
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
     bootstrap_md = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")

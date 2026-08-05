@@ -2,7 +2,7 @@
 
 **Canonical date:** August 5, 2026
 **Part 1 status:** closed
-**Part 2 status:** Phase 1 is banked. DC1 Stage A remains a registered negative (`none`). The Phase-2 pre-window diagnostics, V1d, canonicalizer arbitration, and loss-free student build are banked. Staged A1 completed at 1,000 steps in two seeds with machine verdict `a1_gate_candidate_pass` in both; strategy must bank A1 and resolve the A2 objective contract before A2 can open.
+**Part 2 status:** Phase 1 is banked. DC1 Stage A remains a registered negative (`none`). The Phase-2 pre-window diagnostics, V1d, canonicalizer arbitration, and loss-free student build are banked. Strategy ratified the two seed-specific staged-A1 candidate passes as one replicated `a1_pass` at alpha `0.5`. A zero-update, two-seed A2 calibration is authorized; A2 training remains closed until its gradient receipts are folded into a committed amendment lock.
 
 This page is the short status index. It replaces the earlier June recovery narrative, which became stale after the loop-closure repair, synthetic mechanism installation, Phase A dense-control comparison, and inverse-task boundary program.
 
@@ -170,7 +170,8 @@ fragile positions is the common interpretive frame.
 4. Banked: V2 found median contraction at all four iterates, with some expanding sampled directions at iterate one. The operative failure description is directional off-manifold drift without norm instability, not generic explosion.
 5. Keep the E-stage accounting split: the V1b/V1c ceiling binds the bounded bridge-writeback path only. The direct-logit residual drafter path remains margin-unbounded and is judged against acceptance baselines.
 6. Strategy selected `c = 0.15` with p99 state-RMS cap `0.5508932316303252`. V1d passed its diagnostic preservation rule and is banked.
-7. Staged A1 then completed at alpha `0.5` in two seeds. Probe KL improved by `1.3555` and `1.3157` nats against a `0.10`-nat gate, flow MSE fell by `19.12%` and `19.16%`, and every matched gradient audit passed the amended inequalities on every batch. The result is a state-construction candidate pass only. A2 remains closed pending strategy banking and review of its static point-share objective contract.
+7. Staged A1 then completed at alpha `0.5` in two seeds. Probe KL improved by `1.3555` and `1.3157` nats against a `0.10`-nat gate, flow MSE fell by `19.12%` and `19.16%`, and every matched gradient audit passed the amended inequalities on every batch. Strategy banked these as one replicated state-construction `a1_pass`, with no A1 extension and no state-use claim.
+8. Authorized next: a zero-update A2 calibration on both banked checkpoints, using the actual bridge/control/draft graph and the matched `51 x 128` training estimator. It measures raw and weighted per-loss norms, conflicts, initialization weights, and a candidate catastrophe-only clip tripwire. A2 training and its matched controls remain closed pending a committed post-calibration amendment.
 
 Closed pending that decision: additional Phase G sweeps, coverage, selection,
 LPRM, per-trajectory halting, particles, SVGD, the intra-block oracle probe,

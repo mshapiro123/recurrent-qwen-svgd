@@ -160,6 +160,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3_short_sha"
 #   "paper2_phase2_staged_a1" - locked A100-40GB+ state-construction stage; stops before A2.
 #   "paper2_phase2_a1_matched_estimator_audit" - read-only L4 audit of the A1 stop population mismatch.
 #   "paper2_phase2_staged_a1_resume" - amended A100-40GB+ continuation from audited step-200 checkpoints.
+#   "paper2_phase2_a2_calibration" - authorized zero-update A100-40GB+ A2 gradient calibration.
 #   "paper2_phase2_v1b_rms_audit" - CPU-only audit of existing V1b private rows.
 #   "paper2_phase2_eval_de_freeze" - score-blind EVAL-D/E and own-base feature freeze.
 #   "paper2_d0_prelock_publish_resume" - publish completed Drive-backed D0 lock receipts without inference.
@@ -418,6 +419,25 @@ TARGETS = {
             "A2 remains closed and cannot launch from this target",
             "tests/test_paper2_phase2_staged_a1_resume.py",
             "colab/run_stage5_paper2_phase2_staged_a1_resume.py",
+        ],
+        "env": {},
+    },
+    "paper2_phase2_a2_calibration": {
+        "path": "colab/STAGE5_PAPER2_PHASE2_A2_CALIBRATION_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_PHASE2_A2_CALIBRATION_VERSION",
+            "paper2_phase2_a2_calibration_v1",
+            "banked A1 pass checkpoints for both seeds asserted by SHA256",
+            "zero optimizer updates and no A2 training from this target",
+            "actual A2 graph bridge control and draft only",
+            "raw and weighted per-loss gradient distributions",
+            "pairwise conflict cosines including cumulative KL versus local CE",
+            "legacy 35 35 10 20 shares are initialization targets only",
+            "candidate clip tripwire is observed p99 times 10 not an active shaper",
+            "full module and frozen flow hashes unchanged before and after",
+            "strategy amendment required before A2 training",
+            "tests/test_paper2_phase2_a2_calibration.py",
+            "colab/run_stage5_paper2_phase2_a2_calibration.py",
         ],
         "env": {},
     },

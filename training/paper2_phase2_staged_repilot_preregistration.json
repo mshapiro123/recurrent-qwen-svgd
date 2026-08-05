@@ -149,5 +149,39 @@
     "automatic_extension_disabled": true,
     "a2_launched": false
   },
+  "a1_strategy_bank_20260805": {
+    "status": "banked_a1_pass",
+    "strategy_drive_id": "1CCIZqKgIvaveFit8IEOzcXfEcf-4YYWZ",
+    "decision": "BANK_A1_AND_AUTHORIZE_A2_CALIBRATION",
+    "alpha": 0.5,
+    "seeds": [0, 1],
+    "checkpoint_sha256_by_seed": {
+      "0": "823c1865878a86079a6423fabf432b6f1d36d431ec4381800846019882afb136",
+      "1": "a9c20510f6cf2561f6208fa8d1915626e2ec6e68a588228d3f0edd9cd0efde89"
+    },
+    "automatic_a1_extension": false
+  },
+  "a2_calibration_authorization_20260805": {
+    "status": "authorized_zero_update_prelock",
+    "strategy_drive_id": "1CCIZqKgIvaveFit8IEOzcXfEcf-4YYWZ",
+    "optimizer_updates": 0,
+    "a2_training_authorized": false,
+    "seeds": [0, 1],
+    "measurement_batches": [50, 100],
+    "a1_checkpoint_sha256_by_seed": {
+      "0": "823c1865878a86079a6423fabf432b6f1d36d431ec4381800846019882afb136",
+      "1": "a9c20510f6cf2561f6208fa8d1915626e2ec6e68a588228d3f0edd9cd0efde89"
+    },
+    "legacy_share_role": "initialization_target_only_pending_amendment",
+    "required_receipts": [
+      "raw_and_weighted_per_loss_gradient_norms",
+      "pairwise_conflict_cosines",
+      "batch_distributions",
+      "initialization_weights",
+      "p99_times_10_candidate_catastrophe_tripwire",
+      "zero_parameter_mutation"
+    ],
+    "strategy_review_required_before_a2_training": true
+  },
   "frozen_confirmatory_partitions_touched": []
 }

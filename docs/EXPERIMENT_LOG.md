@@ -1704,8 +1704,13 @@ Colab/Drive backups for selected runs.
   `19.12%` and `19.16%`. Every matched audit at steps 200, 400, 600, 800, and
   1,000 passed on every constituent batch. There were no trust-tripwire,
   clipping, identity, frozen-lineage, or preservation failures. Both machine
-  verdicts are `a1_gate_candidate_pass`; A2 was not launched and remains closed
-  pending strategy banking plus review of its still-static `35/35/10/20` loss
-  share contract. Completion handoff:
+  machine verdicts are `a1_gate_candidate_pass`; strategy subsequently banked
+  them as one replicated `a1_pass` at alpha `0.5`, authorized no A1 extension,
+  and retained the state-construction-only scope. A2 was not launched.
+  Strategy demoted the static `35/35/10/20` shares to calibration
+  initialization targets and authorized a two-seed, zero-update A2 gradient
+  calibration before any amendment lock or training. Completion handoff:
   `docs/PAPER2_PHASE2_STAGED_A1_COMPLETION_HANDOFF_20260805.md`. Summary:
   `outputs/stage5/stage5_paper2_phase2_staged_a1_resume_20260805/summary.json`.
+  Strategy authority:
+  `docs/STRATEGY_TO_CODING_AGENT_A1_BANK_A2_CONTRACT_20260805_RESOURCE.md`.
