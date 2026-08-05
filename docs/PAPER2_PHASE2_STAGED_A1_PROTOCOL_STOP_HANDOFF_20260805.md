@@ -1,10 +1,10 @@
 # Handoff: Phase-2 Staged A1 Protocol Stop
 
-Date: 2026-08-05  
-Run: `stage5_paper2_phase2_staged_a1_20260805`  
-Result commit: `dd47e76e`  
-Launcher commit: `bda826f8c786c2c1c9f97513406c7065fd4c87f4`  
-Protocol lock: `c0ace7aa02ebea11fc0809298572736d29b24012`
+- Date: 2026-08-05
+- Run: `stage5_paper2_phase2_staged_a1_20260805`
+- Result commit: `dd47e76e`
+- Launcher commit: `bda826f8c786c2c1c9f97513406c7065fd4c87f4`
+- Protocol lock: `c0ace7aa02ebea11fc0809298572736d29b24012`
 
 ## 0. Executive verdict
 
@@ -242,4 +242,3 @@ resume into A2. Do not count this as one of the registered completed A1 attempts
 - Locked protocol: `docs/PAPER2_PHASE2_STAGED_REPILOT_PROTOCOL_DRAFT_20260805.md`
 - Machine-readable registration:
   `training/paper2_phase2_staged_repilot_preregistration.json`
-
