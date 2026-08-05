@@ -9,9 +9,11 @@ from torch import nn
 
 from models.paper2_dc2_student import Phase2StudentModules
 from training.paper2_phase2_a2 import (
+    classify_inflight_quality,
     classify_directional_shares,
     paired_verdict,
     repeated_marginal_bounds,
+    retention_slope_latest,
     should_extend,
 )
 from training.run_paper2_phase2_a2 import _forward, _set_trainable
@@ -75,6 +77,48 @@ def test_extension_and_pair_verdict_contracts() -> None:
     )["verdict"] == "positive"
 
 
+def test_trajectory_quality_tripwire_keeps_endpoint_gate_out_of_flight() -> None:
+    healthy = classify_inflight_quality(
+        step_zero_retention=0.994,
+        retention=0.995,
+        wilson_lower=0.993,
+        previous_point_failures=0,
+    )
+    assert not healthy["stop"]
+    assert healthy["point_floor"] == pytest.approx(0.991)
+    first_miss = classify_inflight_quality(
+        step_zero_retention=0.994,
+        retention=0.990,
+        wilson_lower=0.991,
+        previous_point_failures=0,
+    )
+    assert not first_miss["stop"]
+    second_miss = classify_inflight_quality(
+        step_zero_retention=0.994,
+        retention=0.990,
+        wilson_lower=0.991,
+        previous_point_failures=1,
+    )
+    assert second_miss["stop_reason"] == "quality_trajectory_two_consecutive_evaluations"
+    wilson_miss = classify_inflight_quality(
+        step_zero_retention=0.994,
+        retention=0.995,
+        wilson_lower=0.9899,
+        previous_point_failures=0,
+    )
+    assert wilson_miss["stop_reason"] == "quality_wilson_floor_immediate"
+
+
+def test_retention_slope_uses_latest_three_evaluations() -> None:
+    history = [
+        {"step": 0, "retention": 0.990},
+        {"step": 100, "retention": 0.996},
+        {"step": 200, "retention": 0.995},
+        {"step": 300, "retention": 0.994},
+    ]
+    assert retention_slope_latest(history, evaluations=3) < 0
+
+
 def test_draft_only_control_has_no_bridge_or_flow_gradient_and_unchanged_path() -> None:
     torch.manual_seed(9)
     embedding = nn.Embedding(31, 16)
@@ -108,3 +152,8 @@ def test_a2_lock_authorizes_exact_four_run_matrix() -> None:
     ]
     assert lock["control"]["flow_calls"] == 0
     assert lock["control"]["bridge_writeback_calls"] == 0
+    resume = registration["a2_step200_resume_amendment_20260805"]
+    assert resume["status"] == "locked_before_a2_resumed_training"
+    assert resume["resume_all_four"] is True
+    assert len(resume["source_resume_sha256_by_arm"]) == 4
+    assert resume["quality"]["during_training_point_drop_from_step_zero"] == 0.003

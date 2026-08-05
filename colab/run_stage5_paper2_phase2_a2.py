@@ -15,7 +15,13 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-RUN_ID = "stage5_paper2_phase2_a2_20260805"
+RESUME_MODE = os.environ.get("STAGE5_PHASE2_A2_RESUME_MODE", "0") == "1"
+RUN_ID = (
+    "stage5_paper2_phase2_a2_resume_20260805"
+    if RESUME_MODE
+    else "stage5_paper2_phase2_a2_20260805"
+)
+SOURCE_A2_RUN_ID = "stage5_paper2_phase2_a2_20260805"
 A1_RUN_ID = "stage5_paper2_phase2_staged_a1_resume_20260805"
 STAGE0A_ID = "stage5_paper2_phase2_stage0a_20260803"
 ARBITRATION_ID = "stage5_paper2_phase2_arbitration_build_20260804"
@@ -25,6 +31,7 @@ DRIVE_ROOT = Path("/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5")
 DRIVE_STAGE0A = DRIVE_ROOT / STAGE0A_ID / "private/stage0a"
 DRIVE_A1 = DRIVE_ROOT / A1_RUN_ID / "private/a1"
 DRIVE_RUN = DRIVE_ROOT / RUN_ID
+DRIVE_SOURCE_A2 = DRIVE_ROOT / SOURCE_A2_RUN_ID / "private/a2"
 DRIVE_CANONICALIZER = (
     DRIVE_ROOT
     / ARBITRATION_ID
@@ -122,11 +129,41 @@ def stage_static_inputs() -> tuple[Path, Path, Path, dict[int, Path]]:
     return stage0a, canonicalizer, cache, checkpoints
 
 
+def stage_resume_checkpoints(lock: dict[str, object]) -> None:
+    if not RESUME_MODE:
+        return
+    destination_root = DRIVE_RUN / "private/a2"
+    expected_by_arm = lock["source_resume_sha256_by_arm"]
+    for seed in (0, 1):
+        for arm in ("full_a2", "draft_only_control"):
+            name = f"seed_{seed}_{arm}"
+            source = DRIVE_SOURCE_A2 / name / "resume.pt"
+            destination = destination_root / name / "resume.pt"
+            if destination.is_file():
+                print(f"a2_resume_destination_exists arm={name}", flush=True)
+                continue
+            if not source.is_file():
+                raise FileNotFoundError(f"missing registered A2 resume source: {source}")
+            expected = expected_by_arm[name]
+            if sha256_file(source) != expected:
+                raise RuntimeError(f"registered A2 resume source SHA mismatch for {name}")
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(source, destination)
+            if sha256_file(destination) != expected:
+                raise RuntimeError(f"staged A2 resume source SHA mismatch for {name}")
+            print(f"a2_resume_staged arm={name} sha256={expected}", flush=True)
+
+
 def publish() -> str:
     run(["git", "pull", "--rebase", "--autostash", "origin", "main"])
     run(["git", "add", "-f", "--", RUN_DIR.relative_to(ROOT).as_posix()])
     if subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=ROOT).returncode:
-        run(["git", "commit", "-m", "Record Phase 2 A2 matrix [skip ci]"])
+        message = (
+            "Record Phase 2 A2 resumed matrix [skip ci]"
+            if RESUME_MODE
+            else "Record Phase 2 A2 matrix [skip ci]"
+        )
+        run(["git", "commit", "-m", message])
         run(["git", "push", "origin", "main"])
     return subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
 
@@ -143,13 +180,17 @@ def main() -> int:
     RUN_DIR.mkdir(parents=True, exist_ok=True)
     write_status("staging_inputs")
     stage0a, canonicalizer, cache, checkpoints = stage_static_inputs()
+    if RESUME_MODE:
+        resume_lock = registration["a2_step200_resume_amendment_20260805"]
+        if resume_lock["status"] != "locked_before_a2_resumed_training":
+            raise RuntimeError("A2 step-200 resume is not locked")
+        stage_resume_checkpoints(resume_lock)
     for seed, checkpoint in checkpoints.items():
         expected = lock["a1_checkpoint_sha256_by_seed"][str(seed)]
         if sha256_file(checkpoint) != expected:
             raise RuntimeError(f"seed {seed} staged A1 checkpoint SHA mismatch")
     write_status("training_four_run_matrix")
-    returncode = run(
-        [
+    command = [
             sys.executable,
             "-u",
             "-m",
@@ -172,7 +213,11 @@ def main() -> int:
             str(DRIVE_RUN / "private/a2"),
             "--device",
             "cuda",
-        ],
+        ]
+    if RESUME_MODE:
+        command.append("--resume_from_step200")
+    returncode = run(
+        command,
         allowed=(0, 2),
     )
     summary = json.loads((RUN_DIR / "summary.json").read_text(encoding="utf-8"))
@@ -208,4 +253,3 @@ if __name__ == "__main__":
             except Exception as status_error:
                 print(f"status_write_failed={status_error!r}", flush=True)
         raise
-

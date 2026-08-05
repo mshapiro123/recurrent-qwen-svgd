@@ -3476,6 +3476,28 @@ def test_phase2_a2_matrix_is_wired_and_guarded() -> None:
     assert "private/a2" in runner
 
 
+def test_phase2_a2_resume_is_wired_and_guarded() -> None:
+    cell = (ROOT / "colab/STAGE5_PAPER2_PHASE2_A2_RESUME_CELL.py").read_text(
+        encoding="utf-8"
+    )
+    runner = (ROOT / "colab/run_stage5_paper2_phase2_a2.py").read_text(
+        encoding="utf-8"
+    )
+    for bootstrap_path in (
+        ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py",
+        ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md",
+    ):
+        text = bootstrap_path.read_text(encoding="utf-8")
+        assert "paper2_phase2_a2_resume" in text
+        assert "STAGE5_PAPER2_PHASE2_A2_RESUME_CELL.py" in text
+        assert "all four exact step-two-hundred checkpoints asserted by SHA256" in text
+    assert "paper2_phase2_a2_resume_v1" in cell
+    assert "STAGE5_PHASE2_A2_RESUME_MODE" in cell
+    assert "in-flight point tripwire is step-zero retention minus 0.003" in cell
+    assert "--resume_from_step200" in runner
+    assert '"stage5_paper2_phase2_a2_resume_20260805"' in runner
+
+
 def test_gradient_path_audit_target_is_wired_and_guarded() -> None:
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
     bootstrap_md = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")

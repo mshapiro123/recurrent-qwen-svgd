@@ -2,7 +2,7 @@
 
 **Canonical date:** August 5, 2026
 **Part 1 status:** closed
-**Part 2 status:** Phase 1 is banked. DC1 Stage A remains a registered negative (`none`). The Phase-2 pre-window diagnostics, V1d, canonicalizer arbitration, and loss-free student build are banked. Strategy ratified the two seed-specific staged-A1 candidate passes as one replicated `a1_pass` at alpha `0.5`. A zero-update, two-seed A2 calibration is authorized; A2 training remains closed until its gradient receipts are folded into a committed amendment lock.
+**Part 2 status:** Phase 1 is banked. DC1 Stage A remains a registered negative (`none`). The Phase-2 pre-window diagnostics, V1d, canonicalizer arbitration, loss-free student build, and replicated A1 pass at alpha `0.5` are banked. A2's first matrix stopped at step 200 because an endpoint quality gate was incorrectly armed during training while both full arms were improving. Strategy classified that result as a protocol stop, retained every endpoint gate, and locked a stopping-semantics-only continuation from all four exact checkpoints. The resumed A2 matrix is built and authorized but not yet run.
 
 This page is the short status index. It replaces the earlier June recovery narrative, which became stale after the loop-closure repair, synthetic mechanism installation, Phase A dense-control comparison, and inverse-task boundary program.
 

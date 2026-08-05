@@ -1714,3 +1714,21 @@ Colab/Drive backups for selected runs.
   `outputs/stage5/stage5_paper2_phase2_staged_a1_resume_20260805/summary.json`.
   Strategy authority:
   `docs/STRATEGY_TO_CODING_AGENT_A1_BANK_A2_CONTRACT_20260805_RESOURCE.md`.
+- 2026-08-05 Phase-2 A2 step-200 stop and resume lock: the first four-arm A2
+  matrix opened the writeback bridge below the registered endpoint
+  point-retention threshold at step zero. Both full arms then improved through
+  step 200 while remaining above the absolute Wilson floor and passing every
+  directional audit, but the endpoint gate was also acting as the in-flight
+  stop. Strategy therefore classified the result as
+  `protocol_stop_at_step_200`, not `budget-limited`, and authorized a narrow
+  stopping-semantics amendment. The 99.7% point and 99.0% Wilson endpoint gates
+  remain unchanged. During training, two consecutive point-retention values
+  below the arm's step-zero value minus 0.3 points stop; Wilson below 99.0%
+  stops immediately; a negative least-squares slope over the latest three
+  evaluations warns only. All four exact step-200 optimizer, RNG, row-schedule,
+  and model states resume in a new evidence directory after SHA-256 assertions.
+  No optimizer, loss, row, directional, extension, or verdict constant changed.
+  Strategy authority:
+  `docs/STRATEGY_TO_CODING_AGENT_A2_STOP_RESOLUTION_20260805.md`. Resume lock:
+  `docs/PAPER2_PHASE2_A2_STEP200_RESUME_AMENDMENT_20260805.md` at commit
+  `b28497ce931dc79911af4288c5cbd4e3f8a0604a`.

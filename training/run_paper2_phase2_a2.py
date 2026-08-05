@@ -18,10 +18,12 @@ from torch import nn
 
 from models.paper2_dc2_student import Phase2StudentModules
 from training.paper2_phase2_a2 import (
+    classify_inflight_quality,
     classify_directional_shares,
     final_window_slope,
     paired_verdict,
     relative_oracle_headroom,
+    retention_slope_latest,
     repeated_marginal_bounds,
     should_extend,
 )
@@ -62,7 +64,7 @@ def _git_head(root: Path) -> str:
     return subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=root, text=True).strip()
 
 
-def _assert_lock(root: Path) -> dict[str, Any]:
+def _assert_lock(root: Path, *, require_resume: bool = False) -> dict[str, Any]:
     registration = json.loads((root / PROTOCOL_RELATIVE).read_text(encoding="utf-8"))
     lock = registration.get("a2_lock_amendment_20260805", {})
     if lock.get("status") != LOCK_STATUS:
@@ -76,6 +78,19 @@ def _assert_lock(root: Path) -> dict[str, Any]:
         raise RuntimeError("strategy resolution byte count differs from the lock")
     if sha256_file(strategy_path) != strategy["sha256"]:
         raise RuntimeError("strategy resolution SHA differs from the lock")
+    if require_resume:
+        resume = registration.get("a2_step200_resume_amendment_20260805", {})
+        if resume.get("status") != "locked_before_a2_resumed_training":
+            raise RuntimeError("A2 step-200 resume lock is absent")
+        resume_document = root / resume["document"]
+        if not resume_document.is_file():
+            raise RuntimeError("A2 step-200 resume amendment is absent")
+        resume_strategy = resume["strategy_resolution"]
+        resume_strategy_path = root / resume_strategy["document"]
+        if resume_strategy_path.stat().st_size != int(resume_strategy["bytes"]):
+            raise RuntimeError("A2 resume strategy byte count differs from the lock")
+        if sha256_file(resume_strategy_path) != resume_strategy["sha256"]:
+            raise RuntimeError("A2 resume strategy SHA differs from the lock")
     return registration
 
 
@@ -420,6 +435,7 @@ def run_arm(
     train_indices: torch.Tensor, eval_indices: torch.Tensor, embedding_weight: torch.Tensor,
     teacher_embedding: nn.Embedding, checkpoint_path: Path, expected_checkpoint_sha: str,
     registration: dict[str, Any], output_dir: Path, private_dir: Path, device: str,
+    resume_from_step200: bool = False,
 ) -> dict[str, Any]:
     name = f"seed_{seed}_{arm}"
     arm_private = private_dir / name
@@ -455,7 +471,9 @@ def run_arm(
     consecutive_quality_failures = 0
     previous_marginal: list[str] = []
     batch_hashes: list[str] = []
+    resume_lineage: dict[str, Any] | None = None
     if resume_path.is_file():
+        observed_resume_sha = sha256_file(resume_path)
         saved = torch.load(resume_path, map_location="cpu", weights_only=False)
         if saved.get("kind") != ARM_KIND or saved.get("arm") != arm or int(saved.get("seed", -1)) != seed:
             raise RuntimeError(f"resume identity mismatch for {name}")
@@ -473,6 +491,33 @@ def run_arm(
         batch_hashes = list(saved["batch_hashes"])
         batch_generator.set_state(saved["batch_generator_state"])
         _restore_rng(saved["rng"])
+        if resume_from_step200:
+            resume_lock = registration["a2_step200_resume_amendment_20260805"]
+            expected_source_sha = resume_lock["source_resume_sha256_by_arm"][name]
+            prior_lineage = saved.get("resume_lineage")
+            if prior_lineage is None:
+                if observed_resume_sha != expected_source_sha:
+                    raise RuntimeError(f"registered step-200 source SHA mismatch for {name}")
+                if step != int(resume_lock["resume_step"]):
+                    raise RuntimeError(f"registered A2 resume step mismatch for {name}")
+                allowed = resume_lock["resumable_abort"]
+                if arm == allowed["arm"]:
+                    if abort_reason != allowed["reason"]:
+                        raise RuntimeError(f"unregistered A2 abort reason for {name}")
+                    abort_reason = None
+                elif abort_reason is not None:
+                    raise RuntimeError(f"control resume unexpectedly aborted for {name}")
+                consecutive_quality_failures = 0
+                resume_lineage = {
+                    "amendment_status": resume_lock["status"],
+                    "source_sha256": expected_source_sha,
+                    "source_step": step,
+                    "historical_abort_cleared": arm == allowed["arm"],
+                }
+            else:
+                if prior_lineage.get("source_sha256") != expected_source_sha:
+                    raise RuntimeError(f"A2 resume lineage mismatch for {name}")
+                resume_lineage = dict(prior_lineage)
         print(f"a2_resume arm={name} step={step}", flush=True)
 
     frozen_before = _tensor_digest(
@@ -501,6 +546,7 @@ def run_arm(
             "batch_hashes": batch_hashes,
             "batch_generator_state": batch_generator.get_state(),
             "rng": _rng_state(),
+            "resume_lineage": resume_lineage,
         }
         temporary = resume_path.with_suffix(".pt.tmp")
         torch.save(payload, temporary)
@@ -579,12 +625,51 @@ def run_arm(
             evaluation.update({"step": step, "learning_rate": learning_rate, "train_total_loss": float(total.detach())})
             history.append(evaluation)
             torch.save(rows, arm_private / f"rows_step_{step:04d}.pt")
-            consecutive_quality_failures = (
-                consecutive_quality_failures + 1 if not evaluation["quality_noninferior"] else 0
-            )
+            quality_event = None
+            if resume_from_step200:
+                quality_lock = registration["a2_step200_resume_amendment_20260805"]["quality"]
+                quality_event = classify_inflight_quality(
+                    step_zero_retention=float(history[0]["retention"]),
+                    retention=float(evaluation["retention"]),
+                    wilson_lower=float(evaluation["retention_wilson_95_lower"]),
+                    previous_point_failures=consecutive_quality_failures,
+                    point_drop=float(quality_lock["during_training_point_drop_from_step_zero"]),
+                    point_failures_to_stop=int(
+                        quality_lock["during_training_point_drop_consecutive_evaluations"]
+                    ),
+                    wilson_floor=float(quality_lock["during_training_wilson_95_lower_floor"]),
+                )
+                consecutive_quality_failures = int(
+                    quality_event["consecutive_point_misses"]
+                )
+                slope_window = int(quality_lock["negative_slope_window_evaluations"])
+                if len(history) >= slope_window:
+                    slope = retention_slope_latest(history, evaluations=slope_window)
+                    quality_event["retention_slope_latest"] = slope
+                    quality_event["negative_slope_warning"] = slope < 0
+                    if slope < 0:
+                        print(
+                            f"a2_quality_warning arm={name} step={step} "
+                            f"retention_slope={slope:.9g}",
+                            flush=True,
+                        )
+                evaluation["inflight_quality_tripwire"] = quality_event
+                evaluation["endpoint_quality_qualified"] = (
+                    bool(evaluation["quality_noninferior"])
+                    if step in set(quality_lock["endpoint_steps"])
+                    else None
+                )
+            else:
+                consecutive_quality_failures = (
+                    consecutive_quality_failures + 1
+                    if not evaluation["quality_noninferior"]
+                    else 0
+                )
             if arm == "draft_only_control" and not evaluation["control_executed_path_bit_exact"]:
                 abort_reason = "control_executed_path_changed"
-            elif consecutive_quality_failures >= 2:
+            elif quality_event is not None and quality_event["stop"]:
+                abort_reason = quality_event["stop_reason"]
+            elif not resume_from_step200 and consecutive_quality_failures >= 2:
                 abort_reason = "quality_noninferiority_two_consecutive_evaluations"
             save()
             print(
@@ -636,6 +721,7 @@ def run_arm(
         "frozen_parameter_hash_after": frozen_after,
         "source_a1_checkpoint": {"path": str(checkpoint_path), "sha256": expected_checkpoint_sha},
         "checkpoint": {"path": str(resume_path), "sha256": sha256_file(resume_path)},
+        "resume_lineage": resume_lineage,
         "final_rows": {"path": str(final_rows_path), "sha256": sha256_file(final_rows_path)},
     }
     write_json(output_dir / f"{name}.json", result)
@@ -675,7 +761,7 @@ def _pair_summary(full: dict[str, Any], control: dict[str, Any], private_dir: Pa
 
 def run(args: argparse.Namespace) -> dict[str, Any]:
     root = Path(__file__).resolve().parents[1]
-    registration = _assert_lock(root)
+    registration = _assert_lock(root, require_resume=args.resume_from_step200)
     if not torch.cuda.is_available() or torch.cuda.get_device_properties(0).total_memory < 35 * 2**30:
         raise RuntimeError("A2 matrix requires an A100-class GPU with at least 35 GiB VRAM")
     cache = build_pilot_cache(
@@ -728,6 +814,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             expected_checkpoint_sha=lock["a1_checkpoint_sha256_by_seed"][str(seed)],
             registration=registration, output_dir=args.output_dir,
             private_dir=args.private_dir, device=args.device,
+            resume_from_step200=args.resume_from_step200,
         )
         if full["status"] == "complete":
             slope = final_window_slope(full["history"], window=100)
@@ -753,6 +840,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
                     expected_checkpoint_sha=lock["a1_checkpoint_sha256_by_seed"][str(seed)],
                     registration=registration, output_dir=args.output_dir,
                     private_dir=args.private_dir, device=args.device,
+                    resume_from_step200=args.resume_from_step200,
                 )
             full["step_1000_extension_decision"] = extension_decision
             write_json(args.output_dir / f"seed_{seed}_full_a2.json", full)
@@ -765,6 +853,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             expected_checkpoint_sha=lock["a1_checkpoint_sha256_by_seed"][str(seed)],
             registration=registration, output_dir=args.output_dir,
             private_dir=args.private_dir, device=args.device,
+            resume_from_step200=args.resume_from_step200,
         )
         arms.extend([full, control])
         pairs.append(_pair_summary(full, control, args.private_dir))
@@ -776,13 +865,22 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         "kind": RUN_KIND,
         "status": "complete_positive" if all_positive else "complete_budget_limited_or_blocked",
         "launcher_commit": _git_head(root),
-        "lock_commit_ancestry": "training launcher committed after A2 lock commits b9086cc1 and 9ca0d513",
+        "lock_commit_ancestry": (
+            "resume launcher committed after A2 step-200 resume lock b28497ce"
+            if args.resume_from_step200
+            else "training launcher committed after A2 lock commits b9086cc1 and 9ca0d513"
+        ),
         "four_run_matrix": ["seed_0_full_a2", "seed_0_draft_only_control", "seed_1_full_a2", "seed_1_draft_only_control"],
         "train_anchors": int(train_indices.numel()),
         "evaluation_anchors": int(eval_indices.numel()),
         "arms": arms,
         "pairs": pairs,
         "v1d": registration["v1d"],
+        "resume_amendment": (
+            registration["a2_step200_resume_amendment_20260805"]
+            if args.resume_from_step200
+            else None
+        ),
         "frozen_confirmatory_partitions_touched": [],
         "do_not_claim": [
             "DEV accepted length is serving throughput",
@@ -805,6 +903,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--output_dir", type=Path, required=True)
     parser.add_argument("--private_dir", type=Path, required=True)
     parser.add_argument("--device", default="cuda")
+    parser.add_argument("--resume_from_step200", action="store_true")
     return parser.parse_args()
 
 

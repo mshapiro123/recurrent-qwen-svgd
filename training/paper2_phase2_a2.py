@@ -76,6 +76,58 @@ def final_window_slope(history: Sequence[Mapping[str, float]], *, window: int = 
     return (float(last["mean_accepted_length"]) - float(first["mean_accepted_length"])) / elapsed
 
 
+def retention_slope_latest(
+    history: Sequence[Mapping[str, float]], *, evaluations: int = 3
+) -> float:
+    """Return the least-squares retention slope over the latest evaluations."""
+
+    if evaluations < 2 or len(history) < evaluations:
+        raise ValueError("retention slope requires the requested evaluation window")
+    rows = sorted(history, key=lambda row: int(row["step"]))[-evaluations:]
+    steps = [float(row["step"]) for row in rows]
+    values = [float(row["retention"]) for row in rows]
+    center_step = sum(steps) / len(steps)
+    center_value = sum(values) / len(values)
+    denominator = sum((step - center_step) ** 2 for step in steps)
+    if denominator <= 0:
+        raise ValueError("retention evaluations must have distinct steps")
+    return sum(
+        (step - center_step) * (value - center_value)
+        for step, value in zip(steps, values)
+    ) / denominator
+
+
+def classify_inflight_quality(
+    *, step_zero_retention: float, retention: float, wilson_lower: float,
+    previous_point_failures: int, point_drop: float = 0.003,
+    point_failures_to_stop: int = 2, wilson_floor: float = 0.990,
+) -> dict[str, Any]:
+    """Apply the locked trajectory-grounded quality tripwire."""
+
+    values = (step_zero_retention, retention, wilson_lower, point_drop, wilson_floor)
+    if any(not math.isfinite(float(value)) for value in values):
+        raise ValueError("quality tripwire inputs must be finite")
+    point_floor = float(step_zero_retention) - float(point_drop)
+    point_miss = float(retention) < point_floor
+    consecutive = int(previous_point_failures) + 1 if point_miss else 0
+    wilson_miss = float(wilson_lower) < float(wilson_floor)
+    return {
+        "point_floor": point_floor,
+        "point_miss": point_miss,
+        "consecutive_point_misses": consecutive,
+        "wilson_floor": float(wilson_floor),
+        "wilson_miss": wilson_miss,
+        "stop": wilson_miss or consecutive >= int(point_failures_to_stop),
+        "stop_reason": (
+            "quality_wilson_floor_immediate"
+            if wilson_miss
+            else "quality_trajectory_two_consecutive_evaluations"
+            if consecutive >= int(point_failures_to_stop)
+            else None
+        ),
+    }
+
+
 def should_extend(
     *, relative_headroom: float, accepted_length_slope: float,
     minimum_headroom: float = 0.02, maximum_slope: float = 0.002,

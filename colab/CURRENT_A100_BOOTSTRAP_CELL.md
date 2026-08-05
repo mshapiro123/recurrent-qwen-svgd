@@ -164,6 +164,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3_short_sha"
 #   "paper2_phase2_a2_calibration" - authorized zero-update A100-40GB+ A2 gradient calibration.
 #   "paper2_phase2_a2_amendment_prep" - CPU-only calibration reconciliation and unlocked amendment draft.
 #   "paper2_phase2_a2" - locked A100-40GB+ full-versus-draft-only state-use matrix.
+#   "paper2_phase2_a2_resume" - locked A100-40GB+ exact step-200 A2 continuation.
 #   "paper2_phase2_v1b_rms_audit" - CPU-only audit of existing V1b private rows.
 #   "paper2_phase2_eval_de_freeze" - score-blind EVAL-D/E and own-base feature freeze.
 #   "paper2_d0_prelock_publish_resume" - publish completed Drive-backed D0 lock receipts without inference.
@@ -475,6 +476,25 @@ TARGETS = {
             "single pair-matched extension to two thousand steps only",
             "oracle headroom superiority endpoint quality correlation monotonicity verdict",
             "V1d receipt attached to A2 result handoff",
+            "tests/test_paper2_phase2_a2.py",
+            "colab/run_stage5_paper2_phase2_a2.py",
+        ],
+        "env": {},
+    },
+    "paper2_phase2_a2_resume": {
+        "path": "colab/STAGE5_PAPER2_PHASE2_A2_RESUME_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_PHASE2_A2_RESUME_VERSION",
+            "paper2_phase2_a2_resume_v1",
+            "stopping-semantics-only resume amendment locked before updates",
+            "all four exact step-two-hundred checkpoints asserted by SHA256",
+            "historical full-arm quality abort is the only clearable abort",
+            "endpoint point and Wilson quality gates remain unchanged",
+            "in-flight point tripwire is step-zero retention minus 0.003",
+            "in-flight Wilson floor below 0.990 stops immediately",
+            "negative three-evaluation retention slope warns without stopping",
+            "optimizer losses rows directional contract extension and verdict unchanged",
+            "V1d receipt attached to A2 completion handoff",
             "tests/test_paper2_phase2_a2.py",
             "colab/run_stage5_paper2_phase2_a2.py",
         ],
