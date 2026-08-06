@@ -3500,6 +3500,33 @@ def test_phase2_a2_resume_is_wired_and_guarded() -> None:
     assert '"stage5_paper2_phase2_a2_resume_20260805"' in runner
 
 
+def test_phase2_a2_tripwire_audit_is_wired_and_guarded() -> None:
+    cell = (
+        ROOT / "colab/STAGE5_PAPER2_PHASE2_A2_TRIPWIRE_AUDIT_CELL.py"
+    ).read_text(encoding="utf-8")
+    runner = (
+        ROOT / "colab/run_stage5_paper2_phase2_a2_tripwire_audit.py"
+    ).read_text(encoding="utf-8")
+    audit = (
+        ROOT / "eval/eval_paper2_phase2_a2_tripwire_audit.py"
+    ).read_text(encoding="utf-8")
+    for bootstrap_path in (
+        ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py",
+        ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md",
+    ):
+        text = bootstrap_path.read_text(encoding="utf-8")
+        assert "paper2_phase2_a2_tripwire_audit" in text
+        assert "STAGE5_PAPER2_PHASE2_A2_TRIPWIRE_AUDIT_CELL.py" in text
+        assert "stopping attempt 238 reconstructed from registered row seed" in text
+    assert "paper2_phase2_a2_tripwire_audit_v1" in cell
+    assert "zero optimizer updates persisted and source hashes unchanged" in cell
+    assert "one AdamW update simulated in memory and immediately restored" in cell
+    assert "stage5_paper2_phase2_a2_tripwire_audit_20260806" in runner
+    assert "optimizer_updates_persisted" in runner
+    assert "STOP_ATTEMPT = 238" in audit
+    assert "simulated_update" in audit
+
+
 def test_gradient_path_audit_target_is_wired_and_guarded() -> None:
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
     bootstrap_md = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")

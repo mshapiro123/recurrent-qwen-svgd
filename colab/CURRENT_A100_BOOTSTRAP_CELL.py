@@ -501,6 +501,23 @@ TARGETS = {
         ],
         "env": {},
     },
+    "paper2_phase2_a2_tripwire_audit": {
+        "path": "colab/STAGE5_PAPER2_PHASE2_A2_TRIPWIRE_AUDIT_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_PHASE2_A2_TRIPWIRE_AUDIT_VERSION",
+            "paper2_phase2_a2_tripwire_audit_v1",
+            "read-only exact step-237 checkpoints asserted by SHA256",
+            "stopping attempt 238 reconstructed from registered row seed",
+            "schedule window 228 through 248 plus matched 51-batch reference",
+            "per-loss and per-module gradient decomposition",
+            "one AdamW update simulated in memory and immediately restored",
+            "zero optimizer updates persisted and source hashes unchanged",
+            "descriptive receipt cannot clear stop or authorize training",
+            "tests/test_paper2_phase2_a2_tripwire_audit.py",
+            "colab/run_stage5_paper2_phase2_a2_tripwire_audit.py",
+        ],
+        "env": {},
+    },
     "paper2_phase2_oracle_selector_headroom": {
         "path": "colab/STAGE5_PAPER2_PHASE2_ORACLE_SELECTOR_HEADROOM_CELL.py",
         "markers": [
