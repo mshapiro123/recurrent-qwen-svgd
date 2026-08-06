@@ -1,0 +1,53 @@
+{
+  "status": "draft_training_prohibited",
+  "kind": "paper2_phase2_option_b_exploration_preregistration",
+  "date": "2026-08-06",
+  "governing_charter": {
+    "drive_id": "1LkyqpSY-uQkv4VX-V--xyj_UOcwLjnRs",
+    "bytes": 6454,
+    "reported_sha256_prefix": "fbe65a44",
+    "reported_sha256_suffix": "9ccb95"
+  },
+  "lock_blockers": [
+    "localization_receipt_and_mask_decision",
+    "stage0a_anchor_count_amendment",
+    "curve_axis_naming",
+    "training_population_and_partition_hashes"
+  ],
+  "training_authorized": false,
+  "source_checkpoints": {
+    "seed_0_full_a2": "aef5d3fc07ca0319fd60a306f5b4711126137930d498fc838cfda262a0d6b2a6",
+    "seed_0_draft_only_control": "34cae7a307495b86016f6dd9db4c85e8934aee95612450077864529d47bc1cc4",
+    "seed_1_full_a2": "d8904f9bb2241faf42a7f486e829baed1b68720298b8416847799e7490a59373",
+    "seed_1_draft_only_control": "704620b74711c8371ba94e3f4d52b1eaa3fdf2fb3dc34d238e1ff89d0c13ce03"
+  },
+  "fixed_constants": {
+    "alpha": 0.5,
+    "flow_frozen": true,
+    "optimizer": "AdamW_fresh_state",
+    "warmup_steps": 200,
+    "steps": 20000,
+    "batch_size_anchors": 128,
+    "learning_rate": 0.0003,
+    "minimum_learning_rate_fraction": 0.1,
+    "checkpoint_cadence_steps": 1000,
+    "evaluation_cadence_steps": 1000,
+    "directional_audit_cadence_steps": 2000,
+    "directional_audit_batches": 51,
+    "directional_audit_batch_size": 128
+  },
+  "population_units_banked": {
+    "stage0a_anchors": 50000,
+    "stage0a_horizon_samples": 200000,
+    "a2_training_anchors": 41969,
+    "a2_evaluation_anchors": 8031
+  },
+  "unresolved": {
+    "training_anchor_count": null,
+    "training_manifest_sha256": null,
+    "document_partition_sha256": null,
+    "evaluation_exclusion_sha256": null,
+    "curve_x_axis": null,
+    "structural_mask": null
+  }
+}

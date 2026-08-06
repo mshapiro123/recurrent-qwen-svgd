@@ -158,6 +158,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3_short_sha"
 #   "paper2_phase2_matched_alpha" - locked A100-80GB DEV-only matched alpha pilots and decision.
 #   "paper2_phase2_matched_alpha_audit" - read-only L4 terminal-checkpoint and shaper audit.
 #   "paper2_phase2_oracle_selector_headroom" - CPU-only perfect-selector ceiling from banked rows.
+#   "paper2_phase2_a2_localization" - CPU-only helped/harmed localization from banked A2 rows.
 #   "paper2_phase2_staged_a1" - locked A100-40GB+ state-construction stage; stops before A2.
 #   "paper2_phase2_a1_matched_estimator_audit" - read-only L4 audit of the A1 stop population mismatch.
 #   "paper2_phase2_staged_a1_resume" - amended A100-40GB+ continuation from audited step-200 checkpoints.
@@ -545,6 +546,19 @@ TARGETS = {
             "quality-safe oracle reported separately from acceptance oracle",
             "tests/test_paper2_phase2_oracle_selector_headroom.py",
             "colab/run_stage5_paper2_phase2_oracle_selector_headroom.py",
+        ],
+        "env": {},
+    },
+    "paper2_phase2_a2_localization": {
+        "path": "colab/STAGE5_PAPER2_PHASE2_A2_LOCALIZATION_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_PHASE2_A2_LOCALIZATION_VERSION",
+            "paper2_phase2_a2_localization_v1",
+            "CPU-only banked A2 row localization no model inference no training",
+            "document-block bootstrap structural masks only diagnostics separate",
+            "Stage 0A has 50000 anchors and 200000 horizon samples",
+            "tests/test_paper2_phase2_a2_localization.py",
+            "colab/run_stage5_paper2_phase2_a2_localization.py",
         ],
         "env": {},
     },

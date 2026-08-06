@@ -3327,6 +3327,26 @@ def test_phase2_oracle_selector_headroom_target_is_wired_and_guarded() -> None:
     assert "stage5_paper2_phase2_oracle_selector_headroom_20260805" in runner
 
 
+def test_phase2_a2_localization_target_is_wired_and_guarded() -> None:
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    bootstrap_md = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(
+        encoding="utf-8"
+    )
+    cell = (ROOT / "colab/STAGE5_PAPER2_PHASE2_A2_LOCALIZATION_CELL.py").read_text(
+        encoding="utf-8"
+    )
+    runner = (ROOT / "colab/run_stage5_paper2_phase2_a2_localization.py").read_text(
+        encoding="utf-8"
+    )
+    for text in (bootstrap, bootstrap_md):
+        assert "paper2_phase2_a2_localization" in text
+        assert "colab/STAGE5_PAPER2_PHASE2_A2_LOCALIZATION_CELL.py" in text
+        assert "CPU-only banked A2 row localization no model inference no training" in text
+    assert "paper2_phase2_a2_localization_v1" in cell
+    assert "nvidia-smi" not in cell
+    assert "stage5_paper2_phase2_a2_localization_20260806" in runner
+
+
 def test_phase2_staged_a1_target_is_wired_and_guarded() -> None:
     cell = (ROOT / "colab/STAGE5_PAPER2_PHASE2_STAGED_A1_CELL.py").read_text(
         encoding="utf-8"
