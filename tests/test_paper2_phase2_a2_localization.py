@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import torch
 
-from eval.eval_paper2_phase2_a2_localization import localize
+from eval.eval_paper2_phase2_a2_localization import localize, population_hash_receipt
 from training.paper2_phase2_matched_alpha import stable_fraction
 
 
@@ -71,3 +71,35 @@ def test_localization_source_prohibits_training_and_model_compute() -> None:
     assert "transformers" not in source
     assert '"model_inference_runs": 0' in source
     assert '"optimizer_steps": 0' in source
+
+
+def test_population_hash_receipt_is_deterministic_and_document_disjoint() -> None:
+    evaluation_documents = []
+    training_documents = []
+    candidate = 0
+    while len(evaluation_documents) < 4 or len(training_documents) < 8:
+        document = f"partition-doc-{candidate}"
+        if stable_fraction(document, seed=20260804) < 0.2:
+            if len(evaluation_documents) < 4:
+                evaluation_documents.append(document)
+        elif len(training_documents) < 8:
+            training_documents.append(document)
+        candidate += 1
+    documents = training_documents + evaluation_documents
+    metadata = {
+        "documents": documents,
+        "strata": ["code", "general"] * 6,
+        "positions": list(range(12)),
+        "position_buckets": ["token_4_31"] * 12,
+    }
+    first = population_hash_receipt(
+        metadata, expected_train_anchors=8, expected_evaluation_anchors=4
+    )
+    second = population_hash_receipt(
+        metadata, expected_train_anchors=8, expected_evaluation_anchors=4
+    )
+    assert first == second
+    assert first["exclusion"]["overlap_document_count"] == 0
+    assert first["fixed_old_train_subset_anchor_count"] == 4
+    assert len(first["existing_training_manifest_sha256"]) == 64
+    assert len(first["fixed_old_train_subset_sha256"]) == 64

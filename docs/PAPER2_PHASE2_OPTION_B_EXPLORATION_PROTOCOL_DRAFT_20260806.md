@@ -1,118 +1,188 @@
-# Phase-2 Option B Drafter-Power Exploration Protocol
+# Phase-2 Option B Staged Dose-Then-Data Exploration Protocol
 
 Date: 2026-08-06. Status: **draft, not locked, training prohibited**.
 
-Governing charter: `STRATEGY_TO_CODING_AGENT_OPTION_B_CHARTER_20260806.md`,
-Drive `1LkyqpSY-uQkv4VX-V--xyj_UOcwLjnRs`, 6,454 bytes, reported SHA-256
-prefix/suffix `fbe65a44...9ccb95`. Governing guardrail doctrine: Drive
-`1R40TawfW-ZJcec4dkRnxGir9c3v4a5IP`.
+Governing documents:
 
-## 1. Lock blockers
+- Option B charter, Drive `1LkyqpSY-uQkv4VX-V--xyj_UOcwLjnRs`;
+- data-resolution amendment, Drive `1BkxgDfdLzDAKTiresWTbomY8LOzsx89I`;
+- Guardrail Doctrine, Drive `1R40TawfW-ZJcec4dkRnxGir9c3v4a5IP`.
 
-1. The helped/harmed localization receipt must land and strategy must accept or
-   reject its proposed structural mask.
-2. The data-population unit error in
-   `PAPER2_PHASE2_OPTION_B_DATA_UNIT_AUDIT_20260806.md` must be amended by
-   strategy. Stage 0A contains 50,000 anchors, not approximately 200,000.
-3. The curve must be named correctly. With one fixed training population, its
-   x-axis is cumulative anchor presentations, not unique-data scale.
-4. The final training-population manifest, document partition, exclusion proof,
-   and hashes must be filled in before `locked_before_training`.
+## 1. Remaining lock sequence
 
-No training launcher may exist while any blocker remains.
+1. Run the helped/harmed localization job and obtain strategy's mask decision.
+2. Fill the existing 41,969-anchor training manifest, document partition,
+   evaluation-exclusion, and fixed old-train diagnostic-subset hashes.
+3. File the teacher-pass resource note and lock the generation procedure,
+   pinned model revisions, minimum/target anchor counts, quarantine rules, and
+   hash-only amendment procedure.
+4. Resolve whether 14B layer states are collected for every new anchor or only
+   the 14B-threshold subset. The current resource estimate conservatively
+   assumes every anchor; the implementation may not guess.
+5. Strategy locks this protocol and its machine-readable JSON before either
+   segment training or the teacher pass begins.
 
-## 2. Fixed design after blocker resolution
+The expanded data cannot have a manifest hash before it is generated. The lock
+therefore binds its generation procedure and admission tests. A later hash-only
+amendment records the landed manifest and partition hashes and is required
+before the splice. It may not change the recipe, target/floor, source rules, or
+analysis.
 
-- Four arms: full writeback and no-writeback control, seeds 0 and 1.
-- Continue from the four banked A2 step-2,000 endpoints:
-  - seed 0 full: `aef5d3fc07ca0319fd60a306f5b4711126137930d498fc838cfda262a0d6b2a6`;
-  - seed 0 control: `34cae7a307495b86016f6dd9db4c85e8934aee95612450077864529d47bc1cc4`;
-  - seed 1 full: `d8904f9bb2241faf42a7f486e829baed1b68720298b8416847799e7490a59373`;
-  - seed 1 control: `704620b74711c8371ba94e3f4d52b1eaa3fdf2fb3dc34d238e1ff89d0c13ce03`.
-- Fresh AdamW state, 200-step linear warmup.
-- Alpha 0.5. A1 flow frozen. No joint fine-tuning.
-- Batch size 128; 20,000 optimizer updates per arm.
-- Learning rate `3e-4`, cosine decay to `3e-5` over the full budget.
-- Existing weight-decay exclusions preserved exactly.
-- Identical sampled-anchor schedule within each same-seed full/control pair.
-- Resume-safe Drive checkpoint and fixed 8,031-anchor DEV evaluation every
-  1,000 updates.
-- Directional audit every 2,000 updates on the locked matched 51 by 128
-  estimator.
-- Endpoint quality metrics are evidence, not pass/fail, because this is an
-  exploration run.
+No Option B training or teacher-pass launcher may exist before the strategy
+lock. This repository currently provides only the authorized CPU localization
+launcher.
 
-## 3. Measurements
+## 2. Scientific design
 
-At step zero and every 1,000 updates:
+The run has four arms: full writeback and no-writeback control for seeds zero
+and one. They continue from the four banked A2 step-2,000 endpoints. Alpha is
+0.5, the A1 flow remains frozen, and AdamW starts with fresh optimizer state.
 
-- mean expected accepted length for all four arms;
-- gain over the matched zero-loop path;
-- full-minus-control writeback increment and its share of total gain;
-- baseline-correct retention, point estimate and Wilson 95 percent lower bound;
+The 20,000 updates are one staged intervention:
+
+- **Segment 1, dose:** train on the existing 41,969 anchors while the fresh-data
+  cache is generated. This measures additional exposure and overfitting onset.
+- **Segment 2, fresh data:** at a durable 1,000-step checkpoint boundary, add
+  the new anchors and continue without resetting model, optimizer, rule state,
+  or counters. Step 4,000 is the target splice; the recorded boundary governs.
+
+The target expansion is 140,000 new training anchors from new documents. The
+minimum admissible expansion is 100,000. With the target, the post-splice pool
+contains about 181,969 training anchors. The fixed 8,031-anchor evaluation slice
+and all confirmatory partitions remain quarantined.
+
+The splice is a causal data intervention, not a general unique-data scaling
+law. The primary contrast is EAL change per 1,000 updates over the 2,000 updates
+immediately before versus after the splice, with document-block bootstrap
+intervals. The constant learning rate and continued optimizer state make fresh
+data the only intended discontinuity.
+
+## 3. Teacher/cache expansion contract
+
+The pass reuses Stage 0A's units and pinned revisions:
+
+- the general source is FineWeb-Edu `CC-MAIN-2025-26` at revision
+  `87f09149ef4734204d70ed1d046ddc9ca3f2b8f9`; the code source is
+  `bigcode/the-stack-smol` at revision
+  `4a6938ce94446f324c6629e7de00ac591710044b`, with a new selection seed
+  `20260806`, a 50/50 stratum mix, and exclusion of every previously used
+  document id;
+- anchors are the training unit; each anchor has horizons one through four;
+- union top-K is 128 with per-model tail mass and a stable one-percent full-logit
+  audit subset;
+- 7B is the broad teacher, 14B is queried under the standing thresholds and
+  supplies canonicalizer states at layers 16, 32, and 44, and 32B is used only
+  under the existing cascade rule;
+- student, 7B, 14B, and 32B revisions are copied verbatim into the machine lock;
+- every anchor comes from a new document excluded from the existing evaluation
+  documents and every frozen confirmatory partition;
+- the manifest names anchor count and horizon-sample count separately;
+- resume shards, audit hashes, document partitions, and model-cache hashes are
+  durable before ephemeral storage is released.
+
+One coverage detail remains open for strategy lock. The amendment says 14B is
+queried on thresholds while also requiring 14B canonicalizer-input states. A
+threshold-only state cache is cheaper but is not an all-anchor future-flow
+dataset; all-anchor state collection is reusable but changes the resource bill.
+The locked protocol must choose one explicitly.
+
+The fixed diagnostic subsets are document-stratified and immutable: one from
+the old training population and one from the new population. Once the new cache
+lands, all stored pre-splice checkpoints are evaluated on both subsets so the
+train-eval trajectory is aligned across the intervention.
+
+## 4. Optimizer and cadence
+
+- Batch size: 128 anchors.
+- Budget: 20,000 updates per arm.
+- Learning rate: 200-step linear warmup to `3e-4`; constant `3e-4` through step
+  18,000; linear cooldown to `3e-5` over steps 18,001 through 20,000.
+- Existing weight-decay exclusions are preserved exactly.
+- Full/control pairs use identical sampled-anchor schedules within seed.
+- Checkpoint, fixed evaluation, and train-subset diagnostics run at step zero
+  and every 1,000 updates.
+- The locked 51 by 128 directional audit runs every 2,000 updates.
+- Checkpoints persist model, optimizer, RNG, sampler, population version,
+  cumulative presentations, and distinct-anchor ledger.
+
+## 5. Measurements
+
+At all 21 checkpoints, report by arm and seed:
+
+- expected accepted length and relative gain over the matched zero-loop path;
+- full-minus-control writeback increment and share of total gain;
+- baseline-correct retention and Wilson 95 percent lower bound;
 - quality-safe oracle headroom;
 - bridge and draft gate means;
-- cumulative anchor presentations and, once resolved, cumulative distinct
-  anchors observed.
+- fixed evaluation EAL and loss;
+- fixed old-train-subset EAL and loss;
+- fixed new-train-subset EAL and loss once the cache exists, including
+  retrospective reads of pre-splice checkpoints;
+- cumulative anchor presentations, distinct anchors observed, population
+  version, and actual splice step.
 
-The result contains all 21 points, including step zero. Curves are reported by
-seed and as a two-seed descriptive envelope. No arbitrary weighted aggregate is
-used.
+Report the two seeds separately and as a descriptive envelope. Do not collapse
+them into an arbitrary weighted score.
 
-## 4. Pre-stated readings
+## 6. Pre-stated readings
 
-1. **Exploration supports E1:** endpoint full-system relative EAL gain over
-   zero-loop reaches at least 1 percent, or the second-half slope against the
-   correctly named exposure axis is positive with a document-block bootstrap
-   95 percent interval excluding zero.
-2. **Writeback retained for E1:** the full-minus-control increment or its share
-   of total gain grows over the curve in both seeds. A flat or shrinking share
-   sends E1 forward drafter-only and banks writeback as real but bounded.
-3. **Bounded at tested scale:** both arms plateau below 1 percent and the
-   second-half slope interval includes zero. No automatic extension follows.
-4. **Quality trajectory:** a full arm reaching 99.7 percent point retention is
-   banked descriptively. Degradation is governed only by the tripwires below.
+1. **Data starvation confirmed:** the fresh-data segment slope exceeds the dose
+   segment slope with separated document-bootstrap intervals. E1 is justified
+   and its data budget is sized from the observed intervention response.
+2. **Exposure suffices:** both slopes are positive and their intervals overlap.
+   Unique data is not yet binding; the expanded cache remains banked.
+3. **Bounded at tested scale:** both slope intervals include zero and the
+   train-eval gap is small. Only this joint reading can return the bounded
+   program decision. A dose-only plateau cannot.
+4. **Overall E1 support:** the endpoint full-system relative EAL gain reaches
+   at least one percent, or the second-half exposure slope is positive with a
+   document-bootstrap 95 percent interval excluding zero.
+5. **Writeback at scale:** a growing full-minus-control increment or share in
+   both seeds retains the bridge for E1. Flat or shrinking share sends E1
+   forward drafter-only.
+6. **Overfit:** a widening old-train versus evaluation gap during Segment 1 is
+   banked as the exposure ceiling on 41,969 anchors. It is not a stop.
 
-These readings do not authorize serving-throughput, unique-data-scaling, or
-deployable-router claims.
+## 7. Rule inventory
 
-## 5. Draft rule inventory
+| Rule | Threshold | Cadence | Disposition | Named cliff |
+|---|---|---|---|---|
+| Non-finite loss | Any non-finite weighted loss | Every attempt | Stop | Garbage training |
+| Non-finite gradient | Any non-finite active gradient element | Every attempt | Stop | Garbage training |
+| Relative gradient explosion | Raw global norm above 10 times the prior-100 median for three consecutive attempts | Every attempt | Stop | Escaping numerical instability |
+| Endpoint lineage | Exact four source SHAs and metadata | Startup | Stop | Corrupted lineage |
+| Frozen lineage | Exact digest before and after | Startup/completion | Stop | Frozen-parameter mutation |
+| Existing population | Locked manifest, document partition, exclusions, and fixed-subset hashes | Startup | Stop | Invalid dose segment |
+| Expanded population | Hash-only amendment, minimum 100,000 new anchors, document quarantine, audit completeness | Before splice | Refuse splice | Invalid data intervention |
+| Evaluation contact | Zero training access to fixed evaluation or confirmatory partitions | Startup/completion | Stop | Invalidated science |
+| Pair schedule | Exact sampled-anchor sequence within each seed | Every update/resume | Stop | Invalid paired comparison |
+| Splice identity | Only population version changes at recorded checkpoint boundary | Splice | Stop | Confounded intervention |
+| Control identity | No-writeback hidden path bit exact | Every 1,000 | Stop | Invalid control |
+| Resume durability | Model, optimizer, RNG, sampler, population, counters, and receipt hashes persist | Every 1,000 | Stop before updates | Unrecoverable lineage |
+| Wilson quality floor | Lower bound at least 0.99 | Every 1,000 | Stop | Irreversible quality damage |
+| Init-relative retention | More than 0.003 below step zero twice consecutively | Every 1,000 | Stop | Sustained quality drift |
+| Directional gross miss | Primary below 0.40 or any auxiliary above 0.35 | Every 2,000 | Stop | Objective inversion |
+| Directional repeated marginal miss | Primary 0.40-0.50 or auxiliary 0.25-0.35 twice consecutively | Every 2,000 | Stop | Sustained objective displacement |
+| Directional target | Primaries at least 0.50 and auxiliaries at most 0.25 | Every 2,000 | Log | Intended objective balance |
+| Endpoint readings | Slopes, one-percent gain, writeback share, train-eval gaps | Endpoint | Evidence only | None |
 
-| Rule | Threshold | Estimator/reference | Cadence | Disposition | Named cliff |
-|---|---|---|---|---|---|
-| Non-finite loss | Any non-finite weighted loss | Current pre-update batch | Every attempt | Stop | Garbage training |
-| Non-finite gradient | Any non-finite active gradient element | Current pre-update batch | Every attempt | Stop | Garbage training |
-| Relative gradient explosion | Raw global norm above 10 times the prior-100 median for three consecutive attempts | Current excluded; 100-update warmup logs only | Every attempt | Stop | Garbage training escaping into budget |
-| Source checkpoint identity | Exact four endpoint SHAs and metadata | Banked A2 receipts | Startup | Stop | Corrupted lineage |
-| Training-population identity | Exact manifest, document partition, and exclusion hashes | Locked Option B population | Startup | Stop | Invalidated data comparison |
-| Frozen parameter identity | Exact digest before and after | Reconstructed endpoint | Startup and completion | Stop | Corrupted frozen lineage |
-| Evaluation contact | Training loader touches zero fixed 8,031-row evaluation anchors and zero frozen confirmatory partitions | Explicit access ledger | Startup and completion | Stop | Invalidated science |
-| Matched pair schedule | Exact sampled-anchor hash sequence within each seed | Full versus control | Every update and resume | Stop | Invalid paired comparison |
-| Control path identity | No-writeback hidden path bit exact | Fixed DEV probe | Every 1,000 | Stop | Invalid control |
-| Resume durability | Checkpoint, optimizer, RNG, sampler, and receipt hashes all persisted | Drive readback | Every 1,000 | Stop before further updates | Unrecoverable lineage |
-| Wilson quality floor | Wilson 95 percent lower bound at least 0.99 | Fixed DEV baseline-correct decisions | Every 1,000 | Stop | Irreversible quality damage escaping into exploration |
-| Init-relative retention | More than 0.003 below run-specific step zero twice consecutively | Same arm step zero | Every 1,000 | Stop | Irreversible quality drift |
-| Directional gross miss | Primary below 0.40 or any auxiliary above 0.35 | Matched 51 by 128 independent-gradient estimator | Every 2,000 | Stop | Objective inversion |
-| Directional repeated marginal miss | Primary 0.40-0.50 or auxiliary 0.25-0.35 twice consecutively | Prior matched audit | Every 2,000 | Stop | Sustained objective displacement |
-| Directional target | Primaries at least 0.50 and auxiliaries at most 0.25 | Same estimator | Every 2,000 | Log/pass | Intended objective balance |
-| Endpoint evidence | 1 percent gain, exposure slope, writeback share, quality trajectory | Full curve | Endpoint | Evidence only | None |
+Only tripwires with named cliffs stop training. Exposure plateau, overfit onset,
+and endpoint thresholds remain measurements.
 
-Every stop-authority rule names an irrecoverable failure mode. Numeric endpoint
-readings do not acquire stop authority.
+## 8. Localization integration
 
-## 6. Localization integration
+The CPU localization tests only structural candidates observable without a
+teacher or hindsight: stratum, position bucket, and intersections. A single
+candidate can enter the full arms only if it clears the two-seed
+document-bootstrap rule and strategy names it in the lock. Diagnostic quantiles
+can explain the outcome but cannot become router features or masks.
 
-The CPU localization evaluates only structural candidates observable without a
-teacher or hindsight: stratum, position bucket, and their intersections. A
-single candidate may enter the full arms only if it clears the pre-stated
-two-seed document-bootstrap rule and strategy names it in the locked protocol.
-Diagnostic quantiles may explain the outcome but cannot become router features
-or masks in this run.
+## 9. Do not claim
 
-## 7. Do not claim
-
-- The curve is serving throughput.
-- A fixed-population dose curve is a unique-data scaling law.
+- This is serving throughput.
+- A single splice identifies a general unique-data scaling law.
+- A fixed-population dose curve measures unique-data scaling.
 - Post-hoc localization is confirmation evidence.
 - Oracle headroom is achievable by a deployable selector.
-- A plateau at this scale proves architectural impossibility.
+- A plateau without flat fresh-data response and a small train-eval gap proves
+  the substrate is bounded.

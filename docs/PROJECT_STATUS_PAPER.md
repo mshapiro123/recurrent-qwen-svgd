@@ -1,8 +1,8 @@
 # Project Status: Deterministic Program Closed
 
-**Canonical date:** August 5, 2026
+**Canonical date:** August 6, 2026
 **Part 1 status:** closed
-**Part 2 status:** Phase 1 is banked. DC1 Stage A remains a registered negative (`none`). The Phase-2 pre-window diagnostics, V1d, canonicalizer arbitration, loss-free student build, and replicated A1 pass at alpha `0.5` are banked. A2's first matrix stopped at step 200 because an endpoint quality gate was incorrectly armed during training while both full arms were improving. Strategy classified that result as a protocol stop, retained every endpoint gate, and locked a stopping-semantics-only continuation from all four exact checkpoints. The resumed A2 matrix is built and authorized but not yet run.
+**Part 2 status:** Phase 1 is banked. DC1 Stage A remains a registered negative (`none`). The Phase-2 pre-window diagnostics, V1d, canonicalizer arbitration, loss-free student build, and replicated A1 pass at alpha `0.5` are banked. A2 completed 2,000 steps in all four arms. The full writeback arm beat its matched no-writeback control in both seeds, but missed the registered two-percent headroom and 99.7-percent retention gates, so the verdict is `budget-limited`, not success or impossibility. Option B is authorized as a staged dose-then-data exploration. The CPU localization and protocol lock precede a new 100,000-to-140,000-anchor teacher pass and any further training.
 
 This page is the short status index. It replaces the earlier June recovery narrative, which became stale after the loop-closure repair, synthetic mechanism installation, Phase A dense-control comparison, and inverse-task boundary program.
 
@@ -40,6 +40,9 @@ This page is the short status index. It replaces the earlier June recovery narra
 - [DC2 E1 implementation specification](DC2_E1_IMPLEMENTATION_SPEC_20260803.md)
 - [Latent microstep governing design v0.6.1](LATENT_MICROSTEP_FLOW_DISTILLATION_STRATEGY_HANDOFF_V0.6.1_20260803.md)
 - [Phase-2 staged A1 completion and A2 gate](PAPER2_PHASE2_STAGED_A1_COMPLETION_HANDOFF_20260805.md)
+- [Option B data-unit audit and resolution](PAPER2_PHASE2_OPTION_B_DATA_UNIT_AUDIT_20260806.md)
+- [Option B staged exploration protocol draft](PAPER2_PHASE2_OPTION_B_EXPLORATION_PROTOCOL_DRAFT_20260806.md)
+- [Option B teacher-pass resource note draft](PAPER2_PHASE2_OPTION_B_TEACHER_PASS_RESOURCE_NOTE_DRAFT_20260806.md)
 - [Experiment log](EXPERIMENT_LOG.md)
 
 ## Established

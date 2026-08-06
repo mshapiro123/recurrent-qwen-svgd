@@ -1732,3 +1732,24 @@ Colab/Drive backups for selected runs.
   `docs/STRATEGY_TO_CODING_AGENT_A2_STOP_RESOLUTION_20260805.md`. Resume lock:
   `docs/PAPER2_PHASE2_A2_STEP200_RESUME_AMENDMENT_20260805.md` at commit
   `b28497ce931dc79911af4288c5cbd4e3f8a0604a`.
+- 2026-08-06 Phase-2 A2 endpoint and Option B design: all four A2 arms
+  completed 2,000 steps. Full writeback strictly beat its matched no-writeback
+  control in both seeds (`+0.002378` and `+0.004982` mean accepted length), but
+  full-arm quality-safe oracle headroom was `1.702%` and `1.776%`, below the
+  registered `2%` threshold, and retention was `99.615%` and `99.568%`, below
+  the `99.7%` endpoint threshold while retaining safe Wilson floors. The
+  registered verdict is `budget-limited`. Strategy authorized Option B, then
+  corrected its data inventory after the implementation audit established that
+  Stage 0A contains `50,000` anchors and `200,000` horizon samples, not about
+  `200,000` anchors. The amended design is a staged dose-then-data intervention:
+  continue on the existing `41,969` anchors, add `100,000` to `140,000` fresh
+  anchors at a recorded checkpoint boundary, and compare the matched 2,000-step
+  EAL slopes around the splice under a constant learning rate. The CPU
+  localization remains first. No teacher or training launcher exists before
+  strategy locks the amended protocol. Endpoint receipt:
+  `outputs/stage5/stage5_paper2_phase2_a2_step237_continuation_20260806/summary.json`.
+  Draft protocol:
+  `docs/PAPER2_PHASE2_OPTION_B_EXPLORATION_PROTOCOL_DRAFT_20260806.md`.
+  Machine draft:
+  `training/paper2_phase2_option_b_preregistration.draft.json`. Resource note:
+  `docs/PAPER2_PHASE2_OPTION_B_TEACHER_PASS_RESOURCE_NOTE_DRAFT_20260806.md`.

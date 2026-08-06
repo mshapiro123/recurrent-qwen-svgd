@@ -1,19 +1,29 @@
 {
   "status": "draft_training_prohibited",
-  "kind": "paper2_phase2_option_b_exploration_preregistration",
+  "kind": "paper2_phase2_option_b_staged_dose_then_data_preregistration",
   "date": "2026-08-06",
-  "governing_charter": {
-    "drive_id": "1LkyqpSY-uQkv4VX-V--xyj_UOcwLjnRs",
-    "bytes": 6454,
-    "reported_sha256_prefix": "fbe65a44",
-    "reported_sha256_suffix": "9ccb95"
+  "governing_documents": {
+    "charter": {
+      "drive_id": "1LkyqpSY-uQkv4VX-V--xyj_UOcwLjnRs",
+      "bytes": 6454,
+      "reported_sha256_prefix": "fbe65a44",
+      "reported_sha256_suffix": "9ccb95"
+    },
+    "data_resolution": {
+      "drive_id": "1BkxgDfdLzDAKTiresWTbomY8LOzsx89I",
+      "title": "STRATEGY_TO_CODING_AGENT_OPTION_B_DATA_RESOLUTION_20260806.md"
+    }
   },
   "lock_blockers": [
-    "localization_receipt_and_mask_decision",
-    "stage0a_anchor_count_amendment",
-    "curve_axis_naming",
-    "training_population_and_partition_hashes"
+    "localization_receipt_and_strategy_mask_decision",
+    "existing_training_manifest_and_partition_hashes",
+    "fixed_train_diagnostic_subset_hash",
+    "teacher_pass_resource_note",
+    "teacher_14b_state_coverage_policy",
+    "strategy_protocol_lock"
   ],
+  "pre_splice_authorized": false,
+  "post_splice_authorized": false,
   "training_authorized": false,
   "source_checkpoints": {
     "seed_0_full_a2": "aef5d3fc07ca0319fd60a306f5b4711126137930d498fc838cfda262a0d6b2a6",
@@ -29,25 +39,147 @@
     "steps": 20000,
     "batch_size_anchors": 128,
     "learning_rate": 0.0003,
+    "stable_learning_rate_through_step": 18000,
+    "cooldown_steps": 2000,
     "minimum_learning_rate_fraction": 0.1,
     "checkpoint_cadence_steps": 1000,
     "evaluation_cadence_steps": 1000,
     "directional_audit_cadence_steps": 2000,
     "directional_audit_batches": 51,
-    "directional_audit_batch_size": 128
+    "directional_audit_batch_size": 128,
+    "target_splice_step": 4000,
+    "splice_boundary_multiple": 1000,
+    "slope_window_steps_each_side": 2000
   },
   "population_units_banked": {
+    "source_receipt_field": "stage0a_summary.manifest",
     "stage0a_anchors": 50000,
+    "stage0a_horizons_per_anchor": 4,
     "stage0a_horizon_samples": 200000,
     "a2_training_anchors": 41969,
     "a2_evaluation_anchors": 8031
   },
+  "teacher_pass": {
+    "status": "authorized_but_not_built_before_protocol_lock",
+    "new_training_anchor_target": 140000,
+    "new_training_anchor_minimum": 100000,
+    "document_requirement": "new_documents_only",
+    "selection_seed": 20260806,
+    "stratum_mix": {
+      "general": 0.5,
+      "code": 0.5
+    },
+    "sources": {
+      "general": {
+        "dataset": "HuggingFaceFW/fineweb-edu",
+        "revision": "87f09149ef4734204d70ed1d046ddc9ca3f2b8f9",
+        "dump": "CC-MAIN-2025-26"
+      },
+      "code": {
+        "dataset": "bigcode/the-stack-smol",
+        "revision": "4a6938ce94446f324c6629e7de00ac591710044b"
+      }
+    },
+    "horizons": [1, 2, 3, 4],
+    "top_k": 128,
+    "tail_mass_required": true,
+    "full_logit_audit_fraction": 0.01,
+    "selected_layer_ordinals_one_based": [16, 32, 44],
+    "models": {
+      "student_0p5b": {
+        "model": "Qwen/Qwen2.5-0.5B-Instruct",
+        "revision": "7ae557604adf67be50417f59c2c2f167def9a775"
+      },
+      "teacher_7b": {
+        "model": "Qwen/Qwen2.5-7B-Instruct",
+        "revision": "a09a35458c702b33eeacc393d103063234e8bc28",
+        "role": "broad_teacher"
+      },
+      "teacher_14b": {
+        "model": "Qwen/Qwen2.5-14B-Instruct",
+        "revision": "cf98f3b3bbb457ad9e2bb7baf9a0125b6b88caa8",
+        "role": "threshold_and_canonical_state_teacher"
+      },
+      "teacher_32b": {
+        "model": "Qwen/Qwen2.5-32B-Instruct",
+        "revision": "5ede1c97bbab6ce5cda5812749b4c0bdf79b18dd",
+        "role": "cascade_only"
+      }
+    },
+    "quarantine": {
+      "existing_8031_anchor_evaluation_slice": true,
+      "frozen_confirmatory_partitions": true,
+      "document_isolation_required": true
+    },
+    "hash_only_amendment_required_before_splice": true
+  },
+  "segments": {
+    "dose": {
+      "start_step": 0,
+      "end_step": "recorded_splice_step",
+      "training_anchors": 41969,
+      "curve_axis": "cumulative_anchor_presentations",
+      "train_diagnostics": [
+        "fixed_old_train_subset_eal",
+        "fixed_old_train_subset_loss",
+        "fixed_eval_eal",
+        "fixed_eval_loss"
+      ]
+    },
+    "fresh_data": {
+      "start_step": "recorded_splice_step",
+      "end_step": 20000,
+      "training_population": "existing_41969_plus_landed_new_training_anchors",
+      "curve_axes": [
+        "cumulative_anchor_presentations",
+        "cumulative_distinct_anchors_observed"
+      ],
+      "train_diagnostics": [
+        "fixed_old_train_subset_eal",
+        "fixed_old_train_subset_loss",
+        "fixed_new_train_subset_eal",
+        "fixed_new_train_subset_loss",
+        "fixed_eval_eal",
+        "fixed_eval_loss"
+      ]
+    }
+  },
+  "splice_contract": {
+    "same_model_optimizer_and_rule_state": true,
+    "only_training_population_may_change": true,
+    "record_actual_checkpoint_boundary": true,
+    "target_step_is_not_silently_assumed": true,
+    "full_control_pair_uses_identical_sample_schedule_per_seed": true,
+    "expanded_manifest_hash_must_match_hash_only_amendment": true,
+    "pre_splice_checkpoints_re_evaluated_on_fixed_new_train_subset": true
+  },
+  "analysis": {
+    "primary_segment_contrast": "eal_change_per_1000_updates_over_2000_steps_before_vs_after_splice",
+    "bootstrap_unit": "document",
+    "data_starvation_confirmed": "fresh_data_slope_ci_exceeds_dose_slope_ci",
+    "exposure_suffices": "both_slopes_positive_and_cis_overlap",
+    "bounded_requires": [
+      "dose_slope_ci_includes_zero",
+      "fresh_data_slope_ci_includes_zero",
+      "train_eval_gap_small"
+    ],
+    "overall_e1_support": "endpoint_relative_eal_gain_at_least_0.01_or_positive_second_half_exposure_slope",
+    "writeback_reading": "full_minus_control_increment_and_share_by_seed_across_both_segments",
+    "not_a_general_unique_data_scaling_law": true
+  },
   "unresolved": {
-    "training_anchor_count": null,
-    "training_manifest_sha256": null,
-    "document_partition_sha256": null,
+    "localization_receipt_sha256": null,
+    "structural_mask": null,
+    "existing_training_manifest_sha256": null,
+    "existing_document_partition_sha256": null,
     "evaluation_exclusion_sha256": null,
-    "curve_x_axis": null,
-    "structural_mask": null
+    "fixed_old_train_subset_sha256": null,
+    "teacher_pass_resource_note_sha256": null,
+    "teacher_14b_state_coverage_policy": null,
+    "new_training_anchor_count": null,
+    "new_training_manifest_sha256": null,
+    "new_document_partition_sha256": null,
+    "fixed_new_train_subset_sha256": null,
+    "recorded_splice_step": null
   }
 }

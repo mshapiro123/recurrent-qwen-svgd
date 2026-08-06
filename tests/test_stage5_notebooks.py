@@ -3342,7 +3342,8 @@ def test_phase2_a2_localization_target_is_wired_and_guarded() -> None:
         assert "paper2_phase2_a2_localization" in text
         assert "colab/STAGE5_PAPER2_PHASE2_A2_LOCALIZATION_CELL.py" in text
         assert "CPU-only banked A2 row localization no model inference no training" in text
-    assert "paper2_phase2_a2_localization_v1" in cell
+    assert "paper2_phase2_a2_localization_v2" in cell
+    assert "prelock population hashes and fixed old train diagnostic subset" in cell
     assert "nvidia-smi" not in cell
     assert "stage5_paper2_phase2_a2_localization_20260806" in runner
 

@@ -1,17 +1,17 @@
 {
   "schema_version": 1,
   "program": "paper2_causal_control_of_recurrent_computation",
-  "status": "phase1_banked_phase2_staged_a1_candidate_pass_awaiting_a2_strategy_gate",
-  "canonical_date": "2026-08-05",
+  "status": "phase1_banked_phase2_a2_budget_limited_option_b_prelock",
+  "canonical_date": "2026-08-06",
   "active_queue": {
     "program_goal": "causal_arbitration_at_append_and_dispatch_interfaces",
     "p0": "completed_uncitable_adapter_loss_calibration",
     "t1": "two_registered_negatives_raw_endpoints_replicate_exact_in_support_causal_control_with_small_preservation_cost",
     "d0": "banked_not_recoverable_at_pilot_scale_binary_disagreement_target",
     "dc1_stage_a": "registered_none_transient_append_retires_checkpoint_archival_eval_c_spent",
-    "phase2": "staged_a1_complete_two_seed_candidate_pass_strategy_gate_required",
-    "dc2": "a2_closed_pending_strategy_banking_and_objective_contract_review",
-    "d1": "window_closed_pending_phase2_strategy_review",
+    "phase2": "a2_banked_budget_limited_option_b_localization_and_protocol_lock_next",
+    "dc2": "option_b_staged_dose_then_data_authorized_not_locked",
+    "d1": "window_closed_pending_option_b_result",
     "paper_two_packaging": "proceeds_on_banked_phase1_results"
   },
   "artifact_map": {
@@ -45,13 +45,18 @@
     "phase2_staged_a1_completion_summary": "outputs/stage5/stage5_paper2_phase2_staged_a1_resume_20260805/summary.json",
     "phase2_staged_a1_completion_handoff": "docs/PAPER2_PHASE2_STAGED_A1_COMPLETION_HANDOFF_20260805.md",
     "phase2_staged_a1_completion_handoff_resource": "docs/PAPER2_PHASE2_STAGED_A1_COMPLETION_HANDOFF_RESOURCE_20260805.md",
-    "phase2_staged_a1_resume_amendment": "docs/PAPER2_PHASE2_STAGED_A1_RESUME_AMENDMENT_20260805.md"
+    "phase2_staged_a1_resume_amendment": "docs/PAPER2_PHASE2_STAGED_A1_RESUME_AMENDMENT_20260805.md",
+    "phase2_a2_endpoint_summary": "outputs/stage5/stage5_paper2_phase2_a2_step237_continuation_20260806/summary.json",
+    "phase2_option_b_data_unit_audit": "docs/PAPER2_PHASE2_OPTION_B_DATA_UNIT_AUDIT_20260806.md",
+    "phase2_option_b_protocol_draft": "docs/PAPER2_PHASE2_OPTION_B_EXPLORATION_PROTOCOL_DRAFT_20260806.md",
+    "phase2_option_b_machine_draft": "training/paper2_phase2_option_b_preregistration.draft.json",
+    "phase2_option_b_resource_note_draft": "docs/PAPER2_PHASE2_OPTION_B_TEACHER_PASS_RESOURCE_NOTE_DRAFT_20260806.md"
   },
   "claims": [
     {
       "id": "phase2_staged_a1_state_construction",
-      "status": "candidate_pass_awaiting_strategy_gate",
-      "claim": "At alpha 0.5, the frozen-flow-only Stage A1 run completed 1000 optimizer steps in two seeds and exceeded both registered state-construction gates while satisfying the amended gradient inequalities at every matched audit; strategy banking is still required before A2 can open.",
+      "status": "supported_bounded_dev_only",
+      "claim": "At alpha 0.5, the frozen-flow-only Stage A1 run completed 1000 optimizer steps in two seeds, exceeded both registered state-construction gates, and satisfied the amended gradient inequalities at every matched audit; strategy banked the replicated A1 pass before A2 opened.",
       "scope": "Document-isolated DEV diagnostics, alpha 0.5 only, seeds 0 and 1, flow-only training, executed bridge and draft gates closed, no frozen confirmatory partition contact",
       "metrics": {
         "seed_0_probe_kl_improvement_nats": 1.355470295876261,
@@ -77,7 +82,43 @@
         "alpha 0.5 was selected",
         "DEV results are E1 confirmation evidence",
         "speculative accepted length or serving throughput improved",
-        "A2 is authorized before strategy banks A1 and resolves its objective contract"
+        "the A1 pass by itself establishes A2 or E1 success"
+      ]
+    },
+    {
+      "id": "phase2_a2_writeback_causal_pilot",
+      "status": "supported_bounded_budget_limited",
+      "claim": "At alpha 0.5 and the 2,000-step DEV budget, full writeback strictly improved mean accepted length over a matched no-writeback control in both seeds, but both full arms missed the registered two-percent oracle-headroom and 99.7-percent retention gates; the channel is causally non-inert at pilot scale, not yet qualified for E1.",
+      "scope": "Document-isolated DEV evaluation, alpha 0.5, two seeds, 2,000 A2 steps, frozen flow, matched no-writeback controls, no frozen confirmatory partition contact",
+      "metrics": {
+        "seed_0_full_minus_control_mean_accepted_length": 0.002378350356593728,
+        "seed_1_full_minus_control_mean_accepted_length": 0.00498165562748909,
+        "seed_0_full_quality_safe_oracle_headroom_relative": 0.01702148739911423,
+        "seed_1_full_quality_safe_oracle_headroom_relative": 0.017758790395504948,
+        "seed_0_full_retention": 0.9961450478691858,
+        "seed_1_full_retention": 0.9956790646445819,
+        "seed_0_full_retention_wilson_95_lower": 0.9952697645004054,
+        "seed_1_full_retention_wilson_95_lower": 0.9947578744848684,
+        "seed_0_bridge_gate_mean": 0.019943801686167717,
+        "seed_1_bridge_gate_mean": 0.020626123994588852,
+        "registered_verdict": "budget-limited"
+      },
+      "evidence": [
+        {
+          "path": "outputs/stage5/stage5_paper2_phase2_a2_step237_continuation_20260806/summary.json",
+          "locator": "four arms, endpoint gates, paired full-control differences, retention, and lineage receipts"
+        },
+        {
+          "path": "docs/PAPER2_PHASE2_OPTION_B_DATA_UNIT_AUDIT_20260806.md",
+          "locator": "data-unit correction and strategy-resolved staged design"
+        }
+      ],
+      "do_not_claim": [
+        "A2 passed the registered joint gates",
+        "writeback is serving-relevant at this scale",
+        "the two-seed DEV effect generalizes beyond this lineage",
+        "pilot-scale headroom is the architectural ceiling",
+        "a dose-only plateau proves data scaling cannot help"
       ]
     },
     {

@@ -23,6 +23,7 @@ EXPECTED_ARMS = (
 MIN_MASK_ROWS = 200
 BOOTSTRAP_REPLICATES = 2_000
 BOOTSTRAP_SEED = 20260806
+OLD_TRAIN_DIAGNOSTIC_SEED = 20260806
 
 
 def sha256_file(path: Path) -> str:
@@ -38,6 +39,13 @@ def write_json(path: Path, payload: Any) -> None:
     temporary = path.with_suffix(path.suffix + ".tmp")
     temporary.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     temporary.replace(path)
+
+
+def _canonical_sha256(payload: Any) -> str:
+    encoded = json.dumps(
+        payload, sort_keys=True, separators=(",", ":"), ensure_ascii=True
+    ).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
 
 
 def _distribution(values: torch.Tensor) -> dict[str, Any]:
@@ -73,6 +81,94 @@ def _position_bucket(position: int) -> str:
     if position <= 127:
         return "token_32_127"
     return "token_128_plus"
+
+
+def population_hash_receipt(
+    metadata: dict[str, list[Any]],
+    *,
+    expected_train_anchors: int,
+    expected_evaluation_anchors: int,
+) -> dict[str, Any]:
+    """Hash the banked split and a reproducible, stratum-matched train subset."""
+
+    eval_mask = document_partition(
+        metadata["documents"], evaluation_fraction=0.2, seed=20260804
+    )
+    eval_indices = torch.where(eval_mask)[0].tolist()
+    train_indices = torch.where(~eval_mask)[0].tolist()
+    if len(train_indices) != expected_train_anchors:
+        raise RuntimeError("reconstructed A2 training partition has the wrong size")
+    if len(eval_indices) != expected_evaluation_anchors:
+        raise RuntimeError("reconstructed A2 evaluation partition has the wrong size")
+
+    def anchor_record(index: int) -> dict[str, Any]:
+        return {
+            "anchor_index": index,
+            "document_id": metadata["documents"][index],
+            "stratum": metadata["strata"][index],
+            "prediction_position": metadata["positions"][index],
+        }
+
+    train_records = [anchor_record(index) for index in train_indices]
+    evaluation_records = [anchor_record(index) for index in eval_indices]
+    train_documents = {row["document_id"] for row in train_records}
+    evaluation_documents = {row["document_id"] for row in evaluation_records}
+    overlap = sorted(train_documents & evaluation_documents)
+    if overlap:
+        raise RuntimeError("A2 train/evaluation document partitions overlap")
+
+    partition = [
+        {"document_id": document, "partition": "train"}
+        for document in sorted(train_documents)
+    ] + [
+        {"document_id": document, "partition": "evaluation"}
+        for document in sorted(evaluation_documents)
+    ]
+    partition.sort(key=lambda row: (row["document_id"], row["partition"]))
+
+    target_by_stratum: dict[str, int] = defaultdict(int)
+    for row in evaluation_records:
+        target_by_stratum[row["stratum"]] += 1
+    fixed_subset = []
+    for stratum, target in sorted(target_by_stratum.items()):
+        candidates = [row for row in train_records if row["stratum"] == stratum]
+        candidates.sort(
+            key=lambda row: hashlib.sha256(
+                (
+                    f"{OLD_TRAIN_DIAGNOSTIC_SEED}:old_train_diagnostic:"
+                    f"{row['document_id']}:{row['anchor_index']}"
+                ).encode("utf-8")
+            ).hexdigest()
+        )
+        if len(candidates) < target:
+            raise RuntimeError(f"insufficient old-train anchors for stratum {stratum}")
+        fixed_subset.extend(candidates[:target])
+    fixed_subset.sort(key=lambda row: row["anchor_index"])
+    if len(fixed_subset) != expected_evaluation_anchors:
+        raise RuntimeError("old-train diagnostic subset has the wrong size")
+
+    exclusion = {
+        "train_anchor_count": len(train_records),
+        "evaluation_anchor_count": len(evaluation_records),
+        "train_document_count": len(train_documents),
+        "evaluation_document_count": len(evaluation_documents),
+        "overlap_document_count": 0,
+        "overlap_documents": [],
+    }
+    return {
+        "algorithm": "document_partition_seed_20260804_then_stratum_matched_hash_rank",
+        "old_train_diagnostic_seed": OLD_TRAIN_DIAGNOSTIC_SEED,
+        "training_anchor_count": len(train_records),
+        "evaluation_anchor_count": len(evaluation_records),
+        "fixed_old_train_subset_anchor_count": len(fixed_subset),
+        "fixed_old_train_subset_counts_by_stratum": dict(target_by_stratum),
+        "existing_training_manifest_sha256": _canonical_sha256(train_records),
+        "existing_document_partition_sha256": _canonical_sha256(partition),
+        "evaluation_exclusion_sha256": _canonical_sha256(exclusion),
+        "fixed_old_train_subset_sha256": _canonical_sha256(fixed_subset),
+        "evaluation_manifest_sha256": _canonical_sha256(evaluation_records),
+        "exclusion": exclusion,
+    }
 
 
 def load_anchor_metadata(manifest: Path, expected_sha256: str) -> dict[str, list[Any]]:
@@ -422,6 +518,11 @@ def run(
     )
     rows = load_arm_rows(a2_summary, private_a2)
     result = localize(a2_summary=a2_summary, metadata=metadata, rows=rows)
+    result["prelock_population_hashes"] = population_hash_receipt(
+        metadata,
+        expected_train_anchors=int(a2_summary["train_anchors"]),
+        expected_evaluation_anchors=int(a2_summary["evaluation_anchors"]),
+    )
     result["sources"] = {
         "a2_summary": {
             "path": str(a2_summary_path),

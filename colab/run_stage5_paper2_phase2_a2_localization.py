@@ -72,6 +72,13 @@ def markdown(summary: dict) -> str:
     lines.extend(
         [
             "",
+            "## Pre-lock population hashes",
+            "",
+            f"- Existing training manifest: `{summary['prelock_population_hashes']['existing_training_manifest_sha256']}`",
+            f"- Document partition: `{summary['prelock_population_hashes']['existing_document_partition_sha256']}`",
+            f"- Evaluation exclusion proof: `{summary['prelock_population_hashes']['evaluation_exclusion_sha256']}`",
+            f"- Fixed old-train diagnostic subset: `{summary['prelock_population_hashes']['fixed_old_train_subset_sha256']}`",
+            "",
             "This is a post-hoc DEV localization result. Any mask must be locked before the "
             "Option B curve and cannot be described as confirmatory evidence.",
             "",
@@ -118,6 +125,7 @@ def main() -> None:
         "status": summary["status"],
         "population_units": summary["population_units"],
         "recommended_single_mask": summary["recommended_single_mask"],
+        "prelock_population_hashes": summary["prelock_population_hashes"],
     }, indent=2, sort_keys=True))
     print("Phase-2 A2 localization landed.", flush=True)
 

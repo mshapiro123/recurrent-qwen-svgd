@@ -554,10 +554,11 @@ TARGETS = {
         "path": "colab/STAGE5_PAPER2_PHASE2_A2_LOCALIZATION_CELL.py",
         "markers": [
             "STAGE5_PAPER2_PHASE2_A2_LOCALIZATION_VERSION",
-            "paper2_phase2_a2_localization_v1",
+            "paper2_phase2_a2_localization_v2",
             "CPU-only banked A2 row localization no model inference no training",
             "document-block bootstrap structural masks only diagnostics separate",
             "Stage 0A has 50000 anchors and 200000 horizon samples",
+            "prelock population hashes and fixed old train diagnostic subset",
             "tests/test_paper2_phase2_a2_localization.py",
             "colab/run_stage5_paper2_phase2_a2_localization.py",
         ],

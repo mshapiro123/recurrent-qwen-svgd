@@ -1,6 +1,9 @@
 # Phase-2 Option B Data-Unit Audit
 
-Date: 2026-08-06. Status: implementation audit before protocol lock. No training.
+Date: 2026-08-06. Status: resolved by strategy before protocol lock. No training.
+
+Resolution: `STRATEGY_TO_CODING_AGENT_OPTION_B_DATA_RESOLUTION_20260806.md`,
+Drive `1BkxgDfdLzDAKTiresWTbomY8LOzsx89I`.
 
 ## Finding
 
@@ -36,15 +39,31 @@ unique-data scaling law. A true unique-data curve requires nested unique-anchor
 populations or an equivalent design that varies unique data separately from
 optimization exposure.
 
-## Required strategy resolution
+## Strategy resolution
 
-1. Authorize a new teacher/cache pass to create the intended expanded anchor
-   population, or redefine Option B as a dose-only continuation on the existing
-   41,969 training anchors.
-2. Name the primary curve either `EAL versus cumulative anchor presentations`
-   or authorize a nested-population design for a unique-data scaling curve.
-3. Supply the resolved training-population count, data hash, document-partition
-   hash, and exclusion proof before `locked_before_training`.
+Strategy authorized a staged dose-then-data intervention:
 
-No substitution is permitted in the launcher. The protocol draft carries this
-as a lock blocker.
+1. Segment 1 continues the four A2 arms on the existing 41,969-anchor training
+   population and measures exposure, train loss, and fixed-train-subset EAL.
+2. A new teacher/cache pass targets 140,000 fresh training anchors from new
+   documents, with 100,000 as the minimum admissible expansion.
+3. Segment 2 adds the fresh anchors at a recorded 1,000-step checkpoint
+   boundary. The target is step 4,000, but the actual durable boundary governs.
+4. Learning rate is constant at `3e-4` after a 200-step warmup through step
+   18,000, followed by a linear cooldown to 10 percent over the last 2,000
+   steps. This prevents the splice comparison from being confounded by a
+   changing learning rate.
+5. The primary causal contrast is the EAL slope over the 2,000 updates before
+   versus the 2,000 updates after the fresh-data splice. Curves also report
+   cumulative anchor presentations and cumulative distinct anchors observed.
+
+This is one data intervention inside a dose trajectory, not a general
+unique-data scaling law. A flat dose segment alone cannot license a bounded
+reading. That reading requires a flat fresh-data segment and a small train-eval
+gap as specified in the protocol.
+
+The strategy resolution removes the unit and axis blockers. Exact existing-data
+hashes are required at the protocol lock. Expanded-data hashes are necessarily
+created by the authorized teacher pass and enter through a hash-only amendment
+before the splice. No launcher may silently substitute data, models, or a splice
+boundary.
