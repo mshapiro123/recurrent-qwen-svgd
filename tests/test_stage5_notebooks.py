@@ -3527,6 +3527,28 @@ def test_phase2_a2_tripwire_audit_is_wired_and_guarded() -> None:
     assert "simulated_update" in audit
 
 
+def test_phase2_a2_step237_continuation_is_wired_and_guarded() -> None:
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(
+        encoding="utf-8"
+    )
+    cell = (ROOT / "colab/STAGE5_PAPER2_PHASE2_A2_CELL.py").read_text(
+        encoding="utf-8"
+    )
+    runner = (ROOT / "colab/run_stage5_paper2_phase2_a2.py").read_text(
+        encoding="utf-8"
+    )
+    for marker in (
+        "paper2_phase2_a2_step237",
+        "STAGE5_PHASE2_A2_STEP237_MODE",
+        "attempt 238 exact row hash asserted selected and applied without clipping",
+        "relative explosion is 10x trailing-100 median three consecutive steps",
+        "guardrail inventory names a cliff for every stop-authority rule",
+    ):
+        assert marker in bootstrap or marker in cell or marker in runner
+    assert "stage5_paper2_phase2_a2_step237_continuation_20260806" in runner
+    assert "--resume_from_step237" in runner
+
+
 def test_gradient_path_audit_target_is_wired_and_guarded() -> None:
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
     bootstrap_md = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")

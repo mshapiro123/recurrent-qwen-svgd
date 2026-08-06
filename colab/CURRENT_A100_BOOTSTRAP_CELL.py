@@ -164,6 +164,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3_short_sha"
 #   "paper2_phase2_a2_amendment_prep" - CPU-only calibration reconciliation and unlocked amendment draft.
 #   "paper2_phase2_a2" - locked A100-40GB+ full-versus-draft-only state-use matrix.
 #   "paper2_phase2_a2_resume" - locked A100-40GB+ exact step-200 A2 continuation.
+#   "paper2_phase2_a2_step237" - amended A100-40GB+ exact step-237 continuation.
 #   "paper2_phase2_v1b_rms_audit" - CPU-only audit of existing V1b private rows.
 #   "paper2_phase2_eval_de_freeze" - score-blind EVAL-D/E and own-base feature freeze.
 #   "paper2_d0_prelock_publish_resume" - publish completed Drive-backed D0 lock receipts without inference.
@@ -517,6 +518,21 @@ TARGETS = {
             "colab/run_stage5_paper2_phase2_a2_tripwire_audit.py",
         ],
         "env": {},
+    },
+    "paper2_phase2_a2_step237": {
+        "path": "colab/STAGE5_PAPER2_PHASE2_A2_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_PHASE2_A2_VERSION",
+            "paper2_phase2_a2_step237_v1",
+            "step-237 continuation reconstructs all four generators from common seed",
+            "attempt 238 exact row hash asserted selected and applied without clipping",
+            "obsolete static gradient ceiling is telemetry only",
+            "relative explosion is 10x trailing-100 median three consecutive steps",
+            "guardrail inventory names a cliff for every stop-authority rule",
+            "tests/test_paper2_phase2_a2_guardrail_sweep.py",
+            "colab/run_stage5_paper2_phase2_a2.py",
+        ],
+        "env": {"STAGE5_PHASE2_A2_STEP237_MODE": "1"},
     },
     "paper2_phase2_oracle_selector_headroom": {
         "path": "colab/STAGE5_PAPER2_PHASE2_ORACLE_SELECTOR_HEADROOM_CELL.py",

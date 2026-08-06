@@ -312,5 +312,101 @@
       "negative_slope_action": "warning_only"
     },
     "scope": "stopping_semantics_only"
+  },
+  "a2_step237_tripwire_amendment_20260806": {
+    "status": "locked_before_a2_step237_continuation",
+    "document": "docs/PAPER2_PHASE2_A2_STEP237_TRIPWIRE_AMENDMENT_20260806.md",
+    "document_bytes": 3577,
+    "document_sha256": "75ec9fd107ae1cf74a9414fc7f46b7b03d066c4554b53d4cc7a1740fdb38c895",
+    "strategy_resolution": {
+      "drive_id": "1pQsbDV6avNa__XJNb2pEjhQERcch2pa6",
+      "bytes": 9603,
+      "sha256": "6e485df0ac40db4fc07431b20e6890c2545fd6043539200dcd599e2e5b270a45",
+      "document": "docs/STRATEGY_TO_CODING_AGENT_A2_TRIPWIRE_RESOLUTION_20260806_r3.md"
+    },
+    "guardrail_doctrine": {
+      "drive_id": "1R40TawfW-ZJcec4dkRnxGir9c3v4a5IP",
+      "bytes": 4864,
+      "sha256": "d8f38b21bb8ad23a03fa88b4c9a7f0282bd435116b792c5e36fbae17102acb12",
+      "document": "docs/STRATEGY_GUARDRAIL_DOCTRINE_20260806.md",
+      "purpose_test": "every stop names an irrecoverable cliff; otherwise telemetry"
+    },
+    "source_result": {
+      "commit": "1217e02a",
+      "summary": "outputs/stage5/stage5_paper2_phase2_a2_resume_20260805/summary.json",
+      "summary_sha256": "6fc9515be48019db78c79517aeddb2cb9546a092345c68106efc079859d1b14f",
+      "audit_commit": "42922c97",
+      "audit_summary": "outputs/stage5/stage5_paper2_phase2_a2_tripwire_audit_20260806/summary.json",
+      "audit_summary_sha256": "3007927b5da62454c2d12ddef4f99e15beb726cbf9d509aed3e5594a28070ee5",
+      "classification": "STATIC_TRIPWIRE_STALE"
+    },
+    "resume_step": 237,
+    "resume_all_four": true,
+    "source_resume_sha256_by_arm": {
+      "seed_0_full_a2": "aefaf6e0b2204e6d6ec4b1eb128a98afd33770144f48a8ffe6d140d4eb66b253",
+      "seed_0_draft_only_control": "67a00b5f1743066ae9f62f84d373010a7ff79ca68d696a2211e56714cfc53bdc",
+      "seed_1_full_a2": "f7290b5760e3e1619d38b5e2d8a0daf7fd4cedc4e8591a9aa3e8ddf9bfceb6c3",
+      "seed_1_draft_only_control": "594c83825042fe95d88a2256876a7b0624dd920ae2152a383866648cdbff7256"
+    },
+    "resumable_abort": {
+      "arms": ["seed_0_full_a2", "seed_1_full_a2"],
+      "reason": "catastrophe_gradient_norm_tripwire",
+      "step": 237
+    },
+    "generator_reconstruction": {
+      "seed": 20260805,
+      "completed_batch_draws": 237,
+      "next_attempt": 238,
+      "next_row_hash": "3fee92d729b86a2a354a259562343f5ba7cf084e2b01bae84012fdc5c4a3d716",
+      "apply_next_batch": true,
+      "skip": false,
+      "clip": false,
+      "assert_all_four_arms": true
+    },
+    "static_gradient_norm": {
+      "disposition": "log",
+      "thresholds_by_seed": {
+        "0": 2.3620389630494447,
+        "1": 2.648981693767161
+      },
+      "stop_authority": false
+    },
+    "relative_explosion": {
+      "disposition": "stop",
+      "multiplier": 10.0,
+      "trailing_window_steps": 100,
+      "consecutive_exceedances_to_stop": 3,
+      "reference_excludes_current_observation": true,
+      "history_source": "post_step237_observed_optimizer_step_norms",
+      "historical_cross_section_backfill": false,
+      "warmup_disposition": "log",
+      "named_cliff": "garbage training escaping into the budget"
+    },
+    "rule_inventory": [
+      {"name": "nonfinite_loss", "threshold": "not_finite", "estimator": "weighted scalar training loss", "reference_point": "current pre-update batch", "cadence": "every optimizer attempt", "disposition": "stop", "named_cliff": "garbage training"},
+      {"name": "nonfinite_gradient", "threshold": "any non-finite trainable gradient element", "estimator": "all active parameter gradients", "reference_point": "current pre-update batch", "cadence": "every optimizer attempt", "disposition": "stop", "named_cliff": "garbage training"},
+      {"name": "relative_gradient_explosion", "threshold": "raw norm > 10 x prior-100 median for 3 consecutive steps", "estimator": "global L2 norm over active raw gradients", "reference_point": "prior 100 post-resume optimizer attempts, current excluded", "cadence": "every optimizer attempt after 100-observation warmup", "disposition": "stop", "named_cliff": "garbage training escaping into the budget"},
+      {"name": "obsolete_static_gradient_ceiling", "threshold": "seed-specific step-zero p99 x 10", "estimator": "global L2 norm over active raw gradients", "reference_point": "obsolete step-zero calibration", "cadence": "every optimizer attempt", "disposition": "log", "named_cliff": ""},
+      {"name": "source_checkpoint_identity", "threshold": "exact SHA and step identity", "estimator": "SHA-256 plus checkpoint metadata", "reference_point": "locked source receipts", "cadence": "startup", "disposition": "stop", "named_cliff": "corrupted frozen lineage"},
+      {"name": "batch_generator_identity", "threshold": "attempt 238 row hash exact", "estimator": "SHA-256 of selected row indices", "reference_point": "common seed after exactly 237 completed draws", "cadence": "startup and first resumed selection", "disposition": "stop", "named_cliff": "invalidated science"},
+      {"name": "frozen_parameter_identity", "threshold": "exact tensor digest", "estimator": "SHA-256 over all frozen tensors", "reference_point": "pre-training reconstructed source", "cadence": "startup and completion", "disposition": "stop", "named_cliff": "corrupted frozen lineage"},
+      {"name": "frozen_confirmatory_partition_contact", "threshold": "zero touched partitions", "estimator": "explicit partition access ledger", "reference_point": "registered DEV-only run scope", "cadence": "startup and completion", "disposition": "stop", "named_cliff": "invalidated science"},
+      {"name": "control_executed_path_identity", "threshold": "bit exact", "estimator": "bridge versus base hidden-path tensors", "reference_point": "registered no-writeback control", "cadence": "every 100-step evaluation", "disposition": "stop", "named_cliff": "invalidated science"},
+      {"name": "quality_wilson_floor", "threshold": 0.99, "estimator": "Wilson 95 percent lower bound on retained baseline-correct points", "reference_point": "absolute registered floor", "cadence": "every 100-step evaluation", "disposition": "stop", "named_cliff": "irreversible quality damage escaping into a deliverable claim"},
+      {"name": "init_relative_retention", "threshold": "step-zero retention minus 0.003 on two consecutive evaluations", "estimator": "point retention on fixed DEV anchors", "reference_point": "arm-specific step-zero retention", "cadence": "every 100-step evaluation", "disposition": "stop", "named_cliff": "irreversible quality damage escaping into a deliverable claim"},
+      {"name": "negative_retention_slope", "threshold": "negative least-squares slope over latest 3 evaluations", "estimator": "fixed DEV retention trajectory", "reference_point": "latest three evaluations", "cadence": "every 100-step evaluation", "disposition": "warn", "named_cliff": ""},
+      {"name": "directional_gross_miss", "threshold": "primary < 0.40 or any auxiliary > 0.35", "estimator": "51 matched training batches of independently differentiated losses", "reference_point": "locked directional contract", "cadence": "every 200 optimizer steps", "disposition": "stop", "named_cliff": "invalidated science"},
+      {"name": "directional_repeated_marginal_miss", "threshold": "same primary 0.40-0.50 or auxiliary 0.25-0.35 miss twice consecutively", "estimator": "51 matched training batches of independently differentiated losses", "reference_point": "prior matched directional audit", "cadence": "every 200 optimizer steps", "disposition": "stop", "named_cliff": "invalidated science"},
+      {"name": "endpoint_quality_qualification", "threshold": "point retention >= 0.997 and Wilson lower >= 0.990", "estimator": "fixed DEV endpoint evaluation", "reference_point": "registered endpoint", "cadence": "steps 1000 and 2000 only", "disposition": "endpoint_verdict", "named_cliff": ""},
+      {"name": "endpoint_oracle_headroom", "threshold": "relative headroom >= 0.02", "estimator": "quality-safe oracle accepted-length delta divided by zero-loop mean", "reference_point": "registered endpoint", "cadence": "steps 1000 and 2000 only", "disposition": "endpoint_verdict", "named_cliff": ""},
+      {"name": "paired_full_superiority", "threshold": "full mean accepted length strictly greater than matched control", "estimator": "paired fixed-DEV row comparison", "reference_point": "same-seed matched-budget control", "cadence": "registered endpoint", "disposition": "endpoint_verdict", "named_cliff": ""},
+      {"name": "single_extension_decision", "threshold": "headroom < 0.02 or final-100 accepted-length slope > 0.002", "estimator": "full-arm endpoint metrics", "reference_point": "step 1000", "cadence": "once", "disposition": "endpoint_verdict", "named_cliff": ""}
+    ],
+    "v1d_attachment": {
+      "document": "docs/PAPER2_PHASE2_V1D_BANK_ACKNOWLEDGMENT_20260805.md",
+      "document_sha256": "7060d355acdabe74260749aa5457fa2d7a5e8f45839232437978cc73488bd86b",
+      "source_summary_sha256": "b8ec5e81649d7a7917d98a0f988cd39c64be16ea51a34b150b02ef07df6d86ca"
+    },
+    "scope": "stopping_and_exact_resume_mechanics_only"
   }
 }

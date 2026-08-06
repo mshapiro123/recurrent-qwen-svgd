@@ -15,13 +15,25 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-RESUME_MODE = os.environ.get("STAGE5_PHASE2_A2_RESUME_MODE", "0") == "1"
+STEP200_MODE = os.environ.get("STAGE5_PHASE2_A2_RESUME_MODE", "0") == "1"
+STEP237_MODE = os.environ.get("STAGE5_PHASE2_A2_STEP237_MODE", "0") == "1"
+if STEP200_MODE and STEP237_MODE:
+    raise RuntimeError("A2 step-200 and step-237 resume modes are mutually exclusive")
+RESUME_MODE = STEP200_MODE or STEP237_MODE
+# Base-mode compatibility contract: RUN_ID = "stage5_paper2_phase2_a2_20260805"
 RUN_ID = (
+    "stage5_paper2_phase2_a2_step237_continuation_20260806"
+    if STEP237_MODE
+    else
     "stage5_paper2_phase2_a2_resume_20260805"
-    if RESUME_MODE
+    if STEP200_MODE
     else "stage5_paper2_phase2_a2_20260805"
 )
-SOURCE_A2_RUN_ID = "stage5_paper2_phase2_a2_20260805"
+SOURCE_A2_RUN_ID = (
+    "stage5_paper2_phase2_a2_resume_20260805"
+    if STEP237_MODE
+    else "stage5_paper2_phase2_a2_20260805"
+)
 A1_RUN_ID = "stage5_paper2_phase2_staged_a1_resume_20260805"
 STAGE0A_ID = "stage5_paper2_phase2_stage0a_20260803"
 ARBITRATION_ID = "stage5_paper2_phase2_arbitration_build_20260804"
@@ -140,7 +152,12 @@ def stage_resume_checkpoints(lock: dict[str, object]) -> None:
             source = DRIVE_SOURCE_A2 / name / "resume.pt"
             destination = destination_root / name / "resume.pt"
             if destination.is_file():
-                print(f"a2_resume_destination_exists arm={name}", flush=True)
+                observed = sha256_file(destination)
+                print(
+                    f"a2_resume_destination_exists arm={name} "
+                    f"sha256={observed} pristine_source={int(observed == expected_by_arm[name])}",
+                    flush=True,
+                )
                 continue
             if not source.is_file():
                 raise FileNotFoundError(f"missing registered A2 resume source: {source}")
@@ -159,8 +176,10 @@ def publish() -> str:
     run(["git", "add", "-f", "--", RUN_DIR.relative_to(ROOT).as_posix()])
     if subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=ROOT).returncode:
         message = (
-            "Record Phase 2 A2 resumed matrix [skip ci]"
-            if RESUME_MODE
+            "Record Phase 2 A2 step-237 continuation [skip ci]"
+            if STEP237_MODE
+            else "Record Phase 2 A2 resumed matrix [skip ci]"
+            if STEP200_MODE
             else "Record Phase 2 A2 matrix [skip ci]"
         )
         run(["git", "commit", "-m", message])
@@ -181,9 +200,18 @@ def main() -> int:
     write_status("staging_inputs")
     stage0a, canonicalizer, cache, checkpoints = stage_static_inputs()
     if RESUME_MODE:
-        resume_lock = registration["a2_step200_resume_amendment_20260805"]
-        if resume_lock["status"] != "locked_before_a2_resumed_training":
-            raise RuntimeError("A2 step-200 resume is not locked")
+        resume_lock = registration[
+            "a2_step237_tripwire_amendment_20260806"
+            if STEP237_MODE
+            else "a2_step200_resume_amendment_20260805"
+        ]
+        expected_status = (
+            "locked_before_a2_step237_continuation"
+            if STEP237_MODE
+            else "locked_before_a2_resumed_training"
+        )
+        if resume_lock["status"] != expected_status:
+            raise RuntimeError("A2 resume amendment is not locked")
         stage_resume_checkpoints(resume_lock)
     for seed, checkpoint in checkpoints.items():
         expected = lock["a1_checkpoint_sha256_by_seed"][str(seed)]
@@ -214,7 +242,9 @@ def main() -> int:
             "--device",
             "cuda",
         ]
-    if RESUME_MODE:
+    if STEP237_MODE:
+        command.append("--resume_from_step237")
+    elif STEP200_MODE:
         command.append("--resume_from_step200")
     returncode = run(
         command,

@@ -1,0 +1,311 @@
+{
+  "classification": "STATIC_TRIPWIRE_STALE",
+  "demoted_rules": [
+    "obsolete_static_gradient_ceiling"
+  ],
+  "documents": {
+    "amendment": {
+      "bytes": 3577,
+      "path": "docs/PAPER2_PHASE2_A2_STEP237_TRIPWIRE_AMENDMENT_20260806.md",
+      "sha256": "75ec9fd107ae1cf74a9414fc7f46b7b03d066c4554b53d4cc7a1740fdb38c895"
+    },
+    "guardrail_doctrine": {
+      "bytes": 4864,
+      "path": "docs/STRATEGY_GUARDRAIL_DOCTRINE_20260806.md",
+      "sha256": "d8f38b21bb8ad23a03fa88b4c9a7f0282bd435116b792c5e36fbae17102acb12"
+    },
+    "strategy_resolution": {
+      "bytes": 9603,
+      "path": "docs/STRATEGY_TO_CODING_AGENT_A2_TRIPWIRE_RESOLUTION_20260806_r3.md",
+      "sha256": "6e485df0ac40db4fc07431b20e6890c2545fd6043539200dcd599e2e5b270a45"
+    }
+  },
+  "endpoint_only_rules": [
+    "endpoint_quality_qualification",
+    "endpoint_oracle_headroom",
+    "paired_full_superiority",
+    "single_extension_decision"
+  ],
+  "generator_contract": {
+    "apply_next_batch": true,
+    "assert_all_four_arms": true,
+    "clip": false,
+    "completed_batch_draws": 237,
+    "next_attempt": 238,
+    "next_row_hash": "3fee92d729b86a2a354a259562343f5ba7cf084e2b01bae84012fdc5c4a3d716",
+    "seed": 20260805,
+    "skip": false
+  },
+  "gpu_used": false,
+  "implementation_note": "The rolling guard arms after 100 newly observed post-resume norms; cross-sectional audit norms are not backfilled as trajectory history.",
+  "inventory_validation": {
+    "errors": [],
+    "rules": 18,
+    "stop_rules": 12,
+    "telemetry_rules": 1,
+    "valid": true
+  },
+  "kind": "paper2_phase2_a2_guardrail_grounding_sweep_v1",
+  "lock_key": "a2_step237_tripwire_amendment_20260806",
+  "lock_status": "locked_before_a2_step237_continuation",
+  "relative_explosion_contract": {
+    "consecutive_exceedances_to_stop": 3,
+    "disposition": "stop",
+    "historical_cross_section_backfill": false,
+    "history_source": "post_step237_observed_optimizer_step_norms",
+    "multiplier": 10.0,
+    "named_cliff": "garbage training escaping into the budget",
+    "reference_excludes_current_observation": true,
+    "trailing_window_steps": 100,
+    "warmup_disposition": "log"
+  },
+  "rule_inventory": [
+    {
+      "cadence": "every optimizer attempt",
+      "disposition": "stop",
+      "estimator": "weighted scalar training loss",
+      "name": "nonfinite_loss",
+      "named_cliff": "garbage training",
+      "reference_point": "current pre-update batch",
+      "threshold": "not_finite"
+    },
+    {
+      "cadence": "every optimizer attempt",
+      "disposition": "stop",
+      "estimator": "all active parameter gradients",
+      "name": "nonfinite_gradient",
+      "named_cliff": "garbage training",
+      "reference_point": "current pre-update batch",
+      "threshold": "any non-finite trainable gradient element"
+    },
+    {
+      "cadence": "every optimizer attempt after 100-observation warmup",
+      "disposition": "stop",
+      "estimator": "global L2 norm over active raw gradients",
+      "name": "relative_gradient_explosion",
+      "named_cliff": "garbage training escaping into the budget",
+      "reference_point": "prior 100 post-resume optimizer attempts, current excluded",
+      "threshold": "raw norm > 10 x prior-100 median for 3 consecutive steps"
+    },
+    {
+      "cadence": "every optimizer attempt",
+      "disposition": "log",
+      "estimator": "global L2 norm over active raw gradients",
+      "name": "obsolete_static_gradient_ceiling",
+      "named_cliff": "",
+      "reference_point": "obsolete step-zero calibration",
+      "threshold": "seed-specific step-zero p99 x 10"
+    },
+    {
+      "cadence": "startup",
+      "disposition": "stop",
+      "estimator": "SHA-256 plus checkpoint metadata",
+      "name": "source_checkpoint_identity",
+      "named_cliff": "corrupted frozen lineage",
+      "reference_point": "locked source receipts",
+      "threshold": "exact SHA and step identity"
+    },
+    {
+      "cadence": "startup and first resumed selection",
+      "disposition": "stop",
+      "estimator": "SHA-256 of selected row indices",
+      "name": "batch_generator_identity",
+      "named_cliff": "invalidated science",
+      "reference_point": "common seed after exactly 237 completed draws",
+      "threshold": "attempt 238 row hash exact"
+    },
+    {
+      "cadence": "startup and completion",
+      "disposition": "stop",
+      "estimator": "SHA-256 over all frozen tensors",
+      "name": "frozen_parameter_identity",
+      "named_cliff": "corrupted frozen lineage",
+      "reference_point": "pre-training reconstructed source",
+      "threshold": "exact tensor digest"
+    },
+    {
+      "cadence": "startup and completion",
+      "disposition": "stop",
+      "estimator": "explicit partition access ledger",
+      "name": "frozen_confirmatory_partition_contact",
+      "named_cliff": "invalidated science",
+      "reference_point": "registered DEV-only run scope",
+      "threshold": "zero touched partitions"
+    },
+    {
+      "cadence": "every 100-step evaluation",
+      "disposition": "stop",
+      "estimator": "bridge versus base hidden-path tensors",
+      "name": "control_executed_path_identity",
+      "named_cliff": "invalidated science",
+      "reference_point": "registered no-writeback control",
+      "threshold": "bit exact"
+    },
+    {
+      "cadence": "every 100-step evaluation",
+      "disposition": "stop",
+      "estimator": "Wilson 95 percent lower bound on retained baseline-correct points",
+      "name": "quality_wilson_floor",
+      "named_cliff": "irreversible quality damage escaping into a deliverable claim",
+      "reference_point": "absolute registered floor",
+      "threshold": 0.99
+    },
+    {
+      "cadence": "every 100-step evaluation",
+      "disposition": "stop",
+      "estimator": "point retention on fixed DEV anchors",
+      "name": "init_relative_retention",
+      "named_cliff": "irreversible quality damage escaping into a deliverable claim",
+      "reference_point": "arm-specific step-zero retention",
+      "threshold": "step-zero retention minus 0.003 on two consecutive evaluations"
+    },
+    {
+      "cadence": "every 100-step evaluation",
+      "disposition": "warn",
+      "estimator": "fixed DEV retention trajectory",
+      "name": "negative_retention_slope",
+      "named_cliff": "",
+      "reference_point": "latest three evaluations",
+      "threshold": "negative least-squares slope over latest 3 evaluations"
+    },
+    {
+      "cadence": "every 200 optimizer steps",
+      "disposition": "stop",
+      "estimator": "51 matched training batches of independently differentiated losses",
+      "name": "directional_gross_miss",
+      "named_cliff": "invalidated science",
+      "reference_point": "locked directional contract",
+      "threshold": "primary < 0.40 or any auxiliary > 0.35"
+    },
+    {
+      "cadence": "every 200 optimizer steps",
+      "disposition": "stop",
+      "estimator": "51 matched training batches of independently differentiated losses",
+      "name": "directional_repeated_marginal_miss",
+      "named_cliff": "invalidated science",
+      "reference_point": "prior matched directional audit",
+      "threshold": "same primary 0.40-0.50 or auxiliary 0.25-0.35 miss twice consecutively"
+    },
+    {
+      "cadence": "steps 1000 and 2000 only",
+      "disposition": "endpoint_verdict",
+      "estimator": "fixed DEV endpoint evaluation",
+      "name": "endpoint_quality_qualification",
+      "named_cliff": "",
+      "reference_point": "registered endpoint",
+      "threshold": "point retention >= 0.997 and Wilson lower >= 0.990"
+    },
+    {
+      "cadence": "steps 1000 and 2000 only",
+      "disposition": "endpoint_verdict",
+      "estimator": "quality-safe oracle accepted-length delta divided by zero-loop mean",
+      "name": "endpoint_oracle_headroom",
+      "named_cliff": "",
+      "reference_point": "registered endpoint",
+      "threshold": "relative headroom >= 0.02"
+    },
+    {
+      "cadence": "registered endpoint",
+      "disposition": "endpoint_verdict",
+      "estimator": "paired fixed-DEV row comparison",
+      "name": "paired_full_superiority",
+      "named_cliff": "",
+      "reference_point": "same-seed matched-budget control",
+      "threshold": "full mean accepted length strictly greater than matched control"
+    },
+    {
+      "cadence": "once",
+      "disposition": "endpoint_verdict",
+      "estimator": "full-arm endpoint metrics",
+      "name": "single_extension_decision",
+      "named_cliff": "",
+      "reference_point": "step 1000",
+      "threshold": "headroom < 0.02 or final-100 accepted-length slope > 0.002"
+    }
+  ],
+  "source_checks": {
+    "seed_0_draft_only_control": {
+      "abort_reason": null,
+      "checkpoint_sha256": "67a00b5f1743066ae9f62f84d373010a7ff79ca68d696a2211e56714cfc53bdc",
+      "schedule_sha256": "93a74304b3b318048543aa9ac0dcb84e0d0c81db61599e7603f6c467fd4479ed",
+      "status": "complete",
+      "step": 237
+    },
+    "seed_0_full_a2": {
+      "abort_reason": "catastrophe_gradient_norm_tripwire",
+      "checkpoint_sha256": "aefaf6e0b2204e6d6ec4b1eb128a98afd33770144f48a8ffe6d140d4eb66b253",
+      "schedule_sha256": "93a74304b3b318048543aa9ac0dcb84e0d0c81db61599e7603f6c467fd4479ed",
+      "status": "aborted",
+      "step": 237
+    },
+    "seed_1_draft_only_control": {
+      "abort_reason": null,
+      "checkpoint_sha256": "594c83825042fe95d88a2256876a7b0624dd920ae2152a383866648cdbff7256",
+      "schedule_sha256": "93a74304b3b318048543aa9ac0dcb84e0d0c81db61599e7603f6c467fd4479ed",
+      "status": "complete",
+      "step": 237
+    },
+    "seed_1_full_a2": {
+      "abort_reason": "catastrophe_gradient_norm_tripwire",
+      "checkpoint_sha256": "f7290b5760e3e1619d38b5e2d8a0daf7fd4cedc4e8591a9aa3e8ddf9bfceb6c3",
+      "schedule_sha256": "93a74304b3b318048543aa9ac0dcb84e0d0c81db61599e7603f6c467fd4479ed",
+      "status": "aborted",
+      "step": 237
+    }
+  },
+  "status": "complete_lock_valid",
+  "stop_rules": [
+    {
+      "name": "nonfinite_loss",
+      "named_cliff": "garbage training"
+    },
+    {
+      "name": "nonfinite_gradient",
+      "named_cliff": "garbage training"
+    },
+    {
+      "name": "relative_gradient_explosion",
+      "named_cliff": "garbage training escaping into the budget"
+    },
+    {
+      "name": "source_checkpoint_identity",
+      "named_cliff": "corrupted frozen lineage"
+    },
+    {
+      "name": "batch_generator_identity",
+      "named_cliff": "invalidated science"
+    },
+    {
+      "name": "frozen_parameter_identity",
+      "named_cliff": "corrupted frozen lineage"
+    },
+    {
+      "name": "frozen_confirmatory_partition_contact",
+      "named_cliff": "invalidated science"
+    },
+    {
+      "name": "control_executed_path_identity",
+      "named_cliff": "invalidated science"
+    },
+    {
+      "name": "quality_wilson_floor",
+      "named_cliff": "irreversible quality damage escaping into a deliverable claim"
+    },
+    {
+      "name": "init_relative_retention",
+      "named_cliff": "irreversible quality damage escaping into a deliverable claim"
+    },
+    {
+      "name": "directional_gross_miss",
+      "named_cliff": "invalidated science"
+    },
+    {
+      "name": "directional_repeated_marginal_miss",
+      "named_cliff": "invalidated science"
+    }
+  ],
+  "training_authorized_by_this_job": false,
+  "warnings": [
+    "negative_retention_slope"
+  ]
+}

@@ -3,12 +3,97 @@
 from __future__ import annotations
 
 import math
+import statistics
 from collections.abc import Mapping, Sequence
 from typing import Any
 
 
 PRIMARY = ("cumulative_kl", "local_ce")
 NON_PRIMARY = ("final_ce", "preserve_kl")
+
+
+def classify_relative_explosion(
+    *,
+    prior_norms: Sequence[float],
+    current_norm: float,
+    previous_consecutive_exceedances: int,
+    window: int = 100,
+    multiplier: float = 10.0,
+    consecutive_to_stop: int = 3,
+) -> dict[str, Any]:
+    """Classify a trajectory-relative gradient explosion before an update.
+
+    The current observation is excluded from the trailing reference. Saved A2
+    checkpoints do not contain historical per-step norms, so the guard remains
+    telemetry until a full post-resume window has been observed.
+    """
+
+    if window < 1 or consecutive_to_stop < 1 or multiplier <= 1:
+        raise ValueError("relative explosion constants are invalid")
+    if not math.isfinite(float(current_norm)) or float(current_norm) < 0:
+        raise ValueError("current gradient norm must be finite and non-negative")
+    if any(not math.isfinite(float(value)) or float(value) < 0 for value in prior_norms):
+        raise ValueError("prior gradient norms must be finite and non-negative")
+    armed = len(prior_norms) >= int(window)
+    reference = (
+        float(statistics.median(float(value) for value in prior_norms[-window:]))
+        if armed
+        else None
+    )
+    threshold = float(multiplier) * reference if reference is not None else None
+    exceeds = bool(armed and float(current_norm) > float(threshold))
+    consecutive = int(previous_consecutive_exceedances) + 1 if exceeds else 0
+    return {
+        "armed": armed,
+        "history_count": len(prior_norms),
+        "window": int(window),
+        "reference_median": reference,
+        "multiplier": float(multiplier),
+        "threshold": threshold,
+        "current_norm": float(current_norm),
+        "exceeds": exceeds,
+        "consecutive_exceedances": consecutive,
+        "consecutive_to_stop": int(consecutive_to_stop),
+        "stop": armed and consecutive >= int(consecutive_to_stop),
+    }
+
+
+def validate_guardrail_inventory(inventory: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
+    """Validate the Guardrail Doctrine fields for every A2 runner rule."""
+
+    required = {
+        "name",
+        "threshold",
+        "estimator",
+        "reference_point",
+        "cadence",
+        "disposition",
+        "named_cliff",
+    }
+    allowed_dispositions = {"log", "warn", "stop", "endpoint_verdict"}
+    seen: set[str] = set()
+    errors: list[str] = []
+    for number, row in enumerate(inventory):
+        missing = required.difference(row)
+        if missing:
+            errors.append(f"row {number} missing {sorted(missing)}")
+            continue
+        name = str(row["name"])
+        if name in seen:
+            errors.append(f"duplicate rule {name}")
+        seen.add(name)
+        disposition = str(row["disposition"])
+        if disposition not in allowed_dispositions:
+            errors.append(f"{name} has invalid disposition {disposition}")
+        if disposition == "stop" and not str(row["named_cliff"]).strip():
+            errors.append(f"{name} has stop authority without a named cliff")
+    return {
+        "valid": not errors,
+        "rules": len(inventory),
+        "stop_rules": sum(row.get("disposition") == "stop" for row in inventory),
+        "telemetry_rules": sum(row.get("disposition") == "log" for row in inventory),
+        "errors": errors,
+    }
 
 
 def classify_directional_shares(shares: Mapping[str, float]) -> dict[str, Any]:

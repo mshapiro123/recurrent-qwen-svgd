@@ -24,6 +24,13 @@ STAGE5_PAPER2_PHASE2_A2_VERSION = "paper2_phase2_a2_v1"
 # Safety marker: single pair-matched extension to two thousand steps only
 # Safety marker: oracle headroom superiority endpoint quality correlation monotonicity verdict
 # Safety marker: V1d receipt attached to A2 result handoff
+# Safety marker: step-237 continuation reconstructs all four generators from common seed
+# Safety marker: attempt 238 exact row hash asserted selected and applied without clipping
+# Safety marker: obsolete static gradient ceiling is telemetry only
+# Safety marker: relative explosion is 10x trailing-100 median three consecutive steps
+# Safety marker: guardrail inventory names a cliff for every stop-authority rule
+# Safety marker: paper2_phase2_a2_step237_v1
+# Safety marker: tests/test_paper2_phase2_a2_guardrail_sweep.py
 REPO = "mshapiro123/recurrent-qwen-svgd"
 ROOT = Path("/content/recurrent-qwen-svgd")
 REF = os.environ.get("STAGE5_BOOTSTRAP_REF", "main").strip() or "main"
@@ -88,6 +95,7 @@ run(
         "pytest",
         "-q",
         "tests/test_paper2_phase2_a2.py",
+        "tests/test_paper2_phase2_a2_guardrail_sweep.py",
         "tests/test_paper2_phase2_a2_calibration.py",
         "tests/test_paper2_phase2_staged_repilot.py",
         "tests/test_paper2_phase2_staged_repilot_preregistration.py",
@@ -104,4 +112,3 @@ print(
     else "Phase-2 A2 matrix completed with a preregistered budget-limited or blocked verdict.",
     flush=True,
 )
-

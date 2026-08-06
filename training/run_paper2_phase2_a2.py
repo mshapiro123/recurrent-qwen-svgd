@@ -19,6 +19,7 @@ from torch import nn
 from models.paper2_dc2_student import Phase2StudentModules
 from training.paper2_phase2_a2 import (
     classify_inflight_quality,
+    classify_relative_explosion,
     classify_directional_shares,
     final_window_slope,
     paired_verdict,
@@ -26,6 +27,7 @@ from training.paper2_phase2_a2 import (
     retention_slope_latest,
     repeated_marginal_bounds,
     should_extend,
+    validate_guardrail_inventory,
 )
 from training.paper2_phase2_matched_alpha import (
     build_adamw_groups,
@@ -59,8 +61,35 @@ LOSSES = ("final_ce", "cumulative_kl", "local_ce", "preserve_kl")
 PRIMARY = ("cumulative_kl", "local_ce")
 NON_PRIMARY = ("final_ce", "preserve_kl")
 PREUPDATE_ABORT_REASONS = frozenset(
-    {"nonfinite_loss", "nonfinite_gradient", "catastrophe_gradient_norm_tripwire"}
+    {
+        "nonfinite_loss",
+        "nonfinite_gradient",
+        "catastrophe_gradient_norm_tripwire",
+        "relative_gradient_explosion_tripwire",
+    }
 )
+STEP237_LOCK_KEY = "a2_step237_tripwire_amendment_20260806"
+STEP237_LOCK_STATUS = "locked_before_a2_step237_continuation"
+RUNTIME_RULE_NAMES = {
+    "nonfinite_loss",
+    "nonfinite_gradient",
+    "relative_gradient_explosion",
+    "obsolete_static_gradient_ceiling",
+    "source_checkpoint_identity",
+    "batch_generator_identity",
+    "frozen_parameter_identity",
+    "frozen_confirmatory_partition_contact",
+    "control_executed_path_identity",
+    "quality_wilson_floor",
+    "init_relative_retention",
+    "negative_retention_slope",
+    "directional_gross_miss",
+    "directional_repeated_marginal_miss",
+    "endpoint_quality_qualification",
+    "endpoint_oracle_headroom",
+    "paired_full_superiority",
+    "single_extension_decision",
+}
 
 
 def reconcile_executed_schedule(
@@ -101,7 +130,9 @@ def _git_head(root: Path) -> str:
     return subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=root, text=True).strip()
 
 
-def _assert_lock(root: Path, *, require_resume: bool = False) -> dict[str, Any]:
+def _assert_lock(
+    root: Path, *, require_resume: bool = False, require_step237_resume: bool = False
+) -> dict[str, Any]:
     registration = json.loads((root / PROTOCOL_RELATIVE).read_text(encoding="utf-8"))
     lock = registration.get("a2_lock_amendment_20260805", {})
     if lock.get("status") != LOCK_STATUS:
@@ -128,6 +159,41 @@ def _assert_lock(root: Path, *, require_resume: bool = False) -> dict[str, Any]:
             raise RuntimeError("A2 resume strategy byte count differs from the lock")
         if sha256_file(resume_strategy_path) != resume_strategy["sha256"]:
             raise RuntimeError("A2 resume strategy SHA differs from the lock")
+    if require_step237_resume:
+        step237 = registration.get(STEP237_LOCK_KEY, {})
+        if step237.get("status") != STEP237_LOCK_STATUS:
+            raise RuntimeError("A2 step-237 continuation lock is absent")
+        for row, label in (
+            (step237, "step-237 amendment"),
+            (step237["strategy_resolution"], "step-237 strategy resolution"),
+            (step237["guardrail_doctrine"], "guardrail doctrine"),
+        ):
+            path = root / row["document"]
+            expected_bytes = int(row.get("document_bytes", row.get("bytes", -1)))
+            expected_sha = row.get("document_sha256", row.get("sha256"))
+            if not path.is_file() or path.stat().st_size != expected_bytes:
+                raise RuntimeError(f"{label} byte lock differs")
+            if sha256_file(path) != expected_sha:
+                raise RuntimeError(f"{label} SHA lock differs")
+        validation = validate_guardrail_inventory(step237["rule_inventory"])
+        if not validation["valid"]:
+            raise RuntimeError(f"A2 guardrail inventory is invalid: {validation['errors']}")
+        inventory_names = {row["name"] for row in step237["rule_inventory"]}
+        if inventory_names != RUNTIME_RULE_NAMES:
+            raise RuntimeError(
+                "A2 runner rules differ from the locked inventory: "
+                f"runtime_only={sorted(RUNTIME_RULE_NAMES - inventory_names)} "
+                f"lock_only={sorted(inventory_names - RUNTIME_RULE_NAMES)}"
+            )
+        sweep_path = (
+            root
+            / "outputs/stage5/stage5_paper2_phase2_a2_guardrail_sweep_20260806/summary.json"
+        )
+        if not sweep_path.is_file():
+            raise RuntimeError("A2 guardrail grounding sweep receipt is absent")
+        sweep = json.loads(sweep_path.read_text(encoding="utf-8"))
+        if sweep.get("status") != "complete_lock_valid" or sweep.get("lock_key") != STEP237_LOCK_KEY:
+            raise RuntimeError("A2 guardrail grounding sweep receipt is invalid")
     return registration
 
 
@@ -472,8 +538,10 @@ def run_arm(
     train_indices: torch.Tensor, eval_indices: torch.Tensor, embedding_weight: torch.Tensor,
     teacher_embedding: nn.Embedding, checkpoint_path: Path, expected_checkpoint_sha: str,
     registration: dict[str, Any], output_dir: Path, private_dir: Path, device: str,
-    resume_from_step200: bool = False,
+    resume_from_step200: bool = False, resume_from_step237: bool = False,
 ) -> dict[str, Any]:
+    if resume_from_step200 and resume_from_step237:
+        raise ValueError("A2 resume modes are mutually exclusive")
     name = f"seed_{seed}_{arm}"
     arm_private = private_dir / name
     arm_private.mkdir(parents=True, exist_ok=True)
@@ -510,6 +578,11 @@ def run_arm(
     batch_hashes: list[str] = []
     preupdate_attempts: list[dict[str, Any]] = []
     resume_lineage: dict[str, Any] | None = None
+    gradient_norm_history: list[float] = []
+    gradient_tripwire_events: list[dict[str, Any]] = []
+    consecutive_relative_exceedances = 0
+    static_threshold_exceedances = 0
+    next_batch_assertion: dict[str, Any] | None = None
     if resume_path.is_file():
         observed_resume_sha = sha256_file(resume_path)
         saved = torch.load(resume_path, map_location="cpu", weights_only=False)
@@ -528,6 +601,15 @@ def run_arm(
         previous_marginal = list(saved["previous_marginal"])
         saved_batch_hashes = list(saved["batch_hashes"])
         preupdate_attempts = list(saved.get("preupdate_attempts", []))
+        gradient_norm_history = [
+            float(value) for value in saved.get("gradient_norm_history", [])
+        ]
+        gradient_tripwire_events = list(saved.get("gradient_tripwire_events", []))
+        consecutive_relative_exceedances = int(
+            saved.get("consecutive_relative_exceedances", 0)
+        )
+        static_threshold_exceedances = int(saved.get("static_threshold_exceedances", 0))
+        next_batch_assertion = saved.get("next_batch_assertion")
         batch_hashes, preupdate_attempts = reconcile_executed_schedule(
             step=step,
             batch_hashes=saved_batch_hashes,
@@ -535,7 +617,7 @@ def run_arm(
             preupdate_attempts=preupdate_attempts,
         )
         legacy_schedule_repaired = len(batch_hashes) != len(saved_batch_hashes)
-        if legacy_schedule_repaired:
+        if legacy_schedule_repaired or resume_from_step237:
             batch_generator.manual_seed(int(lock["common_training_row_seed"]))
             for _ in range(step):
                 torch.randint(train_indices.numel(), (128,), generator=batch_generator)
@@ -571,6 +653,65 @@ def run_arm(
                 resume_lineage = dict(prior_lineage)
             if legacy_schedule_repaired:
                 resume_lineage["legacy_preupdate_schedule_repaired"] = True
+        if resume_from_step237:
+            step237_lock = registration[STEP237_LOCK_KEY]
+            expected_source_sha = step237_lock["source_resume_sha256_by_arm"][name]
+            step237_lineage = (
+                resume_lineage.get("step237_tripwire_amendment")
+                if resume_lineage is not None
+                else None
+            )
+            if step237_lineage is None:
+                if observed_resume_sha != expected_source_sha:
+                    raise RuntimeError(f"registered step-237 source SHA mismatch for {name}")
+                if step != int(step237_lock["resume_step"]):
+                    raise RuntimeError(f"registered A2 step-237 resume mismatch for {name}")
+                resumable = step237_lock["resumable_abort"]
+                if name in set(resumable["arms"]):
+                    if abort_reason != resumable["reason"]:
+                        raise RuntimeError(f"unregistered step-237 abort reason for {name}")
+                    abort_reason = None
+                elif abort_reason is not None:
+                    raise RuntimeError(f"control step-237 resume unexpectedly aborted for {name}")
+                if resume_lineage is None:
+                    resume_lineage = {}
+                resume_lineage["step237_tripwire_amendment"] = {
+                    "status": step237_lock["status"],
+                    "source_sha256": expected_source_sha,
+                    "source_step": step,
+                    "historical_static_abort_cleared": name in set(resumable["arms"]),
+                }
+                gradient_norm_history = []
+                gradient_tripwire_events = []
+                consecutive_relative_exceedances = 0
+                static_threshold_exceedances = 0
+            elif step237_lineage.get("source_sha256") != expected_source_sha:
+                raise RuntimeError(f"step-237 continuation lineage mismatch for {name}")
+            preview_state = batch_generator.get_state()
+            preview = train_indices.index_select(
+                0, torch.randint(train_indices.numel(), (128,), generator=batch_generator)
+            )
+            preview_hash = hashlib.sha256(
+                preview.cpu().contiguous().numpy().tobytes()
+            ).hexdigest()
+            batch_generator.set_state(preview_state)
+            if step == int(step237_lock["resume_step"]):
+                expected_hash = step237_lock["generator_reconstruction"]["next_row_hash"]
+                if preview_hash != expected_hash:
+                    raise RuntimeError(
+                        f"attempt-238 row hash mismatch for {name}: {preview_hash}"
+                    )
+                next_batch_assertion = {
+                    "completed_draws": step,
+                    "next_attempt": step + 1,
+                    "expected_row_hash": expected_hash,
+                    "observed_row_hash": preview_hash,
+                    "passed": True,
+                    "generator_reconstructed_from_common_seed": True,
+                    "preview_state_restored_before_training": True,
+                }
+            elif next_batch_assertion is None or not next_batch_assertion.get("passed"):
+                raise RuntimeError(f"missing persisted attempt-238 assertion for {name}")
         print(f"a2_resume arm={name} step={step}", flush=True)
 
     frozen_before = _tensor_digest(
@@ -599,6 +740,11 @@ def run_arm(
             "batch_hashes": batch_hashes,
             "preupdate_attempts": preupdate_attempts,
             "batch_generator_state": batch_generator.get_state(),
+            "gradient_norm_history": gradient_norm_history,
+            "gradient_tripwire_events": gradient_tripwire_events,
+            "consecutive_relative_exceedances": consecutive_relative_exceedances,
+            "static_threshold_exceedances": static_threshold_exceedances,
+            "next_batch_assertion": next_batch_assertion,
             "rng": _rng_state(),
             "resume_lineage": resume_lineage,
         }
@@ -625,6 +771,13 @@ def run_arm(
         selected_hash = hashlib.sha256(
             selected.cpu().contiguous().numpy().tobytes()
         ).hexdigest()
+        if resume_from_step237 and step == 237:
+            if next_batch_assertion is None:
+                raise RuntimeError(f"attempt-238 preview assertion missing for {name}")
+            if selected_hash != next_batch_assertion["expected_row_hash"]:
+                raise RuntimeError(f"actual attempt-238 row hash mismatch for {name}")
+            next_batch_assertion["actual_selected_row_hash"] = selected_hash
+            next_batch_assertion["actual_selection_passed"] = True
         batch = _batch(cache, selected, alpha=0.5, device=device)
         losses, _ = _forward(module=module, batch=batch, embedding=embedding, arm=arm)
         total = sum(weights[name_] * losses[name_] for name_ in active_losses)
@@ -652,7 +805,56 @@ def run_arm(
             )
             break
         total_norm = _grad_norm(gradients, list(trainable.values()))
-        if total_norm > float(lock["catastrophe_gradient_norm_by_seed"][str(seed)]):
+        static_threshold = float(lock["catastrophe_gradient_norm_by_seed"][str(seed)])
+        static_exceeds = total_norm > static_threshold
+        if static_exceeds:
+            static_threshold_exceedances += 1
+        if resume_from_step237:
+            relative = registration[STEP237_LOCK_KEY]["relative_explosion"]
+            event = classify_relative_explosion(
+                prior_norms=gradient_norm_history,
+                current_norm=total_norm,
+                previous_consecutive_exceedances=consecutive_relative_exceedances,
+                window=int(relative["trailing_window_steps"]),
+                multiplier=float(relative["multiplier"]),
+                consecutive_to_stop=int(relative["consecutive_exceedances_to_stop"]),
+            )
+            event.update(
+                {
+                    "attempt": step + 1,
+                    "row_hash": selected_hash,
+                    "obsolete_static_threshold": static_threshold,
+                    "obsolete_static_threshold_exceeded": static_exceeds,
+                    "optimizer_update_applied": not event["stop"],
+                }
+            )
+            gradient_tripwire_events.append(event)
+            consecutive_relative_exceedances = int(event["consecutive_exceedances"])
+            if static_exceeds or event["exceeds"]:
+                print(
+                    f"a2_gradient_telemetry arm={name} attempt={step + 1} "
+                    f"norm={total_norm:.9g} static_exceeds={int(static_exceeds)} "
+                    f"relative_armed={int(event['armed'])} "
+                    f"relative_exceeds={int(event['exceeds'])} "
+                    f"relative_consecutive={event['consecutive_exceedances']}",
+                    flush=True,
+                )
+            if event["stop"]:
+                abort_reason = "relative_gradient_explosion_tripwire"
+                preupdate_attempts.append(
+                    {
+                        "row_hash": selected_hash,
+                        "abort_reason": abort_reason,
+                        "optimizer_update_applied": False,
+                        "observed_gradient_norm": total_norm,
+                        "reference_median": event["reference_median"],
+                        "gradient_norm_threshold": event["threshold"],
+                        "consecutive_exceedances": event["consecutive_exceedances"],
+                    }
+                )
+                break
+            gradient_norm_history.append(total_norm)
+        elif static_exceeds:
             abort_reason = "catastrophe_gradient_norm_tripwire"
             preupdate_attempts.append(
                 {
@@ -660,9 +862,7 @@ def run_arm(
                     "abort_reason": abort_reason,
                     "optimizer_update_applied": False,
                     "observed_gradient_norm": total_norm,
-                    "gradient_norm_threshold": float(
-                        lock["catastrophe_gradient_norm_by_seed"][str(seed)]
-                    ),
+                    "gradient_norm_threshold": static_threshold,
                 }
             )
             break
@@ -673,6 +873,13 @@ def run_arm(
         optimizer.step()
         batch_hashes.append(selected_hash)
         step = next_step
+        if resume_from_step237 and step == 238:
+            if next_batch_assertion is None or not next_batch_assertion.get(
+                "actual_selection_passed"
+            ):
+                raise RuntimeError(f"attempt-238 selection was not asserted for {name}")
+            next_batch_assertion["optimizer_update_applied"] = True
+            next_batch_assertion["executed_schedule_hash_at_238"] = selected_hash
 
         if arm == "full_a2" and step % 200 == 0:
             audit = {"step": step, **directional_audit(
@@ -706,7 +913,7 @@ def run_arm(
             history.append(evaluation)
             torch.save(rows, arm_private / f"rows_step_{step:04d}.pt")
             quality_event = None
-            if resume_from_step200:
+            if resume_from_step200 or resume_from_step237:
                 quality_lock = registration["a2_step200_resume_amendment_20260805"]["quality"]
                 quality_event = classify_inflight_quality(
                     step_zero_retention=float(history[0]["retention"]),
@@ -749,7 +956,11 @@ def run_arm(
                 abort_reason = "control_executed_path_changed"
             elif quality_event is not None and quality_event["stop"]:
                 abort_reason = quality_event["stop_reason"]
-            elif not resume_from_step200 and consecutive_quality_failures >= 2:
+            elif (
+                not resume_from_step200
+                and not resume_from_step237
+                and consecutive_quality_failures >= 2
+            ):
                 abort_reason = "quality_noninferiority_two_consecutive_evaluations"
             save()
             print(
@@ -796,6 +1007,22 @@ def run_arm(
             "definition": "optimizer_updates_only",
         },
         "preupdate_attempts": preupdate_attempts,
+        "next_batch_assertion": next_batch_assertion,
+        "gradient_norm_telemetry": {
+            "observed_optimizer_updates": len(gradient_norm_history),
+            "values": gradient_norm_history,
+            "events": gradient_tripwire_events,
+            "consecutive_relative_exceedances": consecutive_relative_exceedances,
+            "obsolete_static_threshold": float(
+                lock["catastrophe_gradient_norm_by_seed"][str(seed)]
+            ),
+            "obsolete_static_threshold_exceedances": static_threshold_exceedances,
+            "relative_explosion_contract": (
+                registration[STEP237_LOCK_KEY]["relative_explosion"]
+                if resume_from_step237
+                else None
+            ),
+        },
         "history": history,
         "directional_audits": audits,
         "final": final,
@@ -804,6 +1031,11 @@ def run_arm(
         "source_a1_checkpoint": {"path": str(checkpoint_path), "sha256": expected_checkpoint_sha},
         "checkpoint": {"path": str(resume_path), "sha256": sha256_file(resume_path)},
         "resume_lineage": resume_lineage,
+        "guardrail_inventory": (
+            registration[STEP237_LOCK_KEY]["rule_inventory"]
+            if resume_from_step237
+            else None
+        ),
         "final_rows": {"path": str(final_rows_path), "sha256": sha256_file(final_rows_path)},
     }
     write_json(output_dir / f"{name}.json", result)
@@ -850,7 +1082,11 @@ def _pair_summary(full: dict[str, Any], control: dict[str, Any], private_dir: Pa
 
 def run(args: argparse.Namespace) -> dict[str, Any]:
     root = Path(__file__).resolve().parents[1]
-    registration = _assert_lock(root, require_resume=args.resume_from_step200)
+    registration = _assert_lock(
+        root,
+        require_resume=args.resume_from_step200 or args.resume_from_step237,
+        require_step237_resume=args.resume_from_step237,
+    )
     if not torch.cuda.is_available() or torch.cuda.get_device_properties(0).total_memory < 35 * 2**30:
         raise RuntimeError("A2 matrix requires an A100-class GPU with at least 35 GiB VRAM")
     cache = build_pilot_cache(
@@ -904,6 +1140,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             registration=registration, output_dir=args.output_dir,
             private_dir=args.private_dir, device=args.device,
             resume_from_step200=args.resume_from_step200,
+            resume_from_step237=args.resume_from_step237,
         )
         if full["status"] == "complete":
             slope = final_window_slope(full["history"], window=100)
@@ -930,6 +1167,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
                     registration=registration, output_dir=args.output_dir,
                     private_dir=args.private_dir, device=args.device,
                     resume_from_step200=args.resume_from_step200,
+                    resume_from_step237=args.resume_from_step237,
                 )
             full["step_1000_extension_decision"] = extension_decision
             write_json(args.output_dir / f"seed_{seed}_full_a2.json", full)
@@ -943,6 +1181,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             registration=registration, output_dir=args.output_dir,
             private_dir=args.private_dir, device=args.device,
             resume_from_step200=args.resume_from_step200,
+            resume_from_step237=args.resume_from_step237,
         )
         arms.extend([full, control])
         pairs.append(_pair_summary(full, control, args.private_dir))
@@ -955,7 +1194,9 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         "status": "complete_positive" if all_positive else "complete_budget_limited_or_blocked",
         "launcher_commit": _git_head(root),
         "lock_commit_ancestry": (
-            "resume launcher committed after A2 step-200 resume lock b28497ce"
+            "continuation launcher committed after the A2 step-237 tripwire amendment"
+            if args.resume_from_step237
+            else "resume launcher committed after A2 step-200 resume lock b28497ce"
             if args.resume_from_step200
             else "training launcher committed after A2 lock commits b9086cc1 and 9ca0d513"
         ),
@@ -966,8 +1207,20 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         "pairs": pairs,
         "v1d": registration["v1d"],
         "resume_amendment": (
-            registration["a2_step200_resume_amendment_20260805"]
+            registration[STEP237_LOCK_KEY]
+            if args.resume_from_step237
+            else registration["a2_step200_resume_amendment_20260805"]
             if args.resume_from_step200
+            else None
+        ),
+        "guardrail_inventory_validation": (
+            validate_guardrail_inventory(registration[STEP237_LOCK_KEY]["rule_inventory"])
+            if args.resume_from_step237
+            else None
+        ),
+        "v1d_attachment": (
+            registration[STEP237_LOCK_KEY]["v1d_attachment"]
+            if args.resume_from_step237
             else None
         ),
         "frozen_confirmatory_partitions_touched": [],
@@ -993,6 +1246,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--private_dir", type=Path, required=True)
     parser.add_argument("--device", default="cuda")
     parser.add_argument("--resume_from_step200", action="store_true")
+    parser.add_argument("--resume_from_step237", action="store_true")
     return parser.parse_args()
 
 

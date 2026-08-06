@@ -10,11 +10,13 @@ from torch import nn
 from models.paper2_dc2_student import Phase2StudentModules
 from training.paper2_phase2_a2 import (
     classify_inflight_quality,
+    classify_relative_explosion,
     classify_directional_shares,
     paired_verdict,
     repeated_marginal_bounds,
     retention_slope_latest,
     should_extend,
+    validate_guardrail_inventory,
 )
 from training.run_paper2_phase2_a2 import (
     _forward,
@@ -123,6 +125,79 @@ def test_retention_slope_uses_latest_three_evaluations() -> None:
     assert retention_slope_latest(history, evaluations=3) < 0
 
 
+def test_relative_explosion_uses_prior_window_and_three_strikes() -> None:
+    warmup = classify_relative_explosion(
+        prior_norms=[1.0] * 99,
+        current_norm=100.0,
+        previous_consecutive_exceedances=0,
+    )
+    assert not warmup["armed"]
+    assert not warmup["stop"]
+    first = classify_relative_explosion(
+        prior_norms=[1.0] * 100,
+        current_norm=10.01,
+        previous_consecutive_exceedances=0,
+    )
+    assert first["armed"]
+    assert first["reference_median"] == pytest.approx(1.0)
+    assert first["consecutive_exceedances"] == 1
+    assert not first["stop"]
+    third = classify_relative_explosion(
+        prior_norms=[1.0] * 100,
+        current_norm=10.01,
+        previous_consecutive_exceedances=2,
+    )
+    assert third["stop"]
+    reset = classify_relative_explosion(
+        prior_norms=[1.0] * 100,
+        current_norm=10.0,
+        previous_consecutive_exceedances=2,
+    )
+    assert reset["consecutive_exceedances"] == 0
+
+
+def test_guardrail_inventory_requires_named_cliff_for_stop_authority() -> None:
+    valid = validate_guardrail_inventory(
+        [
+            {
+                "name": "finite",
+                "threshold": "finite",
+                "estimator": "scalar",
+                "reference_point": "current",
+                "cadence": "each step",
+                "disposition": "stop",
+                "named_cliff": "garbage training",
+            },
+            {
+                "name": "curve",
+                "threshold": "below target",
+                "estimator": "metric",
+                "reference_point": "endpoint",
+                "cadence": "each eval",
+                "disposition": "log",
+                "named_cliff": "",
+            },
+        ]
+    )
+    assert valid["valid"]
+    invalid = validate_guardrail_inventory(
+        [{**valid_inventory_row(), "named_cliff": ""}]
+    )
+    assert not invalid["valid"]
+
+
+def valid_inventory_row() -> dict[str, object]:
+    return {
+        "name": "rule",
+        "threshold": "x",
+        "estimator": "y",
+        "reference_point": "z",
+        "cadence": "each step",
+        "disposition": "stop",
+        "named_cliff": "garbage training",
+    }
+
+
 def test_legacy_preupdate_abort_is_removed_from_executed_schedule() -> None:
     schedule, attempts = reconcile_executed_schedule(
         step=2,
@@ -198,3 +273,19 @@ def test_a2_lock_authorizes_exact_four_run_matrix() -> None:
     assert resume["resume_all_four"] is True
     assert len(resume["source_resume_sha256_by_arm"]) == 4
     assert resume["quality"]["during_training_point_drop_from_step_zero"] == 0.003
+    step237 = registration["a2_step237_tripwire_amendment_20260806"]
+    assert step237["status"] == "locked_before_a2_step237_continuation"
+    assert step237["generator_reconstruction"]["next_attempt"] == 238
+    assert step237["generator_reconstruction"]["apply_next_batch"] is True
+    assert step237["relative_explosion"] == {
+        "disposition": "stop",
+        "multiplier": 10.0,
+        "trailing_window_steps": 100,
+        "consecutive_exceedances_to_stop": 3,
+        "reference_excludes_current_observation": True,
+        "history_source": "post_step237_observed_optimizer_step_norms",
+        "historical_cross_section_backfill": False,
+        "warmup_disposition": "log",
+        "named_cliff": "garbage training escaping into the budget",
+    }
+    assert validate_guardrail_inventory(step237["rule_inventory"])["valid"]
