@@ -334,11 +334,19 @@
     "source_result": {
       "commit": "1217e02a",
       "summary": "outputs/stage5/stage5_paper2_phase2_a2_resume_20260805/summary.json",
-      "summary_sha256": "6fc9515be48019db78c79517aeddb2cb9546a092345c68106efc079859d1b14f",
+      "summary_sha256": "243d49f0a70995456f3e6a011c648fffc9c9c99514aa3a8175c31fadde6b7500",
       "audit_commit": "42922c97",
       "audit_summary": "outputs/stage5/stage5_paper2_phase2_a2_tripwire_audit_20260806/summary.json",
-      "audit_summary_sha256": "3007927b5da62454c2d12ddef4f99e15beb726cbf9d509aed3e5594a28070ee5",
+      "audit_summary_sha256": "1e2c064a028511116d006274516bdd673f26e7216777676367f099c1f9f85ba6",
+      "text_hash_mode": "utf8_lf_normalized_sha256",
       "classification": "STATIC_TRIPWIRE_STALE"
+    },
+    "technical_erratum": {
+      "document": "docs/PAPER2_PHASE2_A2_STEP237_HASH_PORTABILITY_ERRATUM_20260806.md",
+      "bytes": 1818,
+      "sha256": "aa8bde489f98d99eb4259edb922b894d10b68fd071560a328606375350f00d45",
+      "scope": "cross_platform_text_receipt_hashing_only",
+      "optimizer_steps_before_erratum": 0
     },
     "resume_step": 237,
     "resume_all_four": true,

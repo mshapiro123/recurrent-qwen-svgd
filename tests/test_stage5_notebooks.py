@@ -3543,6 +3543,7 @@ def test_phase2_a2_step237_continuation_is_wired_and_guarded() -> None:
         "attempt 238 exact row hash asserted selected and applied without clipping",
         "relative explosion is 10x trailing-100 median three consecutive steps",
         "guardrail inventory names a cliff for every stop-authority rule",
+        "utf8_lf_normalized_sha256 removes checkout newline variance only",
     ):
         assert marker in bootstrap or marker in cell or marker in runner
     assert "stage5_paper2_phase2_a2_step237_continuation_20260806" in runner

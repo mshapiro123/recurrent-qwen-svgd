@@ -277,6 +277,8 @@ def test_a2_lock_authorizes_exact_four_run_matrix() -> None:
     assert step237["status"] == "locked_before_a2_step237_continuation"
     assert step237["generator_reconstruction"]["next_attempt"] == 238
     assert step237["generator_reconstruction"]["apply_next_batch"] is True
+    assert step237["source_result"]["text_hash_mode"] == "utf8_lf_normalized_sha256"
+    assert step237["technical_erratum"]["optimizer_steps_before_erratum"] == 0
     assert step237["relative_explosion"] == {
         "disposition": "stop",
         "multiplier": 10.0,

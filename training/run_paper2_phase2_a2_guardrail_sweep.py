@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 from pathlib import Path
 from typing import Any
@@ -20,6 +21,12 @@ EXPECTED_ARMS = {
     "seed_1_full_a2",
     "seed_1_draft_only_control",
 }
+
+
+def sha256_lf_text(path: Path) -> str:
+    """Hash UTF-8 text after Git-independent newline normalization."""
+    normalized = path.read_text(encoding="utf-8").encode("utf-8")
+    return hashlib.sha256(normalized).hexdigest()
 
 
 def _assert_file(root: Path, row: dict[str, Any], *, path_key: str = "document") -> Path:
@@ -45,12 +52,15 @@ def run(*, root: Path, output: Path) -> dict[str, Any]:
         "amendment": _assert_file(root, lock),
         "strategy_resolution": _assert_file(root, lock["strategy_resolution"]),
         "guardrail_doctrine": _assert_file(root, lock["guardrail_doctrine"]),
+        "hash_portability_erratum": _assert_file(root, lock["technical_erratum"]),
     }
     source_summary = root / lock["source_result"]["summary"]
     audit_summary = root / lock["source_result"]["audit_summary"]
-    if sha256_file(source_summary) != lock["source_result"]["summary_sha256"]:
+    if lock["source_result"].get("text_hash_mode") != "utf8_lf_normalized_sha256":
+        raise RuntimeError("step-237 text receipt hash mode is not locked")
+    if sha256_lf_text(source_summary) != lock["source_result"]["summary_sha256"]:
         raise RuntimeError("step-237 source summary SHA mismatch")
-    if sha256_file(audit_summary) != lock["source_result"]["audit_summary_sha256"]:
+    if sha256_lf_text(audit_summary) != lock["source_result"]["audit_summary_sha256"]:
         raise RuntimeError("tripwire audit summary SHA mismatch")
     source = json.loads(source_summary.read_text(encoding="utf-8"))
     audit = json.loads(audit_summary.read_text(encoding="utf-8"))
@@ -101,6 +111,11 @@ def run(*, root: Path, output: Path) -> dict[str, Any]:
         "lock_key": LOCK_KEY,
         "lock_status": lock["status"],
         "classification": lock["source_result"]["classification"],
+        "source_receipt_hash_contract": {
+            "mode": lock["source_result"]["text_hash_mode"],
+            "source_summary_sha256": sha256_lf_text(source_summary),
+            "audit_summary_sha256": sha256_lf_text(audit_summary),
+        },
         "documents": {
             name: {
                 "path": path.relative_to(root).as_posix(),

@@ -167,6 +167,7 @@ def _assert_lock(
             (step237, "step-237 amendment"),
             (step237["strategy_resolution"], "step-237 strategy resolution"),
             (step237["guardrail_doctrine"], "guardrail doctrine"),
+            (step237["technical_erratum"], "step-237 hash portability erratum"),
         ):
             path = root / row["document"]
             expected_bytes = int(row.get("document_bytes", row.get("bytes", -1)))
