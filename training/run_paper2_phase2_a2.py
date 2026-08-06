@@ -126,6 +126,16 @@ def reconcile_executed_schedule(
     )
 
 
+def restore_resume_lineage(saved: dict[str, Any]) -> dict[str, Any] | None:
+    """Restore immutable source ancestry from a continuation checkpoint."""
+    lineage = saved.get("resume_lineage")
+    if lineage is None:
+        return None
+    if not isinstance(lineage, dict):
+        raise RuntimeError("resume lineage must be a mapping")
+    return dict(lineage)
+
+
 def _git_head(root: Path) -> str:
     return subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=root, text=True).strip()
 
@@ -168,6 +178,7 @@ def _assert_lock(
             (step237["strategy_resolution"], "step-237 strategy resolution"),
             (step237["guardrail_doctrine"], "guardrail doctrine"),
             (step237["technical_erratum"], "step-237 hash portability erratum"),
+            (step237["extension_resume_incident"], "A2 extension resume incident"),
         ):
             path = root / row["document"]
             expected_bytes = int(row.get("document_bytes", row.get("bytes", -1)))
@@ -611,6 +622,7 @@ def run_arm(
         )
         static_threshold_exceedances = int(saved.get("static_threshold_exceedances", 0))
         next_batch_assertion = saved.get("next_batch_assertion")
+        resume_lineage = restore_resume_lineage(saved)
         batch_hashes, preupdate_attempts = reconcile_executed_schedule(
             step=step,
             batch_hashes=saved_batch_hashes,
@@ -628,7 +640,7 @@ def run_arm(
         if resume_from_step200:
             resume_lock = registration["a2_step200_resume_amendment_20260805"]
             expected_source_sha = resume_lock["source_resume_sha256_by_arm"][name]
-            prior_lineage = saved.get("resume_lineage")
+            prior_lineage = resume_lineage
             if prior_lineage is None:
                 if observed_resume_sha != expected_source_sha:
                     raise RuntimeError(f"registered step-200 source SHA mismatch for {name}")

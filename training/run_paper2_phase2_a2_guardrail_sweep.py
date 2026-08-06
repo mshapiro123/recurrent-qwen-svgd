@@ -53,6 +53,7 @@ def run(*, root: Path, output: Path) -> dict[str, Any]:
         "strategy_resolution": _assert_file(root, lock["strategy_resolution"]),
         "guardrail_doctrine": _assert_file(root, lock["guardrail_doctrine"]),
         "hash_portability_erratum": _assert_file(root, lock["technical_erratum"]),
+        "extension_resume_incident": _assert_file(root, lock["extension_resume_incident"]),
     }
     source_summary = root / lock["source_result"]["summary"]
     audit_summary = root / lock["source_result"]["audit_summary"]

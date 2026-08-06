@@ -348,6 +348,14 @@
       "scope": "cross_platform_text_receipt_hashing_only",
       "optimizer_steps_before_erratum": 0
     },
+    "extension_resume_incident": {
+      "document": "docs/PAPER2_PHASE2_A2_EXTENSION_RESUME_INCIDENT_20260806.md",
+      "bytes": 2286,
+      "sha256": "5e5179a0799826cede216e32aa9d086a5832398563e6dc66c56f2a2ff94e920c",
+      "scope": "persisted_resume_lineage_restoration_only",
+      "seed_0_full_a2_completed_step": 1000,
+      "extension_optimizer_steps_before_failure": 0
+    },
     "resume_step": 237,
     "resume_all_four": true,
     "source_resume_sha256_by_arm": {

@@ -530,6 +530,7 @@ TARGETS = {
             "relative explosion is 10x trailing-100 median three consecutive steps",
             "guardrail inventory names a cliff for every stop-authority rule",
             "utf8_lf_normalized_sha256 removes checkout newline variance only",
+            "persisted resume lineage reopens the registered step-1000 extension",
             "tests/test_paper2_phase2_a2_guardrail_sweep.py",
             "colab/run_stage5_paper2_phase2_a2.py",
         ],

@@ -30,6 +30,7 @@ STAGE5_PAPER2_PHASE2_A2_VERSION = "paper2_phase2_a2_v1"
 # Safety marker: relative explosion is 10x trailing-100 median three consecutive steps
 # Safety marker: guardrail inventory names a cliff for every stop-authority rule
 # Safety marker: utf8_lf_normalized_sha256 removes checkout newline variance only
+# Safety marker: persisted resume lineage reopens the registered step-1000 extension
 # Safety marker: paper2_phase2_a2_step237_v1
 # Safety marker: tests/test_paper2_phase2_a2_guardrail_sweep.py
 REPO = "mshapiro123/recurrent-qwen-svgd"

@@ -22,6 +22,7 @@ from training.run_paper2_phase2_a2 import (
     _forward,
     _set_trainable,
     reconcile_executed_schedule,
+    restore_resume_lineage,
 )
 
 
@@ -235,6 +236,27 @@ def test_schedule_repair_preserves_exact_executed_schedule() -> None:
     assert attempts == [{"row_hash": "old-rejected"}]
 
 
+def test_continuation_checkpoint_restores_step237_source_lineage() -> None:
+    source = {
+        "resume_lineage": {
+            "step237_tripwire_amendment": {
+                "status": "locked_before_a2_step237_continuation",
+                "source_sha256": "registered-source",
+                "source_step": 237,
+            }
+        }
+    }
+    restored = restore_resume_lineage(source)
+    assert restored == source["resume_lineage"]
+    assert restored is not source["resume_lineage"]
+    assert restored["step237_tripwire_amendment"]["source_sha256"] == "registered-source"
+
+
+def test_continuation_checkpoint_rejects_malformed_lineage() -> None:
+    with pytest.raises(RuntimeError, match="resume lineage must be a mapping"):
+        restore_resume_lineage({"resume_lineage": "not-a-mapping"})
+
+
 def test_draft_only_control_has_no_bridge_or_flow_gradient_and_unchanged_path() -> None:
     torch.manual_seed(9)
     embedding = nn.Embedding(31, 16)
@@ -279,6 +301,8 @@ def test_a2_lock_authorizes_exact_four_run_matrix() -> None:
     assert step237["generator_reconstruction"]["apply_next_batch"] is True
     assert step237["source_result"]["text_hash_mode"] == "utf8_lf_normalized_sha256"
     assert step237["technical_erratum"]["optimizer_steps_before_erratum"] == 0
+    assert step237["extension_resume_incident"]["seed_0_full_a2_completed_step"] == 1000
+    assert step237["extension_resume_incident"]["extension_optimizer_steps_before_failure"] == 0
     assert step237["relative_explosion"] == {
         "disposition": "stop",
         "multiplier": 10.0,
