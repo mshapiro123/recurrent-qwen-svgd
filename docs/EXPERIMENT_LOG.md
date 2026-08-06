@@ -1767,3 +1767,5 @@ Colab/Drive backups for selected runs.
   `outputs/stage5/stage5_paper2_phase2_a2_localization_20260806/summary.json`.
   Handoff:
   `docs/PAPER2_PHASE2_OPTION_B_LOCALIZATION_PRELOCK_HANDOFF_20260806.md`.
+  Drive mirror: `1MW2MlGkfVy9KLKbE8BGThN2NTc1kWo6p`, `5,401` bytes,
+  SHA-256 `6b41875af042a46cd8105d4a58dc6ae9bb25a6609c9cd02021f5fb9d42406ac7`.

@@ -53,7 +53,9 @@
     "phase2_option_b_resource_note_draft": "docs/PAPER2_PHASE2_OPTION_B_TEACHER_PASS_RESOURCE_NOTE_DRAFT_20260806.md",
     "phase2_option_b_localization_summary": "outputs/stage5/stage5_paper2_phase2_a2_localization_20260806/summary.json",
     "phase2_option_b_localization_receipt": "outputs/stage5/stage5_paper2_phase2_a2_localization_20260806/receipt.md",
-    "phase2_option_b_localization_handoff": "docs/PAPER2_PHASE2_OPTION_B_LOCALIZATION_PRELOCK_HANDOFF_20260806.md"
+    "phase2_option_b_localization_handoff": "docs/PAPER2_PHASE2_OPTION_B_LOCALIZATION_PRELOCK_HANDOFF_20260806.md",
+    "phase2_option_b_localization_handoff_drive_id": "1MW2MlGkfVy9KLKbE8BGThN2NTc1kWo6p",
+    "phase2_option_b_localization_handoff_sha256": "6b41875af042a46cd8105d4a58dc6ae9bb25a6609c9cd02021f5fb9d42406ac7"
   },
   "claims": [
     {
