@@ -30,6 +30,8 @@ def test_option_b_draft_is_staged_and_cannot_launch() -> None:
     assert registration["teacher_pass"]["new_training_anchor_minimum"] == 100_000
     assert registration["teacher_pass"]["hash_only_amendment_required_before_splice"] is True
     assert "teacher_14b_state_coverage_policy" in registration["lock_blockers"]
+    assert "strategy_ratification_of_no_structural_mask" in registration["lock_blockers"]
+    assert "localization_receipt_and_strategy_mask_decision" not in registration["lock_blockers"]
     assert registration["analysis"]["not_a_general_unique_data_scaling_law"] is True
 
 
@@ -63,6 +65,23 @@ def test_option_b_protocol_requires_lock_and_hash_only_splice_amendment() -> Non
     assert "single splice identifies a general unique-data scaling law" in protocol
     assert not (ROOT / "training/run_paper2_phase2_option_b.py").exists()
     assert not (ROOT / "colab/run_stage5_paper2_phase2_option_b.py").exists()
+
+
+def test_option_b_localization_and_existing_population_hashes_are_banked() -> None:
+    registration = json.loads(REGISTRATION.read_text(encoding="utf-8"))
+    unresolved = registration["unresolved"]
+    assert unresolved["localization_mask_rule_result"] == "no_structural_group_qualified"
+    assert unresolved["structural_mask"] is None
+    for key in (
+        "localization_receipt_sha256",
+        "localization_markdown_receipt_sha256",
+        "existing_training_manifest_sha256",
+        "existing_document_partition_sha256",
+        "evaluation_exclusion_sha256",
+        "fixed_old_train_subset_sha256",
+        "teacher_pass_resource_note_sha256",
+    ):
+        assert len(unresolved[key]) == 64
 
 
 def test_option_b_resource_note_separates_runtime_classes() -> None:

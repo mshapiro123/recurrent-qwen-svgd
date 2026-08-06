@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "program": "paper2_causal_control_of_recurrent_computation",
-  "status": "phase1_banked_phase2_a2_budget_limited_option_b_prelock",
+  "status": "phase1_banked_phase2_a2_budget_limited_option_b_localization_banked_prelock",
   "canonical_date": "2026-08-06",
   "active_queue": {
     "program_goal": "causal_arbitration_at_append_and_dispatch_interfaces",
@@ -9,7 +9,7 @@
     "t1": "two_registered_negatives_raw_endpoints_replicate_exact_in_support_causal_control_with_small_preservation_cost",
     "d0": "banked_not_recoverable_at_pilot_scale_binary_disagreement_target",
     "dc1_stage_a": "registered_none_transient_append_retires_checkpoint_archival_eval_c_spent",
-    "phase2": "a2_banked_budget_limited_option_b_localization_and_protocol_lock_next",
+    "phase2": "a2_banked_budget_limited_option_b_localization_no_mask_qualified_strategy_lock_next",
     "dc2": "option_b_staged_dose_then_data_authorized_not_locked",
     "d1": "window_closed_pending_option_b_result",
     "paper_two_packaging": "proceeds_on_banked_phase1_results"
@@ -50,7 +50,10 @@
     "phase2_option_b_data_unit_audit": "docs/PAPER2_PHASE2_OPTION_B_DATA_UNIT_AUDIT_20260806.md",
     "phase2_option_b_protocol_draft": "docs/PAPER2_PHASE2_OPTION_B_EXPLORATION_PROTOCOL_DRAFT_20260806.md",
     "phase2_option_b_machine_draft": "training/paper2_phase2_option_b_preregistration.draft.json",
-    "phase2_option_b_resource_note_draft": "docs/PAPER2_PHASE2_OPTION_B_TEACHER_PASS_RESOURCE_NOTE_DRAFT_20260806.md"
+    "phase2_option_b_resource_note_draft": "docs/PAPER2_PHASE2_OPTION_B_TEACHER_PASS_RESOURCE_NOTE_DRAFT_20260806.md",
+    "phase2_option_b_localization_summary": "outputs/stage5/stage5_paper2_phase2_a2_localization_20260806/summary.json",
+    "phase2_option_b_localization_receipt": "outputs/stage5/stage5_paper2_phase2_a2_localization_20260806/receipt.md",
+    "phase2_option_b_localization_handoff": "docs/PAPER2_PHASE2_OPTION_B_LOCALIZATION_PRELOCK_HANDOFF_20260806.md"
   },
   "claims": [
     {
@@ -119,6 +122,39 @@
         "the two-seed DEV effect generalizes beyond this lineage",
         "pilot-scale headroom is the architectural ceiling",
         "a dose-only plateau proves data scaling cannot help"
+      ]
+    },
+    {
+      "id": "phase2_a2_structural_localization",
+      "status": "supported_bounded_posthoc_dev_only",
+      "claim": "No preregistered coarse structural group identified a replicated writeback-harm pocket suitable for masking before the Option B continuation.",
+      "scope": "CPU-only post-hoc localization on 8,031 fixed A2 DEV anchors, two seeds, structural candidates limited to stratum, token-position buckets, and their intersections; no model inference or training",
+      "metrics": {
+        "anchors": 8031,
+        "helped_both_seeds": 3270,
+        "harmed_both_seeds": 2904,
+        "opposite_sign_across_seeds": 1857,
+        "quality_loss_both_seeds": 61,
+        "qualified_structural_masks": 0,
+        "minimum_candidate_rows": 200,
+        "nearest_candidate_token_zero_rows": 24
+      },
+      "evidence": [
+        {
+          "path": "outputs/stage5/stage5_paper2_phase2_a2_localization_20260806/summary.json",
+          "locator": "cross-seed consistency, structural candidate table, bootstrap intervals, diagnostic quartiles, and pre-lock hashes"
+        },
+        {
+          "path": "outputs/stage5/stage5_paper2_phase2_a2_localization_20260806/receipt.md",
+          "locator": "population units, no-mask result, and existing population hashes"
+        }
+      ],
+      "do_not_claim": [
+        "writeback harm is absent at row level",
+        "no deployable router can exist",
+        "diagnostic quantiles are authorized router features",
+        "the post-hoc localization is confirmatory evidence",
+        "the unmasked Option B arm has passed its endpoint gates"
       ]
     },
     {

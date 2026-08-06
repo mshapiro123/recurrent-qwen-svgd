@@ -10,16 +10,25 @@ Governing documents:
 
 ## 1. Remaining lock sequence
 
-1. Run the helped/harmed localization job and obtain strategy's mask decision.
-2. Fill the existing 41,969-anchor training manifest, document partition,
-   evaluation-exclusion, and fixed old-train diagnostic-subset hashes.
-3. File the teacher-pass resource note and lock the generation procedure,
+The CPU localization landed at commit `17151603`. No structural candidate
+cleared the pre-stated two-seed rule. The protocol therefore recommends no
+mask, pending strategy ratification. The existing-data hashes are now banked:
+
+- training manifest: `03ce3e1877f4e79f0952ab7054b16c0fb823fe9c9de03ee7c9088d8aa271201a`;
+- document partition: `7b4fcdfad21b940ea8a5d51d4310d3a9b4ac851d27df2542004a9182f8398e81`;
+- evaluation exclusion proof: `c751de988b7c83fd1bfed4a409174d99ed79b02657a06f156672df73537b7f5f`;
+- fixed old-train diagnostic subset: `0f5d114c3dcf6c856956ba9a618f7957f0c3d18c317415c3a1eb23420cd609c5`.
+
+Remaining lock sequence:
+
+1. Strategy ratifies the no-mask reading.
+2. Approve the teacher-pass resource note and lock the generation procedure,
    pinned model revisions, minimum/target anchor counts, quarantine rules, and
    hash-only amendment procedure.
-4. Resolve whether 14B layer states are collected for every new anchor or only
+3. Resolve whether 14B layer states are collected for every new anchor or only
    the 14B-threshold subset. The current resource estimate conservatively
    assumes every anchor; the implementation may not guess.
-5. Strategy locks this protocol and its machine-readable JSON before either
+4. Strategy locks this protocol and its machine-readable JSON before either
    segment training or the teacher pass begins.
 
 The expanded data cannot have a manifest hash before it is generated. The lock
@@ -176,6 +185,18 @@ teacher or hindsight: stratum, position bucket, and intersections. A single
 candidate can enter the full arms only if it clears the two-seed
 document-bootstrap rule and strategy names it in the lock. Diagnostic quantiles
 can explain the outcome but cannot become router features or masks.
+
+The landed result found `3,270/8,031` rows helped in both seeds,
+`2,904/8,031` harmed in both, and `1,857/8,031` with opposite signs. Only
+`61/8,031` rows lost quality in both seeds. No structural candidate qualified.
+The nearest apparent pocket, token position zero, contained only 24 rows and
+failed both the 200-row minimum and the replicated interval rule. Coarser groups
+with adequate support generally showed a benefit from writeback, not a
+maskable harm pocket. The recommended locked arm is therefore unmasked.
+
+Receipt:
+`outputs/stage5/stage5_paper2_phase2_a2_localization_20260806/summary.json`
+(SHA-256 `848afffcd0c1eaffed61cb1524870246a522689e436d32a0cfa560fbdb1ae222`).
 
 ## 9. Do not claim
 

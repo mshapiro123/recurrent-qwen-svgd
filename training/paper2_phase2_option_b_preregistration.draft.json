@@ -15,10 +15,8 @@
     }
   },
   "lock_blockers": [
-    "localization_receipt_and_strategy_mask_decision",
-    "existing_training_manifest_and_partition_hashes",
-    "fixed_train_diagnostic_subset_hash",
-    "teacher_pass_resource_note",
+    "strategy_ratification_of_no_structural_mask",
+    "teacher_pass_resource_note_approval",
     "teacher_14b_state_coverage_policy",
     "strategy_protocol_lock"
   ],
@@ -168,13 +166,16 @@
     "not_a_general_unique_data_scaling_law": true
   },
   "unresolved": {
-    "localization_receipt_sha256": null,
+    "localization_receipt_sha256": "848afffcd0c1eaffed61cb1524870246a522689e436d32a0cfa560fbdb1ae222",
+    "localization_markdown_receipt_sha256": "903062e46bb17d81825899aa995616f5fd121f43c3ec965eaed66cd1700f73d2",
+    "localization_mask_rule_result": "no_structural_group_qualified",
+    "localization_strategy_recommendation": "no_mask_pending_strategy_ratification",
     "structural_mask": null,
-    "existing_training_manifest_sha256": null,
-    "existing_document_partition_sha256": null,
-    "evaluation_exclusion_sha256": null,
-    "fixed_old_train_subset_sha256": null,
-    "teacher_pass_resource_note_sha256": null,
+    "existing_training_manifest_sha256": "03ce3e1877f4e79f0952ab7054b16c0fb823fe9c9de03ee7c9088d8aa271201a",
+    "existing_document_partition_sha256": "7b4fcdfad21b940ea8a5d51d4310d3a9b4ac851d27df2542004a9182f8398e81",
+    "evaluation_exclusion_sha256": "c751de988b7c83fd1bfed4a409174d99ed79b02657a06f156672df73537b7f5f",
+    "fixed_old_train_subset_sha256": "0f5d114c3dcf6c856956ba9a618f7957f0c3d18c317415c3a1eb23420cd609c5",
+    "teacher_pass_resource_note_sha256": "4c117acbe0bc0ca8f1c1e29c77ca2a156a661fe2b946eb7e7e996a23fcda1817",
     "teacher_14b_state_coverage_policy": null,
     "new_training_anchor_count": null,
     "new_training_manifest_sha256": null,

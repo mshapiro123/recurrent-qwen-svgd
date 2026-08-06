@@ -1753,3 +1753,17 @@ Colab/Drive backups for selected runs.
   Machine draft:
   `training/paper2_phase2_option_b_preregistration.draft.json`. Resource note:
   `docs/PAPER2_PHASE2_OPTION_B_TEACHER_PASS_RESOURCE_NOTE_DRAFT_20260806.md`.
+- 2026-08-06 Phase-2 Option B localization: CPU-only post-processing used all
+  `8,031` fixed A2 DEV anchors and banked the existing population hashes.
+  Across both seeds, `3,270/8,031 = 40.72%` were helped, `2,904/8,031 =
+  36.16%` were harmed, `1,857/8,031 = 23.12%` changed sign, and only
+  `61/8,031 = 0.76%` lost quality in both seeds. No structural candidate met
+  the pre-stated two-seed mask rule. The nearest apparent pocket, token
+  position zero, had only 24 rows and failed the minimum-support and replicated
+  interval requirements. Adequately sized coarse groups generally showed
+  writeback benefit, not maskable harm. Recommendation: lock unmasked after
+  strategy ratification. Teacher generation and training remain prohibited.
+  Receipt:
+  `outputs/stage5/stage5_paper2_phase2_a2_localization_20260806/summary.json`.
+  Handoff:
+  `docs/PAPER2_PHASE2_OPTION_B_LOCALIZATION_PRELOCK_HANDOFF_20260806.md`.

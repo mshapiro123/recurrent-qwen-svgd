@@ -63,7 +63,8 @@ reading. That reading requires a flat fresh-data segment and a small train-eval
 gap as specified in the protocol.
 
 The strategy resolution removes the unit and axis blockers. Exact existing-data
-hashes are required at the protocol lock. Expanded-data hashes are necessarily
+hashes were banked by the CPU localization receipt at commit `17151603`.
+Expanded-data hashes are necessarily
 created by the authorized teacher pass and enter through a hash-only amendment
 before the splice. No launcher may silently substitute data, models, or a splice
 boundary.
