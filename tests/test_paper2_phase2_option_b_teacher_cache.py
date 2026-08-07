@@ -134,8 +134,11 @@ def test_launcher_is_teacher_only_and_bootstrap_target_is_wired() -> None:
     assert "STAGE5_PHASE2_OPTION_B_OFFLOAD_32B" in runner
     assert "a100_40gb_32b_accelerate_offload" in runner
     assert "memory >= 38000" in cell
-    assert "paper2_phase2_option_b_teacher_cache_v5" in cell
+    assert "paper2_phase2_option_b_teacher_cache_v6" in cell
     assert "derived exclusion receipts require hash-closed source JSONL lineage" in cell
+    assert "hardware-specific pilot caches prevent cross-mode throughput reuse" in cell
+    assert 'pilot_mode = "a10040_offload" if offload_32b else "a10080_resident"' in runner
+    assert 'pilot_private = private / f"pilot_{pilot_mode}"' in runner
     assert "pinned bf16 32B Accelerate offload on CUDA" in cell
     assert 'MIN_SCRATCH_TOTAL_GIB"] = "200"' in cell
     assert 'MIN_SCRATCH_FREE_GIB"] = "150"' in cell

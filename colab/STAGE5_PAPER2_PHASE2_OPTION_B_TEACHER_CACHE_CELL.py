@@ -12,7 +12,7 @@ from google.colab import drive, userdata
 
 
 STAGE5_PAPER2_PHASE2_OPTION_B_TEACHER_CACHE_VERSION = (
-    "paper2_phase2_option_b_teacher_cache_v5"
+    "paper2_phase2_option_b_teacher_cache_v6"
 )
 # Safety marker: locked fresh documents target 140000 floor 100000 anchors
 # Safety marker: all-admitted-anchor 14B states and per-anchor label-tier admission
@@ -20,6 +20,7 @@ STAGE5_PAPER2_PHASE2_OPTION_B_TEACHER_CACHE_VERSION = (
 # Safety marker: A100 40GB storage profile total 200 GiB free 150 GiB
 # Safety marker: A100 40GB launch is preflight-only before full cache authorization
 # Safety marker: derived exclusion receipts require hash-closed source JSONL lineage
+# Safety marker: hardware-specific pilot caches prevent cross-mode throughput reuse
 # Safety marker: A100 80GB remains fully resident sequential model loads
 # Safety marker: teacher cache only no model optimizer no training
 # Safety marker: no optimizer no training

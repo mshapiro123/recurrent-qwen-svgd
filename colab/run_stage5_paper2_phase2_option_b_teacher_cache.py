@@ -340,18 +340,20 @@ def main() -> int:
             command.extend(["--excluded_jsonl", str(path)])
         run(command)
 
-    pilot_config = private / "pilot_config.json"
+    offload_32b = os.environ.get("STAGE5_PHASE2_OPTION_B_OFFLOAD_32B", "0") == "1"
+    pilot_mode = "a10040_offload" if offload_32b else "a10080_resident"
+    pilot_config = private / f"pilot_config_{pilot_mode}.json"
     write_json(
         pilot_config,
         build_cache_config(
             registration=registration,
             data_path=data,
             anchor_count=PILOT_ANCHORS,
-            run_id=RUN_ID + "_pilot",
+            run_id=RUN_ID + f"_pilot_{pilot_mode}",
         ),
     )
-    pilot_private = private / "pilot"
-    pilot_output = receipts / "pilot_cache_summary.json"
+    pilot_private = private / f"pilot_{pilot_mode}"
+    pilot_output = receipts / f"pilot_cache_summary_{pilot_mode}.json"
     pilot_started = time.perf_counter()
     run(
         cache_command(
@@ -359,7 +361,7 @@ def main() -> int:
             config=pilot_config,
             private=pilot_private,
             output=pilot_output,
-            staging=Path(scratch["staging_dir"]) / "pilot",
+            staging=Path(scratch["staging_dir"]) / f"pilot_{pilot_mode}",
         )
     )
     pilot_elapsed = time.perf_counter() - pilot_started
@@ -376,6 +378,7 @@ def main() -> int:
         scratch_free_bytes=shutil.disk_usage(scratch["mount"]).free,
         drive_free_bytes=shutil.disk_usage(DRIVE_RUN).free,
     )
+    storage["pilot_execution_mode"] = pilot_mode
     storage["pilot_elapsed_seconds"] = pilot_elapsed
     pilot_summary = json.loads(pilot_output.read_text(encoding="utf-8"))
     storage["model_throughput"] = {
