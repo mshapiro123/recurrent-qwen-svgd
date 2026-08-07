@@ -133,7 +133,7 @@ def select_scratch() -> dict[str, Any]:
 def cache_command(
     *, data: Path, config: Path, private: Path, output: Path, staging: Path
 ) -> list[str]:
-    return [
+    command = [
         sys.executable,
         "-u",
         "-m",
@@ -155,6 +155,15 @@ def cache_command(
         "--attn_implementation",
         "sdpa",
     ]
+    if os.environ.get("STAGE5_PHASE2_OPTION_B_OFFLOAD_32B", "0") == "1":
+        command.extend(
+            [
+                "--offload_32b",
+                "--offload_dir",
+                str(staging / "offload_32b"),
+            ]
+        )
+    return command
 
 
 def publish(summary_path: Path) -> str:
@@ -362,8 +371,20 @@ def main() -> int:
         "teacher_state_ledger_sha256": sha256_file(
             full_private / "model_cache" / "teacher_14b" / "summary.json"
         ),
+        "model_execution_modes": {
+            key: value.get("execution_mode")
+            for key, value in full_summary["model_caches"].items()
+        },
+        "teacher_32b_hf_device_map": full_summary["model_caches"]["teacher_32b"].get(
+            "hf_device_map", {}
+        ),
         "throughput_storage_preflight": storage,
         "runtime_storage": scratch,
+        "hardware_mode": (
+            "a100_40gb_32b_accelerate_offload"
+            if os.environ.get("STAGE5_PHASE2_OPTION_B_OFFLOAD_32B", "0") == "1"
+            else "a100_80gb_fully_resident"
+        ),
         "training_started": False,
         "optimizer_steps": 0,
         "evaluation_partition_touched": False,

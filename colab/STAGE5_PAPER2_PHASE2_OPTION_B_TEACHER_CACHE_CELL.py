@@ -12,11 +12,12 @@ from google.colab import drive, userdata
 
 
 STAGE5_PAPER2_PHASE2_OPTION_B_TEACHER_CACHE_VERSION = (
-    "paper2_phase2_option_b_teacher_cache_v1"
+    "paper2_phase2_option_b_teacher_cache_v2"
 )
 # Safety marker: locked fresh documents target 140000 floor 100000 anchors
 # Safety marker: all-admitted-anchor 14B states and per-anchor label-tier admission
-# Safety marker: A100-SXM4-80GB sequential model loads local scratch Drive resume
+# Safety marker: A100 40GB uses pinned bf16 32B Accelerate offload on CUDA
+# Safety marker: A100 80GB remains fully resident sequential model loads
 # Safety marker: teacher cache only no model optimizer no training
 # Safety marker: no optimizer no training
 # Safety marker: tests/test_paper2_phase2_option_b_teacher_cache.py
@@ -79,10 +80,16 @@ memory = max(
     ).splitlines()
     if value.strip()
 )
-assert memory >= 70000, (
-    "Option B includes a pinned 32B bf16 pass and requires an A100 80GB; "
-    f"observed {memory} MiB."
-)
+assert memory >= 38000, f"Option B requires an A100 40GB or larger; observed {memory} MiB."
+if memory < 70000:
+    os.environ["STAGE5_PHASE2_OPTION_B_OFFLOAD_32B"] = "1"
+    print(
+        "hardware_mode=a100_40gb_32b_accelerate_cpu_disk_offload_cuda_execution",
+        flush=True,
+    )
+else:
+    os.environ["STAGE5_PHASE2_OPTION_B_OFFLOAD_32B"] = "0"
+    print("hardware_mode=a100_80gb_fully_resident", flush=True)
 listing = subprocess.check_output(
     ["df", "-B1", "--output=target,size,avail"], text=True
 )

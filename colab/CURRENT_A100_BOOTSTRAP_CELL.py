@@ -149,7 +149,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3_short_sha"
 #   "paper2_phase2_v1c" - DEV-C-only larger-radius paired extension; no training.
 #   "paper2_phase2_v1d" - DEV-C-only RMS-capped c=0.15 confirmation; no training.
 #   "paper2_phase2_stage0a" - DEV-C sparse lattice and 14B teacher states; A100-80GB, no training.
-#   "paper2_phase2_option_b_teacher_cache" - locked new-document teacher cache; A100-80GB, no training.
+#   "paper2_phase2_option_b_teacher_cache" - locked new-document teacher cache; A100-40GB offload or 80GB, no training.
 #   "paper2_phase2_stage0a_repair" - CPU-only finite-metric repair from cached Stage 0A shards.
 #   "paper2_phase2_exp0a" - A100 DEV-only canonicalizer and partial-whitening screening.
 #   "paper2_phase2_exp0b" - L4-or-larger DEV-only interpolation and serial-flow screening.
@@ -312,10 +312,11 @@ TARGETS = {
         "path": "colab/STAGE5_PAPER2_PHASE2_OPTION_B_TEACHER_CACHE_CELL.py",
         "markers": [
             "STAGE5_PAPER2_PHASE2_OPTION_B_TEACHER_CACHE_VERSION",
-            "paper2_phase2_option_b_teacher_cache_v1",
+            "paper2_phase2_option_b_teacher_cache_v2",
             "locked fresh documents target 140000 floor 100000 anchors",
             "all-admitted-anchor 14B states and per-anchor label-tier admission",
-            "A100-SXM4-80GB sequential model loads local scratch Drive resume",
+            "A100 40GB uses pinned bf16 32B Accelerate offload on CUDA",
+            "A100 80GB remains fully resident sequential model loads",
             "teacher cache only no model optimizer no training",
             "tests/test_paper2_phase2_option_b_teacher_cache.py",
             "colab/run_stage5_paper2_phase2_option_b_teacher_cache.py",

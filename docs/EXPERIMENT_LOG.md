@@ -1789,3 +1789,12 @@ Colab/Drive backups for selected runs.
   exclusion, manifest, position, audit, model-cache, lattice, teacher-state,
   per-anchor per-horizon label-tier admission, and fixed-subset hashes. No
   optimizer or training launcher is present.
+- 2026-08-06 Option B 40GB execution amendment: the first launch correctly
+  refused an A100-SXM4-40GB because the pinned 32B bf16 weights exceed device
+  memory. The revised route keeps 0.5B, 7B, and 14B fully resident and uses
+  Accelerate CPU/local-scratch-backed dispatch only for the unchanged 32B bf16
+  pass. Offloaded modules execute on the main CUDA device through hooks. The
+  receipt records the execution mode and full device map. No model, revision,
+  dtype, cascade, cache product, threshold, optimizer, or training contract
+  changed. Amendment:
+  `docs/PAPER2_PHASE2_OPTION_B_A10040_OFFLOAD_AMENDMENT_20260806.md`.

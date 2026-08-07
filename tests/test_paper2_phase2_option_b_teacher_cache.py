@@ -2,8 +2,12 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
+import torch
+
+from eval.cache_paper2_phase2_stage0a import _materialize_weight
 
 from training.paper2_phase2_option_b import (
     build_anchor_admission_rows,
@@ -122,4 +126,33 @@ def test_launcher_is_teacher_only_and_bootstrap_target_is_wired() -> None:
     assert "paper2_phase2_option_b_teacher_cache" in bootstrap
     assert "STAGE5_PAPER2_PHASE2_OPTION_B_TEACHER_CACHE_CELL.py" in bootstrap
     assert "torch.optim" not in runner
+    assert "STAGE5_PHASE2_OPTION_B_OFFLOAD_32B" in runner
+    assert "a100_40gb_32b_accelerate_offload" in runner
+    assert "memory >= 38000" in cell
+    assert "paper2_phase2_option_b_teacher_cache_v2" in cell
+    assert "pinned bf16 32B Accelerate offload on CUDA" in cell
     assert not (ROOT / "colab/run_stage5_paper2_phase2_option_b.py").exists()
+
+
+def test_materialize_weight_keeps_resident_tensor_exact() -> None:
+    module = torch.nn.Linear(3, 2, bias=False)
+    assert _materialize_weight(module).data_ptr() == module.weight.data_ptr()
+
+
+def test_materialize_weight_reads_accelerate_offload_map() -> None:
+    module = torch.nn.Linear(3, 2, bias=False, device="meta")
+    expected = torch.arange(6, dtype=torch.bfloat16).reshape(2, 3)
+    module._hf_hook = SimpleNamespace(weights_map={"weight": expected})
+    assert torch.equal(_materialize_weight(module), expected)
+
+
+def test_40gb_mode_is_an_execution_only_amendment() -> None:
+    amendment = (
+        ROOT / "docs/PAPER2_PHASE2_OPTION_B_A10040_OFFLOAD_AMENDMENT_20260806.md"
+    ).read_text(encoding="utf-8")
+    for marker in (
+        "model IDs, revisions, bf16 dtype",
+        "no quantization, optimizer, training, or threshold change",
+        "complete `hf_device_map`",
+    ):
+        assert marker in amendment

@@ -262,7 +262,14 @@ def _validate_shared_vocabulary(receipt: dict[str, Any], private_dir: Path) -> N
 
 
 def _load_model(
-    *, model_name: str, revision: str, device: str, dtype: str, attn_implementation: str
+    *,
+    model_name: str,
+    revision: str,
+    device: str,
+    dtype: str,
+    attn_implementation: str,
+    cpu_offload: bool = False,
+    offload_dir: Path | None = None,
 ) -> tuple[Any, Any]:
     tokenizer = AutoTokenizer.from_pretrained(model_name, revision=revision)
     kwargs = model_load_kwargs(
@@ -273,7 +280,32 @@ def _load_model(
     )
     if device.startswith("cuda"):
         index = int(device.split(":", 1)[1]) if ":" in device else 0
-        kwargs["device_map"] = {"": index}
+        if cpu_offload:
+            if offload_dir is None:
+                raise ValueError("32B CPU offload requires a local offload directory")
+            offload_dir.mkdir(parents=True, exist_ok=True)
+            gpu_total_gib = int(
+                torch.cuda.get_device_properties(index).total_memory // 1024**3
+            )
+            cpu_total_gib = int(
+                os.sysconf("SC_PHYS_PAGES")
+                * os.sysconf("SC_PAGE_SIZE")
+                // 1024**3
+            )
+            kwargs.update(
+                {
+                    "device_map": "auto",
+                    "max_memory": {
+                        index: f"{max(8, gpu_total_gib - 4)}GiB",
+                        "cpu": f"{max(8, cpu_total_gib - 16)}GiB",
+                    },
+                    "offload_folder": str(offload_dir),
+                    "offload_state_dict": True,
+                    "offload_buffers": True,
+                }
+            )
+        else:
+            kwargs["device_map"] = {"": index}
     model = AutoModelForCausalLM.from_pretrained(model_name, **kwargs)
     if not device.startswith("cuda"):
         model = model.to(device)
@@ -282,7 +314,26 @@ def _load_model(
 
 
 def _model_device(model: Any) -> torch.device:
+    hook = getattr(model, "_hf_hook", None)
+    execution_device = getattr(hook, "execution_device", None)
+    if execution_device is not None:
+        return torch.device(execution_device)
+    device_map = getattr(model, "hf_device_map", None) or {}
+    for value in device_map.values():
+        if value not in {"cpu", "disk"}:
+            return torch.device(f"cuda:{value}" if isinstance(value, int) else value)
     return next(model.parameters()).device
+
+
+def _materialize_weight(module: Any, name: str = "weight") -> torch.Tensor:
+    weight = getattr(module, name)
+    if weight.device.type != "meta":
+        return weight
+    hook = getattr(module, "_hf_hook", None)
+    weights_map = getattr(hook, "weights_map", None)
+    if weights_map is None:
+        raise RuntimeError(f"Cannot materialize offloaded parameter {name}")
+    return weights_map[name]
 
 
 def _topk_statistics(
@@ -330,7 +381,12 @@ def _save_lm_head(
                 "sha256": sha256_file(destination),
                 "shape": list(payload["weight_bfloat16"].shape),
             }
-    weight = model.lm_head.weight[:shared_vocab_size].detach().to(torch.bfloat16).cpu()
+    weight = (
+        _materialize_weight(model.lm_head)[:shared_vocab_size]
+        .detach()
+        .to(torch.bfloat16)
+        .cpu()
+    )
     payload = {
         "kind": "paper2_phase2_stage0a_lm_head",
         "model_key": model_key,
@@ -356,6 +412,8 @@ def cache_model_pass(
     device: str,
     dtype: str,
     attn_implementation: str,
+    offload_32b: bool = False,
+    offload_dir: Path | None = None,
 ) -> dict[str, Any]:
     model_spec = ACTIVE_CONFIG["models"][model_key]
     samples_by_row = _samples_by_row(samples)
@@ -391,6 +449,13 @@ def cache_model_pass(
         device=device,
         dtype=dtype,
         attn_implementation=attn_implementation,
+        cpu_offload=bool(offload_32b and model_key == "teacher_32b"),
+        offload_dir=(offload_dir / model_key if offload_dir is not None else None),
+    )
+    execution_mode = (
+        "accelerate_cpu_disk_offload_cuda_execution"
+        if offload_32b and model_key == "teacher_32b"
+        else "fully_resident_cuda"
     )
     vocab_receipt = _vocabulary_receipt(tokenizer)
     _validate_shared_vocabulary(vocab_receipt, private_dir)
@@ -560,6 +625,11 @@ def cache_model_pass(
         "peak_gpu_memory_bytes_this_invocation": (
             int(torch.cuda.max_memory_allocated()) if torch.cuda.is_available() else 0
         ),
+        "execution_mode": execution_mode,
+        "hf_device_map": {
+            str(key): str(value)
+            for key, value in (getattr(model, "hf_device_map", None) or {}).items()
+        },
         "resume_policy": "completed shards never re-forwarded; an interrupted partial shard may replay",
         "training_started": False,
         "optimizer_steps": 0,
@@ -1451,6 +1521,12 @@ def main() -> int:
         "--config_json",
         help="Optional locked config; defaults to the original Stage 0A config.",
     )
+    parser.add_argument(
+        "--offload_32b",
+        action="store_true",
+        help="Keep the pinned 32B bf16 pass on CUDA via Accelerate CPU/disk offload.",
+    )
+    parser.add_argument("--offload_dir")
     args = parser.parse_args()
 
     if args.config_json:
@@ -1479,6 +1555,8 @@ def main() -> int:
             device=args.device,
             dtype=args.dtype,
             attn_implementation=args.attn_implementation,
+            offload_32b=args.offload_32b,
+            offload_dir=Path(args.offload_dir) if args.offload_dir else None,
         )
     cascade_indices, cascade_summary = build_32b_cascade(
         rows=rows, samples=samples, private_dir=private_dir
@@ -1494,6 +1572,8 @@ def main() -> int:
         device=args.device,
         dtype=args.dtype,
         attn_implementation=args.attn_implementation,
+        offload_32b=args.offload_32b,
+        offload_dir=Path(args.offload_dir) if args.offload_dir else None,
     )
     build_union_shards(rows=rows, private_dir=private_dir, staging_dir=staging_dir)
     union_score_summaries: dict[str, Any] = {}

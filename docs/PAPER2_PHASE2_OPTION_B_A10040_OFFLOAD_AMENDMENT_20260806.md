@@ -1,0 +1,23 @@
+# Option B A100-40GB Execution Amendment
+
+Date: 2026-08-06. Status: implementation-only amendment after the teacher-pass
+lock and before any teacher forward.
+
+The available runtime is an A100-SXM4-40GB. A pinned Qwen2.5-32B bf16 model
+cannot be fully resident because its weights alone exceed that memory. The
+teacher/cache pass therefore adds one explicit hardware mode:
+
+- the 0.5B, 7B, and 14B routes remain fully resident on CUDA;
+- the pinned 32B bf16 route uses Accelerate big-model dispatch with CPU and, if
+  needed, local-scratch backing;
+- offloaded modules execute on the main CUDA device through Accelerate hooks;
+- model IDs, revisions, bf16 dtype, top-K, cascade admission, state coverage,
+  audit rows, and cache formats are unchanged;
+- the receipt records the hardware mode and complete `hf_device_map`;
+- no quantization, optimizer, training, or threshold change is authorized.
+
+This amendment changes runtime and likely wall clock only. It does not change
+the scientific intervention or permit a silent lower-capacity teacher. The
+40GB mode requires the same 300GiB local scratch and is expected to make the
+32B cascade materially slower than the 80GB fully resident route. The bounded
+pilot remains the source of the runtime projection.
