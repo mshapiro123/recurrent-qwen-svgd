@@ -129,10 +129,13 @@ def test_launcher_is_teacher_only_and_bootstrap_target_is_wired() -> None:
     assert "STAGE5_PHASE2_OPTION_B_OFFLOAD_32B" in runner
     assert "a100_40gb_32b_accelerate_offload" in runner
     assert "memory >= 38000" in cell
-    assert "paper2_phase2_option_b_teacher_cache_v3" in cell
+    assert "paper2_phase2_option_b_teacher_cache_v4" in cell
     assert "pinned bf16 32B Accelerate offload on CUDA" in cell
     assert 'MIN_SCRATCH_TOTAL_GIB"] = "200"' in cell
     assert 'MIN_SCRATCH_FREE_GIB"] = "150"' in cell
+    assert 'OPTION_B_PREFLIGHT_ONLY"] = "1"' in cell
+    assert "complete_preflight_full_cache_not_started" in runner
+    assert '"full_cache_started": False' in runner
     assert not (ROOT / "colab/run_stage5_paper2_phase2_option_b.py").exists()
 
 

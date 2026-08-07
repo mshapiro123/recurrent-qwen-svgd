@@ -319,6 +319,30 @@ def main() -> int:
     }
     write_json(receipts / "throughput_storage_preflight.json", storage)
 
+    if os.environ.get("STAGE5_PHASE2_OPTION_B_PREFLIGHT_ONLY", "0") == "1":
+        summary = {
+            "kind": "paper2_phase2_option_b_teacher_cache_preflight",
+            "status": "complete_preflight_full_cache_not_started",
+            "hardware_mode": "a100_40gb_32b_accelerate_offload",
+            "pilot_anchor_count": PILOT_ANCHORS,
+            "selected_full_anchor_count_if_authorized": storage[
+                "selected_anchor_count"
+            ],
+            "throughput_storage_preflight": storage,
+            "training_started": False,
+            "optimizer_steps": 0,
+            "full_cache_started": False,
+            "next_required_action": (
+                "review measured runtime and storage before authorizing full cache"
+            ),
+        }
+        public_summary = RUN_DIR / "preflight_summary.json"
+        write_json(public_summary, summary)
+        shutil.copy2(public_summary, receipts / "preflight_summary.json")
+        commit = publish(public_summary)
+        print(json.dumps({**summary, "publish_commit": commit}, indent=2, sort_keys=True))
+        return 0
+
     selected = int(storage["selected_anchor_count"])
     full_config = private / "full_config.json"
     write_json(

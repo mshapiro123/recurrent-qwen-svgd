@@ -27,3 +27,9 @@ projection still checks measured scratch and Drive headroom with the locked
 25-percent reserve before the full pass. The 32B cascade is expected to be
 materially slower than the 80GB fully resident route; the bounded pilot remains
 the source of the runtime projection.
+
+Given a 79.99-compute-unit balance at an observed 5.3 units per hour, the first
+40GB launch is preflight-only. It publishes the measured target/floor runtime
+and storage receipt and exits before the full cache begins. Starting the full
+cache requires review of that receipt; this prevents an automatically launched
+multi-day pass from consuming a roughly 15-hour current credit budget.
