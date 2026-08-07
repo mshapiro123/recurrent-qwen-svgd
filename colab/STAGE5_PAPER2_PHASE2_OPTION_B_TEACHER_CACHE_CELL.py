@@ -12,11 +12,12 @@ from google.colab import drive, userdata
 
 
 STAGE5_PAPER2_PHASE2_OPTION_B_TEACHER_CACHE_VERSION = (
-    "paper2_phase2_option_b_teacher_cache_v2"
+    "paper2_phase2_option_b_teacher_cache_v3"
 )
 # Safety marker: locked fresh documents target 140000 floor 100000 anchors
 # Safety marker: all-admitted-anchor 14B states and per-anchor label-tier admission
 # Safety marker: A100 40GB uses pinned bf16 32B Accelerate offload on CUDA
+# Safety marker: A100 40GB storage profile total 200 GiB free 150 GiB
 # Safety marker: A100 80GB remains fully resident sequential model loads
 # Safety marker: teacher cache only no model optimizer no training
 # Safety marker: no optimizer no training
@@ -83,30 +84,45 @@ memory = max(
 assert memory >= 38000, f"Option B requires an A100 40GB or larger; observed {memory} MiB."
 if memory < 70000:
     os.environ["STAGE5_PHASE2_OPTION_B_OFFLOAD_32B"] = "1"
+    os.environ["STAGE5_PHASE2_OPTION_B_MIN_SCRATCH_TOTAL_GIB"] = "200"
+    os.environ["STAGE5_PHASE2_OPTION_B_MIN_SCRATCH_FREE_GIB"] = "150"
     print(
         "hardware_mode=a100_40gb_32b_accelerate_cpu_disk_offload_cuda_execution",
         flush=True,
     )
 else:
     os.environ["STAGE5_PHASE2_OPTION_B_OFFLOAD_32B"] = "0"
+    os.environ["STAGE5_PHASE2_OPTION_B_MIN_SCRATCH_TOTAL_GIB"] = "300"
+    os.environ["STAGE5_PHASE2_OPTION_B_MIN_SCRATCH_FREE_GIB"] = "250"
     print("hardware_mode=a100_80gb_fully_resident", flush=True)
 listing = subprocess.check_output(
     ["df", "-B1", "--output=target,size,avail"], text=True
 )
+minimum_total = int(os.environ["STAGE5_PHASE2_OPTION_B_MIN_SCRATCH_TOTAL_GIB"]) * 1024**3
+minimum_free = int(os.environ["STAGE5_PHASE2_OPTION_B_MIN_SCRATCH_FREE_GIB"]) * 1024**3
 scratch_ok = False
 for line in listing.splitlines()[1:]:
     fields = line.split()
     if len(fields) != 3:
         continue
-    target, size_text, _free_text = fields
+    target, size_text, free_text = fields
     try:
         size = int(size_text)
+        free = int(free_text)
     except ValueError:
         continue
-    if size >= 300 * 1024**3 and not target.startswith("/content/drive"):
+    if (
+        size >= minimum_total
+        and free >= minimum_free
+        and not target.startswith("/content/drive")
+    ):
         scratch_ok = True
         break
-assert scratch_ok, "Attach the Colab local-scratch disk (at least 300 GiB)."
+assert scratch_ok, (
+    "No local disk satisfies the active Option B profile: "
+    f"total>={minimum_total / 1024**3:.0f} GiB, "
+    f"free>={minimum_free / 1024**3:.0f} GiB."
+)
 
 url = f"https://x-access-token:{GH}@github.com/{REPO}.git"
 if ROOT.exists():

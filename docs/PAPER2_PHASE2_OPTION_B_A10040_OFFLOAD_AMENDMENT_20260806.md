@@ -18,6 +18,12 @@ teacher/cache pass therefore adds one explicit hardware mode:
 
 This amendment changes runtime and likely wall clock only. It does not change
 the scientific intervention or permit a silent lower-capacity teacher. The
-40GB mode requires the same 300GiB local scratch and is expected to make the
-32B cascade materially slower than the 80GB fully resident route. The bounded
-pilot remains the source of the runtime projection.
+40GB mode requires at least 200GiB total local disk with 150GiB free at launch;
+the 80GB mode retains the original 300GiB-total, 250GiB-free profile. The lower
+40GB threshold is permitted because its 83GiB system-memory budget keeps the
+offloaded 32B weights in GPU plus CPU memory, while local disk holds streaming
+corpus data, model downloads, staging shards, and a reserve. The post-pilot
+projection still checks measured scratch and Drive headroom with the locked
+25-percent reserve before the full pass. The 32B cascade is expected to be
+materially slower than the 80GB fully resident route; the bounded pilot remains
+the source of the runtime projection.

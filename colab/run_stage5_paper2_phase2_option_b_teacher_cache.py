@@ -38,7 +38,6 @@ DRIVE_RUN = Path(
 )
 REGISTRATION = ROOT / "training/paper2_phase2_option_b_preregistration.json"
 PILOT_ANCHORS = 512
-MINIMUM_SCRATCH_BYTES = 300 * 1024**3
 EXCLUSION_RUNS = (
     "stage5_paper2_d0_20260726",
     "stage5_paper2_dc0_20260728",
@@ -91,6 +90,12 @@ def collect_exclusion_files() -> list[Path]:
 
 
 def select_scratch() -> dict[str, Any]:
+    minimum_total_bytes = int(
+        os.environ.get("STAGE5_PHASE2_OPTION_B_MIN_SCRATCH_TOTAL_GIB", "300")
+    ) * 1024**3
+    minimum_free_bytes = int(
+        os.environ.get("STAGE5_PHASE2_OPTION_B_MIN_SCRATCH_FREE_GIB", "250")
+    ) * 1024**3
     listing = subprocess.check_output(
         ["df", "-B1", "--output=target,size,avail"], text=True
     )
@@ -105,12 +110,20 @@ def select_scratch() -> dict[str, Any]:
         except ValueError:
             continue
         path = Path(target)
-        if size < MINIMUM_SCRATCH_BYTES or target.startswith("/content/drive"):
+        if (
+            size < minimum_total_bytes
+            or free < minimum_free_bytes
+            or target.startswith("/content/drive")
+        ):
             continue
         if path.is_dir() and os.access(path, os.W_OK):
             candidates.append(("scratch" in target.lower(), free, size, path))
     if not candidates:
-        raise RuntimeError("Option B requires a writable local scratch disk of at least 300 GiB")
+        raise RuntimeError(
+            "Option B has no writable local disk meeting the active total/free "
+            f"profile: total>={minimum_total_bytes / 1024**3:.0f} GiB, "
+            f"free>={minimum_free_bytes / 1024**3:.0f} GiB"
+        )
     candidates.sort(reverse=True)
     _named, free, size, mount = candidates[0]
     job = mount / RUN_ID
@@ -125,6 +138,8 @@ def select_scratch() -> dict[str, Any]:
         "mount": str(mount),
         "total_bytes": size,
         "free_bytes_at_start": free,
+        "minimum_total_bytes": minimum_total_bytes,
+        "minimum_free_bytes": minimum_free_bytes,
         "staging_dir": str(staging),
         "job_root": str(job),
     }

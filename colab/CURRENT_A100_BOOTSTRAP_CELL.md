@@ -313,10 +313,11 @@ TARGETS = {
         "path": "colab/STAGE5_PAPER2_PHASE2_OPTION_B_TEACHER_CACHE_CELL.py",
         "markers": [
             "STAGE5_PAPER2_PHASE2_OPTION_B_TEACHER_CACHE_VERSION",
-            "paper2_phase2_option_b_teacher_cache_v2",
+            "paper2_phase2_option_b_teacher_cache_v3",
             "locked fresh documents target 140000 floor 100000 anchors",
             "all-admitted-anchor 14B states and per-anchor label-tier admission",
             "A100 40GB uses pinned bf16 32B Accelerate offload on CUDA",
+            "A100 40GB storage profile total 200 GiB free 150 GiB",
             "A100 80GB remains fully resident sequential model loads",
             "teacher cache only no model optimizer no training",
             "tests/test_paper2_phase2_option_b_teacher_cache.py",
