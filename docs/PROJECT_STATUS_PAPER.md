@@ -2,7 +2,7 @@
 
 **Canonical date:** August 6, 2026
 **Part 1 status:** closed
-**Part 2 status:** Phase 1 is banked. DC1 Stage A remains a registered negative (`none`). The Phase-2 pre-window diagnostics, V1d, canonicalizer arbitration, loss-free student build, and replicated A1 pass at alpha `0.5` are banked. A2 completed 2,000 steps in all four arms. The full writeback arm beat its matched no-writeback control in both seeds, but missed the registered two-percent headroom and 99.7-percent retention gates, so the verdict is `budget-limited`, not success or impossibility. Option B is authorized as a staged dose-then-data exploration. Its CPU localization found no preregistered structural mask. Strategy must ratify the unmasked design and choose 14B state-cache coverage before locking the teacher pass or further training.
+**Part 2 status:** Phase 1 is banked. DC1 Stage A remains a registered negative (`none`). The Phase-2 pre-window diagnostics, V1d, canonicalizer arbitration, loss-free student build, and replicated A1 pass at alpha `0.5` are banked. A2 completed 2,000 steps in all four arms. The full writeback arm beat its matched no-writeback control in both seeds, but missed the registered two-percent headroom and 99.7-percent retention gates, so the verdict is `budget-limited`, not success or impossibility. Option B is locked as an unmasked staged dose-then-data exploration. Strategy authorized a resumable teacher/cache pass with 14B states for every admitted anchor and per-anchor label-tier admission receipts. Training remains prohibited until the new cache hashes are banked.
 
 This page is the short status index. It replaces the earlier June recovery narrative, which became stale after the loop-closure repair, synthetic mechanism installation, Phase A dense-control comparison, and inverse-task boundary program.
 
@@ -41,8 +41,8 @@ This page is the short status index. It replaces the earlier June recovery narra
 - [Latent microstep governing design v0.6.1](LATENT_MICROSTEP_FLOW_DISTILLATION_STRATEGY_HANDOFF_V0.6.1_20260803.md)
 - [Phase-2 staged A1 completion and A2 gate](PAPER2_PHASE2_STAGED_A1_COMPLETION_HANDOFF_20260805.md)
 - [Option B data-unit audit and resolution](PAPER2_PHASE2_OPTION_B_DATA_UNIT_AUDIT_20260806.md)
-- [Option B staged exploration protocol draft](PAPER2_PHASE2_OPTION_B_EXPLORATION_PROTOCOL_DRAFT_20260806.md)
-- [Option B teacher-pass resource note draft](PAPER2_PHASE2_OPTION_B_TEACHER_PASS_RESOURCE_NOTE_DRAFT_20260806.md)
+- [Option B staged exploration protocol lock](PAPER2_PHASE2_OPTION_B_EXPLORATION_PROTOCOL_LOCKED_20260806.md)
+- [Option B teacher-pass resource note lock](PAPER2_PHASE2_OPTION_B_TEACHER_PASS_RESOURCE_NOTE_LOCKED_20260806.md)
 - [Option B localization and pre-lock handoff](PAPER2_PHASE2_OPTION_B_LOCALIZATION_PRELOCK_HANDOFF_20260806.md)
 - [Experiment log](EXPERIMENT_LOG.md)
 
@@ -176,8 +176,8 @@ fragile positions is the common interpretive frame.
 6. Strategy selected `c = 0.15` with p99 state-RMS cap `0.5508932316303252`. V1d passed its diagnostic preservation rule and is banked.
 7. Staged A1 then completed at alpha `0.5` in two seeds. Probe KL improved by `1.3555` and `1.3157` nats against a `0.10`-nat gate, flow MSE fell by `19.12%` and `19.16%`, and every matched gradient audit passed the amended inequalities on every batch. Strategy banked these as one replicated state-construction `a1_pass`, with no A1 extension and no state-use claim.
 8. Banked: Option B localization used all `8,031` fixed DEV anchors. Across both seeds, `3,270` were helped, `2,904` harmed, and `1,857` changed sign. No structural group met the pre-stated two-seed mask rule. The recommended continuation is unmasked.
-9. Pre-lock: strategy must ratify the no-mask reading, approve the teacher resource note, and choose all-anchor versus threshold-only 14B state coverage. The existing population and diagnostic-subset hashes are banked.
-10. Held: teacher/cache generation and all four 20,000-step Option B arms remain prohibited until the human and machine protocols are strategy-locked.
+9. Locked: strategy ratified no mask, approved the teacher resource note, and selected all-admitted-anchor 14B state coverage with per-anchor label-tier admission receipts.
+10. Authorized: build and run the resumable teacher/cache generator. Held: all four 20,000-step Option B arms remain prohibited until the generated-cache hashes are banked by the hash-only amendment.
 
 Closed pending that decision: additional Phase G sweeps, coverage, selection,
 LPRM, per-trajectory halting, particles, SVGD, the intra-block oracle probe,

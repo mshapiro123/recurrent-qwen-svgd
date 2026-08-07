@@ -1,0 +1,170 @@
+{
+  "kind": "paper2_phase2_option_b_complete_rule_inventory",
+  "date": "2026-08-06",
+  "status": "locked_before_teacher_pass",
+  "policy": "Only rules with a named cliff may stop execution. Rules without a named cliff are telemetry.",
+  "rules": [
+    {
+      "name": "non_finite_loss",
+      "threshold": "any_non_finite_weighted_loss",
+      "estimator": "scalar_finiteness",
+      "reference": "current_attempt",
+      "cadence": "every_attempt",
+      "disposition": "stop",
+      "named_cliff": "garbage_training"
+    },
+    {
+      "name": "non_finite_gradient",
+      "threshold": "any_non_finite_active_gradient_element",
+      "estimator": "elementwise_finiteness",
+      "reference": "current_active_gradient_tensors",
+      "cadence": "every_attempt",
+      "disposition": "stop",
+      "named_cliff": "garbage_training"
+    },
+    {
+      "name": "relative_gradient_explosion",
+      "threshold": "raw_global_norm_gt_10x_prior_100_median_for_3_consecutive_attempts",
+      "estimator": "global_l2_norm_and_rolling_median",
+      "reference": "prior_100_attempts_same_arm",
+      "cadence": "every_attempt",
+      "disposition": "stop",
+      "named_cliff": "escaping_numerical_instability"
+    },
+    {
+      "name": "endpoint_lineage",
+      "threshold": "exact_four_source_shas_and_metadata",
+      "estimator": "sha256_and_metadata_equality",
+      "reference": "locked_source_checkpoint_table",
+      "cadence": "startup",
+      "disposition": "stop",
+      "named_cliff": "corrupted_lineage"
+    },
+    {
+      "name": "frozen_lineage",
+      "threshold": "exact_digest_before_and_after",
+      "estimator": "sha256_equality",
+      "reference": "startup_frozen_parameter_digest",
+      "cadence": "startup_and_completion",
+      "disposition": "stop",
+      "named_cliff": "frozen_parameter_mutation"
+    },
+    {
+      "name": "existing_population",
+      "threshold": "exact_locked_population_hashes",
+      "estimator": "sha256_equality_and_count_checks",
+      "reference": "locked_existing_population_table",
+      "cadence": "startup",
+      "disposition": "stop",
+      "named_cliff": "invalid_dose_segment"
+    },
+    {
+      "name": "expanded_population",
+      "threshold": "hash_amendment_and_minimum_100000_new_anchors_and_quarantine_and_complete_audits",
+      "estimator": "sha256_count_and_set_disjointness_checks",
+      "reference": "locked_generation_procedure_plus_landed_amendment",
+      "cadence": "before_splice",
+      "disposition": "refuse_splice",
+      "named_cliff": "invalid_data_intervention"
+    },
+    {
+      "name": "evaluation_contact",
+      "threshold": "zero_training_access_to_fixed_evaluation_or_confirmatory_partitions",
+      "estimator": "document_and_anchor_id_set_intersection",
+      "reference": "locked_exclusion_ledger",
+      "cadence": "startup_and_completion",
+      "disposition": "stop",
+      "named_cliff": "invalidated_science"
+    },
+    {
+      "name": "pair_schedule",
+      "threshold": "exact_sampled_anchor_sequence_within_seed",
+      "estimator": "sequence_hash_equality",
+      "reference": "matched_full_control_schedule_for_seed",
+      "cadence": "every_update_and_resume",
+      "disposition": "stop",
+      "named_cliff": "invalid_paired_comparison"
+    },
+    {
+      "name": "splice_identity",
+      "threshold": "only_population_version_changes_at_recorded_checkpoint_boundary",
+      "estimator": "serialized_state_and_config_diff",
+      "reference": "durable_pre_splice_checkpoint",
+      "cadence": "splice",
+      "disposition": "stop",
+      "named_cliff": "confounded_intervention"
+    },
+    {
+      "name": "control_identity",
+      "threshold": "no_writeback_hidden_path_bit_exact",
+      "estimator": "one_batch_path_equivalence",
+      "reference": "locked_control_path",
+      "cadence": "every_1000_steps",
+      "disposition": "stop",
+      "named_cliff": "invalid_control"
+    },
+    {
+      "name": "resume_durability",
+      "threshold": "all_state_and_receipt_hashes_persist",
+      "estimator": "round_trip_readback_and_hash_equality",
+      "reference": "just_written_durable_checkpoint",
+      "cadence": "every_1000_steps",
+      "disposition": "stop_before_updates",
+      "named_cliff": "unrecoverable_lineage"
+    },
+    {
+      "name": "wilson_quality_floor",
+      "threshold": "wilson_95pct_lower_bound_gte_0.99",
+      "estimator": "wilson_95pct_lower_bound",
+      "reference": "fixed_evaluation_correctness",
+      "cadence": "every_1000_steps",
+      "disposition": "stop",
+      "named_cliff": "irreversible_quality_damage"
+    },
+    {
+      "name": "init_relative_retention",
+      "threshold": "more_than_0.003_below_step_zero_twice_consecutively",
+      "estimator": "paired_retention_rate_difference",
+      "reference": "same_arm_step_zero_evaluation",
+      "cadence": "every_1000_steps",
+      "disposition": "stop",
+      "named_cliff": "sustained_quality_drift"
+    },
+    {
+      "name": "directional_gross_miss",
+      "threshold": "primary_lt_0.40_or_any_auxiliary_gt_0.35",
+      "estimator": "mean_post_clip_gradient_share_over_51x128_audit",
+      "reference": "locked_a2_objective_groups",
+      "cadence": "every_2000_steps",
+      "disposition": "stop",
+      "named_cliff": "objective_inversion"
+    },
+    {
+      "name": "directional_repeated_marginal_miss",
+      "threshold": "primary_0.40_to_0.50_or_auxiliary_0.25_to_0.35_twice_consecutively",
+      "estimator": "mean_post_clip_gradient_share_over_51x128_audit",
+      "reference": "locked_a2_objective_groups_and_prior_audit",
+      "cadence": "every_2000_steps",
+      "disposition": "stop",
+      "named_cliff": "sustained_objective_displacement"
+    },
+    {
+      "name": "directional_target",
+      "threshold": "primaries_gte_0.50_and_auxiliaries_lte_0.25",
+      "estimator": "mean_post_clip_gradient_share_over_51x128_audit",
+      "reference": "locked_a2_objective_groups",
+      "cadence": "every_2000_steps",
+      "disposition": "telemetry",
+      "named_cliff": null
+    },
+    {
+      "name": "endpoint_readings",
+      "threshold": "slopes_one_percent_gain_writeback_share_and_train_eval_gaps",
+      "estimator": "locked_section_6_estimators",
+      "reference": "matched_arm_and_segment_baselines",
+      "cadence": "endpoint",
+      "disposition": "evidence_only",
+      "named_cliff": null
+    }
+  ]
+}

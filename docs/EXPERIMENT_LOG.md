@@ -1769,3 +1769,13 @@ Colab/Drive backups for selected runs.
   `docs/PAPER2_PHASE2_OPTION_B_LOCALIZATION_PRELOCK_HANDOFF_20260806.md`.
   Drive mirror: `1MW2MlGkfVy9KLKbE8BGThN2NTc1kWo6p`, `5,401` bytes,
   SHA-256 `6b41875af042a46cd8105d4a58dc6ae9bb25a6609c9cd02021f5fb9d42406ac7`.
+- 2026-08-06 Phase-2 Option B lock approval: strategy ratified
+  `structural_mask = null`, approved the teacher-pass resource note, and
+  required 14B canonicalizer states for every admitted anchor while preserving
+  the existing label cascade. The cache must record each anchor's admission at
+  every label tier. The human protocol, machine preregistration, and complete
+  rule inventory lock together before generator construction. The teacher/cache
+  pass is authorized; training and the data splice remain prohibited until the
+  generated hashes land in the prescribed hash-only amendment. Strategy source:
+  Drive `1UUVcMbVACiiZu3wzv304XlgEtwSe5dUD`, mirrored at
+  `docs/STRATEGY_TO_CODING_AGENT_OPTION_B_LOCK_APPROVAL_20260806.md`.

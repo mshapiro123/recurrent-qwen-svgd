@@ -1,6 +1,6 @@
 # Option B Teacher-Pass Resource Note
 
-Date: 2026-08-06. Status: **draft for strategy lock; no launch authority**.
+Date: 2026-08-06. Status: **approved and locked for teacher/cache generation; no training authority**.
 
 ## 1. Banked reference
 
@@ -35,9 +35,9 @@ overhead. The runner must compute actual projected bytes from its selected
 manifest and refuse to start unless scratch and Drive headroom exceed the
 projection plus a 25-percent reserve.
 
-This estimate assumes 14B states for every anchor. If strategy locks
-threshold-only 14B state collection, the runner recomputes the estimate from the
-measured threshold rate; it may not silently change coverage to fit hardware.
+The locked policy collects 14B states for every admitted anchor. The runner may
+not silently change coverage to fit hardware. It also records, per anchor, the
+label tiers admitted by the unchanged teacher cascade.
 
 ## 3. Runtime class and ordering
 
@@ -83,5 +83,6 @@ local copy can be deleted. Before the splice, a hash-only amendment must record:
 - zero overlap with the existing 8,031-anchor evaluation slice and all frozen
   confirmatory partitions.
 
-This note sizes and sequences the pass. It does not authorize the pass or any
-training before strategy locks the protocol.
+This note and the locked protocol authorize only the teacher/cache pass.
+Training remains prohibited until the landed hashes are banked by the required
+hash-only amendment and a separate training launcher is built.

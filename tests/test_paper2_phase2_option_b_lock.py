@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import hashlib
 from pathlib import Path
 
 from training.paper2_phase2_stage0a import STAGE0A_CONFIG
@@ -14,13 +15,17 @@ from training.speculative_depth_d0_spec import (
 
 
 ROOT = Path(__file__).resolve().parents[1]
-REGISTRATION = ROOT / "training/paper2_phase2_option_b_preregistration.draft.json"
-PROTOCOL = ROOT / "docs/PAPER2_PHASE2_OPTION_B_EXPLORATION_PROTOCOL_DRAFT_20260806.md"
+REGISTRATION = ROOT / "training/paper2_phase2_option_b_preregistration.json"
+PROTOCOL = ROOT / "docs/PAPER2_PHASE2_OPTION_B_EXPLORATION_PROTOCOL_LOCKED_20260806.md"
+RULES = ROOT / "training/paper2_phase2_option_b_rule_inventory.json"
 
 
-def test_option_b_draft_is_staged_and_cannot_launch() -> None:
+def test_option_b_lock_authorizes_teacher_pass_but_not_training() -> None:
     registration = json.loads(REGISTRATION.read_text(encoding="utf-8"))
-    assert registration["status"] == "draft_training_prohibited"
+    assert registration["status"] == "locked_teacher_pass_authorized_training_prohibited"
+    assert registration["locked_before_teacher_pass"] is True
+    assert registration["teacher_pass_authorized"] is True
+    assert registration["lock_blockers"] == []
     assert registration["pre_splice_authorized"] is False
     assert registration["post_splice_authorized"] is False
     assert registration["training_authorized"] is False
@@ -29,9 +34,8 @@ def test_option_b_draft_is_staged_and_cannot_launch() -> None:
     assert registration["teacher_pass"]["new_training_anchor_target"] == 140_000
     assert registration["teacher_pass"]["new_training_anchor_minimum"] == 100_000
     assert registration["teacher_pass"]["hash_only_amendment_required_before_splice"] is True
-    assert "teacher_14b_state_coverage_policy" in registration["lock_blockers"]
-    assert "strategy_ratification_of_no_structural_mask" in registration["lock_blockers"]
-    assert "localization_receipt_and_strategy_mask_decision" not in registration["lock_blockers"]
+    assert registration["teacher_pass"]["teacher_14b_state_coverage_policy"] == "all_admitted_anchors"
+    assert registration["teacher_pass"]["per_anchor_label_tier_admission_required"] is True
     assert registration["analysis"]["not_a_general_unique_data_scaling_law"] is True
 
 
@@ -57,10 +61,11 @@ def test_option_b_units_and_teacher_revisions_are_explicit() -> None:
     assert sources["code"]["revision"] == STACK_REVISION
 
 
-def test_option_b_protocol_requires_lock_and_hash_only_splice_amendment() -> None:
+def test_option_b_protocol_is_locked_and_requires_hash_only_splice_amendment() -> None:
     protocol = PROTOCOL.read_text(encoding="utf-8")
-    assert "draft, not locked, training prohibited" in protocol
-    assert "No Option B training or teacher-pass launcher may exist" in protocol
+    assert "locked before teacher pass" in protocol
+    assert "teacher/cache generation authorized" in protocol
+    assert "Option B training remains prohibited" in protocol
     assert "hash-only amendment" in protocol
     assert "single splice identifies a general unique-data scaling law" in protocol
     assert not (ROOT / "training/run_paper2_phase2_option_b.py").exists()
@@ -69,7 +74,7 @@ def test_option_b_protocol_requires_lock_and_hash_only_splice_amendment() -> Non
 
 def test_option_b_localization_and_existing_population_hashes_are_banked() -> None:
     registration = json.loads(REGISTRATION.read_text(encoding="utf-8"))
-    unresolved = registration["unresolved"]
+    unresolved = registration["post_generation_hash_amendment"]
     assert unresolved["localization_mask_rule_result"] == "no_structural_group_qualified"
     assert unresolved["structural_mask"] is None
     for key in (
@@ -86,10 +91,39 @@ def test_option_b_localization_and_existing_population_hashes_are_banked() -> No
 
 def test_option_b_resource_note_separates_runtime_classes() -> None:
     note = (
-        ROOT / "docs/PAPER2_PHASE2_OPTION_B_TEACHER_PASS_RESOURCE_NOTE_DRAFT_20260806.md"
+        ROOT / "docs/PAPER2_PHASE2_OPTION_B_TEACHER_PASS_RESOURCE_NOTE_LOCKED_20260806.md"
     ).read_text(encoding="utf-8")
     assert "A100 80GB class" in note
     assert "One A100 cannot run the teacher pass and Segment 1 concurrently" in note
     assert "100,000-anchor floor" in note
     assert "25-percent reserve" in note
-    assert "does not authorize" in note
+    assert "authorize only the teacher/cache pass" in note
+
+
+def test_option_b_rule_inventory_is_complete_and_only_named_cliffs_stop() -> None:
+    inventory = json.loads(RULES.read_text(encoding="utf-8"))
+    assert inventory["status"] == "locked_before_teacher_pass"
+    assert len(inventory["rules"]) == 18
+    required = {
+        "name",
+        "threshold",
+        "estimator",
+        "reference",
+        "cadence",
+        "disposition",
+        "named_cliff",
+    }
+    for rule in inventory["rules"]:
+        assert set(rule) == required
+        if rule["disposition"] in {"stop", "stop_before_updates", "refuse_splice"}:
+            assert rule["named_cliff"]
+        else:
+            assert rule["named_cliff"] is None
+
+
+def test_option_b_locked_artifact_hashes_match() -> None:
+    registration = json.loads(REGISTRATION.read_text(encoding="utf-8"))
+    for artifact in registration["lock_artifacts"].values():
+        path = ROOT / artifact["path"]
+        assert path.exists()
+        assert hashlib.sha256(path.read_bytes()).hexdigest() == artifact["sha256"]

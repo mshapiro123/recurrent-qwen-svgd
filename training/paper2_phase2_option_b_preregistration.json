@@ -1,5 +1,5 @@
 {
-  "status": "draft_training_prohibited",
+  "status": "locked_teacher_pass_authorized_training_prohibited",
   "kind": "paper2_phase2_option_b_staged_dose_then_data_preregistration",
   "date": "2026-08-06",
   "governing_documents": {
@@ -12,14 +12,31 @@
     "data_resolution": {
       "drive_id": "1BkxgDfdLzDAKTiresWTbomY8LOzsx89I",
       "title": "STRATEGY_TO_CODING_AGENT_OPTION_B_DATA_RESOLUTION_20260806.md"
+    },
+    "strategy_lock_approval": {
+      "drive_id": "1UUVcMbVACiiZu3wzv304XlgEtwSe5dUD",
+      "bytes": 5727,
+      "repo_mirror_sha256": "0a50ce3dc8eb910ee9d3030396dcdd9ec03bb60595d84269366b66894928093f"
     }
   },
-  "lock_blockers": [
-    "strategy_ratification_of_no_structural_mask",
-    "teacher_pass_resource_note_approval",
-    "teacher_14b_state_coverage_policy",
-    "strategy_protocol_lock"
-  ],
+  "locked_before_teacher_pass": true,
+  "teacher_pass_authorized": true,
+  "lock_blockers": [],
+  "rule_inventory": "training/paper2_phase2_option_b_rule_inventory.json",
+  "lock_artifacts": {
+    "human_protocol": {
+      "path": "docs/PAPER2_PHASE2_OPTION_B_EXPLORATION_PROTOCOL_LOCKED_20260806.md",
+      "sha256": "7bce7104c6a13f00a6e1ea582fcff340f7a44a7f3ef0221ef9ad6aefe2d2a6e2"
+    },
+    "teacher_pass_resource_note": {
+      "path": "docs/PAPER2_PHASE2_OPTION_B_TEACHER_PASS_RESOURCE_NOTE_LOCKED_20260806.md",
+      "sha256": "02e68b09647f79dcc60730114f392544bf743076a405e19e85a262c5ee26d2e6"
+    },
+    "rule_inventory": {
+      "path": "training/paper2_phase2_option_b_rule_inventory.json",
+      "sha256": "8658e7d14191d84d34e1a3ddf0b05d1cc851ffbd23a7b9ceac2653762c5ee950"
+    }
+  },
   "pre_splice_authorized": false,
   "post_splice_authorized": false,
   "training_authorized": false,
@@ -58,7 +75,7 @@
     "a2_evaluation_anchors": 8031
   },
   "teacher_pass": {
-    "status": "authorized_but_not_built_before_protocol_lock",
+    "status": "authorized_for_resumable_generation",
     "new_training_anchor_target": 140000,
     "new_training_anchor_minimum": 100000,
     "document_requirement": "new_documents_only",
@@ -83,6 +100,8 @@
     "tail_mass_required": true,
     "full_logit_audit_fraction": 0.01,
     "selected_layer_ordinals_one_based": [16, 32, 44],
+    "teacher_14b_state_coverage_policy": "all_admitted_anchors",
+    "per_anchor_label_tier_admission_required": true,
     "models": {
       "student_0p5b": {
         "model": "Qwen/Qwen2.5-0.5B-Instruct",
@@ -165,18 +184,18 @@
     "writeback_reading": "full_minus_control_increment_and_share_by_seed_across_both_segments",
     "not_a_general_unique_data_scaling_law": true
   },
-  "unresolved": {
+  "post_generation_hash_amendment": {
     "localization_receipt_sha256": "848afffcd0c1eaffed61cb1524870246a522689e436d32a0cfa560fbdb1ae222",
     "localization_markdown_receipt_sha256": "903062e46bb17d81825899aa995616f5fd121f43c3ec965eaed66cd1700f73d2",
     "localization_mask_rule_result": "no_structural_group_qualified",
-    "localization_strategy_recommendation": "no_mask_pending_strategy_ratification",
+    "localization_strategy_recommendation": "no_mask_ratified",
     "structural_mask": null,
     "existing_training_manifest_sha256": "03ce3e1877f4e79f0952ab7054b16c0fb823fe9c9de03ee7c9088d8aa271201a",
     "existing_document_partition_sha256": "7b4fcdfad21b940ea8a5d51d4310d3a9b4ac851d27df2542004a9182f8398e81",
     "evaluation_exclusion_sha256": "c751de988b7c83fd1bfed4a409174d99ed79b02657a06f156672df73537b7f5f",
     "fixed_old_train_subset_sha256": "0f5d114c3dcf6c856956ba9a618f7957f0c3d18c317415c3a1eb23420cd609c5",
-    "teacher_pass_resource_note_sha256": "4c117acbe0bc0ca8f1c1e29c77ca2a156a661fe2b946eb7e7e996a23fcda1817",
-    "teacher_14b_state_coverage_policy": null,
+    "teacher_pass_resource_note_sha256": "02e68b09647f79dcc60730114f392544bf743076a405e19e85a262c5ee26d2e6",
+    "teacher_14b_state_coverage_policy": "all_admitted_anchors",
     "new_training_anchor_count": null,
     "new_training_manifest_sha256": null,
     "new_document_partition_sha256": null,

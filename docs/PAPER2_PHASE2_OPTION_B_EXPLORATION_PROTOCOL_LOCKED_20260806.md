@@ -1,35 +1,33 @@
 # Phase-2 Option B Staged Dose-Then-Data Exploration Protocol
 
-Date: 2026-08-06. Status: **draft, not locked, training prohibited**.
+Date: 2026-08-06. Status: **locked before teacher pass; teacher/cache generation authorized; training prohibited**.
 
 Governing documents:
 
 - Option B charter, Drive `1LkyqpSY-uQkv4VX-V--xyj_UOcwLjnRs`;
 - data-resolution amendment, Drive `1BkxgDfdLzDAKTiresWTbomY8LOzsx89I`;
 - Guardrail Doctrine, Drive `1R40TawfW-ZJcec4dkRnxGir9c3v4a5IP`.
+- strategy lock approval, Drive `1UUVcMbVACiiZu3wzv304XlgEtwSe5dUD`,
+  mirrored at
+  `docs/STRATEGY_TO_CODING_AGENT_OPTION_B_LOCK_APPROVAL_20260806.md`.
 
-## 1. Remaining lock sequence
+## 1. Locked decisions and remaining sequence
 
 The CPU localization landed at commit `17151603`. No structural candidate
-cleared the pre-stated two-seed rule. The protocol therefore recommends no
-mask, pending strategy ratification. The existing-data hashes are now banked:
+cleared the pre-stated two-seed rule. Strategy ratified `structural_mask =
+null`. The existing-data hashes are banked:
 
 - training manifest: `03ce3e1877f4e79f0952ab7054b16c0fb823fe9c9de03ee7c9088d8aa271201a`;
 - document partition: `7b4fcdfad21b940ea8a5d51d4310d3a9b4ac851d27df2542004a9182f8398e81`;
 - evaluation exclusion proof: `c751de988b7c83fd1bfed4a409174d99ed79b02657a06f156672df73537b7f5f`;
 - fixed old-train diagnostic subset: `0f5d114c3dcf6c856956ba9a618f7957f0c3d18c317415c3a1eb23420cd609c5`.
 
-Remaining lock sequence:
-
-1. Strategy ratifies the no-mask reading.
-2. Approve the teacher-pass resource note and lock the generation procedure,
-   pinned model revisions, minimum/target anchor counts, quarantine rules, and
-   hash-only amendment procedure.
-3. Resolve whether 14B layer states are collected for every new anchor or only
-   the 14B-threshold subset. The current resource estimate conservatively
-   assumes every anchor; the implementation may not guess.
-4. Strategy locks this protocol and its machine-readable JSON before either
-   segment training or the teacher pass begins.
+The teacher-pass resource note and generation contract are approved. The 14B
+state policy is all admitted anchors. Cascade admission continues to govern
+label tiers only, and the cache must record each anchor's admission at every
+label tier. This document and
+`training/paper2_phase2_option_b_preregistration.json` lock those decisions in
+the same commit.
 
 The expanded data cannot have a manifest hash before it is generated. The lock
 therefore binds its generation procedure and admission tests. A later hash-only
@@ -37,9 +35,10 @@ amendment records the landed manifest and partition hashes and is required
 before the splice. It may not change the recipe, target/floor, source rules, or
 analysis.
 
-No Option B training or teacher-pass launcher may exist before the strategy
-lock. This repository currently provides only the authorized CPU localization
-launcher.
+The next permitted build is the resumable teacher/cache generator and its A100
+launcher. Option B training remains prohibited until the generated cache lands,
+its hashes are banked by the prescribed hash-only amendment, and a separate
+training launcher is built afterward.
 
 ## 2. Scientific design
 
@@ -79,9 +78,11 @@ The pass reuses Stage 0A's units and pinned revisions:
 - anchors are the training unit; each anchor has horizons one through four;
 - union top-K is 128 with per-model tail mass and a stable one-percent full-logit
   audit subset;
-- 7B is the broad teacher, 14B is queried under the standing thresholds and
-  supplies canonicalizer states at layers 16, 32, and 44, and 32B is used only
-  under the existing cascade rule;
+- 7B is the broad teacher; 14B supplies canonicalizer states at layers 16, 32,
+  and 44 for every admitted anchor; and 32B is used only under the existing
+  label-cascade rule;
+- every anchor records whether the cascade admitted it at each label tier, so
+  the label-selection function remains reconstructable;
 - student, 7B, 14B, and 32B revisions are copied verbatim into the machine lock;
 - every anchor comes from a new document excluded from the existing evaluation
   documents and every frozen confirmatory partition;
@@ -89,11 +90,9 @@ The pass reuses Stage 0A's units and pinned revisions:
 - resume shards, audit hashes, document partitions, and model-cache hashes are
   durable before ephemeral storage is released.
 
-One coverage detail remains open for strategy lock. The amendment says 14B is
-queried on thresholds while also requiring 14B canonicalizer-input states. A
-threshold-only state cache is cheaper but is not an all-anchor future-flow
-dataset; all-anchor state collection is reusable but changes the resource bill.
-The locked protocol must choose one explicitly.
+The state and label policies are deliberately separate. All-anchor 14B states
+avoid a future-flow dataset selected by the teacher-cascade difficulty rule;
+the label cascade and its thresholds remain unchanged.
 
 The fixed diagnostic subsets are document-stratified and immutable: one from
 the old training population and one from the new population. Once the new cache
@@ -154,26 +153,26 @@ them into an arbitrary weighted score.
 
 ## 7. Rule inventory
 
-| Rule | Threshold | Cadence | Disposition | Named cliff |
-|---|---|---|---|---|
-| Non-finite loss | Any non-finite weighted loss | Every attempt | Stop | Garbage training |
-| Non-finite gradient | Any non-finite active gradient element | Every attempt | Stop | Garbage training |
-| Relative gradient explosion | Raw global norm above 10 times the prior-100 median for three consecutive attempts | Every attempt | Stop | Escaping numerical instability |
-| Endpoint lineage | Exact four source SHAs and metadata | Startup | Stop | Corrupted lineage |
-| Frozen lineage | Exact digest before and after | Startup/completion | Stop | Frozen-parameter mutation |
-| Existing population | Locked manifest, document partition, exclusions, and fixed-subset hashes | Startup | Stop | Invalid dose segment |
-| Expanded population | Hash-only amendment, minimum 100,000 new anchors, document quarantine, audit completeness | Before splice | Refuse splice | Invalid data intervention |
-| Evaluation contact | Zero training access to fixed evaluation or confirmatory partitions | Startup/completion | Stop | Invalidated science |
-| Pair schedule | Exact sampled-anchor sequence within each seed | Every update/resume | Stop | Invalid paired comparison |
-| Splice identity | Only population version changes at recorded checkpoint boundary | Splice | Stop | Confounded intervention |
-| Control identity | No-writeback hidden path bit exact | Every 1,000 | Stop | Invalid control |
-| Resume durability | Model, optimizer, RNG, sampler, population, counters, and receipt hashes persist | Every 1,000 | Stop before updates | Unrecoverable lineage |
-| Wilson quality floor | Lower bound at least 0.99 | Every 1,000 | Stop | Irreversible quality damage |
-| Init-relative retention | More than 0.003 below step zero twice consecutively | Every 1,000 | Stop | Sustained quality drift |
-| Directional gross miss | Primary below 0.40 or any auxiliary above 0.35 | Every 2,000 | Stop | Objective inversion |
-| Directional repeated marginal miss | Primary 0.40-0.50 or auxiliary 0.25-0.35 twice consecutively | Every 2,000 | Stop | Sustained objective displacement |
-| Directional target | Primaries at least 0.50 and auxiliaries at most 0.25 | Every 2,000 | Log | Intended objective balance |
-| Endpoint readings | Slopes, one-percent gain, writeback share, train-eval gaps | Endpoint | Evidence only | None |
+| Rule | Threshold | Estimator | Reference | Cadence | Disposition | Named cliff |
+|---|---|---|---|---|---|---|
+| Non-finite loss | Any non-finite weighted loss | Scalar finiteness | Current attempt | Every attempt | Stop | Garbage training |
+| Non-finite gradient | Any non-finite active gradient element | Elementwise finiteness | Current active-gradient tensors | Every attempt | Stop | Garbage training |
+| Relative gradient explosion | Raw global norm above 10 times the prior-100 median for three consecutive attempts | Global L2 norm and rolling median | Prior 100 attempts in the same arm | Every attempt | Stop | Escaping numerical instability |
+| Endpoint lineage | Exact four source SHAs and metadata | SHA-256 and metadata equality | Locked source-checkpoint table | Startup | Stop | Corrupted lineage |
+| Frozen lineage | Exact digest before and after | SHA-256 equality | Startup frozen-parameter digest | Startup/completion | Stop | Frozen-parameter mutation |
+| Existing population | Exact manifest, document partition, exclusions, and fixed-subset hashes | SHA-256 equality and count checks | Locked existing-population table | Startup | Stop | Invalid dose segment |
+| Expanded population | Hash-only amendment, at least 100,000 anchors, quarantine, complete audits | SHA-256, count, and set-disjointness checks | Locked generation procedure plus landed amendment | Before splice | Refuse splice | Invalid data intervention |
+| Evaluation contact | Zero training access to fixed evaluation or confirmatory partitions | Document- and anchor-ID set intersection | Locked exclusion ledger | Startup/completion | Stop | Invalidated science |
+| Pair schedule | Exact sampled-anchor sequence within seed | Sequence-hash equality | Matched full/control schedule for that seed | Every update/resume | Stop | Invalid paired comparison |
+| Splice identity | Only population version changes at recorded checkpoint boundary | Serialized-state and config diff | Durable pre-splice checkpoint | Splice | Stop | Confounded intervention |
+| Control identity | No-writeback hidden path bit exact | One-batch path equivalence | Locked control path | Every 1,000 | Stop | Invalid control |
+| Resume durability | Model, optimizer, RNG, sampler, population, counters, and receipt hashes persist | Round-trip readback and hash equality | Just-written durable checkpoint | Every 1,000 | Stop before updates | Unrecoverable lineage |
+| Wilson quality floor | Lower bound at least 0.99 | Wilson 95 percent lower bound | Fixed evaluation correctness | Every 1,000 | Stop | Irreversible quality damage |
+| Init-relative retention | More than 0.003 below step zero twice consecutively | Paired retention-rate difference | Same arm's step-zero evaluation | Every 1,000 | Stop | Sustained quality drift |
+| Directional gross miss | Primary below 0.40 or any auxiliary above 0.35 | Mean post-clip gradient share over 51 by 128 audit | Locked A2 objective groups | Every 2,000 | Stop | Objective inversion |
+| Directional repeated marginal miss | Primary 0.40-0.50 or auxiliary 0.25-0.35 twice consecutively | Mean post-clip gradient share over 51 by 128 audit | Locked A2 objective groups and prior audit | Every 2,000 | Stop | Sustained objective displacement |
+| Directional target | Primaries at least 0.50 and auxiliaries at most 0.25 | Mean post-clip gradient share over 51 by 128 audit | Locked A2 objective groups | Every 2,000 | Log | None; telemetry only |
+| Endpoint readings | Slopes, one-percent gain, writeback share, train-eval gaps | Locked estimators in section 6 | Matched arm and segment baselines | Endpoint | Evidence only | None; telemetry only |
 
 Only tripwires with named cliffs stop training. Exposure plateau, overfit onset,
 and endpoint thresholds remain measurements.
