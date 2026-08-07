@@ -1,0 +1,97 @@
+{
+  "exclusion_lineage_closure_sha256": "287afb659921712689b29f4aa354c11daec02cf94a861814e3ca83fdb3321cae",
+  "full_cache_started": false,
+  "hardware_mode": "a100_40gb_32b_accelerate_offload",
+  "kind": "paper2_phase2_option_b_teacher_cache_preflight",
+  "next_required_action": "review measured runtime and storage before authorizing full cache",
+  "optimizer_steps": 0,
+  "pilot_anchor_count": 512,
+  "selected_full_anchor_count_if_authorized": 140000,
+  "status": "complete_preflight_full_cache_not_started",
+  "throughput_storage_preflight": {
+    "cascade_32b_fraction": 0.16748046875,
+    "drive_free_bytes": 79637917696,
+    "drive_write_bytes_per_second_observed": 2052228.0398794925,
+    "floor_projected_bytes_with_reserve": 49072634458,
+    "model_throughput": {
+      "student_0p5b": {
+        "peak_gpu_memory_bytes": 1027767808,
+        "samples_per_second": 127.80529640308978,
+        "shard_seconds_per_sample": {
+          "count": 212,
+          "max": 0.23669897424998965,
+          "mean": 0.008872377356379121,
+          "median": 0.0077359926249975786,
+          "min": 0.002952820333329479,
+          "p10": 0.005086607999998213,
+          "p90": 0.009682220762499583,
+          "p95": 0.010487440837494684
+        }
+      },
+      "teacher_14b": {
+        "peak_gpu_memory_bytes": 29856989184,
+        "samples_per_second": 54.28987147339431,
+        "shard_seconds_per_sample": {
+          "count": 212,
+          "max": 0.036517476000000215,
+          "mean": 0.01943338344508608,
+          "median": 0.020913789520837632,
+          "min": 0.008170886333336588,
+          "p10": 0.014132824941664998,
+          "p90": 0.022884837725001717,
+          "p95": 0.02457288733124726
+        }
+      },
+      "teacher_32b": {
+        "peak_gpu_memory_bytes": 37264285184,
+        "samples_per_second": 0.21336170377936833,
+        "shard_seconds_per_sample": {
+          "count": 150,
+          "max": 75.03162938500009,
+          "mean": 5.809810666629917,
+          "median": 6.640802864000079,
+          "min": 1.6506630462499743,
+          "p10": 2.6906355373400177,
+          "p90": 7.052086603633305,
+          "p95": 7.062381408799877
+        }
+      },
+      "teacher_7b": {
+        "peak_gpu_memory_bytes": 15316443648,
+        "samples_per_second": 92.1280858485161,
+        "shard_seconds_per_sample": {
+          "count": 212,
+          "max": 0.020306946499999867,
+          "mean": 0.011606673022492946,
+          "median": 0.012232258312501187,
+          "min": 0.004865189333334759,
+          "p10": 0.008138264810715563,
+          "p90": 0.014240219475001937,
+          "p95": 0.016693814237492426
+        }
+      }
+    },
+    "peak_child_system_ram_kib": 37829908,
+    "peak_local_scratch_bytes_observed": 222671306186,
+    "pilot_anchors": 512,
+    "pilot_elapsed_seconds": 2264.480489348,
+    "pilot_fixed_bytes": 4469110692,
+    "pilot_total_bytes": 4647230356,
+    "projected_runtime_seconds": {
+      "floor_high_from_shard_variation": 553550.893153989,
+      "floor_low_from_shard_variation": 179197.8967422551,
+      "floor_point": 442281.34557578125,
+      "target_high_from_shard_variation": 774971.2504155847,
+      "target_low_from_shard_variation": 250877.05543915715,
+      "target_point": 619193.8838060937,
+      "uncertainty_note": "End-to-end pilot scaled by the minimum p10/median and maximum p90/median observed across per-model shard timings."
+    },
+    "reason": "target_fits_with_25_percent_reserve",
+    "reserve_fraction": 0.25,
+    "scratch_free_bytes": 83829387264,
+    "selected_anchor_count": 140000,
+    "target_projected_bytes_with_reserve": 66467132896,
+    "variable_bytes_per_anchor": 347889.96875
+  },
+  "training_started": false
+}
