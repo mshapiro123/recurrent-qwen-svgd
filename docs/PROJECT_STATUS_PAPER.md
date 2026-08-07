@@ -177,7 +177,7 @@ fragile positions is the common interpretive frame.
 7. Staged A1 then completed at alpha `0.5` in two seeds. Probe KL improved by `1.3555` and `1.3157` nats against a `0.10`-nat gate, flow MSE fell by `19.12%` and `19.16%`, and every matched gradient audit passed the amended inequalities on every batch. Strategy banked these as one replicated state-construction `a1_pass`, with no A1 extension and no state-use claim.
 8. Banked: Option B localization used all `8,031` fixed DEV anchors. Across both seeds, `3,270` were helped, `2,904` harmed, and `1,857` changed sign. No structural group met the pre-stated two-seed mask rule. The recommended continuation is unmasked.
 9. Locked: strategy ratified no mask, approved the teacher resource note, and selected all-admitted-anchor 14B state coverage with per-anchor label-tier admission receipts.
-10. Authorized: build and run the resumable teacher/cache generator. Held: all four 20,000-step Option B arms remain prohibited until the generated-cache hashes are banked by the hash-only amendment.
+10. Built and awaiting launch: the resumable A100-80GB teacher/cache generator runs an all-model pilot, chooses only the locked 140,000-anchor target or 100,000-anchor floor from measured storage, and then writes the complete hash and admission ledgers. Held: all four 20,000-step Option B arms remain prohibited until those generated-cache hashes are banked by the hash-only amendment.
 
 Closed pending that decision: additional Phase G sweeps, coverage, selection,
 LPRM, per-trajectory halting, particles, SVGD, the intra-block oracle probe,

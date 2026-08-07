@@ -1779,3 +1779,13 @@ Colab/Drive backups for selected runs.
   generated hashes land in the prescribed hash-only amendment. Strategy source:
   Drive `1UUVcMbVACiiZu3wzv304XlgEtwSe5dUD`, mirrored at
   `docs/STRATEGY_TO_CODING_AGENT_OPTION_B_LOCK_APPROVAL_20260806.md`.
+- 2026-08-06 Phase-2 Option B teacher-cache build: after the separate lock
+  commit, the Stage 0A cache path was parameterized without changing its
+  default config. The Option B target freezes new, quarantined documents; runs
+  a 512-anchor sequential 0.5B/7B/14B/32B preflight; records model throughput,
+  shard variation, GPU/system-memory and storage telemetry; selects only the
+  locked 140,000-anchor target or 100,000-anchor floor; and resumes the full
+  cache from durable Drive shards. The final receipt includes explicit source,
+  exclusion, manifest, position, audit, model-cache, lattice, teacher-state,
+  per-anchor per-horizon label-tier admission, and fixed-subset hashes. No
+  optimizer or training launcher is present.

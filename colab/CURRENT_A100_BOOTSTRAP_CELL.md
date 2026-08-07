@@ -150,6 +150,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3_short_sha"
 #   "paper2_phase2_v1c" - DEV-C-only larger-radius paired extension; no training.
 #   "paper2_phase2_v1d" - DEV-C-only RMS-capped c=0.15 confirmation; no training.
 #   "paper2_phase2_stage0a" - DEV-C sparse lattice and 14B teacher states; A100-80GB, no training.
+#   "paper2_phase2_option_b_teacher_cache" - locked new-document teacher cache; A100-80GB, no training.
 #   "paper2_phase2_stage0a_repair" - CPU-only finite-metric repair from cached Stage 0A shards.
 #   "paper2_phase2_exp0a" - A100 DEV-only canonicalizer and partial-whitening screening.
 #   "paper2_phase2_exp0b" - L4-or-larger DEV-only interpolation and serial-flow screening.
@@ -305,6 +306,20 @@ TARGETS = {
             "affine targets no persistent-state renormalization loop cap four",
             "tests/test_paper2_phase2_stage0ab.py",
             "colab/run_stage5_paper2_phase2_exp0b.py",
+        ],
+        "env": {},
+    },
+    "paper2_phase2_option_b_teacher_cache": {
+        "path": "colab/STAGE5_PAPER2_PHASE2_OPTION_B_TEACHER_CACHE_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_PHASE2_OPTION_B_TEACHER_CACHE_VERSION",
+            "paper2_phase2_option_b_teacher_cache_v1",
+            "locked fresh documents target 140000 floor 100000 anchors",
+            "all-admitted-anchor 14B states and per-anchor label-tier admission",
+            "A100-SXM4-80GB sequential model loads local scratch Drive resume",
+            "teacher cache only no model optimizer no training",
+            "tests/test_paper2_phase2_option_b_teacher_cache.py",
+            "colab/run_stage5_paper2_phase2_option_b_teacher_cache.py",
         ],
         "env": {},
     },
@@ -531,6 +546,8 @@ TARGETS = {
             "obsolete static gradient ceiling is telemetry only",
             "relative explosion is 10x trailing-100 median three consecutive steps",
             "guardrail inventory names a cliff for every stop-authority rule",
+            "utf8_lf_normalized_sha256 removes checkout newline variance only",
+            "persisted resume lineage reopens the registered step-1000 extension",
             "tests/test_paper2_phase2_a2_guardrail_sweep.py",
             "colab/run_stage5_paper2_phase2_a2.py",
         ],

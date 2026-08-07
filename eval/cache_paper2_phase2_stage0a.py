@@ -10,6 +10,7 @@ import math
 import os
 import shutil
 import tempfile
+import time
 from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Any, Iterable, Sequence
@@ -36,6 +37,7 @@ UNION_SCORE_SCHEMA_VERSION = 4
 TOPK_LOG_PROB_EQUIVALENCE_TOLERANCE = 0.25
 TOPK_PROB_EQUIVALENCE_TOLERANCE = 0.01
 SPARSE_MASS_PROJECTION_MAX_OVERFLOW = 0.05
+ACTIVE_CONFIG = STAGE0A_CONFIG
 
 
 def read_jsonl(path: str | Path) -> list[dict[str, Any]]:
@@ -172,6 +174,9 @@ def prepare_sample_manifest(
         "boundary_sample_count": selected["boundary_sample_count"],
         "counts_by_stratum": selected["counts_by_stratum"],
         "full_logit_audit_samples": audit_count,
+        "full_logit_audit_sample_keys_sha256": hashlib.sha256(
+            ("\n".join(sorted(audit_keys)) + "\n").encode("utf-8")
+        ).hexdigest(),
         "document_isolated": True,
         "span_boundaries_available": sum(
             len(row.get("span_boundaries") or row.get("trace_boundaries") or [])
@@ -352,7 +357,7 @@ def cache_model_pass(
     dtype: str,
     attn_implementation: str,
 ) -> dict[str, Any]:
-    model_spec = STAGE0A_CONFIG["models"][model_key]
+    model_spec = ACTIVE_CONFIG["models"][model_key]
     samples_by_row = _samples_by_row(samples)
     cache_root = private_dir / "model_cache"
     expected_by_shard: list[tuple[int, int, list[int]]] = []
@@ -393,16 +398,16 @@ def cache_model_pass(
     if int(model.config.vocab_size) < shared_vocab_size:
         raise RuntimeError("Stage 0A model output vocabulary is smaller than the tokenizer")
 
-    collect_teacher_states = model_key == STAGE0A_CONFIG["teacher_state_model"]["key"]
+    collect_teacher_states = model_key == ACTIVE_CONFIG["teacher_state_model"]["key"]
     if collect_teacher_states:
-        expected = STAGE0A_CONFIG["teacher_state_model"]
+        expected = ACTIVE_CONFIG["teacher_state_model"]
         if int(model.config.hidden_size) != int(expected["hidden_size"]):
             raise RuntimeError("Stage 0A 14B hidden width differs from the locked design")
         if int(model.config.num_hidden_layers) != int(expected["num_hidden_layers"]):
             raise RuntimeError("Stage 0A 14B layer count differs from the locked design")
         hidden_indices = post_block_hidden_state_indices(
             num_hidden_layers=int(model.config.num_hidden_layers),
-            ordinals_one_based=STAGE0A_CONFIG["selected_layer_ordinals_one_based"],
+            ordinals_one_based=ACTIVE_CONFIG["selected_layer_ordinals_one_based"],
         )
     else:
         hidden_indices = ()
@@ -417,6 +422,10 @@ def cache_model_pass(
     )
     rows_forwarded = 0
     samples_cached = 0
+    shard_seconds_per_sample: list[float] = []
+    started_at = time.perf_counter()
+    if torch.cuda.is_available():
+        torch.cuda.reset_peak_memory_stats()
     for shard_number, (start, stop, expected_indices) in enumerate(expected_by_shard, start=1):
         destination = _shard_path(cache_root, model_key, start, stop)
         if completed_model_shard(
@@ -433,6 +442,7 @@ def cache_model_pass(
                 flush=True,
             )
             continue
+        shard_started_at = time.perf_counter()
         payload_rows: list[dict[str, torch.Tensor | int]] = []
         for row_index in range(start, stop):
             selected = [
@@ -466,7 +476,7 @@ def cache_model_pass(
                 model,
                 final_hidden,
                 shared_vocab_size=shared_vocab_size,
-                top_k=int(STAGE0A_CONFIG["top_k"]),
+                top_k=int(ACTIVE_CONFIG["top_k"]),
             )
             row_payload: dict[str, Any] = {
                 "row_index": row_index,
@@ -509,6 +519,9 @@ def cache_model_pass(
             "teacher_state_layer_ordinals_one_based": list(hidden_indices),
         }
         atomic_torch_save(payload, destination, staging_dir=staging_dir)
+        shard_elapsed = time.perf_counter() - shard_started_at
+        if expected_indices:
+            shard_seconds_per_sample.append(shard_elapsed / len(expected_indices))
         print(
             f"stage0a_model_progress model={model_key} shard={shard_number}/{len(expected_by_shard)} "
             f"samples={samples_cached}",
@@ -523,6 +536,7 @@ def cache_model_pass(
         }
         for start, stop, indices in expected_by_shard
     ]
+    elapsed_seconds = max(time.perf_counter() - started_at, 1e-9)
     summary = {
         "kind": "paper2_phase2_stage0a_model_cache",
         "status": "complete_development_only",
@@ -538,6 +552,14 @@ def cache_model_pass(
         "teacher_state_layer_ordinals_one_based": list(hidden_indices),
         "teacher_forward_passes": 1,
         "forward_rows_this_invocation": rows_forwarded,
+        "elapsed_seconds_this_invocation": elapsed_seconds,
+        "samples_per_second_this_invocation": samples_cached / elapsed_seconds,
+        "shard_seconds_per_sample_this_invocation": _quantiles(
+            shard_seconds_per_sample
+        ),
+        "peak_gpu_memory_bytes_this_invocation": (
+            int(torch.cuda.max_memory_allocated()) if torch.cuda.is_available() else 0
+        ),
         "resume_policy": "completed shards never re-forwarded; an interrupted partial shard may replay",
         "training_started": False,
         "optimizer_steps": 0,
@@ -557,8 +579,8 @@ def _load_flat_shard(path: Path) -> dict[str, torch.Tensor]:
     if not rows:
         return {
             "sample_indices": torch.empty(0, dtype=torch.long),
-            "topk_ids": torch.empty((0, STAGE0A_CONFIG["top_k"]), dtype=torch.int32),
-            "topk_log_probs": torch.empty((0, STAGE0A_CONFIG["top_k"]), dtype=torch.bfloat16),
+            "topk_ids": torch.empty((0, ACTIVE_CONFIG["top_k"]), dtype=torch.int32),
+            "topk_log_probs": torch.empty((0, ACTIVE_CONFIG["top_k"]), dtype=torch.bfloat16),
             "log_partition": torch.empty(0),
             "entropy": torch.empty(0),
             "final_hidden_bfloat16": torch.empty((0, 0), dtype=torch.bfloat16),
@@ -637,7 +659,7 @@ def build_union_shards(
             complete = (
                 existing.get("kind") == "paper2_phase2_stage0a_union"
                 and existing.get("samples")
-                == int(STAGE0A_CONFIG["boundary_sample_count"])
+                == int(ACTIVE_CONFIG["boundary_sample_count"])
                 and len(shards) == math.ceil(len(rows) / ROWS_PER_SHARD)
                 and all(
                     Path(receipt["path"]).is_file()
@@ -670,7 +692,7 @@ def build_union_shards(
             for key in ("student_0p5b", "teacher_7b", "teacher_14b")
         ]
         thirty_two_topk = torch.full(
-            (n, int(STAGE0A_CONFIG["top_k"])), -1, dtype=torch.long
+            (n, int(ACTIVE_CONFIG["top_k"])), -1, dtype=torch.long
         )
         thirty_two_present = torch.zeros(n, dtype=torch.bool)
         base_lookup = {value: offset for offset, value in enumerate(base_indices.tolist())}
@@ -1217,7 +1239,7 @@ def finalize_lattice(
         union = torch.load(union_root / filename, map_location="cpu", weights_only=False)
         scores = {
             key: torch.load(scores_root / key / filename, map_location="cpu", weights_only=False)
-            for key in STAGE0A_CONFIG["models"]
+            for key in ACTIVE_CONFIG["models"]
         }
         base_lookup = {
             int(sample_index): offset
@@ -1349,15 +1371,15 @@ def finalize_lattice(
     summary = {
         "kind": "paper2_phase2_stage0a",
         "status": "complete_development_only",
-        "config": STAGE0A_CONFIG,
-        "config_sha256": _config_sha256(STAGE0A_CONFIG),
+        "config": ACTIVE_CONFIG,
+        "config_sha256": _config_sha256(ACTIVE_CONFIG),
         "manifest": manifest_summary,
         "model_caches": model_summaries,
         "union_scores": union_score_summaries,
         "cascade_32b": cascade_summary,
         "lattice": {
             "samples": sum(row["samples"] for row in final_receipts),
-            "top_k": STAGE0A_CONFIG["top_k"],
+            "top_k": ACTIVE_CONFIG["top_k"],
             "candidate_space": (
                 "cached-forward own-model top-k anchor plus approximately rescored "
                 "cross-model candidates and simplex-reconciled tail"
@@ -1379,7 +1401,7 @@ def finalize_lattice(
                 "tail_probability_abs_error": _quantiles(audit_tail_errors[key]),
                 "represented_mass_abs_error": _quantiles(audit_mass_errors[key]),
             }
-            for key in STAGE0A_CONFIG["models"]
+            for key in ACTIVE_CONFIG["models"]
         },
         "sparse_reconstruction_scope": (
             "own-model top-k values come from the original forward; cross-model union "
@@ -1416,6 +1438,7 @@ def finalize_lattice(
 
 
 def main() -> int:
+    global ACTIVE_CONFIG
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--data_jsonl", required=True)
     parser.add_argument("--private_dir", required=True)
@@ -1424,7 +1447,14 @@ def main() -> int:
     parser.add_argument("--device", default="cuda")
     parser.add_argument("--dtype", default="bfloat16")
     parser.add_argument("--attn_implementation", default="sdpa")
+    parser.add_argument(
+        "--config_json",
+        help="Optional locked config; defaults to the original Stage 0A config.",
+    )
     args = parser.parse_args()
+
+    if args.config_json:
+        ACTIVE_CONFIG = json.loads(Path(args.config_json).read_text(encoding="utf-8"))
 
     if not args.device.startswith("cuda") or not torch.cuda.is_available():
         raise RuntimeError("Stage 0A requires an A100-class CUDA runtime")
@@ -1434,7 +1464,7 @@ def main() -> int:
     rows, samples, manifest_summary = prepare_sample_manifest(
         data_path=Path(args.data_jsonl),
         private_dir=private_dir,
-        config=STAGE0A_CONFIG,
+        config=ACTIVE_CONFIG,
     )
     model_summaries: dict[str, Any] = {}
     for model_key in ("student_0p5b", "teacher_7b", "teacher_14b"):
@@ -1467,7 +1497,7 @@ def main() -> int:
     )
     build_union_shards(rows=rows, private_dir=private_dir, staging_dir=staging_dir)
     union_score_summaries: dict[str, Any] = {}
-    for model_key in STAGE0A_CONFIG["models"]:
+    for model_key in ACTIVE_CONFIG["models"]:
         union_score_summaries[model_key] = score_union_for_model(
             model_key=model_key,
             rows=rows,
