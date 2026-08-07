@@ -350,6 +350,7 @@ def main() -> int:
             data_path=data,
             anchor_count=PILOT_ANCHORS,
             run_id=RUN_ID + f"_pilot_{pilot_mode}",
+            pilot=True,
         ),
     )
     pilot_private = private / f"pilot_{pilot_mode}"

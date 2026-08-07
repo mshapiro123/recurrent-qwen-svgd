@@ -51,13 +51,16 @@ def build_cache_config(
     data_path: str | Path,
     anchor_count: int,
     run_id: str,
+    pilot: bool = False,
 ) -> dict[str, Any]:
     teacher = registration["teacher_pass"]
     if anchor_count % 2:
         raise ValueError("Option B anchor count must split evenly across strata")
     minimum = int(teacher["new_training_anchor_minimum"])
     target = int(teacher["new_training_anchor_target"])
-    if anchor_count not in {minimum, target} and not run_id.endswith("_pilot"):
+    if pilot and not 0 < anchor_count < minimum:
+        raise ValueError("Option B pilot must be smaller than the locked floor")
+    if not pilot and anchor_count not in {minimum, target}:
         raise ValueError("Option B full cache must use the locked floor or target")
     data_path = Path(data_path)
     models = teacher["models"]
@@ -65,6 +68,7 @@ def build_cache_config(
         "kind": "paper2_phase2_option_b_teacher_cache_config",
         "version": "option_b_teacher_cache_v1_20260806",
         "run_id": run_id,
+        "execution_scope": "hardware_preflight_pilot" if pilot else "locked_full_cache",
         "data_partition": "OPTION_B_NEW_DOCUMENTS_TRAINING_ONLY",
         "data_sha256": sha256_file(data_path),
         "seed": int(teacher["selection_seed"]),

@@ -40,6 +40,30 @@ def test_locked_option_b_config_preserves_teacher_and_training_boundaries(tmp_pa
     assert config["teacher_14b_state_coverage_policy"] == "all_admitted_anchors"
     assert config["training_started"] is False
     assert config["optimizer_steps"] == 0
+    assert config["execution_scope"] == "locked_full_cache"
+
+
+def test_hardware_qualified_pilot_uses_explicit_scope(tmp_path: Path) -> None:
+    registration = load_locked_registration()
+    data = tmp_path / "rows.jsonl"
+    data.write_text('{"document_id":"new","input_ids":[1,2,3,4,5]}\n', encoding="utf-8")
+    config = build_cache_config(
+        registration=registration,
+        data_path=data,
+        anchor_count=500,
+        run_id="test_pilot_a10080_resident",
+        pilot=True,
+    )
+    assert config["anchor_count"] == 500
+    assert config["execution_scope"] == "hardware_preflight_pilot"
+
+    with pytest.raises(ValueError, match="locked floor or target"):
+        build_cache_config(
+            registration=registration,
+            data_path=data,
+            anchor_count=500,
+            run_id="test_pilot_a10080_resident",
+        )
 
 
 def test_storage_preflight_chooses_target_then_floor_and_never_lower() -> None:
@@ -134,7 +158,8 @@ def test_launcher_is_teacher_only_and_bootstrap_target_is_wired() -> None:
     assert "STAGE5_PHASE2_OPTION_B_OFFLOAD_32B" in runner
     assert "a100_40gb_32b_accelerate_offload" in runner
     assert "memory >= 38000" in cell
-    assert "paper2_phase2_option_b_teacher_cache_v6" in cell
+    assert "paper2_phase2_option_b_teacher_cache_v7" in cell
+    assert "explicit pilot scope survives hardware-qualified run IDs" in cell
     assert "derived exclusion receipts require hash-closed source JSONL lineage" in cell
     assert "hardware-specific pilot caches prevent cross-mode throughput reuse" in cell
     assert 'pilot_mode = "a10040_offload" if offload_32b else "a10080_resident"' in runner
