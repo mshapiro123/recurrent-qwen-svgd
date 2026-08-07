@@ -8,9 +8,13 @@ import shutil
 import subprocess
 import sys
 import time
-import resource
 from pathlib import Path
 from typing import Any
+
+try:
+    import resource
+except ModuleNotFoundError:  # Windows unit-test collection; Colab provides resource.
+    resource = None  # type: ignore[assignment]
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
@@ -38,14 +42,21 @@ DRIVE_RUN = Path(
 )
 REGISTRATION = ROOT / "training/paper2_phase2_option_b_preregistration.json"
 PILOT_ANCHORS = 512
-EXCLUSION_RUNS = (
+DATA_EXCLUSION_RUNS = (
     "stage5_paper2_d0_20260726",
     "stage5_paper2_dc0_20260728",
     "stage5_paper2_dc1_preflight_20260729",
     "stage5_paper2_dc1_stage_a_20260730",
-    "stage5_paper2_phase2_prewindow_20260731",
-    "stage5_paper2_phase2_stage0a_20260803",
 )
+DERIVED_EXCLUSION_RECEIPTS = {
+    "stage5_paper2_phase2_prewindow_20260731": (
+        ROOT / "outputs/stage5/stage5_paper2_phase2_prewindow_20260731"
+    ),
+    "stage5_paper2_phase2_stage0a_20260803": (
+        ROOT / "outputs/stage5/stage5_paper2_phase2_stage0a_20260803"
+    ),
+}
+SOURCE_DATA_HASH_KEYS = {"data_jsonl_sha256", "dev_data_sha256", "data_sha256"}
 
 
 def run(command: list[str]) -> None:
@@ -75,18 +86,118 @@ def directory_bytes(path: Path) -> int:
     return sum(item.stat().st_size for item in path.rglob("*") if item.is_file())
 
 
-def collect_exclusion_files() -> list[Path]:
-    base = Path("/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5")
+def collect_source_data_hashes(payload: Any) -> set[str]:
+    hashes: set[str] = set()
+    if isinstance(payload, dict):
+        for key, value in payload.items():
+            if (
+                key in SOURCE_DATA_HASH_KEYS
+                and isinstance(value, str)
+                and len(value) == 64
+                and all(character in "0123456789abcdef" for character in value.lower())
+            ):
+                hashes.add(value.lower())
+            hashes.update(collect_source_data_hashes(value))
+    elif isinstance(payload, list):
+        for value in payload:
+            hashes.update(collect_source_data_hashes(value))
+    return hashes
+
+
+def receipt_path(path: Path) -> str:
+    try:
+        return str(path.relative_to(ROOT))
+    except ValueError:
+        return str(path)
+
+
+def collect_exclusion_files(
+    *,
+    base: Path | None = None,
+    data_runs: tuple[str, ...] = DATA_EXCLUSION_RUNS,
+    derived_receipts: dict[str, Path] = DERIVED_EXCLUSION_RECEIPTS,
+) -> tuple[list[Path], dict[str, Any]]:
+    base = base or Path("/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5")
     files: list[Path] = []
-    for run_id in EXCLUSION_RUNS:
+    files_by_sha256: dict[str, list[str]] = {}
+    data_run_receipts: list[dict[str, Any]] = []
+    for run_id in data_runs:
         root = base / run_id
         if not root.is_dir():
             raise FileNotFoundError(f"Missing locked Option B exclusion run: {root}")
         candidates = sorted(root.rglob("*.jsonl"))
         if not candidates:
             raise FileNotFoundError(f"No JSONL exclusion records under: {root}")
+        candidate_receipts = []
+        for path in candidates:
+            digest = sha256_file(path)
+            files_by_sha256.setdefault(digest, []).append(str(path))
+            candidate_receipts.append({"path": str(path), "sha256": digest})
         files.extend(candidates)
-    return files
+        data_run_receipts.append(
+            {
+                "run_id": run_id,
+                "mode": "data_bearing",
+                "jsonl_files": candidate_receipts,
+            }
+        )
+
+    derived_run_receipts: list[dict[str, Any]] = []
+    for run_id, receipt_root in derived_receipts.items():
+        drive_root = base / run_id
+        if not drive_root.is_dir():
+            raise FileNotFoundError(f"Missing locked derived Option B exclusion run: {drive_root}")
+        summaries = sorted(receipt_root.rglob("summary.json"))
+        if not summaries:
+            raise FileNotFoundError(
+                f"No canonical derived receipts for Option B exclusion run: {receipt_root}"
+            )
+        source_hashes: set[str] = set()
+        summary_receipts = []
+        for path in summaries:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+            observed = collect_source_data_hashes(payload)
+            source_hashes.update(observed)
+            summary_receipts.append(
+                {
+                    "path": receipt_path(path),
+                    "sha256": sha256_file(path),
+                    "source_data_sha256": sorted(observed),
+                }
+            )
+        if not source_hashes:
+            raise RuntimeError(
+                f"Derived Option B exclusion run has no source-data hashes: {receipt_root}"
+            )
+        unresolved = sorted(source_hashes - files_by_sha256.keys())
+        if unresolved:
+            raise RuntimeError(
+                "Derived Option B exclusion lineage is not closed over the actual "
+                f"quarantined JSONL files for {run_id}: {unresolved}"
+            )
+        derived_run_receipts.append(
+            {
+                "run_id": run_id,
+                "mode": "receipt_only_derived",
+                "source_data_sha256": sorted(source_hashes),
+                "resolved_source_files": {
+                    digest: files_by_sha256[digest] for digest in sorted(source_hashes)
+                },
+                "canonical_receipts": summary_receipts,
+            }
+        )
+    resolution = {
+        "kind": "paper2_phase2_option_b_exclusion_lineage_closure",
+        "status": "complete",
+        "data_bearing_runs": data_run_receipts,
+        "derived_receipt_only_runs": derived_run_receipts,
+        "jsonl_file_count": len(files),
+        "unique_jsonl_sha256_count": len(files_by_sha256),
+        "all_derived_source_hashes_resolved": True,
+        "training_started": False,
+        "optimizer_steps": 0,
+    }
+    return files, resolution
 
 
 def select_scratch() -> dict[str, Any]:
@@ -195,10 +306,12 @@ def main() -> int:
     DRIVE_RUN.mkdir(parents=True, exist_ok=True)
     RUN_DIR.mkdir(parents=True, exist_ok=True)
     scratch = select_scratch()
-    exclusions = collect_exclusion_files()
     private = DRIVE_RUN / "private"
     receipts = DRIVE_RUN / "receipts"
     receipts.mkdir(parents=True, exist_ok=True)
+    exclusions, exclusion_resolution = collect_exclusion_files()
+    exclusion_resolution_path = receipts / "exclusion_lineage_closure.json"
+    write_json(exclusion_resolution_path, exclusion_resolution)
     data = private / "new_documents_target.jsonl"
     target_config = private / "target_config.json"
     freeze_summary = receipts / "new_document_freeze_summary.json"
@@ -276,8 +389,10 @@ def main() -> int:
         for key, value in pilot_summary["model_caches"].items()
     }
     storage["cascade_32b_fraction"] = pilot_summary["cascade_32b"]["selected_fraction"]
-    storage["peak_child_system_ram_kib"] = int(
-        resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss
+    storage["peak_child_system_ram_kib"] = (
+        int(resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss)
+        if resource is not None
+        else None
     )
     storage["peak_local_scratch_bytes_observed"] = directory_bytes(
         Path(scratch["job_root"])
@@ -328,6 +443,9 @@ def main() -> int:
             "selected_full_anchor_count_if_authorized": storage[
                 "selected_anchor_count"
             ],
+            "exclusion_lineage_closure_sha256": sha256_file(
+                exclusion_resolution_path
+            ),
             "throughput_storage_preflight": storage,
             "training_started": False,
             "optimizer_steps": 0,
@@ -392,6 +510,7 @@ def main() -> int:
         },
         "new_document_id_sha256": freeze["new_document_id_sha256"],
         "excluded_document_id_sha256": freeze["excluded_document_id_sha256"],
+        "exclusion_lineage_closure_sha256": sha256_file(exclusion_resolution_path),
         "zero_overlap_with_excluded_documents": freeze[
             "zero_overlap_with_excluded_documents"
         ],

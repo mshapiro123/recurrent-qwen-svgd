@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 from types import SimpleNamespace
@@ -8,6 +9,10 @@ import pytest
 import torch
 
 from eval.cache_paper2_phase2_stage0a import _materialize_weight
+from colab.run_stage5_paper2_phase2_option_b_teacher_cache import (
+    collect_exclusion_files,
+    collect_source_data_hashes,
+)
 
 from training.paper2_phase2_option_b import (
     build_anchor_admission_rows,
@@ -129,7 +134,8 @@ def test_launcher_is_teacher_only_and_bootstrap_target_is_wired() -> None:
     assert "STAGE5_PHASE2_OPTION_B_OFFLOAD_32B" in runner
     assert "a100_40gb_32b_accelerate_offload" in runner
     assert "memory >= 38000" in cell
-    assert "paper2_phase2_option_b_teacher_cache_v4" in cell
+    assert "paper2_phase2_option_b_teacher_cache_v5" in cell
+    assert "derived exclusion receipts require hash-closed source JSONL lineage" in cell
     assert "pinned bf16 32B Accelerate offload on CUDA" in cell
     assert 'MIN_SCRATCH_TOTAL_GIB"] = "200"' in cell
     assert 'MIN_SCRATCH_FREE_GIB"] = "150"' in cell
@@ -161,3 +167,76 @@ def test_40gb_mode_is_an_execution_only_amendment() -> None:
         "complete `hf_device_map`",
     ):
         assert marker in amendment
+
+
+def test_derived_exclusion_receipts_close_over_data_bearing_jsonl(tmp_path: Path) -> None:
+    base = tmp_path / "drive"
+    data_root = base / "source-run"
+    data_root.mkdir(parents=True)
+    source = data_root / "partition.jsonl"
+    source.write_text('{"document_id":"doc-a"}\n', encoding="utf-8")
+    source_sha256 = hashlib.sha256(source.read_bytes()).hexdigest()
+
+    derived_drive = base / "derived-run"
+    derived_drive.mkdir(parents=True)
+    receipt_root = tmp_path / "receipts"
+    receipt_root.mkdir()
+    (receipt_root / "summary.json").write_text(
+        json.dumps({"sources": {"data_jsonl_sha256": source_sha256}}) + "\n",
+        encoding="utf-8",
+    )
+
+    files, closure = collect_exclusion_files(
+        base=base,
+        data_runs=("source-run",),
+        derived_receipts={"derived-run": receipt_root},
+    )
+    assert files == [source]
+    assert closure["all_derived_source_hashes_resolved"] is True
+    assert closure["derived_receipt_only_runs"][0]["source_data_sha256"] == [
+        source_sha256
+    ]
+
+
+def test_derived_exclusion_receipts_fail_closed_on_unresolved_hash(tmp_path: Path) -> None:
+    base = tmp_path / "drive"
+    data_root = base / "source-run"
+    data_root.mkdir(parents=True)
+    (data_root / "partition.jsonl").write_text(
+        '{"document_id":"doc-a"}\n', encoding="utf-8"
+    )
+    (base / "derived-run").mkdir()
+    receipt_root = tmp_path / "receipts"
+    receipt_root.mkdir()
+    (receipt_root / "summary.json").write_text(
+        json.dumps({"manifest": {"data_sha256": "f" * 64}}) + "\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(RuntimeError, match="lineage is not closed"):
+        collect_exclusion_files(
+            base=base,
+            data_runs=("source-run",),
+            derived_receipts={"derived-run": receipt_root},
+        )
+
+
+def test_canonical_derived_receipts_name_only_quarantined_source_partitions() -> None:
+    expected_dev_c = "05bca2ee3ba71421296b2e31a0439746eb9c1b0e15e2cea4471be202ab6ac29d"
+    expected_eval_c = "04a68f41b3a7858d185da5d37fdc5a6db35b37804a892e218a4d932898d13f58"
+    prewindow = ROOT / "outputs/stage5/stage5_paper2_phase2_prewindow_20260731"
+    stage0a = ROOT / "outputs/stage5/stage5_paper2_phase2_stage0a_20260803"
+
+    prewindow_hashes: set[str] = set()
+    for path in prewindow.rglob("summary.json"):
+        prewindow_hashes.update(
+            collect_source_data_hashes(json.loads(path.read_text(encoding="utf-8")))
+        )
+    stage0a_hashes: set[str] = set()
+    for path in stage0a.rglob("summary.json"):
+        stage0a_hashes.update(
+            collect_source_data_hashes(json.loads(path.read_text(encoding="utf-8")))
+        )
+
+    assert prewindow_hashes == {expected_dev_c, expected_eval_c}
+    assert stage0a_hashes == {expected_dev_c}
