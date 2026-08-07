@@ -170,7 +170,7 @@ def test_launcher_is_teacher_only_and_bootstrap_target_is_wired() -> None:
     assert 'OPTION_B_PREFLIGHT_ONLY"] = "1"' in cell
     assert "complete_preflight_full_cache_not_started" in runner
     assert '"full_cache_started": False' in runner
-    assert not (ROOT / "colab/run_stage5_paper2_phase2_option_b.py").exists()
+    assert (ROOT / "colab/run_stage5_paper2_phase2_option_b.py").exists()
 
 
 def test_materialize_weight_keeps_resident_tensor_exact() -> None:

@@ -20,15 +20,15 @@ PROTOCOL = ROOT / "docs/PAPER2_PHASE2_OPTION_B_EXPLORATION_PROTOCOL_LOCKED_20260
 RULES = ROOT / "training/paper2_phase2_option_b_rule_inventory.json"
 
 
-def test_option_b_lock_authorizes_teacher_pass_but_not_training() -> None:
+def test_option_b_hash_amendment_authorizes_the_locked_training_protocol() -> None:
     registration = json.loads(REGISTRATION.read_text(encoding="utf-8"))
-    assert registration["status"] == "locked_teacher_pass_authorized_training_prohibited"
+    assert registration["status"] == "locked_post_generation_hash_amendment_training_authorized"
     assert registration["locked_before_teacher_pass"] is True
     assert registration["teacher_pass_authorized"] is True
     assert registration["lock_blockers"] == []
-    assert registration["pre_splice_authorized"] is False
-    assert registration["post_splice_authorized"] is False
-    assert registration["training_authorized"] is False
+    assert registration["pre_splice_authorized"] is True
+    assert registration["post_splice_authorized"] is True
+    assert registration["training_authorized"] is True
     assert registration["fixed_constants"]["target_splice_step"] == 4000
     assert registration["fixed_constants"]["stable_learning_rate_through_step"] == 18000
     assert registration["teacher_pass"]["new_training_anchor_target"] == 140_000
@@ -61,15 +61,20 @@ def test_option_b_units_and_teacher_revisions_are_explicit() -> None:
     assert sources["code"]["revision"] == STACK_REVISION
 
 
-def test_option_b_protocol_is_locked_and_requires_hash_only_splice_amendment() -> None:
+def test_option_b_protocol_and_post_generation_amendment_are_both_immutable() -> None:
     protocol = PROTOCOL.read_text(encoding="utf-8")
     assert "locked before teacher pass" in protocol
     assert "teacher/cache generation authorized" in protocol
     assert "Option B training remains prohibited" in protocol
     assert "hash-only amendment" in protocol
     assert "single splice identifies a general unique-data scaling law" in protocol
-    assert not (ROOT / "training/run_paper2_phase2_option_b.py").exists()
-    assert not (ROOT / "colab/run_stage5_paper2_phase2_option_b.py").exists()
+    assert (ROOT / "training/run_paper2_phase2_option_b.py").exists()
+    assert (ROOT / "colab/run_stage5_paper2_phase2_option_b.py").exists()
+    registration = json.loads(REGISTRATION.read_text(encoding="utf-8"))
+    amendment = registration["post_generation_hash_amendment"]
+    path = ROOT / amendment["amendment_document"]
+    assert path.stat().st_size == amendment["amendment_document_bytes"]
+    assert hashlib.sha256(path.read_bytes()).hexdigest() == amendment["amendment_document_sha256"]
 
 
 def test_option_b_localization_and_existing_population_hashes_are_banked() -> None:
@@ -85,6 +90,24 @@ def test_option_b_localization_and_existing_population_hashes_are_banked() -> No
         "evaluation_exclusion_sha256",
         "fixed_old_train_subset_sha256",
         "teacher_pass_resource_note_sha256",
+    ):
+        assert len(unresolved[key]) == 64
+    assert unresolved["new_training_anchor_count"] == 140_000
+    assert unresolved["new_horizon_sample_count"] == 560_000
+    assert unresolved["teacher_14b_state_sample_count"] == 560_000
+    assert unresolved["recorded_splice_step"] == 4_000
+    for key in (
+        "teacher_cache_summary_sha256",
+        "new_data_sha256",
+        "new_training_manifest_sha256",
+        "new_document_partition_sha256",
+        "excluded_document_partition_sha256",
+        "new_position_key_sha256",
+        "new_lattice_summary_sha256",
+        "full_logit_audit_sample_keys_sha256",
+        "anchor_admission_ledger_sha256",
+        "fixed_new_train_subset_sha256",
+        "exclusion_lineage_closure_sha256",
     ):
         assert len(unresolved[key]) == 64
 
@@ -126,4 +149,5 @@ def test_option_b_locked_artifact_hashes_match() -> None:
     for artifact in registration["lock_artifacts"].values():
         path = ROOT / artifact["path"]
         assert path.exists()
-        assert hashlib.sha256(path.read_bytes()).hexdigest() == artifact["sha256"]
+        locked_bytes = path.read_bytes().replace(b"\r\n", b"\n")
+        assert hashlib.sha256(locked_bytes).hexdigest() == artifact["sha256"]

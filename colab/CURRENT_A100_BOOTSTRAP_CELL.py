@@ -150,6 +150,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3_short_sha"
 #   "paper2_phase2_v1d" - DEV-C-only RMS-capped c=0.15 confirmation; no training.
 #   "paper2_phase2_stage0a" - DEV-C sparse lattice and 14B teacher states; A100-80GB, no training.
 #   "paper2_phase2_option_b_teacher_cache" - locked new-document teacher cache; A100-40GB offload or 80GB, no training.
+#   "paper2_phase2_option_b" - locked four-arm dose-then-data matrix; A100-40GB+.
 #   "paper2_phase2_stage0a_repair" - CPU-only finite-metric repair from cached Stage 0A shards.
 #   "paper2_phase2_exp0a" - A100 DEV-only canonicalizer and partial-whitening screening.
 #   "paper2_phase2_exp0b" - L4-or-larger DEV-only interpolation and serial-flow screening.
@@ -325,6 +326,21 @@ TARGETS = {
             "teacher cache only no model optimizer no training",
             "tests/test_paper2_phase2_option_b_teacher_cache.py",
             "colab/run_stage5_paper2_phase2_option_b_teacher_cache.py",
+        ],
+        "env": {},
+    },
+    "paper2_phase2_option_b": {
+        "path": "colab/STAGE5_PAPER2_PHASE2_OPTION_B_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_PHASE2_OPTION_B_VERSION",
+            "paper2_phase2_option_b_v1",
+            "hash-only amendment locked before Option B training",
+            "four A2 endpoint arms fresh AdamW state exact step 4000 splice",
+            "20000 steps eval checkpoint 1000 directional audit 2000",
+            "identical full control sample schedule within seed",
+            "fixed evaluation excluded from both training populations",
+            "tests/test_paper2_phase2_option_b_training.py",
+            "colab/run_stage5_paper2_phase2_option_b.py",
         ],
         "env": {},
     },

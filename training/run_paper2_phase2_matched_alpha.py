@@ -126,11 +126,11 @@ def _parallel_receipts(summary: dict[str, Any], key: str) -> list[dict[str, Any]
 
 
 def _local_source(path: str, stage0a_private: Path) -> Path:
-    marker = "/private/stage0a/"
     normalized = str(path).replace("\\", "/")
-    if marker not in normalized:
-        raise RuntimeError(f"unrecognized Stage 0A private path: {path}")
-    return stage0a_private / normalized.split(marker, 1)[1]
+    for marker in ("/private/stage0a/", "/private/full/"):
+        if marker in normalized:
+            return stage0a_private / normalized.split(marker, 1)[1]
+    raise RuntimeError(f"unrecognized Phase-2 private cache path: {path}")
 
 
 def _grow_last_dim(value: torch.Tensor, width: int, fill: int | float | bool) -> torch.Tensor:
@@ -152,17 +152,24 @@ def build_pilot_cache(
     stage0a_private: Path,
     canonicalizer_path: Path,
     output_path: Path,
+    expected_samples: int = 200_000,
 ) -> dict[str, Any]:
     if output_path.is_file():
         cached = torch.load(output_path, map_location="cpu", weights_only=False)
-        if cached.get("kind") == "paper2_phase2_matched_alpha_cache_v1":
+        if (
+            cached.get("kind") == "paper2_phase2_matched_alpha_cache_v1"
+            and len(cached.get("documents", [])) * 4 == int(expected_samples)
+        ):
             print(f"matched_alpha_cache_resume={output_path}", flush=True)
             return cached
     summary = json.loads(stage0a_summary_path.read_text(encoding="utf-8"))
     samples_path = stage0a_private / "sample_manifest.jsonl"
     samples = [json.loads(line) for line in samples_path.read_text(encoding="utf-8").splitlines() if line]
-    if len(samples) != 200_000:
-        raise RuntimeError("matched-alpha pilot requires all 200,000 Stage 0A samples")
+    if len(samples) != int(expected_samples):
+        raise RuntimeError(
+            "matched-alpha cache sample count differs from the explicit contract: "
+            f"observed={len(samples)} expected={int(expected_samples)}"
+        )
     if sha256_file(samples_path) != summary["manifest"]["sample_manifest_sha256"]:
         raise RuntimeError("Stage 0A manifest hash mismatch")
     canonicalizer = torch.load(canonicalizer_path, map_location="cpu", weights_only=False)

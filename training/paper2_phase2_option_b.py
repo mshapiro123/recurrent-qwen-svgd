@@ -17,14 +17,26 @@ RULE_INVENTORY_PATH = ROOT / "training/paper2_phase2_option_b_rule_inventory.jso
 
 def load_locked_registration(path: str | Path = REGISTRATION_PATH) -> dict[str, Any]:
     registration = json.loads(Path(path).read_text(encoding="utf-8"))
-    if registration.get("status") != "locked_teacher_pass_authorized_training_prohibited":
+    allowed_statuses = {
+        "locked_teacher_pass_authorized_training_prohibited",
+        "locked_post_generation_hash_amendment_training_authorized",
+    }
+    if registration.get("status") not in allowed_statuses:
         raise RuntimeError("Option B registration is not locked for the teacher pass")
     if not registration.get("locked_before_teacher_pass"):
         raise RuntimeError("Option B lock does not precede teacher generation")
     if not registration.get("teacher_pass_authorized"):
         raise RuntimeError("Option B teacher pass is not authorized")
-    if registration.get("training_authorized"):
-        raise RuntimeError("Option B training must remain prohibited")
+    post_generation = registration.get("status") == (
+        "locked_post_generation_hash_amendment_training_authorized"
+    )
+    if post_generation:
+        if registration.get("training_authorized") is not True:
+            raise RuntimeError("Option B post-generation training authorization is absent")
+        if registration["teacher_pass"].get("status") != "banked_complete_at_target":
+            raise RuntimeError("Option B teacher pass is not banked")
+    elif registration.get("training_authorized"):
+        raise RuntimeError("Option B training must remain prohibited before the amendment")
     if registration.get("lock_blockers"):
         raise RuntimeError("Option B registration still has lock blockers")
     teacher = registration["teacher_pass"]
