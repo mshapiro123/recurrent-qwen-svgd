@@ -46,6 +46,10 @@ from training.run_paper2_phase2_matched_alpha import (
 ROOT = Path(__file__).resolve().parents[1]
 REGISTRATION = ROOT / "training/paper2_phase2_option_b_preregistration.json"
 RULE_INVENTORY = ROOT / "training/paper2_phase2_option_b_rule_inventory.json"
+A2_REGISTRATION = ROOT / "training/paper2_phase2_staged_repilot_preregistration.json"
+A2_PUBLIC_ENDPOINTS = (
+    ROOT / "outputs/stage5/stage5_paper2_phase2_a2_step237_continuation_20260806"
+)
 RUN_KIND = "paper2_phase2_option_b_matrix_v1"
 ARM_KIND = "paper2_phase2_option_b_arm_v1"
 EXPECTED_STATUS = "locked_post_transport_and_endpoint_errata_training_authorized"
@@ -69,6 +73,40 @@ def canonical_json_sha256(value: Any) -> str:
         ensure_ascii=True,
     ).encode("utf-8")
     return hashlib.sha256(payload).hexdigest()
+
+
+def inherited_a2_loss_weights(*, seed: int, arm: str) -> tuple[dict[str, float], dict[str, Any]]:
+    """Recover Option B's unchanged objective from the locked A2 contract."""
+    if seed not in (0, 1) or arm not in ("full_a2", "draft_only_control"):
+        raise ValueError(f"invalid Option B arm identity: seed={seed} arm={arm}")
+    a2_registration = json.loads(A2_REGISTRATION.read_text(encoding="utf-8"))
+    lock = a2_registration.get("a2_lock_amendment_20260805", {})
+    if lock.get("status") != "locked_before_a2_training":
+        raise RuntimeError("Option B inherited A2 loss-weight lock is absent")
+    all_weights = {
+        key: float(value)
+        for key, value in lock["full_a2_static_weights_by_seed"][str(seed)].items()
+    }
+    active_losses = LOSSES if arm == "full_a2" else PRIMARY
+    weights = {key: all_weights[key] for key in active_losses}
+    receipt_path = A2_PUBLIC_ENDPOINTS / f"seed_{seed}_{arm}.json"
+    receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+    receipt_weights = {
+        key: float(value) for key, value in receipt["static_loss_weights"].items()
+    }
+    if receipt_weights != weights:
+        raise RuntimeError(
+            f"Option B A2 loss weights disagree with the public endpoint receipt: "
+            f"seed={seed} arm={arm}"
+        )
+    source = {
+        "contract": "a2_lock_amendment_20260805.full_a2_static_weights_by_seed",
+        "a2_registration": str(A2_REGISTRATION.relative_to(ROOT)),
+        "a2_registration_canonical_json_sha256": canonical_json_sha256(a2_registration),
+        "public_endpoint_receipt": str(receipt_path.relative_to(ROOT)),
+        "public_endpoint_receipt_canonical_json_sha256": canonical_json_sha256(receipt),
+    }
+    return weights, source
 
 
 def load_training_lock() -> tuple[dict[str, Any], dict[str, Any]]:
@@ -369,9 +407,8 @@ def run_arm(
     frozen_before = _tensor_digest(
         {key: value for key, value in module.named_parameters() if not value.requires_grad}
     )
-    endpoint_payload = source["a2_endpoint"]
-    weights = {key: float(value) for key, value in endpoint_payload["static_loss_weights"].items()}
     active_losses = LOSSES if arm == "full_a2" else PRIMARY
+    weights, loss_weight_source = inherited_a2_loss_weights(seed=seed, arm=arm)
     optimizer = torch.optim.AdamW(build_adamw_groups(module, weight_decay=0.01), lr=0.0)
     schedule_generator = torch.Generator().manual_seed(20260805 + seed)
     audit_generator = torch.Generator().manual_seed(20270805 + seed)
@@ -397,6 +434,10 @@ def run_arm(
         saved = torch.load(resume_path, map_location="cpu", weights_only=False)
         if saved.get("kind") != ARM_KIND or saved.get("name") != name:
             raise RuntimeError(f"Option B resume identity mismatch for {name}")
+        if saved.get("static_loss_weights") != weights:
+            raise RuntimeError(f"Option B resume loss weights mismatch for {name}")
+        if saved.get("loss_weight_source") != loss_weight_source:
+            raise RuntimeError(f"Option B resume loss-weight source mismatch for {name}")
         _load_trainable_state(module, saved["trainable_state"])
         optimizer.load_state_dict(saved["optimizer_state"])
         step = int(saved["step"])
@@ -425,6 +466,8 @@ def run_arm(
             "step": step,
             "target_steps": target_steps,
             "source_endpoint_sha256": endpoint_sha,
+            "static_loss_weights": weights,
+            "loss_weight_source": loss_weight_source,
             "trainable_state": {
                 key: value.detach().cpu() for key, value in module.named_parameters() if value.requires_grad
             },
@@ -621,6 +664,7 @@ def run_arm(
         "fresh_optimizer_state_at_step_zero": True,
         "active_training_losses": list(active_losses),
         "static_loss_weights": weights,
+        "loss_weight_source": loss_weight_source,
         "history": history,
         "directional_audits": audits,
         "schedule": {

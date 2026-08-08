@@ -8,6 +8,7 @@ import torch
 from training.run_paper2_phase2_option_b import (
     EXPECTED_STATUS,
     canonical_json_sha256,
+    inherited_a2_loss_weights,
     learning_rate_at_step,
     load_training_lock,
     merge_caches,
@@ -70,6 +71,34 @@ def test_teacher_summary_integrity_is_transport_stable_and_semantic(tmp_path: Pa
     assert canonical_json_sha256(parsed) != transport["canonical_json_sha256"]
 
 
+def test_option_b_inherits_exact_a2_loss_weights_from_lock_and_public_receipts() -> None:
+    expected = {
+        0: {
+            "final_ce": 1.0,
+            "cumulative_kl": 2201.8315363546058,
+            "local_ce": 395.0116541409731,
+            "preserve_kl": 521.7796435629211,
+        },
+        1: {
+            "final_ce": 1.0,
+            "cumulative_kl": 1789.411575181737,
+            "local_ce": 303.9643794779331,
+            "preserve_kl": 467.10657754438176,
+        },
+    }
+    for seed in (0, 1):
+        full, full_source = inherited_a2_loss_weights(seed=seed, arm="full_a2")
+        control, control_source = inherited_a2_loss_weights(
+            seed=seed, arm="draft_only_control"
+        )
+        assert full == expected[seed]
+        assert control == {
+            key: expected[seed][key] for key in ("cumulative_kl", "local_ce")
+        }
+        assert full_source["contract"] == control_source["contract"]
+        assert len(full_source["a2_registration_canonical_json_sha256"]) == 64
+
+
 def test_learning_rate_matches_locked_warmup_plateau_and_cooldown() -> None:
     constants = json.loads(
         (ROOT / "training/paper2_phase2_option_b_preregistration.json").read_text(
@@ -106,10 +135,11 @@ def test_launcher_is_wired_with_resume_and_scientific_boundaries() -> None:
         encoding="utf-8"
     )
     for marker in (
-        "paper2_phase2_option_b_v3",
+        "paper2_phase2_option_b_v4",
         "four A2 endpoint arms fresh AdamW state exact step 4000 splice",
         "fixed evaluation excluded from both training populations",
         "teacher summary normalized Git-LF plus canonical JSON integrity",
+        "A2 loss weights inherited from locked contract and public receipts",
     ):
         assert marker in bootstrap or marker in cell
     assert "checkpoint_step_" in training
