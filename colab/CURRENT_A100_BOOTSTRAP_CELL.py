@@ -171,6 +171,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3_short_sha"
 #   "paper2_phase2_a2_step237" - amended A100-40GB+ exact step-237 continuation.
 #   "paper2_phase2_v1b_rms_audit" - CPU-only audit of existing V1b private rows.
 #   "paper2_phase2_eval_de_freeze" - score-blind EVAL-D/E and own-base feature freeze.
+#   "paper2_phase2_e1_confirmation" - locked read-once EVAL-D confirmation; A100-80GB.
 #   "paper2_d0_prelock_publish_resume" - publish completed Drive-backed D0 lock receipts without inference.
 #   "paper2_d0_prelock" - authorized density probe, corpus freeze, and preregistration lock only.
 TARGET = os.environ.get("STAGE5_CURRENT_A100_TARGET", "preflight")
@@ -684,6 +685,21 @@ TARGETS = {
             "no EVAL-D contact no outcome score no optimizer no training",
             "read-once E1 scoring remains unspent before lock",
             "colab/run_stage5_paper2_phase2_e1_endpoint_lock.py",
+        ],
+        "env": {},
+    },
+    "paper2_phase2_e1_confirmation": {
+        "path": "colab/STAGE5_PAPER2_PHASE2_E1_CONFIRMATION_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_PHASE2_E1_CONFIRMATION_VERSION",
+            "paper2_phase2_e1_confirmation_v1",
+            "lock commit ebe4ea4b before scorer construction",
+            "read-once EVAL-D scoring four final Option B endpoints",
+            "paired document bootstrap 10000 replicates seed 20260808",
+            "no optimizer no parameter gradients no training EVAL-E untouched",
+            "A100 80GB required by locked conservative resource note",
+            "failed score-bearing pass cannot rerun without strategy review",
+            "colab/run_stage5_paper2_phase2_e1_confirmation.py",
         ],
         "env": {},
     },
