@@ -1809,3 +1809,18 @@ Colab/Drive backups for selected runs.
   Drive hashes plus semantic tensor digests. The A2 runner now preserves
   completed checkpoint bytes on a no-op resume. Erratum:
   `docs/PAPER2_PHASE2_OPTION_B_ENDPOINT_RESERIALIZATION_ERRATUM_20260807.md`.
+- 2026-08-08 Option B closure and E1 draft: all four Option B arms completed
+  20,000 updates with no tripwire event. On the fixed 8,031-anchor DEV slice,
+  full writeback exceeded the matched control by 0.351% and 0.496% in seeds 0
+  and 1, with paired document-bootstrap intervals excluding zero. The one-percent
+  exploratory target was not met; the CI-qualified late-slope alternative opened
+  E1. Strategy ratified a read-once E1 confirmation on the four frozen final
+  endpoints, with point retention at least 99.5% and Wilson lower bound at least
+  99.0%. The preregistration is drafted but not locked. The readiness audit found
+  no landed EVAL-D freeze receipt and also established that the older pre-window
+  EVAL-D design is schema-incompatible with the Option B evaluator: it stores a
+  7B token cache and own-base features rather than the required four-horizon 14B
+  sparse lattice, top-k probe targets, and canonicalizer coordinates. E1 scoring
+  remains prohibited pending a score-blind compatible cache and readiness receipt.
+  Draft: `docs/PAPER2_PHASE2_E1_CONFIRMATION_PREREGISTRATION_DRAFT_20260808.md`.
+  Readiness: `outputs/stage5/stage5_paper2_phase2_e1_preregistration_20260808/readiness.json`.

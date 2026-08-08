@@ -1,0 +1,79 @@
+{
+  "kind": "paper2_phase2_e1_confirmation_evaluation_rule_inventory",
+  "version": "e1_confirmation_rules_v1_20260808",
+  "mode": "evaluation_only",
+  "continuous_shapers": [],
+  "endpoint_thresholds_are_process_aborts": false,
+  "rules": [
+    {
+      "id": "E1-R01",
+      "name": "locked_registration",
+      "class": "tripwire",
+      "cliff": "registration is not locked before scoring or evaluation is not explicitly authorized",
+      "action": "abort_before_score_exposure"
+    },
+    {
+      "id": "E1-R02",
+      "name": "endpoint_lineage",
+      "class": "tripwire",
+      "cliff": "checkpoint file hash, semantic tensor digest, seed, arm, or final-step identity differs from the lock",
+      "action": "abort_before_score_exposure"
+    },
+    {
+      "id": "E1-R03",
+      "name": "partition_identity",
+      "class": "tripwire",
+      "cliff": "EVAL-D data, document, position-key, or cache hash differs from the readiness receipt",
+      "action": "abort_before_score_exposure"
+    },
+    {
+      "id": "E1-R04",
+      "name": "document_quarantine",
+      "class": "tripwire",
+      "cliff": "any EVAL-D document overlaps training, DEV, prior evaluation, or EVAL-E",
+      "action": "abort_before_score_exposure"
+    },
+    {
+      "id": "E1-R05",
+      "name": "option_b_cache_schema",
+      "class": "tripwire",
+      "cliff": "cache lacks the four-horizon student, 14B lattice, top-k probe, canonical-target, or document fields required by the locked evaluator",
+      "action": "abort_before_score_exposure"
+    },
+    {
+      "id": "E1-R06",
+      "name": "read_once_lease",
+      "class": "tripwire",
+      "cliff": "read-once state is already spent, absent, non-atomic, or cannot be durably marked started",
+      "action": "abort_before_score_exposure"
+    },
+    {
+      "id": "E1-R07",
+      "name": "no_optimizer_or_mutation",
+      "class": "tripwire",
+      "cliff": "an optimizer exists, a parameter requires gradients, or any endpoint tensor changes before versus after",
+      "action": "abort_and_mark_read_once_spent_if_scoring_started"
+    },
+    {
+      "id": "E1-R08",
+      "name": "paired_schedule",
+      "class": "tripwire",
+      "cliff": "arm row order, anchor keys, document IDs, candidate lattice, or scorer implementation differs",
+      "action": "abort_and_mark_read_once_spent_if_scoring_started"
+    },
+    {
+      "id": "E1-R09",
+      "name": "row_completeness",
+      "class": "tripwire",
+      "cliff": "a row is missing, duplicated, non-finite, or cannot reproduce the public aggregate within 2e-6",
+      "action": "fail_integrity_and_mark_read_once_spent"
+    },
+    {
+      "id": "E1-R10",
+      "name": "single_scripted_verdict",
+      "class": "tripwire",
+      "cliff": "bootstrap seed, replicate count, document unit, thresholds, or scripted reading differs from the lock",
+      "action": "fail_integrity_and_mark_read_once_spent"
+    }
+  ]
+}

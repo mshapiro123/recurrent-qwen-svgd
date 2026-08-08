@@ -1,0 +1,119 @@
+{
+  "kind": "paper2_phase2_e1_confirmation_preregistration",
+  "version": "e1_confirmation_draft_v1_20260808",
+  "date": "2026-08-08",
+  "status": "draft_awaiting_option_b_compatible_eval_d_not_locked",
+  "locked_before_e1_scoring": false,
+  "e1_evaluation_authorized": false,
+  "training_authorized": false,
+  "governing_documents": {
+    "charter": {
+      "drive_id": "1HhPKvOd3w3hiL6pbzCvDU4MJsLNtpdNf",
+      "path": "docs/STRATEGY_TO_CODING_AGENT_OPTION_B_CLOSE_E1_CHARTER_20260808.md",
+      "sha256": "954104b86b3053981f1445e6c724177907ddeea228eaf81ee427646430d67231"
+    },
+    "ratification": {
+      "drive_id": "19q4UxbpOxLL7qYZzjY7puI2Kywp1n8-x",
+      "path": "docs/STRATEGY_RATIFICATION_E1_CHARTER_20260808.md",
+      "sha256": "e26d903facd7606cd40ed0fcd11156004e6048c649092a6e6462c4b02531c0a1"
+    },
+    "human_preregistration_draft": "docs/PAPER2_PHASE2_E1_CONFIRMATION_PREREGISTRATION_DRAFT_20260808.md"
+  },
+  "source": {
+    "option_b_result_commit": "ce79e913e041276f19d2b92d19d2c46cc12f6f40",
+    "option_b_bootstrap_audit_commit": "e26d349e",
+    "option_b_result_summary": "outputs/stage5/stage5_paper2_phase2_option_b_20260807/summary.json",
+    "option_b_bootstrap_summary": "outputs/stage5/stage5_paper2_phase2_option_b_bootstrap_audit_20260808/summary.json"
+  },
+  "checkpoints": {
+    "seed_0_full_a2": {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_option_b_20260807/private/option_b/seed_0_full_a2/resume.pt",
+      "sha256": "c1f5a6f217342ad721267a08d16c1bca75c8308d03f471db9d28ff3f319c777f"
+    },
+    "seed_0_draft_only_control": {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_option_b_20260807/private/option_b/seed_0_draft_only_control/resume.pt",
+      "sha256": "8c9a7f6573bd268d67592b271a1b10a37c1f882681dc20efdbd8e9a5232bd681"
+    },
+    "seed_1_full_a2": {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_option_b_20260807/private/option_b/seed_1_full_a2/resume.pt",
+      "sha256": "ccebda5c0b4bb1832194f690075b0be9ac1a96c557e63978ebb97a8632d278f7"
+    },
+    "seed_1_draft_only_control": {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_option_b_20260807/private/option_b/seed_1_draft_only_control/resume.pt",
+      "sha256": "b26ca18e76fc60a622d6056b2957d31ee37e0c6c26dde88a3250b9bbd54a2424"
+    }
+  },
+  "evaluation": {
+    "partition": "EVAL-D",
+    "read_once": true,
+    "read_once_scoring_spent": false,
+    "optimizer_construction_prohibited": true,
+    "model_mutation_prohibited": true,
+    "alpha": 0.5,
+    "alpha_status": "unselected_design_prior",
+    "horizons": [1, 2, 3, 4],
+    "bootstrap": {
+      "unit": "document",
+      "paired": true,
+      "replicates": 10000,
+      "seed": 20260808,
+      "interval": "two_sided_percentile_95",
+      "identical_document_multiplicities_across_arms_and_seeds": true
+    },
+    "scorer_source": "training/run_paper2_phase2_a2.py:evaluate",
+    "scorer_source_sha256": null,
+    "option_b_cache_schema_required": "paper2_phase2_matched_alpha_cache_v1",
+    "actual_anchor_count": null,
+    "actual_document_count": null,
+    "data_sha256": null,
+    "position_key_sha256": null,
+    "private_cache_sha256": null,
+    "canonicalizer_sha256": null,
+    "readiness_receipt_sha256": null
+  },
+  "primary": {
+    "metric": "relative_mean_eal_gain_full_over_matched_control",
+    "required_seeds": [0, 1],
+    "pass": "paired_document_bootstrap_95_ci_lower_strictly_greater_than_zero_in_each_seed",
+    "dev_expected_effect_descriptive_only": [0.0035, 0.0050],
+    "one_percent_target": "retired_as_gate_report_as_unmet_exploratory_aspiration"
+  },
+  "quality": {
+    "population": "zero_loop_baseline_correct_decisions",
+    "required_seeds": [0, 1],
+    "point_retention_minimum": 0.995,
+    "wilson_95_lower_minimum": 0.990,
+    "diagnostic_aspiration_0p997": "report_as_unmet_not_a_gate"
+  },
+  "secondaries_descriptive_only": [
+    "full_over_zero_loop_eal",
+    "full_minus_control_writeback_increment",
+    "probe_kl_vs_eal_correlation",
+    "probe_top1_vs_eal_correlation",
+    "probe_kl_vs_probe_top1_correlation",
+    "per_stratum_effect",
+    "per_position_bucket_effect",
+    "bridge_gate_use",
+    "quality_safe_oracle_headroom"
+  ],
+  "scripted_readings": {
+    "primary_pass_quality_pass": "CONFIRMED_WITH_MEASURED_PARETO",
+    "primary_pass_quality_fail": "EFFECT_REPLICATES_QUALITY_BOUNDARY_FAILS",
+    "primary_fail_quality_pass": "MECHANISM_NOT_CONFIRMED",
+    "primary_fail_quality_fail": "BOTH_CONFIRMATION_REQUIREMENTS_FAIL",
+    "mixed_seed_primary": "MECHANISM_NOT_CONFIRMED"
+  },
+  "rule_inventory": "training/paper2_phase2_e1_confirmation_rule_inventory.json",
+  "resource_note": {
+    "cache_generation": "A100_80GB_expected_due_to_pinned_teacher_lattice",
+    "e1_scoring": "A100_40GB_expected_pending_score_blind_one_batch_preflight"
+  },
+  "lock_blockers": [
+    "option_b_compatible_eval_d_cache_missing",
+    "eval_d_readiness_receipt_missing",
+    "eval_d_actual_n_and_document_count_unfilled",
+    "eval_d_hash_transcription_unfilled",
+    "scorer_source_hash_unfilled",
+    "resource_preflight_unfilled"
+  ]
+}

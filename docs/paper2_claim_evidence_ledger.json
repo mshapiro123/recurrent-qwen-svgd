@@ -1,17 +1,17 @@
 {
   "schema_version": 1,
   "program": "paper2_causal_control_of_recurrent_computation",
-  "status": "phase1_banked_phase2_a2_budget_limited_option_b_localization_banked_prelock",
-  "canonical_date": "2026-08-06",
+  "status": "phase1_banked_option_b_positive_dev_e1_confirmation_draft_blocked_on_eval_d_cache",
+  "canonical_date": "2026-08-08",
   "active_queue": {
     "program_goal": "causal_arbitration_at_append_and_dispatch_interfaces",
     "p0": "completed_uncitable_adapter_loss_calibration",
     "t1": "two_registered_negatives_raw_endpoints_replicate_exact_in_support_causal_control_with_small_preservation_cost",
     "d0": "banked_not_recoverable_at_pilot_scale_binary_disagreement_target",
     "dc1_stage_a": "registered_none_transient_append_retires_checkpoint_archival_eval_c_spent",
-    "phase2": "a2_banked_budget_limited_option_b_localization_no_mask_qualified_strategy_lock_next",
-    "dc2": "option_b_staged_dose_then_data_authorized_not_locked",
-    "d1": "window_closed_pending_option_b_result",
+    "phase2": "option_b_banked_small_replicated_writeback_effect_e1_confirmation_draft_unlocked",
+    "dc2": "e1_confirmation_blocked_only_on_option_b_compatible_eval_d_cache_and_readiness",
+    "d1": "window_closed_pending_e1_confirmation",
     "paper_two_packaging": "proceeds_on_banked_phase1_results"
   },
   "artifact_map": {
@@ -55,9 +55,56 @@
     "phase2_option_b_localization_receipt": "outputs/stage5/stage5_paper2_phase2_a2_localization_20260806/receipt.md",
     "phase2_option_b_localization_handoff": "docs/PAPER2_PHASE2_OPTION_B_LOCALIZATION_PRELOCK_HANDOFF_20260806.md",
     "phase2_option_b_localization_handoff_drive_id": "1MW2MlGkfVy9KLKbE8BGThN2NTc1kWo6p",
-    "phase2_option_b_localization_handoff_sha256": "6b41875af042a46cd8105d4a58dc6ae9bb25a6609c9cd02021f5fb9d42406ac7"
+    "phase2_option_b_localization_handoff_sha256": "6b41875af042a46cd8105d4a58dc6ae9bb25a6609c9cd02021f5fb9d42406ac7",
+    "phase2_option_b_final_summary": "outputs/stage5/stage5_paper2_phase2_option_b_20260807/summary.json",
+    "phase2_option_b_bootstrap_audit": "outputs/stage5/stage5_paper2_phase2_option_b_bootstrap_audit_20260808/summary.json",
+    "phase2_option_b_final_handoff": "docs/PAPER2_PHASE2_OPTION_B_FINAL_RESULT_HANDOFF_20260808.md",
+    "phase2_e1_charter": "docs/STRATEGY_TO_CODING_AGENT_OPTION_B_CLOSE_E1_CHARTER_20260808.md",
+    "phase2_e1_ratification": "docs/STRATEGY_RATIFICATION_E1_CHARTER_20260808.md",
+    "phase2_e1_preregistration_draft": "docs/PAPER2_PHASE2_E1_CONFIRMATION_PREREGISTRATION_DRAFT_20260808.md",
+    "phase2_e1_preregistration_draft_handoff": "docs/PAPER2_PHASE2_E1_PREREGISTRATION_DRAFT_HANDOFF_20260808.md",
+    "phase2_e1_machine_draft": "training/paper2_phase2_e1_confirmation_preregistration.draft.json",
+    "phase2_e1_readiness": "outputs/stage5/stage5_paper2_phase2_e1_preregistration_20260808/readiness.json"
   },
   "claims": [
+    {
+      "id": "phase2_option_b_scaled_writeback_effect",
+      "status": "supported_bounded_dev_only",
+      "claim": "On the fixed document-disjoint DEV slice, the final full writeback system exceeded its matched drafter-only control in both seeds after 20,000 additional updates, with paired document-bootstrap intervals excluding zero; the full-system late slope also excluded zero in both seeds, opening the separately locked E1 confirmation pass.",
+      "scope": "DEV only, alpha 0.5 unselected design prior, two required seeds, 8,031 anchors in 85 documents, final Option B endpoints, document bootstrap over documents rather than seeds",
+      "metrics": {
+        "seed_0_relative_eal_gain": 0.00351,
+        "seed_0_relative_eal_gain_ci95": [0.00240, 0.00477],
+        "seed_1_relative_eal_gain": 0.00496,
+        "seed_1_relative_eal_gain_ci95": [0.00370, 0.00655],
+        "seed_0_writeback_gap_growth_eal": 0.005106,
+        "seed_1_writeback_gap_growth_eal": 0.005603,
+        "one_percent_target_met": false,
+        "option_b_tripwire_events": 0
+      },
+      "evidence": [
+        {
+          "path": "outputs/stage5/stage5_paper2_phase2_option_b_20260807/summary.json",
+          "locator": "four completed arms, endpoint checkpoints, fixed-DEV curves, quality, gate, and lineage receipts"
+        },
+        {
+          "path": "outputs/stage5/stage5_paper2_phase2_option_b_bootstrap_audit_20260808/summary.json",
+          "locator": "paired document-bootstrap endpoint, slope, and gap-growth intervals"
+        },
+        {
+          "path": "docs/PAPER2_PHASE2_OPTION_B_FINAL_RESULT_HANDOFF_20260808.md",
+          "locator": "design, results, registered readings, limitations, and E1 recommendation"
+        }
+      ],
+      "do_not_claim": [
+        "E1 confirmation has passed",
+        "the effect reaches one percent",
+        "alpha 0.5 is selected or optimal",
+        "quality is neutral",
+        "two seeds estimate a seed population",
+        "the DEV result generalizes beyond the registered substrate"
+      ]
+    },
     {
       "id": "phase2_staged_a1_state_construction",
       "status": "supported_bounded_dev_only",

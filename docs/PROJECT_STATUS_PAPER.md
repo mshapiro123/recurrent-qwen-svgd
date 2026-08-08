@@ -1,8 +1,8 @@
 # Project Status: Deterministic Program Closed
 
-**Canonical date:** August 6, 2026
+**Canonical date:** August 8, 2026
 **Part 1 status:** closed
-**Part 2 status:** Phase 1 is banked. DC1 Stage A remains a registered negative (`none`). The Phase-2 pre-window diagnostics, V1d, canonicalizer arbitration, loss-free student build, and replicated A1 pass at alpha `0.5` are banked. A2 completed 2,000 steps in all four arms. The full writeback arm beat its matched no-writeback control in both seeds, but missed the registered two-percent headroom and 99.7-percent retention gates, so the verdict is `budget-limited`, not success or impossibility. Option B is locked as an unmasked staged dose-then-data exploration. Strategy authorized a resumable teacher/cache pass with 14B states for every admitted anchor and per-anchor label-tier admission receipts. Training remains prohibited until the new cache hashes are banked.
+**Part 2 status:** Phase 1 is banked. DC1 Stage A remains a registered negative (`none`). Phase-2 Option B is complete and banked on DEV: the final full writeback system beat its matched drafter-only control in both seeds by `0.351%` and `0.496%`, with paired document-bootstrap intervals excluding zero. The effect is small, quality carries a measured cost, and the exploratory one-percent target was not met. Strategy ratified a one-shot E1 confirmation on the four frozen Option B endpoints. The preregistration is drafted but intentionally unlocked because the older EVAL-D freeze design is 7B-only and does not contain the 14B four-horizon lattice required by the Option B evaluator. E1 scoring remains prohibited until a score-blind compatible cache and readiness receipt land.
 
 This page is the short status index. It replaces the earlier June recovery narrative, which became stale after the loop-closure repair, synthetic mechanism installation, Phase A dense-control comparison, and inverse-task boundary program.
 
@@ -44,6 +44,11 @@ This page is the short status index. It replaces the earlier June recovery narra
 - [Option B staged exploration protocol lock](PAPER2_PHASE2_OPTION_B_EXPLORATION_PROTOCOL_LOCKED_20260806.md)
 - [Option B teacher-pass resource note lock](PAPER2_PHASE2_OPTION_B_TEACHER_PASS_RESOURCE_NOTE_LOCKED_20260806.md)
 - [Option B localization and pre-lock handoff](PAPER2_PHASE2_OPTION_B_LOCALIZATION_PRELOCK_HANDOFF_20260806.md)
+- [Option B final result handoff](PAPER2_PHASE2_OPTION_B_FINAL_RESULT_HANDOFF_20260808.md)
+- [E1 confirmation charter](STRATEGY_TO_CODING_AGENT_OPTION_B_CLOSE_E1_CHARTER_20260808.md)
+- [E1 charter ratification](STRATEGY_RATIFICATION_E1_CHARTER_20260808.md)
+- [E1 preregistration draft](PAPER2_PHASE2_E1_CONFIRMATION_PREREGISTRATION_DRAFT_20260808.md)
+- [E1 draft and readiness handoff](PAPER2_PHASE2_E1_PREREGISTRATION_DRAFT_HANDOFF_20260808.md)
 - [Experiment log](EXPERIMENT_LOG.md)
 
 ## Established

@@ -1,0 +1,50 @@
+{
+  "blockers": [
+    "eval_d_freeze_receipt_missing"
+  ],
+  "e1_scoring_authorized": false,
+  "inputs": {
+    "eval_d_freeze": "C:\\Users\\mshap\\Documents\\Codex\\2026-06-15\\option-b-pilot-contract-fix\\outputs\\stage5\\stage5_paper2_phase2_prewindow_20260731\\eval_de\\summary.json",
+    "eval_d_freeze_sha256": null,
+    "option_b_summary": "C:\\Users\\mshap\\Documents\\Codex\\2026-06-15\\option-b-pilot-contract-fix\\outputs\\stage5\\stage5_paper2_phase2_option_b_20260807\\summary.json",
+    "option_b_summary_sha256": "7f689070e7d303a6acb2d6a2688797a3396791f5a12e3c1bec6dd31d9ccf9a0a",
+    "registration": "C:\\Users\\mshap\\Documents\\Codex\\2026-06-15\\option-b-pilot-contract-fix\\training\\paper2_phase2_e1_confirmation_preregistration.draft.json",
+    "registration_sha256": "78294c3579e8b9535257a0f9682abab6b690353283c9909f9752394b4f3ab291",
+    "rule_inventory": "C:\\Users\\mshap\\Documents\\Codex\\2026-06-15\\option-b-pilot-contract-fix\\training\\paper2_phase2_e1_confirmation_rule_inventory.json",
+    "rule_inventory_sha256": "16bb8a51c74052380894aa10507d8de46baf5e9d23b859dc09228310f7bfd4ee"
+  },
+  "kind": "paper2_phase2_e1_readiness",
+  "note": "Readiness authorizes completion of the preregistration lock only; the eventual locked registration must separately authorize E1 scoring.",
+  "observations": {
+    "option_b_endpoint_hashes": {
+      "seed_0_draft_only_control": "8c9a7f6573bd268d67592b271a1b10a37c1f882681dc20efdbd8e9a5232bd681",
+      "seed_0_full_a2": "c1f5a6f217342ad721267a08d16c1bca75c8308d03f471db9d28ff3f319c777f",
+      "seed_1_draft_only_control": "b26ca18e76fc60a622d6056b2957d31ee37e0c6c26dde88a3250b9bbd54a2424",
+      "seed_1_full_a2": "ccebda5c0b4bb1832194f690075b0be9ac1a96c557e63978ebb97a8632d278f7"
+    }
+  },
+  "read_once_scoring_spent": false,
+  "ready_to_lock": false,
+  "required_option_b_cache_fields": [
+    "base_log_probs",
+    "base_tail",
+    "candidate_ids",
+    "candidate_mask",
+    "decoder_bias",
+    "decoder_weight_alpha_0p5",
+    "documents",
+    "positions",
+    "strata",
+    "student_hidden",
+    "target_centered_raw",
+    "teacher_log_probs",
+    "teacher_tail",
+    "teacher_topk_ids",
+    "teacher_topk_log_probs",
+    "whiten_basis",
+    "whiten_eigenvalues"
+  ],
+  "required_option_b_cache_kind": "paper2_phase2_matched_alpha_cache_v1",
+  "status": "blocked_before_lock",
+  "version": "e1_readiness_v1_20260808"
+}
