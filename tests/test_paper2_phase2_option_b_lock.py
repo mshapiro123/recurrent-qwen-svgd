@@ -22,7 +22,9 @@ RULES = ROOT / "training/paper2_phase2_option_b_rule_inventory.json"
 
 def test_option_b_hash_amendment_authorizes_the_locked_training_protocol() -> None:
     registration = json.loads(REGISTRATION.read_text(encoding="utf-8"))
-    assert registration["status"] == "locked_post_generation_hash_amendment_training_authorized"
+    assert registration["status"] == (
+        "locked_post_endpoint_reserialization_erratum_training_authorized"
+    )
     assert registration["locked_before_teacher_pass"] is True
     assert registration["teacher_pass_authorized"] is True
     assert registration["lock_blockers"] == []
@@ -37,6 +39,13 @@ def test_option_b_hash_amendment_authorizes_the_locked_training_protocol() -> No
     assert registration["teacher_pass"]["teacher_14b_state_coverage_policy"] == "all_admitted_anchors"
     assert registration["teacher_pass"]["per_anchor_label_tier_admission_required"] is True
     assert registration["analysis"]["not_a_general_unique_data_scaling_law"] is True
+    erratum = registration["endpoint_reserialization_erratum"]
+    assert erratum["locked_before_option_b_optimizer_updates"] is True
+    assert erratum["option_b_optimizer_updates_before_erratum"] == 0
+    assert erratum["executed_optimizer_updates_per_arm"] == 2_000
+    assert erratum["executed_schedule_sha256"] == (
+        "a2718f46a22ff47a91f14fac2bb1fb38719fa29c4edb9663cab5143f139524c6"
+    )
 
 
 def test_option_b_units_and_teacher_revisions_are_explicit() -> None:
@@ -75,6 +84,26 @@ def test_option_b_protocol_and_post_generation_amendment_are_both_immutable() ->
     path = ROOT / amendment["amendment_document"]
     assert path.stat().st_size == amendment["amendment_document_bytes"]
     assert hashlib.sha256(path.read_bytes()).hexdigest() == amendment["amendment_document_sha256"]
+    endpoint_erratum = registration["governing_documents"][
+        "endpoint_reserialization_erratum"
+    ]
+    endpoint_path = ROOT / endpoint_erratum["path"]
+    assert endpoint_path.stat().st_size == endpoint_erratum["bytes"]
+    assert hashlib.sha256(endpoint_path.read_bytes()).hexdigest() == endpoint_erratum["sha256"]
+
+
+def test_option_b_endpoint_byte_and_semantic_hashes_are_locked() -> None:
+    registration = json.loads(REGISTRATION.read_text(encoding="utf-8"))
+    assert registration["source_checkpoints"] == {
+        "seed_0_full_a2": "5ebc1ec1f2299344b24fb055799c5e35a8236982a4840f2013418fd7513a6373",
+        "seed_0_draft_only_control": "69f0b3970dd1de174d728ce062ceba242a55d9ae9c670e4c5dd0d27ad9249b1a",
+        "seed_1_full_a2": "5960ef967f3834db0c83eef26a2d9c896e43cc4f07f6a6d6047700dbcf5d4e76",
+        "seed_1_draft_only_control": "691e102c0dd258f543e55aee291ac9d05675a9a8e8e8b170f47015e4782d1760",
+    }
+    digests = registration["source_checkpoint_semantic_digests"]
+    assert digests["algorithm"] == "sorted_name_dtype_shape_tensor_bytes_sha256"
+    for name in registration["source_checkpoints"]:
+        assert len(digests[name]) == 64
 
 
 def test_option_b_localization_and_existing_population_hashes_are_banked() -> None:

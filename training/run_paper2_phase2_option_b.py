@@ -48,7 +48,7 @@ REGISTRATION = ROOT / "training/paper2_phase2_option_b_preregistration.json"
 RULE_INVENTORY = ROOT / "training/paper2_phase2_option_b_rule_inventory.json"
 RUN_KIND = "paper2_phase2_option_b_matrix_v1"
 ARM_KIND = "paper2_phase2_option_b_arm_v1"
-EXPECTED_STATUS = "locked_post_generation_hash_amendment_training_authorized"
+EXPECTED_STATUS = "locked_post_endpoint_reserialization_erratum_training_authorized"
 
 
 def _git_head() -> str:
@@ -68,6 +68,18 @@ def load_training_lock() -> tuple[dict[str, Any], dict[str, Any]]:
         raise RuntimeError("Option B hash-amendment byte lock differs")
     if sha256_file(amendment_path) != amendment["amendment_document_sha256"]:
         raise RuntimeError("Option B hash-amendment SHA differs")
+    endpoint_erratum = registration["governing_documents"][
+        "endpoint_reserialization_erratum"
+    ]
+    endpoint_erratum_path = ROOT / endpoint_erratum["path"]
+    if endpoint_erratum_path.stat().st_size != int(endpoint_erratum["bytes"]):
+        raise RuntimeError("Option B endpoint erratum byte lock differs")
+    if sha256_file(endpoint_erratum_path) != endpoint_erratum["sha256"]:
+        raise RuntimeError("Option B endpoint erratum SHA differs")
+    if registration["endpoint_reserialization_erratum"].get(
+        "locked_before_option_b_optimizer_updates"
+    ) is not True:
+        raise RuntimeError("Option B endpoint erratum was not locked before training")
     if int(amendment["recorded_splice_step"]) != int(
         registration["fixed_constants"]["target_splice_step"]
     ):
@@ -223,6 +235,7 @@ def _endpoint_module(
     a1_sha: str,
     endpoint: Path,
     endpoint_sha: str,
+    endpoint_state_digest: str,
     embedding: nn.Embedding,
     rms_cap: float,
     device: str,
@@ -246,6 +259,11 @@ def _endpoint_module(
         or int(saved.get("step", -1)) != 2000
     ):
         raise RuntimeError(f"Option B endpoint metadata mismatch for seed={seed} arm={arm}")
+    observed_state_digest = _tensor_digest(saved["trainable_state"])
+    if observed_state_digest != endpoint_state_digest:
+        raise RuntimeError(
+            f"Option B endpoint state digest mismatch for seed={seed} arm={arm}"
+        )
     _load_trainable_state(module, saved["trainable_state"])
     return module, {"a1": source, "a2_endpoint": saved}
 
@@ -295,6 +313,7 @@ def run_arm(
     a1_sha: str,
     endpoint: Path,
     endpoint_sha: str,
+    endpoint_state_digest: str,
     registration: dict[str, Any],
     inventory: dict[str, Any],
     output_dir: Path,
@@ -316,6 +335,7 @@ def run_arm(
         a1_sha=a1_sha,
         endpoint=endpoint,
         endpoint_sha=endpoint_sha,
+        endpoint_state_digest=endpoint_state_digest,
         embedding=embedding,
         rms_cap=rms_cap,
         device=device,
@@ -816,6 +836,9 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
                     endpoint_sha=registration["source_checkpoints"][
                         f"seed_{seed}_{'full_a2' if arm == 'full_a2' else 'draft_only_control'}"
                     ],
+                    endpoint_state_digest=registration[
+                        "source_checkpoint_semantic_digests"
+                    ][f"seed_{seed}_{arm}"],
                     registration=registration,
                     inventory=inventory,
                     output_dir=args.output_dir,

@@ -13,6 +13,8 @@ import traceback
 from collections import deque
 from pathlib import Path
 
+import torch
+
 
 ROOT = Path(__file__).resolve().parents[1]
 RUN_ID = "stage5_paper2_phase2_option_b_20260807"
@@ -47,6 +49,18 @@ def sha256_file(path: Path) -> str:
         for block in iter(lambda: handle.read(1024 * 1024), b""):
             digest.update(block)
     return digest.hexdigest()
+
+
+def trainable_state_digest(path: Path) -> tuple[dict[str, object], str]:
+    saved = torch.load(path, map_location="cpu", weights_only=False)
+    digest = hashlib.sha256()
+    for name in sorted(saved["trainable_state"]):
+        value = saved["trainable_state"][name].detach().cpu().contiguous()
+        digest.update(name.encode("utf-8"))
+        digest.update(str(value.dtype).encode("ascii"))
+        digest.update(str(tuple(value.shape)).encode("ascii"))
+        digest.update(value.numpy().tobytes())
+    return saved, digest.hexdigest()
 
 
 def run(command: list[str], *, allowed: tuple[int, ...] = (0,)) -> int:
@@ -152,6 +166,29 @@ def stage_inputs() -> dict[str, object]:
             expected = registration["source_checkpoints"][f"seed_{seed}_{arm}"]
             if sha256_file(destination) != expected:
                 raise RuntimeError(f"Option B source endpoint SHA mismatch: seed={seed} arm={arm}")
+            saved, observed_state_digest = trainable_state_digest(destination)
+            expected_state_digest = registration["source_checkpoint_semantic_digests"][
+                f"seed_{seed}_{arm}"
+            ]
+            if observed_state_digest != expected_state_digest:
+                raise RuntimeError(
+                    f"Option B source endpoint state mismatch: seed={seed} arm={arm}"
+                )
+            if (
+                saved.get("kind") != "paper2_phase2_a2_arm_v1"
+                or int(saved.get("seed", -1)) != seed
+                or saved.get("arm") != arm
+                or int(saved.get("step", -1)) != 2000
+                or saved.get("abort_reason") is not None
+            ):
+                raise RuntimeError(
+                    f"Option B source endpoint identity mismatch: seed={seed} arm={arm}"
+                )
+            print(
+                f"option_b_endpoint_verified seed={seed} arm={arm} "
+                f"sha256={expected} state_digest={expected_state_digest}",
+                flush=True,
+            )
             endpoints[(seed, arm)] = destination
     return {
         "scratch": scratch,

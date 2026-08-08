@@ -334,7 +334,7 @@ TARGETS = {
         "path": "colab/STAGE5_PAPER2_PHASE2_OPTION_B_CELL.py",
         "markers": [
             "STAGE5_PAPER2_PHASE2_OPTION_B_VERSION",
-            "paper2_phase2_option_b_v1",
+            "paper2_phase2_option_b_v2",
             "hash-only amendment locked before Option B training",
             "four A2 endpoint arms fresh AdamW state exact step 4000 splice",
             "20000 steps eval checkpoint 1000 directional audit 2000",

@@ -1798,3 +1798,14 @@ Colab/Drive backups for selected runs.
   dtype, cascade, cache product, threshold, optimizer, or training contract
   changed. Amendment:
   `docs/PAPER2_PHASE2_OPTION_B_A10040_OFFLOAD_AMENDMENT_20260806.md`.
+- 2026-08-07 Option B endpoint reserialization erratum: the first four-arm
+  launch stopped before cache construction and before any optimizer update
+  because all four A2 endpoint byte hashes differed from the repo lock. The
+  endpoints match the canonical Drive A2 receipt, retain the exact registered
+  seed, arm, step-2,000 identity and common executed-row schedule, and expose
+  stable trainable-state digests. A completed no-op A2 rerun had re-saved the
+  payloads without taking optimizer steps, changing PyTorch archive bytes and
+  leaving the repo receipt stale. The pre-training erratum locks the canonical
+  Drive hashes plus semantic tensor digests. The A2 runner now preserves
+  completed checkpoint bytes on a no-op resume. Erratum:
+  `docs/PAPER2_PHASE2_OPTION_B_ENDPOINT_RESERIALIZATION_ERRATUM_20260807.md`.

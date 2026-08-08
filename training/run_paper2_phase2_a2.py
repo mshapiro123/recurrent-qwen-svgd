@@ -595,6 +595,7 @@ def run_arm(
     consecutive_relative_exceedances = 0
     static_threshold_exceedances = 0
     next_batch_assertion: dict[str, Any] | None = None
+    loaded_completed_resume_sha: str | None = None
     if resume_path.is_file():
         observed_resume_sha = sha256_file(resume_path)
         saved = torch.load(resume_path, map_location="cpu", weights_only=False)
@@ -637,6 +638,8 @@ def run_arm(
         else:
             batch_generator.set_state(saved["batch_generator_state"])
         _restore_rng(saved["rng"])
+        if step >= target_steps and abort_reason is None and int(history[-1]["step"]) == step:
+            loaded_completed_resume_sha = observed_resume_sha
         if resume_from_step200:
             resume_lock = registration["a2_step200_resume_amendment_20260805"]
             expected_source_sha = resume_lock["source_resume_sha256_by_arm"][name]
@@ -1000,7 +1003,16 @@ def run_arm(
     )
     if frozen_after != frozen_before:
         raise RuntimeError(f"frozen parameter mutation detected for {name}")
-    save()
+    if loaded_completed_resume_sha is not None:
+        if sha256_file(resume_path) != loaded_completed_resume_sha:
+            raise RuntimeError(f"completed no-op resume mutated checkpoint for {name}")
+        print(
+            f"a2_noop_resume_preserved arm={name} step={step} "
+            f"sha256={loaded_completed_resume_sha}",
+            flush=True,
+        )
+    else:
+        save()
     final = history[-1]
     final_rows_path = arm_private / f"rows_step_{int(final['step']):04d}.pt"
     result = {

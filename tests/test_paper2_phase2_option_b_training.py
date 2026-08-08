@@ -83,7 +83,7 @@ def test_launcher_is_wired_with_resume_and_scientific_boundaries() -> None:
         encoding="utf-8"
     )
     for marker in (
-        "paper2_phase2_option_b_v1",
+        "paper2_phase2_option_b_v2",
         "four A2 endpoint arms fresh AdamW state exact step 4000 splice",
         "fixed evaluation excluded from both training populations",
     ):
@@ -93,3 +93,9 @@ def test_launcher_is_wired_with_resume_and_scientific_boundaries() -> None:
     assert "fixed_evaluation" in training
     assert "DRIVE_A2" in runner
     assert "private/option_b" in runner
+    assert "trainable_state_digest" in runner
+    assert "source_checkpoint_semantic_digests" in training
+    assert "endpoint_state_digest" in training
+    assert "a2_noop_resume_preserved" in (
+        ROOT / "training/run_paper2_phase2_a2.py"
+    ).read_text(encoding="utf-8")

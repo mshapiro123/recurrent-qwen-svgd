@@ -2,21 +2,24 @@
 
 from __future__ import annotations
 
+import json
 import os
 import shutil
 import subprocess
 import sys
+from collections import deque
 from pathlib import Path
 
 from google.colab import drive, userdata
 
 
-STAGE5_PAPER2_PHASE2_OPTION_B_VERSION = "paper2_phase2_option_b_v1"
+STAGE5_PAPER2_PHASE2_OPTION_B_VERSION = "paper2_phase2_option_b_v2"
 # Safety marker: hash-only amendment locked before Option B training
 # Safety marker: four A2 endpoint arms fresh AdamW state exact step 4000 splice
 # Safety marker: 20000 steps eval checkpoint 1000 directional audit 2000
 # Safety marker: identical full control sample schedule within seed
 # Safety marker: fixed evaluation excluded from both training populations
+# Safety marker: canonical endpoint byte hashes plus semantic state digests
 # Safety marker: colab/run_stage5_paper2_phase2_option_b.py
 # Safety marker: tests/test_paper2_phase2_option_b_training.py
 REPO = "mshapiro123/recurrent-qwen-svgd"
@@ -44,7 +47,39 @@ os.environ["HUGGINGFACE_HUB_TOKEN"] = HF
 
 def run(command: list[str], cwd: Path | None = None) -> None:
     print("$", " ".join(command).replace(GH, "****"), flush=True)
-    subprocess.run(command, cwd=cwd or ROOT, env=os.environ.copy(), check=True)
+    tail: deque[str] = deque(maxlen=400)
+    process = subprocess.Popen(
+        command,
+        cwd=cwd or ROOT,
+        env=os.environ.copy(),
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        bufsize=1,
+    )
+    assert process.stdout is not None
+    for line in process.stdout:
+        print(line, end="", flush=True)
+        tail.append(line.rstrip())
+    returncode = process.wait()
+    if returncode:
+        print("option_b_wrapper_failure_tail_begin", flush=True)
+        print("\n".join(tail), flush=True)
+        print("option_b_wrapper_failure_tail_end", flush=True)
+        status_path = Path(
+            "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/"
+            "stage5_paper2_phase2_option_b_20260807/receipts/status.json"
+        )
+        if status_path.is_file():
+            print("option_b_durable_failure_receipt_begin", flush=True)
+            print(
+                json.dumps(
+                    json.loads(status_path.read_text(encoding="utf-8")), indent=2
+                ),
+                flush=True,
+            )
+            print("option_b_durable_failure_receipt_end", flush=True)
+        raise subprocess.CalledProcessError(returncode, command)
 
 
 if not Path("/content/drive/MyDrive").is_dir():
