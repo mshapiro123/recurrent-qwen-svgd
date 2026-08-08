@@ -101,5 +101,12 @@ run(
         "tests/test_paper2_phase2_e1_runner.py",
     ]
 )
-run([sys.executable, "-u", "colab/run_stage5_paper2_phase2_e1_confirmation.py"])
+run(
+    [
+        sys.executable,
+        "-u",
+        "-m",
+        "colab.run_stage5_paper2_phase2_e1_confirmation",
+    ]
+)
 print("Read-once E1 confirmation completed and published.", flush=True)

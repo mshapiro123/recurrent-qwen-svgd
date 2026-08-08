@@ -87,3 +87,5 @@ def test_bootstrap_target_exposes_locked_e1_confirmation() -> None:
     )
     assert "memory >= 70000" in cell
     assert "lock commit ebe4ea4b before scorer construction" in cell
+    assert '"-m",\n        "colab.run_stage5_paper2_phase2_e1_confirmation"' in cell
+    assert '"colab/run_stage5_paper2_phase2_e1_confirmation.py"' not in cell
