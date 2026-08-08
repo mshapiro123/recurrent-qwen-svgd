@@ -1,0 +1,358 @@
+{
+  "all_emitted_metrics_finite": true,
+  "do_not_claim": [
+    "support mismatch is an E1 outcome",
+    "sparse reconstruction is exact full-vocabulary scoring",
+    "the read-once E1 confirmation has been run"
+  ],
+  "endpoint_checkpoints_loaded": false,
+  "interpretation": "Finite-support log errors and explicit support-mismatch counts replace non-finite legacy log-error quantiles. Probability-space, tail, and represented-mass errors remain integrity telemetry only.",
+  "kind": "paper2_phase2_e1_sparse_support_qc_v1",
+  "model_quality_scores_computed": false,
+  "models": {
+    "student_0p5b": {
+      "counts": {
+        "audit_rows": 320,
+        "candidate_entries": 78759,
+        "finite_pairs": 76607,
+        "rows_with_support_mismatch": 16,
+        "support_mismatch_entries": 2152,
+        "support_mismatch_fraction_all_entries": 0.027323861399966988
+      },
+      "metrics": {
+        "finite_log_max_abs_error": {
+          "count": 320,
+          "finite_count": 320,
+          "finite_max": 4.415285110473633,
+          "finite_mean": 0.06197690219721608,
+          "finite_median": 0.039089202880859375,
+          "finite_min": 0.0,
+          "finite_p10": 0.01820640563964844,
+          "finite_p90": 0.06220588684082031,
+          "finite_p95": 0.06253013610839844,
+          "nan_count": 0,
+          "negative_infinity_count": 0,
+          "positive_infinity_count": 0
+        },
+        "probability_max_abs_error": {
+          "count": 320,
+          "finite_count": 320,
+          "finite_max": 0.004752300679683685,
+          "finite_mean": 0.00035285124409672444,
+          "finite_median": 0.0002252832055091858,
+          "finite_min": 3.2661313974571837e-13,
+          "finite_p10": 7.253885269165039e-06,
+          "finite_p90": 0.0008084610104560852,
+          "finite_p95": 0.0010752722620964053,
+          "nan_count": 0,
+          "negative_infinity_count": 0,
+          "positive_infinity_count": 0
+        },
+        "represented_mass_abs_error": {
+          "count": 320,
+          "finite_count": 320,
+          "finite_max": 1.1920928955078125e-07,
+          "finite_mean": 3.725290298461914e-09,
+          "finite_median": 0.0,
+          "finite_min": 0.0,
+          "finite_p10": 0.0,
+          "finite_p90": 0.0,
+          "finite_p95": 0.0,
+          "nan_count": 0,
+          "negative_infinity_count": 0,
+          "positive_infinity_count": 0
+        },
+        "support_mismatch_fraction": {
+          "count": 320,
+          "finite_count": 320,
+          "finite_max": 0.6759493947029114,
+          "finite_mean": 0.024738927278667687,
+          "finite_median": 0.0,
+          "finite_min": 0.0,
+          "finite_p10": 0.0,
+          "finite_p90": 0.0,
+          "finite_p95": 0.017346939444545875,
+          "nan_count": 0,
+          "negative_infinity_count": 0,
+          "positive_infinity_count": 0
+        },
+        "tail_probability_abs_error": {
+          "count": 320,
+          "finite_count": 320,
+          "finite_max": 0.006399035453796387,
+          "finite_mean": 0.0009347914658750511,
+          "finite_median": 0.0005138814449310303,
+          "finite_min": 0.0,
+          "finite_p10": 7.259898120537401e-06,
+          "finite_p90": 0.0023813422769308093,
+          "finite_p95": 0.003231801977381111,
+          "nan_count": 0,
+          "negative_infinity_count": 0,
+          "positive_infinity_count": 0
+        }
+      },
+      "score_shards_verified": 57
+    },
+    "teacher_14b": {
+      "counts": {
+        "audit_rows": 320,
+        "candidate_entries": 78759,
+        "finite_pairs": 74126,
+        "rows_with_support_mismatch": 36,
+        "support_mismatch_entries": 4633,
+        "support_mismatch_fraction_all_entries": 0.058825023171954954
+      },
+      "metrics": {
+        "finite_log_max_abs_error": {
+          "count": 320,
+          "finite_count": 320,
+          "finite_max": 8.227352142333984,
+          "finite_mean": 0.2889778193086386,
+          "finite_median": 0.12500810623168945,
+          "finite_min": 0.0001010894775390625,
+          "finite_p10": 0.06292953491210937,
+          "finite_p90": 0.1879809379577637,
+          "finite_p95": 0.25161781311035175,
+          "nan_count": 0,
+          "negative_infinity_count": 0,
+          "positive_infinity_count": 0
+        },
+        "probability_max_abs_error": {
+          "count": 320,
+          "finite_count": 320,
+          "finite_max": 0.0381353497505188,
+          "finite_mean": 0.004529785145214621,
+          "finite_median": 0.0007094596512615681,
+          "finite_min": 7.862693829352452e-11,
+          "finite_p10": 2.5122371880570427e-06,
+          "finite_p90": 0.01840923577547074,
+          "finite_p95": 0.024561928212642695,
+          "nan_count": 0,
+          "negative_infinity_count": 0,
+          "positive_infinity_count": 0
+        },
+        "represented_mass_abs_error": {
+          "count": 320,
+          "finite_count": 320,
+          "finite_max": 2.384185791015625e-07,
+          "finite_mean": 8.940696716308593e-09,
+          "finite_median": 0.0,
+          "finite_min": 0.0,
+          "finite_p10": 0.0,
+          "finite_p90": 0.0,
+          "finite_p95": 1.1920928955078125e-07,
+          "nan_count": 0,
+          "negative_infinity_count": 0,
+          "positive_infinity_count": 0
+        },
+        "support_mismatch_fraction": {
+          "count": 320,
+          "finite_count": 320,
+          "finite_max": 0.6855036616325378,
+          "finite_mean": 0.053207650780677795,
+          "finite_median": 0.0,
+          "finite_min": 0.0,
+          "finite_p10": 0.0,
+          "finite_p90": 0.3219279140234,
+          "finite_p95": 0.4628461241722108,
+          "nan_count": 0,
+          "negative_infinity_count": 0,
+          "positive_infinity_count": 0
+        },
+        "tail_probability_abs_error": {
+          "count": 320,
+          "finite_count": 320,
+          "finite_max": 0.007242798805236816,
+          "finite_mean": 0.0008068128175898082,
+          "finite_median": 0.0003132223791908473,
+          "finite_min": 0.0,
+          "finite_p10": 5.960466353371885e-07,
+          "finite_p90": 0.00236175658646971,
+          "finite_p95": 0.00316578744677827,
+          "nan_count": 0,
+          "negative_infinity_count": 0,
+          "positive_infinity_count": 0
+        }
+      },
+      "score_shards_verified": 57
+    },
+    "teacher_32b": {
+      "counts": {
+        "audit_rows": 320,
+        "candidate_entries": 78759,
+        "finite_pairs": 73134,
+        "rows_with_support_mismatch": 39,
+        "support_mismatch_entries": 5625,
+        "support_mismatch_fraction_all_entries": 0.0714204090961033
+      },
+      "metrics": {
+        "finite_log_max_abs_error": {
+          "count": 320,
+          "finite_count": 320,
+          "finite_max": 9.29011344909668,
+          "finite_mean": 0.3375969230101292,
+          "finite_median": 0.1238853931427002,
+          "finite_min": 2.0256265997886658e-08,
+          "finite_p10": 0.027735042572021484,
+          "finite_p90": 0.18738870620727538,
+          "finite_p95": 0.6373274803161668,
+          "nan_count": 0,
+          "negative_infinity_count": 0,
+          "positive_infinity_count": 0
+        },
+        "probability_max_abs_error": {
+          "count": 320,
+          "finite_count": 320,
+          "finite_max": 0.03785359859466553,
+          "finite_mean": 0.0027744283017126945,
+          "finite_median": 0.00033222069032490253,
+          "finite_min": 6.938805086065258e-11,
+          "finite_p10": 7.152557373046875e-07,
+          "finite_p90": 0.008363594859838506,
+          "finite_p95": 0.018846085667610174,
+          "nan_count": 0,
+          "negative_infinity_count": 0,
+          "positive_infinity_count": 0
+        },
+        "represented_mass_abs_error": {
+          "count": 320,
+          "finite_count": 320,
+          "finite_max": 2.384185791015625e-07,
+          "finite_mean": 9.872019290924072e-09,
+          "finite_median": 0.0,
+          "finite_min": 0.0,
+          "finite_p10": 0.0,
+          "finite_p90": 0.0,
+          "finite_p95": 1.1920928955078125e-07,
+          "nan_count": 0,
+          "negative_infinity_count": 0,
+          "positive_infinity_count": 0
+        },
+        "support_mismatch_fraction": {
+          "count": 320,
+          "finite_count": 320,
+          "finite_max": 0.7009345889091492,
+          "finite_mean": 0.06225905194878578,
+          "finite_median": 0.0,
+          "finite_min": 0.0,
+          "finite_p10": 0.0,
+          "finite_p90": 0.4131121397018433,
+          "finite_p95": 0.524425956606865,
+          "nan_count": 0,
+          "negative_infinity_count": 0,
+          "positive_infinity_count": 0
+        },
+        "tail_probability_abs_error": {
+          "count": 320,
+          "finite_count": 320,
+          "finite_max": 0.007936537265777588,
+          "finite_mean": 0.0007267685784480005,
+          "finite_median": 0.0002484903670847416,
+          "finite_min": 0.0,
+          "finite_p10": 5.960497219348326e-07,
+          "finite_p90": 0.0021449711173772814,
+          "finite_p95": 0.0029425691813230515,
+          "nan_count": 0,
+          "negative_infinity_count": 0,
+          "positive_infinity_count": 0
+        }
+      },
+      "score_shards_verified": 57
+    },
+    "teacher_7b": {
+      "counts": {
+        "audit_rows": 320,
+        "candidate_entries": 78759,
+        "finite_pairs": 74632,
+        "rows_with_support_mismatch": 30,
+        "support_mismatch_entries": 4127,
+        "support_mismatch_fraction_all_entries": 0.05240036059370993
+      },
+      "metrics": {
+        "finite_log_max_abs_error": {
+          "count": 320,
+          "finite_count": 320,
+          "finite_max": 7.715763092041016,
+          "finite_mean": 0.26040920829639164,
+          "finite_median": 0.04113197326660156,
+          "finite_min": 0.0,
+          "finite_p10": 0.0016173362731933614,
+          "finite_p90": 0.06706953048706082,
+          "finite_p95": 1.7650646209716827,
+          "nan_count": 0,
+          "negative_infinity_count": 0,
+          "positive_infinity_count": 0
+        },
+        "probability_max_abs_error": {
+          "count": 320,
+          "finite_count": 320,
+          "finite_max": 0.0016224384307861328,
+          "finite_mean": 0.00026754722140653095,
+          "finite_median": 0.00013099145144224167,
+          "finite_min": 6.975678715215317e-13,
+          "finite_p10": 5.900859832763673e-07,
+          "finite_p90": 0.0006955087184906007,
+          "finite_p95": 0.0009149521589279177,
+          "nan_count": 0,
+          "negative_infinity_count": 0,
+          "positive_infinity_count": 0
+        },
+        "represented_mass_abs_error": {
+          "count": 320,
+          "finite_count": 320,
+          "finite_max": 2.384185791015625e-07,
+          "finite_mean": 9.12696123123169e-09,
+          "finite_median": 0.0,
+          "finite_min": 0.0,
+          "finite_p10": 0.0,
+          "finite_p90": 0.0,
+          "finite_p95": 1.1920928955078125e-07,
+          "nan_count": 0,
+          "negative_infinity_count": 0,
+          "positive_infinity_count": 0
+        },
+        "support_mismatch_fraction": {
+          "count": 320,
+          "finite_count": 320,
+          "finite_max": 0.6855036616325378,
+          "finite_mean": 0.046023201663047075,
+          "finite_median": 0.0,
+          "finite_min": 0.0,
+          "finite_p10": 0.0,
+          "finite_p90": 0.0,
+          "finite_p95": 0.45240877717733424,
+          "nan_count": 0,
+          "negative_infinity_count": 0,
+          "positive_infinity_count": 0
+        },
+        "tail_probability_abs_error": {
+          "count": 320,
+          "finite_count": 320,
+          "finite_max": 0.006549835205078125,
+          "finite_mean": 0.0007012159981957478,
+          "finite_median": 0.000225811279960908,
+          "finite_min": 0.0,
+          "finite_p10": 5.960461464837862e-07,
+          "finite_p90": 0.0020767483860254315,
+          "finite_p95": 0.002789302868768573,
+          "nan_count": 0,
+          "negative_infinity_count": 0,
+          "positive_infinity_count": 0
+        }
+      },
+      "score_shards_verified": 57
+    }
+  },
+  "optimizer_steps": 0,
+  "outcome_scores_computed": false,
+  "private_dir": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_e1_eval_d_20260808/private/e1_eval_d",
+  "read_once_scoring_spent": false,
+  "ready_for_lock_transcription": true,
+  "score_blind": true,
+  "source_summary": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_paper2_phase2_e1_eval_d_20260808/cache/e1_eval_d_lattice_summary.json",
+  "source_summary_sha256": "2a63b9d0dcf0fa7d94c000d2f06cedf163038541223a6061e3e032e49469ab4b",
+  "status": "complete_score_blind_integrity_only",
+  "support_mismatch_is_reported_not_silently_dropped": true,
+  "training_started": false,
+  "version": "paper2_phase2_e1_sparse_support_qc_v1_20260808"
+}
