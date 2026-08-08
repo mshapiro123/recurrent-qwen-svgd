@@ -675,6 +675,19 @@ TARGETS = {
         ],
         "env": {},
     },
+    "paper2_phase2_e1_endpoint_lock": {
+        "path": "colab/STAGE5_PAPER2_PHASE2_E1_ENDPOINT_LOCK_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_PHASE2_E1_ENDPOINT_LOCK_VERSION",
+            "paper2_phase2_e1_endpoint_lock_v1",
+            "CPU-only checkpoint-container integrity no model instantiation",
+            "final Option B file hashes semantic trainable-state digests step 20000",
+            "no EVAL-D contact no outcome score no optimizer no training",
+            "read-once E1 scoring remains unspent before lock",
+            "colab/run_stage5_paper2_phase2_e1_endpoint_lock.py",
+        ],
+        "env": {},
+    },
     "paper2_d0_expert_choice_rung0": {
         "path": "colab/STAGE5_PAPER2_D0_EXPERT_CHOICE_RUNG0_CELL.py",
         "markers": [
