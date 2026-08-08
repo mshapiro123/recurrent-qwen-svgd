@@ -49,7 +49,7 @@ def main() -> int:
     parser.add_argument("--local_cache", type=Path, required=True)
     parser.add_argument("--private_cache", type=Path, required=True)
     parser.add_argument("--data_jsonl", type=Path, required=True)
-    parser.add_argument("--legacy_freeze_summary", type=Path, required=True)
+    parser.add_argument("--data_freeze_summary", type=Path, required=True)
     parser.add_argument("--exclude_jsonl", action="append", type=Path, default=[])
     parser.add_argument("--dev_sample_manifest", type=Path, required=True)
     parser.add_argument("--admission_ledger", type=Path, required=True)
@@ -69,14 +69,19 @@ def main() -> int:
     if stage0a_summary.get("student_teacher_quality_aggregates_emitted") is not False:
         raise RuntimeError("E1 source lattice emitted a forbidden quality aggregate")
 
-    legacy = json.loads(args.legacy_freeze_summary.read_text(encoding="utf-8"))
-    legacy_eval = legacy["partitions"]["eval_d"]
-    if sha256_file(args.data_jsonl) != legacy_eval["data"]["sha256"]:
-        raise RuntimeError("E1 data differs from the frozen legacy EVAL-D partition")
-    if legacy_eval.get("scores_exposed") is not False or legacy_eval.get(
+    data_freeze = json.loads(args.data_freeze_summary.read_text(encoding="utf-8"))
+    if data_freeze.get("kind") != "paper2_phase2_e1_eval_d_data_freeze_v1":
+        raise RuntimeError("E1 data freeze receipt has the wrong schema")
+    if data_freeze.get("status") != "complete_frozen_unscored":
+        raise RuntimeError("E1 data partition is not frozen unscored")
+    if sha256_file(args.data_jsonl) != data_freeze["data"]["sha256"]:
+        raise RuntimeError("E1 data differs from its frozen partition receipt")
+    if data_freeze.get("scores_exposed") is not False or data_freeze.get(
         "read_once_scoring_spent"
     ) is not False:
-        raise RuntimeError("legacy EVAL-D read-once status is no longer unspent")
+        raise RuntimeError("EVAL-D read-once status is no longer unspent")
+    if data_freeze.get("eval_e_touched") is not False:
+        raise RuntimeError("EVAL-D materialization unexpectedly touched EVAL-E")
 
     eval_documents = document_ids(args.data_jsonl)
     overlap: set[str] = set()
@@ -145,7 +150,7 @@ def main() -> int:
         cross_partition_document_overlap=sorted(overlap),
     )
     receipt["integrity"] = {
-        "legacy_eval_d_freeze_sha256": sha256_file(args.legacy_freeze_summary),
+        "eval_d_data_freeze_sha256": sha256_file(args.data_freeze_summary),
         "score_blind_lattice_summary_sha256": sha256_file(args.stage0a_summary),
         "exclusion_receipts": exclusion_receipts,
         "private_admission_ledger_rows": admission_receipt["rows"],

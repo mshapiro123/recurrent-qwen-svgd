@@ -651,6 +651,7 @@ TARGETS = {
             "STAGE5_PAPER2_PHASE2_E1_EVAL_D_FREEZE_VERSION",
             "paper2_phase2_e1_eval_d_freeze_v1",
             "8000 anchors 4000 general 4000 code seed 20260808",
+            "absent legacy EVAL-D materialized data-only with original seed 20260731",
             "EVAL-D infrastructure only no endpoint checkpoint no outcome score",
             "base student forward materializes cache tensors only no quality score",
             "no EAL no retention no acceptance no optimizer no training",

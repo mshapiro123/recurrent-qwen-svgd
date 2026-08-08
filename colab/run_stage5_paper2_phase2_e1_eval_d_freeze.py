@@ -31,9 +31,9 @@ RUN_DIR = ROOT / "outputs/stage5" / RUN_ID
 DRIVE_ROOT = Path(
     f"/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/{RUN_ID}"
 )
-PREWINDOW = Path(
+DC0 = Path(
     "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/"
-    "stage5_paper2_phase2_prewindow_20260731"
+    "stage5_paper2_dc0_20260728"
 )
 STAGE0A = Path(
     "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/"
@@ -51,6 +51,7 @@ OPTION_B_CACHE = Path(
     "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/"
     "stage5_paper2_phase2_option_b_teacher_cache_20260806"
 )
+D0_LOCK = ROOT / "outputs/stage5/stage5_paper2_d0_preregistration_20260726"
 ARBITRATION = Path(
     "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/"
     "stage5_paper2_phase2_arbitration_build_20260804"
@@ -129,23 +130,41 @@ def publish(paths: list[Path]) -> str:
 def main() -> int:
     DRIVE_ROOT.mkdir(parents=True, exist_ok=True)
     scratch = select_scratch()
-    data = PREWINDOW / "private/eval_de/eval_d/eval_d.jsonl"
-    legacy = PREWINDOW / "receipts/eval_de_freeze_summary.json"
+    data = DRIVE_ROOT / "private/eval_d_data/eval_d.jsonl"
+    data_freeze = RUN_DIR / "receipts/eval_d_data_freeze.json"
     canonicalizer = (
         ARBITRATION
         / "private/canonicalizer/learned_mixture_rrr_seed_20260814.pt"
     )
     dev_manifest = STAGE0A / "private/stage0a/sample_manifest.jsonl"
     exclusions = [
-        PREWINDOW / "private/eval_de/eval_e/eval_e.jsonl",
+        DC0 / "private/eval_b/eval_b.jsonl",
         DC1_PREFLIGHT / "private/dev_c/dev_c.jsonl",
         DC1_STAGE_A / "private/eval_c/eval_c.jsonl",
         OPTION_B_CACHE / "private/new_documents_target.jsonl",
     ]
-    required = [data, legacy, canonicalizer, dev_manifest, *exclusions]
+    data_manifest = D0_LOCK / "data_manifest.json"
+    required = [data_manifest, canonicalizer, dev_manifest, *exclusions]
     missing = [str(path) for path in required if not path.is_file()]
     if missing:
         raise FileNotFoundError(f"E1 cache prerequisites are missing: {missing}")
+
+    status_event("materializing_absent_eval_d_partition")
+    prepare = [
+        sys.executable,
+        "-u",
+        "-m",
+        "eval.prepare_paper2_phase2_e1_eval_d",
+        "--data_manifest",
+        str(data_manifest),
+        "--output_data",
+        str(data),
+        "--output_summary",
+        str(data_freeze),
+    ]
+    for path in exclusions:
+        prepare.extend(["--prior_partition_jsonl", str(path)])
+    run(prepare)
 
     registration = load_locked_registration()
     config = build_score_blind_config(registration=registration, data_path=data)
@@ -206,8 +225,8 @@ def main() -> int:
         str(private_cache),
         "--data_jsonl",
         str(data),
-        "--legacy_freeze_summary",
-        str(legacy),
+        "--data_freeze_summary",
+        str(data_freeze),
         "--dev_sample_manifest",
         str(dev_manifest),
         "--admission_ledger",
@@ -236,9 +255,10 @@ def main() -> int:
 
     receipt_dir = DRIVE_ROOT / "receipts"
     receipt_dir.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(data_freeze, receipt_dir / "eval_d_data_freeze.json")
     shutil.copy2(freeze, receipt_dir / "e1_eval_d_freeze_summary.json")
     shutil.copy2(readiness, receipt_dir / "e1_readiness.json")
-    commit = publish([config_path, lattice_summary, freeze, readiness])
+    commit = publish([config_path, data_freeze, lattice_summary, freeze, readiness])
     status_event(
         "complete_frozen_unscored_ready_to_lock",
         freeze_sha256=sha256_file(freeze),

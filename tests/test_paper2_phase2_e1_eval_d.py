@@ -125,6 +125,7 @@ def test_e1_cache_runner_cannot_load_endpoints_or_train() -> None:
     )
     assert not any(marker in runner for marker in forbidden)
     assert "--score_blind" in runner
+    assert "eval.prepare_paper2_phase2_e1_eval_d" in runner
     assert "eval.finalize_paper2_phase2_e1_eval_d_cache" in runner
     assert "read_once_scoring_spent" in runner
 
@@ -141,9 +142,24 @@ def test_e1_eval_d_target_is_wired_and_guarded() -> None:
         assert "paper2_phase2_e1_eval_d_freeze" in bootstrap
         assert "STAGE5_PAPER2_PHASE2_E1_EVAL_D_FREEZE_CELL.py" in bootstrap
         assert "read-once scoring remains unspent and readiness only authorizes lock" in bootstrap
+        assert "absent legacy EVAL-D materialized data-only with original seed 20260731" in bootstrap
     assert "paper2_phase2_e1_eval_d_freeze_v1" in cell
     assert "memory >= 70000" in cell
     assert "no EAL no retention no acceptance no optimizer no training" in cell
+
+
+def test_eval_d_materialization_is_data_only_and_leaves_eval_e_untouched() -> None:
+    source = (ROOT / "eval/prepare_paper2_phase2_e1_eval_d.py").read_text(
+        encoding="utf-8"
+    )
+    assert 'partition="eval_d"' in source
+    assert '"eval_e_touched": False' in source
+    assert '"models_loaded": False' in source
+    assert '"teacher_cache_generated": False' in source
+    assert "load_teacher" not in source
+    assert "AutoModel" not in source
+    assert "torch.optim" not in source
+    assert "optimizer.step" not in source
 
 
 def test_machine_preregistration_carries_ratified_population() -> None:

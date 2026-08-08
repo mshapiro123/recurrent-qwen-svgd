@@ -1839,3 +1839,11 @@ Colab/Drive backups for selected runs.
   training/DEV/EVAL-E overlap is checked, all-anchor 14B state coverage gets a
   private admission ledger, and readiness remains lock-only. Ratification:
   `docs/STRATEGY_TO_CODING_AGENT_E1_EVALD_RATIFICATION_20260808.md`.
+- 2026-08-08 E1 cache preflight correction: the first launch stopped before
+  model loading because the pre-window EVAL-D/E files and freeze receipt had
+  never been materialized at their registered Drive path. No cache shard or
+  score was produced. The corrected target materializes EVAL-D data only under
+  the original pinned corpus revisions, 200,000-token 50/50 source budget, and
+  partition seed 20260731, while adding every later training and DEV document
+  set to quarantine. It leaves EVAL-E untouched and freezes the resulting data
+  hash before the unchanged score-blind teacher/cache pass.

@@ -70,6 +70,18 @@
         "general": 0.5,
         "code": 0.5
       },
+      "data_materialization": {
+        "status_before_cache_launch": "absent_never_materialized",
+        "recipe": "original_prewindow_eval_d",
+        "partition_seed": 20260731,
+        "source_token_budget": {
+          "general": 100000,
+          "code": 100000
+        },
+        "subsequent_training_and_dev_documents_quarantined": true,
+        "eval_e_touched": false,
+        "models_loaded": false
+      },
       "membership_fixed_before_teacher_cache": true
     },
     "bootstrap": {

@@ -15,6 +15,7 @@ STAGE5_PAPER2_PHASE2_E1_EVAL_D_FREEZE_VERSION = (
     "paper2_phase2_e1_eval_d_freeze_v1"
 )
 # Safety marker: 8000 anchors 4000 general 4000 code seed 20260808
+# Safety marker: absent legacy EVAL-D materialized data-only with original seed 20260731
 # Safety marker: EVAL-D infrastructure only no endpoint checkpoint no outcome score
 # Safety marker: base student forward materializes cache tensors only no quality score
 # Safety marker: no EAL no retention no acceptance no optimizer no training
@@ -103,6 +104,7 @@ run(
         "tests/test_paper2_phase2_e1_confirmation.py",
         "tests/test_paper2_phase2_e1_eval_d.py",
         "tests/test_paper2_phase2_stage0a.py",
+        "tests/test_paper2_phase2_eval_de.py",
     ]
 )
 run([sys.executable, "-u", "colab/run_stage5_paper2_phase2_e1_eval_d_freeze.py"])

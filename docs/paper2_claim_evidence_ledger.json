@@ -67,6 +67,7 @@
     "phase2_e1_readiness": "outputs/stage5/stage5_paper2_phase2_e1_preregistration_20260808/readiness.json",
     "phase2_e1_eval_d_ratification": "docs/STRATEGY_TO_CODING_AGENT_E1_EVALD_RATIFICATION_20260808.md",
     "phase2_e1_eval_d_cache_config": "outputs/stage5/stage5_paper2_phase2_e1_eval_d_20260808/config/e1_eval_d_cache_config.json",
+    "phase2_e1_eval_d_data_freeze": "outputs/stage5/stage5_paper2_phase2_e1_eval_d_20260808/receipts/eval_d_data_freeze.json",
     "phase2_e1_eval_d_freeze": "outputs/stage5/stage5_paper2_phase2_e1_eval_d_20260808/receipts/e1_eval_d_freeze_summary.json",
     "phase2_e1_eval_d_readiness": "outputs/stage5/stage5_paper2_phase2_e1_eval_d_20260808/receipts/e1_readiness.json"
   },
