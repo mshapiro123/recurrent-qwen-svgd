@@ -48,11 +48,27 @@ REGISTRATION = ROOT / "training/paper2_phase2_option_b_preregistration.json"
 RULE_INVENTORY = ROOT / "training/paper2_phase2_option_b_rule_inventory.json"
 RUN_KIND = "paper2_phase2_option_b_matrix_v1"
 ARM_KIND = "paper2_phase2_option_b_arm_v1"
-EXPECTED_STATUS = "locked_post_endpoint_reserialization_erratum_training_authorized"
+EXPECTED_STATUS = "locked_post_transport_and_endpoint_errata_training_authorized"
 
 
 def _git_head() -> str:
     return subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
+
+
+def normalized_lf_sha256(path: Path) -> str:
+    """Hash tracked text independent of CRLF checkout conversion."""
+    payload = path.read_bytes().replace(b"\r\n", b"\n")
+    return hashlib.sha256(payload).hexdigest()
+
+
+def canonical_json_sha256(value: Any) -> str:
+    payload = json.dumps(
+        value,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=True,
+    ).encode("utf-8")
+    return hashlib.sha256(payload).hexdigest()
 
 
 def load_training_lock() -> tuple[dict[str, Any], dict[str, Any]]:
@@ -80,6 +96,15 @@ def load_training_lock() -> tuple[dict[str, Any], dict[str, Any]]:
         "locked_before_option_b_optimizer_updates"
     ) is not True:
         raise RuntimeError("Option B endpoint erratum was not locked before training")
+    transport = registration["teacher_cache_summary_transport_erratum"]
+    transport_path = ROOT / transport["document"]
+    transport_bytes = transport_path.read_bytes().replace(b"\r\n", b"\n")
+    if len(transport_bytes) != int(transport["document_git_lf_bytes"]):
+        raise RuntimeError("Option B teacher-summary transport erratum byte lock differs")
+    if hashlib.sha256(transport_bytes).hexdigest() != transport["document_git_lf_sha256"]:
+        raise RuntimeError("Option B teacher-summary transport erratum SHA differs")
+    if transport.get("locked_before_option_b_optimizer_updates") is not True:
+        raise RuntimeError("Option B teacher-summary transport erratum was not pre-training")
     if int(amendment["recorded_splice_step"]) != int(
         registration["fixed_constants"]["target_splice_step"]
     ):
@@ -698,8 +723,19 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         raise RuntimeError("Option B requires an A100-class GPU with at least 35 GiB VRAM")
     public = json.loads(args.new_public_summary.read_text(encoding="utf-8"))
     amendment = registration["post_generation_hash_amendment"]
-    if sha256_file(args.new_public_summary) != amendment["teacher_cache_summary_sha256"]:
-        raise RuntimeError("Option B public teacher-cache summary SHA differs")
+    transport = registration["teacher_cache_summary_transport_erratum"]
+    public_integrity = {
+        "raw_sha256": sha256_file(args.new_public_summary),
+        "normalized_git_lf_sha256": normalized_lf_sha256(args.new_public_summary),
+        "canonical_json_sha256": canonical_json_sha256(public),
+        "original_registered_windows_crlf_sha256": amendment[
+            "teacher_cache_summary_sha256"
+        ],
+    }
+    if public_integrity["normalized_git_lf_sha256"] != transport["git_lf_sha256"]:
+        raise RuntimeError("Option B public teacher-cache summary Git-LF SHA differs")
+    if public_integrity["canonical_json_sha256"] != transport["canonical_json_sha256"]:
+        raise RuntimeError("Option B public teacher-cache summary semantic digest differs")
     checks = {
         "selected_anchor_count": int(amendment["new_training_anchor_count"]),
         "horizon_sample_count": int(amendment["new_horizon_sample_count"]),
@@ -863,6 +899,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         "status": "complete" if all(row["status"] == "complete" for row in arms) else "blocked",
         "launcher_commit": _git_head(),
         "hash_amendment": amendment,
+        "teacher_cache_summary_integrity": public_integrity,
         "population": {
             "existing_train_anchors": int(old_train.numel()),
             "existing_evaluation_anchors": int(old_eval.numel()),

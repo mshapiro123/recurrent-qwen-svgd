@@ -1,5 +1,5 @@
 {
-  "status": "locked_post_endpoint_reserialization_erratum_training_authorized",
+  "status": "locked_post_transport_and_endpoint_errata_training_authorized",
   "kind": "paper2_phase2_option_b_staged_dose_then_data_preregistration",
   "date": "2026-08-06",
   "governing_documents": {
@@ -27,6 +27,11 @@
       "path": "docs/PAPER2_PHASE2_OPTION_B_ENDPOINT_RESERIALIZATION_ERRATUM_20260807.md",
       "bytes": 2841,
       "sha256": "7949b6e94f0746ae3e8918afee54d99b89ec2ae7930b4044c1690a7fd2d392c3"
+    },
+    "teacher_summary_transport_erratum": {
+      "path": "docs/PAPER2_PHASE2_OPTION_B_TEACHER_SUMMARY_TRANSPORT_ERRATUM_20260807.md",
+      "git_lf_bytes": 1968,
+      "git_lf_sha256": "aa4cd4f1fa664287eb9946ab629b948d30525e8c3d2f78fd1a0281f06e84f536"
     }
   },
   "locked_before_teacher_pass": true,
@@ -75,6 +80,21 @@
       "seed_1_full_a2": "d8904f9bb2241faf42a7f486e829baed1b68720298b8416847799e7490a59373",
       "seed_1_draft_only_control": "704620b74711c8371ba94e3f4d52b1eaa3fdf2fb3dc34d238e1ff89d0c13ce03"
     }
+  },
+  "teacher_cache_summary_transport_erratum": {
+    "locked_before_option_b_optimizer_updates": true,
+    "option_b_optimizer_updates_before_erratum": 0,
+    "document": "docs/PAPER2_PHASE2_OPTION_B_TEACHER_SUMMARY_TRANSPORT_ERRATUM_20260807.md",
+    "document_git_lf_bytes": 1968,
+    "document_git_lf_sha256": "aa4cd4f1fa664287eb9946ab629b948d30525e8c3d2f78fd1a0281f06e84f536",
+    "original_windows_crlf_bytes": 6358,
+    "original_windows_crlf_sha256": "04bf069d50753475c03dd817424eae657d27a43458b61c9178249b6f1b7d45e0",
+    "git_lf_bytes": 6216,
+    "git_lf_sha256": "038bf9d1cda762b5107e7f6e45353a38aec5f3af8cbdcf3d1521081af49fee51",
+    "canonical_json_algorithm": "json_utf8_sort_keys_ascii_compact_separators_sha256",
+    "canonical_json_sha256": "e650f06f266d6b7d61e4a9ac1a67cb5625d2a05843ea3c5d6c4ae04eddc4780b",
+    "newline_count": 142,
+    "semantic_change": false
   },
   "fixed_constants": {
     "alpha": 0.5,

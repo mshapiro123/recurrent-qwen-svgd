@@ -20,6 +20,8 @@ def load_locked_registration(path: str | Path = REGISTRATION_PATH) -> dict[str, 
     allowed_statuses = {
         "locked_teacher_pass_authorized_training_prohibited",
         "locked_post_generation_hash_amendment_training_authorized",
+        "locked_post_endpoint_reserialization_erratum_training_authorized",
+        "locked_post_transport_and_endpoint_errata_training_authorized",
     }
     if registration.get("status") not in allowed_statuses:
         raise RuntimeError("Option B registration is not locked for the teacher pass")
@@ -27,9 +29,11 @@ def load_locked_registration(path: str | Path = REGISTRATION_PATH) -> dict[str, 
         raise RuntimeError("Option B lock does not precede teacher generation")
     if not registration.get("teacher_pass_authorized"):
         raise RuntimeError("Option B teacher pass is not authorized")
-    post_generation = registration.get("status") == (
-        "locked_post_generation_hash_amendment_training_authorized"
-    )
+    post_generation = registration.get("status") in {
+        "locked_post_generation_hash_amendment_training_authorized",
+        "locked_post_endpoint_reserialization_erratum_training_authorized",
+        "locked_post_transport_and_endpoint_errata_training_authorized",
+    }
     if post_generation:
         if registration.get("training_authorized") is not True:
             raise RuntimeError("Option B post-generation training authorization is absent")

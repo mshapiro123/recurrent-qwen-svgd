@@ -23,7 +23,7 @@ RULES = ROOT / "training/paper2_phase2_option_b_rule_inventory.json"
 def test_option_b_hash_amendment_authorizes_the_locked_training_protocol() -> None:
     registration = json.loads(REGISTRATION.read_text(encoding="utf-8"))
     assert registration["status"] == (
-        "locked_post_endpoint_reserialization_erratum_training_authorized"
+        "locked_post_transport_and_endpoint_errata_training_authorized"
     )
     assert registration["locked_before_teacher_pass"] is True
     assert registration["teacher_pass_authorized"] is True
@@ -46,6 +46,13 @@ def test_option_b_hash_amendment_authorizes_the_locked_training_protocol() -> No
     assert erratum["executed_schedule_sha256"] == (
         "a2718f46a22ff47a91f14fac2bb1fb38719fa29c4edb9663cab5143f139524c6"
     )
+    transport = registration["teacher_cache_summary_transport_erratum"]
+    assert transport["locked_before_option_b_optimizer_updates"] is True
+    assert transport["option_b_optimizer_updates_before_erratum"] == 0
+    assert transport["original_windows_crlf_sha256"] == registration[
+        "post_generation_hash_amendment"
+    ]["teacher_cache_summary_sha256"]
+    assert transport["newline_count"] == 142
 
 
 def test_option_b_units_and_teacher_revisions_are_explicit() -> None:
@@ -90,6 +97,11 @@ def test_option_b_protocol_and_post_generation_amendment_are_both_immutable() ->
     endpoint_path = ROOT / endpoint_erratum["path"]
     assert endpoint_path.stat().st_size == endpoint_erratum["bytes"]
     assert hashlib.sha256(endpoint_path.read_bytes()).hexdigest() == endpoint_erratum["sha256"]
+    transport = registration["governing_documents"]["teacher_summary_transport_erratum"]
+    transport_path = ROOT / transport["path"]
+    transport_bytes = transport_path.read_bytes().replace(b"\r\n", b"\n")
+    assert len(transport_bytes) == transport["git_lf_bytes"]
+    assert hashlib.sha256(transport_bytes).hexdigest() == transport["git_lf_sha256"]
 
 
 def test_option_b_endpoint_byte_and_semantic_hashes_are_locked() -> None:

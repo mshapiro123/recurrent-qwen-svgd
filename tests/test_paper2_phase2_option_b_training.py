@@ -7,9 +7,11 @@ import torch
 
 from training.run_paper2_phase2_option_b import (
     EXPECTED_STATUS,
+    canonical_json_sha256,
     learning_rate_at_step,
     load_training_lock,
     merge_caches,
+    normalized_lf_sha256,
 )
 
 
@@ -45,6 +47,27 @@ def test_post_generation_lock_is_complete_and_rule_inventory_rides() -> None:
     assert registration["training_authorized"] is True
     assert registration["post_generation_hash_amendment"]["recorded_splice_step"] == 4_000
     assert len(inventory["rules"]) == 18
+
+
+def test_teacher_summary_integrity_is_transport_stable_and_semantic(tmp_path: Path) -> None:
+    registration = json.loads(
+        (ROOT / "training/paper2_phase2_option_b_preregistration.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    transport = registration["teacher_cache_summary_transport_erratum"]
+    source = ROOT / "outputs/stage5/stage5_paper2_phase2_option_b_teacher_cache_20260806/summary.json"
+    payload = source.read_bytes().replace(b"\r\n", b"\n")
+    lf_path = tmp_path / "lf.json"
+    crlf_path = tmp_path / "crlf.json"
+    lf_path.write_bytes(payload)
+    crlf_path.write_bytes(payload.replace(b"\n", b"\r\n"))
+    assert normalized_lf_sha256(lf_path) == transport["git_lf_sha256"]
+    assert normalized_lf_sha256(crlf_path) == transport["git_lf_sha256"]
+    parsed = json.loads(lf_path.read_text(encoding="utf-8"))
+    assert canonical_json_sha256(parsed) == transport["canonical_json_sha256"]
+    parsed["selected_anchor_count"] += 1
+    assert canonical_json_sha256(parsed) != transport["canonical_json_sha256"]
 
 
 def test_learning_rate_matches_locked_warmup_plateau_and_cooldown() -> None:
@@ -83,9 +106,10 @@ def test_launcher_is_wired_with_resume_and_scientific_boundaries() -> None:
         encoding="utf-8"
     )
     for marker in (
-        "paper2_phase2_option_b_v2",
+        "paper2_phase2_option_b_v3",
         "four A2 endpoint arms fresh AdamW state exact step 4000 splice",
         "fixed evaluation excluded from both training populations",
+        "teacher summary normalized Git-LF plus canonical JSON integrity",
     ):
         assert marker in bootstrap or marker in cell
     assert "checkpoint_step_" in training
