@@ -6,6 +6,13 @@
   "endpoint_thresholds_are_process_aborts": false,
   "rules": [
     {
+      "id": "E1-R00",
+      "name": "score_blind_cache_generation",
+      "class": "tripwire",
+      "cliff": "cache generation loads an endpoint checkpoint, computes an outcome or quality score, emits a quality aggregate, mutates a model, or constructs an optimizer",
+      "action": "abort_cache_generation_before_any_e1_score_exposure"
+    },
+    {
       "id": "E1-R01",
       "name": "locked_registration",
       "class": "tripwire",

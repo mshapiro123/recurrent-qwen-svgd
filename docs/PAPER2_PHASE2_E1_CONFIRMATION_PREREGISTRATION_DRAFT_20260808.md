@@ -38,7 +38,11 @@ The scorer and row schedule are byte-identical to the final Option B endpoint ev
 
 The existing pre-window EVAL-D design is **not sufficient for this confirmation**. It specifies a 7B token cache and own-base boundary features, whereas the Option B evaluator consumes the 14B four-horizon lattice and canonicalizer payload above. A score-blind EVAL-D cache amendment must land before lock. This is a schema correction, not a scoring pass.
 
-The readiness receipt must record the final anchor count, document count, per-stratum counts, data hash, position-key hash, private cache hash, source-model revisions, canonicalizer hash, and zero overlap with all quarantined documents. These transcription fields remain blank in the machine draft until the receipt exists.
+The frozen population contains exactly 8,000 anchors, 4,000 general and 4,000 code. Selection uses the existing Stage 0A non-overlapping rule: enumerate every eligible `(row_id, prediction_position)` whose four-horizon span stays within one row; rank within stratum by SHA-256 of `20260808:row_id:prediction_position`; greedily retain non-overlapping four-position spans; then take the first 4,000 per stratum. The row-major reorder used for efficient teacher passes occurs only after selection and cannot change membership. Membership is asserted against the frozen EVAL-D data and document-partition hashes.
+
+The readiness receipt must record the final anchor count, document count, per-stratum counts, data hash, sample-manifest hash, position-key hash, private cache hash, source-model revisions, canonicalizer hash, cascade fraction, admission-ledger hash, and zero overlap with all quarantined documents. These receipt-derived hashes and counts remain blank in the machine draft until the cache exists.
+
+Cache generation is strictly score-blind. The base 0.5B forward may materialize only the hidden states and sparse log-probability tensors required by the frozen Option B cache schema. No Option B endpoint checkpoint is loaded, and no correctness, EAL, retention, acceptance, arm comparison, or student-teacher quality aggregate is computed or emitted. Public products are limited to hashes, counts, pinned model revisions, cascade fraction, and integrity telemetry. The private tensor cache and admission ledger are infrastructure, not an evaluation result.
 
 ## 4. Fixed evaluation procedure
 
@@ -55,7 +59,7 @@ The readiness receipt must record the final anchor count, document count, per-st
 
 For each seed separately, compute the paired full-minus-control difference in mean expected accepted length (EAL). Construct a two-sided 95% paired percentile cluster-bootstrap interval by resampling documents with replacement and applying identical document multiplicities to the full and control arms. Use 10,000 replicates and seed `20260808`.
 
-The primary endpoint passes only if the lower interval bound is strictly greater than zero in **both** seeds. Two training seeds are treated as two required replications, not as a sample from a seed population.
+The primary pooled estimate gives general and code equal weight by construction: 4,000 anchors from each stratum. The primary endpoint passes only if the lower interval bound is strictly greater than zero in **both** seeds. Two training seeds are treated as two required replications, not as a sample from a seed population.
 
 The DEV effect size of 0.35% to 0.50% is an expectation stated descriptively, not a confirmation margin. The former 1% target is retired as a gate and must be reported as an unmet exploratory aspiration.
 
@@ -89,6 +93,7 @@ All are descriptive and cannot rescue the primary endpoint:
 - absolute and relative writeback increment, full minus matched control;
 - probe KL versus EAL, probe top-1 versus EAL, and probe KL versus probe top-1 correlations;
 - per-stratum and per-position-bucket effects;
+- a DEV-mixture-reweighted full-minus-control estimate, using the immutable DEV general/code anchor proportions defined by the Stage 0A manifest and document-partition seed `20260804`, for direct comparison with the Option B 0.351% and 0.496% results;
 - bridge-gate use;
 - quality-safe oracle headroom;
 - the 1% exploratory target and 99.7% diagnostic aspiration;
@@ -108,9 +113,9 @@ Cache generation is separate from E1 scoring. The Option-B-compatible EVAL-D cac
 
 The following must be closed before the lock commit:
 
-1. Generate the Option-B-compatible EVAL-D cache without endpoint scoring.
-2. Land and hash the EVAL-D readiness receipt, including actual `n` and document count.
-3. Fill the machine preregistration's EVAL-D transcription fields.
+1. Generate the ratified 8,000-anchor Option-B-compatible EVAL-D cache without endpoint scoring or quality aggregates.
+2. Land and hash the EVAL-D readiness receipt, including document count and the exact DEV-mixture comparison weights.
+3. Fill the machine preregistration's EVAL-D hash and receipt transcription fields.
 4. Run the readiness checker with result `ready_to_lock=true`.
 5. Fix the scorer source SHA, resource note, and rule-inventory SHA in the lock commit.
 

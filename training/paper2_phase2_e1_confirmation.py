@@ -24,6 +24,7 @@ LEGACY_EVAL_DE_SUMMARY = (
 OPTION_B_CACHE_KIND = "paper2_phase2_matched_alpha_cache_v1"
 E1_EVAL_D_FREEZE_KIND = "paper2_phase2_e1_eval_d_freeze_v1"
 REQUIRED_CACHE_FIELDS = {
+    "anchor_keys",
     "documents",
     "strata",
     "positions",
@@ -140,6 +141,40 @@ def assess_readiness(
                 blockers.append("eval_d_freeze_optimizer_steps_nonzero")
             if eval_d_freeze.get("cross_partition_document_overlap") not in ([], None):
                 blockers.append("eval_d_document_overlap")
+            for field in (
+                "endpoint_checkpoints_loaded",
+                "model_quality_scores_computed",
+                "eal_computed",
+                "retention_computed",
+                "acceptance_computed",
+                "student_teacher_quality_aggregates_emitted",
+            ):
+                if eval_d_freeze.get(field) is not False:
+                    blockers.append(f"eval_d_score_blind_contract_failed_{field}")
+
+            selection = eval_d_freeze.get("selection", {})
+            population = registration["evaluation"]["population"]
+            if int(selection.get("seed", -1)) != int(population["selection_seed"]):
+                blockers.append("eval_d_selection_seed_mismatch")
+            if selection.get("rule") != population["selection_rule"]:
+                blockers.append("eval_d_selection_rule_mismatch")
+            if selection.get("anchors_per_stratum") != population["anchors_per_stratum"]:
+                blockers.append("eval_d_stratum_population_mismatch")
+
+            estimators = eval_d_freeze.get("estimators", {})
+            primary_weights = estimators.get("primary", {}).get("weights")
+            if primary_weights != {"general": 0.5, "code": 0.5}:
+                blockers.append("eval_d_balanced_primary_weights_mismatch")
+            dev_weights = estimators.get("dev_mixture_reweighted_secondary", {}).get(
+                "weights"
+            )
+            if not isinstance(dev_weights, dict) or set(dev_weights) != {
+                "general",
+                "code",
+            }:
+                blockers.append("eval_d_dev_mixture_weights_missing")
+            elif abs(sum(float(value) for value in dev_weights.values()) - 1.0) > 1e-9:
+                blockers.append("eval_d_dev_mixture_weights_do_not_sum_to_one")
 
             cache = eval_d_freeze.get("option_b_cache", {})
             if cache.get("kind") != OPTION_B_CACHE_KIND:
@@ -160,6 +195,10 @@ def assess_readiness(
                 value = cache.get(field)
                 if value in (None, "", 0):
                     blockers.append(f"eval_d_{field}_missing")
+            if int(cache.get("anchor_count", -1)) != int(population["anchor_count"]):
+                blockers.append("eval_d_anchor_count_mismatch")
+            if cache.get("anchors_per_stratum") != population["anchors_per_stratum"]:
+                blockers.append("eval_d_cache_stratum_counts_mismatch")
 
     unique_blockers = list(dict.fromkeys(blockers))
     return {

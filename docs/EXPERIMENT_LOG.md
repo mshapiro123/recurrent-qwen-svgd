@@ -1824,3 +1824,18 @@ Colab/Drive backups for selected runs.
   remains prohibited pending a score-blind compatible cache and readiness receipt.
   Draft: `docs/PAPER2_PHASE2_E1_CONFIRMATION_PREREGISTRATION_DRAFT_20260808.md`.
   Readiness: `outputs/stage5/stage5_paper2_phase2_e1_preregistration_20260808/readiness.json`.
+- 2026-08-08 E1 EVAL-D population ratification and cache build: strategy fixed
+  the confirmation population at 8,000 anchors, balanced 4,000 general and
+  4,000 code, under deterministic selection seed 20260808. The balanced pooled
+  estimate is primary and an immutable DEV-mixture-reweighted estimate is a
+  registered descriptive secondary. A new A100-80GB cache target reuses the
+  pinned Option B 0.5B/7B/14B/32B teacher stack and cascade to materialize the
+  evaluator-compatible four-horizon tensor cache. It cannot load an Option B
+  endpoint, construct an optimizer, train, or compute correctness, EAL,
+  retention, acceptance, arm comparisons, or student-teacher quality
+  aggregates. The base 0.5B forward exists only to materialize required cache
+  tensors. Public outputs are hashes, counts, model revisions, cascade fraction,
+  and integrity telemetry. The legacy EVAL-D partition identity is asserted,
+  training/DEV/EVAL-E overlap is checked, all-anchor 14B state coverage gets a
+  private admission ledger, and readiness remains lock-only. Ratification:
+  `docs/STRATEGY_TO_CODING_AGENT_E1_EVALD_RATIFICATION_20260808.md`.

@@ -29,11 +29,32 @@ def compatible_freeze() -> dict:
         "read_once_scoring_spent": False,
         "training_started": False,
         "optimizer_steps": 0,
+        "endpoint_checkpoints_loaded": False,
+        "model_quality_scores_computed": False,
+        "eal_computed": False,
+        "retention_computed": False,
+        "acceptance_computed": False,
+        "student_teacher_quality_aggregates_emitted": False,
         "cross_partition_document_overlap": [],
+        "selection": {
+            "seed": 20260808,
+            "rule": (
+                "stable_sha256_rank_within_stratum_then_greedy_nonoverlapping_"
+                "four_position_spans_then_row_major_execution_order"
+            ),
+            "anchors_per_stratum": {"general": 4000, "code": 4000},
+        },
+        "estimators": {
+            "primary": {"weights": {"general": 0.5, "code": 0.5}},
+            "dev_mixture_reweighted_secondary": {
+                "weights": {"general": 0.51, "code": 0.49}
+            },
+        },
         "option_b_cache": {
             "kind": "paper2_phase2_matched_alpha_cache_v1",
             "fields": sorted(REQUIRED_CACHE_FIELDS),
             "anchor_count": 8000,
+            "anchors_per_stratum": {"general": 4000, "code": 4000},
             "document_count": 85,
             "data_sha256": "a" * 64,
             "position_key_sha256": "b" * 64,

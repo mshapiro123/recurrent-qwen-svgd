@@ -1288,7 +1288,7 @@ def finalize_lattice(
     *, rows: Sequence[dict[str, Any]], samples: Sequence[dict[str, Any]], private_dir: Path,
     output_summary: Path, staging_dir: Path, manifest_summary: dict[str, Any],
     model_summaries: dict[str, Any], union_score_summaries: dict[str, Any],
-    cascade_summary: dict[str, Any]
+    cascade_summary: dict[str, Any], score_blind: bool = False
 ) -> dict[str, Any]:
     union_root = private_dir / "union"
     scores_root = private_dir / "union_scores"
@@ -1352,43 +1352,6 @@ def finalize_lattice(
                 distributions[key] = torch.cat(
                     [candidates, payload["tail_log_probs"][offset : offset + 1].float()]
                 )
-            teachers = [
-                distributions[key]
-                for key in ("teacher_7b", "teacher_14b", "teacher_32b")
-                if key in distributions
-            ]
-            student_top_ids = set(
-                int(value)
-                for value in union["topk_ids"]["student_0p5b"][offset].tolist()
-                if int(value) >= 0
-            )
-            union_ids = union["union_ids"][offset][valid].tolist()
-            student_mask = torch.tensor(
-                [int(value) in student_top_ids for value in union_ids] + [False],
-                dtype=torch.bool,
-            )
-            metric = coarse_lattice_metrics(
-                student_log_probs=distributions["student_0p5b"],
-                teacher_log_probs=teachers,
-                student_topk_mask=student_mask,
-            )
-            teacher_vectors = [
-                distributions[key]
-                for key in ("teacher_7b", "teacher_14b", "teacher_32b")
-                if key in distributions
-            ]
-            coherence = _scale_coherence(teacher_vectors)
-            greedy = {
-                key: int(payload["greedy_token_ids"][offset])
-                for key, payload in scores.items()
-                if bool(payload["present"][offset])
-            }
-            bucket = _bucket(
-                greedy["student_0p5b"],
-                greedy["teacher_7b"],
-                greedy["teacher_14b"],
-                greedy.get("teacher_32b"),
-            )
             record = {
                 "sample_index": sample_index,
                 "sample_key": sample["sample_key"],
@@ -1401,19 +1364,56 @@ def finalize_lattice(
                 "verifier_available": sample["verifier_available"],
                 "verifier_semantics": "observed token only unless an external verifier is present",
                 "teacher_32b_present": "teacher_32b" in distributions,
-                "bucket": bucket,
-                "greedy_token_ids": greedy,
-                **metric,
-                "scale_coherence_cosine": coherence,
             }
+            if not score_blind:
+                teachers = [
+                    distributions[key]
+                    for key in ("teacher_7b", "teacher_14b", "teacher_32b")
+                    if key in distributions
+                ]
+                student_top_ids = set(
+                    int(value)
+                    for value in union["topk_ids"]["student_0p5b"][offset].tolist()
+                    if int(value) >= 0
+                )
+                union_ids = union["union_ids"][offset][valid].tolist()
+                student_mask = torch.tensor(
+                    [int(value) in student_top_ids for value in union_ids] + [False],
+                    dtype=torch.bool,
+                )
+                metric = coarse_lattice_metrics(
+                    student_log_probs=distributions["student_0p5b"],
+                    teacher_log_probs=teachers,
+                    student_topk_mask=student_mask,
+                )
+                coherence = _scale_coherence(teachers)
+                greedy = {
+                    key: int(payload["greedy_token_ids"][offset])
+                    for key, payload in scores.items()
+                    if bool(payload["present"][offset])
+                }
+                bucket = _bucket(
+                    greedy["student_0p5b"],
+                    greedy["teacher_7b"],
+                    greedy["teacher_14b"],
+                    greedy.get("teacher_32b"),
+                )
+                record.update(
+                    {
+                        "bucket": bucket,
+                        "greedy_token_ids": greedy,
+                        **metric,
+                        "scale_coherence_cosine": coherence,
+                    }
+                )
+                bucket_counts[bucket] += 1
+                agreements.append(float(metric["normalized_teacher_agreement"]))
+                gaps.append(float(metric["student_gap_coarse_kl"]))
+                teachabilities.append(float(metric["teachability_student_topk"]))
+                if coherence is not None:
+                    coherences.append(coherence)
             records.append(record)
-            bucket_counts[bucket] += 1
             stratum_counts[str(sample["stratum"])] += 1
-            agreements.append(float(metric["normalized_teacher_agreement"]))
-            gaps.append(float(metric["student_gap_coarse_kl"]))
-            teachabilities.append(float(metric["teachability_student_topk"]))
-            if coherence is not None:
-                coherences.append(coherence)
         destination = final_root / filename
         payload = {
             "kind": "paper2_phase2_stage0a_lattice_shard",
@@ -1428,9 +1428,12 @@ def finalize_lattice(
             "model_tail_log_probs": {
                 key: value["tail_log_probs"] for key, value in scores.items()
             },
-            "model_entropy": {key: value["entropy"] for key, value in scores.items()},
             "records": records,
         }
+        if not score_blind:
+            payload["model_entropy"] = {
+                key: value["entropy"] for key, value in scores.items()
+            }
         atomic_torch_save(payload, destination, staging_dir=staging_dir)
         final_receipts.append(
             {"path": str(destination), "sha256": sha256_file(destination), "samples": len(records)}
@@ -1438,30 +1441,37 @@ def finalize_lattice(
         print(f"stage0a_finalize_progress rows={stop}/{len(rows)}", flush=True)
 
     fourteen_summary = model_summaries["teacher_14b"]
+    lattice_summary = {
+        "samples": sum(row["samples"] for row in final_receipts),
+        "top_k": ACTIVE_CONFIG["top_k"],
+        "candidate_space": (
+            "cached-forward own-model top-k anchor plus approximately rescored "
+            "cross-model candidates and simplex-reconciled tail"
+        ),
+        "stratum_counts": dict(sorted(stratum_counts.items())),
+        "shards": final_receipts,
+    }
+    if not score_blind:
+        lattice_summary.update(
+            {
+                "bucket_counts": dict(sorted(bucket_counts.items())),
+                "normalized_teacher_agreement": _quantiles(agreements),
+                "student_gap_coarse_kl": _quantiles(gaps),
+                "teachability_student_topk": _quantiles(teachabilities),
+                "scale_coherence_cosine": _quantiles(coherences),
+            }
+        )
     summary = {
         "kind": "paper2_phase2_stage0a",
-        "status": "complete_development_only",
+        "status": "complete_frozen_unscored" if score_blind else "complete_development_only",
+        "score_blind": bool(score_blind),
         "config": ACTIVE_CONFIG,
         "config_sha256": _config_sha256(ACTIVE_CONFIG),
         "manifest": manifest_summary,
         "model_caches": model_summaries,
         "union_scores": union_score_summaries,
         "cascade_32b": cascade_summary,
-        "lattice": {
-            "samples": sum(row["samples"] for row in final_receipts),
-            "top_k": ACTIVE_CONFIG["top_k"],
-            "candidate_space": (
-                "cached-forward own-model top-k anchor plus approximately rescored "
-                "cross-model candidates and simplex-reconciled tail"
-            ),
-            "bucket_counts": dict(sorted(bucket_counts.items())),
-            "stratum_counts": dict(sorted(stratum_counts.items())),
-            "normalized_teacher_agreement": _quantiles(agreements),
-            "student_gap_coarse_kl": _quantiles(gaps),
-            "teachability_student_topk": _quantiles(teachabilities),
-            "scale_coherence_cosine": _quantiles(coherences),
-            "shards": final_receipts,
-        },
+        "lattice": lattice_summary,
         "full_logit_audit": {
             key: {
                 "samples": len(audit_candidate_errors[key]),
@@ -1491,8 +1501,13 @@ def finalize_lattice(
         "teacher_forward_passes": {
             key: int(value["teacher_forward_passes"]) for key, value in model_summaries.items()
         },
-        "evaluation_partition_touched": False,
-        "frozen_evaluation_partitions_touched": [],
+        "evaluation_partition_touched": bool(score_blind),
+        "frozen_evaluation_partitions_touched": ["EVAL-D_CACHE_ONLY"] if score_blind else [],
+        "endpoint_models_loaded": False,
+        "eal_computed": False,
+        "retention_computed": False,
+        "acceptance_computed": False,
+        "student_teacher_quality_aggregates_emitted": not score_blind,
         "training_started": False,
         "optimizer_steps": 0,
         "do_not_claim": [
@@ -1527,6 +1542,14 @@ def main() -> int:
         help="Keep the pinned 32B bf16 pass on CUDA via Accelerate CPU/disk offload.",
     )
     parser.add_argument("--offload_dir")
+    parser.add_argument(
+        "--score_blind",
+        action="store_true",
+        help=(
+            "Build the private lattice without computing or emitting student-versus-teacher "
+            "quality aggregates. Required for frozen confirmation cache preparation."
+        ),
+    )
     args = parser.parse_args()
 
     if args.config_json:
@@ -1596,6 +1619,7 @@ def main() -> int:
         model_summaries=model_summaries,
         union_score_summaries=union_score_summaries,
         cascade_summary=cascade_summary,
+        score_blind=args.score_blind,
     )
     print(json.dumps(summary, indent=2, sort_keys=True))
     return 0

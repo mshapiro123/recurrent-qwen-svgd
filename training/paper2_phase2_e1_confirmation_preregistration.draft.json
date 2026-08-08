@@ -17,6 +17,11 @@
       "path": "docs/STRATEGY_RATIFICATION_E1_CHARTER_20260808.md",
       "sha256": "e26d903facd7606cd40ed0fcd11156004e6048c649092a6e6462c4b02531c0a1"
     },
+    "eval_d_population_ratification": {
+      "drive_id": "1GNhsTylSYTLdnQZhNsy1iaavAXq3zJUE",
+      "path": "docs/STRATEGY_TO_CODING_AGENT_E1_EVALD_RATIFICATION_20260808.md",
+      "sha256": "19ce4bd5c8e665806b416b872396d9d0fe149555f05dbbd2704d7d4cd192fe33"
+    },
     "human_preregistration_draft": "docs/PAPER2_PHASE2_E1_CONFIRMATION_PREREGISTRATION_DRAFT_20260808.md"
   },
   "source": {
@@ -52,6 +57,21 @@
     "alpha": 0.5,
     "alpha_status": "unselected_design_prior",
     "horizons": [1, 2, 3, 4],
+    "population": {
+      "token_budget": 200000,
+      "anchor_count": 8000,
+      "anchors_per_stratum": {
+        "general": 4000,
+        "code": 4000
+      },
+      "selection_seed": 20260808,
+      "selection_rule": "stable_sha256_rank_within_stratum_then_greedy_nonoverlapping_four_position_spans_then_row_major_execution_order",
+      "primary_weighting": {
+        "general": 0.5,
+        "code": 0.5
+      },
+      "membership_fixed_before_teacher_cache": true
+    },
     "bootstrap": {
       "unit": "document",
       "paired": true,
@@ -63,16 +83,33 @@
     "scorer_source": "training/run_paper2_phase2_a2.py:evaluate",
     "scorer_source_sha256": null,
     "option_b_cache_schema_required": "paper2_phase2_matched_alpha_cache_v1",
-    "actual_anchor_count": null,
+    "actual_anchor_count": 8000,
     "actual_document_count": null,
     "data_sha256": null,
     "position_key_sha256": null,
     "private_cache_sha256": null,
     "canonicalizer_sha256": null,
-    "readiness_receipt_sha256": null
+    "readiness_receipt_sha256": null,
+    "score_blind_cache_contract": {
+      "endpoint_checkpoints_loaded": false,
+      "base_student_forward_role": "tensor_cache_materialization_only_no_quality_or_outcome_scoring",
+      "model_quality_scores_computed": false,
+      "eal_computed": false,
+      "retention_computed": false,
+      "acceptance_computed": false,
+      "student_teacher_quality_aggregates_emitted": false,
+      "allowed_public_outputs": [
+        "hashes",
+        "counts",
+        "model_revisions",
+        "cascade_fraction",
+        "integrity_telemetry"
+      ]
+    }
   },
   "primary": {
     "metric": "relative_mean_eal_gain_full_over_matched_control",
+    "population_weighting": "balanced_general_0p5_code_0p5",
     "required_seeds": [0, 1],
     "pass": "paired_document_bootstrap_95_ci_lower_strictly_greater_than_zero_in_each_seed",
     "dev_expected_effect_descriptive_only": [0.0035, 0.0050],
@@ -96,6 +133,12 @@
     "bridge_gate_use",
     "quality_safe_oracle_headroom"
   ],
+  "dev_mixture_reweighted_secondary": {
+    "metric": "relative_mean_eal_gain_full_over_matched_control",
+    "weights_source": "immutable_stage0a_dev_manifest_under_document_partition_seed_20260804",
+    "weights": null,
+    "role": "direct_comparability_with_option_b_dev_effect_not_a_primary_gate"
+  },
   "scripted_readings": {
     "primary_pass_quality_pass": "CONFIRMED_WITH_MEASURED_PARETO",
     "primary_pass_quality_fail": "EFFECT_REPLICATES_QUALITY_BOUNDARY_FAILS",
@@ -111,7 +154,8 @@
   "lock_blockers": [
     "option_b_compatible_eval_d_cache_missing",
     "eval_d_readiness_receipt_missing",
-    "eval_d_actual_n_and_document_count_unfilled",
+    "eval_d_document_count_unfilled",
+    "dev_mixture_reweighting_weights_unfilled",
     "eval_d_hash_transcription_unfilled",
     "scorer_source_hash_unfilled",
     "resource_preflight_unfilled"

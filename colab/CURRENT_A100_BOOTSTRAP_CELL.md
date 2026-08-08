@@ -646,6 +646,21 @@ TARGETS = {
         ],
         "env": {},
     },
+    "paper2_phase2_e1_eval_d_freeze": {
+        "path": "colab/STAGE5_PAPER2_PHASE2_E1_EVAL_D_FREEZE_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_PHASE2_E1_EVAL_D_FREEZE_VERSION",
+            "paper2_phase2_e1_eval_d_freeze_v1",
+            "8000 anchors 4000 general 4000 code seed 20260808",
+            "EVAL-D infrastructure only no endpoint checkpoint no outcome score",
+            "base student forward materializes cache tensors only no quality score",
+            "no EAL no retention no acceptance no optimizer no training",
+            "read-once scoring remains unspent and readiness only authorizes lock",
+            "tests/test_paper2_phase2_e1_eval_d.py",
+            "colab/run_stage5_paper2_phase2_e1_eval_d_freeze.py",
+        ],
+        "env": {},
+    },
     "paper2_d0_expert_choice_rung0": {
         "path": "colab/STAGE5_PAPER2_D0_EXPERT_CHOICE_RUNG0_CELL.py",
         "markers": [

@@ -127,7 +127,7 @@ def _parallel_receipts(summary: dict[str, Any], key: str) -> list[dict[str, Any]
 
 def _local_source(path: str, stage0a_private: Path) -> Path:
     normalized = str(path).replace("\\", "/")
-    for marker in ("/private/stage0a/", "/private/full/"):
+    for marker in ("/private/stage0a/", "/private/full/", "/private/e1_eval_d/"):
         if marker in normalized:
             return stage0a_private / normalized.split(marker, 1)[1]
     raise RuntimeError(f"unrecognized Phase-2 private cache path: {path}")
@@ -159,6 +159,11 @@ def build_pilot_cache(
         if (
             cached.get("kind") == "paper2_phase2_matched_alpha_cache_v1"
             and len(cached.get("documents", [])) * 4 == int(expected_samples)
+            and (
+                int(expected_samples) != 32_000
+                or len(cached.get("anchor_keys", []))
+                == len(cached.get("documents", []))
+            )
         ):
             print(f"matched_alpha_cache_resume={output_path}", flush=True)
             return cached
@@ -181,6 +186,7 @@ def build_pilot_cache(
     sample_horizon = torch.tensor([int(row["horizon"]) for row in samples], dtype=torch.long)
     documents_by_anchor = [""] * anchors
     strata_by_anchor = [""] * anchors
+    anchor_keys = [""] * anchors
     positions = torch.zeros(anchors, dtype=torch.long)
     for row in samples:
         anchor = int(row["anchor_index"])
@@ -188,6 +194,12 @@ def build_pilot_cache(
         strata_by_anchor[anchor] = str(row["stratum"])
         if int(row["horizon"]) == 1:
             positions[anchor] = int(row["prediction_position"])
+            anchor_keys[anchor] = hashlib.sha256(
+                (
+                    f"{int(summary['config']['seed'])}:anchor:"
+                    f"{row['row_id']}:{int(row['prediction_position'])}"
+                ).encode("utf-8")
+            ).hexdigest()
 
     lattice_receipts = list(summary["lattice"]["shards"])
     student_receipts = _parallel_receipts(summary, "student_0p5b")
@@ -298,6 +310,7 @@ def build_pilot_cache(
     centered_raw = raw - canonicalizer["canonical_mean"].float()
     payload = {
         "kind": "paper2_phase2_matched_alpha_cache_v1",
+        "anchor_keys": anchor_keys,
         "documents": documents_by_anchor,
         "strata": strata_by_anchor,
         "positions": positions,

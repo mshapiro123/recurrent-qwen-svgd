@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "program": "paper2_causal_control_of_recurrent_computation",
-  "status": "phase1_banked_option_b_positive_dev_e1_confirmation_draft_blocked_on_eval_d_cache",
+  "status": "phase1_banked_option_b_positive_dev_e1_eval_d_cache_built_awaiting_execution",
   "canonical_date": "2026-08-08",
   "active_queue": {
     "program_goal": "causal_arbitration_at_append_and_dispatch_interfaces",
@@ -10,7 +10,7 @@
     "d0": "banked_not_recoverable_at_pilot_scale_binary_disagreement_target",
     "dc1_stage_a": "registered_none_transient_append_retires_checkpoint_archival_eval_c_spent",
     "phase2": "option_b_banked_small_replicated_writeback_effect_e1_confirmation_draft_unlocked",
-    "dc2": "e1_confirmation_blocked_only_on_option_b_compatible_eval_d_cache_and_readiness",
+    "dc2": "e1_score_blind_eval_d_cache_target_built_read_once_unspent",
     "d1": "window_closed_pending_e1_confirmation",
     "paper_two_packaging": "proceeds_on_banked_phase1_results"
   },
@@ -64,7 +64,11 @@
     "phase2_e1_preregistration_draft": "docs/PAPER2_PHASE2_E1_CONFIRMATION_PREREGISTRATION_DRAFT_20260808.md",
     "phase2_e1_preregistration_draft_handoff": "docs/PAPER2_PHASE2_E1_PREREGISTRATION_DRAFT_HANDOFF_20260808.md",
     "phase2_e1_machine_draft": "training/paper2_phase2_e1_confirmation_preregistration.draft.json",
-    "phase2_e1_readiness": "outputs/stage5/stage5_paper2_phase2_e1_preregistration_20260808/readiness.json"
+    "phase2_e1_readiness": "outputs/stage5/stage5_paper2_phase2_e1_preregistration_20260808/readiness.json",
+    "phase2_e1_eval_d_ratification": "docs/STRATEGY_TO_CODING_AGENT_E1_EVALD_RATIFICATION_20260808.md",
+    "phase2_e1_eval_d_cache_config": "outputs/stage5/stage5_paper2_phase2_e1_eval_d_20260808/config/e1_eval_d_cache_config.json",
+    "phase2_e1_eval_d_freeze": "outputs/stage5/stage5_paper2_phase2_e1_eval_d_20260808/receipts/e1_eval_d_freeze_summary.json",
+    "phase2_e1_eval_d_readiness": "outputs/stage5/stage5_paper2_phase2_e1_eval_d_20260808/receipts/e1_readiness.json"
   },
   "claims": [
     {
