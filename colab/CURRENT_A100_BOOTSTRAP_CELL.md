@@ -152,6 +152,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3_short_sha"
 #   "paper2_phase2_stage0a" - DEV-C sparse lattice and 14B teacher states; A100-80GB, no training.
 #   "paper2_phase2_option_b_teacher_cache" - locked new-document teacher cache; A100-40GB offload or 80GB, no training.
 #   "paper2_phase2_option_b" - locked four-arm dose-then-data matrix; A100-40GB+.
+#   "paper2_phase2_option_b_bootstrap_audit" - CPU-only document-bootstrap completion from saved rows.
 #   "paper2_phase2_stage0a_repair" - CPU-only finite-metric repair from cached Stage 0A shards.
 #   "paper2_phase2_exp0a" - A100 DEV-only canonicalizer and partial-whitening screening.
 #   "paper2_phase2_exp0b" - L4-or-larger DEV-only interpolation and serial-flow screening.
@@ -345,6 +346,21 @@ TARGETS = {
             "per-arm Drive directory write preflight before model execution",
             "tests/test_paper2_phase2_option_b_training.py",
             "colab/run_stage5_paper2_phase2_option_b.py",
+        ],
+        "env": {},
+    },
+    "paper2_phase2_option_b_bootstrap_audit": {
+        "path": "colab/STAGE5_PAPER2_PHASE2_OPTION_B_BOOTSTRAP_AUDIT_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_PHASE2_OPTION_B_BOOTSTRAP_AUDIT_VERSION",
+            "paper2_phase2_option_b_bootstrap_audit_v1",
+            "CPU-only saved-row post-processing no model load no optimizer no training",
+            "paired document cluster bootstrap 10000 replicates seed 20260808",
+            "governing CI-qualified E1 reading preserved separately from source verdict",
+            "fixed evaluation rows only and zero confirmatory partition contact",
+            "source summary and every consumed row receipt hashed into output",
+            "tests/test_paper2_phase2_option_b_bootstrap_audit.py",
+            "colab/run_stage5_paper2_phase2_option_b_bootstrap_audit.py",
         ],
         "env": {},
     },

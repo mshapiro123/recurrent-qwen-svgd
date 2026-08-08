@@ -3572,6 +3572,33 @@ def test_phase2_a2_step237_continuation_is_wired_and_guarded() -> None:
     assert "--resume_from_step237" in runner
 
 
+def test_phase2_option_b_bootstrap_audit_is_wired_and_guarded() -> None:
+    cell = (
+        ROOT / "colab/STAGE5_PAPER2_PHASE2_OPTION_B_BOOTSTRAP_AUDIT_CELL.py"
+    ).read_text(encoding="utf-8")
+    runner = (
+        ROOT / "colab/run_stage5_paper2_phase2_option_b_bootstrap_audit.py"
+    ).read_text(encoding="utf-8")
+    audit = (
+        ROOT / "eval/eval_paper2_phase2_option_b_bootstrap_audit.py"
+    ).read_text(encoding="utf-8")
+    for bootstrap_path in (
+        ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py",
+        ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md",
+    ):
+        text = bootstrap_path.read_text(encoding="utf-8")
+        assert "paper2_phase2_option_b_bootstrap_audit" in text
+        assert "STAGE5_PAPER2_PHASE2_OPTION_B_BOOTSTRAP_AUDIT_CELL.py" in text
+        assert "governing CI-qualified E1 reading preserved separately" in text
+    assert "paper2_phase2_option_b_bootstrap_audit_v1" in cell
+    assert "CPU-only saved-row post-processing no model load no optimizer no training" in cell
+    assert "paired document cluster bootstrap 10000 replicates seed 20260808" in cell
+    assert "stage5_paper2_phase2_option_b_bootstrap_audit_20260808" in runner
+    assert "optimizer_updates" in runner
+    assert "document_bootstrap_95_ci" in audit
+    assert "landed_implementation" in audit
+
+
 def test_gradient_path_audit_target_is_wired_and_guarded() -> None:
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
     bootstrap_md = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")
