@@ -5,6 +5,7 @@ from pathlib import Path
 
 from training.paper2_phase2_e1_confirmation import (
     E1_EVAL_D_FREEZE_KIND,
+    E1_SPARSE_SUPPORT_QC_KIND,
     REQUIRED_CACHE_FIELDS,
     assess_readiness,
 )
@@ -64,6 +65,26 @@ def compatible_freeze() -> dict:
     }
 
 
+def compatible_sparse_qc() -> dict:
+    models = {}
+    for key in ("student_0p5b", "teacher_7b", "teacher_14b", "teacher_32b"):
+        models[key] = {"counts": {"audit_rows": 320}}
+    return {
+        "kind": E1_SPARSE_SUPPORT_QC_KIND,
+        "status": "complete_score_blind_integrity_only",
+        "all_emitted_metrics_finite": True,
+        "ready_for_lock_transcription": True,
+        "score_blind": True,
+        "endpoint_checkpoints_loaded": False,
+        "outcome_scores_computed": False,
+        "model_quality_scores_computed": False,
+        "read_once_scoring_spent": False,
+        "training_started": False,
+        "optimizer_steps": 0,
+        "models": models,
+    }
+
+
 def test_draft_is_explicitly_unlocked_with_ratified_endpoints() -> None:
     registration = loaded(REGISTRATION)
     assert registration["locked_before_e1_scoring"] is False
@@ -90,6 +111,7 @@ def test_legacy_eval_d_receipt_is_rejected_as_schema_incompatible() -> None:
             "kind": "paper2_phase2_eval_de_freeze",
             "status": "complete_frozen_unscored",
         },
+        sparse_support_qc=compatible_sparse_qc(),
     )
     assert result["ready_to_lock"] is False
     assert "legacy_eval_d_schema_is_7b_only_not_option_b_compatible" in result["blockers"]
@@ -101,6 +123,7 @@ def test_compatible_unscored_freeze_clears_readiness() -> None:
         rule_inventory=loaded(INVENTORY),
         option_b_summary=loaded(OPTION_B),
         eval_d_freeze=compatible_freeze(),
+        sparse_support_qc=compatible_sparse_qc(),
     )
     assert result["ready_to_lock"] is True
     assert result["status"] == "ready_to_lock"
@@ -116,6 +139,7 @@ def test_score_exposure_or_missing_cache_field_blocks_lock() -> None:
         rule_inventory=loaded(INVENTORY),
         option_b_summary=loaded(OPTION_B),
         eval_d_freeze=freeze,
+        sparse_support_qc=compatible_sparse_qc(),
     )
     assert result["ready_to_lock"] is False
     assert "eval_d_scores_already_exposed" in result["blockers"]
@@ -123,3 +147,18 @@ def test_score_exposure_or_missing_cache_field_blocks_lock() -> None:
     assert result["observations"]["missing_option_b_cache_fields"] == [
         "teacher_topk_ids"
     ]
+
+
+def test_missing_or_nonfinite_sparse_qc_blocks_lock() -> None:
+    kwargs = {
+        "registration": loaded(REGISTRATION),
+        "rule_inventory": loaded(INVENTORY),
+        "option_b_summary": loaded(OPTION_B),
+        "eval_d_freeze": compatible_freeze(),
+    }
+    missing = assess_readiness(**kwargs, sparse_support_qc=None)
+    assert "eval_d_sparse_support_qc_missing" in missing["blockers"]
+    broken = compatible_sparse_qc()
+    broken["all_emitted_metrics_finite"] = False
+    result = assess_readiness(**kwargs, sparse_support_qc=broken)
+    assert "eval_d_sparse_support_qc_nonfinite" in result["blockers"]

@@ -23,6 +23,7 @@ LEGACY_EVAL_DE_SUMMARY = (
 
 OPTION_B_CACHE_KIND = "paper2_phase2_matched_alpha_cache_v1"
 E1_EVAL_D_FREEZE_KIND = "paper2_phase2_e1_eval_d_freeze_v1"
+E1_SPARSE_SUPPORT_QC_KIND = "paper2_phase2_e1_sparse_support_qc_v1"
 REQUIRED_CACHE_FIELDS = {
     "anchor_keys",
     "documents",
@@ -82,6 +83,7 @@ def assess_readiness(
     rule_inventory: Mapping[str, Any],
     option_b_summary: Mapping[str, Any] | None,
     eval_d_freeze: Mapping[str, Any] | None,
+    sparse_support_qc: Mapping[str, Any] | None,
 ) -> dict[str, Any]:
     blockers: list[str] = []
     observations: dict[str, Any] = {}
@@ -200,10 +202,45 @@ def assess_readiness(
             if cache.get("anchors_per_stratum") != population["anchors_per_stratum"]:
                 blockers.append("eval_d_cache_stratum_counts_mismatch")
 
+    if sparse_support_qc is None:
+        blockers.append("eval_d_sparse_support_qc_missing")
+    else:
+        observations["eval_d_sparse_support_qc_kind"] = sparse_support_qc.get("kind")
+        if sparse_support_qc.get("kind") != E1_SPARSE_SUPPORT_QC_KIND:
+            blockers.append("eval_d_sparse_support_qc_kind_mismatch")
+        if sparse_support_qc.get("status") != "complete_score_blind_integrity_only":
+            blockers.append("eval_d_sparse_support_qc_incomplete")
+        if sparse_support_qc.get("all_emitted_metrics_finite") is not True:
+            blockers.append("eval_d_sparse_support_qc_nonfinite")
+        if sparse_support_qc.get("ready_for_lock_transcription") is not True:
+            blockers.append("eval_d_sparse_support_qc_not_ready")
+        if sparse_support_qc.get("score_blind") is not True:
+            blockers.append("eval_d_sparse_support_qc_not_score_blind")
+        for field in (
+            "endpoint_checkpoints_loaded",
+            "outcome_scores_computed",
+            "model_quality_scores_computed",
+            "read_once_scoring_spent",
+            "training_started",
+        ):
+            if sparse_support_qc.get(field) is not False:
+                blockers.append(f"eval_d_sparse_support_qc_contract_failed_{field}")
+        if int(sparse_support_qc.get("optimizer_steps", -1)) != 0:
+            blockers.append("eval_d_sparse_support_qc_optimizer_steps_nonzero")
+        models = sparse_support_qc.get("models", {})
+        if set(models) != {"student_0p5b", "teacher_7b", "teacher_14b", "teacher_32b"}:
+            blockers.append("eval_d_sparse_support_qc_model_set_mismatch")
+        else:
+            for model_key, model in models.items():
+                if int(model.get("counts", {}).get("audit_rows", -1)) != 320:
+                    blockers.append(
+                        f"eval_d_sparse_support_qc_audit_rows_mismatch_{model_key}"
+                    )
+
     unique_blockers = list(dict.fromkeys(blockers))
     return {
         "kind": "paper2_phase2_e1_readiness",
-        "version": "e1_readiness_v1_20260808",
+        "version": "e1_readiness_v2_20260808",
         "status": "ready_to_lock" if not unique_blockers else "blocked_before_lock",
         "ready_to_lock": not unique_blockers,
         "e1_scoring_authorized": False,

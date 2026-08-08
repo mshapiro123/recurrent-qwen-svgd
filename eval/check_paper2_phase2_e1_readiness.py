@@ -44,6 +44,7 @@ def main() -> int:
     parser.add_argument("--rule_inventory", type=Path, default=RULE_INVENTORY)
     parser.add_argument("--option_b_summary", type=Path, default=OPTION_B_SUMMARY)
     parser.add_argument("--eval_d_freeze", type=Path, default=LEGACY_EVAL_DE_SUMMARY)
+    parser.add_argument("--sparse_support_qc", type=Path)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
 
@@ -54,6 +55,11 @@ def main() -> int:
         rule_inventory=inventory,
         option_b_summary=load_optional(args.option_b_summary),
         eval_d_freeze=load_optional(args.eval_d_freeze),
+        sparse_support_qc=(
+            load_optional(args.sparse_support_qc)
+            if args.sparse_support_qc is not None
+            else None
+        ),
     )
     receipt["inputs"] = {
         "registration": str(args.registration),
@@ -67,6 +73,14 @@ def main() -> int:
         "eval_d_freeze": str(args.eval_d_freeze),
         "eval_d_freeze_sha256": (
             sha256_file(args.eval_d_freeze) if args.eval_d_freeze.is_file() else None
+        ),
+        "sparse_support_qc": (
+            str(args.sparse_support_qc) if args.sparse_support_qc is not None else None
+        ),
+        "sparse_support_qc_sha256": (
+            sha256_file(args.sparse_support_qc)
+            if args.sparse_support_qc is not None and args.sparse_support_qc.is_file()
+            else None
         ),
     }
     write_json(args.output, receipt)

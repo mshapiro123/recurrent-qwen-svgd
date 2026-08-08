@@ -661,6 +661,19 @@ TARGETS = {
         ],
         "env": {},
     },
+    "paper2_phase2_e1_sparse_qc": {
+        "path": "colab/STAGE5_PAPER2_PHASE2_E1_SPARSE_QC_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_PHASE2_E1_SPARSE_QC_VERSION",
+            "paper2_phase2_e1_sparse_qc_v1",
+            "CPU-only cached sparse-support integrity audit no model inference",
+            "finite-support log error plus explicit support-mismatch counts",
+            "no EAL no retention no acceptance no optimizer no training",
+            "read-once E1 scoring remains unspent and only lock readiness may change",
+            "colab/run_stage5_paper2_phase2_e1_sparse_qc.py",
+        ],
+        "env": {},
+    },
     "paper2_d0_expert_choice_rung0": {
         "path": "colab/STAGE5_PAPER2_D0_EXPERT_CHOICE_RUNG0_CELL.py",
         "markers": [

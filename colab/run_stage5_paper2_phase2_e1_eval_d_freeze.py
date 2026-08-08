@@ -247,10 +247,12 @@ def main() -> int:
             str(freeze),
             "--output",
             str(readiness),
-        ]
+        ],
+        allowed=(0, 2),
     )
     ready = json.loads(readiness.read_text(encoding="utf-8"))
-    if not ready.get("ready_to_lock"):
+    expected_qc_block = ready.get("blockers") == ["eval_d_sparse_support_qc_missing"]
+    if not ready.get("ready_to_lock") and not expected_qc_block:
         raise RuntimeError(f"E1 cache landed but readiness is blocked: {ready['blockers']}")
 
     receipt_dir = DRIVE_ROOT / "receipts"
@@ -260,7 +262,11 @@ def main() -> int:
     shutil.copy2(readiness, receipt_dir / "e1_readiness.json")
     commit = publish([config_path, data_freeze, lattice_summary, freeze, readiness])
     status_event(
-        "complete_frozen_unscored_ready_to_lock",
+        (
+            "complete_frozen_unscored_ready_to_lock"
+            if ready.get("ready_to_lock")
+            else "complete_frozen_unscored_awaiting_sparse_qc"
+        ),
         freeze_sha256=sha256_file(freeze),
         readiness_sha256=sha256_file(readiness),
         private_cache_sha256=sha256_file(private_cache),
