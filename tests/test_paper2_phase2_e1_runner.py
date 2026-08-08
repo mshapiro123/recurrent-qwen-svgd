@@ -10,10 +10,15 @@ from eval.eval_paper2_phase2_e1_confirmation import (
     _claim_lease,
     summarize,
 )
+from colab.run_stage5_paper2_phase2_e1_confirmation import resolve_a1_checkpoints
 
 
 ROOT = Path(__file__).resolve().parents[1]
 REGISTRATION = ROOT / "training/paper2_phase2_e1_confirmation_preregistration.json"
+A1_SUMMARY = (
+    ROOT
+    / "outputs/stage5/stage5_paper2_phase2_staged_a1_resume_20260805/summary.json"
+)
 
 
 def test_read_once_lease_is_exclusive(tmp_path: Path) -> None:
@@ -22,6 +27,15 @@ def test_read_once_lease_is_exclusive(tmp_path: Path) -> None:
     assert first["read_once_scoring_spent"] is False
     with pytest.raises(RuntimeError, match="automatic rerun is prohibited"):
         _claim_lease(path, "a" * 64)
+
+
+def test_runner_resolves_hash_locked_a1_checkpoints_from_receipt() -> None:
+    resolved = resolve_a1_checkpoints(A1_SUMMARY)
+    assert set(resolved) == {0, 1}
+    for seed, (path, sha256) in resolved.items():
+        assert f"/private/a1/alpha_0p5_seed_{seed}/" in path.as_posix()
+        assert path.name == "a1_resume_amended.pt"
+        assert len(sha256) == 64
 
 
 def test_scripted_verdict_requires_both_seed_effect_and_quality_passes() -> None:

@@ -23,9 +23,9 @@ DRIVE_STAGE5 = Path("/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5
 DRIVE_RUN = DRIVE_STAGE5 / RUN_ID
 DRIVE_EVAL_D = DRIVE_STAGE5 / EVAL_D_ID
 DRIVE_OPTION_B = DRIVE_STAGE5 / OPTION_B_ID
-DRIVE_A1 = DRIVE_STAGE5 / A1_ID / "private"
 PUBLIC_EVAL_D = ROOT / "outputs/stage5" / EVAL_D_ID / "receipts"
 OPTION_B_SUMMARY = ROOT / "outputs/stage5" / OPTION_B_ID / "summary.json"
+A1_SUMMARY = ROOT / "outputs/stage5" / A1_ID / "summary.json"
 
 
 def run(command: list[str], *, allowed: tuple[int, ...] = (0,)) -> int:
@@ -123,6 +123,20 @@ def resolve_head(model_dir: Path) -> tuple[Path, str]:
     return source, str(receipt["sha256"])
 
 
+def resolve_a1_checkpoints(summary_path: Path) -> dict[int, tuple[Path, str]]:
+    summary = json.loads(summary_path.read_text(encoding="utf-8"))
+    resolved: dict[int, tuple[Path, str]] = {}
+    for arm in summary["arms"]:
+        if float(arm["alpha"]) != 0.5:
+            continue
+        seed = int(arm["seed"])
+        checkpoint = arm["checkpoint"]
+        resolved[seed] = (Path(checkpoint["path"]), str(checkpoint["sha256"]))
+    if set(resolved) != {0, 1}:
+        raise RuntimeError(f"E1 A1 summary did not resolve seeds 0 and 1: {summary_path}")
+    return resolved
+
+
 def publish() -> str:
     receipt_dir = DRIVE_RUN / "receipts"
     receipt_dir.mkdir(parents=True, exist_ok=True)
@@ -158,10 +172,11 @@ def main() -> int:
     student_head = copy_verified(student_source, scratch / "student_lm_head.pt", student_sha)
     teacher_head = copy_verified(teacher_source, scratch / "teacher14_lm_head.pt", teacher_sha)
     a1 = {}
-    for seed in (0, 1):
+    for seed, (source, expected_sha) in resolve_a1_checkpoints(A1_SUMMARY).items():
         a1[seed] = copy_verified(
-            DRIVE_A1 / f"alpha_0p5_seed_{seed}/a1_resume_amended.pt",
+            source,
             scratch / f"a1_seed_{seed}.pt",
+            expected_sha,
         )
     endpoints = {}
     for seed in (0, 1):
