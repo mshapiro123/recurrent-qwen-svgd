@@ -333,7 +333,7 @@ TARGETS = {
         "path": "colab/STAGE5_PAPER2_PHASE2_OPTION_B_CELL.py",
         "markers": [
             "STAGE5_PAPER2_PHASE2_OPTION_B_VERSION",
-            "paper2_phase2_option_b_v4",
+            "paper2_phase2_option_b_v5",
             "hash-only amendment locked before Option B training",
             "four A2 endpoint arms fresh AdamW state exact step 4000 splice",
             "20000 steps eval checkpoint 1000 directional audit 2000",
@@ -341,6 +341,7 @@ TARGETS = {
             "fixed evaluation excluded from both training populations",
             "teacher summary normalized Git-LF plus canonical JSON integrity",
             "A2 loss weights inherited from locked contract and public receipts",
+            "per-arm Drive directory write preflight before model execution",
             "tests/test_paper2_phase2_option_b_training.py",
             "colab/run_stage5_paper2_phase2_option_b.py",
         ],

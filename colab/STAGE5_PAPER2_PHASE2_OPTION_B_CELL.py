@@ -13,7 +13,7 @@ from pathlib import Path
 from google.colab import drive, userdata
 
 
-STAGE5_PAPER2_PHASE2_OPTION_B_VERSION = "paper2_phase2_option_b_v4"
+STAGE5_PAPER2_PHASE2_OPTION_B_VERSION = "paper2_phase2_option_b_v5"
 # Safety marker: hash-only amendment locked before Option B training
 # Safety marker: four A2 endpoint arms fresh AdamW state exact step 4000 splice
 # Safety marker: 20000 steps eval checkpoint 1000 directional audit 2000
@@ -22,6 +22,7 @@ STAGE5_PAPER2_PHASE2_OPTION_B_VERSION = "paper2_phase2_option_b_v4"
 # Safety marker: canonical endpoint byte hashes plus semantic state digests
 # Safety marker: teacher summary normalized Git-LF plus canonical JSON integrity
 # Safety marker: A2 loss weights inherited from locked contract and public receipts
+# Safety marker: per-arm Drive directory write preflight before model execution
 # Safety marker: colab/run_stage5_paper2_phase2_option_b.py
 # Safety marker: tests/test_paper2_phase2_option_b_training.py
 REPO = "mshapiro123/recurrent-qwen-svgd"

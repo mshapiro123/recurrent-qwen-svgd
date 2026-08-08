@@ -109,6 +109,18 @@ def inherited_a2_loss_weights(*, seed: int, arm: str) -> tuple[dict[str, float],
     return weights, source
 
 
+def prepare_arm_private_dir(private_dir: Path, *, seed: int, arm: str) -> Path:
+    """Create and verify the durable per-arm directory before model execution."""
+    path = private_dir / f"seed_{seed}_{arm}"
+    path.mkdir(parents=True, exist_ok=True)
+    probe = path / ".option_b_write_preflight.tmp"
+    probe.write_bytes(b"option-b-write-preflight\n")
+    if probe.read_bytes() != b"option-b-write-preflight\n":
+        raise RuntimeError(f"Option B private directory write preflight failed: {path}")
+    probe.unlink()
+    return path
+
+
 def load_training_lock() -> tuple[dict[str, Any], dict[str, Any]]:
     registration = json.loads(REGISTRATION.read_text(encoding="utf-8"))
     if registration.get("status") != EXPECTED_STATUS:
@@ -387,11 +399,11 @@ def run_arm(
     constants = registration["fixed_constants"]
     splice = int(registration["post_generation_hash_amendment"]["recorded_splice_step"])
     target_steps = int(constants["steps"])
-    arm_private = private_dir / name
+    arm_private = prepare_arm_private_dir(private_dir, seed=seed, arm=arm)
     resume_path = arm_private / "resume.pt"
     embedding = nn.Embedding.from_pretrained(embedding_weight.float(), freeze=True).to(device)
     teacher_embedding = nn.Embedding.from_pretrained(teacher_weight.float(), freeze=True).to(device)
-    module, source = _endpoint_module(
+    module, _source = _endpoint_module(
         seed=seed,
         arm=arm,
         a1_checkpoint=a1_checkpoint,

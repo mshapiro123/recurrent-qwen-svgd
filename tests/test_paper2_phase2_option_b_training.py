@@ -13,6 +13,7 @@ from training.run_paper2_phase2_option_b import (
     load_training_lock,
     merge_caches,
     normalized_lf_sha256,
+    prepare_arm_private_dir,
 )
 
 
@@ -99,6 +100,17 @@ def test_option_b_inherits_exact_a2_loss_weights_from_lock_and_public_receipts()
         assert len(full_source["a2_registration_canonical_json_sha256"]) == 64
 
 
+def test_option_b_creates_and_can_write_each_private_arm_directory(tmp_path: Path) -> None:
+    private_root = tmp_path / "private" / "option_b"
+    for seed in (0, 1):
+        for arm in ("full_a2", "draft_only_control"):
+            arm_dir = prepare_arm_private_dir(private_root, seed=seed, arm=arm)
+            row_path = arm_dir / "rows_fixed_evaluation_step_00000.pt"
+            torch.save({"seed": seed, "arm": arm}, row_path)
+            assert torch.load(row_path, weights_only=False) == {"seed": seed, "arm": arm}
+            assert not (arm_dir / ".option_b_write_preflight.tmp").exists()
+
+
 def test_learning_rate_matches_locked_warmup_plateau_and_cooldown() -> None:
     constants = json.loads(
         (ROOT / "training/paper2_phase2_option_b_preregistration.json").read_text(
@@ -135,11 +147,12 @@ def test_launcher_is_wired_with_resume_and_scientific_boundaries() -> None:
         encoding="utf-8"
     )
     for marker in (
-        "paper2_phase2_option_b_v4",
+        "paper2_phase2_option_b_v5",
         "four A2 endpoint arms fresh AdamW state exact step 4000 splice",
         "fixed evaluation excluded from both training populations",
         "teacher summary normalized Git-LF plus canonical JSON integrity",
         "A2 loss weights inherited from locked contract and public receipts",
+        "per-arm Drive directory write preflight before model execution",
     ):
         assert marker in bootstrap or marker in cell
     assert "checkpoint_step_" in training
