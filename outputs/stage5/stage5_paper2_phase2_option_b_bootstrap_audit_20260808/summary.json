@@ -1,0 +1,370 @@
+{
+  "audit_reason": {
+    "disposition": "preserve source receipt and issue corrected CI-qualified reading",
+    "governing_requirement": "positive second-half exposure slope with a document-bootstrap 95 percent interval excluding zero",
+    "landed_implementation": "positive point estimate only"
+  },
+  "bootstrap": {
+    "combined_scope": "descriptive mean conditional on the two registered seeds",
+    "confidence_level": 0.95,
+    "evaluation_anchors": 8031,
+    "method": "paired percentile cluster bootstrap",
+    "replicates": 10000,
+    "seed": 20260808,
+    "seed_inference": false,
+    "unique_documents": 85,
+    "unit": "document"
+  },
+  "combined_descriptive": {
+    "control_dose": {
+      "ci_excludes_zero_positive": false,
+      "document_bootstrap_95_ci": [
+        -0.00012677510950150905,
+        0.0005887344544153406
+      ],
+      "estimate": 0.0002560262653125145
+    },
+    "control_fresh": {
+      "ci_excludes_zero_positive": true,
+      "document_bootstrap_95_ci": [
+        0.0014502211764588799,
+        0.0027061234106611127
+      ],
+      "estimate": 0.0020967682776876773
+    },
+    "endpoint_relative": {
+      "ci_excludes_zero_positive": true,
+      "document_bootstrap_95_ci": [
+        0.0031348592127159202,
+        0.005584807710500364
+      ],
+      "estimate": 0.004233258850559303
+    },
+    "full_dose": {
+      "ci_excludes_zero_positive": true,
+      "document_bootstrap_95_ci": [
+        0.0006139443001163592,
+        0.0014586463747765983
+      ],
+      "estimate": 0.0010491419402608448
+    },
+    "full_fresh": {
+      "ci_excludes_zero_positive": true,
+      "document_bootstrap_95_ci": [
+        0.0022434226579998357,
+        0.003586283389191257
+      ],
+      "estimate": 0.0028932409133508585
+    },
+    "full_late": {
+      "ci_excludes_zero_positive": true,
+      "document_bootstrap_95_ci": [
+        8.552827994299413e-05,
+        0.00029647059614068403
+      ],
+      "estimate": 0.00019004272453573482
+    },
+    "gap_growth": {
+      "ci_excludes_zero_positive": true,
+      "document_bootstrap_95_ci": [
+        0.0035668374365213696,
+        0.0074062777985071685
+      ],
+      "estimate": 0.005354425813580921
+    },
+    "late_gap": {
+      "ci_excludes_zero_positive": false,
+      "document_bootstrap_95_ci": [
+        -3.125092055597866e-05,
+        0.00016623234121068472
+      ],
+      "estimate": 6.187915005553066e-05
+    }
+  },
+  "corrected_scripted_reading": {
+    "e1_support_in_any_seed": true,
+    "e1_support_in_both_seeds": true,
+    "interpretation": "curve_supports_E1_recipe_transfer",
+    "writeback_retained_for_e1": true
+  },
+  "do_not_claim": [
+    "document bootstrap supplies inference over seeds",
+    "DEV accepted length is serving throughput",
+    "this single splice is a general unique-data scaling law",
+    "a flat curve proves architectural impossibility"
+  ],
+  "kind": "paper2_phase2_option_b_document_bootstrap_audit_v1",
+  "method": {
+    "document": "docs/PAPER2_PHASE2_OPTION_B_BOOTSTRAP_AUDIT_METHOD_20260808.md",
+    "document_sha256": "db5d42b47b879c219be3123ffd8ece2853ff22264c95f381ab6b70894712a9b0",
+    "fixed_before_audit": true
+  },
+  "mode": "read_only_cpu_post_processing",
+  "model_loaded": false,
+  "optimizer_updates": 0,
+  "row_receipt_sha256": {
+    "seed_0_draft_only_control": {
+      "0": "9c9a1d851a83d8ada93abe0d9ceb9c9d2c8ea10c44053ed8ea010a13265339d1",
+      "10000": "ed4e72d70daf8eaa02797d0cc6f5e60b7a4ba82bcaa55f468f75b636df5e7355",
+      "11000": "628585af98df416e3c2b48cec4474d4f355376685bf16f51e937b7fddff8de46",
+      "12000": "f796d6d5e34e834c4da9f08799ab756ae3defe24e58354299d4637656c613488",
+      "13000": "dd2921ee86336ba9ee772750dc5a2503e6ade6524299e09992fe8722bda9489d",
+      "14000": "ff0039986417ce8c3b34cc1b9fb237e1f19a5b279a8f52c11350ecfe13786b2a",
+      "15000": "ab7b770fc384317af55e8fce2a7ecd320bb30add96a908b5ddbda3c73e28e72b",
+      "16000": "8b7573585a4360eab1b7685e3c32c71dba85889aab3f6783c37ef56be032814f",
+      "17000": "57cf439841f679281fd46ebc6fe291dbe111c02eaf2154880322a028162efe66",
+      "18000": "d23f39b321b7d20b8d1a0792f3abcff5039178f55ec60e98bb4b7db769b73c2b",
+      "19000": "7f3399a49eb93ee86759b2df5d2c127309c47d40762ff04b533d406428cd10f7",
+      "2000": "d1bc8d185fe61df15a43b24ac6307177aa199a0eec4176bd2b904249bc53f6b6",
+      "20000": "61bbc1b93a5014aba38154fbc066cc313a2225f68e9222aa38e512ec02150be6",
+      "4000": "254d9d0e156165e02495c8c31d7e1b1a6ad77b2f684953927801af9f267d7db8",
+      "6000": "30bd7556ac53040eccbbf7bd273f46acf30c218fbce7b07b15a941602ed3ffc7"
+    },
+    "seed_0_full_a2": {
+      "0": "74109c95deb3a4bab80f6dbdc70254f742d2793c9185881bb125488d695aa469",
+      "10000": "83ac3d71fae4dc934419fa08b6e0ec9f0d2db28123438d6c1d70c908fc95d42d",
+      "11000": "4e0bbfeb08e06bc66d1a50826b5cdbd6ab892c55ca48ef484050433f36693632",
+      "12000": "021bd95c2338f7fd55fc0b5817726af60e54fc274d4a68f57ce2fb1b6e2b4041",
+      "13000": "85ecd7350ddafe63176193139ca4a7a10758262853c28d9e0f9beb5543121853",
+      "14000": "4d98d82492354f9e4d8b7c7e05b4f65bf1f0c512ab65e52ab299459860dcb86d",
+      "15000": "68d62d3869a581f2c913a76ac663a444ab35c65093be10273aa003438823c5c9",
+      "16000": "ff51d79cc8a442b264c82ea37c2b7969264b5296a3438bfc3d769366762a1600",
+      "17000": "5e52287704d320b1a59dd994ebc0165ae9abdc6eddfcc5f35d9c31443746fd4f",
+      "18000": "796a3a96dc371633823ca3dbc77fc16c86cc3c291a908f3c31c79077ee8d4cd4",
+      "19000": "8b7d6580717a284d2453fa376476d8a1ccc2f9a8fa42081d6d17722ffa58b97e",
+      "2000": "0335c611c06baa6bc01e052f9a52d976ed2a369d42df0b49da574010f82bee93",
+      "20000": "5b86300a0cd56407f3ca9b4943e36163d11c5f51bf87c3dd3d0a424c4d8bfc02",
+      "4000": "930ac1e104745703d53f83a21942f74bd86c3b9b72ecaa0318f37eea506ca2a4",
+      "6000": "39718992f01734244113db4b3265db393988036aab7a4433b7153a74d48f4345"
+    },
+    "seed_1_draft_only_control": {
+      "0": "d408593431f523c34e764d05c581799d2ed720bf17c5e1c3fe03ca6cede80b00",
+      "10000": "1459a08e485ae1692addf497bb0c72eae50ba8ac8acc2d45f8ec310824ae8496",
+      "11000": "74da878ab1422de1b3c4fc8ef26b5e40fb2f96f15fc45f884fe51372899884e2",
+      "12000": "c41a1fb7d94b8e778c19f11f39c1466248b43b248674d8c6fa2fefb1fd843b25",
+      "13000": "c80b51f8a3907c57058a3a897fcae6ef25e2b60cf4404b7d11dfc660b1185a31",
+      "14000": "abf1dd946daa4c4444148ab9fff028527564f002f74c525f1660d43519db55b1",
+      "15000": "9511227e3ab9cfa27763c4bd84f2b0fad23992d176017b3d3692c4fca01f5753",
+      "16000": "234e0b4ab4f856a8dee7361e4dddfd92561ac16b19f9c83f1ea33653aaa6ff77",
+      "17000": "6d1071207773917128742eef7d8d01ede3cab8c0ae34e290baee72ac97b4762a",
+      "18000": "b8926bd19a240d39b755f208c50bf95b68314cda669f67effd2a57a5ac33999c",
+      "19000": "a14443f45b6ba48f52514468775d100dda7da3ca6573ac43173e2934fa2e64a5",
+      "2000": "2934d7f393e5aa7f7ca67fb8c314f388b20808336d8fce89c0893c90b0aaa22e",
+      "20000": "a84ad0f3ac8522e1cb0a8b061a77bb5e5288ac2dc4e64ab58fa304bf817f1e45",
+      "4000": "675f18f3299e28cbb3615c26fbb201a548c2abe5c25dccc6efaafdb020a79673",
+      "6000": "009caddcdd3da9a0063e9977eb4ac26523d925488ec51c017116a0c9eb982483"
+    },
+    "seed_1_full_a2": {
+      "0": "a8f340a915adf08e731a9681008e2160382df27d8580d4cc6e91d0e8f930c758",
+      "10000": "e4452f1ee61c59c458fc765090afa5a2ea69e119d8c9d14714e94f472c724b0a",
+      "11000": "be6790a1c3304d242e1ee70bf305173d9f372bb6bf24835fcf289a97ed0b56fc",
+      "12000": "0035ccb857213dd977659223fafe2757add83e5f553608a3ec58e0ccb43474a9",
+      "13000": "b2b0c07437e4d968a003baa1879b85df8ad334fc924b6abb372536b14539cefa",
+      "14000": "093e755ba1d350275b1b9cab0ca1599b3c4b1cb03b714a8a365830f43b8d26b3",
+      "15000": "0677653015f44e9c70d7da9b8411c2e7ed7bdbe7ea9d94a783bb9077d98ad34c",
+      "16000": "c0bcfab35ae532df49f87ddc5d7cefff142c6a218af80d6a5ac315024cbdd0f3",
+      "17000": "bb88a72e1ed150e9b1b46cd41485dfa764c11844b64c42d1bd2911fc61f5cd9e",
+      "18000": "2e2fb5c9529c1935a5417c7b8bd347861ee9b99bae7a1f0567b44819080ef7e6",
+      "19000": "4eea3fe1c11fd7e6631186b9806b3034aaf2deb5e40697db4f307053c44f0c22",
+      "2000": "59a5595a087f1143d2db579edd3ef1e2945fc4d03b3f8e923293db1cca607843",
+      "20000": "08cefd8806e36b77e94de86e149909a00b5761a88b94f4dfcd9b4a2bc50ae7e7",
+      "4000": "2e07bb5728e1d86ac1fd9c15f1517da399f42ee2d9eb46f50aabcbb8c2639799",
+      "6000": "02a32f11c096222ad1af1fd144a48d467138a302ed3efcda3451bb663362d1c4"
+    }
+  },
+  "seeds": [
+    {
+      "control_segment_slopes": {
+        "dose_pre_splice_eal_per_1000": {
+          "ci_excludes_zero_positive": false,
+          "document_bootstrap_95_ci": [
+            -0.00031919237484365757,
+            0.0005001064356357607
+          ],
+          "estimate": 0.00011354881953007379
+        },
+        "fresh_and_dose_intervals_separated": true,
+        "fresh_minus_dose_eal_per_1000": {
+          "ci_excludes_zero_positive": true,
+          "document_bootstrap_95_ci": [
+            0.0017712068170076091,
+            0.003513444698748133
+          ],
+          "estimate": 0.0026145051205925807
+        },
+        "fresh_post_splice_eal_per_1000": {
+          "ci_excludes_zero_positive": true,
+          "document_bootstrap_95_ci": [
+            0.0020547904839378545,
+            0.0033694458420467917
+          ],
+          "estimate": 0.0027280539401226545
+        }
+      },
+      "corrected_e1_support": true,
+      "endpoint_relative_full_gain": {
+        "ci_excludes_zero_positive": true,
+        "document_bootstrap_95_ci": [
+          0.0023980305642411063,
+          0.004768317327332648
+        ],
+        "estimate": 0.003506550348321765
+      },
+      "full_second_half_exposure_slope_eal_per_1000": {
+        "ci_excludes_zero_positive": true,
+        "document_bootstrap_95_ci": [
+          0.00010433516354000815,
+          0.00035075315281340265
+        ],
+        "estimate": 0.00022761283765956622
+      },
+      "full_system_segment_slopes": {
+        "dose_pre_splice_eal_per_1000": {
+          "ci_excludes_zero_positive": true,
+          "document_bootstrap_95_ci": [
+            0.00010556221945432773,
+            0.0011379198057783369
+          ],
+          "estimate": 0.0006319629630882062
+        },
+        "fresh_and_dose_intervals_separated": true,
+        "fresh_minus_dose_eal_per_1000": {
+          "ci_excludes_zero_positive": true,
+          "document_bootstrap_95_ci": [
+            0.0019481974369846612,
+            0.004058922614753762
+          ],
+          "estimate": 0.002951221227824652
+        },
+        "fresh_post_splice_eal_per_1000": {
+          "ci_excludes_zero_positive": true,
+          "document_bootstrap_95_ci": [
+            0.0027776119177285036,
+            0.004438403341075372
+          ],
+          "estimate": 0.003583184190912858
+        }
+      },
+      "one_percent_endpoint_gain": false,
+      "seed": 0,
+      "writeback_gap_growth_step_0_to_20000": {
+        "ci_excludes_zero_positive": true,
+        "document_bootstrap_95_ci": [
+          0.0031856011580029377,
+          0.007201308593971845
+        ],
+        "estimate": 0.005106326581944209
+      },
+      "writeback_gap_second_half_slope_eal_per_1000": {
+        "ci_excludes_zero_positive": false,
+        "document_bootstrap_95_ci": [
+          -2.3433904111229782e-05,
+          0.0001741707757414036
+        ],
+        "estimate": 7.104776078283656e-05
+      }
+    },
+    {
+      "control_segment_slopes": {
+        "dose_pre_splice_eal_per_1000": {
+          "ci_excludes_zero_positive": false,
+          "document_bootstrap_95_ci": [
+            -2.1273268304694513e-05,
+            0.0007914130547735874
+          ],
+          "estimate": 0.0003985037110949552
+        },
+        "fresh_and_dose_intervals_separated": true,
+        "fresh_minus_dose_eal_per_1000": {
+          "ci_excludes_zero_positive": true,
+          "document_bootstrap_95_ci": [
+            0.0001795666810834714,
+            0.0019401260806218618
+          ],
+          "estimate": 0.0010669789041577449
+        },
+        "fresh_post_splice_eal_per_1000": {
+          "ci_excludes_zero_positive": true,
+          "document_bootstrap_95_ci": [
+            0.0007933405840976407,
+            0.0020830292954236605
+          ],
+          "estimate": 0.0014654826152527
+        }
+      },
+      "corrected_e1_support": true,
+      "endpoint_relative_full_gain": {
+        "ci_excludes_zero_positive": true,
+        "document_bootstrap_95_ci": [
+          0.003700414250529522,
+          0.006552979411515262
+        ],
+        "estimate": 0.004959967352796841
+      },
+      "full_second_half_exposure_slope_eal_per_1000": {
+        "ci_excludes_zero_positive": true,
+        "document_bootstrap_95_ci": [
+          4.136953261768694e-05,
+          0.00026352566206018296
+        ],
+        "estimate": 0.00015247261141190338
+      },
+      "full_system_segment_slopes": {
+        "dose_pre_splice_eal_per_1000": {
+          "ci_excludes_zero_positive": true,
+          "document_bootstrap_95_ci": [
+            0.0009618603063076604,
+            0.001971092386330239
+          ],
+          "estimate": 0.0014663209174334835
+        },
+        "fresh_and_dose_intervals_separated": false,
+        "fresh_minus_dose_eal_per_1000": {
+          "ci_excludes_zero_positive": false,
+          "document_bootstrap_95_ci": [
+            -0.00017131944709169696,
+            0.0015722179521736545
+          ],
+          "estimate": 0.0007369767183553755
+        },
+        "fresh_post_splice_eal_per_1000": {
+          "ci_excludes_zero_positive": true,
+          "document_bootstrap_95_ci": [
+            0.0015533695885277365,
+            0.002834094695687428
+          ],
+          "estimate": 0.002203297635788859
+        }
+      },
+      "one_percent_endpoint_gain": false,
+      "seed": 1,
+      "writeback_gap_growth_step_0_to_20000": {
+        "ci_excludes_zero_positive": true,
+        "document_bootstrap_95_ci": [
+          0.0036358500337536743,
+          0.007902539034960954
+        ],
+        "estimate": 0.005602525045217632
+      },
+      "writeback_gap_second_half_slope_eal_per_1000": {
+        "ci_excludes_zero_positive": false,
+        "document_bootstrap_95_ci": [
+          -5.6634869728180636e-05,
+          0.0001742739463827632
+        ],
+        "estimate": 5.271053932822476e-05
+      }
+    }
+  ],
+  "source": {
+    "source_receipt_kind": "paper2_phase2_option_b_matrix_v1",
+    "source_scripted_reading": {
+      "e1_support_in_any_seed": true,
+      "e1_support_in_both_seeds": true,
+      "interpretation": "curve_supports_E1_recipe_transfer"
+    },
+    "summary": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_paper2_phase2_option_b_20260807/summary.json",
+    "summary_sha256": "de62445fc029956f445cd4789c494d9fa6de3a92aec98a6cffd25d30235f66f4"
+  },
+  "status": "complete"
+}
