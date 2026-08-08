@@ -1,8 +1,8 @@
-# Phase 2 E1 Confirmation Preregistration Draft
+# Phase 2 E1 Confirmation Preregistration
 
-Date: 2026-08-08. Status: **draft, not locked, evaluation prohibited**.
+Date: 2026-08-08. Status: **locked before E1 scoring; evaluation authorized only under this registration**.
 
-This draft implements the ratified E1 charter without spending EVAL-D. The commit containing the eventual completed preregistration is the lock. This draft commit is not the lock because the Option-B-compatible EVAL-D cache and its readiness receipt do not yet exist.
+This registration implements the ratified E1 charter without spending EVAL-D. The commit containing this completed preregistration is the lock. The Option-B-compatible EVAL-D cache, sparse-support QC, readiness receipt, and endpoint semantic identities all landed before this lock; each records `read_once_scoring_spent=false`.
 
 ## 1. Question
 
@@ -14,12 +14,12 @@ E1 is a one-shot confirmation pass. It is not another optimization stage, a sele
 
 The following final Option B checkpoints are the only admissible systems:
 
-| Seed | Arm | SHA-256 |
-|---:|---|---|
-| 0 | full system with writeback | `c1f5a6f217342ad721267a08d16c1bca75c8308d03f471db9d28ff3f319c777f` |
-| 0 | drafter-only control | `8c9a7f6573bd268d67592b271a1b10a37c1f882681dc20efdbd8e9a5232bd681` |
-| 1 | full system with writeback | `ccebda5c0b4bb1832194f690075b0be9ac1a96c557e63978ebb97a8632d278f7` |
-| 1 | drafter-only control | `b26ca18e76fc60a622d6056b2957d31ee37e0c6c26dde88a3250b9bbd54a2424` |
+| Seed | Arm | File SHA-256 | Semantic trainable-state SHA-256 |
+|---:|---|---|---|
+| 0 | full system with writeback | `c1f5a6f217342ad721267a08d16c1bca75c8308d03f471db9d28ff3f319c777f` | `d47bd4094846c4ac540cbeb418fe24e05734557d9f9e3fa226e7f0c2b7f066f5` |
+| 0 | drafter-only control | `8c9a7f6573bd268d67592b271a1b10a37c1f882681dc20efdbd8e9a5232bd681` | `e190080c98529fcb8e8adafad6c6439daa26c6959b799b94d23d198daf276a48` |
+| 1 | full system with writeback | `ccebda5c0b4bb1832194f690075b0be9ac1a96c557e63978ebb97a8632d278f7` | `3ad55c17fe82afa0cf3b66533ba6ffec7864b8e13db68fb9dfc287b7a513ed31` |
+| 1 | drafter-only control | `b26ca18e76fc60a622d6056b2957d31ee37e0c6c26dde88a3250b9bbd54a2424` | `bc2a0034687dcc64b8bebb7a9ca24bd351152d638a3b5c898ba7b5cb1e130181` |
 
 All model parameters and buffers are frozen. The runner must hash each file and the sorted trainable-state tensor payload before evaluation, then repeat both checks after evaluation. No optimizer may be constructed. No parameter may have `requires_grad=True`.
 
@@ -42,7 +42,7 @@ The pre-window EVAL-D files were never materialized at the registered durable pa
 
 The frozen population contains exactly 8,000 anchors, 4,000 general and 4,000 code. Selection uses the existing Stage 0A non-overlapping rule: enumerate every eligible `(row_id, prediction_position)` whose four-horizon span stays within one row; rank within stratum by SHA-256 of `20260808:row_id:prediction_position`; greedily retain non-overlapping four-position spans; then take the first 4,000 per stratum. The row-major reorder used for efficient teacher passes occurs only after selection and cannot change membership. Membership is asserted against the frozen EVAL-D data and document-partition hashes.
 
-The readiness receipt must record the final anchor count, document count, per-stratum counts, data hash, sample-manifest hash, position-key hash, private cache hash, source-model revisions, canonicalizer hash, cascade fraction, admission-ledger hash, and zero overlap with all quarantined documents. These receipt-derived hashes and counts remain blank in the machine draft until the cache exists.
+The readiness chain records 8,000 anchors across 132 documents, 4,000 anchors per stratum, all required data and cache hashes, source-model revisions, the canonicalizer identity, an 18.35% cascade fraction, the admission-ledger identity, and zero overlap with every quarantined document set. The sparse-support audit reports finite integrity metrics and explicit support-mismatch rates; it does not expose an E1 outcome.
 
 Cache generation is strictly score-blind. The base 0.5B forward may materialize only the hidden states and sparse log-probability tensors required by the frozen Option B cache schema. No Option B endpoint checkpoint is loaded, and no correctness, EAL, retention, acceptance, arm comparison, or student-teacher quality aggregate is computed or emitted. Public products are limited to hashes, counts, pinned model revisions, cascade fraction, and integrity telemetry. The private tensor cache and admission ledger are infrastructure, not an evaluation result.
 
@@ -109,19 +109,11 @@ No population edits, threshold changes, additional arms, or reruns are allowed a
 
 ## 10. Resource note
 
-Cache generation is separate from E1 scoring. The Option-B-compatible EVAL-D cache requires the pinned 14B and cascade teacher path and is expected to require an A100 80GB class runtime plus local scratch. The final E1 scorer is evaluation-only and is expected to fit an A100 40GB runtime after a score-blind one-batch memory preflight; the locked resource note must record the observed peak and may conservatively require 80GB if that preflight is not run.
+Cache generation is separate from E1 scoring. The Option-B-compatible EVAL-D cache requires the pinned 14B and cascade teacher path and an A100 80GB class runtime plus local scratch. The final E1 scorer is evaluation-only. No endpoint-bearing score-blind memory preflight was run, so this lock conservatively requires an A100 80GB runtime.
 
-## 11. Lock blockers
+## 11. Lock closure
 
-The following must be closed before the lock commit:
-
-1. Generate the ratified 8,000-anchor Option-B-compatible EVAL-D cache without endpoint scoring or quality aggregates.
-2. Land and hash the EVAL-D readiness receipt, including document count and the exact DEV-mixture comparison weights.
-3. Fill the machine preregistration's EVAL-D hash and receipt transcription fields.
-4. Run the readiness checker with result `ready_to_lock=true`.
-5. Fix the scorer source SHA, resource note, and rule-inventory SHA in the lock commit.
-
-Until then: `locked_before_e1_scoring=false`, `e1_evaluation_authorized=false`, and `read_once_scoring_spent=false`.
+All five lock blockers are closed. The machine registration carries the EVAL-D hashes, DEV-mixture weights, exact evaluator and rule-inventory hashes, four endpoint file and semantic identities, and the conservative A100 80GB requirement. The final score-blind readiness checker returned `ready_to_lock=true` with no blockers. At lock: `locked_before_e1_scoring=true`, `e1_evaluation_authorized=true`, and `read_once_scoring_spent=false`.
 
 ## 12. Do-not-claim boundaries
 

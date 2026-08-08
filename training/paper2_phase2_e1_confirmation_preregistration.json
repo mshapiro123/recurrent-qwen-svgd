@@ -1,10 +1,10 @@
 {
   "kind": "paper2_phase2_e1_confirmation_preregistration",
-  "version": "e1_confirmation_draft_v1_20260808",
+  "version": "e1_confirmation_locked_v1_20260808",
   "date": "2026-08-08",
-  "status": "draft_awaiting_option_b_compatible_eval_d_not_locked",
-  "locked_before_e1_scoring": false,
-  "e1_evaluation_authorized": false,
+  "status": "locked_before_e1_scoring",
+  "locked_before_e1_scoring": true,
+  "e1_evaluation_authorized": true,
   "training_authorized": false,
   "governing_documents": {
     "charter": {
@@ -22,7 +22,7 @@
       "path": "docs/STRATEGY_TO_CODING_AGENT_E1_EVALD_RATIFICATION_20260808.md",
       "sha256": "19ce4bd5c8e665806b416b872396d9d0fe149555f05dbbd2704d7d4cd192fe33"
     },
-    "human_preregistration_draft": "docs/PAPER2_PHASE2_E1_CONFIRMATION_PREREGISTRATION_DRAFT_20260808.md"
+    "human_preregistration": "docs/PAPER2_PHASE2_E1_CONFIRMATION_PREREGISTRATION_LOCKED_20260808.md"
   },
   "source": {
     "option_b_result_commit": "ce79e913e041276f19d2b92d19d2c46cc12f6f40",
@@ -33,19 +33,27 @@
   "checkpoints": {
     "seed_0_full_a2": {
       "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_option_b_20260807/private/option_b/seed_0_full_a2/resume.pt",
-      "sha256": "c1f5a6f217342ad721267a08d16c1bca75c8308d03f471db9d28ff3f319c777f"
+      "sha256": "c1f5a6f217342ad721267a08d16c1bca75c8308d03f471db9d28ff3f319c777f",
+      "semantic_trainable_state_digest": "d47bd4094846c4ac540cbeb418fe24e05734557d9f9e3fa226e7f0c2b7f066f5",
+      "expected_step": 20000
     },
     "seed_0_draft_only_control": {
       "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_option_b_20260807/private/option_b/seed_0_draft_only_control/resume.pt",
-      "sha256": "8c9a7f6573bd268d67592b271a1b10a37c1f882681dc20efdbd8e9a5232bd681"
+      "sha256": "8c9a7f6573bd268d67592b271a1b10a37c1f882681dc20efdbd8e9a5232bd681",
+      "semantic_trainable_state_digest": "e190080c98529fcb8e8adafad6c6439daa26c6959b799b94d23d198daf276a48",
+      "expected_step": 20000
     },
     "seed_1_full_a2": {
       "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_option_b_20260807/private/option_b/seed_1_full_a2/resume.pt",
-      "sha256": "ccebda5c0b4bb1832194f690075b0be9ac1a96c557e63978ebb97a8632d278f7"
+      "sha256": "ccebda5c0b4bb1832194f690075b0be9ac1a96c557e63978ebb97a8632d278f7",
+      "semantic_trainable_state_digest": "3ad55c17fe82afa0cf3b66533ba6ffec7864b8e13db68fb9dfc287b7a513ed31",
+      "expected_step": 20000
     },
     "seed_1_draft_only_control": {
       "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_option_b_20260807/private/option_b/seed_1_draft_only_control/resume.pt",
-      "sha256": "b26ca18e76fc60a622d6056b2957d31ee37e0c6c26dde88a3250b9bbd54a2424"
+      "sha256": "b26ca18e76fc60a622d6056b2957d31ee37e0c6c26dde88a3250b9bbd54a2424",
+      "semantic_trainable_state_digest": "bc2a0034687dcc64b8bebb7a9ca24bd351152d638a3b5c898ba7b5cb1e130181",
+      "expected_step": 20000
     }
   },
   "evaluation": {
@@ -93,15 +101,20 @@
       "identical_document_multiplicities_across_arms_and_seeds": true
     },
     "scorer_source": "training/run_paper2_phase2_a2.py:evaluate",
-    "scorer_source_sha256": null,
+    "scorer_source_sha256": "54319f829f36e592846f228f3e9b16e7ddba85a35a214682642358f0f74d6345",
     "option_b_cache_schema_required": "paper2_phase2_matched_alpha_cache_v1",
     "actual_anchor_count": 8000,
-    "actual_document_count": null,
-    "data_sha256": null,
-    "position_key_sha256": null,
-    "private_cache_sha256": null,
-    "canonicalizer_sha256": null,
-    "readiness_receipt_sha256": null,
+    "actual_document_count": 132,
+    "data_sha256": "13722464d99627b246bef5983c7c2dad8a54f6f9e4d1cc91a4826a9ca45d71b8",
+    "sample_manifest_sha256": "dbda648920b45bb4508aeb13f47beed5cf00dfaadcd30cb63ce125ce4b7d6d54",
+    "position_key_sha256": "ce409b004133cc6efde2bb6540b4939f8cbe7eafd7acb6a7be5ba61ffa8b9f5c",
+    "private_cache_sha256": "8b58d1f2647028c229f6ac94d0c1e0fafcb4638f9b6c2e5803c5e7ec5a35eed6",
+    "canonicalizer_sha256": "53215130a75c929def4bcc4b81ba9187d90a7b6fe2b1502391518d45c09476e3",
+    "admission_ledger_sha256": "17c4f51b1be7ba0ec366bbcfecf21bb8b3dd3920d7e6f32f4fb13e8aac4ef841",
+    "readiness_receipt_sha256": "d5114de056f5c2314f7c03413e159c89c726a1dd507c6a6e94fbe2769cca2e3c",
+    "sparse_support_qc_sha256": "ef930b2e1b29da4eec7f26c9de01bc03d2cd12fec40f6128cdfe9e74e24b8f1d",
+    "endpoint_lock_preparation_sha256": "123001091e292a2784da13fe114e94067978c7889718a6ade890d62f4f5eb867",
+    "eval_d_freeze_receipt_sha256": "675d27401b14b7c8bdaa0b15f0a58bfdaed3acd4032973c5ff68519d98337e68",
     "score_blind_cache_contract": {
       "endpoint_checkpoints_loaded": false,
       "base_student_forward_role": "tensor_cache_materialization_only_no_quality_or_outcome_scoring",
@@ -148,7 +161,10 @@
   "dev_mixture_reweighted_secondary": {
     "metric": "relative_mean_eal_gain_full_over_matched_control",
     "weights_source": "immutable_stage0a_dev_manifest_under_document_partition_seed_20260804",
-    "weights": null,
+    "weights": {
+      "general": 0.47366454986925666,
+      "code": 0.5263354501307433
+    },
     "role": "direct_comparability_with_option_b_dev_effect_not_a_primary_gate"
   },
   "scripted_readings": {
@@ -161,15 +177,34 @@
   "rule_inventory": "training/paper2_phase2_e1_confirmation_rule_inventory.json",
   "resource_note": {
     "cache_generation": "A100_80GB_expected_due_to_pinned_teacher_lattice",
-    "e1_scoring": "A100_40GB_expected_pending_score_blind_one_batch_preflight"
+    "e1_scoring": "A100_80GB_required_conservatively_no_score_blind_endpoint_memory_preflight_run"
   },
-  "lock_blockers": [
-    "option_b_compatible_eval_d_cache_missing",
-    "eval_d_readiness_receipt_missing",
-    "eval_d_document_count_unfilled",
-    "dev_mixture_reweighting_weights_unfilled",
-    "eval_d_hash_transcription_unfilled",
-    "scorer_source_hash_unfilled",
-    "resource_preflight_unfilled"
-  ]
+  "lock_artifacts": {
+    "rule_inventory": {
+      "path": "training/paper2_phase2_e1_confirmation_rule_inventory.json",
+      "sha256": "4525f726c886f0bd41d359c0cdb585a3f45ce73eb019be432570ec75b6c889a6"
+    },
+    "eval_d_freeze": {
+      "path": "outputs/stage5/stage5_paper2_phase2_e1_eval_d_20260808/receipts/e1_eval_d_freeze_summary.json",
+      "sha256": "675d27401b14b7c8bdaa0b15f0a58bfdaed3acd4032973c5ff68519d98337e68"
+    },
+    "readiness": {
+      "path": "outputs/stage5/stage5_paper2_phase2_e1_eval_d_20260808/receipts/e1_readiness.json",
+      "sha256": "d5114de056f5c2314f7c03413e159c89c726a1dd507c6a6e94fbe2769cca2e3c"
+    },
+    "sparse_support_qc": {
+      "path": "outputs/stage5/stage5_paper2_phase2_e1_eval_d_20260808/receipts/e1_sparse_support_qc.json",
+      "sha256": "ef930b2e1b29da4eec7f26c9de01bc03d2cd12fec40f6128cdfe9e74e24b8f1d"
+    },
+    "endpoint_lock_preparation": {
+      "path": "outputs/stage5/stage5_paper2_phase2_e1_eval_d_20260808/receipts/e1_endpoint_lock_preparation.json",
+      "sha256": "123001091e292a2784da13fe114e94067978c7889718a6ade890d62f4f5eb867"
+    }
+  },
+  "lock_transport": {
+    "hash_convention": "git_lf_bytes_sha256",
+    "read_once_scoring_spent_at_lock": false,
+    "eval_e_touched": false
+  },
+  "lock_blockers": []
 }

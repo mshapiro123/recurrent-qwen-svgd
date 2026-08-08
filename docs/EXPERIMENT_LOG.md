@@ -1847,3 +1847,15 @@ Colab/Drive backups for selected runs.
   partition seed 20260731, while adding every later training and DEV document
   set to quarantine. It leaves EVAL-E untouched and freezes the resulting data
   hash before the unchanged score-blind teacher/cache pass.
+- 2026-08-08 E1 score-blind lock closure: the compatible EVAL-D cache landed
+  with 8,000 balanced anchors in 132 documents, all required sparse-lattice
+  fields, zero quarantined-document overlap, and `read_once_scoring_spent=false`.
+  A separate sparse-support audit replaced non-finite legacy log-error summaries
+  with finite-support errors and explicit mismatch rates without computing an
+  E1 outcome. A CPU-only endpoint pass then verified all four step-20,000 Option
+  B checkpoint containers and fixed both file hashes and semantic trainable-state
+  digests. The v2 readiness checker returned `ready_to_lock=true` with no
+  blockers. The human and machine preregistrations are now locked, the exact
+  evaluator and rule inventory are hashed, EVAL-E remains untouched, and the
+  one-shot E1 pass is authorized but unspent. Because no endpoint-bearing memory
+  preflight was run, the lock conservatively requires an A100 80GB runtime.

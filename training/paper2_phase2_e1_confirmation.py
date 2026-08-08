@@ -9,9 +9,12 @@ from typing import Any, Mapping
 
 
 ROOT = Path(__file__).resolve().parents[1]
-DRAFT_REGISTRATION = (
-    ROOT / "training/paper2_phase2_e1_confirmation_preregistration.draft.json"
+LOCKED_REGISTRATION = (
+    ROOT / "training/paper2_phase2_e1_confirmation_preregistration.json"
 )
+# Kept for the score-blind readiness CLI; after lock, callers must pass an
+# explicit historical draft if they intend to rerun the pre-lock checker.
+DRAFT_REGISTRATION = LOCKED_REGISTRATION
 RULE_INVENTORY = ROOT / "training/paper2_phase2_e1_confirmation_rule_inventory.json"
 OPTION_B_SUMMARY = (
     ROOT / "outputs/stage5/stage5_paper2_phase2_option_b_20260807/summary.json"
@@ -52,6 +55,12 @@ def sha256_file(path: str | Path) -> str:
         for block in iter(lambda: handle.read(1024 * 1024), b""):
             digest.update(block)
     return digest.hexdigest()
+
+
+def git_lf_sha256_file(path: str | Path) -> str:
+    """Hash repository text using the LF bytes materialized on Colab/Linux."""
+    payload = Path(path).read_bytes().replace(b"\r\n", b"\n")
+    return hashlib.sha256(payload).hexdigest()
 
 
 def canonical_json_sha256(payload: Any) -> str:

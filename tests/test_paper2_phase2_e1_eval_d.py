@@ -165,7 +165,7 @@ def test_eval_d_materialization_is_data_only_and_leaves_eval_e_untouched() -> No
 def test_machine_preregistration_carries_ratified_population() -> None:
     payload = json.loads(
         (
-            ROOT / "training/paper2_phase2_e1_confirmation_preregistration.draft.json"
+            ROOT / "training/paper2_phase2_e1_confirmation_preregistration.json"
         ).read_text(encoding="utf-8")
     )
     population = payload["evaluation"]["population"]

@@ -29,8 +29,8 @@ def write_json(path: Path, payload: Any) -> None:
 def prepare_endpoint_lock(
     *, registration: Path, checkpoints: dict[str, Path], output: Path
 ) -> dict[str, Any]:
-    draft = json.loads(registration.read_text(encoding="utf-8"))
-    expected = draft["checkpoints"]
+    registration_payload = json.loads(registration.read_text(encoding="utf-8"))
+    expected = registration_payload["checkpoints"]
     if set(checkpoints) != set(expected):
         raise RuntimeError("E1 endpoint-lock checkpoint set differs from draft")
     endpoints: dict[str, Any] = {}
@@ -74,8 +74,8 @@ def prepare_endpoint_lock(
         "kind": KIND,
         "version": "paper2_phase2_e1_endpoint_lock_preparation_v1_20260808",
         "status": "complete_integrity_only",
-        "registration_draft": str(registration),
-        "registration_draft_sha256": sha256_file(registration),
+        "registration": str(registration),
+        "registration_sha256": sha256_file(registration),
         "endpoints": endpoints,
         "endpoint_checkpoints_loaded_as_containers_only": True,
         "model_instantiated": False,

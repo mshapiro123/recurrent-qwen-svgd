@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "program": "paper2_causal_control_of_recurrent_computation",
-  "status": "phase1_banked_option_b_positive_dev_e1_eval_d_cache_built_awaiting_execution",
+  "status": "phase1_banked_option_b_positive_dev_e1_locked_awaiting_read_once_execution",
   "canonical_date": "2026-08-08",
   "active_queue": {
     "program_goal": "causal_arbitration_at_append_and_dispatch_interfaces",
@@ -9,8 +9,8 @@
     "t1": "two_registered_negatives_raw_endpoints_replicate_exact_in_support_causal_control_with_small_preservation_cost",
     "d0": "banked_not_recoverable_at_pilot_scale_binary_disagreement_target",
     "dc1_stage_a": "registered_none_transient_append_retires_checkpoint_archival_eval_c_spent",
-    "phase2": "option_b_banked_small_replicated_writeback_effect_e1_confirmation_draft_unlocked",
-    "dc2": "e1_score_blind_eval_d_cache_target_built_read_once_unspent",
+    "phase2": "option_b_banked_small_replicated_writeback_effect_e1_confirmation_locked",
+    "dc2": "e1_score_blind_eval_d_cache_frozen_and_locked_read_once_unspent",
     "d1": "window_closed_pending_e1_confirmation",
     "paper_two_packaging": "proceeds_on_banked_phase1_results"
   },
@@ -61,15 +61,17 @@
     "phase2_option_b_final_handoff": "docs/PAPER2_PHASE2_OPTION_B_FINAL_RESULT_HANDOFF_20260808.md",
     "phase2_e1_charter": "docs/STRATEGY_TO_CODING_AGENT_OPTION_B_CLOSE_E1_CHARTER_20260808.md",
     "phase2_e1_ratification": "docs/STRATEGY_RATIFICATION_E1_CHARTER_20260808.md",
-    "phase2_e1_preregistration_draft": "docs/PAPER2_PHASE2_E1_CONFIRMATION_PREREGISTRATION_DRAFT_20260808.md",
+    "phase2_e1_preregistration": "docs/PAPER2_PHASE2_E1_CONFIRMATION_PREREGISTRATION_LOCKED_20260808.md",
     "phase2_e1_preregistration_draft_handoff": "docs/PAPER2_PHASE2_E1_PREREGISTRATION_DRAFT_HANDOFF_20260808.md",
-    "phase2_e1_machine_draft": "training/paper2_phase2_e1_confirmation_preregistration.draft.json",
+    "phase2_e1_machine_preregistration": "training/paper2_phase2_e1_confirmation_preregistration.json",
     "phase2_e1_readiness": "outputs/stage5/stage5_paper2_phase2_e1_preregistration_20260808/readiness.json",
     "phase2_e1_eval_d_ratification": "docs/STRATEGY_TO_CODING_AGENT_E1_EVALD_RATIFICATION_20260808.md",
     "phase2_e1_eval_d_cache_config": "outputs/stage5/stage5_paper2_phase2_e1_eval_d_20260808/config/e1_eval_d_cache_config.json",
     "phase2_e1_eval_d_data_freeze": "outputs/stage5/stage5_paper2_phase2_e1_eval_d_20260808/receipts/eval_d_data_freeze.json",
     "phase2_e1_eval_d_freeze": "outputs/stage5/stage5_paper2_phase2_e1_eval_d_20260808/receipts/e1_eval_d_freeze_summary.json",
-    "phase2_e1_eval_d_readiness": "outputs/stage5/stage5_paper2_phase2_e1_eval_d_20260808/receipts/e1_readiness.json"
+    "phase2_e1_eval_d_readiness": "outputs/stage5/stage5_paper2_phase2_e1_eval_d_20260808/receipts/e1_readiness.json",
+    "phase2_e1_sparse_support_qc": "outputs/stage5/stage5_paper2_phase2_e1_eval_d_20260808/receipts/e1_sparse_support_qc.json",
+    "phase2_e1_endpoint_lock_preparation": "outputs/stage5/stage5_paper2_phase2_e1_eval_d_20260808/receipts/e1_endpoint_lock_preparation.json"
   },
   "claims": [
     {

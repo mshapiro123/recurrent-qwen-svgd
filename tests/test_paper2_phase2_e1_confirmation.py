@@ -1,24 +1,35 @@
 from __future__ import annotations
 
 import json
+import copy
 from pathlib import Path
 
 from training.paper2_phase2_e1_confirmation import (
     E1_EVAL_D_FREEZE_KIND,
     E1_SPARSE_SUPPORT_QC_KIND,
+    LOCKED_REGISTRATION,
     REQUIRED_CACHE_FIELDS,
     assess_readiness,
+    git_lf_sha256_file,
 )
 
 
 ROOT = Path(__file__).resolve().parents[1]
-REGISTRATION = ROOT / "training/paper2_phase2_e1_confirmation_preregistration.draft.json"
+REGISTRATION = LOCKED_REGISTRATION
 INVENTORY = ROOT / "training/paper2_phase2_e1_confirmation_rule_inventory.json"
 OPTION_B = ROOT / "outputs/stage5/stage5_paper2_phase2_option_b_20260807/summary.json"
 
 
 def loaded(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def draft_registration() -> dict:
+    registration = copy.deepcopy(loaded(REGISTRATION))
+    registration["status"] = "draft_awaiting_option_b_compatible_eval_d_not_locked"
+    registration["locked_before_e1_scoring"] = False
+    registration["e1_evaluation_authorized"] = False
+    return registration
 
 
 def compatible_freeze() -> dict:
@@ -85,14 +96,32 @@ def compatible_sparse_qc() -> dict:
     }
 
 
-def test_draft_is_explicitly_unlocked_with_ratified_endpoints() -> None:
+def test_registration_is_locked_with_ratified_endpoints_and_no_blockers() -> None:
     registration = loaded(REGISTRATION)
-    assert registration["locked_before_e1_scoring"] is False
-    assert registration["e1_evaluation_authorized"] is False
+    assert registration["status"] == "locked_before_e1_scoring"
+    assert registration["locked_before_e1_scoring"] is True
+    assert registration["e1_evaluation_authorized"] is True
+    assert registration["training_authorized"] is False
+    assert registration["lock_blockers"] == []
     assert registration["quality"]["point_retention_minimum"] == 0.995
     assert registration["quality"]["wilson_95_lower_minimum"] == 0.990
     assert registration["primary"]["required_seeds"] == [0, 1]
     assert len(registration["checkpoints"]) == 4
+    assert all(
+        row["expected_step"] == 20_000
+        and len(row["semantic_trainable_state_digest"]) == 64
+        for row in registration["checkpoints"].values()
+    )
+
+
+def test_lock_artifact_hashes_match_git_lf_bytes() -> None:
+    registration = loaded(REGISTRATION)
+    for artifact in registration["lock_artifacts"].values():
+        assert git_lf_sha256_file(ROOT / artifact["path"]) == artifact["sha256"]
+    scorer = registration["evaluation"]["scorer_source"].split(":", 1)[0]
+    assert git_lf_sha256_file(ROOT / scorer) == registration["evaluation"][
+        "scorer_source_sha256"
+    ]
 
 
 def test_rule_inventory_contains_only_evaluation_tripwires() -> None:
@@ -104,7 +133,7 @@ def test_rule_inventory_contains_only_evaluation_tripwires() -> None:
 
 def test_legacy_eval_d_receipt_is_rejected_as_schema_incompatible() -> None:
     result = assess_readiness(
-        registration=loaded(REGISTRATION),
+        registration=draft_registration(),
         rule_inventory=loaded(INVENTORY),
         option_b_summary=loaded(OPTION_B),
         eval_d_freeze={
@@ -119,7 +148,7 @@ def test_legacy_eval_d_receipt_is_rejected_as_schema_incompatible() -> None:
 
 def test_compatible_unscored_freeze_clears_readiness() -> None:
     result = assess_readiness(
-        registration=loaded(REGISTRATION),
+        registration=draft_registration(),
         rule_inventory=loaded(INVENTORY),
         option_b_summary=loaded(OPTION_B),
         eval_d_freeze=compatible_freeze(),
@@ -135,7 +164,7 @@ def test_score_exposure_or_missing_cache_field_blocks_lock() -> None:
     freeze["scores_exposed"] = True
     freeze["option_b_cache"]["fields"].remove("teacher_topk_ids")
     result = assess_readiness(
-        registration=loaded(REGISTRATION),
+        registration=draft_registration(),
         rule_inventory=loaded(INVENTORY),
         option_b_summary=loaded(OPTION_B),
         eval_d_freeze=freeze,
@@ -151,7 +180,7 @@ def test_score_exposure_or_missing_cache_field_blocks_lock() -> None:
 
 def test_missing_or_nonfinite_sparse_qc_blocks_lock() -> None:
     kwargs = {
-        "registration": loaded(REGISTRATION),
+        "registration": draft_registration(),
         "rule_inventory": loaded(INVENTORY),
         "option_b_summary": loaded(OPTION_B),
         "eval_d_freeze": compatible_freeze(),
