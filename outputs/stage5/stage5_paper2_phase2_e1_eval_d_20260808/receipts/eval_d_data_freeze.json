@@ -1,0 +1,69 @@
+{
+  "data": {
+    "document_id_sha256": "743b4d7d4e19f9da4ad12143ac574ff9e76d66add16ec7743e55c4ee0e637c71",
+    "documents": 132,
+    "rows": 451,
+    "sha256": "13722464d99627b246bef5983c7c2dad8a54f6f9e4d1cc91a4826a9ca45d71b8",
+    "tokens": 200000
+  },
+  "disjointness": {
+    "document_disjoint": true,
+    "documents": 132,
+    "overlap_count": 0,
+    "partition": "eval_d",
+    "prior_documents": 2382
+  },
+  "eval_e_touched": false,
+  "kind": "paper2_phase2_e1_eval_d_data_freeze_v1",
+  "models_loaded": false,
+  "optimizer_steps": 0,
+  "partition": "eval_d",
+  "partition_recipe": {
+    "dataset_revisions": {
+      "drafter": "7ae557604adf67be50417f59c2c2f167def9a775",
+      "fineweb": "87f09149ef4734204d70ed1d046ddc9ca3f2b8f9",
+      "stack_smol_main": "4a6938ce94446f324c6629e7de00ac591710044b",
+      "stack_smol_pinned": "4a6938ce94446f324c6629e7de00ac591710044b",
+      "teacher_14b": "cf98f3b3bbb457ad9e2bb7baf9a0125b6b88caa8",
+      "teacher_7b": "a09a35458c702b33eeacc393d103063234e8bc28"
+    },
+    "selection_seed": 20260731,
+    "source": "original_prewindow_eval_d_recipe",
+    "strata": {
+      "code": 100000,
+      "general": 100000
+    },
+    "token_budget": 200000,
+    "tokenizer": "Qwen/Qwen2.5-0.5B-Instruct",
+    "tokenizer_revision": "7ae557604adf67be50417f59c2c2f167def9a775"
+  },
+  "private_manifest_sha256": "33e67fa93f79cd6868d5d47428adbd8c6e8217a895a0fa9c4a4f411bd3de2d2f",
+  "quarantine": {
+    "d0_data_manifest_sha256": "72d2f6c1e286c1fedce8399040c218b5eee35c3da049e35312d9920c063e9d53",
+    "overlap": [],
+    "prior_document_count": 2382,
+    "sources": [
+      {
+        "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_dc0_20260728/private/eval_b/eval_b.jsonl",
+        "sha256": "1490cc40c025b01ef74876d7ba8d90790d6b874be059382a54339c51d740f3cc"
+      },
+      {
+        "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_dc1_preflight_20260729/private/dev_c/dev_c.jsonl",
+        "sha256": "05bca2ee3ba71421296b2e31a0439746eb9c1b0e15e2cea4471be202ab6ac29d"
+      },
+      {
+        "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_dc1_stage_a_20260730/private/eval_c/eval_c.jsonl",
+        "sha256": "04a68f41b3a7858d185da5d37fdc5a6db35b37804a892e218a4d932898d13f58"
+      },
+      {
+        "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_option_b_teacher_cache_20260806/private/new_documents_target.jsonl",
+        "sha256": "bd0c84984f1dd47d1ee5dc06172afb7ea9728443d7712ca82ffa836d54edff9b"
+      }
+    ]
+  },
+  "read_once_scoring_spent": false,
+  "scores_exposed": false,
+  "status": "complete_frozen_unscored",
+  "teacher_cache_generated": false,
+  "training_started": false
+}

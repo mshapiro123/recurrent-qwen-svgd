@@ -1,0 +1,132 @@
+{
+  "acceptance_computed": false,
+  "allowed_public_outputs_only": [
+    "hashes",
+    "counts",
+    "model_revisions",
+    "cascade_fraction",
+    "integrity_telemetry"
+  ],
+  "base_student_forward_role": "tensor_cache_materialization_only_no_quality_or_outcome_scoring",
+  "cross_partition_document_overlap": [],
+  "eal_computed": false,
+  "endpoint_checkpoints_loaded": false,
+  "estimators": {
+    "dev_mixture_reweighted_secondary": {
+      "anchor_count": 8031,
+      "counts": {
+        "code": 4227,
+        "general": 3804
+      },
+      "source": "immutable_stage0a_dev_manifest_under_document_partition_seed_20260804",
+      "weights": {
+        "code": 0.5263354501307433,
+        "general": 0.47366454986925666
+      }
+    },
+    "primary": {
+      "population": "balanced_eval_d",
+      "weights": {
+        "code": 0.5,
+        "general": 0.5
+      }
+    }
+  },
+  "integrity": {
+    "eval_d_data_freeze_sha256": "4594e15b0c9a42201c5090a5e3d71da0afad8d5a51bbb169945e56c0c4bac845",
+    "exclusion_receipts": [
+      {
+        "overlap_count": 0,
+        "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_dc0_20260728/private/eval_b/eval_b.jsonl",
+        "sha256": "1490cc40c025b01ef74876d7ba8d90790d6b874be059382a54339c51d740f3cc"
+      },
+      {
+        "overlap_count": 0,
+        "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_dc1_preflight_20260729/private/dev_c/dev_c.jsonl",
+        "sha256": "05bca2ee3ba71421296b2e31a0439746eb9c1b0e15e2cea4471be202ab6ac29d"
+      },
+      {
+        "overlap_count": 0,
+        "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_dc1_stage_a_20260730/private/eval_c/eval_c.jsonl",
+        "sha256": "04a68f41b3a7858d185da5d37fdc5a6db35b37804a892e218a4d932898d13f58"
+      },
+      {
+        "overlap_count": 0,
+        "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_option_b_teacher_cache_20260806/private/new_documents_target.jsonl",
+        "sha256": "bd0c84984f1dd47d1ee5dc06172afb7ea9728443d7712ca82ffa836d54edff9b"
+      }
+    ],
+    "private_admission_ledger_rows": 8000,
+    "private_admission_ledger_sha256": "17c4f51b1be7ba0ec366bbcfecf21bb8b3dd3920d7e6f32f4fb13e8aac4ef841",
+    "private_cache_transport_sha256_match": true,
+    "score_blind_lattice_summary_sha256": "2a63b9d0dcf0fa7d94c000d2f06cedf163038541223a6061e3e032e49469ab4b"
+  },
+  "kind": "paper2_phase2_e1_eval_d_freeze_v1",
+  "model_quality_scores_computed": false,
+  "optimizer_steps": 0,
+  "option_b_cache": {
+    "anchor_count": 8000,
+    "anchors_per_stratum": {
+      "code": 4000,
+      "general": 4000
+    },
+    "canonicalizer_sha256": "53215130a75c929def4bcc4b81ba9187d90a7b6fe2b1502391518d45c09476e3",
+    "data_sha256": "13722464d99627b246bef5983c7c2dad8a54f6f9e4d1cc91a4826a9ca45d71b8",
+    "document_count": 132,
+    "fields": [
+      "anchor_keys",
+      "base_log_probs",
+      "base_tail",
+      "candidate_ids",
+      "candidate_mask",
+      "decoder_bias",
+      "decoder_weight_alpha_0p5",
+      "documents",
+      "positions",
+      "strata",
+      "student_hidden",
+      "target_centered_raw",
+      "teacher_log_probs",
+      "teacher_tail",
+      "teacher_topk_ids",
+      "teacher_topk_log_probs",
+      "whiten_basis",
+      "whiten_eigenvalues"
+    ],
+    "kind": "paper2_phase2_matched_alpha_cache_v1",
+    "position_key_sha256": "ce409b004133cc6efde2bb6540b4939f8cbe7eafd7acb6a7be5ba61ffa8b9f5c",
+    "private_cache_sha256": "8b58d1f2647028c229f6ac94d0c1e0fafcb4638f9b6c2e5803c5e7ec5a35eed6",
+    "sample_manifest_sha256": "dbda648920b45bb4508aeb13f47beed5cf00dfaadcd30cb63ce125ce4b7d6d54"
+  },
+  "partition": "eval_d",
+  "read_once_scoring_spent": false,
+  "retention_computed": false,
+  "scores_exposed": false,
+  "selection": {
+    "anchors_per_stratum": {
+      "code": 4000,
+      "general": 4000
+    },
+    "rule": "stable_sha256_rank_within_stratum_then_greedy_nonoverlapping_four_position_spans_then_row_major_execution_order",
+    "seed": 20260808
+  },
+  "status": "complete_frozen_unscored",
+  "student_teacher_quality_aggregates_emitted": false,
+  "teacher_stack": {
+    "admission_ledger_sha256": "17c4f51b1be7ba0ec366bbcfecf21bb8b3dd3920d7e6f32f4fb13e8aac4ef841",
+    "cascade_count": 5872,
+    "cascade_fraction": 0.1835,
+    "cascade_fraction_delta": 0.016019531249999996,
+    "model_revisions": {
+      "student_0p5b": "7ae557604adf67be50417f59c2c2f167def9a775",
+      "teacher_14b": "cf98f3b3bbb457ad9e2bb7baf9a0125b6b88caa8",
+      "teacher_32b": "5ede1c97bbab6ce5cda5812749b4c0bdf79b18dd",
+      "teacher_7b": "a09a35458c702b33eeacc393d103063234e8bc28"
+    },
+    "option_b_fresh_document_cascade_fraction": 0.16748046875,
+    "role": "population_note_not_outcome_score",
+    "teacher_14b_states_for_all_anchors": true
+  },
+  "training_started": false,
+  "version": "paper2_phase2_e1_eval_d_freeze_v1_20260808"
+}

@@ -1,0 +1,72 @@
+{
+  "anchor_count": 8000,
+  "anchors_per_stratum": {
+    "code": 4000,
+    "general": 4000
+  },
+  "boundary_sample_count": 32000,
+  "cascade": {
+    "query_32b_on_7b_14b_argmax_disagreement": true,
+    "query_32b_on_verifier_available": true,
+    "stable_audit_fraction": 0.01
+  },
+  "data_partition": "EVAL-D_CACHE_ONLY",
+  "data_sha256": "13722464d99627b246bef5983c7c2dad8a54f6f9e4d1cc91a4826a9ca45d71b8",
+  "endpoint_checkpoints_loaded": false,
+  "execution_scope": "frozen_eval_d_score_blind_infrastructure_only",
+  "frozen_evaluation_partitions_touched": [
+    "EVAL-D_CACHE_ONLY"
+  ],
+  "full_logit_audit_fraction": 0.01,
+  "horizons": [
+    1,
+    2,
+    3,
+    4
+  ],
+  "kind": "paper2_phase2_e1_eval_d_cache_config",
+  "model_quality_scores_computed": false,
+  "models": {
+    "student_0p5b": {
+      "model": "Qwen/Qwen2.5-0.5B-Instruct",
+      "revision": "7ae557604adf67be50417f59c2c2f167def9a775"
+    },
+    "teacher_14b": {
+      "model": "Qwen/Qwen2.5-14B-Instruct",
+      "revision": "cf98f3b3bbb457ad9e2bb7baf9a0125b6b88caa8",
+      "role": "threshold_and_canonical_state_teacher"
+    },
+    "teacher_32b": {
+      "model": "Qwen/Qwen2.5-32B-Instruct",
+      "revision": "5ede1c97bbab6ce5cda5812749b4c0bdf79b18dd",
+      "role": "cascade_only"
+    },
+    "teacher_7b": {
+      "model": "Qwen/Qwen2.5-7B-Instruct",
+      "revision": "a09a35458c702b33eeacc393d103063234e8bc28",
+      "role": "broad_teacher"
+    }
+  },
+  "optimizer_steps": 0,
+  "per_anchor_label_tier_admission_required": true,
+  "run_id": "stage5_paper2_phase2_e1_eval_d_20260808",
+  "score_blind": true,
+  "seed": 20260808,
+  "selected_layer_ordinals_one_based": [
+    16,
+    32,
+    44
+  ],
+  "selection_rule": "stable_sha256_rank_within_stratum_then_greedy_nonoverlapping_four_position_spans_then_row_major_execution_order",
+  "teacher_14b_state_coverage_policy": "all_admitted_anchors",
+  "teacher_state_model": {
+    "hidden_size": 5120,
+    "key": "teacher_14b",
+    "model": "Qwen/Qwen2.5-14B-Instruct",
+    "num_hidden_layers": 48,
+    "revision": "cf98f3b3bbb457ad9e2bb7baf9a0125b6b88caa8"
+  },
+  "top_k": 128,
+  "training_started": false,
+  "version": "paper2_phase2_e1_eval_d_cache_v1_20260808"
+}
