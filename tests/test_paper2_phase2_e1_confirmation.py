@@ -102,4 +102,3 @@ def test_score_exposure_or_missing_cache_field_blocks_lock() -> None:
     assert result["observations"]["missing_option_b_cache_fields"] == [
         "teacher_topk_ids"
     ]
-
