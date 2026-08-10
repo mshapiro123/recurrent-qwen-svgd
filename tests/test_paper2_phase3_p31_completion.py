@@ -180,6 +180,9 @@ def test_reference_pass_has_model_specific_generation_batches() -> None:
     )
     assert "--base_generation_batch_size" in scorer
     assert "--teacher_generation_batch_size" in scorer
+    assert "--base_mcq_candidate_batch_size" in scorer
+    assert "--teacher_mcq_candidate_batch_size" in scorer
     assert '"STAGE5_P31_BASE_GENERATION_BATCH_SIZE", "32"' in runner
     assert '"STAGE5_P31_TEACHER_GENERATION_BATCH_SIZE", "8"' in runner
+    assert '"STAGE5_P31_TEACHER_MCQ_CANDIDATE_BATCH_SIZE", "8"' in runner
     assert '"generation_batch_size": generation_batch_size' in scorer

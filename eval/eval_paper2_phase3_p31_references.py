@@ -328,81 +328,82 @@ def score_model(
             )
     existing = {str(row["item_id"]): row for row in existing_rows}
     pending = [row for row in rows if str(row["item_id"]) not in existing]
-    tokenizer = AutoTokenizer.from_pretrained(spec["model"], revision=spec["revision"])
-    tokenizer.padding_side = "right"
-    model = AutoModelForCausalLM.from_pretrained(
-        spec["model"],
-        revision=spec["revision"],
-        torch_dtype=dtype,
-        attn_implementation="sdpa",
-    ).to(device).eval()
+    if pending:
+        tokenizer = AutoTokenizer.from_pretrained(spec["model"], revision=spec["revision"])
+        tokenizer.padding_side = "right"
+        model = AutoModelForCausalLM.from_pretrained(
+            spec["model"],
+            revision=spec["revision"],
+            torch_dtype=dtype,
+            attn_implementation="sdpa",
+        ).to(device).eval()
 
-    mcq = [row for row in pending if row["battery"] in {"arc_easy", "arc_challenge", "mmlu"}]
-    generated = [row for row in pending if row["battery"] in {"gsm8k", "mbpp", "tier1"}]
-    if mcq:
-        results = score_mcq_rows(
-            model,
-            tokenizer,
-            mcq,
-            device=device,
-            candidate_batch_size=mcq_candidate_batch_size,
-        )
-        lookup = {str(row["item_id"]): row for row in mcq}
-        append_jsonl(
-            output_jsonl,
-            [
-                {
-                    "kind": "paper2_phase3_p31_model_score_v1",
-                    "model_key": model_key,
-                    "model": spec["model"],
-                    "revision": spec["revision"],
-                    "battery": lookup[result["item_id"]]["battery"],
-                    "battery_role": lookup[result["item_id"]]["battery_role"],
-                    "partition": lookup[result["item_id"]]["partition"],
-                    "document_id": lookup[result["item_id"]]["document_id"],
-                    "content_sha256": lookup[result["item_id"]]["content_sha256"],
-                    **result,
-                }
-                for result in results
-            ],
-        )
-    if generated:
-        results = []
-        for row, text in generate_rows(
-            model,
-            tokenizer,
-            generated,
-            device=device,
-            batch_size=generation_batch_size,
-        ):
-            correct, prediction = score_generated(row, text)
-            results.append(
-                {
-                    "kind": "paper2_phase3_p31_model_score_v1",
-                    "model_key": model_key,
-                    "model": spec["model"],
-                    "revision": spec["revision"],
-                    "battery": row["battery"],
-                    "battery_role": row["battery_role"],
-                    "partition": row["partition"],
-                    "document_id": row["document_id"],
-                    "content_sha256": row["content_sha256"],
-                    "item_id": row["item_id"],
-                    "reader": row["reader"],
-                    "generation_batch_size": generation_batch_size,
-                    "prediction": prediction,
-                    "correct": bool(correct),
-                    "generated_text": text,
-                }
+        mcq = [row for row in pending if row["battery"] in {"arc_easy", "arc_challenge", "mmlu"}]
+        generated = [row for row in pending if row["battery"] in {"gsm8k", "mbpp", "tier1"}]
+        if mcq:
+            results = score_mcq_rows(
+                model,
+                tokenizer,
+                mcq,
+                device=device,
+                candidate_batch_size=mcq_candidate_batch_size,
             )
-            if len(results) >= 32:
-                append_jsonl(output_jsonl, results)
-                results = []
-        append_jsonl(output_jsonl, results)
-    del model
-    gc.collect()
-    if torch.cuda.is_available():
-        torch.cuda.empty_cache()
+            lookup = {str(row["item_id"]): row for row in mcq}
+            append_jsonl(
+                output_jsonl,
+                [
+                    {
+                        "kind": "paper2_phase3_p31_model_score_v1",
+                        "model_key": model_key,
+                        "model": spec["model"],
+                        "revision": spec["revision"],
+                        "battery": lookup[result["item_id"]]["battery"],
+                        "battery_role": lookup[result["item_id"]]["battery_role"],
+                        "partition": lookup[result["item_id"]]["partition"],
+                        "document_id": lookup[result["item_id"]]["document_id"],
+                        "content_sha256": lookup[result["item_id"]]["content_sha256"],
+                        **result,
+                    }
+                    for result in results
+                ],
+            )
+        if generated:
+            results = []
+            for row, text in generate_rows(
+                model,
+                tokenizer,
+                generated,
+                device=device,
+                batch_size=generation_batch_size,
+            ):
+                correct, prediction = score_generated(row, text)
+                results.append(
+                    {
+                        "kind": "paper2_phase3_p31_model_score_v1",
+                        "model_key": model_key,
+                        "model": spec["model"],
+                        "revision": spec["revision"],
+                        "battery": row["battery"],
+                        "battery_role": row["battery_role"],
+                        "partition": row["partition"],
+                        "document_id": row["document_id"],
+                        "content_sha256": row["content_sha256"],
+                        "item_id": row["item_id"],
+                        "reader": row["reader"],
+                        "generation_batch_size": generation_batch_size,
+                        "prediction": prediction,
+                        "correct": bool(correct),
+                        "generated_text": text,
+                    }
+                )
+                if len(results) >= 32:
+                    append_jsonl(output_jsonl, results)
+                    results = []
+            append_jsonl(output_jsonl, results)
+        del model
+        gc.collect()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
     final = read_jsonl(output_jsonl)
     if len(final) != len({str(row["item_id"]) for row in final}):
         raise RuntimeError(f"P3.1 resumable score file has duplicate item ids: {output_jsonl}")
@@ -435,6 +436,8 @@ def main() -> int:
     parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     parser.add_argument("--dtype", choices=("bfloat16", "float16", "float32"), default="bfloat16")
     parser.add_argument("--mcq_candidate_batch_size", type=int, default=32)
+    parser.add_argument("--base_mcq_candidate_batch_size", type=int)
+    parser.add_argument("--teacher_mcq_candidate_batch_size", type=int)
     parser.add_argument("--generation_batch_size", type=int, default=8)
     parser.add_argument("--base_generation_batch_size", type=int)
     parser.add_argument("--teacher_generation_batch_size", type=int)
@@ -452,6 +455,13 @@ def main() -> int:
     dtype = getattr(torch, args.dtype)
     receipts = []
     for model_key in args.model_key or list(MODEL_SPECS):
+        model_mcq_candidate_batch_size = args.mcq_candidate_batch_size
+        if model_key == "base" and args.base_mcq_candidate_batch_size is not None:
+            model_mcq_candidate_batch_size = args.base_mcq_candidate_batch_size
+        elif model_key == "teacher_14b" and args.teacher_mcq_candidate_batch_size is not None:
+            model_mcq_candidate_batch_size = args.teacher_mcq_candidate_batch_size
+        if model_mcq_candidate_batch_size <= 0:
+            raise ValueError("P3.1 MCQ candidate batch sizes must be positive")
         model_generation_batch_size = args.generation_batch_size
         if model_key == "base" and args.base_generation_batch_size is not None:
             model_generation_batch_size = args.base_generation_batch_size
@@ -466,7 +476,7 @@ def main() -> int:
                 output_jsonl=args.output_dir / f"{model_key}_scores.jsonl",
                 device=args.device,
                 dtype=dtype,
-                mcq_candidate_batch_size=args.mcq_candidate_batch_size,
+                mcq_candidate_batch_size=model_mcq_candidate_batch_size,
                 generation_batch_size=model_generation_batch_size,
                 confirm_seal_sha256=confirm_seal_sha256,
             )
