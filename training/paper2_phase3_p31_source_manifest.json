@@ -53,8 +53,8 @@
     "tier1": {
       "dataset_id": "local_paper_one_tier1_arithmetic",
       "path": "outputs/stage5/stage5_adapter_budget_arm_e_20260718/data/base_capability_canary_64.jsonl",
-      "bytes": 40900,
-      "sha256": "d24f48b21a0c75d82793ec682ab21bc54de1e9bfc25ba38afc4a25bcc9207569",
+      "bytes": 40836,
+      "sha256": "22b1d809b176a8fa4b4544b6761106483e04d4ed2982511a2cf4bb881cb6fcf0",
       "verified_train_split": null,
       "evaluation_split": "frozen_64",
       "reader": "paper_one_same_reader",

@@ -76,7 +76,7 @@
   "p31": {
     "source_manifest": {
       "path": "training/paper2_phase3_p31_source_manifest.json",
-      "sha256": "31cda92fa0ca812ec8abe4da1d5a964afc405b5f62dccb1da78a6560841d5a56"
+      "sha256": "88898e3f680614d72766b9f8143197bf79f8ff244d0b42f0867e6c2307ad7948"
     },
     "split_seed": 20260809,
     "target_primary": ["gsm8k", "mbpp"],

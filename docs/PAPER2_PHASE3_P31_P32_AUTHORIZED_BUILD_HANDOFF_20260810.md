@@ -65,7 +65,7 @@ The source manifest pins:
 | GSM8K | `openai/gsm8k`, `main` | `740312ad...` | primary, final number after `####` |
 | MBPP | `google-research-datasets/mbpp`, `sanitized` | `4bb6404f...` | primary, sandboxed unit tests |
 | MMLU | `cais/mmlu`, `all` | `c30699e8...` | floor, fixed seeded slice |
-| Tier-1 | local Paper One 64-row canary | `d24f48b2...` | floor, Paper One same reader |
+| Tier-1 | local Paper One 64-row canary | `22b1d809...` | floor, Paper One same reader |
 
 A local score-blind materialization dry run completed without loading a model:
 
@@ -84,6 +84,12 @@ The complete ledger hash was
 All train/DEV/CONFIRM document-overlap checks were empty. These are build dry-run
 numbers, not yet the durable P3.1 receipt. The Colab target repeats the process
 to Drive and records the private membership file and public hashes.
+
+The launch preflight subsequently exposed that the original Tier-1 source hash
+had been taken from a Windows CRLF worktree. The frozen manifest now uses the
+canonical Git-blob/Linux bytes (40,836 bytes, SHA-256 `22b1d809...`) and carries
+a regression test against `git show`, so the source identity is independent of
+checkout line-ending transforms.
 
 ## 3. P3.2 admission and coverage
 

@@ -1,5 +1,10 @@
 from __future__ import annotations
 
+import hashlib
+import json
+import subprocess
+from pathlib import Path
+
 from eval.prepare_paper2_phase3_p31_sources import (
     arc_rows,
     gsm8k_final_answer,
@@ -47,3 +52,16 @@ def test_arc_and_mbpp_training_rows_keep_real_verifier_contracts() -> None:
     assert arc["programmatic_verifier_available"] is True
     assert mbpp["programmatic_verifier_available"] is True
     assert mbpp["tests"] == ["assert f() == 1"]
+
+
+def test_tier1_manifest_uses_canonical_git_blob_bytes() -> None:
+    root = Path(__file__).resolve().parents[1]
+    manifest = json.loads(
+        (root / "training/paper2_phase3_p31_source_manifest.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    tier1 = manifest["sources"]["tier1"]
+    blob = subprocess.check_output(["git", "show", f"HEAD:{tier1['path']}"], cwd=root)
+    assert len(blob) == tier1["bytes"]
+    assert hashlib.sha256(blob).hexdigest() == tier1["sha256"]
