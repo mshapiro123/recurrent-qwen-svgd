@@ -61,11 +61,50 @@ def run_preflight(output_summary: Path) -> dict[str, Any]:
                 "teacher_14b_top1": 5,
                 "teacher_32b_top1": 5,
                 "cross_scale_consistent": True,
+                "flip_candidate_14b": True,
                 "teachability": 0.9,
                 "confident_agreement_margin": 0.0,
                 "teacher_topk_ids": [5, 7],
                 "teacher_topk_log_probs": [-0.1, -2.0],
                 "gate_label": int(agreement_label),
+            },
+            {
+                "record_id": "agreement-negative-14b-only-preflight",
+                "source_stratum": "agreement",
+                "battery": "lattice",
+                "document_id": "agreement-negative-document",
+                "item_id": "agreement-negative-item",
+                "prediction_position": 1,
+                "loop_index": 1,
+                "student_top1": 5,
+                "teacher_14b_top1": 5,
+                "teacher_32b_top1": None,
+                "cross_scale_consistent": False,
+                "flip_candidate_14b": False,
+                "teachability": 0.1,
+                "confident_agreement_margin": 2.0,
+                "teacher_topk_ids": [5, 7],
+                "teacher_topk_log_probs": [-0.1, -2.0],
+                "gate_label": int(GateLabel.NEGATIVE),
+            },
+            {
+                "record_id": "agreement-uncovered-flip-preflight",
+                "source_stratum": "agreement",
+                "battery": "lattice",
+                "document_id": "agreement-uncovered-document",
+                "item_id": "agreement-uncovered-item",
+                "prediction_position": 1,
+                "loop_index": 1,
+                "student_top1": 3,
+                "teacher_14b_top1": 5,
+                "teacher_32b_top1": None,
+                "cross_scale_consistent": False,
+                "flip_candidate_14b": True,
+                "teachability": 0.9,
+                "confident_agreement_margin": 0.0,
+                "teacher_topk_ids": [5, 7],
+                "teacher_topk_log_probs": [-0.1, -2.0],
+                "gate_label": int(GateLabel.IGNORED),
             },
             {
                 "record_id": "verified-preflight",
@@ -105,6 +144,13 @@ def run_preflight(output_summary: Path) -> dict[str, Any]:
         "agreement_correctness_labels_prohibited": manifest[
             "agreement_correctness_labels_prohibited"
         ],
+        "14b_only_negative_admitted": (
+            manifest["coverage"]["per_loss_class"]["gate_negative"]["agreement_14b_only_eligible"]
+            == 1
+        ),
+        "uncovered_flip_candidate_receipted": (
+            manifest["coverage"]["targeted_32b_extension_candidates"] == 1
+        ),
         "batched_gradient_all_finite": equivalence["all_finite"],
         "batched_gradient_direction_equivalent": (
             equivalence["maximum_direction_difference"] == 0.0

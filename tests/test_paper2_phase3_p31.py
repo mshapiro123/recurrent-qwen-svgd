@@ -11,6 +11,7 @@ from training.paper2_phase3_p31 import (
     build_split_ledger,
     claim_partition_lease,
     eval_half,
+    estimate_empirical_paired_design,
     paired_false_stop,
     paired_upper_confidence_bound,
     simulate_false_stop_probability,
@@ -117,3 +118,38 @@ def test_false_stop_simulation_is_seeded_and_reports_conservative_target() -> No
     assert first == second
     assert first["consecutive_looks_required"] == 2
     assert first["target_probability"] == 1e-4
+    assert first["true_mean_difference"] == 0.0
+    assert first["metric_role"] == "familywise_false_stop_under_no_drop_null"
+
+
+def test_sequential_stop_simulation_reports_descriptive_power() -> None:
+    design = PairedNullDesign(rows=128, looks=6, adjacent_correlation=0.5)
+    power = simulate_false_stop_probability(
+        design,
+        alpha=0.001,
+        campaigns=400,
+        seed=20260810,
+        true_mean_difference=-0.05,
+        batch_campaigns=50,
+    )
+    assert power["metric_role"] == "detection_power_under_sustained_drop"
+    assert power["true_mean_difference"] == -0.05
+    assert 0.0 <= power["estimated_detection_power"] <= 1.0
+    assert power["power_gate"] is None
+
+
+def test_empirical_noise_estimate_uses_dev_pairing_and_adjacent_looks() -> None:
+    differences = np.array(
+        [
+            [0, -1, 0, 1, 0, -1],
+            [0, -1, 0, 1, -1, 0],
+            [0, -1, 1, 1, -1, 0],
+        ],
+        dtype=float,
+    )
+    estimate = estimate_empirical_paired_design(differences)
+    assert estimate["looks"] == 3
+    assert estimate["rows"] == 6
+    assert estimate["paired_discordant_probability"] == np.mean(differences != 0)
+    assert 0.0 <= estimate["adjacent_checkpoint_autocorrelation"] < 1.0
+    assert estimate["scores_are_not_confirm"] is True

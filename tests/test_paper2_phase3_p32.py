@@ -41,6 +41,20 @@ def test_agreement_gate_requires_cross_scale_concurrence() -> None:
     ) == GateLabel.IGNORED
 
 
+def test_confident_agreement_negative_does_not_require_32b() -> None:
+    assert agreement_gate_label(
+        AgreementLabelInputs(
+            student_top1=5,
+            teacher_14b_top1=5,
+            teacher_32b_top1=None,
+            teachability=0.0,
+            confident_agreement_margin=2.0,
+        ),
+        teachability_threshold=0.8,
+        confident_agreement_margin_threshold=1.0,
+    ) == GateLabel.NEGATIVE
+
+
 def test_gate_labels_are_tri_state_and_ignored_rows_leave_loss() -> None:
     labels = torch.tensor([1, 0, -1], dtype=torch.long)
     assert torch.equal(gate_loss_mask(labels), torch.tensor([True, True, False]))
@@ -67,6 +81,7 @@ def test_agreement_cache_cannot_claim_unverified_correctness() -> None:
         "teacher_14b_top1": 5,
         "teacher_32b_top1": 5,
         "cross_scale_consistent": True,
+        "flip_candidate_14b": True,
         "teachability": 0.9,
         "confident_agreement_margin": 0.0,
         "teacher_topk_ids": [5, 7],
@@ -91,6 +106,7 @@ def test_cache_manifest_keeps_agreement_and_verified_semantics_separate() -> Non
         "teacher_14b_top1": 5,
         "teacher_32b_top1": 5,
         "cross_scale_consistent": True,
+        "flip_candidate_14b": True,
         "teachability": 0.9,
         "confident_agreement_margin": 0.0,
         "teacher_topk_ids": [5, 7],
@@ -120,7 +136,60 @@ def test_cache_manifest_keeps_agreement_and_verified_semantics_separate() -> Non
         "positive": 2,
         "negative": 0,
         "ignored": 0,
+        "total": 2,
     }
+    assert manifest["coverage"]["per_loss_class"]["aim_target"]["eligible"] == 1
+    assert manifest["coverage"]["targeted_32b_extension_candidates"] == 0
+
+
+def test_manifest_splits_strict_writes_from_permissive_distillation() -> None:
+    records = [
+        {
+            "record_id": "negative-14b-only",
+            "source_stratum": "agreement",
+            "battery": "lattice",
+            "document_id": "doc-n",
+            "item_id": "item-n",
+            "prediction_position": 2,
+            "loop_index": 1,
+            "student_top1": 5,
+            "teacher_14b_top1": 5,
+            "teacher_32b_top1": None,
+            "cross_scale_consistent": False,
+            "flip_candidate_14b": False,
+            "teachability": 0.0,
+            "confident_agreement_margin": 2.0,
+            "teacher_topk_ids": [5, 7],
+            "teacher_topk_log_probs": [-0.1, -2.0],
+            "gate_label": 0,
+        },
+        {
+            "record_id": "uncovered-flip",
+            "source_stratum": "agreement",
+            "battery": "lattice",
+            "document_id": "doc-u",
+            "item_id": "item-u",
+            "prediction_position": 2,
+            "loop_index": 1,
+            "student_top1": 3,
+            "teacher_14b_top1": 5,
+            "teacher_32b_top1": None,
+            "cross_scale_consistent": False,
+            "flip_candidate_14b": True,
+            "teachability": 0.9,
+            "confident_agreement_margin": 0.0,
+            "teacher_topk_ids": [5, 7],
+            "teacher_topk_log_probs": [-0.1, -2.0],
+            "gate_label": -1,
+        },
+    ]
+    manifest = cache_manifest(records)
+    coverage = manifest["coverage"]
+    assert coverage["per_loss_class"]["l_kl"]["eligible"] == 2
+    assert coverage["per_loss_class"]["gate_negative"]["agreement_14b_only_eligible"] == 1
+    assert coverage["per_loss_class"]["aim_target"]["eligible"] == 0
+    assert coverage["targeted_32b_extension_candidates"] == 1
+    assert coverage["write_stratum_thinness_decision"] == "pending_p33_lock"
 
 
 def test_oracle_gradient_batch_matches_single_rows() -> None:

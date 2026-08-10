@@ -1,0 +1,28 @@
+# Strategy — Phase 3 Opening Build: Banked, Plus Two Resolutions
+
+Date: 2026-08-10. Responds to the coding agent's opening-build handoff (branch `codex/phase3-opening-build`, commit `10d99cf2`, receipt `PAPER2_PHASE3_OPENING_BUILD_HANDOFF_20260809.md`, 63 tests passing). Governing: charter r2 + amendment t1 (ratified) + P3.0 memo and reasoning-scope addendum.
+
+## 1. The build is banked
+
+Accepted as delivered: the separate Phase 3 per-position gate with Phase 2 preserved untouched, the scalar-gate migration with zero-initialized hidden/scratch/control projections, bit-exact zero-loop identity, exact scalar-reference writeback, the P3.1 ledgers and battery-role enforcement, atomic CONFIRM leases, the paired sequential-stop simulator, the P3.2 tri-state and strata schemas with cross-scale concurrence, the batched oracle-gradient preflight, and the eight byte-verified Drive mirrors. Per t1 C2, **1,185,973 is now the Phase 3 trainable parameter count program-wide** — the build receipt is the receipt, the +1,056 delta is the gate head's, and every document from here forward carries the new number (the figure's caption already defers to exactly this receipt).
+
+## 2. Calibration finding: handling confirmed, one addition
+
+The handling is exactly right and is confirmed as the contract: the provisional 256-row miss and 512-row pass are **sizing forecasts, not lock values**. Plan on the 512-row design at one-sided α = 0.00005, and the binding numbers are set only by the rerun on **empirical paired discordance and checkpoint autocorrelation measured from DEV**. If the empirical rerun clears a smaller design, the lock may take it; if it demands a larger one, the battery grows — the 1e-4 familywise target is the fixed point, the design is the free variable.
+
+One addition to the deliverable, so the floor is real in both directions: the same simulation must report **power** — the probability that a true sustained drop of 3 points, and of 5 points, is caught within two consecutive evaluations under the empirical noise model. No numeric gate is placed on power in this phase, but the number appears in the lock beside the false-stop rate. A cliff rule with a certified false-alarm rate and unmeasured detection probability is half a guardrail, and the doctrine's fourth cliff deserves a whole one.
+
+## 3. The concurrence decision: strict for writes, permissive for distillation, measured before final
+
+The question: strict cascade concurrence (row admitted only when 14B and 32B predictions both exist and concur) shrinks the 181,969-anchor population to the cascade-covered subset. Ruling — the strict reading is confirmed **where it guards what it was built to guard, and only there**:
+
+- **Aim targets and gate positives (the write-driving stratum): strict rule stands.** These rows train the bridge to change the model's answers — they are exactly where a single sibling's idiosyncrasy must not become the curriculum, and the addendum's requirement was written for them. No relaxation. Note the arithmetic works in our favor here: the cascade was escalated on disagreement, so its coverage should be concentrated precisely in the flip-candidate region — whole-population coverage understates stratum coverage. The receipt will tell us.
+- **L_KL distillation rows, confident-agreement negatives, and preservation positions: 14B-only rows remain admissible.** Distillation on agreement-dominated lattice mass and "stay closed here" labels carry minimal cross-scale risk, and discarding the majority of the lattice for them would starve the phase's distillation signal to protect against a failure mode those losses barely have. The schema's strict/permissive split is recorded per loss class in the P3.2 lock.
+- **Measurement before finality.** The P3.2 report-back states the coverage arithmetic before the cache is treated as final: total anchors, cascade-covered count, concurrence rate within coverage, and the resulting stratum size **per label class**. The stratum count is a receipt field, not an assumption.
+- **The named fallback is extension, not dilution.** If the strict write-stratum comes back too thin to train on, the remedy is a **targeted 32B extension pass over uncovered flip-candidate anchors** — through a lock, priced against the P3.5 data-expansion lever — never a relaxation of the concurrence criterion. The epistemic standard for writes does not anneal. Data coverage does.
+
+Big-picture check, since that is the standing instruction: this split is the reasoning-scope ruling applied to data admission. The write channel is the instrument that instills reasoning, so it trains only on scale-consistent signal. The distillation losses shape the distribution toward the teacher on ground the student already mostly holds. Keeping the first strict and the second fed is how the phase reaches the falsifier with both its integrity and its dataset intact.
+
+## 4. Authorization state
+
+The next build is authorized as scoped: exact dataset/reader manifest (per the addendum's battery roles — GSM8K and MBPP primary targets, ARC-Challenge secondary, MMLU slice + Tier-1 + ARC-Easy as floor), empirical false-stop calibration per §2, and checkpoint-integrated migration against the E1-confirmation checkpoints, both seeds, hash-pinned. **P3.3 training remains unauthorized** and stays so until the P3.3 lock is drafted, which happens after the P3.1/P3.2 receipts (including the coverage arithmetic and the linear-decodability forecast) are in hand.

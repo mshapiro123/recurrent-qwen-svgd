@@ -27,3 +27,17 @@ def test_opening_contract_authorizes_build_but_not_p33_training() -> None:
     assert contract["authorization"]["p33_training"] is False
     assert contract["architecture"]["phase2_trainable_parameters_historical"] == 1_184_917
     assert contract["architecture"]["phase3_trainable_parameters"] == 1_185_973
+    source_manifest = ROOT / contract["p31"]["source_manifest"]["path"]
+    assert hashlib.sha256(source_manifest.read_bytes()).hexdigest() == contract["p31"][
+        "source_manifest"
+    ]["sha256"]
+    assert contract["p31"]["planning_assumption"] == {
+        "rows": 512,
+        "one_sided_alpha": 0.00005,
+        "binding": False,
+    }
+    assert contract["p32"]["concurrence_relaxation_permitted"] is False
+    migration_sources = ROOT / contract["architecture"]["migration_sources"]["path"]
+    assert hashlib.sha256(migration_sources.read_bytes()).hexdigest() == contract[
+        "architecture"
+    ]["migration_sources"]["sha256"]

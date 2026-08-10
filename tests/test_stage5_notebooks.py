@@ -3599,6 +3599,29 @@ def test_phase2_option_b_bootstrap_audit_is_wired_and_guarded() -> None:
     assert "landed_implementation" in audit
 
 
+def test_phase3_p31_p32_receipts_target_is_wired_and_guarded() -> None:
+    cell = (
+        ROOT / "colab/STAGE5_PAPER2_PHASE3_P31_P32_RECEIPTS_CELL.py"
+    ).read_text(encoding="utf-8")
+    runner = (
+        ROOT / "colab/run_stage5_paper2_phase3_p31_p32_receipts.py"
+    ).read_text(encoding="utf-8")
+    for bootstrap_path in (
+        ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py",
+        ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md",
+    ):
+        text = bootstrap_path.read_text(encoding="utf-8")
+        assert "paper2_phase3_p31_p32_receipts" in text
+        assert "STAGE5_PAPER2_PHASE3_P31_P32_RECEIPTS_CELL.py" in text
+        assert "no P3.3 optimizer no P3.3 training no CONFIRM scoring" in text
+    assert "paper2_phase3_p31_p32_receipts_v1" in cell
+    assert "three-point and five-point power" in cell
+    assert "both E1 full-system seed checkpoints hash-pinned and migrated bit-exact" in cell
+    assert "stage5_paper2_phase3_p31_p32_receipts_20260810" in runner
+    assert "p33_training_authorized" in runner
+    assert "optimizer_steps" in runner
+
+
 def test_gradient_path_audit_target_is_wired_and_guarded() -> None:
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
     bootstrap_md = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")

@@ -1,0 +1,26 @@
+{
+  "kind": "paper2_phase3_e1_migration_sources_v1",
+  "status": "hash_pinned_both_seeds",
+  "state_rms_cap": 0.5508932316303252,
+  "seeds": {
+    "0": {
+      "a1": {
+        "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_staged_a1_resume_20260805/private/a1/alpha_0p5_seed_0/a1_resume_amended.pt",
+        "sha256": "823c1865878a86079a6423fabf432b6f1d36d431ec4381800846019882afb136",
+        "expected_step": 1000
+      },
+      "e1_endpoint_key": "seed_0_full_a2"
+    },
+    "1": {
+      "a1": {
+        "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_staged_a1_resume_20260805/private/a1/alpha_0p5_seed_1/a1_resume_amended.pt",
+        "sha256": "a9c20510f6cf2561f6208fa8d1915626e2ec6e68a588228d3f0edd9cd0efde89",
+        "expected_step": 1000
+      },
+      "e1_endpoint_key": "seed_1_full_a2"
+    }
+  },
+  "reconstruction": "seeded_phase2_initialization_plus_hash_pinned_a1_flow_state_plus_hash_pinned_e1_endpoint_active_state",
+  "optimizer_state_migrated": false,
+  "p33_training_authorized": false
+}

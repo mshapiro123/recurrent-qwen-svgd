@@ -1,0 +1,72 @@
+{
+  "kind": "paper2_phase3_p31_dataset_reader_source_manifest_v1",
+  "date": "2026-08-10",
+  "status": "source_revisions_and_reader_contracts_frozen_selection_receipt_pending",
+  "split_seed": 20260809,
+  "sources": {
+    "arc_easy": {
+      "dataset_id": "allenai/ai2_arc",
+      "revision": "210d026faf9955653af8916fad021475a3f00453",
+      "config": "ARC-Easy",
+      "verified_train_split": "train",
+      "evaluation_split": "validation",
+      "reader": "mcq_choice_text_same_reader",
+      "role": "floor_retention_only"
+    },
+    "arc_challenge": {
+      "dataset_id": "allenai/ai2_arc",
+      "revision": "210d026faf9955653af8916fad021475a3f00453",
+      "config": "ARC-Challenge",
+      "verified_train_split": "train",
+      "evaluation_split": "validation",
+      "reader": "mcq_choice_text_same_reader",
+      "role": "target_secondary"
+    },
+    "gsm8k": {
+      "dataset_id": "openai/gsm8k",
+      "revision": "740312add88f781978c0658806c59bc2815b9866",
+      "config": "main",
+      "verified_train_split": "train",
+      "evaluation_split": "test",
+      "reader": "final_number_after_hash_delimiter",
+      "role": "target_primary"
+    },
+    "mbpp": {
+      "dataset_id": "google-research-datasets/mbpp",
+      "revision": "4bb6404fdc6cacfda99d4ac4205087b89d32030c",
+      "config": "sanitized",
+      "verified_train_split": "train",
+      "evaluation_split": "test",
+      "reader": "sandboxed_unit_test_execution",
+      "role": "target_primary"
+    },
+    "mmlu": {
+      "dataset_id": "cais/mmlu",
+      "revision": "c30699e8356da336a370243923dbaf21066bb9fe",
+      "config": "all",
+      "verified_train_split": null,
+      "evaluation_split": "test",
+      "reader": "mcq_choice_text_same_reader",
+      "role": "floor_retention_only",
+      "selection": "fixed_seeded_slice_size_set_by_empirical_false_stop_calibration"
+    },
+    "tier1": {
+      "dataset_id": "local_paper_one_tier1_arithmetic",
+      "path": "outputs/stage5/stage5_adapter_budget_arm_e_20260718/data/base_capability_canary_64.jsonl",
+      "bytes": 40900,
+      "sha256": "d24f48b21a0c75d82793ec682ab21bc54de1e9bfc25ba38afc4a25bcc9207569",
+      "verified_train_split": null,
+      "evaluation_split": "frozen_64",
+      "reader": "paper_one_same_reader",
+      "role": "floor_retention_only"
+    }
+  },
+  "pending_receipts_before_p33_lock": [
+    "materialized_content_hash_per_source_split",
+    "mmlu_fixed_slice_size_and_membership_hash",
+    "dev_confirm_document_membership_hashes",
+    "empirical_discordance_and_checkpoint_autocorrelation",
+    "reader_source_hashes"
+  ],
+  "p33_training_authorized": false
+}

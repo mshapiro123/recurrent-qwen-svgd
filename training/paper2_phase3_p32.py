@@ -38,14 +38,11 @@ def agreement_gate_label(
     *,
     teachability_threshold: float,
     confident_agreement_margin_threshold: float,
-    require_32b: bool = True,
 ) -> GateLabel:
     cross_scale = (
         inputs.teacher_32b_top1 is not None
         and inputs.teacher_14b_top1 == inputs.teacher_32b_top1
     )
-    if require_32b and not cross_scale:
-        return GateLabel.IGNORED
     disagreement = inputs.student_top1 != inputs.teacher_14b_top1
     if disagreement and cross_scale and inputs.teachability >= teachability_threshold:
         return GateLabel.POSITIVE
@@ -109,6 +106,7 @@ def validate_cache_record(record: Mapping[str, Any]) -> dict[str, Any]:
         required = {
             "teacher_32b_top1",
             "cross_scale_consistent",
+            "flip_candidate_14b",
             "teachability",
             "confident_agreement_margin",
             "teacher_topk_ids",
@@ -117,10 +115,22 @@ def validate_cache_record(record: Mapping[str, Any]) -> dict[str, Any]:
         absent = sorted(required - set(record))
         if absent:
             raise ValueError(f"agreement record missing fields: {absent}")
-        if record["teacher_32b_top1"] is None or not bool(record["cross_scale_consistent"]):
-            raise ValueError("agreement record lacks required 14B/32B concurrence")
-        if label == GateLabel.POSITIVE and record["student_top1"] == record["teacher_14b_top1"]:
-            raise ValueError("agreement positive must be a teacher/student disagreement")
+        cascade_covered = record["teacher_32b_top1"] is not None
+        cross_scale_consistent = bool(
+            cascade_covered
+            and record["teacher_14b_top1"] == record["teacher_32b_top1"]
+        )
+        if bool(record["cross_scale_consistent"]) != cross_scale_consistent:
+            raise ValueError("agreement cross-scale consistency field is inaccurate")
+        disagreement = record["student_top1"] != record["teacher_14b_top1"]
+        if bool(record["flip_candidate_14b"]) and not disagreement:
+            raise ValueError("14B flip candidate must be a teacher/student disagreement")
+        if label == GateLabel.POSITIVE and not (
+            bool(record["flip_candidate_14b"]) and cross_scale_consistent
+        ):
+            raise ValueError("agreement positive requires a concurrent 14B/32B flip target")
+        if label == GateLabel.NEGATIVE and disagreement:
+            raise ValueError("agreement negative must be a confident 14B/student agreement")
         if "teacher_right" in record or "student_right" in record:
             raise ValueError("agreement records cannot carry unverified correctness labels")
     else:
@@ -132,6 +142,17 @@ def validate_cache_record(record: Mapping[str, Any]) -> dict[str, Any]:
             bool(record["teacher_right"]) and not bool(record["student_right"])
         ):
             raise ValueError("verified positive must be teacher-right/student-wrong")
+    is_agreement = stratum == "agreement"
+    cascade_covered = bool(is_agreement and record.get("teacher_32b_top1") is not None)
+    cross_scale_consistent = bool(is_agreement and record.get("cross_scale_consistent"))
+    flip_candidate_14b = bool(is_agreement and record.get("flip_candidate_14b"))
+    loss_eligibility = {
+        "l_kl": is_agreement,
+        "aim_target": is_agreement and label == GateLabel.POSITIVE and cross_scale_consistent,
+        "gate_positive": label == GateLabel.POSITIVE,
+        "gate_negative": label == GateLabel.NEGATIVE,
+        "preservation": label == GateLabel.NEGATIVE,
+    }
     return {
         "record_id": str(record["record_id"]),
         "source_stratum": stratum,
@@ -139,6 +160,16 @@ def validate_cache_record(record: Mapping[str, Any]) -> dict[str, Any]:
         "document_id": str(record["document_id"]),
         "item_id": str(record["item_id"]),
         "gate_label": int(label),
+        "cascade_covered": cascade_covered,
+        "cross_scale_consistent": cross_scale_consistent,
+        "flip_candidate_14b": flip_candidate_14b,
+        "targeted_32b_extension_candidate": bool(
+            is_agreement and flip_candidate_14b and not cascade_covered
+        ),
+        "cross_scale_conflict": bool(
+            is_agreement and cascade_covered and not cross_scale_consistent
+        ),
+        "loss_eligibility": loss_eligibility,
         "record_sha256": canonical_sha256(dict(record)),
     }
 
@@ -149,19 +180,77 @@ def cache_manifest(records: list[Mapping[str, Any]]) -> dict[str, Any]:
     if len(ids) != len(set(ids)):
         raise ValueError("P3.2 cache record ids must be unique")
     counts = {
+        "total": len(validated),
         "agreement": sum(record["source_stratum"] == "agreement" for record in validated),
         "verified": sum(record["source_stratum"] == "verified" for record in validated),
         "positive": sum(record["gate_label"] == int(GateLabel.POSITIVE) for record in validated),
         "negative": sum(record["gate_label"] == int(GateLabel.NEGATIVE) for record in validated),
         "ignored": sum(record["gate_label"] == int(GateLabel.IGNORED) for record in validated),
     }
+    agreement = [record for record in validated if record["source_stratum"] == "agreement"]
+    cascade_covered = sum(record["cascade_covered"] for record in agreement)
+    concurrent = sum(record["cross_scale_consistent"] for record in agreement)
+    label_names = {
+        GateLabel.POSITIVE: "positive",
+        GateLabel.NEGATIVE: "negative",
+        GateLabel.IGNORED: "ignored",
+    }
+    per_label_class = {}
+    for label, name in label_names.items():
+        selected = [record for record in agreement if record["gate_label"] == int(label)]
+        covered = sum(record["cascade_covered"] for record in selected)
+        per_label_class[name] = {
+            "total": len(selected),
+            "cascade_covered": covered,
+            "cross_scale_concurrent": sum(
+                record["cross_scale_consistent"] for record in selected
+            ),
+            "14b_only": len(selected) - covered,
+        }
+    per_loss_class = {
+        loss: {
+            "eligible": sum(record["loss_eligibility"][loss] for record in validated),
+            "agreement_14b_only_eligible": sum(
+                record["source_stratum"] == "agreement"
+                and not record["cascade_covered"]
+                and record["loss_eligibility"][loss]
+                for record in validated
+            ),
+        }
+        for loss in ("l_kl", "aim_target", "gate_positive", "gate_negative", "preservation")
+    }
+    extension_candidates = sum(
+        record["targeted_32b_extension_candidate"] for record in agreement
+    )
     stable = sorted(validated, key=lambda record: record["record_id"])
     return {
-        "kind": "paper2_phase3_p32_cache_manifest_v1",
+        "kind": "paper2_phase3_p32_cache_manifest_v2",
         "status": "schema_validated_no_model_training",
         "counts": counts,
+        "coverage": {
+            "total_anchors": len(validated),
+            "agreement_anchors": len(agreement),
+            "cascade_covered_agreement_anchors": cascade_covered,
+            "cross_scale_concurrent_agreement_anchors": concurrent,
+            "concurrence_rate_within_cascade_coverage": (
+                concurrent / cascade_covered if cascade_covered else None
+            ),
+            "per_label_class": per_label_class,
+            "per_loss_class": per_loss_class,
+            "targeted_32b_extension_candidates": extension_candidates,
+            "cross_scale_conflicts": sum(record["cross_scale_conflict"] for record in agreement),
+            "write_stratum_thinness_threshold": None,
+            "write_stratum_thinness_decision": "pending_p33_lock",
+        },
         "record_index_sha256": canonical_sha256(stable),
-        "cross_scale_agreement_required": True,
+        "admission_policy": {
+            "aim_target": "14b_and_32b_required_and_concurrent",
+            "gate_positive": "agreement_positive_requires_14b_32b_concurrence_verified_positive_requires_programmatic_correctness",
+            "l_kl": "14b_only_admissible",
+            "gate_negative": "confident_14b_student_agreement_14b_only_admissible",
+            "preservation": "14b_only_admissible",
+            "fallback": "targeted_32b_extension_over_uncovered_flip_candidates_never_dilution",
+        },
         "agreement_correctness_labels_prohibited": True,
         "gate_label_semantics": {"positive": 1, "negative": 0, "ignored": -1},
     }

@@ -50,6 +50,12 @@
       "path": "docs/STRATEGY_P30_ADDENDUM_REASONING_SCOPE_20260809.md",
       "bytes": 6026,
       "sha256": "9c47ffc394c965f452766cfc7d38c15bf6396970a8cf1c36e2f0c9324689b081"
+    },
+    "opening_build_strategy_response": {
+      "drive_id": "1-7DU8aleh-tbkV9sR9Eh7VTERH5jBnsy",
+      "path": "docs/STRATEGY_PHASE3_BUILD_RESPONSE_20260810.md",
+      "bytes": 5506,
+      "sha256": "925082fc56ffa5fab776aa4dbd44c42440b2e7aa7965f916106236640f8fd37d"
     }
   },
   "architecture": {
@@ -61,18 +67,39 @@
       "attended_scratch",
       "control_state"
     ],
-    "migration": "retain bridge.gate_logits as per-loop bias and zero-initialize all new projections"
+    "migration": "retain bridge.gate_logits as per-loop bias and zero-initialize all new projections",
+    "migration_sources": {
+      "path": "training/paper2_phase3_migration_sources.json",
+        "sha256": "7565afe193c6c163adbde6e87ef55d46e5dda1c09751f473eed5e8c9d16e498c"
+    }
   },
   "p31": {
+    "source_manifest": {
+      "path": "training/paper2_phase3_p31_source_manifest.json",
+      "sha256": "31cda92fa0ca812ec8abe4da1d5a964afc405b5f62dccb1da78a6560841d5a56"
+    },
     "split_seed": 20260809,
     "target_primary": ["gsm8k", "mbpp"],
     "target_secondary": ["arc_challenge"],
     "floor_retention_only": ["arc_easy", "mmlu", "tier1"],
-    "false_stop": "paired one-sided upper Student-t bound below -0.03 on two consecutive looks; n and alpha selected by campaign simulation"
+    "false_stop": "paired one-sided upper Student-t bound below -0.03 on two consecutive looks; n and alpha selected under a no-drop null by campaign simulation",
+    "planning_assumption": {
+      "rows": 512,
+      "one_sided_alpha": 0.00005,
+      "binding": false
+    },
+    "binding_calibration": "rerun on empirical DEV paired discordance and adjacent checkpoint autocorrelation",
+    "familywise_false_stop_target": 0.0001,
+    "descriptive_power_drops": [-0.03, -0.05],
+    "power_gate": null
   },
   "p32": {
     "agreement_stratum_correctness_labels": false,
-    "cross_scale_14b_32b_concurrence_required": true,
+    "cross_scale_14b_32b_concurrence_required_for": ["aim_target", "gate_positive"],
+    "14b_only_admissible_for": ["l_kl", "gate_negative", "preservation"],
+    "coverage_arithmetic_required_per_label_and_loss_class": true,
+    "thin_write_stratum_fallback": "targeted_32b_extension_over_uncovered_flip_candidates",
+    "concurrence_relaxation_permitted": false,
     "verified_stratum_programmatic_correctness_required": true,
     "gate_labels": ["positive", "negative", "ignored"],
     "gate_loss_excludes_ignored": true

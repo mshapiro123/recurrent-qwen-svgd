@@ -259,6 +259,36 @@ def paired_false_stop(
     }
 
 
+def estimate_empirical_paired_design(
+    differences_by_look: Sequence[Sequence[float] | np.ndarray],
+) -> dict[str, Any]:
+    values = np.asarray(differences_by_look, dtype=np.float64)
+    if values.ndim != 2 or values.shape[0] < 2 or values.shape[1] < 2:
+        raise ValueError("empirical calibration requires [looks, paired rows]")
+    if not np.isin(values, (-1.0, 0.0, 1.0)).all():
+        raise ValueError("empirical paired differences must be -1, 0, or 1")
+    discordance = float(np.mean(values != 0.0))
+    earlier = values[:-1].reshape(-1)
+    later = values[1:].reshape(-1)
+    if float(earlier.std()) == 0.0 or float(later.std()) == 0.0:
+        raise ValueError("empirical differences have no variance for autocorrelation")
+    correlation = float(np.corrcoef(earlier, later)[0, 1])
+    if not math.isfinite(correlation):
+        raise ValueError("empirical checkpoint autocorrelation is non-finite")
+    if correlation < 0.0:
+        raise ValueError("negative empirical autocorrelation requires a preregistration amendment")
+    return {
+        "kind": "paper2_phase3_p31_empirical_noise_estimate_v1",
+        "looks": int(values.shape[0]),
+        "rows": int(values.shape[1]),
+        "paired_discordant_probability": discordance,
+        "adjacent_checkpoint_autocorrelation": min(correlation, 0.999999),
+        "mean_difference_by_look": values.mean(axis=1).tolist(),
+        "source_is_dev": True,
+        "scores_are_not_confirm": True,
+    }
+
+
 @dataclass(frozen=True)
 class PairedNullDesign:
     rows: int
@@ -270,8 +300,8 @@ class PairedNullDesign:
     def validate(self) -> None:
         if self.rows < 2 or self.looks < 2:
             raise ValueError("paired null design requires rows and looks")
-        if not abs(self.margin) < self.discordant_probability < 1.0:
-            raise ValueError("discordance must exceed the absolute null mean")
+        if not 0.0 < self.discordant_probability < 1.0:
+            raise ValueError("discordance must be in (0, 1)")
         if not 0.0 <= self.adjacent_correlation < 1.0:
             raise ValueError("adjacent correlation must be in [0, 1)")
 
@@ -282,20 +312,29 @@ def simulate_false_stop_probability(
     alpha: float,
     campaigns: int,
     seed: int,
+    true_mean_difference: float = 0.0,
     batch_campaigns: int = 128,
 ) -> dict[str, Any]:
-    """Simulate the registered paired looks at the non-inferiority boundary."""
+    """Simulate the registered paired sequential-stop rule under one effect size."""
 
     design.validate()
     if campaigns <= 0 or batch_campaigns <= 0:
         raise ValueError("simulation campaign counts must be positive")
+    if abs(true_mean_difference) > design.discordant_probability:
+        raise ValueError("absolute true mean cannot exceed paired discordance")
     rng = np.random.default_rng(seed)
-    negative_probability = (design.discordant_probability - design.margin) / 2.0
-    positive_probability = (design.discordant_probability + design.margin) / 2.0
+    negative_probability = (design.discordant_probability - true_mean_difference) / 2.0
+    positive_probability = (design.discordant_probability + true_mean_difference) / 2.0
     if min(negative_probability, positive_probability) < 0:
         raise ValueError("paired null probabilities are invalid")
-    negative_cut = float(_normal_ppf(negative_probability))
-    positive_cut = float(_normal_ppf(1.0 - positive_probability))
+    negative_cut = (
+        -math.inf if negative_probability == 0.0 else float(_normal_ppf(negative_probability))
+    )
+    positive_cut = (
+        math.inf
+        if positive_probability == 0.0
+        else float(_normal_ppf(1.0 - positive_probability))
+    )
     stopped = 0
     completed = 0
     while completed < campaigns:
@@ -322,24 +361,48 @@ def simulate_false_stop_probability(
         if stopped == campaigns
         else float(beta_distribution.ppf(0.95, stopped + 1, campaigns - stopped))
     )
-    return {
-        "kind": "paper2_phase3_p31_false_stop_simulation_v1",
+    is_no_drop_null = math.isclose(true_mean_difference, 0.0, abs_tol=1e-12)
+    result = {
+        "kind": "paper2_phase3_p31_sequential_stop_simulation_v2",
+        "metric_role": (
+            "familywise_false_stop_under_no_drop_null"
+            if is_no_drop_null
+            else "detection_power_under_sustained_drop"
+        ),
         "seed": seed,
         "campaigns": campaigns,
         "rows": design.rows,
         "looks": design.looks,
-        "null_mean_difference": design.margin,
+        "true_mean_difference": true_mean_difference,
+        "stopping_margin": design.margin,
         "discordant_probability": design.discordant_probability,
         "adjacent_correlation": design.adjacent_correlation,
         "one_sided_alpha": alpha,
         "confidence_level": 1.0 - alpha,
         "consecutive_looks_required": 2,
-        "false_stops": stopped,
-        "estimated_familywise_false_stop_probability": probability,
+        "campaigns_stopped": stopped,
+        "estimated_stop_probability": probability,
         "conservative_upper_95_probability": upper_95,
-        "target_probability": 1e-4,
-        "target_met_by_conservative_upper": upper_95 < 1e-4,
     }
+    if is_no_drop_null:
+        result.update(
+            {
+                "false_stops": stopped,
+                "estimated_familywise_false_stop_probability": probability,
+                "target_probability": 1e-4,
+                "target_met_by_conservative_upper": upper_95 < 1e-4,
+            }
+        )
+    else:
+        result.update(
+            {
+                "detected_campaigns": stopped,
+                "estimated_detection_power": probability,
+                "power_gate": None,
+                "power_is_descriptive": True,
+            }
+        )
+    return result
 
 
 def _normal_ppf(probability: float) -> float:

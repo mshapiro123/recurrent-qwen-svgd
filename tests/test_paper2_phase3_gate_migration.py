@@ -3,6 +3,10 @@ from __future__ import annotations
 import torch
 from torch import nn
 
+from eval.prepare_paper2_phase3_checkpoint_migration import (
+    _new_embedding,
+    _reconstruct_phase2_state,
+)
 from models.paper2_dc2_student import (
     Phase2StudentModules,
     Phase3PerPositionAnchoredBridge,
@@ -102,3 +106,40 @@ def test_phase2_scalar_gate_migration_is_one_way_and_counted() -> None:
     assert phase3_trainable_parameter_count(phase2) == 1_184_917
     assert receipt["phase3_trainable_parameter_count"] == 1_185_973
     assert phase3_trainable_parameter_count(module) == 1_185_973
+
+
+def test_checkpoint_reconstruction_combines_a1_flow_and_e1_active_state() -> None:
+    seed = 1
+    rms_cap = 0.5508932316303252
+    torch.manual_seed(seed)
+    baseline = Phase2StudentModules(
+        tied_embedding=_new_embedding(seed), hidden_size=896, rms_cap=rms_cap
+    ).float()
+    baseline_state = trainable_state(baseline)
+    flow_state = {
+        name: torch.full_like(value, 0.125)
+        for name, value in baseline_state.items()
+        if name.startswith("flow.")
+    }
+    endpoint_state = {
+        "bridge.gate_logits": torch.tensor([-4.0, -3.5, -3.0, -2.5]),
+        "draft.write_gate.bias": torch.full_like(
+            baseline_state["draft.write_gate.bias"], -2.75
+        ),
+    }
+
+    reconstructed = _reconstruct_phase2_state(
+        a1_payload={"flow_state": flow_state},
+        endpoint_state=endpoint_state,
+        seed=seed,
+        rms_cap=rms_cap,
+    )
+
+    for name, value in flow_state.items():
+        assert torch.equal(reconstructed[name], value)
+    for name, value in endpoint_state.items():
+        assert torch.equal(reconstructed[name], value)
+    assert torch.equal(
+        reconstructed["initializer.query.weight"],
+        baseline_state["initializer.query.weight"],
+    )

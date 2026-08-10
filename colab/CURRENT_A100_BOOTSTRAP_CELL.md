@@ -4166,6 +4166,20 @@ TARGETS = {
             "STAGE5_REGRESSION_DISCONNECT": "0",
         },
     },
+    "paper2_phase3_p31_p32_receipts": {
+        "path": "colab/STAGE5_PAPER2_PHASE3_P31_P32_RECEIPTS_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_PHASE3_P31_P32_RECEIPTS_VERSION",
+            "paper2_phase3_p31_p32_receipts_v1",
+            "exact pinned datasets score-blind source assembly and CONFIRM seal only",
+            "512-row alpha-0.00005 planning forecast plus three-point and five-point power",
+            "both E1 full-system seed checkpoints hash-pinned and migrated bit-exact",
+            "P3.2 strict writes permissive distillation coverage receipt before cache finality",
+            "no P3.3 optimizer no P3.3 training no CONFIRM scoring",
+            "colab/run_stage5_paper2_phase3_p31_p32_receipts.py",
+        ],
+        "env": {},
+    },
     "gradient_path_audit": {
         "path": "colab/STAGE5_GRADIENT_PATH_AUDIT_CELL.py",
         "markers": [
