@@ -1,6 +1,12 @@
 from __future__ import annotations
 
-from eval.eval_paper2_phase3_p32_coverage import coverage_surface
+import pytest
+import torch
+
+from eval.eval_paper2_phase3_p32_coverage import (
+    _flatten_teacher_field,
+    coverage_surface,
+)
 
 
 def _row(
@@ -47,3 +53,38 @@ def test_coverage_surface_separates_strict_writes_and_extension() -> None:
     assert negative["confident_agreement_negatives"] == 1
     assert negative["14b_only_admissible"] == 1
     assert result["thresholds_selected_for_p33"] is False
+
+
+def test_teacher_row_groups_flatten_in_declared_sample_order() -> None:
+    payload = {
+        "sample_indices": torch.tensor([3, 7, 11]),
+        "rows": [
+            {
+                "sample_indices": torch.tensor([3, 7]),
+                "topk_log_probs": torch.tensor([[1.0, 0.0], [2.0, 1.0]]),
+            },
+            {
+                "sample_indices": torch.tensor([11]),
+                "topk_log_probs": torch.tensor([[3.0, 2.0]]),
+            },
+        ],
+    }
+    observed = _flatten_teacher_field(payload, "topk_log_probs")
+    assert torch.equal(
+        observed,
+        torch.tensor([[1.0, 0.0], [2.0, 1.0], [3.0, 2.0]]),
+    )
+
+
+def test_teacher_row_groups_reject_changed_sample_order() -> None:
+    payload = {
+        "sample_indices": torch.tensor([3, 7]),
+        "rows": [
+            {
+                "sample_indices": torch.tensor([7, 3]),
+                "topk_log_probs": torch.zeros(2, 2),
+            }
+        ],
+    }
+    with pytest.raises(RuntimeError, match="sample ordering changed"):
+        _flatten_teacher_field(payload, "topk_log_probs")

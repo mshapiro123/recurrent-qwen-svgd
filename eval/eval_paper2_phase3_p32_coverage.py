@@ -60,6 +60,24 @@ def _samples(private_root: Path) -> list[dict[str, Any]]:
     return rows
 
 
+def _flatten_teacher_field(payload: dict[str, Any], field: str) -> torch.Tensor:
+    """Read both legacy flat fixtures and the real row-grouped teacher shards."""
+
+    if field in payload:
+        return payload[field]
+    rows = payload.get("rows")
+    if not isinstance(rows, list) or not rows:
+        raise KeyError(f"teacher cache is missing {field!r} and row groups")
+    missing = [index for index, row in enumerate(rows) if field not in row]
+    if missing:
+        raise KeyError(f"teacher cache row groups missing {field!r}: {missing[:8]}")
+    row_indices = torch.cat([row["sample_indices"].long() for row in rows])
+    top_indices = payload["sample_indices"].long()
+    if not torch.equal(row_indices, top_indices):
+        raise RuntimeError("teacher cache row-group sample ordering changed")
+    return torch.cat([row[field] for row in rows])
+
+
 def _training_anchor_mask(
     samples: list[dict[str, Any]], *, source: str
 ) -> tuple[torch.Tensor, dict[int, dict[str, Any]]]:
@@ -129,6 +147,9 @@ def load_agreement_records(
         teacher_indices = teacher["sample_indices"].long()
         if not torch.equal(lattice_indices, teacher_indices):
             raise RuntimeError("P3.2 lattice/teacher sample alignment failed")
+        teacher_topk_log_probs = _flatten_teacher_field(teacher, "topk_log_probs")
+        if teacher_topk_log_probs.shape[0] != teacher_indices.numel():
+            raise RuntimeError("P3.2 teacher top-k row count mismatch")
         if len(lattice["records"]) != int(lattice_indices.numel()):
             raise RuntimeError("P3.2 lattice record count mismatch")
         for offset, sample_index in enumerate(lattice_indices.tolist()):
@@ -145,7 +166,7 @@ def load_agreement_records(
                 if greedy.get("teacher_32b") is not None
                 else None
             )
-            topk_log = teacher["topk_log_probs"][offset].float()
+            topk_log = teacher_topk_log_probs[offset].float()
             if topk_log.numel() < 2:
                 raise RuntimeError("14B confident-agreement margin needs at least top-2")
             margin = float(topk_log[0] - topk_log[1])
