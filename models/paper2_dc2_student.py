@@ -244,6 +244,7 @@ class BridgeOutput:
     rho: torch.Tensor
     realized_writeback_ratio: torch.Tensor
     position_zero_gate_closed: bool
+    position_gate: Optional[torch.Tensor] = None
 
 
 class AnchoredBridge(nn.Module):
@@ -321,6 +322,105 @@ class AnchoredBridge(nn.Module):
             rho=rho,
             realized_writeback_ratio=ratio,
             position_zero_gate_closed=bool(torch.equal(gate_mask[:, 0], torch.zeros_like(gate_mask[:, 0]))),
+        )
+
+
+class Phase3PerPositionAnchoredBridge(AnchoredBridge):
+    """Phase 3 gate extension with scalar-compatible per-position control."""
+
+    def __init__(
+        self,
+        *,
+        hidden_size: int,
+        latent_dim: int = 128,
+        control_dim: int = 32,
+        max_steps: int = 4,
+        rms_cap: float = 0.550893,
+        eps: float = 1e-6,
+    ) -> None:
+        super().__init__(
+            hidden_size=hidden_size,
+            latent_dim=latent_dim,
+            max_steps=max_steps,
+            rms_cap=rms_cap,
+            eps=eps,
+        )
+        self.control_dim = int(control_dim)
+        self.gate_hidden = nn.Linear(hidden_size, 1, bias=False)
+        self.gate_scratch = nn.Linear(latent_dim, 1, bias=False)
+        self.gate_control = nn.Linear(control_dim, 1, bias=False)
+        nn.init.zeros_(self.gate_hidden.weight)
+        nn.init.zeros_(self.gate_scratch.weight)
+        nn.init.zeros_(self.gate_control.weight)
+
+    def forward(
+        self,
+        *,
+        h0: torch.Tensor,
+        previous: torch.Tensor,
+        scratch: torch.Tensor,
+        control_state: Optional[torch.Tensor],
+        loop_index: int,
+        active: bool = True,
+    ) -> BridgeOutput:
+        if loop_index < 0 or loop_index >= self.max_steps:
+            raise ValueError(f"loop index violates loop cap {self.max_steps}")
+        if h0.shape != previous.shape or h0.ndim != 3:
+            raise ValueError("h0 and previous must share [batch, sequence, hidden]")
+        if control_state is not None and control_state.shape != (h0.shape[0], self.control_dim):
+            raise ValueError("control state must share the bridge batch and registered control width")
+        if not active:
+            zero = previous.new_zeros(previous.shape)
+            return BridgeOutput(
+                hidden=previous,
+                delta=zero,
+                gate=previous.new_zeros(()),
+                rho=previous.new_ones(()),
+                realized_writeback_ratio=previous.new_zeros(previous.shape[:2]),
+                position_zero_gate_closed=True,
+                position_gate=previous.new_zeros((*previous.shape[:2], 1)),
+            )
+        query = self.query(self.hidden_norm(h0.float()))
+        normalized_scratch = self.scratch_norm(scratch.float())
+        key = self.key(normalized_scratch)
+        value = self.value(normalized_scratch)
+        attention = torch.softmax(query @ key.transpose(-1, -2) / math.sqrt(self.latent_dim), dim=-1)
+        attended_scratch = attention @ value
+        delta = self.output_projection(attended_scratch)
+        delta_rms = _rms(delta).unsqueeze(-1)
+        reference = _rms(h0).clamp_max(self.rms_cap).unsqueeze(-1).detach()
+        delta = delta / delta_rms.clamp_min(self.eps) * reference
+        if control_state is None:
+            control_state = h0.new_zeros((h0.shape[0], self.control_dim))
+        gate_logit = (
+            self.gate_logits[loop_index]
+            + self.gate_hidden(self.hidden_norm(previous.float()))
+            + self.gate_scratch(attended_scratch)
+            + self.gate_control(control_state.float()).unsqueeze(1)
+        )
+        position_gate = torch.sigmoid(gate_logit)
+        rho = torch.sigmoid(self.rho_logits[loop_index])
+        gate_mask = torch.ones_like(delta[..., :1])
+        gate_mask[:, 0] = 0
+        position_gate = position_gate * gate_mask
+        writeback = position_gate * delta
+        hidden = h0 + rho * (previous - h0) + writeback
+        ratio = _rms(writeback) / _rms(h0).clamp_min(self.eps)
+        gate = (
+            position_gate[:, 1:].mean()
+            if position_gate.shape[1] > 1
+            else position_gate.new_zeros(())
+        )
+        return BridgeOutput(
+            hidden=hidden,
+            delta=delta,
+            gate=gate,
+            rho=rho,
+            realized_writeback_ratio=ratio,
+            position_zero_gate_closed=bool(
+                torch.equal(gate_mask[:, 0], torch.zeros_like(gate_mask[:, 0]))
+            ),
+            position_gate=position_gate,
         )
 
 
@@ -512,6 +612,111 @@ class Phase2StudentModules(nn.Module):
             h0=hidden,
             previous=hidden,
             scratch=flow.state,
+            loop_index=max(0, steps - 1),
+            active=steps > 0,
+        )
+        if steps > 0:
+            draft = self.draft(
+                previous_logits=previous_logits,
+                scratch=flow.state,
+                control_state=control,
+                candidate_ids=candidate_ids,
+            )
+        else:
+            zero_delta = torch.zeros_like(previous_logits)
+            draft = DraftHeadOutput(
+                logits=previous_logits,
+                delta_logits=zero_delta,
+                write_gates=previous_logits.new_zeros(previous_logits.shape[:2]),
+            )
+        return Phase2StudentOutput(
+            loss=None,
+            scratch=flow.state,
+            flow=flow,
+            hidden=bridge.hidden,
+            logits=draft.logits,
+            control_state=control,
+            control_read=control,
+            bridge=bridge,
+            draft=draft,
+        )
+
+
+class Phase3StudentModules(Phase2StudentModules):
+    """Phase 3 sidecar with a separately versioned per-position bridge gate."""
+
+    def __init__(
+        self,
+        *,
+        tied_embedding: nn.Embedding,
+        hidden_size: int,
+        latent_dim: int = 128,
+        n_slots: int = 8,
+        control_dim: int = 32,
+        draft_rank: int = 64,
+        max_steps: int = 4,
+        rms_cap: float = 0.550893,
+    ) -> None:
+        super().__init__(
+            tied_embedding=tied_embedding,
+            hidden_size=hidden_size,
+            latent_dim=latent_dim,
+            n_slots=n_slots,
+            control_dim=control_dim,
+            draft_rank=draft_rank,
+            max_steps=max_steps,
+            rms_cap=rms_cap,
+        )
+        self.bridge = Phase3PerPositionAnchoredBridge(
+            hidden_size=hidden_size,
+            latent_dim=latent_dim,
+            control_dim=control_dim,
+            max_steps=max_steps,
+            rms_cap=rms_cap,
+        )
+
+    def forward(
+        self,
+        *,
+        hidden: torch.Tensor,
+        previous_logits: torch.Tensor,
+        steps: int,
+        attention_mask: Optional[torch.Tensor] = None,
+        position_bucket: Optional[torch.Tensor] = None,
+        target_scratch: Optional[torch.Tensor] = None,
+        apply_trust_penalty: bool = False,
+        candidate_ids: Optional[torch.Tensor] = None,
+    ) -> Phase2StudentOutput:
+        if steps < 0 or steps > self.max_steps:
+            raise ValueError(f"requested steps violate loop cap {self.max_steps}")
+        scratch0 = self.initializer(hidden, attention_mask)
+        context = hidden.float().mean(dim=1)
+        flow = self.flow(
+            scratch0,
+            context,
+            steps=steps,
+            target_state=target_scratch,
+            apply_trust_penalty=apply_trust_penalty,
+        )
+        if flow.updates:
+            innovation_norm = _rms(flow.updates[-1]).mean(dim=1)
+        else:
+            innovation_norm = hidden.new_zeros((hidden.shape[0],))
+        if position_bucket is None:
+            position_bucket = torch.zeros(hidden.shape[0], dtype=torch.long, device=hidden.device)
+        control = self.control(
+            scratch=flow.state,
+            previous=None,
+            innovation_norm=innovation_norm,
+            student_entropy=hidden.new_zeros((hidden.shape[0],)),
+            top2_margin=hidden.new_zeros((hidden.shape[0],)),
+            position_bucket=position_bucket,
+        )
+        bridge = self.bridge(
+            h0=hidden,
+            previous=hidden,
+            scratch=flow.state,
+            control_state=control,
             loop_index=max(0, steps - 1),
             active=steps > 0,
         )

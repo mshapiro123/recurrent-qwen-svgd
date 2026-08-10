@@ -1,0 +1,7 @@
+# Program Record — Technical Amendment t1 Ratified
+
+Date: 2026-08-09. Mark ratified `STRATEGY_PHASE3_TECH_AMENDMENT_20260809.md` (Drive `1kcSXssN6sVmQFQ2toJoMiQitMU7AcbMl`, SHA `12071c995ee93535133f657aa0b698b4a60a159d4d3bbc07da75cb52fba52873`) in full: corrections C1–C4, amendments B1–B6, the seven question answers, and the build order.
+
+Effect: the coding agent is cleared to proceed on build-order items 1–4 — (1) land the r2 handoff (`1ZF7zOQQMvU_HEMQVEfwpuv8hQUhDRCW0`), realignment r2 (`1189Ah2swUw6DiK778VffygPAqeOhkQbe`), dialectical review (`1_CeYQj_rUkau_clRzW5R7CFizCZmYjoL`), amendment t1, and figure r2 (`15FuxB4cDjDnmPtLzeGIcBv8IVy-VIn7a`) byte-verified in the repository; (2) is this record's subject, complete; (3) the P3.1 battery assembler, DEV/CONFIRM split ledger with seed 20260809, lease enforcement, and the C4 paired false-stop simulation; (4) the P3.2 cache schema and oracle-gradient batching preflight, including the per-position gate head build under the C2 migration contract.
+
+The P3.3 lock is drafted only after the P3.0 research memo lands (strategy, in progress) and the t1 contract items are bound to receipts. The per-position gate head is an authorized architecture change: final trainable parameter count is set by its build receipt and adopted program-wide from that receipt forward.

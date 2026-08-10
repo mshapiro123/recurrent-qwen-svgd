@@ -3,5 +3,6 @@ transformers>=4.44
 accelerate
 pyyaml
 pytest
+scipy
 datasets
 huggingface_hub

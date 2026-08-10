@@ -1,0 +1,87 @@
+{
+  "kind": "paper2_phase3_opening_contract_v1",
+  "date": "2026-08-09",
+  "status": "p31_p32_build_authorized_p33_training_not_locked",
+  "governing_artifacts": {
+    "opening_handoff_r2": {
+      "drive_id": "1ZF7zOQQMvU_HEMQVEfwpuv8hQUhDRCW0",
+      "path": "docs/STRATEGY_PHASE3_OPENING_HANDOFF_20260809_r2.md",
+      "bytes": 23083,
+      "sha256": "e1acc3ec20025fecad71832b8f8ccde1b99756d3038dd54adebd0053e846f667"
+    },
+    "goal_realignment_r2": {
+      "drive_id": "1189Ah2swUw6DiK778VffygPAqeOhkQbe",
+      "path": "docs/STRATEGY_PHASE3_GOAL_REALIGNMENT_20260809_r2.md",
+      "bytes": 12009,
+      "sha256": "14eb1fbc3a0fcc9a5bcb30dcc4478225bc6d07c02a3a1ecbaadb3d3939067798"
+    },
+    "dialectical_review": {
+      "drive_id": "1_CeYQj_rUkau_clRzW5R7CFizCZmYjoL",
+      "path": "docs/STRATEGY_PHASE3_DIALECTICAL_REVIEW_20260809.md",
+      "bytes": 14002,
+      "sha256": "d163af54029ccd81a38b0958d60b41a282fc8d7a32aaaaa4a88d7a552bebcaa1"
+    },
+    "technical_amendment_t1": {
+      "drive_id": "1kcSXssN6sVmQFQ2toJoMiQitMU7AcbMl",
+      "path": "docs/STRATEGY_PHASE3_TECH_AMENDMENT_20260809.md",
+      "bytes": 13289,
+      "sha256": "12071c995ee93535133f657aa0b698b4a60a159d4d3bbc07da75cb52fba52873"
+    },
+    "training_signals_r2": {
+      "drive_id": "15FuxB4cDjDnmPtLzeGIcBv8IVy-VIn7a",
+      "path": "docs/figures/PHASE3_TRAINING_SIGNALS_20260809_r2.svg",
+      "bytes": 17176,
+      "sha256": "a335aaf52cd300f2ec268320fed60a2329dbd960b39ba8bef4616514735bda50"
+    },
+    "t1_ratification": {
+      "drive_id": "1TY89NPedmsU3BxSiRo7Sl6v33IDLSgYF",
+      "path": "docs/STRATEGY_T1_RATIFICATION_20260809.md",
+      "bytes": 1333,
+      "sha256": "45095a5b57beaee6e774020b808e7aab9499c9af8eb9e18fcf866ee30d7502e1"
+    },
+    "p30_research_sweep": {
+      "drive_id": "1p1Otx5wPNQA1d5Eg07OR9RX6F3kIZ4Mb",
+      "path": "docs/STRATEGY_P30_RESEARCH_SWEEP_20260809.md",
+      "bytes": 11191,
+      "sha256": "b3a0530f3ed16ec76912a53e30d9f2a87f811fc1b4a1b0e6f73b017238848014"
+    },
+    "p30_reasoning_scope_addendum": {
+      "drive_id": "1JFUpF6wbIM_ZmrggaRp1sp_KIbONyY5_",
+      "path": "docs/STRATEGY_P30_ADDENDUM_REASONING_SCOPE_20260809.md",
+      "bytes": 6026,
+      "sha256": "9c47ffc394c965f452766cfc7d38c15bf6396970a8cf1c36e2f0c9324689b081"
+    }
+  },
+  "architecture": {
+    "phase2_trainable_parameters_historical": 1184917,
+    "phase3_added_per_position_gate_parameters": 1056,
+    "phase3_trainable_parameters": 1185973,
+    "gate_inputs": [
+      "per_position_hidden",
+      "attended_scratch",
+      "control_state"
+    ],
+    "migration": "retain bridge.gate_logits as per-loop bias and zero-initialize all new projections"
+  },
+  "p31": {
+    "split_seed": 20260809,
+    "target_primary": ["gsm8k", "mbpp"],
+    "target_secondary": ["arc_challenge"],
+    "floor_retention_only": ["arc_easy", "mmlu", "tier1"],
+    "false_stop": "paired one-sided upper Student-t bound below -0.03 on two consecutive looks; n and alpha selected by campaign simulation"
+  },
+  "p32": {
+    "agreement_stratum_correctness_labels": false,
+    "cross_scale_14b_32b_concurrence_required": true,
+    "verified_stratum_programmatic_correctness_required": true,
+    "gate_labels": ["positive", "negative", "ignored"],
+    "gate_loss_excludes_ignored": true
+  },
+  "authorization": {
+    "document_and_figure_landing": true,
+    "per_position_gate_build": true,
+    "p31_infrastructure_build": true,
+    "p32_schema_and_preflight_build": true,
+    "p33_training": false
+  }
+}
