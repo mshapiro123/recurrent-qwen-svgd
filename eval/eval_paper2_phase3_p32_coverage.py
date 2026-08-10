@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -170,6 +171,27 @@ def load_agreement_records(
             if topk_log.numel() < 2:
                 raise RuntimeError("14B confident-agreement margin needs at least top-2")
             margin = float(topk_log[0] - topk_log[1])
+            valid = lattice["union_mask"][offset].bool()
+            union_ids = lattice["union_ids"][offset][valid].long()
+            student_log_probs = lattice["model_candidate_log_probs"]["student_0p5b"][
+                offset
+            ][valid].float()
+            student_matches = torch.where(union_ids.eq(student))[0]
+            if student_matches.numel() != 1:
+                raise RuntimeError("student greedy token is absent from the sparse union")
+            student_top1_probability = float(
+                student_log_probs[int(student_matches.item())].exp()
+            )
+            teacher_top1_probability = float(topk_log[0].exp())
+            teacher_count = int(lattice_record.get("teacher_count", 1))
+            normalized_agreement = float(
+                lattice_record.get("normalized_teacher_agreement", 1.0)
+            )
+            teacher_js_divergence = (
+                0.0
+                if teacher_count <= 1
+                else (1.0 - normalized_agreement) * math.log(teacher_count)
+            )
             document = anchors[anchor]
             record_id = canonical_sha256(
                 {
@@ -194,6 +216,9 @@ def load_agreement_records(
                     "teacher_14b_top1": teacher_14b,
                     "teacher_32b_top1": teacher_32b,
                     "teachability": float(lattice_record["teachability_student_topk"]),
+                    "student_top1_probability": student_top1_probability,
+                    "teacher_14b_top1_probability": teacher_top1_probability,
+                    "teacher_js_divergence": teacher_js_divergence,
                     "confident_agreement_margin": margin,
                     "flip_candidate_14b": student != teacher_14b,
                     "cascade_covered": teacher_32b is not None,

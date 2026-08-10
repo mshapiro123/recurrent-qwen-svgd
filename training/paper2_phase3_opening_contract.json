@@ -1,7 +1,7 @@
 {
   "kind": "paper2_phase3_opening_contract_v1",
   "date": "2026-08-09",
-  "status": "p31_p32_build_authorized_p33_training_not_locked",
+  "status": "p31_completion_guardrail_and_p33_prep_authorized_p33_training_not_locked",
   "governing_artifacts": {
     "opening_handoff_r2": {
       "drive_id": "1ZF7zOQQMvU_HEMQVEfwpuv8hQUhDRCW0",
@@ -56,6 +56,12 @@
       "path": "docs/STRATEGY_PHASE3_BUILD_RESPONSE_20260810.md",
       "bytes": 5506,
       "sha256": "925082fc56ffa5fab776aa4dbd44c42440b2e7aa7965f916106236640f8fd37d"
+    },
+    "p31_p33prep_execution_handoff": {
+      "drive_id": "16Bse2nTmz9-PpzI9QneFIZ70MqTO9gHp",
+      "path": "docs/STRATEGY_HANDOFF_P31_P33PREP_20260810.md",
+      "bytes": 5401,
+      "sha256": "1ef98934ec2ce5164536a245f1a7931699568f7488c80a403c820c0b30675910"
     }
   },
   "architecture": {
@@ -76,7 +82,7 @@
   "p31": {
     "source_manifest": {
       "path": "training/paper2_phase3_p31_source_manifest.json",
-      "sha256": "88898e3f680614d72766b9f8143197bf79f8ff244d0b42f0867e6c2307ad7948"
+      "sha256": "1bcb847e02652881b0161718f73f13faeb30ede93f95f6a50152af900cdedef7"
     },
     "split_seed": 20260809,
     "target_primary": ["gsm8k", "mbpp"],
@@ -91,7 +97,28 @@
     "binding_calibration": "rerun on empirical DEV paired discordance and adjacent checkpoint autocorrelation",
     "familywise_false_stop_target": 0.0001,
     "descriptive_power_drops": [-0.03, -0.05],
-    "power_gate": null
+    "power_gate": null,
+    "completion": {
+      "reference_models": ["Qwen2.5-0.5B-Instruct", "Qwen2.5-14B-Instruct"],
+      "scored_partitions": ["dev", "verified_train"],
+      "confirm_scored": false,
+      "confirm_seal_required_before_model_load": true,
+      "sentinel_rows": 2048,
+      "sentinel_cohorts": [
+        "consensus_no_op",
+        "stable_missing_knowledge",
+        "procedural_reasoning",
+        "mixed",
+        "paired_counterfactuals",
+        "paraphrase_ood"
+      ]
+    },
+    "three_tier_guardrail": {
+      "tier_s": "smallest true drop with at least 0.99 detection probability under the retained minus-0.03 paired-UCB decision margin and familywise false-stop at most 0.0001",
+      "tier_w": "minus-0.03 one-sided 90% paired upper bound on two consecutive looks",
+      "tier_e": "both macro and micro pooled CONFIRM deltas non-negative",
+      "panel_sizes": [256, 512, 1024]
+    }
   },
   "p32": {
     "agreement_stratum_correctness_labels": false,
@@ -104,11 +131,25 @@
     "gate_labels": ["positive", "negative", "ignored"],
     "gate_loss_excludes_ignored": true
   },
+  "p33_prep": {
+    "teachability_threshold": 0.7,
+    "audit_rows": 4096,
+    "audit_strata": ["horizon", "teachability_decile"],
+    "negative_to_positive_ratio": 3,
+    "negative_ranking": "min(student_loop1_top1_probability,teacher_14b_top1_probability)",
+    "position_zero_ignored": true,
+    "observatory_build_required": true,
+    "a_state_interventions": ["zero", "norm_matched_random", "cross_example", "stale", "bypass"],
+    "training_authorized": false
+  },
   "authorization": {
     "document_and_figure_landing": true,
     "per_position_gate_build": true,
     "p31_infrastructure_build": true,
     "p32_schema_and_preflight_build": true,
+    "p31_reference_scoring_dev_and_verified_train": true,
+    "guardrail_recalibration_build": true,
+    "p33_data_and_observatory_prep": true,
     "p33_training": false
   }
 }

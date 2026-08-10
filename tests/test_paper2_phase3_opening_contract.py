@@ -20,10 +20,14 @@ def test_governing_artifacts_are_byte_verified() -> None:
 
 def test_opening_contract_authorizes_build_but_not_p33_training() -> None:
     contract = json.loads(CONTRACT.read_text(encoding="utf-8"))
-    assert contract["status"] == "p31_p32_build_authorized_p33_training_not_locked"
+    assert contract["status"] == (
+        "p31_completion_guardrail_and_p33_prep_authorized_p33_training_not_locked"
+    )
     assert contract["authorization"]["per_position_gate_build"] is True
     assert contract["authorization"]["p31_infrastructure_build"] is True
     assert contract["authorization"]["p32_schema_and_preflight_build"] is True
+    assert contract["authorization"]["p31_reference_scoring_dev_and_verified_train"] is True
+    assert contract["authorization"]["p33_data_and_observatory_prep"] is True
     assert contract["authorization"]["p33_training"] is False
     assert contract["architecture"]["phase2_trainable_parameters_historical"] == 1_184_917
     assert contract["architecture"]["phase3_trainable_parameters"] == 1_185_973

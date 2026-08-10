@@ -173,6 +173,8 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3_short_sha"
 #   "paper2_phase3_empirical_calibration" - CPU-only empirical DEV sequential-floor calibration.
 #   "paper2_phase3_p32_coverage" - CPU-only agreement-stratum coverage surface from cached lattice rows.
 #   "paper2_phase3_oracle_forecast" - GPU agreement-oracle cache plus document-disjoint ridge forecast.
+#   "paper2_phase3_p31_completion" - GPU sealed DEV/verified-train base and 14B reference pass.
+#   "paper2_phase3_guardrail_p33_prep" - CPU-only guardrail calibration and P3.3 build staging.
 #   "paper2_phase2_eval_de_freeze" - score-blind EVAL-D/E and own-base feature freeze.
 #   "paper2_phase2_e1_confirmation" - locked read-once EVAL-D confirmation; A100-80GB.
 #   "paper2_d0_prelock_publish_resume" - publish completed Drive-backed D0 lock receipts without inference.
@@ -4219,6 +4221,33 @@ TARGETS = {
             "document-disjoint linear forecast neither upper nor lower bound",
             "GPU cache generation only no optimizer no training no CONFIRM scoring",
             "colab/run_stage5_paper2_phase3_oracle_forecast.py",
+        ],
+        "env": {},
+    },
+    "paper2_phase3_p31_completion": {
+        "path": "colab/STAGE5_PAPER2_PHASE3_P31_COMPLETION_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_PHASE3_P31_COMPLETION_VERSION",
+            "paper2_phase3_p31_completion_v1",
+            "CONFIRM membership sealed atomically before either model loads",
+            "DEV and verified-train only same-reader base and 14B scoring",
+            "2048-row six-cohort sentinel and per-loop diagnostic coda",
+            "resumable model-by-model scoring no optimizer no training no CONFIRM scoring",
+            "colab/run_stage5_paper2_phase3_p31_completion.py",
+        ],
+        "env": {},
+    },
+    "paper2_phase3_guardrail_p33_prep": {
+        "path": "colab/STAGE5_PAPER2_PHASE3_GUARDRAIL_P33_PREP_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_PHASE3_GUARDRAIL_P33_PREP_VERSION",
+            "paper2_phase3_guardrail_p33_prep_v1",
+            "three-tier empirical DEV calibration panel sizes 256 512 1024",
+            "delta catastrophe is an effect size while the paired UCB margin remains minus three points",
+            "teachability 0.70 audit 4096 confidence-ranked negatives three to one",
+            "Tier-1 observatory and paired A_state intervention harness build only",
+            "CPU-only no model optimizer no training no CONFIRM scoring",
+            "colab/run_stage5_paper2_phase3_guardrail_p33_prep.py",
         ],
         "env": {},
     },

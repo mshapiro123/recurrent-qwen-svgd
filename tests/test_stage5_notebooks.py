@@ -3681,6 +3681,50 @@ def test_phase3_oracle_forecast_target_is_wired_and_guarded() -> None:
     assert '"p33_training_authorized": False' in runner
 
 
+def test_phase3_p31_completion_target_is_wired_and_guarded() -> None:
+    cell = (ROOT / "colab/STAGE5_PAPER2_PHASE3_P31_COMPLETION_CELL.py").read_text(
+        encoding="utf-8"
+    )
+    runner = (ROOT / "colab/run_stage5_paper2_phase3_p31_completion.py").read_text(
+        encoding="utf-8"
+    )
+    scorer = (ROOT / "eval/eval_paper2_phase3_p31_references.py").read_text(
+        encoding="utf-8"
+    )
+    for bootstrap_path in (
+        ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py",
+        ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md",
+    ):
+        text = bootstrap_path.read_text(encoding="utf-8")
+        assert "paper2_phase3_p31_completion" in text
+        assert "STAGE5_PAPER2_PHASE3_P31_COMPLETION_CELL.py" in text
+        assert "resumable model-by-model scoring no optimizer no training no CONFIRM scoring" in text
+    assert "paper2_phase3_p31_completion_v1" in cell
+    assert "confirm_seal_ledger" in runner
+    assert "--confirm_seal_ledger" in scorer
+    assert '"p33_training_authorized": False' in runner
+
+
+def test_phase3_guardrail_p33_prep_target_is_wired_and_guarded() -> None:
+    cell = (
+        ROOT / "colab/STAGE5_PAPER2_PHASE3_GUARDRAIL_P33_PREP_CELL.py"
+    ).read_text(encoding="utf-8")
+    runner = (
+        ROOT / "colab/run_stage5_paper2_phase3_guardrail_p33_prep.py"
+    ).read_text(encoding="utf-8")
+    for bootstrap_path in (
+        ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py",
+        ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md",
+    ):
+        text = bootstrap_path.read_text(encoding="utf-8")
+        assert "paper2_phase3_guardrail_p33_prep" in text
+        assert "STAGE5_PAPER2_PHASE3_GUARDRAIL_P33_PREP_CELL.py" in text
+        assert "CPU-only no model optimizer no training no CONFIRM scoring" in text
+    assert "paper2_phase3_guardrail_p33_prep_v1" in cell
+    assert "--campaigns" in runner
+    assert '"p33_training_authorized": False' in runner
+
+
 def test_gradient_path_audit_target_is_wired_and_guarded() -> None:
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
     bootstrap_md = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")

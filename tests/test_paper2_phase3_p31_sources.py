@@ -50,7 +50,10 @@ def test_arc_and_mbpp_training_rows_keep_real_verifier_contracts() -> None:
         native_split="train",
     )[0]
     assert arc["programmatic_verifier_available"] is True
+    assert arc["item_id"] == "arc_challenge-arc-1"
+    assert arc["reader"] == "cyclic_label_aggregated_permutation_mean_v1"
     assert mbpp["programmatic_verifier_available"] is True
+    assert mbpp["reader"] == "isolated_subprocess_unit_test_execution_v1"
     assert mbpp["tests"] == ["assert f() == 1"]
 
 

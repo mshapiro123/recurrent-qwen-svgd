@@ -10,7 +10,7 @@
       "config": "ARC-Easy",
       "verified_train_split": "train",
       "evaluation_split": "validation",
-      "reader": "mcq_choice_text_same_reader",
+      "reader": "cyclic_label_aggregated_permutation_mean",
       "role": "floor_retention_only"
     },
     "arc_challenge": {
@@ -19,7 +19,7 @@
       "config": "ARC-Challenge",
       "verified_train_split": "train",
       "evaluation_split": "validation",
-      "reader": "mcq_choice_text_same_reader",
+      "reader": "cyclic_label_aggregated_permutation_mean",
       "role": "target_secondary"
     },
     "gsm8k": {
@@ -37,7 +37,7 @@
       "config": "sanitized",
       "verified_train_split": "train",
       "evaluation_split": "test",
-      "reader": "sandboxed_unit_test_execution",
+      "reader": "isolated_subprocess_unit_test_execution",
       "role": "target_primary"
     },
     "mmlu": {
@@ -46,7 +46,7 @@
       "config": "all",
       "verified_train_split": null,
       "evaluation_split": "test",
-      "reader": "mcq_choice_text_same_reader",
+      "reader": "cyclic_label_aggregated_permutation_mean",
       "role": "floor_retention_only",
       "selection": "fixed_seeded_slice_size_set_by_empirical_false_stop_calibration"
     },

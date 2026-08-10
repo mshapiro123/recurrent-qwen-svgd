@@ -16,6 +16,7 @@ from training.paper2_phase3_p31 import (
     SPLIT_SEED,
     build_split_ledger,
     canonical_sha256,
+    partition_rows,
 )
 
 
@@ -55,17 +56,18 @@ def arc_rows(dataset: Iterable[Mapping[str, Any]], *, battery: str, native_split
             "choice_labels": [str(value) for value in choices["label"]],
             "choice_text": [str(value) for value in choices["text"]],
         }
-        item_id = str(item["id"])
+        raw_item_id = str(item["id"])
+        item_id = f"{battery}-{raw_item_id}"
         rows.append(
             {
                 "battery": battery,
                 "item_id": item_id,
-                "document_id": f"{battery}:{item_id}",
+                "document_id": f"{battery}:{raw_item_id}",
                 "native_split": native_split,
                 "prompt": prompt,
                 "answer": str(item["answerKey"]),
                 "tests": None,
-                "reader": "mcq_choice_text_same_reader_v1",
+                "reader": "cyclic_label_aggregated_permutation_mean_v1",
                 "programmatic_verifier_available": native_split == "train",
             }
         )
@@ -105,7 +107,7 @@ def mbpp_rows(dataset: Iterable[Mapping[str, Any]], *, native_split: str) -> lis
                 "prompt": str(item["prompt"]),
                 "answer": str(item["code"]),
                 "tests": [*map(str, item["test_imports"]), *map(str, item["test_list"])],
-                "reader": "sandboxed_unit_test_execution_v1",
+                "reader": "isolated_subprocess_unit_test_execution_v1",
                 "programmatic_verifier_available": native_split == "train",
             }
         )
@@ -129,7 +131,7 @@ def mmlu_rows(dataset: Iterable[Mapping[str, Any]]) -> list[dict[str, Any]]:
                 },
                 "answer": int(item["answer"]),
                 "tests": None,
-                "reader": "mcq_choice_text_same_reader_v1",
+                "reader": "cyclic_label_aggregated_permutation_mean_v1",
                 "programmatic_verifier_available": False,
             }
         )
@@ -250,14 +252,15 @@ def materialize(
     rows.extend(tier1_rows(tier1_path))
 
     rows.sort(key=lambda row: (row["battery"], row["native_split"], row["item_id"]))
-    write_jsonl(private_rows, rows)
+    partitioned_rows = partition_rows(rows)
+    write_jsonl(private_rows, partitioned_rows)
     revisions = {battery: str(specs[battery].get("revision") or specs[battery]["sha256"]) for battery in ALL_BATTERIES}
     reader_versions = {
         battery: next(row["reader"] for row in rows if row["battery"] == battery)
         for battery in ALL_BATTERIES
     }
     ledger = build_split_ledger(
-        rows,
+        partitioned_rows,
         dataset_revisions=revisions,
         reader_versions=reader_versions,
     )

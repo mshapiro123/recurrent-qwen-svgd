@@ -83,6 +83,12 @@ def _partition_row(row: Mapping[str, Any]) -> dict[str, Any]:
     }
 
 
+def partition_rows(rows: Iterable[Mapping[str, Any]]) -> list[dict[str, Any]]:
+    """Expose the canonical row-level partition assignment used by the ledger."""
+
+    return [_partition_row(row) for row in rows]
+
+
 def build_split_ledger(
     rows: Iterable[Mapping[str, Any]],
     *,
@@ -97,7 +103,7 @@ def build_split_ledger(
         raise ValueError(
             f"P3.1 lock metadata incomplete revisions={missing_revisions} readers={missing_readers}"
         )
-    partitioned = [_partition_row(row) for row in rows]
+    partitioned = partition_rows(rows)
     if not partitioned:
         raise ValueError("P3.1 split ledger requires rows")
 
