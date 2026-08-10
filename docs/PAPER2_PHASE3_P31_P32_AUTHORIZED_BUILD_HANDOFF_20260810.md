@@ -1,7 +1,7 @@
 # Paper Two Phase 3.1/3.2 Authorized Build Handoff
 
-Date: 2026-08-10. Branch: `codex/phase3-opening-build`. Status: build complete;
-receipt run prepared; P3.3 training remains unauthorized.
+Date: 2026-08-10. Branch: `codex/phase3-opening-build`. Status: build and
+receipt run complete; P3.3 training remains unauthorized.
 
 ## 0. Bottom line
 
@@ -38,8 +38,8 @@ discordance 0.20 and adjacent-look correlation 0.80 produced:
 | Familywise false stops under no true drop | 0 / 100,000 |
 | Conservative 95% upper probability | 0.00002996 |
 | Target | below 0.0001 |
-| Detection power at a sustained -3 point difference | 0.00003 |
-| Detection power at a sustained -5 point difference | 0.00242 |
+| Detection power at a sustained -3 point difference | 0.00002 |
+| Detection power at a sustained -5 point difference | 0.00237 |
 
 The first row is favorable and the power rows are not. A true -3 point effect
 lies exactly on the stopping boundary, so high power there is incompatible
@@ -153,15 +153,39 @@ It does not score CONFIRM, construct an optimizer, or authorize P3.3.
 - P3.2 preflight: all assertions green.
 - Source compilation and `git diff --check`: green.
 
-## 7. Remaining work before P3.3 can lock
+## 7. Landed receipt
 
-1. Run the prepared Colab receipt target so both checkpoint migrations and the
-   source ledger become durable Drive receipts.
-2. Supply or generate the DEV paired-difference trajectory and rerun empirical
+The CPU Colab target completed at commit `758394c8caf73c7d1da9773c29d49cc292444289`.
+Its durable root is:
+
+`/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase3_p31_p32_receipts_20260810`
+
+The independent post-run readback found `status=complete` and
+`summary_status=complete_p33_still_unauthorized`. All six top-level assertions
+were true: CONFIRM unscored, source assembly model-free, both E1 migrations
+bit-exact, P3.2 schema preflight green, zero optimizer steps, and P3.3 still
+unauthorized.
+
+The migrated checkpoint receipts are:
+
+| Lineage | Bytes | SHA-256 |
+|---|---:|---|
+| seed 0 full A2 | 4,759,429 | `d0f2b735825d29ab9801a5200493ca9aa65294778aea2fb7f728eb8e85dfc519` |
+| seed 1 full A2 | 4,759,429 | `3ca1cdf8dd16bf4f435e81a675d7514778144c5c881af52a70171659f7734b4f` |
+
+The launch preflight caught and repaired two infrastructure defects before any
+training or CONFIRM scoring: a Windows-worktree-versus-Git-blob Tier-1 hash and
+a 12-position equivalence fixture applied to the registered four-horizon draft
+head. Both repairs have regression tests. The final Colab preflight passed 25
+tests.
+
+## 8. Remaining work before P3.3 can lock
+
+1. Supply or generate the DEV paired-difference trajectory and rerun empirical
    calibration. The planning power result makes this substantive, not clerical.
-3. Generate the real P3.2 cache and coverage arithmetic.
-4. Fit the document-disjoint linear-decodability forecast.
-5. If the concurrent write stratum is too thin under the future locked
+2. Generate the real P3.2 cache and coverage arithmetic.
+3. Fit the document-disjoint linear-decodability forecast.
+4. If the concurrent write stratum is too thin under the future locked
    criterion, authorize a targeted 32B extension over uncovered flip candidates.
-6. Draft and lock P3.3 only after these receipts. No Phase 3 training is
+5. Draft and lock P3.3 only after these receipts. No Phase 3 training is
    authorized now.
