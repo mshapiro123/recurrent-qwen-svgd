@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -29,6 +30,69 @@ NEW_PRIVATE = DRIVE_ROOT / NEW_ID / "private/full"
 COVERAGE_INDEX = DRIVE_ROOT / COVERAGE_ID / "private/agreement_coverage_index.jsonl"
 COVERAGE_SUMMARY = DRIVE_ROOT / COVERAGE_ID / "receipts/summary.json"
 MIGRATED = DRIVE_ROOT / MIGRATION_ID / "private/migrated_checkpoints"
+
+
+def scratch_root() -> Path:
+    candidates = [Path("/mnt/local-scratch"), Path("/content/local-scratch"), Path("/content")]
+    required_free_gib = 80.0
+    for candidate in candidates:
+        if not candidate.exists():
+            continue
+        free_gib = shutil.disk_usage(candidate).free / (1024**3)
+        print(f"phase3_oracle_scratch_candidate path={candidate} free_gib={free_gib:.1f}", flush=True)
+        if free_gib >= required_free_gib:
+            return candidate / "recurrent-qwen-svgd-stage" / RUN_ID
+    raise RuntimeError(
+        f"Phase 3 oracle forecast needs {required_free_gib:.0f} GiB of local scratch"
+    )
+
+
+def rsync(source: Path, destination: Path) -> None:
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    source_arg = str(source) + os.sep if source.is_dir() else str(source)
+    destination_arg = str(destination) + os.sep if source.is_dir() else str(destination)
+    command = [
+        "rsync",
+        "--archive",
+        "--delete",
+        "--partial",
+        "--info=progress2",
+        source_arg,
+        destination_arg,
+    ]
+    print("$", " ".join(command), flush=True)
+    subprocess.run(command, cwd=ROOT, check=True)
+
+
+def stage_sources() -> dict[str, Path]:
+    scratch = scratch_root()
+    scratch.mkdir(parents=True, exist_ok=True)
+    staged_old = scratch / "old"
+    staged_new = scratch / "new"
+    staged_coverage = scratch / "coverage"
+    staged_checkpoints = scratch / "migrated_checkpoints"
+
+    # Only stage files consumed by the oracle pass.  The coverage pass has
+    # already reduced the lattice and teacher caches to a compact index.
+    for source, destination in (
+        (OLD_PRIVATE / "sample_manifest.jsonl", staged_old / "sample_manifest.jsonl"),
+        (OLD_PRIVATE / "model_cache/student_0p5b/", staged_old / "model_cache/student_0p5b/"),
+        (NEW_PRIVATE / "sample_manifest.jsonl", staged_new / "sample_manifest.jsonl"),
+        (NEW_PRIVATE / "model_cache/student_0p5b/", staged_new / "model_cache/student_0p5b/"),
+        (COVERAGE_INDEX, staged_coverage / COVERAGE_INDEX.name),
+        (COVERAGE_SUMMARY, staged_coverage / COVERAGE_SUMMARY.name),
+        (MIGRATED / "seed_0_full_a2_phase3_migrated.pt", staged_checkpoints / "seed_0_full_a2_phase3_migrated.pt"),
+        (MIGRATED / "seed_1_full_a2_phase3_migrated.pt", staged_checkpoints / "seed_1_full_a2_phase3_migrated.pt"),
+    ):
+        rsync(source, destination)
+    return {
+        "root": scratch,
+        "old_private": staged_old,
+        "new_private": staged_new,
+        "coverage_index": staged_coverage / COVERAGE_INDEX.name,
+        "coverage_summary": staged_coverage / COVERAGE_SUMMARY.name,
+        "checkpoints": staged_checkpoints,
+    }
 
 
 def write_json(path: Path, payload: object) -> None:
@@ -60,7 +124,7 @@ def run(command: list[str]) -> None:
 
 
 def main() -> int:
-    checkpoints = [
+    drive_checkpoints = [
         MIGRATED / "seed_0_full_a2_phase3_migrated.pt",
         MIGRATED / "seed_1_full_a2_phase3_migrated.pt",
     ]
@@ -71,7 +135,7 @@ def main() -> int:
         NEW_PRIVATE,
         COVERAGE_INDEX,
         COVERAGE_SUMMARY,
-        *checkpoints,
+        *drive_checkpoints,
     ]
     missing = [str(path) for path in required if not path.exists()]
     if missing:
@@ -82,6 +146,12 @@ def main() -> int:
 
     RUN_DIR.mkdir(parents=True, exist_ok=True)
     PRIVATE_DIR.mkdir(parents=True, exist_ok=True)
+    write_status("staging_drive_sources_to_local_scratch")
+    staged = stage_sources()
+    checkpoints = [
+        staged["checkpoints"] / "seed_0_full_a2_phase3_migrated.pt",
+        staged["checkpoints"] / "seed_1_full_a2_phase3_migrated.pt",
+    ]
     write_status("building_threshold_neutral_oracle_cache")
     cache_command = [
         sys.executable,
@@ -89,15 +159,15 @@ def main() -> int:
         "-m",
         "eval.cache_paper2_phase3_agreement_oracle",
         "--coverage_index",
-        str(COVERAGE_INDEX),
+        str(staged["coverage_index"]),
         "--old_summary",
         str(OLD_SUMMARY),
         "--old_private",
-        str(OLD_PRIVATE),
+        str(staged["old_private"]),
         "--new_summary",
         str(NEW_SUMMARY),
         "--new_private",
-        str(NEW_PRIVATE),
+        str(staged["new_private"]),
         "--migrated_checkpoint",
         str(checkpoints[0]),
         "--migrated_checkpoint",
