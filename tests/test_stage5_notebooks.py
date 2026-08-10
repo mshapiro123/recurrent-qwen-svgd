@@ -3659,6 +3659,28 @@ def test_phase3_p32_coverage_target_is_wired_and_guarded() -> None:
     assert "optimizer_steps" in runner
 
 
+def test_phase3_oracle_forecast_target_is_wired_and_guarded() -> None:
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(
+        encoding="utf-8"
+    )
+    cell = (
+        ROOT / "colab/STAGE5_PAPER2_PHASE3_ORACLE_FORECAST_CELL.py"
+    ).read_text(encoding="utf-8")
+    runner = (
+        ROOT / "colab/run_stage5_paper2_phase3_oracle_forecast.py"
+    ).read_text(encoding="utf-8")
+    for text in (bootstrap, cell):
+        assert "paper2_phase3_oracle_forecast" in text
+        assert "paper2_phase3_oracle_forecast_v1" in text
+        assert "GPU cache generation only no optimizer no training no CONFIRM scoring" in text
+        assert "document-disjoint linear forecast neither upper nor lower bound" in text
+    assert "tests/test_paper2_phase3_agreement_oracle.py" in cell
+    assert "stage5_paper2_phase3_oracle_forecast_20260810" in runner
+    assert "seed_0_full_a2_phase3_migrated.pt" in runner
+    assert "seed_1_full_a2_phase3_migrated.pt" in runner
+    assert '"p33_training_authorized": False' in runner
+
+
 def test_gradient_path_audit_target_is_wired_and_guarded() -> None:
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
     bootstrap_md = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")

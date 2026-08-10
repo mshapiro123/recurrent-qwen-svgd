@@ -172,6 +172,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3_short_sha"
 #   "paper2_phase2_v1b_rms_audit" - CPU-only audit of existing V1b private rows.
 #   "paper2_phase3_empirical_calibration" - CPU-only empirical DEV sequential-floor calibration.
 #   "paper2_phase3_p32_coverage" - CPU-only agreement-stratum coverage surface from cached lattice rows.
+#   "paper2_phase3_oracle_forecast" - GPU agreement-oracle cache plus document-disjoint ridge forecast.
 #   "paper2_phase2_eval_de_freeze" - score-blind EVAL-D/E and own-base feature freeze.
 #   "paper2_phase2_e1_confirmation" - locked read-once EVAL-D confirmation; A100-80GB.
 #   "paper2_d0_prelock_publish_resume" - publish completed Drive-backed D0 lock receipts without inference.
@@ -4204,6 +4205,20 @@ TARGETS = {
             "targeted 32B extension demand reported never concurrence dilution",
             "CPU-only cached lattice processing no model no optimizer no training no CONFIRM scoring",
             "colab/run_stage5_paper2_phase3_p32_coverage.py",
+        ],
+        "env": {},
+    },
+    "paper2_phase3_oracle_forecast": {
+        "path": "colab/STAGE5_PAPER2_PHASE3_ORACLE_FORECAST_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_PHASE3_ORACLE_FORECAST_VERSION",
+            "paper2_phase3_oracle_forecast_v1",
+            "actual cached 0.5B LM-head gradient path with batched one-row equivalence",
+            "strict 14B/32B concurrent flips retained without selecting teachability threshold",
+            "both migrated seed lineages and loops one through four feature-cached",
+            "document-disjoint linear forecast neither upper nor lower bound",
+            "GPU cache generation only no optimizer no training no CONFIRM scoring",
+            "colab/run_stage5_paper2_phase3_oracle_forecast.py",
         ],
         "env": {},
     },

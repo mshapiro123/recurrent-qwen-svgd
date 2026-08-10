@@ -95,6 +95,42 @@ def fit_ridge(
     }
 
 
+def fit_ridge_family(
+    train_x: torch.Tensor,
+    train_y: torch.Tensor,
+    *,
+    ridges: Sequence[float],
+) -> list[dict[str, torch.Tensor]]:
+    """Fit a ridge family from one shared eigensystem."""
+
+    x = train_x.float()
+    y = train_y.float()
+    x_mean = x.mean(dim=0)
+    x_scale = x.std(dim=0, unbiased=False).clamp_min(1e-6)
+    y_mean = y.mean(dim=0)
+    normalized = (x - x_mean) / x_scale
+    centered_y = y - y_mean
+    gram = normalized.T @ normalized
+    right = normalized.T @ centered_y
+    eigenvalues, eigenvectors = torch.linalg.eigh(gram)
+    eigenvalues = eigenvalues.clamp_min(0.0)
+    projected = eigenvectors.T @ right
+    models = []
+    for ridge in ridges:
+        if float(ridge) <= 0:
+            raise ValueError("ridge candidates must be positive")
+        weight = eigenvectors @ (projected / (eigenvalues + float(ridge)).unsqueeze(1))
+        models.append(
+            {
+                "weight": weight,
+                "x_mean": x_mean,
+                "x_scale": x_scale,
+                "y_mean": y_mean,
+            }
+        )
+    return models
+
+
 def predict_ridge(model: dict[str, torch.Tensor], features: torch.Tensor) -> torch.Tensor:
     normalized = (features.float() - model["x_mean"]) / model["x_scale"]
     return normalized @ model["weight"] + model["y_mean"]
@@ -145,13 +181,12 @@ def run_forecast(
         raise ValueError("forecast inputs contain non-finite values")
     split = document_split(documents, seed=seed)
     candidates = []
-    models = []
-    for ridge in ridge_candidates:
-        model = fit_ridge(
-            features.index_select(0, split.train),
-            directions.index_select(0, split.train),
-            ridge=float(ridge),
-        )
+    models = fit_ridge_family(
+        features.index_select(0, split.train),
+        directions.index_select(0, split.train),
+        ridges=ridge_candidates,
+    )
+    for ridge, model in zip(ridge_candidates, models):
         prediction = predict_ridge(model, features.index_select(0, split.calibration))
         cosine = cosine_rows(prediction, directions.index_select(0, split.calibration))
         candidates.append(
@@ -160,7 +195,6 @@ def run_forecast(
                 "calibration_mean_cosine": float(cosine.mean()),
             }
         )
-        models.append(model)
     best_index = max(
         range(len(candidates)),
         key=lambda index: (candidates[index]["calibration_mean_cosine"], -candidates[index]["ridge"]),
@@ -215,6 +249,7 @@ def run_forecast(
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--feature_cache", type=Path, required=True)
+    parser.add_argument("--direction_cache", type=Path)
     parser.add_argument("--output_summary", type=Path, required=True)
     parser.add_argument(
         "--ridge_candidates",
@@ -224,20 +259,49 @@ def main() -> int:
     )
     parser.add_argument("--seed", type=int, default=20260810)
     parser.add_argument("--bootstrap_replicates", type=int, default=2_000)
+    parser.add_argument("--min_teachability", type=float)
     args = parser.parse_args()
     payload = torch.load(args.feature_cache, map_location="cpu", weights_only=False)
-    required = {"features", "directions", "documents"}
-    missing = sorted(required - set(payload))
-    if missing:
-        raise ValueError(f"linear-forecast cache missing fields: {missing}")
+    if args.direction_cache is None:
+        required = {"features", "directions", "documents"}
+        missing = sorted(required - set(payload))
+        if missing:
+            raise ValueError(f"linear-forecast cache missing fields: {missing}")
+        directions = payload["directions"]
+        documents = list(payload["documents"])
+        selected = torch.arange(payload["features"].shape[0])
+    else:
+        direction_payload = torch.load(
+            args.direction_cache, map_location="cpu", weights_only=False
+        )
+        if list(payload.get("record_ids", [])) != list(
+            direction_payload.get("record_ids", [])
+        ):
+            raise ValueError("feature and direction cache record ids do not align")
+        directions = direction_payload["directions"]
+        documents = list(direction_payload["documents"])
+        selected = torch.arange(payload["features"].shape[0])
+        if args.min_teachability is not None:
+            selected = torch.where(
+                direction_payload["teachability"].float()
+                >= float(args.min_teachability)
+            )[0]
+        if selected.numel() == 0:
+            raise ValueError("teachability filter removed every forecast row")
     result = run_forecast(
-        features=payload["features"],
-        directions=payload["directions"],
-        documents=list(payload["documents"]),
+        features=payload["features"].index_select(0, selected),
+        directions=directions.index_select(0, selected),
+        documents=[documents[index] for index in selected.tolist()],
         ridge_candidates=args.ridge_candidates,
         seed=args.seed,
         bootstrap_replicates=args.bootstrap_replicates,
     )
+    result["source"] = {
+        "feature_cache": str(args.feature_cache),
+        "direction_cache": str(args.direction_cache) if args.direction_cache else None,
+        "min_teachability": args.min_teachability,
+        "threshold_selected_for_p33": False,
+    }
     args.output_summary.parent.mkdir(parents=True, exist_ok=True)
     args.output_summary.write_text(
         json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8"

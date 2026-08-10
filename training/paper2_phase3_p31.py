@@ -313,7 +313,7 @@ def simulate_false_stop_probability(
     campaigns: int,
     seed: int,
     true_mean_difference: float = 0.0,
-    batch_campaigns: int = 128,
+    batch_campaigns: int = 2_048,
 ) -> dict[str, Any]:
     """Simulate the registered paired sequential-stop rule under one effect size."""
 
