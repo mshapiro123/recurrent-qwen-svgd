@@ -97,7 +97,7 @@ def checkpoint_equivalence(
 ) -> dict[str, Any]:
     generator = torch.Generator().manual_seed(20260820 + seed)
     hidden = torch.randn(2, 12, 896, generator=generator)
-    previous_logits = torch.randn(2, 12, 257, generator=generator)
+    previous_logits = torch.randn(2, 4, 257, generator=generator)
     rows = []
     for steps in range(5):
         old = phase2(hidden=hidden, previous_logits=previous_logits, steps=steps)

@@ -4,8 +4,10 @@ import torch
 from torch import nn
 
 from eval.prepare_paper2_phase3_checkpoint_migration import (
+    _module_pair,
     _new_embedding,
     _reconstruct_phase2_state,
+    checkpoint_equivalence,
 )
 from models.paper2_dc2_student import (
     Phase2StudentModules,
@@ -143,3 +145,20 @@ def test_checkpoint_reconstruction_combines_a1_flow_and_e1_active_state() -> Non
         reconstructed["initializer.query.weight"],
         baseline_state["initializer.query.weight"],
     )
+
+
+def test_checkpoint_equivalence_uses_registered_four_horizon_draft_shape() -> None:
+    seed = 0
+    rms_cap = 0.5508932316303252
+    torch.manual_seed(seed)
+    source_module = Phase2StudentModules(
+        tied_embedding=_new_embedding(seed), hidden_size=896, rms_cap=rms_cap
+    ).float()
+    phase2, phase3 = _module_pair(
+        trainable_state(source_module), seed=seed, rms_cap=rms_cap
+    )
+
+    receipt = checkpoint_equivalence(phase2, phase3, seed=seed)
+
+    assert receipt["all_outputs_bit_exact"] is True
+    assert [row["steps"] for row in receipt["rows"]] == [0, 1, 2, 3, 4]
