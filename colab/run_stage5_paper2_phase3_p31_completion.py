@@ -138,6 +138,10 @@ def main() -> int:
             os.environ.get("STAGE5_P31_MCQ_CANDIDATE_BATCH_SIZE", "32"),
             "--generation_batch_size",
             os.environ.get("STAGE5_P31_GENERATION_BATCH_SIZE", "4"),
+            "--base_generation_batch_size",
+            os.environ.get("STAGE5_P31_BASE_GENERATION_BATCH_SIZE", "32"),
+            "--teacher_generation_batch_size",
+            os.environ.get("STAGE5_P31_TEACHER_GENERATION_BATCH_SIZE", "8"),
             "--confirm_seal_ledger",
             str(confirm_seal_ledger),
         ]

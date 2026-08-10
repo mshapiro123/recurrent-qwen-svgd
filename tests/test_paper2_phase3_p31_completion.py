@@ -168,3 +168,18 @@ def test_generation_yields_after_each_batch_instead_of_buffering_all_rows() -> N
     assert first_row == rows[0]
     assert first_text == "Final answer: 1"
     assert model.calls == 1
+
+
+def test_reference_pass_has_model_specific_generation_batches() -> None:
+    root = Path(__file__).resolve().parents[1]
+    scorer = (root / "eval/eval_paper2_phase3_p31_references.py").read_text(
+        encoding="utf-8"
+    )
+    runner = (root / "colab/run_stage5_paper2_phase3_p31_completion.py").read_text(
+        encoding="utf-8"
+    )
+    assert "--base_generation_batch_size" in scorer
+    assert "--teacher_generation_batch_size" in scorer
+    assert '"STAGE5_P31_BASE_GENERATION_BATCH_SIZE", "32"' in runner
+    assert '"STAGE5_P31_TEACHER_GENERATION_BATCH_SIZE", "8"' in runner
+    assert '"generation_batch_size": generation_batch_size' in scorer

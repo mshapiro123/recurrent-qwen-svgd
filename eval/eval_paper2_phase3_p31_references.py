@@ -320,6 +320,12 @@ def score_model(
             or existing_row.get("reader") != source["reader"]
         ):
             raise RuntimeError(f"P3.1 resumable score lineage or reader changed: {output_jsonl}")
+        if source["battery"] in {"gsm8k", "mbpp", "tier1"} and (
+            existing_row.get("generation_batch_size") != generation_batch_size
+        ):
+            raise RuntimeError(
+                f"P3.1 resumable generation batch changed: {output_jsonl}"
+            )
     existing = {str(row["item_id"]): row for row in existing_rows}
     pending = [row for row in rows if str(row["item_id"]) not in existing]
     tokenizer = AutoTokenizer.from_pretrained(spec["model"], revision=spec["revision"])
@@ -383,6 +389,7 @@ def score_model(
                     "content_sha256": row["content_sha256"],
                     "item_id": row["item_id"],
                     "reader": row["reader"],
+                    "generation_batch_size": generation_batch_size,
                     "prediction": prediction,
                     "correct": bool(correct),
                     "generated_text": text,
@@ -414,6 +421,8 @@ def score_model(
         "path": str(output_jsonl),
         "sha256": sha256_file(output_jsonl),
         "confirm_seal_sha256": confirm_seal_sha256,
+        "mcq_candidate_batch_size": mcq_candidate_batch_size,
+        "generation_batch_size": generation_batch_size,
         "confirm_rows": sum(row["partition"] == "confirm" for row in final),
     }
 
@@ -427,6 +436,8 @@ def main() -> int:
     parser.add_argument("--dtype", choices=("bfloat16", "float16", "float32"), default="bfloat16")
     parser.add_argument("--mcq_candidate_batch_size", type=int, default=32)
     parser.add_argument("--generation_batch_size", type=int, default=8)
+    parser.add_argument("--base_generation_batch_size", type=int)
+    parser.add_argument("--teacher_generation_batch_size", type=int)
     parser.add_argument("--confirm_seal_ledger", type=Path, required=True)
     args = parser.parse_args()
     seal = json.loads(args.confirm_seal_ledger.read_text(encoding="utf-8"))
@@ -441,6 +452,13 @@ def main() -> int:
     dtype = getattr(torch, args.dtype)
     receipts = []
     for model_key in args.model_key or list(MODEL_SPECS):
+        model_generation_batch_size = args.generation_batch_size
+        if model_key == "base" and args.base_generation_batch_size is not None:
+            model_generation_batch_size = args.base_generation_batch_size
+        elif model_key == "teacher_14b" and args.teacher_generation_batch_size is not None:
+            model_generation_batch_size = args.teacher_generation_batch_size
+        if model_generation_batch_size <= 0:
+            raise ValueError("P3.1 generation batch sizes must be positive")
         receipts.append(
             score_model(
                 rows,
@@ -449,7 +467,7 @@ def main() -> int:
                 device=args.device,
                 dtype=dtype,
                 mcq_candidate_batch_size=args.mcq_candidate_batch_size,
-                generation_batch_size=args.generation_batch_size,
+                generation_batch_size=model_generation_batch_size,
                 confirm_seal_sha256=confirm_seal_sha256,
             )
         )
