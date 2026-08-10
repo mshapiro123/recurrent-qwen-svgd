@@ -15,7 +15,7 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
-from typing import Any, Iterable, Mapping, Sequence
+from typing import Any, Iterable, Iterator, Mapping, Sequence
 
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
@@ -201,8 +201,9 @@ def generate_rows(
     *,
     device: str,
     batch_size: int,
-) -> list[tuple[Mapping[str, Any], str]]:
-    output = []
+) -> Iterator[tuple[Mapping[str, Any], str]]:
+    """Yield decoded rows batch by batch so long passes remain resumable."""
+
     by_cap: dict[int, list[Mapping[str, Any]]] = {}
     for row in rows:
         _, cap = _generation_prompt(row)
@@ -226,13 +227,12 @@ def generate_rows(
             padding_width = encoded["input_ids"].shape[1]
             for row, tokens, _length in zip(batch, generated, lengths):
                 text = tokenizer.decode(tokens[padding_width:], skip_special_tokens=True)
-                output.append((row, text))
+                yield row, text
             print(
                 f"phase3_p31_generation model={model.config.name_or_path} "
                 f"battery={batch[0]['battery']} rows={min(start + len(batch), len(selected))}/{len(selected)}",
                 flush=True,
             )
-    return output
 
 
 def _normalize_number(value: str) -> str | None:

@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
+import torch
 
+from eval.eval_paper2_phase3_p31_references import generate_rows
 from training.paper2_phase3_p31 import ALL_BATTERIES
 from training.paper2_phase3_p31_completion import (
     build_sentinel_panel,
@@ -111,3 +114,57 @@ def test_verified_counts_and_sentinel_are_exact_and_confirm_free() -> None:
         "paired_counterfactuals",
         "paraphrase_ood",
     }
+
+
+def test_generation_yields_after_each_batch_instead_of_buffering_all_rows() -> None:
+    class Encoded(dict):
+        def to(self, _device: str) -> "Encoded":
+            return self
+
+    class Tokenizer:
+        pad_token_id = 0
+        eos_token_id = 2
+        padding_side = "right"
+
+        def apply_chat_template(self, _messages, **_kwargs) -> str:
+            return "prompt"
+
+        def __call__(self, prompts, **_kwargs) -> Encoded:
+            batch = len(prompts)
+            return Encoded(
+                input_ids=torch.ones((batch, 2), dtype=torch.long),
+                attention_mask=torch.ones((batch, 2), dtype=torch.long),
+            )
+
+        def decode(self, _tokens, **_kwargs) -> str:
+            return "Final answer: 1"
+
+    class Model:
+        config = SimpleNamespace(name_or_path="fake")
+
+        def __init__(self) -> None:
+            self.calls = 0
+
+        def generate(self, input_ids, **_kwargs):
+            self.calls += 1
+            if self.calls > 1:
+                raise AssertionError("second batch was evaluated before the first yield")
+            suffix = torch.full((input_ids.shape[0], 1), 99, dtype=torch.long)
+            return torch.cat([input_ids, suffix], dim=1)
+
+    model = Model()
+    rows = [
+        {"battery": "tier1", "prompt": f"row-{index}"}
+        for index in range(2)
+    ]
+    iterator = generate_rows(
+        model,
+        Tokenizer(),
+        rows,
+        device="cpu",
+        batch_size=1,
+    )
+    first_row, first_text = next(iterator)
+    assert first_row == rows[0]
+    assert first_text == "Final answer: 1"
+    assert model.calls == 1
