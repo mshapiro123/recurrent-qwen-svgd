@@ -59,10 +59,31 @@ def test_gate_labels_are_tri_state_and_ignored_rows_leave_loss() -> None:
     labels = torch.tensor([1, 0, -1], dtype=torch.long)
     assert torch.equal(gate_loss_mask(labels), torch.tensor([True, True, False]))
     assert verified_gate_label(
-        VerifiedLabelInputs(student_right=False, teacher_right=True, confident_agreement=False)
+        VerifiedLabelInputs(
+            student_right=False,
+            teacher_right=True,
+            confident_agreement=False,
+            teacher_14b_top1=5,
+            teacher_32b_top1=5,
+        )
     ) == GateLabel.POSITIVE
     assert verified_gate_label(
-        VerifiedLabelInputs(student_right=False, teacher_right=False, confident_agreement=False)
+        VerifiedLabelInputs(
+            student_right=False,
+            teacher_right=False,
+            confident_agreement=False,
+            teacher_14b_top1=5,
+            teacher_32b_top1=None,
+        )
+    ) == GateLabel.IGNORED
+    assert verified_gate_label(
+        VerifiedLabelInputs(
+            student_right=False,
+            teacher_right=True,
+            confident_agreement=False,
+            teacher_14b_top1=5,
+            teacher_32b_top1=None,
+        )
     ) == GateLabel.IGNORED
     with pytest.raises(ValueError, match="positive, negative, or ignored"):
         gate_loss_mask(torch.tensor([2]))
@@ -123,6 +144,8 @@ def test_cache_manifest_keeps_agreement_and_verified_semantics_separate() -> Non
         "loop_index": 1,
         "student_top1": 9,
         "teacher_14b_top1": 11,
+        "teacher_32b_top1": 11,
+        "cross_scale_consistent": True,
         "gate_label": 1,
         "verifier_kind": "final_number",
         "student_right": False,
@@ -138,7 +161,7 @@ def test_cache_manifest_keeps_agreement_and_verified_semantics_separate() -> Non
         "ignored": 0,
         "total": 2,
     }
-    assert manifest["coverage"]["per_loss_class"]["aim_target"]["eligible"] == 1
+    assert manifest["coverage"]["per_loss_class"]["aim_target"]["eligible"] == 2
     assert manifest["coverage"]["targeted_32b_extension_candidates"] == 0
 
 

@@ -31,6 +31,8 @@ class VerifiedLabelInputs:
     student_right: bool
     teacher_right: bool
     confident_agreement: bool
+    teacher_14b_top1: int
+    teacher_32b_top1: Optional[int]
 
 
 def agreement_gate_label(
@@ -55,7 +57,11 @@ def agreement_gate_label(
 
 
 def verified_gate_label(inputs: VerifiedLabelInputs) -> GateLabel:
-    if inputs.teacher_right and not inputs.student_right:
+    cross_scale = (
+        inputs.teacher_32b_top1 is not None
+        and inputs.teacher_14b_top1 == inputs.teacher_32b_top1
+    )
+    if inputs.teacher_right and not inputs.student_right and cross_scale:
         return GateLabel.POSITIVE
     if inputs.student_right and inputs.teacher_right and inputs.confident_agreement:
         return GateLabel.NEGATIVE
@@ -134,22 +140,45 @@ def validate_cache_record(record: Mapping[str, Any]) -> dict[str, Any]:
         if "teacher_right" in record or "student_right" in record:
             raise ValueError("agreement records cannot carry unverified correctness labels")
     else:
-        required = {"verifier_kind", "student_right", "teacher_right", "verifier_receipt"}
+        required = {
+            "teacher_32b_top1",
+            "cross_scale_consistent",
+            "verifier_kind",
+            "student_right",
+            "teacher_right",
+            "verifier_receipt",
+        }
         absent = sorted(required - set(record))
         if absent:
             raise ValueError(f"verified record missing fields: {absent}")
+        cascade_covered = record["teacher_32b_top1"] is not None
+        cross_scale_consistent = bool(
+            cascade_covered
+            and record["teacher_14b_top1"] == record["teacher_32b_top1"]
+        )
+        if bool(record["cross_scale_consistent"]) != cross_scale_consistent:
+            raise ValueError("verified cross-scale consistency field is inaccurate")
         if label == GateLabel.POSITIVE and not (
-            bool(record["teacher_right"]) and not bool(record["student_right"])
+            bool(record["teacher_right"])
+            and not bool(record["student_right"])
+            and cross_scale_consistent
         ):
-            raise ValueError("verified positive must be teacher-right/student-wrong")
+            raise ValueError(
+                "verified positive must be teacher-right/student-wrong with 14B/32B concurrence"
+            )
     is_agreement = stratum == "agreement"
-    cascade_covered = bool(is_agreement and record.get("teacher_32b_top1") is not None)
-    cross_scale_consistent = bool(is_agreement and record.get("cross_scale_consistent"))
+    is_verified = stratum == "verified"
+    cascade_covered = bool(record.get("teacher_32b_top1") is not None)
+    cross_scale_consistent = bool(record.get("cross_scale_consistent"))
     flip_candidate_14b = bool(is_agreement and record.get("flip_candidate_14b"))
+    verified_flip_candidate = bool(
+        is_verified and record.get("teacher_right") and not record.get("student_right")
+    )
+    write_candidate = flip_candidate_14b or verified_flip_candidate
     loss_eligibility = {
         "l_kl": is_agreement,
-        "aim_target": is_agreement and label == GateLabel.POSITIVE and cross_scale_consistent,
-        "gate_positive": label == GateLabel.POSITIVE,
+        "aim_target": label == GateLabel.POSITIVE and cross_scale_consistent,
+        "gate_positive": label == GateLabel.POSITIVE and cross_scale_consistent,
         "gate_negative": label == GateLabel.NEGATIVE,
         "preservation": label == GateLabel.NEGATIVE,
     }
@@ -163,11 +192,12 @@ def validate_cache_record(record: Mapping[str, Any]) -> dict[str, Any]:
         "cascade_covered": cascade_covered,
         "cross_scale_consistent": cross_scale_consistent,
         "flip_candidate_14b": flip_candidate_14b,
+        "verified_flip_candidate": verified_flip_candidate,
         "targeted_32b_extension_candidate": bool(
-            is_agreement and flip_candidate_14b and not cascade_covered
+            write_candidate and not cascade_covered
         ),
         "cross_scale_conflict": bool(
-            is_agreement and cascade_covered and not cross_scale_consistent
+            write_candidate and cascade_covered and not cross_scale_consistent
         ),
         "loss_eligibility": loss_eligibility,
         "record_sha256": canonical_sha256(dict(record)),
@@ -197,7 +227,7 @@ def cache_manifest(records: list[Mapping[str, Any]]) -> dict[str, Any]:
     }
     per_label_class = {}
     for label, name in label_names.items():
-        selected = [record for record in agreement if record["gate_label"] == int(label)]
+        selected = [record for record in validated if record["gate_label"] == int(label)]
         covered = sum(record["cascade_covered"] for record in selected)
         per_label_class[name] = {
             "total": len(selected),
@@ -206,6 +236,10 @@ def cache_manifest(records: list[Mapping[str, Any]]) -> dict[str, Any]:
                 record["cross_scale_consistent"] for record in selected
             ),
             "14b_only": len(selected) - covered,
+            "by_stratum": {
+                stratum: sum(record["source_stratum"] == stratum for record in selected)
+                for stratum in ("agreement", "verified")
+            },
         }
     per_loss_class = {
         loss: {
@@ -245,7 +279,7 @@ def cache_manifest(records: list[Mapping[str, Any]]) -> dict[str, Any]:
         "record_index_sha256": canonical_sha256(stable),
         "admission_policy": {
             "aim_target": "14b_and_32b_required_and_concurrent",
-            "gate_positive": "agreement_positive_requires_14b_32b_concurrence_verified_positive_requires_programmatic_correctness",
+            "gate_positive": "all_positive_strata_require_14b_32b_concurrence_verified_positive_also_requires_programmatic_correctness",
             "l_kl": "14b_only_admissible",
             "gate_negative": "confident_14b_student_agreement_14b_only_admissible",
             "preservation": "14b_only_admissible",

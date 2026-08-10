@@ -170,6 +170,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3_short_sha"
 #   "paper2_phase2_a2_resume" - locked A100-40GB+ exact step-200 A2 continuation.
 #   "paper2_phase2_a2_step237" - amended A100-40GB+ exact step-237 continuation.
 #   "paper2_phase2_v1b_rms_audit" - CPU-only audit of existing V1b private rows.
+#   "paper2_phase3_empirical_calibration" - CPU-only empirical DEV sequential-floor calibration.
 #   "paper2_phase2_eval_de_freeze" - score-blind EVAL-D/E and own-base feature freeze.
 #   "paper2_phase2_e1_confirmation" - locked read-once EVAL-D confirmation; A100-80GB.
 #   "paper2_d0_prelock_publish_resume" - publish completed Drive-backed D0 lock receipts without inference.
@@ -4176,6 +4177,19 @@ TARGETS = {
             "P3.2 strict writes permissive distillation coverage receipt before cache finality",
             "no P3.3 optimizer no P3.3 training no CONFIRM scoring",
             "colab/run_stage5_paper2_phase3_p31_p32_receipts.py",
+        ],
+        "env": {},
+    },
+    "paper2_phase3_empirical_calibration": {
+        "path": "colab/STAGE5_PAPER2_PHASE3_EMPIRICAL_CALIBRATION_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_PHASE3_EMPIRICAL_CALIBRATION_VERSION",
+            "paper2_phase3_empirical_calibration_v1",
+            "empirical DEV paired differences from twenty positive-step Option B looks",
+            "seed-wise conservative envelope no cross-seed pseudo-replication",
+            "familywise false-stop target 0.0001 plus three-point and five-point power",
+            "CPU-only saved-row post-processing no model no optimizer no training no CONFIRM scoring",
+            "colab/run_stage5_paper2_phase3_empirical_calibration.py",
         ],
         "env": {},
     },

@@ -45,6 +45,8 @@ def run_preflight(output_summary: Path) -> dict[str, Any]:
             student_right=False,
             teacher_right=True,
             confident_agreement=False,
+            teacher_14b_top1=5,
+            teacher_32b_top1=5,
         )
     )
     manifest = cache_manifest(
@@ -116,6 +118,8 @@ def run_preflight(output_summary: Path) -> dict[str, Any]:
                 "loop_index": 1,
                 "student_top1": 3,
                 "teacher_14b_top1": 5,
+                "teacher_32b_top1": 5,
+                "cross_scale_consistent": True,
                 "gate_label": int(verified_label),
                 "verifier_kind": "final_number",
                 "student_right": False,
@@ -141,6 +145,18 @@ def run_preflight(output_summary: Path) -> dict[str, Any]:
     assertions = {
         "agreement_positive_requires_cross_scale": agreement_label == GateLabel.POSITIVE,
         "verified_positive_uses_real_correctness": verified_label == GateLabel.POSITIVE,
+        "verified_positive_requires_cross_scale": (
+            verified_gate_label(
+                VerifiedLabelInputs(
+                    student_right=False,
+                    teacher_right=True,
+                    confident_agreement=False,
+                    teacher_14b_top1=5,
+                    teacher_32b_top1=None,
+                )
+            )
+            == GateLabel.IGNORED
+        ),
         "agreement_correctness_labels_prohibited": manifest[
             "agreement_correctness_labels_prohibited"
         ],
