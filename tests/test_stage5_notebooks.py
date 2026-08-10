@@ -3637,6 +3637,24 @@ def test_phase3_empirical_calibration_target_is_wired_and_guarded() -> None:
     assert "seed_0_full_a2" in runner
     assert "seed_1_full_a2" in runner
     assert '"p33_training_authorized": False' in runner
+
+
+def test_phase3_p32_coverage_target_is_wired_and_guarded() -> None:
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    cell = (ROOT / "colab/STAGE5_PAPER2_PHASE3_P32_COVERAGE_CELL.py").read_text(
+        encoding="utf-8"
+    )
+    runner = (ROOT / "colab/run_stage5_paper2_phase3_p32_coverage.py").read_text(
+        encoding="utf-8"
+    )
+    for text in (bootstrap, cell):
+        assert "paper2_phase3_p32_coverage" in text
+        assert "paper2_phase3_p32_coverage_v1" in text
+        assert "CPU-only cached lattice processing no model no optimizer no training no CONFIRM scoring" in text
+    assert "tests/test_paper2_phase3_p32_coverage.py" in cell
+    assert "stage5_paper2_phase3_p32_coverage_20260810" in runner
+    assert "agreement_coverage_index.jsonl" in runner
+    assert '"p33_training_authorized": False' in runner
     assert "p33_training_authorized" in runner
     assert "optimizer_steps" in runner
 

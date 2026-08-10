@@ -171,6 +171,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3_short_sha"
 #   "paper2_phase2_a2_step237" - amended A100-40GB+ exact step-237 continuation.
 #   "paper2_phase2_v1b_rms_audit" - CPU-only audit of existing V1b private rows.
 #   "paper2_phase3_empirical_calibration" - CPU-only empirical DEV sequential-floor calibration.
+#   "paper2_phase3_p32_coverage" - CPU-only agreement-stratum coverage surface from cached lattice rows.
 #   "paper2_phase2_eval_de_freeze" - score-blind EVAL-D/E and own-base feature freeze.
 #   "paper2_phase2_e1_confirmation" - locked read-once EVAL-D confirmation; A100-80GB.
 #   "paper2_d0_prelock_publish_resume" - publish completed Drive-backed D0 lock receipts without inference.
@@ -4190,6 +4191,19 @@ TARGETS = {
             "familywise false-stop target 0.0001 plus three-point and five-point power",
             "CPU-only saved-row post-processing no model no optimizer no training no CONFIRM scoring",
             "colab/run_stage5_paper2_phase3_empirical_calibration.py",
+        ],
+        "env": {},
+    },
+    "paper2_phase3_p32_coverage": {
+        "path": "colab/STAGE5_PAPER2_PHASE3_P32_COVERAGE_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_PHASE3_P32_COVERAGE_VERSION",
+            "paper2_phase3_p32_coverage_v1",
+            "strict write coverage measured across teachability thresholds without selecting one",
+            "14B-only distillation negatives and preservation remain admissible",
+            "targeted 32B extension demand reported never concurrence dilution",
+            "CPU-only cached lattice processing no model no optimizer no training no CONFIRM scoring",
+            "colab/run_stage5_paper2_phase3_p32_coverage.py",
         ],
         "env": {},
     },
