@@ -41,6 +41,7 @@ def test_runner_includes_required_measurement_surfaces() -> None:
     assert '"task_level_capability_scoring": False' in source
     assert '"confirm_scored": False' in source
     assert '"eval_e_scored": False' in source
+    assert '"bf16_reader_sensitivity"' in inspect.getsource(runner.audit_model)
 
 
 def test_observatory_defines_gradient_dot_write_without_task_generation() -> None:

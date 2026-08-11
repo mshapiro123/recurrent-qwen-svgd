@@ -593,13 +593,15 @@ def audit_model(
                     "horizon": int(source["horizon"]),
                     "teachability_decile": source.get("teachability_decile"),
                     "base_top1": int(base_token[offset]),
+                    "cached_student_top1": int(source["student_top1"]),
+                    "base_reader_matches_cached_student": (
+                        int(base_token[offset]) == int(source["student_top1"])
+                    ),
                     "deployed_top1": int(deployed_token[offset]),
                     "gate_unclamped": float(gate_unclamped[offset]),
                     "gate_deployed": float(gate_deployed[offset]),
                     "collateral_change": bool(base_token[offset] != deployed_token[offset]),
                 }
-                if int(base_token[offset]) != int(source["student_top1"]):
-                    raise RuntimeError("P3.3 audit base-reader mismatch")
                 if population == "positive":
                     teacher = int(source["teacher_14b_top1"])
                     forced_trained, forced_oracle, deployed_oracle = tokens[2:5]
@@ -623,6 +625,9 @@ def audit_model(
         [float(row["gate_unclamped"]) for row in (*positive_rows, *negative_rows)]
     )
     gate = gate_classification(probabilities, labels)
+    reader_matched_positive = [
+        row for row in positive_rows if bool(row["base_reader_matches_cached_student"])
+    ]
     summary = {
         "seed": seed,
         "step": step,
@@ -638,6 +643,28 @@ def audit_model(
             denominator="deployed_oracle_flip",
             seed=20270811 + seed + step,
         ),
+        "bf16_reader_sensitivity": {
+            "locked_primary_rows": len(positive_rows),
+            "reader_matched_rows": len(reader_matched_positive),
+            "reader_mismatched_rows": len(positive_rows) - len(reader_matched_positive),
+            "reader_match_rate": len(reader_matched_positive) / len(positive_rows),
+            "pi_dir_reader_matched": _ratio_bootstrap(
+                reader_matched_positive,
+                numerator="forced_trained_flip",
+                denominator="forced_oracle_flip",
+                seed=20280811 + seed + step,
+            ),
+            "pi_dep_reader_matched": _ratio_bootstrap(
+                reader_matched_positive,
+                numerator="deployed_trained_flip",
+                denominator="deployed_oracle_flip",
+                seed=20290811 + seed + step,
+            ),
+            "interpretation": (
+                "sensitivity only; locked primary retains all 4096 rows and uses the same "
+                "BF16 hidden-state reader in numerator and oracle denominator"
+            ),
+        },
         "gate": gate,
         "collateral_chi": sum(bool(row["collateral_change"]) for row in negative_rows) / len(negative_rows),
         "mean_direction_cosine": float(np.mean([row["direction_cosine"] for row in positive_rows])),
