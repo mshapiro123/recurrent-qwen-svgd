@@ -3678,6 +3678,7 @@ def test_phase3_oracle_forecast_target_is_wired_and_guarded() -> None:
         assert "document-disjoint linear forecast neither upper nor lower bound" in text
     assert "tests/test_paper2_phase3_agreement_oracle.py" in cell
     assert 'ROOT if ROOT.is_dir() else Path("/content")' in cell
+    assert 'shutil.which("nvidia-smi") or "/opt/bin/nvidia-smi"' in cell
     assert "stage5_paper2_phase3_oracle_forecast_20260810" in runner
     assert "seed_0_full_a2_phase3_migrated.pt" in runner
     assert "seed_1_full_a2_phase3_migrated.pt" in runner

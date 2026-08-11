@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import shutil
 import subprocess
 import sys
 from collections import deque
@@ -52,7 +53,9 @@ def run(command: list[str], cwd: Path | None = None) -> None:
 
 if not Path("/content/drive/MyDrive").is_dir():
     drive.mount("/content/drive", force_remount=False, timeout_ms=240_000)
-run(["nvidia-smi"])
+nvidia_smi = shutil.which("nvidia-smi") or "/opt/bin/nvidia-smi"
+assert Path(nvidia_smi).is_file(), "GPU runtime is missing nvidia-smi."
+run([nvidia_smi])
 url = f"https://x-access-token:{GH}@github.com/{REPO}.git"
 if ROOT.exists():
     run(["git", "remote", "set-url", "origin", url])
