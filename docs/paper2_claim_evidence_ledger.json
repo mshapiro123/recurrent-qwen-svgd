@@ -71,7 +71,9 @@
     "phase2_e1_eval_d_freeze": "outputs/stage5/stage5_paper2_phase2_e1_eval_d_20260808/receipts/e1_eval_d_freeze_summary.json",
     "phase2_e1_eval_d_readiness": "outputs/stage5/stage5_paper2_phase2_e1_eval_d_20260808/receipts/e1_readiness.json",
     "phase2_e1_sparse_support_qc": "outputs/stage5/stage5_paper2_phase2_e1_eval_d_20260808/receipts/e1_sparse_support_qc.json",
-    "phase2_e1_endpoint_lock_preparation": "outputs/stage5/stage5_paper2_phase2_e1_eval_d_20260808/receipts/e1_endpoint_lock_preparation.json"
+    "phase2_e1_endpoint_lock_preparation": "outputs/stage5/stage5_paper2_phase2_e1_eval_d_20260808/receipts/e1_endpoint_lock_preparation.json",
+    "phase3_linear_decodability_forecast_summary": "outputs/stage5/stage5_paper2_phase3_oracle_forecast_20260810/summary.json",
+    "phase3_linear_decodability_forecast_receipt": "docs/PAPER2_PHASE3_LINEAR_DECODABILITY_FORECAST_RECEIPT_20260811.md"
   },
   "claims": [
     {
@@ -722,6 +724,43 @@
         "transient append is universally impossible",
         "teacher agreement is semantic correctness",
         "Stage B opened from the Stage A result"
+      ]
+    },
+    {
+      "id": "phase3_strict_oracle_linear_decodability",
+      "status": "descriptive_planning_prior",
+      "claim": "Bridge-input features weakly but reproducibly linearly predict the strict 14B-and-32B-concurrent oracle direction on document-disjoint holdout data in both migrated seed lineages.",
+      "scope": "43,204 strict concurrent positions from 37,887 anchors; both migrated E1-confirmation full-system seeds; loops 1-4; ridge selected on document-disjoint calibration and scored on document-disjoint holdout; no optimizer, no threshold selection, CONFIRM unscored",
+      "metrics": {
+        "positions": 43204,
+        "selected_anchors": 37887,
+        "feature_dimension": 1920,
+        "direction_dimension": 896,
+        "seed_0_loop_4_extended_holdout_cosine": 0.09519519223165872,
+        "seed_0_loop_4_extended_ci95_low": 0.08415710471960071,
+        "seed_0_loop_4_extended_ci95_high": 0.10767398351707179,
+        "seed_1_loop_4_extended_holdout_cosine": 0.08736954357940654,
+        "seed_1_loop_4_extended_ci95_low": 0.07919089850910442,
+        "seed_1_loop_4_extended_ci95_high": 0.09930920498412377,
+        "selected_ridge_both_seeds": 100000.0,
+        "optimizer_steps": 0
+      },
+      "evidence": [
+        {
+          "path": "outputs/stage5/stage5_paper2_phase3_oracle_forecast_20260810/summary.json",
+          "locator": "public metrics, integrity assertions, and Drive receipt hashes"
+        },
+        {
+          "path": "docs/PAPER2_PHASE3_LINEAR_DECODABILITY_FORECAST_RECEIPT_20260811.md",
+          "locator": "design, results, interpretation, evidence hashes, and boundaries"
+        }
+      ],
+      "do_not_claim": [
+        "the forecast bounds nonlinear bridge aim capture",
+        "P3.3 trained aim succeeds",
+        "ridge 1e5 is a P3.3 training hyperparameter",
+        "a teachability threshold has been selected",
+        "CONFIRM has been scored"
       ]
     },
     {

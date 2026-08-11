@@ -1,0 +1,85 @@
+{
+  "kind": "paper2_phase3_linear_decodability_forecast_public_summary_v1",
+  "status": "complete_descriptive_forecast_no_training",
+  "run_date": "2026-08-11",
+  "code_commit": "768191422b30a78a8f66e677f4c9c4299be4673c",
+  "optimizer_steps": 0,
+  "p33_training_authorized_by_run": false,
+  "confirm_partition_scored": false,
+  "teachability_threshold_selected": false,
+  "selected_anchors": 37887,
+  "strict_concurrent_positions": 43204,
+  "direction_dimension": 896,
+  "feature_dimension": 1920,
+  "base_forecasts": {
+    "ridge_candidates_maximum": 100.0,
+    "seed_0_holdout_cosine_by_loop": [
+      0.0742774085800567,
+      0.07482763497466909,
+      0.0753789458361373,
+      0.075829855667515
+    ],
+    "seed_1_holdout_cosine_by_loop": [
+      0.07017964638364524,
+      0.07096230719738827,
+      0.07138103624723666,
+      0.0716699699699369
+    ]
+  },
+  "ridge_extended_loop_4": {
+    "ridge_candidates": [
+      0.0001,
+      0.001,
+      0.01,
+      0.1,
+      1.0,
+      10.0,
+      100.0,
+      1000.0,
+      10000.0,
+      100000.0,
+      1000000.0,
+      10000000.0,
+      100000000.0
+    ],
+    "seed_0": {
+      "selected_ridge": 100000.0,
+      "holdout_cosine_mean": 0.09519519223165872,
+      "holdout_cosine_ci95_low": 0.08415710471960071,
+      "holdout_cosine_ci95_high": 0.10767398351707179,
+      "train_rows": 31096,
+      "calibration_rows": 5919,
+      "holdout_rows": 6189,
+      "train_documents": 689,
+      "calibration_documents": 135,
+      "holdout_documents": 143
+    },
+    "seed_1": {
+      "selected_ridge": 100000.0,
+      "holdout_cosine_mean": 0.08736954357940654,
+      "holdout_cosine_ci95_low": 0.07919089850910442,
+      "holdout_cosine_ci95_high": 0.09930920498412377,
+      "train_rows": 28560,
+      "calibration_rows": 6053,
+      "holdout_rows": 8591,
+      "train_documents": 658,
+      "calibration_documents": 148,
+      "holdout_documents": 161
+    }
+  },
+  "integrity": {
+    "actual_lm_head_equivalence": true,
+    "all_four_loops": true,
+    "both_seed_lineages": true,
+    "document_disjoint_forecasts": true,
+    "optimizer_steps_zero": true,
+    "threshold_not_selected": true,
+    "direction_cache_sha256": "611be787dea0438761d279aa035d5bfe2aa37e74710d880be1066d7ae80a45a2",
+    "drive_summary_sha256": "0cbe273a073d08be104dfc8d468b205653a1e2654ee5c7f9d7f168fb0788810d",
+    "drive_oracle_cache_summary_sha256": "a4ee3bce8886f92a6a8f4a187a78936aa48b1f9cb1363abf6ad697210a0aa662",
+    "drive_seed_0_ridge_extension_sha256": "908956fdd4f04ca74bcbb837a626a9e574759999a279e3e964c2244f88d43ee4",
+    "drive_seed_1_ridge_extension_sha256": "9d6a1262c2305925f38d057612cfa59a184a660c7ea4f16aef1f9428b4f8beca"
+  },
+  "drive_receipt_root": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase3_oracle_forecast_20260810/receipts",
+  "interpretation": "The document-disjoint linear decoder found weak but replicated positive alignment with the strict concurrent oracle direction. This is a planning prior only: it is neither an upper nor a lower bound on nonlinear bridge aim capture."
+}

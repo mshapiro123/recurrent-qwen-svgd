@@ -67,12 +67,25 @@ Recommended inherited pilot schedule: AdamW, learning rate `3e-4`, batch size
 50 updates. Parameter exclusions for weight decay follow the Phase 2 pilot:
 biases, normalization gains, and learned scalar parameters receive no decay.
 
+## A5 resolution
+
+The linear-decodability forecast was regenerated and banked on 2026-08-11.
+Both seed lineages and all four loops completed over 43,204 strict concurrent
+positions with document-disjoint splits and zero optimizer steps. The
+ridge-extended loop-4 fits selected ridge `1e5` and produced holdout cosine
+`0.0952` (95% CI `[0.0842, 0.1077]`) for seed 0 and `0.0874` (95% CI
+`[0.0792, 0.0993]`) for seed 1. See
+`docs/PAPER2_PHASE3_LINEAR_DECODABILITY_FORECAST_RECEIPT_20260811.md` and
+`outputs/stage5/stage5_paper2_phase3_oracle_forecast_20260810/summary.json`.
+
+Pre-run assertion A5 is now satisfied. The four protocol discrepancies above
+remain unresolved and continue to block optimizer construction.
+
 ## Work that may proceed
 
-- Locate or regenerate and bank A5.
+- Treat A5 as complete and preserve its hashes in the P3.3 execution receipt.
 - Mirror the governing documents and bind their hashes.
 - Build tests, telemetry, resumable checkpointing, and an optimizer-free A1-A4
   preflight.
 - Do not construct the optimizer or launch P3.3 until the four rulings above are
   recorded in a protocol erratum.
-

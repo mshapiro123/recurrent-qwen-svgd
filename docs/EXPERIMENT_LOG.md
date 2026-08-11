@@ -1859,3 +1859,19 @@ Colab/Drive backups for selected runs.
   evaluator and rule inventory are hashed, EVAL-E remains untouched, and the
   one-shot E1 pass is authorized but unspent. Because no endpoint-bearing memory
   preflight was run, the lock conservatively requires an A100 80GB runtime.
+- 2026-08-11 Phase-3 linear-decodability forecast: a read-only L4 run cached
+  the strict 14B-and-32B-concurrent oracle direction and bridge-input features
+  for both migrated E1-confirmation seed lineages at loops 1 through 4. The
+  population contained 43,204 strict concurrent positions from 37,887 anchors;
+  feature and direction dimensions were 1,920 and 896. Document-disjoint ridge
+  fits on the initial grid produced loop-4 holdout cosines of 0.0758 and 0.0717.
+  Because ridge 100 was the calibration-grid boundary, a post-hoc extension
+  through 1e8 selected ridge 1e5 in both seeds and raised loop-4 holdout cosine
+  to 0.0952 (95% CI 0.0842-0.1077) and 0.0874 (95% CI 0.0792-0.0993). The
+  result is weak but replicated linear decodability and is neither an upper nor
+  a lower bound on nonlinear bridge capture. No optimizer ran, no threshold
+  was selected, and CONFIRM remained unscored. A5 is banked; the four P3.3
+  source-to-lock discrepancies remain optimizer blockers. Receipt:
+  `docs/PAPER2_PHASE3_LINEAR_DECODABILITY_FORECAST_RECEIPT_20260811.md`.
+  Summary:
+  `outputs/stage5/stage5_paper2_phase3_oracle_forecast_20260810/summary.json`.
