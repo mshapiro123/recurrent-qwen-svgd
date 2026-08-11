@@ -51,12 +51,14 @@ from training.paper2_phase3_p33_prep import (
     observatory_metrics,
     sha256_file,
 )
+from training.paper2_phase3_migration import phase3_trainable_parameter_count
 from training.run_paper2_phase2_matched_alpha import _local_source, _parallel_receipts
 
 
 RUN_KIND = "paper2_phase3_p33_aimed_writeback_seed_v1"
 AUDIT_RADIUS = 0.15
-EXPECTED_TRAINABLE = 1_185_973
+EXPECTED_PHASE3_CONFIGURATION = 1_185_973
+EXPECTED_OPTIMIZER_MARKED = 280_880
 POSITIVE_PER_BATCH = 32
 NEGATIVE_PER_BATCH = 96
 AUDIT_BATCH_SIZE = 32
@@ -1014,10 +1016,13 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     if not all(zero_loop.values()):
         raise RuntimeError("P3.3 zero-loop identity failed")
     clamp = activate_operating_clamp(module)
+    configured_count = phase3_trainable_parameter_count(module)
+    if configured_count != EXPECTED_PHASE3_CONFIGURATION:
+        raise RuntimeError(f"P3.3 Phase 3 configuration count changed: {configured_count}")
     trainable = set_p33_trainable(module)
     trainable_count = sum(parameter.numel() for parameter in trainable.values())
-    if trainable_count != EXPECTED_TRAINABLE:
-        raise RuntimeError(f"P3.3 trainable count changed: {trainable_count}")
+    if trainable_count != EXPECTED_OPTIMIZER_MARKED:
+        raise RuntimeError(f"P3.3 optimizer-marked count changed: {trainable_count}")
     frozen_before = tensor_digest(
         {name: value for name, value in module.named_parameters() if not value.requires_grad}
     )
@@ -1314,7 +1319,8 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         "operating_clamp": clamp,
         "zero_loop_identity": zero_loop,
         "instrumentation_nonperturbation": instrumentation,
-        "trainable_parameters": trainable_count,
+        "phase3_configuration_parameters": configured_count,
+        "optimizer_marked_parameters": trainable_count,
         "frozen_parameter_digest_before": frozen_before,
         "frozen_parameter_digest_after": frozen_after,
         "optimizer": {

@@ -15,6 +15,8 @@ def test_runner_binds_exact_e2_receipts_and_checkpoint_lineage() -> None:
         "e46198291bdea16f3561b44eaa1a77764aa7a0fcc49a60c4c58802491aef985c"
     )
     assert set(runner.EXPECTED_MIGRATED_SHA256) == {0, 1}
+    assert runner.EXPECTED_PHASE3_CONFIGURATION == 1_185_973
+    assert runner.EXPECTED_OPTIMIZER_MARKED == 280_880
     assert runner.P33_TOTAL_STEPS == 1000
     assert runner.P33_LOOK_INTERVAL == 50
     assert runner.P33_LOOKS == 20
