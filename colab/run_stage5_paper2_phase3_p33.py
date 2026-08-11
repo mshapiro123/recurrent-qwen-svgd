@@ -79,9 +79,13 @@ def main() -> int:
         new = scratch / "new"
         preflight = DRIVE_STAGE5 / PREFLIGHT_ID
         rsync(DRIVE_STAGE5 / OLD_ID / "private/stage0a/sample_manifest.jsonl", old / "sample_manifest.jsonl")
+        rsync(DRIVE_STAGE5 / OLD_ID / "private/stage0a/lattice", old / "lattice")
         rsync(DRIVE_STAGE5 / OLD_ID / "private/stage0a/model_cache/student_0p5b", old / "model_cache/student_0p5b")
+        rsync(DRIVE_STAGE5 / OLD_ID / "private/stage0a/model_cache/teacher_14b", old / "model_cache/teacher_14b")
         rsync(DRIVE_STAGE5 / NEW_ID / "private/full/sample_manifest.jsonl", new / "sample_manifest.jsonl")
+        rsync(DRIVE_STAGE5 / NEW_ID / "private/full/lattice", new / "lattice")
         rsync(DRIVE_STAGE5 / NEW_ID / "private/full/model_cache/student_0p5b", new / "model_cache/student_0p5b")
+        rsync(DRIVE_STAGE5 / NEW_ID / "private/full/model_cache/teacher_14b", new / "model_cache/teacher_14b")
         canonicalizer = scratch / "canonicalizer.pt"
         direction_cache = scratch / "agreement_oracle_directions.pt"
         migrated = scratch / f"seed_{seed}_migrated.pt"

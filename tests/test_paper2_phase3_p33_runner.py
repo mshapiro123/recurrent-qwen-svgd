@@ -41,6 +41,14 @@ def test_runner_includes_required_measurement_surfaces() -> None:
     assert '"eval_e_scored": False' in source
 
 
+def test_observatory_defines_gradient_dot_write_without_task_generation() -> None:
+    source = inspect.getsource(runner.tier1_observatory_read)
+    assert "loss_gradient=loss_gradient" in source
+    assert "teacher_14b_top1" in source
+    assert "student_top1" in source
+    assert "generate(" not in source
+
+
 def test_tensor_digest_is_stable() -> None:
     values = {"b": torch.tensor([2.0]), "a": torch.tensor([1.0])}
     assert runner.tensor_digest(values) == runner.tensor_digest(dict(reversed(list(values.items()))))

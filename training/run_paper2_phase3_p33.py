@@ -6,6 +6,7 @@ import argparse
 import hashlib
 import json
 import math
+import pickle
 import random
 import shutil
 from collections import defaultdict
@@ -98,6 +99,10 @@ def tensor_digest(values: Mapping[str, torch.Tensor]) -> str:
         digest.update(str(tuple(tensor.shape)).encode("ascii"))
         digest.update(tensor.view(torch.uint8).numpy().tobytes())
     return digest.hexdigest()
+
+
+def object_digest(value: object) -> str:
+    return hashlib.sha256(pickle.dumps(value, protocol=5)).hexdigest()
 
 
 def atomic_torch_save(payload: object, path: Path) -> str:
@@ -567,13 +572,23 @@ def instrumentation_nonperturbation(
         for name, value in metrics_a.items()
         if isinstance(value, torch.Tensor) and name in metrics_b
     )
-    rng_exact = tensor_digest({"torch": before_rng["torch"]}) == tensor_digest(
-        {"torch": after_telemetry_rng["torch"]}
-    ) == tensor_digest({"torch": after_repeat_rng["torch"]})
+    rng_exact = (
+        object_digest(before_rng["python"])
+        == object_digest(after_telemetry_rng["python"])
+        == object_digest(after_repeat_rng["python"])
+        and object_digest(before_rng["numpy"])
+        == object_digest(after_telemetry_rng["numpy"])
+        == object_digest(after_repeat_rng["numpy"])
+        and torch.equal(before_rng["torch"], after_telemetry_rng["torch"])
+        and torch.equal(before_rng["torch"], after_repeat_rng["torch"])
+    )
     if torch.cuda.is_available():
         rng_exact = rng_exact and all(
-            torch.equal(left, right)
-            for left, right in zip(before_rng["cuda"], after_repeat_rng["cuda"])
+            torch.equal(before, after_telemetry)
+            and torch.equal(before, after_repeat)
+            for before, after_telemetry, after_repeat in zip(
+                before_rng["cuda"], after_telemetry_rng["cuda"], after_repeat_rng["cuda"]
+            )
         )
     result = {
         "loss_bit_exact": loss_exact,
@@ -622,15 +637,38 @@ def _flow_and_writes(
     return torch.stack(flow.states, dim=1), torch.stack(writes, dim=1)
 
 
-@torch.inference_mode()
 def tier1_observatory_read(
     *, module: nn.Module, material: Mapping[str, Any], step: int, device: str
 ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     records = material["positive"]["records"][:OBSERVATORY_ROWS]
     hidden4 = material["positive"]["hidden4"][:OBSERVATORY_ROWS].to(device=device, dtype=torch.float32)
     positions = torch.tensor([int(row["prediction_position"]) for row in records], device=device)
-    states, writes = _flow_and_writes(module=module, hidden4=hidden4, positions=positions)
-    metrics = observatory_metrics(states=states, writes=writes)
+    with torch.no_grad():
+        states, writes = _flow_and_writes(module=module, hidden4=hidden4, positions=positions)
+
+    # The lock names gradient-dot-write as an acceptance-facing diagnostic.  At
+    # each scored position, use the exact gradient of the local teacher-versus-
+    # student token margin with respect to the bridge write.  This avoids
+    # inventing a task-generation graph in P3.3 while retaining a causal,
+    # position-specific quantity in the estimator P3.3 actually owns.
+    teacher = torch.tensor(
+        [int(row["teacher_14b_top1"]) for row in records], device=device
+    )
+    student = torch.tensor([int(row["student_top1"]) for row in records], device=device)
+    embedding = module.draft.tied_embedding.weight.detach().float()
+    margin_gradient_at_position = embedding.index_select(0, teacher) - embedding.index_select(
+        0, student
+    )
+    loss_gradient = torch.zeros_like(writes)
+    batch_index = torch.arange(len(records), device=device)
+    write_position = positions + 1  # bridge writes include the prepended control slot
+    for loop_index in range(writes.shape[1]):
+        loss_gradient[batch_index, loop_index, write_position] = margin_gradient_at_position
+    metrics = observatory_metrics(
+        states=states,
+        writes=writes,
+        loss_gradient=loss_gradient,
+    )
     rows = observatory_event_rows(
         record_ids=[str(row["record_id"]) for row in records], metrics=metrics
     )
@@ -640,6 +678,10 @@ def tier1_observatory_read(
         "step": int(step),
         "rows": len(records),
         "events": len(rows),
+        "gradient_definition": (
+            "exact gradient of teacher_14b_top1 minus student_top1 local token margin "
+            "with respect to the bridge write at the prediction position"
+        ),
         "by_metric": {},
     }
     for name, value in metrics.items():
