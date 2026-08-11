@@ -163,7 +163,19 @@ def _batch(
     directions: torch.Tensor,
     device: str,
 ) -> dict[str, torch.Tensor]:
-    anchors = torch.tensor([int(row["anchor_index"]) for row in records], dtype=torch.long)
+    old_anchors = int(cache["source_anchor_offsets"]["new"])
+    anchors = torch.tensor(
+        [
+            int(row["anchor_index"])
+            + (old_anchors if str(row["source"]) == "new" else 0)
+            for row in records
+        ],
+        dtype=torch.long,
+    )
+    if any(str(row["source"]) not in {"old", "new"} for row in records):
+        raise RuntimeError("P3.3 batch contains an unknown population source")
+    if int(anchors.min()) < 0 or int(anchors.max()) >= len(cache["documents"]):
+        raise RuntimeError("P3.3 source-local anchor does not map into the merged cache")
     labels = torch.full((len(records), 4), int(GateLabel.IGNORED), dtype=torch.long)
     oracle = torch.zeros((len(records), 4, 896), dtype=torch.float32)
     for index, row in enumerate(records):
@@ -807,6 +819,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         old_cache_path=args.old_cache,
         new_cache_path=args.new_cache,
     )
+    cache["source_anchor_offsets"] = {"old": 0, "new": len(old["documents"])}
     del old, new
     sources = {
         "old": (args.old_summary, args.old_private),

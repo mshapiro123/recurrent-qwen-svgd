@@ -52,3 +52,29 @@ def test_observatory_defines_gradient_dot_write_without_task_generation() -> Non
 def test_tensor_digest_is_stable() -> None:
     values = {"b": torch.tensor([2.0]), "a": torch.tensor([1.0])}
     assert runner.tensor_digest(values) == runner.tensor_digest(dict(reversed(list(values.items()))))
+
+
+def test_batch_maps_source_local_anchors_into_concatenated_cache() -> None:
+    cache = {
+        "documents": ["old-0", "old-1", "new-0", "new-1", "new-2"],
+        "source_anchor_offsets": {"old": 0, "new": 2},
+        "positions": torch.tensor([1, 2, 3, 4, 5]),
+        "student_hidden": torch.arange(5 * 4 * 896).reshape(5, 4, 896),
+        "candidate_ids": torch.zeros((5, 4, 1), dtype=torch.long),
+        "candidate_mask": torch.ones((5, 4, 1), dtype=torch.bool),
+        "base_log_probs": torch.zeros((5, 4, 1)),
+        "base_tail": torch.zeros((5, 4)),
+    }
+    records = [
+        {"source": "old", "anchor_index": 1, "horizon": 1, "gate_label": 0},
+        {"source": "new", "anchor_index": 1, "horizon": 1, "gate_label": 0},
+    ]
+    batch = runner._batch(
+        cache=cache,
+        records=records,
+        direction_index={},
+        directions=torch.empty((0, 896)),
+        device="cpu",
+    )
+    assert torch.equal(batch["hidden4"][0], cache["student_hidden"][1])
+    assert torch.equal(batch["hidden4"][1], cache["student_hidden"][3])
