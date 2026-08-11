@@ -4252,6 +4252,20 @@ TARGETS = {
         ],
         "env": {},
     },
+    "paper2_phase3_retention_preflight": {
+        "path": "colab/STAGE5_PAPER2_PHASE3_RETENTION_PREFLIGHT_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_PHASE3_RETENTION_PREFLIGHT_VERSION",
+            "paper2_phase3_retention_preflight_v1",
+            "exact 1024-position token-retention estimator balanced across four horizons",
+            "task-scale thresholds void and task capability scoring absent in P3.3",
+            "step-zero init-relative calibration before optimizer construction",
+            "Tier-S familywise false stop 1e-4 and 99 percent delta-cat power",
+            "L4 read-only model pass then CPU simulation no optimizer no training",
+            "colab/run_stage5_paper2_phase3_retention_preflight.py",
+        ],
+        "env": {},
+    },
     "gradient_path_audit": {
         "path": "colab/STAGE5_GRADIENT_PATH_AUDIT_CELL.py",
         "markers": [

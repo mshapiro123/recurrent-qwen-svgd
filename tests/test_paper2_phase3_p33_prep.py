@@ -32,16 +32,24 @@ def _record(index: int, *, positive: bool) -> dict[str, object]:
 def test_p33_staging_holds_out_audit_and_uses_ranked_three_to_one_negatives() -> None:
     records = [_record(index, positive=True) for index in range(100)]
     records += [_record(100 + index, positive=False) for index in range(340)]
-    staged, audit, negative_audit, receipt = prepare_training_rows(
-        records, audit_rows=20, negative_audit_rows=30
+    staged, audit, negative_audit, retention_panel, receipt = prepare_training_rows(
+        records, audit_rows=20, negative_audit_rows=30, retention_panel_rows=20
     )
     assert len(audit) == 20
     assert receipt["train_positive_count"] == 80
     assert receipt["train_negative_count"] == 240
     assert receipt["negative_to_positive_ratio"] == 3.0
     assert len(negative_audit) == 30
+    assert len(retention_panel) == 20
     assert receipt["audit_cohorts_disjoint"] is True
     assert receipt["negative_audit_excluded_from_training"] is True
+    assert receipt["retention_panel_excluded_from_training"] is True
+    assert receipt["retention_panel_by_horizon"] == {
+        "1": 5,
+        "2": 5,
+        "3": 5,
+        "4": 5,
+    }
     audit_ids = {row["record_id"] for row in audit}
     assert all(
         row["gate_label"] == int(GateLabel.IGNORED)
@@ -55,6 +63,15 @@ def test_p33_staging_holds_out_audit_and_uses_ranked_three_to_one_negatives() ->
         and row["audit_role"] == "negative"
         for row in staged
         if row["record_id"] in negative_audit_ids
+    )
+    retention_ids = {row["record_id"] for row in retention_panel}
+    assert audit_ids.isdisjoint(retention_ids)
+    assert negative_audit_ids.isdisjoint(retention_ids)
+    assert all(
+        row["gate_label"] == int(GateLabel.IGNORED)
+        and row["audit_role"] == "retention"
+        for row in staged
+        if row["record_id"] in retention_ids
     )
 
 

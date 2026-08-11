@@ -1,7 +1,7 @@
 {
   "kind": "paper2_phase3_opening_contract_v1",
   "date": "2026-08-09",
-  "status": "p31_completion_guardrail_and_p33_prep_authorized_p33_training_not_locked",
+  "status": "p33_lock_ratified_amended_e2_retention_preflight_required_before_training",
   "governing_artifacts": {
     "opening_handoff_r2": {
       "drive_id": "1ZF7zOQQMvU_HEMQVEfwpuv8hQUhDRCW0",
@@ -62,6 +62,30 @@
       "path": "docs/STRATEGY_HANDOFF_P31_P33PREP_20260810.md",
       "bytes": 5401,
       "sha256": "1ef98934ec2ce5164536a245f1a7931699568f7488c80a403c820c0b30675910"
+    },
+    "p33_protocol_lock": {
+      "drive_id": "1q2MxeBKtMhm87yPCHKaL_Ssnpix3Mjbn",
+      "path": "docs/STRATEGY_P33_PROTOCOL_LOCK_20260811.md",
+      "bytes": 8588,
+      "sha256": "45e2221bc94cf6c13df38c7d0bcdbb4075256792dc5968cb33b1076336455c8d"
+    },
+    "p33_lock_ratification": {
+      "drive_id": "1h5iYjpSYG4nbG7-dmH3ySaEhu_odekyd",
+      "path": "docs/PROGRAM_RECORD_P33_PROTOCOL_LOCK_RATIFIED_20260811.md",
+      "bytes": 1748,
+      "sha256": "4f3a333dbdee1d9379fbca2711fefbadd5bda0c17717e90f4988cba2c6af68f2"
+    },
+    "p33_erratum_e1": {
+      "drive_id": "17hYNV-IbzR6Yen9DLPTLjB8l-3magnxi",
+      "path": "docs/STRATEGY_P33_LOCK_ERRATUM_E1_20260811.md",
+      "bytes": 5189,
+      "sha256": "ff2d65e32495f2f15f7d05578a10b27eb15673424a26b13b72a004fd7aef0e51"
+    },
+    "p33_erratum_e2": {
+      "drive_id": "1s6_LvNfeI-mx3g2FiiXdy71o83KEbJp_",
+      "path": "docs/STRATEGY_P33_LOCK_ERRATUM_E2_20260811.md",
+      "bytes": 4442,
+      "sha256": "4efc06f8435adb1a80027d217f17ad0d4b95ce1494565f9d8c28d6bdfa356f33"
     }
   },
   "architecture": {
@@ -136,11 +160,22 @@
     "audit_rows": 4096,
     "audit_strata": ["horizon", "teachability_decile"],
     "negative_to_positive_ratio": 3,
+    "negative_audit_rows": 12288,
+    "retention_panel_rows": 1024,
+    "retention_panel_horizons": [1, 2, 3, 4],
+    "retention_panel_rows_per_horizon": 256,
+    "retention_estimand": "fraction of positions where augmented top1 matches frozen base top1",
+    "retention_threshold_reference": "step0_init_relative",
+    "retention_guardrail_looks": 20,
+    "retention_recalibration_required_before_optimizer": true,
+    "task_scale_p33_guardrail_thresholds_void": true,
+    "task_level_capability_scoring": false,
+    "task_inference_graph_deferred_to": "p34_lock_prerequisite",
     "negative_ranking": "min(student_loop1_top1_probability,teacher_14b_top1_probability)",
     "position_zero_ignored": true,
     "observatory_build_required": true,
     "a_state_interventions": ["zero", "norm_matched_random", "cross_example", "stale", "bypass"],
-    "training_authorized": false
+    "training_authorized_after_retention_preflight_assertions": true
   },
   "authorization": {
     "document_and_figure_landing": true,
@@ -150,6 +185,6 @@
     "p31_reference_scoring_dev_and_verified_train": true,
     "guardrail_recalibration_build": true,
     "p33_data_and_observatory_prep": true,
-    "p33_training": false
+    "p33_training": "authorized_by_ratified_lock_only_after_e2_retention_preflight_receipt"
   }
 }

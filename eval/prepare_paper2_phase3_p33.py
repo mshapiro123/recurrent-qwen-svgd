@@ -43,14 +43,16 @@ def build(
     canonical_projection: Path | None,
 ) -> dict[str, Any]:
     records = read_jsonl(coverage_index)
-    staged, audit, negative_audit, receipt = prepare_training_rows(records)
+    staged, audit, negative_audit, retention_panel, receipt = prepare_training_rows(records)
     output_dir.mkdir(parents=True, exist_ok=True)
     staged_path = output_dir / "p33_staged_labels.jsonl"
     audit_path = output_dir / "p33_audit_slice.jsonl"
     negative_audit_path = output_dir / "p33_negative_audit_slice.jsonl"
+    retention_panel_path = output_dir / "p33_retention_panel.jsonl"
     write_jsonl(staged_path, staged)
     write_jsonl(audit_path, audit)
     write_jsonl(negative_audit_path, negative_audit)
+    write_jsonl(retention_panel_path, retention_panel)
     projection = fixed_random_projection()
     projection_path = output_dir / "p33_fixed_random_projection.pt"
     temporary = projection_path.with_suffix(".pt.tmp")
@@ -88,6 +90,18 @@ def build(
                 "selection": (
                     "next ranked confident-agreement rows after the frozen training "
                     "negative cohort"
+                ),
+            },
+            "retention_panel": {
+                "path": str(retention_panel_path),
+                "sha256": sha256_file(retention_panel_path),
+                "rows": len(retention_panel),
+                "selection": (
+                    "next unused confident-agreement rows after training negatives "
+                    "and the negative audit, balanced 256 per horizon"
+                ),
+                "estimand": (
+                    "fraction of positions where augmented top1 matches frozen base top1"
                 ),
             },
             "fixed_instruments": {

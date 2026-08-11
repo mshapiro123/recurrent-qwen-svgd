@@ -1892,3 +1892,14 @@ Colab/Drive backups for selected runs.
   `outputs/stage5/stage5_paper2_phase3_guardrail_p33_prep_20260810/summary.json`.
   Handoff:
   `docs/PAPER2_PHASE3_P33_ERRATUM_PREFLIGHT_HANDOFF_20260811.md`.
+- 2026-08-11 P3.3 estimator erratum e2 build: strategy selected Path A and
+  retired the task-level Tier-S/W estimator from P3.3. The implementation now
+  deterministically reserves 1,024 confident-agreement positions, balanced at
+  256 per horizon and disjoint from both training cohorts and both audit
+  slices. A no-update L4 preflight recomputes the frozen-base top-1, scores the
+  clamped migrated model at step zero in both seeds, and calibrates init-relative
+  Tier-S/W sequential rules over exactly 20 looks before optimizer construction.
+  Power is reported for sustained drops of 0.5, 1.0, and 2.0 percentage points.
+  The code and focused tests are complete; the empirical preflight receipt has
+  not yet landed, so no P3.3 training step or task-level capability score exists.
+  Governing erratum: `docs/STRATEGY_P33_LOCK_ERRATUM_E2_20260811.md`.

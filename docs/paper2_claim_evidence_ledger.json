@@ -765,15 +765,18 @@
     },
     {
       "id": "phase3_p33_erratum_preflight",
-      "status": "build_complete_training_blocked_on_estimator_ruling",
-      "claim": "Erratum e1 is implemented and the P3.3 positive and negative audit cohorts are frozen, disjoint, and excluded from training; no optimizer step has run.",
-      "scope": "CPU-only data staging and code preflight at commit 3197999b; no model training, no CONFIRM/EVAL-E scoring, and no P3.3 aim-capture result",
+      "status": "e2_implementation_complete_retention_receipt_pending",
+      "claim": "Errata e1 and e2 are implemented in the P3.3 preflight code: positive, negative, and token-retention holdouts are disjoint and excluded from training, and estimator-specific calibration must complete before optimizer construction.",
+      "scope": "Build and tests only for the e2 retention path; the earlier e1 CPU receipt remains banked; no P3.3 model training, no task-level capability scoring, and no CONFIRM/EVAL-E scoring",
       "metrics": {
         "coverage_index_positions": 727876,
         "training_positives": 34521,
         "training_negatives": 103563,
         "positive_audit_rows": 4096,
         "negative_audit_rows": 12288,
+        "retention_panel_rows_registered": 1024,
+        "retention_rows_per_horizon_registered": 256,
+        "retention_guardrail_looks": 20,
         "negative_audit_ratio": 3.0,
         "negative_confidence_cut": 0.9937900900840759,
         "optimizer_steps": 0,
@@ -787,13 +790,22 @@
         {
           "path": "docs/PAPER2_PHASE3_P33_ERRATUM_PREFLIGHT_HANDOFF_20260811.md",
           "locator": "erratum implementation, CPU results, unresolved Tier-S deployment semantics, and requested ruling"
+        },
+        {
+          "path": "docs/STRATEGY_P33_LOCK_ERRATUM_E2_20260811.md",
+          "locator": "Path A ruling, exact token-retention estimator, mandatory recalibration, and P3.4 task-inference deferral"
+        },
+        {
+          "path": "colab/run_stage5_paper2_phase3_retention_preflight.py",
+          "locator": "score-blind panel build, exact step-zero scoring, and calibration-before-optimizer execution order"
         }
       ],
       "do_not_claim": [
         "P3.3 training has started",
         "aim capture is positive or negative",
         "the token-level audit is a general-capability panel",
-        "the registered Tier-S task estimator has an implemented Phase-3 inference path",
+        "P3.3 has task-level capability results or an implemented task inference graph",
+        "the 1,024-position retention panel or its calibrated thresholds have landed before the preflight receipt exists",
         "CONFIRM or EVAL-E has been scored"
       ]
     },

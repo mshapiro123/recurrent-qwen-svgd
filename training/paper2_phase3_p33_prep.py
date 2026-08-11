@@ -18,6 +18,7 @@ from training.paper2_phase3_p32 import GateLabel, canonical_sha256
 P33_TEACHABILITY_THRESHOLD = 0.70
 P33_AUDIT_ROWS = 4_096
 P33_NEGATIVE_AUDIT_ROWS = 12_288
+P33_RETENTION_PANEL_ROWS = 1_024
 P33_NEGATIVE_TO_POSITIVE = 3
 P33_SPLIT_SEED = 20260810
 P33_PROJECTION_SEED = 20260810
@@ -79,15 +80,60 @@ def stratified_audit_slice(
     return sorted(selected, key=lambda row: str(row["record_id"]))
 
 
+def stratified_retention_panel(
+    rows: Sequence[Mapping[str, Any]],
+    *,
+    size: int = P33_RETENTION_PANEL_ROWS,
+) -> list[dict[str, Any]]:
+    """Select a deterministic, horizon-balanced confident-agreement panel."""
+
+    horizons = (1, 2, 3, 4)
+    if size <= 0 or size % len(horizons):
+        raise ValueError("P3.3 retention panel must divide evenly across four horizons")
+    per_horizon = size // len(horizons)
+    selected: list[dict[str, Any]] = []
+    for horizon in horizons:
+        candidates = [row for row in rows if int(row["horizon"]) == horizon]
+        ranked = sorted(
+            candidates,
+            key=lambda row: (
+                -min(
+                    float(row["student_top1_probability"]),
+                    float(row["teacher_14b_top1_probability"]),
+                ),
+                str(row["record_id"]),
+            ),
+        )
+        if len(ranked) < per_horizon:
+            raise RuntimeError(
+                "P3.3 retention panel lacks confident agreements at "
+                f"horizon {horizon}: {len(ranked)} < {per_horizon}"
+            )
+        for rank, row in enumerate(ranked[:per_horizon], start=1):
+            selected.append(
+                {
+                    **dict(row),
+                    "retention_horizon_rank": rank,
+                    "retention_confidence": min(
+                        float(row["student_top1_probability"]),
+                        float(row["teacher_14b_top1_probability"]),
+                    ),
+                }
+            )
+    return sorted(selected, key=lambda row: str(row["record_id"]))
+
+
 def prepare_training_rows(
     records: Sequence[Mapping[str, Any]],
     *,
     teachability_threshold: float = P33_TEACHABILITY_THRESHOLD,
     audit_rows: int = P33_AUDIT_ROWS,
     negative_audit_rows: int = P33_NEGATIVE_AUDIT_ROWS,
+    retention_panel_rows: int = P33_RETENTION_PANEL_ROWS,
     negative_to_positive: int = P33_NEGATIVE_TO_POSITIVE,
     seed: int = P33_SPLIT_SEED,
 ) -> tuple[
+    list[dict[str, Any]],
     list[dict[str, Any]],
     list[dict[str, Any]],
     list[dict[str, Any]],
@@ -144,7 +190,7 @@ def prepare_training_rows(
         ),
     )
     negative_count = negative_to_positive * len(train_positives)
-    required_negatives = negative_count + int(negative_audit_rows)
+    required_negatives = negative_count + int(negative_audit_rows) + int(retention_panel_rows)
     if len(ranked_negatives) < required_negatives:
         raise RuntimeError(
             "P3.3 negative pool too small for disjoint training and audit cohorts: "
@@ -158,6 +204,12 @@ def prepare_training_rows(
         )
     ]
     negative_audit_ids = {str(row["record_id"]) for row in negative_audit}
+    retention_pool = ranked_negatives[negative_count + negative_audit_rows :]
+    retention_panel = stratified_retention_panel(
+        retention_pool,
+        size=retention_panel_rows,
+    )
+    retention_ids = {str(row["record_id"]) for row in retention_panel}
     confidence_cut = min(
         min(
             float(row["student_top1_probability"]),
@@ -179,12 +231,18 @@ def prepare_training_rows(
             {
                 **dict(row),
                 "gate_label": label,
-                "audit_holdout": record_id in audit_ids or record_id in negative_audit_ids,
+                "audit_holdout": (
+                    record_id in audit_ids
+                    or record_id in negative_audit_ids
+                    or record_id in retention_ids
+                ),
                 "audit_role": (
                     "positive"
                     if record_id in audit_ids
                     else "negative"
                     if record_id in negative_audit_ids
+                    else "retention"
+                    if record_id in retention_ids
                     else None
                 ),
                 "training_eligible": label != int(GateLabel.IGNORED),
@@ -199,7 +257,7 @@ def prepare_training_rows(
     }
     counts = Counter(row["gate_label"] for row in staged)
     receipt = {
-        "kind": "paper2_phase3_p33_data_staging_receipt_v2",
+        "kind": "paper2_phase3_p33_data_staging_receipt_v3",
         "status": "staged_build_only_training_unauthorized",
         "teachability_threshold": teachability_threshold,
         "strict_concurrent_count_at_threshold_before_position_zero": len(threshold_eligible),
@@ -207,6 +265,7 @@ def prepare_training_rows(
         "strict_positive_count_before_audit": len(positives),
         "audit_rows": len(audit),
         "negative_audit_rows": len(negative_audit),
+        "retention_panel_rows": len(retention_panel),
         "train_positive_count": positive_count,
         "train_negative_count": negative_count,
         "negative_to_positive_ratio": negative_count / positive_count,
@@ -238,9 +297,36 @@ def prepare_training_rows(
                 for row in negative_audit
             ]
         ),
-        "audit_cohorts_disjoint": not bool(audit_ids & negative_audit_ids),
+        "retention_panel_sha256": canonical_sha256(
+            [
+                {
+                    "record_id": row["record_id"],
+                    "horizon": row["horizon"],
+                    "retention_horizon_rank": row["retention_horizon_rank"],
+                    "retention_confidence": row["retention_confidence"],
+                }
+                for row in retention_panel
+            ]
+        ),
+        "audit_cohorts_disjoint": not bool(
+            (audit_ids & negative_audit_ids)
+            or (audit_ids & retention_ids)
+            or (negative_audit_ids & retention_ids)
+        ),
         "negative_audit_excluded_from_training": not bool(
             negative_audit_ids & set(labels)
+        ),
+        "retention_panel_excluded_from_training": not bool(
+            retention_ids & set(labels)
+        ),
+        "retention_panel_estimand": (
+            "fraction of positions where augmented top1 matches frozen base top1"
+        ),
+        "retention_panel_by_horizon": dict(
+            Counter(str(row["horizon"]) for row in retention_panel)
+        ),
+        "retention_panel_minimum_confidence": min(
+            float(row["retention_confidence"]) for row in retention_panel
         ),
         "audit_by_horizon_decile": dict(
             Counter(f"h{row['horizon']}_d{row['teachability_decile']}" for row in audit)
@@ -256,7 +342,7 @@ def prepare_training_rows(
         "optimizer_constructed": False,
         "optimizer_steps": 0,
     }
-    return staged, audit, negative_audit, receipt
+    return staged, audit, negative_audit, retention_panel, receipt
 
 
 def fixed_random_projection(

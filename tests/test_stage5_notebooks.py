@@ -3725,8 +3725,31 @@ def test_phase3_guardrail_p33_prep_target_is_wired_and_guarded() -> None:
         assert "STAGE5_PAPER2_PHASE3_GUARDRAIL_P33_PREP_CELL.py" in text
         assert "CPU-only no model optimizer no training no CONFIRM scoring" in text
     assert "paper2_phase3_guardrail_p33_prep_v1" in cell
-    assert "--campaigns" in runner
+    assert "retention_recalibration" in runner
+    assert "superseded_task_guardrail" in runner
     assert '"p33_training_authorized": False' in runner
+
+
+def test_phase3_retention_preflight_target_is_wired_and_guarded() -> None:
+    cell = (
+        ROOT / "colab/STAGE5_PAPER2_PHASE3_RETENTION_PREFLIGHT_CELL.py"
+    ).read_text(encoding="utf-8")
+    runner = (
+        ROOT / "colab/run_stage5_paper2_phase3_retention_preflight.py"
+    ).read_text(encoding="utf-8")
+    for bootstrap_path in (
+        ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py",
+        ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md",
+    ):
+        text = bootstrap_path.read_text(encoding="utf-8")
+        assert "paper2_phase3_retention_preflight" in text
+        assert "STAGE5_PAPER2_PHASE3_RETENTION_PREFLIGHT_CELL.py" in text
+        assert "L4 read-only model pass then CPU simulation no optimizer no training" in text
+    assert "paper2_phase3_retention_preflight_v1" in cell
+    assert "eval.eval_paper2_phase3_retention_step0" in runner
+    assert "eval.eval_paper2_phase3_retention_guardrail" in runner
+    assert '"task_level_capability_scoring": False' in runner
+    assert '"optimizer_constructed": False' in runner
 
 
 def test_gradient_path_audit_target_is_wired_and_guarded() -> None:

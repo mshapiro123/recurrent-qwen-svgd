@@ -85,39 +85,7 @@ def main() -> int:
     if not coverage_has_confidence():
         raise RuntimeError("P3.2 coverage refresh lacks rank-confidence fields")
 
-    guardrail = RECEIPT_DIR / "guardrail_recalibration.json"
-    if guardrail.is_file():
-        existing_guardrail = json.loads(guardrail.read_text(encoding="utf-8"))
-        if (
-            existing_guardrail.get("status")
-            == "complete_empirical_dev_hybrid_noise_model"
-            and existing_guardrail.get("looks") == 20
-        ):
-            status("reusing_hash_stable_three_tier_guardrails")
-        else:
-            guardrail.unlink()
-    if not guardrail.is_file():
-        status("calibrating_three_tier_guardrails")
-        run(
-            [
-                sys.executable,
-                "-u",
-                "-m",
-                "eval.eval_paper2_phase3_guardrail_recalibration",
-                "--reference_rows",
-                str(P31_REFERENCE_ROWS),
-                "--prior_empirical_summary",
-                str(EMPIRICAL),
-                "--output_summary",
-                str(guardrail),
-                "--panel_sizes",
-                "256",
-                "512",
-                "1024",
-                "--campaigns",
-                "100000",
-            ]
-        )
+    superseded_guardrail = RECEIPT_DIR / "guardrail_recalibration.json"
     status("staging_p33_labels_audit_and_observatory")
     p33_dir = PRIVATE_DIR / "p33_prep"
     run(
@@ -134,20 +102,51 @@ def main() -> int:
             str(CANONICALIZER),
         ]
     )
-    guardrail_payload = json.loads(guardrail.read_text(encoding="utf-8"))
     p33_payload = json.loads((p33_dir / "summary.json").read_text(encoding="utf-8"))
+    retention_recalibration = {
+        "status": "pending_step0_augmented_predictions_before_optimizer_construction",
+        "estimator": p33_payload["retention_panel_estimand"],
+        "panel_rows": p33_payload["retention_panel_rows"],
+        "panel_sha256": p33_payload["retention_panel_sha256"],
+        "looks": 20,
+        "threshold_reference": "init_relative",
+        "requested_sustained_drop_power_points": [-0.5, -1.0, -2.0],
+        "tier_s": {
+            "familywise_false_stop_max": 0.0001,
+            "power_minimum": 0.99,
+            "consecutive_looks": 2,
+            "delta_cat": "search_before_optimizer_construction",
+        },
+        "tier_w": {
+            "null_warning_rate": "same_class_as_prior_calibration",
+            "threshold": "search_before_optimizer_construction",
+        },
+        "optimizer_constructed": False,
+        "optimizer_steps": 0,
+    }
     final = {
         "kind": "paper2_phase3_guardrail_p33_prep_summary_v1",
-        "status": "complete_build_only_p33_training_unauthorized",
-        "guardrail": guardrail_payload,
+        "status": "complete_e2_panel_build_recalibration_pending_training_unauthorized",
+        "superseded_task_guardrail": (
+            json.loads(superseded_guardrail.read_text(encoding="utf-8"))
+            if superseded_guardrail.is_file()
+            else None
+        ),
+        "retention_recalibration": retention_recalibration,
         "p33_prep": p33_payload,
         "assertions": {
-            "tier_s_and_w_complete": guardrail_payload["status"].startswith("complete"),
             "audit_slice_4096": p33_payload["audit_rows"] == 4096,
             "negative_audit_slice_12288": p33_payload["negative_audit_rows"] == 12288,
+            "retention_panel_1024": p33_payload["retention_panel_rows"] == 1024,
+            "retention_panel_horizon_balanced": p33_payload[
+                "retention_panel_by_horizon"
+            ] == {"1": 256, "2": 256, "3": 256, "4": 256},
             "audit_cohorts_disjoint": p33_payload["audit_cohorts_disjoint"],
             "negative_audit_excluded_from_training": p33_payload[
                 "negative_audit_excluded_from_training"
+            ],
+            "retention_panel_excluded_from_training": p33_payload[
+                "retention_panel_excluded_from_training"
             ],
             "negative_positive_ratio_3": p33_payload["negative_to_positive_ratio"] == 3.0,
             "position_zero_ignored": set(p33_payload["position_zero_labels"]) <= {"-1"},
