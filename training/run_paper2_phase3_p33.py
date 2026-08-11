@@ -24,6 +24,7 @@ from eval.cache_paper2_phase3_agreement_oracle import (
     _load_phase3_module,
     load_selected_anchor_hidden,
 )
+from eval.cache_paper2_phase2_stage0a import _load_flat_shard
 from eval.eval_paper2_phase3_retention_step0 import position_buckets
 from training.paper2_phase2_matched_alpha import build_adamw_groups, clip_module_groups
 from training.paper2_phase3_p32 import GateLabel
@@ -50,7 +51,7 @@ from training.paper2_phase3_p33_prep import (
     observatory_metrics,
     sha256_file,
 )
-from training.run_paper2_phase2_option_b import build_option_b_cache
+from training.run_paper2_phase2_matched_alpha import _local_source, _parallel_receipts
 
 
 RUN_KIND = "paper2_phase3_p33_aimed_writeback_seed_v1"
@@ -153,6 +154,173 @@ def _direction_lookup(path: Path) -> tuple[dict[str, int], torch.Tensor, dict[st
         "sha256": sha256_file(path),
         "rows": len(record_ids),
     }
+
+
+def _grow_last(value: torch.Tensor, width: int, fill: int | float | bool) -> torch.Tensor:
+    if width <= value.shape[-1]:
+        return value
+    output = torch.full((*value.shape[:-1], width), fill, dtype=value.dtype)
+    output[..., : value.shape[-1]] = value
+    return output
+
+
+def build_p33_population_cache(
+    *,
+    summary_path: Path,
+    private_root: Path,
+    output_path: Path,
+    expected_samples: int,
+) -> dict[str, Any]:
+    """Build only the source tensors consumed by the locked P3.3 losses.
+
+    The inherited Option B cache also materializes teacher states, canonical
+    targets, and teacher sparse distributions.  P3.3 uses none of them: its
+    teacher labels and oracle directions are already frozen in the e2 inputs.
+    Omitting those tensors changes transport, not the P3.3 estimator.
+    """
+
+    if output_path.is_file():
+        cached = torch.load(output_path, map_location="cpu", weights_only=False)
+        if (
+            cached.get("kind") == "paper2_phase3_p33_population_cache_v1"
+            and len(cached.get("documents", [])) * 4 == int(expected_samples)
+        ):
+            print(f"p33_population_cache_resume={output_path}", flush=True)
+            return cached
+    summary = json.loads(summary_path.read_text(encoding="utf-8"))
+    manifest_path = private_root / "sample_manifest.jsonl"
+    samples = read_jsonl(manifest_path)
+    if len(samples) != int(expected_samples):
+        raise RuntimeError(
+            f"P3.3 source sample count changed: {len(samples)} != {expected_samples}"
+        )
+    if sha256_file(manifest_path) != summary["manifest"]["sample_manifest_sha256"]:
+        raise RuntimeError("P3.3 source manifest hash mismatch")
+
+    anchors = max(int(row["anchor_index"]) for row in samples) + 1
+    sample_anchor = torch.tensor([int(row["anchor_index"]) for row in samples])
+    sample_horizon = torch.tensor([int(row["horizon"]) for row in samples])
+    documents = [""] * anchors
+    strata = [""] * anchors
+    positions = torch.zeros(anchors, dtype=torch.long)
+    for row in samples:
+        anchor = int(row["anchor_index"])
+        documents[anchor] = str(row["document_id"])
+        strata[anchor] = str(row["stratum"])
+        if int(row["horizon"]) == 1:
+            positions[anchor] = int(row["prediction_position"])
+
+    lattice_receipts = list(summary["lattice"]["shards"])
+    student_receipts = _parallel_receipts(summary, "student_0p5b")
+    if len(lattice_receipts) != len(student_receipts):
+        raise RuntimeError("P3.3 lattice and student ledgers do not align")
+    first_lattice = torch.load(
+        _local_source(lattice_receipts[0]["path"], private_root),
+        map_location="cpu",
+        weights_only=False,
+    )
+    width = int(first_lattice["union_ids"].shape[1])
+    hidden = torch.empty((anchors, 4, 896), dtype=torch.bfloat16)
+    candidate_ids = torch.full((anchors, 4, width), -1, dtype=torch.int32)
+    candidate_mask = torch.zeros((anchors, 4, width), dtype=torch.bool)
+    base_log_probs = torch.full(
+        (anchors, 4, width), float("-inf"), dtype=torch.bfloat16
+    )
+    base_tail = torch.empty((anchors, 4), dtype=torch.bfloat16)
+    seen = torch.zeros((anchors, 4), dtype=torch.bool)
+    for shard_number, (lattice_receipt, student_receipt) in enumerate(
+        zip(lattice_receipts, student_receipts), start=1
+    ):
+        lattice_path = _local_source(lattice_receipt["path"], private_root)
+        student_path = _local_source(student_receipt["path"], private_root)
+        for path, receipt in (
+            (lattice_path, lattice_receipt),
+            (student_path, student_receipt),
+        ):
+            if sha256_file(path) != receipt["sha256"]:
+                raise RuntimeError(f"P3.3 source shard hash mismatch: {path}")
+        lattice = torch.load(lattice_path, map_location="cpu", weights_only=False)
+        student = _load_flat_shard(student_path)
+        indices = lattice["sample_indices"].long()
+        if not torch.equal(indices, student["sample_indices"].long()):
+            raise RuntimeError("P3.3 source sample alignment failed")
+        shard_width = int(lattice["union_ids"].shape[1])
+        if shard_width > width:
+            candidate_ids = _grow_last(candidate_ids, shard_width, -1)
+            candidate_mask = _grow_last(candidate_mask, shard_width, False)
+            base_log_probs = _grow_last(base_log_probs, shard_width, float("-inf"))
+            width = shard_width
+        anchor = sample_anchor.index_select(0, indices)
+        horizon = sample_horizon.index_select(0, indices) - 1
+        hidden[anchor, horizon] = student["final_hidden_bfloat16"]
+        candidate_ids[anchor, horizon, :shard_width] = lattice["union_ids"].to(torch.int32)
+        candidate_mask[anchor, horizon, :shard_width] = lattice["union_mask"]
+        base_log_probs[anchor, horizon, :shard_width] = lattice[
+            "model_candidate_log_probs"
+        ]["student_0p5b"].to(torch.bfloat16)
+        base_tail[anchor, horizon] = lattice["model_tail_log_probs"]["student_0p5b"].to(
+            torch.bfloat16
+        )
+        seen[anchor, horizon] = True
+        if shard_number == 1 or shard_number % 64 == 0 or shard_number == len(lattice_receipts):
+            print(
+                f"p33_population_cache_progress shard={shard_number}/{len(lattice_receipts)} "
+                f"anchors_complete={int(seen.all(dim=1).sum())}",
+                flush=True,
+            )
+    if not bool(seen.all()):
+        raise RuntimeError("P3.3 population cache is missing anchor horizons")
+    payload = {
+        "kind": "paper2_phase3_p33_population_cache_v1",
+        "documents": documents,
+        "strata": strata,
+        "positions": positions,
+        "student_hidden": hidden,
+        "candidate_ids": candidate_ids,
+        "candidate_mask": candidate_mask,
+        "base_log_probs": base_log_probs,
+        "base_tail": base_tail,
+        "source": {
+            "summary_sha256": sha256_file(summary_path),
+            "manifest_sha256": sha256_file(manifest_path),
+            "teacher_state_materialized": False,
+            "teacher_sparse_distribution_materialized": False,
+        },
+    }
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = output_path.with_suffix(output_path.suffix + ".tmp")
+    torch.save(payload, temporary)
+    temporary.replace(output_path)
+    return payload
+
+
+def merge_p33_population_caches(
+    old: Mapping[str, Any], new: Mapping[str, Any]
+) -> dict[str, Any]:
+    width = max(int(old["candidate_ids"].shape[-1]), int(new["candidate_ids"].shape[-1]))
+    merged = {
+        "kind": "paper2_phase3_p33_merged_cache_v1",
+        "documents": [*old["documents"], *new["documents"]],
+        "strata": [*old["strata"], *new["strata"]],
+        "positions": torch.cat([old["positions"], new["positions"]]),
+        "student_hidden": torch.cat([old["student_hidden"], new["student_hidden"]]),
+        "candidate_ids": torch.cat(
+            [_grow_last(old["candidate_ids"], width, -1), _grow_last(new["candidate_ids"], width, -1)]
+        ),
+        "candidate_mask": torch.cat(
+            [_grow_last(old["candidate_mask"], width, False), _grow_last(new["candidate_mask"], width, False)]
+        ),
+        "base_log_probs": torch.cat(
+            [
+                _grow_last(old["base_log_probs"], width, float("-inf")),
+                _grow_last(new["base_log_probs"], width, float("-inf")),
+            ]
+        ),
+        "base_tail": torch.cat([old["base_tail"], new["base_tail"]]),
+        "source_anchor_offsets": {"old": 0, "new": len(old["documents"])},
+        "source": {"old": old["source"], "new": new["source"]},
+    }
+    return merged
 
 
 def _batch(
@@ -810,16 +978,19 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     records = read_jsonl(args.staged_labels)
     positives, negatives = _active_record_pools(records)
     direction_index, directions, direction_receipt = _direction_lookup(args.direction_cache)
-    old, new, cache = build_option_b_cache(
-        old_summary=args.old_summary,
-        old_private=args.old_private,
-        new_summary=args.new_summary,
-        new_private=args.new_private,
-        canonicalizer=args.canonicalizer,
-        old_cache_path=args.old_cache,
-        new_cache_path=args.new_cache,
+    old = build_p33_population_cache(
+        summary_path=args.old_summary,
+        private_root=args.old_private,
+        output_path=args.old_cache,
+        expected_samples=200_000,
     )
-    cache["source_anchor_offsets"] = {"old": 0, "new": len(old["documents"])}
+    new = build_p33_population_cache(
+        summary_path=args.new_summary,
+        private_root=args.new_private,
+        output_path=args.new_cache,
+        expected_samples=560_000,
+    )
+    cache = merge_p33_population_caches(old, new)
     del old, new
     sources = {
         "old": (args.old_summary, args.old_private),

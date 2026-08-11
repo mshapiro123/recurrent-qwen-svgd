@@ -49,6 +49,13 @@ def test_observatory_defines_gradient_dot_write_without_task_generation() -> Non
     assert "generate(" not in source
 
 
+def test_p33_population_cache_excludes_unused_teacher_state_surface() -> None:
+    source = inspect.getsource(runner.build_p33_population_cache)
+    assert '_parallel_receipts(summary, "student_0p5b")' in source
+    assert '_parallel_receipts(summary, "teacher_14b")' not in source
+    assert '"teacher_state_materialized": False' in source
+
+
 def test_tensor_digest_is_stable() -> None:
     values = {"b": torch.tensor([2.0]), "a": torch.tensor([1.0])}
     assert runner.tensor_digest(values) == runner.tensor_digest(dict(reversed(list(values.items()))))
