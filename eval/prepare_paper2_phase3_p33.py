@@ -43,12 +43,14 @@ def build(
     canonical_projection: Path | None,
 ) -> dict[str, Any]:
     records = read_jsonl(coverage_index)
-    staged, audit, receipt = prepare_training_rows(records)
+    staged, audit, negative_audit, receipt = prepare_training_rows(records)
     output_dir.mkdir(parents=True, exist_ok=True)
     staged_path = output_dir / "p33_staged_labels.jsonl"
     audit_path = output_dir / "p33_audit_slice.jsonl"
+    negative_audit_path = output_dir / "p33_negative_audit_slice.jsonl"
     write_jsonl(staged_path, staged)
     write_jsonl(audit_path, audit)
+    write_jsonl(negative_audit_path, negative_audit)
     projection = fixed_random_projection()
     projection_path = output_dir / "p33_fixed_random_projection.pt"
     temporary = projection_path.with_suffix(".pt.tmp")
@@ -78,6 +80,15 @@ def build(
                 "path": str(audit_path),
                 "sha256": sha256_file(audit_path),
                 "rows": len(audit),
+            },
+            "negative_audit_slice": {
+                "path": str(negative_audit_path),
+                "sha256": sha256_file(negative_audit_path),
+                "rows": len(negative_audit),
+                "selection": (
+                    "next ranked confident-agreement rows after the frozen training "
+                    "negative cohort"
+                ),
             },
             "fixed_instruments": {
                 "random_projection": {

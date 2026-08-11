@@ -17,9 +17,13 @@ from training.paper2_phase3_p32 import GateLabel, canonical_sha256
 
 P33_TEACHABILITY_THRESHOLD = 0.70
 P33_AUDIT_ROWS = 4_096
+P33_NEGATIVE_AUDIT_ROWS = 12_288
 P33_NEGATIVE_TO_POSITIVE = 3
 P33_SPLIT_SEED = 20260810
 P33_PROJECTION_SEED = 20260810
+P33_GATE_CEILING = 0.02
+P33_AUDIT_RADIUS = 0.15
+P33_RMS_CAP = 0.550893
 
 
 def sha256_file(path: Path) -> str:
@@ -80,9 +84,15 @@ def prepare_training_rows(
     *,
     teachability_threshold: float = P33_TEACHABILITY_THRESHOLD,
     audit_rows: int = P33_AUDIT_ROWS,
+    negative_audit_rows: int = P33_NEGATIVE_AUDIT_ROWS,
     negative_to_positive: int = P33_NEGATIVE_TO_POSITIVE,
     seed: int = P33_SPLIT_SEED,
-) -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, Any]]:
+) -> tuple[
+    list[dict[str, Any]],
+    list[dict[str, Any]],
+    list[dict[str, Any]],
+    dict[str, Any],
+]:
     required_fields = {
         "record_id",
         "flip_candidate_14b",
@@ -134,11 +144,20 @@ def prepare_training_rows(
         ),
     )
     negative_count = negative_to_positive * len(train_positives)
-    if len(ranked_negatives) < negative_count:
+    required_negatives = negative_count + int(negative_audit_rows)
+    if len(ranked_negatives) < required_negatives:
         raise RuntimeError(
-            f"P3.3 negative pool too small: {len(ranked_negatives)} < {negative_count}"
+            "P3.3 negative pool too small for disjoint training and audit cohorts: "
+            f"{len(ranked_negatives)} < {required_negatives}"
         )
     negatives = ranked_negatives[:negative_count]
+    negative_audit = [
+        {**dict(row), "negative_confidence_rank": negative_count + index + 1}
+        for index, row in enumerate(
+            ranked_negatives[negative_count : negative_count + negative_audit_rows]
+        )
+    ]
+    negative_audit_ids = {str(row["record_id"]) for row in negative_audit}
     confidence_cut = min(
         min(
             float(row["student_top1_probability"]),
@@ -160,7 +179,14 @@ def prepare_training_rows(
             {
                 **dict(row),
                 "gate_label": label,
-                "audit_holdout": record_id in audit_ids,
+                "audit_holdout": record_id in audit_ids or record_id in negative_audit_ids,
+                "audit_role": (
+                    "positive"
+                    if record_id in audit_ids
+                    else "negative"
+                    if record_id in negative_audit_ids
+                    else None
+                ),
                 "training_eligible": label != int(GateLabel.IGNORED),
             }
         )
@@ -173,13 +199,14 @@ def prepare_training_rows(
     }
     counts = Counter(row["gate_label"] for row in staged)
     receipt = {
-        "kind": "paper2_phase3_p33_data_staging_receipt_v1",
+        "kind": "paper2_phase3_p33_data_staging_receipt_v2",
         "status": "staged_build_only_training_unauthorized",
         "teachability_threshold": teachability_threshold,
         "strict_concurrent_count_at_threshold_before_position_zero": len(threshold_eligible),
         "position_zero_excluded_from_positive_count": len(threshold_eligible) - len(positives),
         "strict_positive_count_before_audit": len(positives),
         "audit_rows": len(audit),
+        "negative_audit_rows": len(negative_audit),
         "train_positive_count": positive_count,
         "train_negative_count": negative_count,
         "negative_to_positive_ratio": negative_count / positive_count,
@@ -202,6 +229,19 @@ def prepare_training_rows(
                 for row in audit
             ]
         ),
+        "negative_audit_slice_sha256": canonical_sha256(
+            [
+                {
+                    "record_id": row["record_id"],
+                    "negative_confidence_rank": row["negative_confidence_rank"],
+                }
+                for row in negative_audit
+            ]
+        ),
+        "audit_cohorts_disjoint": not bool(audit_ids & negative_audit_ids),
+        "negative_audit_excluded_from_training": not bool(
+            negative_audit_ids & set(labels)
+        ),
         "audit_by_horizon_decile": dict(
             Counter(f"h{row['horizon']}_d{row['teachability_decile']}" for row in audit)
         ),
@@ -216,7 +256,7 @@ def prepare_training_rows(
         "optimizer_constructed": False,
         "optimizer_steps": 0,
     }
-    return staged, audit, receipt
+    return staged, audit, negative_audit, receipt
 
 
 def fixed_random_projection(
@@ -231,6 +271,28 @@ def fixed_random_projection(
     values = torch.randn(input_dim, output_dim, generator=generator, dtype=torch.float64)
     orthogonal, _ = torch.linalg.qr(values, mode="reduced")
     return orthogonal.T.contiguous().to(torch.float32)
+
+
+def forced_audit_write(
+    delta: torch.Tensor,
+    h0: torch.Tensor,
+    *,
+    radius: float = P33_AUDIT_RADIUS,
+    rms_cap: float = P33_RMS_CAP,
+    eps: float = 1e-6,
+) -> torch.Tensor:
+    """Apply the V-series audit radius without changing the deployed bridge."""
+
+    if delta.shape != h0.shape or delta.ndim != 3:
+        raise ValueError("forced audit write requires shape-matched hidden tensors")
+    if not 0.0 < float(radius) <= 1.0:
+        raise ValueError("audit radius must be inside (0, 1]")
+    delta_rms = delta.float().square().mean(dim=-1, keepdim=True).sqrt()
+    reference = (
+        h0.float().square().mean(dim=-1, keepdim=True).sqrt().clamp_max(float(rms_cap))
+    )
+    normalized = delta.float() / delta_rms.clamp_min(float(eps)) * reference
+    return normalized.to(delta.dtype) * float(radius)
 
 
 def observatory_metrics(

@@ -245,6 +245,7 @@ class BridgeOutput:
     realized_writeback_ratio: torch.Tensor
     position_zero_gate_closed: bool
     position_gate: Optional[torch.Tensor] = None
+    position_gate_unclamped: Optional[torch.Tensor] = None
 
 
 class AnchoredBridge(nn.Module):
@@ -346,12 +347,18 @@ class Phase3PerPositionAnchoredBridge(AnchoredBridge):
             eps=eps,
         )
         self.control_dim = int(control_dim)
+        self.gate_ceiling: float | None = None
         self.gate_hidden = nn.Linear(hidden_size, 1, bias=False)
         self.gate_scratch = nn.Linear(latent_dim, 1, bias=False)
         self.gate_control = nn.Linear(control_dim, 1, bias=False)
         nn.init.zeros_(self.gate_hidden.weight)
         nn.init.zeros_(self.gate_scratch.weight)
         nn.init.zeros_(self.gate_control.weight)
+
+    def set_gate_ceiling(self, value: float | None) -> None:
+        if value is not None and not 0.0 < float(value) <= 1.0:
+            raise ValueError("gate ceiling must be inside (0, 1]")
+        self.gate_ceiling = None if value is None else float(value)
 
     def forward(
         self,
@@ -398,7 +405,12 @@ class Phase3PerPositionAnchoredBridge(AnchoredBridge):
             + self.gate_scratch(attended_scratch)
             + self.gate_control(control_state.float()).unsqueeze(1)
         )
-        position_gate = torch.sigmoid(gate_logit)
+        position_gate_unclamped = torch.sigmoid(gate_logit)
+        position_gate = (
+            position_gate_unclamped.clamp_max(self.gate_ceiling)
+            if self.gate_ceiling is not None
+            else position_gate_unclamped
+        )
         rho = torch.sigmoid(self.rho_logits[loop_index])
         gate_mask = torch.ones_like(delta[..., :1])
         gate_mask[:, 0] = 0
@@ -421,6 +433,7 @@ class Phase3PerPositionAnchoredBridge(AnchoredBridge):
                 torch.equal(gate_mask[:, 0], torch.zeros_like(gate_mask[:, 0]))
             ),
             position_gate=position_gate,
+            position_gate_unclamped=position_gate_unclamped * gate_mask,
         )
 
 

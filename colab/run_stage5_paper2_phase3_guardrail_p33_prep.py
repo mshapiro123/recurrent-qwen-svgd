@@ -85,28 +85,39 @@ def main() -> int:
     if not coverage_has_confidence():
         raise RuntimeError("P3.2 coverage refresh lacks rank-confidence fields")
 
-    status("calibrating_three_tier_guardrails")
     guardrail = RECEIPT_DIR / "guardrail_recalibration.json"
-    run(
-        [
-            sys.executable,
-            "-u",
-            "-m",
-            "eval.eval_paper2_phase3_guardrail_recalibration",
-            "--reference_rows",
-            str(P31_REFERENCE_ROWS),
-            "--prior_empirical_summary",
-            str(EMPIRICAL),
-            "--output_summary",
-            str(guardrail),
-            "--panel_sizes",
-            "256",
-            "512",
-            "1024",
-            "--campaigns",
-            "100000",
-        ]
-    )
+    if guardrail.is_file():
+        existing_guardrail = json.loads(guardrail.read_text(encoding="utf-8"))
+        if (
+            existing_guardrail.get("status")
+            == "complete_empirical_dev_hybrid_noise_model"
+            and existing_guardrail.get("looks") == 20
+        ):
+            status("reusing_hash_stable_three_tier_guardrails")
+        else:
+            guardrail.unlink()
+    if not guardrail.is_file():
+        status("calibrating_three_tier_guardrails")
+        run(
+            [
+                sys.executable,
+                "-u",
+                "-m",
+                "eval.eval_paper2_phase3_guardrail_recalibration",
+                "--reference_rows",
+                str(P31_REFERENCE_ROWS),
+                "--prior_empirical_summary",
+                str(EMPIRICAL),
+                "--output_summary",
+                str(guardrail),
+                "--panel_sizes",
+                "256",
+                "512",
+                "1024",
+                "--campaigns",
+                "100000",
+            ]
+        )
     status("staging_p33_labels_audit_and_observatory")
     p33_dir = PRIVATE_DIR / "p33_prep"
     run(
@@ -133,6 +144,11 @@ def main() -> int:
         "assertions": {
             "tier_s_and_w_complete": guardrail_payload["status"].startswith("complete"),
             "audit_slice_4096": p33_payload["audit_rows"] == 4096,
+            "negative_audit_slice_12288": p33_payload["negative_audit_rows"] == 12288,
+            "audit_cohorts_disjoint": p33_payload["audit_cohorts_disjoint"],
+            "negative_audit_excluded_from_training": p33_payload[
+                "negative_audit_excluded_from_training"
+            ],
             "negative_positive_ratio_3": p33_payload["negative_to_positive_ratio"] == 3.0,
             "position_zero_ignored": set(p33_payload["position_zero_labels"]) <= {"-1"},
             "optimizer_absent": True,

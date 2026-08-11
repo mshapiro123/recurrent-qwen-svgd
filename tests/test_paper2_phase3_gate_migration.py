@@ -89,6 +89,39 @@ def test_position_gate_can_depend_on_position_scratch_and_control() -> None:
     assert torch.unique(changed.position_gate[:, 1:]).numel() > 1
 
 
+def test_gate_ceiling_activates_only_after_migration_identity() -> None:
+    torch.manual_seed(20260810)
+    bridge = Phase3PerPositionAnchoredBridge(
+        hidden_size=16, latent_dim=8, control_dim=6, max_steps=4
+    )
+    with torch.no_grad():
+        bridge.gate_logits.fill_(-3.0)
+    h0 = torch.randn(2, 7, 16)
+    previous = torch.randn_like(h0)
+    scratch = torch.randn(2, 8, 8)
+    control = torch.randn(2, 6)
+    identity = bridge(
+        h0=h0,
+        previous=previous,
+        scratch=scratch,
+        control_state=control,
+        loop_index=0,
+    )
+    assert float(identity.position_gate[:, 1:].detach().max()) > 0.02
+    bridge.set_gate_ceiling(0.02)
+    clamped = bridge(
+        h0=h0,
+        previous=previous,
+        scratch=scratch,
+        control_state=control,
+        loop_index=0,
+    )
+    assert float(clamped.position_gate.detach().max()) <= 0.02
+    assert torch.equal(
+        clamped.position_gate_unclamped[:, 1:], identity.position_gate[:, 1:]
+    )
+
+
 def test_phase2_scalar_gate_migration_is_one_way_and_counted() -> None:
     torch.manual_seed(20260811)
     embedding = nn.Embedding(257, 896)
