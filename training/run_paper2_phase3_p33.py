@@ -864,13 +864,16 @@ def tier1_observatory_read(
         [int(row["teacher_14b_top1"]) for row in records], device=device
     )
     student = torch.tensor([int(row["student_top1"]) for row in records], device=device)
+    horizons = torch.tensor([int(row["horizon"]) - 1 for row in records], device=device)
     embedding = module.draft.tied_embedding.weight.detach().float()
     margin_gradient_at_position = embedding.index_select(0, teacher) - embedding.index_select(
         0, student
     )
     loss_gradient = torch.zeros_like(writes)
     batch_index = torch.arange(len(records), device=device)
-    write_position = positions + 1  # bridge writes include the prepended control slot
+    write_position = horizons + 1  # bridge writes include the prepended control slot
+    if int(write_position.min()) < 1 or int(write_position.max()) >= writes.shape[2]:
+        raise RuntimeError("P3.3 observatory horizon does not map into bridge slots")
     for loop_index in range(writes.shape[1]):
         loss_gradient[batch_index, loop_index, write_position] = margin_gradient_at_position
     metrics = observatory_metrics(

@@ -49,6 +49,7 @@ def test_observatory_defines_gradient_dot_write_without_task_generation() -> Non
     assert "loss_gradient=loss_gradient" in source
     assert "teacher_14b_top1" in source
     assert "student_top1" in source
+    assert "write_position = horizons + 1" in source
     assert "generate(" not in source
 
 
