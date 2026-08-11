@@ -3654,6 +3654,8 @@ def test_phase3_p32_coverage_target_is_wired_and_guarded() -> None:
     assert "tests/test_paper2_phase3_p32_coverage.py" in cell
     assert "stage5_paper2_phase3_p32_coverage_20260810" in runner
     assert "agreement_coverage_index.jsonl" in runner
+    assert "resumable_shards" in runner
+    assert "--resume_shard_dir" in runner
     assert '"p33_training_authorized": False' in runner
     assert "p33_training_authorized" in runner
     assert "optimizer_steps" in runner

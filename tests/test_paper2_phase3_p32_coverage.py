@@ -1,11 +1,17 @@
 from __future__ import annotations
 
+import json
+
 import pytest
 import torch
 
+import eval.eval_paper2_phase3_p32_coverage as coverage_module
 from eval.eval_paper2_phase3_p32_coverage import (
     _flatten_teacher_field,
+    _valid_resumed_shard,
     coverage_surface,
+    load_agreement_records_resumable,
+    sha256_file,
 )
 
 
@@ -88,3 +94,100 @@ def test_teacher_row_groups_reject_changed_sample_order() -> None:
     }
     with pytest.raises(RuntimeError, match="sample ordering changed"):
         _flatten_teacher_field(payload, "topk_log_probs")
+
+
+def test_resumable_shard_requires_matching_lineage_and_output(tmp_path) -> None:
+    output = tmp_path / "shard.jsonl"
+    receipt = tmp_path / "shard.receipt.json"
+    output.write_text('{"record_id":"a"}\n', encoding="utf-8")
+    receipt.write_text(
+        "{\n"
+        '  "source": "old",\n'
+        '  "shard_index": 3,\n'
+        '  "lattice_sha256": "lattice",\n'
+        '  "teacher_sha256": "teacher",\n'
+        f'  "output_sha256": "{sha256_file(output)}",\n'
+        '  "records": 1\n'
+        "}\n",
+        encoding="utf-8",
+    )
+    arguments = {
+        "output_path": output,
+        "receipt_path": receipt,
+        "source": "old",
+        "shard_index": 3,
+        "lattice_sha256": "lattice",
+        "teacher_sha256": "teacher",
+    }
+    assert _valid_resumed_shard(**arguments)
+    output.write_text('{"record_id":"changed"}\n', encoding="utf-8")
+    assert not _valid_resumed_shard(**arguments)
+
+
+def test_resumable_loader_skips_durable_completed_shard(tmp_path, monkeypatch) -> None:
+    private = tmp_path / "private"
+    lattice = private / "lattice" / "shard.pt"
+    teacher = private / "model_cache" / "teacher_14b" / "shard.pt"
+    lattice.parent.mkdir(parents=True)
+    teacher.parent.mkdir(parents=True)
+    lattice.write_bytes(b"lattice")
+    teacher.write_bytes(b"teacher")
+    (private / "sample_manifest.jsonl").write_text(
+        '{"anchor_index":0,"document_id":"doc","stratum":"general","row_id":"row"}\n',
+        encoding="utf-8",
+    )
+    summary = tmp_path / "summary.json"
+    summary.write_text(
+        json.dumps(
+            {
+                "lattice": {
+                    "shards": [{"path": str(lattice), "sha256": sha256_file(lattice)}]
+                },
+                "model_caches": {
+                    "teacher_14b": {
+                        "shards": [
+                            {"path": str(teacher), "sha256": sha256_file(teacher)}
+                        ]
+                    }
+                },
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(
+        coverage_module,
+        "_training_anchor_mask",
+        lambda samples, source: (
+            torch.tensor([True]),
+            {0: {"document_id": "doc", "stratum": "general", "row_id": "row"}},
+        ),
+    )
+
+    calls = {"copy": 0, "process": 0}
+
+    def copy_shard(source, destination):
+        calls["copy"] += 1
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_bytes(source.read_bytes())
+
+    def process_shard(**kwargs):
+        calls["process"] += 1
+        return ([{"record_id": "record"}], [
+            {"path": str(kwargs["lattice_path"]), "sha256": sha256_file(kwargs["lattice_path"])},
+            {"path": str(kwargs["teacher_path"]), "sha256": sha256_file(kwargs["teacher_path"])},
+        ])
+
+    monkeypatch.setattr(coverage_module, "_copy_shard", copy_shard)
+    monkeypatch.setattr(coverage_module, "_agreement_shard_records", process_shard)
+    arguments = {
+        "source": "new",
+        "summary_path": summary,
+        "private_root": private,
+        "resume_shard_dir": tmp_path / "resume",
+        "scratch_dir": tmp_path / "scratch",
+    }
+    first, _ = load_agreement_records_resumable(**arguments)
+    second, _ = load_agreement_records_resumable(**arguments)
+    assert first == second == [{"record_id": "record"}]
+    assert calls == {"copy": 2, "process": 1}

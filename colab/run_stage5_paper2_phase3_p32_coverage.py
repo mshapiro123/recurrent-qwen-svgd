@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import os
 import shutil
 import subprocess
 import sys
@@ -29,7 +28,7 @@ NEW_PRIVATE = DRIVE_ROOT / NEW_ID / "private/full"
 
 def scratch_root() -> Path:
     candidates = [Path("/mnt/local-scratch"), Path("/content/local-scratch"), Path("/content")]
-    required_free_gib = 100.0
+    required_free_gib = 20.0
     for candidate in candidates:
         if not candidate.exists():
             continue
@@ -38,41 +37,8 @@ def scratch_root() -> Path:
         if free_gib >= required_free_gib:
             return candidate / "recurrent-qwen-svgd-stage" / RUN_ID
     raise RuntimeError(
-        f"Phase 3 coverage needs {required_free_gib:.0f} GiB of local scratch"
+        f"Phase 3 resumable coverage needs {required_free_gib:.0f} GiB of local scratch"
     )
-
-
-def rsync(source: Path, destination: Path) -> None:
-    destination.parent.mkdir(parents=True, exist_ok=True)
-    source_arg = str(source) + os.sep if source.is_dir() else str(source)
-    destination_arg = str(destination) + os.sep if source.is_dir() else str(destination)
-    command = [
-        "rsync",
-        "--archive",
-        "--delete",
-        "--partial",
-        "--info=progress2",
-        source_arg,
-        destination_arg,
-    ]
-    print("$", " ".join(command), flush=True)
-    subprocess.run(command, cwd=ROOT, check=True)
-
-
-def stage_sources() -> tuple[Path, Path]:
-    scratch = scratch_root()
-    staged_old = scratch / "old"
-    staged_new = scratch / "new"
-    for source, destination in (
-        (OLD_PRIVATE / "sample_manifest.jsonl", staged_old / "sample_manifest.jsonl"),
-        (OLD_PRIVATE / "lattice/", staged_old / "lattice/"),
-        (OLD_PRIVATE / "model_cache/teacher_14b/", staged_old / "model_cache/teacher_14b/"),
-        (NEW_PRIVATE / "sample_manifest.jsonl", staged_new / "sample_manifest.jsonl"),
-        (NEW_PRIVATE / "lattice/", staged_new / "lattice/"),
-        (NEW_PRIVATE / "model_cache/teacher_14b/", staged_new / "model_cache/teacher_14b/"),
-    ):
-        rsync(source, destination)
-    return staged_old, staged_new
 
 
 def write_json(path: Path, payload: object) -> None:
@@ -105,9 +71,13 @@ def main() -> int:
         raise FileNotFoundError(f"missing P3.2 coverage source: {missing}")
     RUN_DIR.mkdir(parents=True, exist_ok=True)
     PRIVATE_DIR.mkdir(parents=True, exist_ok=True)
-    write_status("staging_drive_sources_to_local_scratch")
-    staged_old, staged_new = stage_sources()
-    write_status("reading_cached_agreement_lattice")
+    scratch = scratch_root()
+    resume_shards = PRIVATE_DIR / "resumable_shards"
+    write_status(
+        "reading_cached_agreement_lattice_resumable",
+        scratch=str(scratch),
+        resume_shards=str(resume_shards),
+    )
     output = RUN_DIR / "summary.json"
     index = PRIVATE_DIR / "agreement_coverage_index.jsonl"
     command = [
@@ -118,15 +88,19 @@ def main() -> int:
         "--old_summary",
         str(OLD_SUMMARY),
         "--old_private",
-        str(staged_old),
+        str(OLD_PRIVATE),
         "--new_summary",
         str(NEW_SUMMARY),
         "--new_private",
-        str(staged_new),
+        str(NEW_PRIVATE),
         "--output_index",
         str(index),
         "--output_summary",
         str(output),
+        "--resume_shard_dir",
+        str(resume_shards),
+        "--scratch_dir",
+        str(scratch),
     ]
     print("$", " ".join(command), flush=True)
     subprocess.run(command, cwd=ROOT, check=True)
