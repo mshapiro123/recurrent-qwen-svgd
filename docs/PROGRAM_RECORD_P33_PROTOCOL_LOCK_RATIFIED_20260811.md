@@ -1,0 +1,9 @@
+# Program Record — P3.3 Protocol Lock Ratified
+
+Date: 2026-08-11. Mark ratified `STRATEGY_P33_PROTOCOL_LOCK_20260811.md` (Drive `1q2MxeBKtMhm87yPCHKaL_Ssnpix3Mjbn`, SHA-256 `45e2221bc94cf6c13df38c7d0bcdbb4075256792dc5968cb33b1076336455c8d`) as drafted.
+
+**Effect: P3.3 aimed-writeback training is authorized**, conditional only on the lock's own pre-run assertions passing and being receipted before the first training step — A1 migration equivalence, A2 zero-loop bit-exact identity, A3 label-artifact hash match (34,521 / 103,563 / 4,096), A4 instrumentation non-perturbation, and A5 the linear-decodability forecast receipt banked repo-side (located or regenerated; session memory is not a receipt). The coding agent binds the checkpoint hashes, realized confidence cut, calibration receipt IDs, and look schedule into the ratified copy from the ledger at execution time, per the lock's ratification line.
+
+Run scope as locked: both seeds from the E1-confirmation checkpoints, one A100 session per seed, trainable set bridge + per-position gate + control only, loss set {L_aim, L_gate at 3:1 inverse-class weights, preserve at λ_p = 1.0}, γ = 0.02 fixed, directional share contract as inequalities on the trailing-window training estimator, rule inventory per lock §4 with Tier S at −8.5 points on the 1,024-row panel and Tier W at −3 as observe-and-flag. Read-out: π_dir and π_dep on the held-out 4,096-row audit slice with both oracle accountings, gate recall/precision, χ, teachability-decile stratification, Tier-1 observatory telemetry, and the end-of-run A_state battery. Readings: π_dir ≥ 0.25 proceed, < 0.05 after the one preregistered iteration → boundary memo. Do-not-claim standing as written.
+
+The falsifier runs.

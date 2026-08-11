@@ -4331,6 +4331,9 @@ if TARGET not in TARGETS:
 
 GH_TOKEN = secret("GH_TOKEN", "GITHUB_TOKEN")
 assert GH_TOKEN, "Missing GH_TOKEN or GITHUB_TOKEN in Colab secrets."
+# Nested launchers run in this same interpreter. Reuse the already-authorized
+# token instead of prompting Colab Secrets a second time from hidden code.
+os.environ.setdefault("GH_TOKEN", GH_TOKEN)
 
 
 def github_json(url):

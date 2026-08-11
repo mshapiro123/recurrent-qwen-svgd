@@ -1,0 +1,78 @@
+# P3.3 Lock Implementation Audit
+
+Date: 2026-08-11. Status: optimizer construction blocked pending a narrow
+protocol erratum. No P3.3 training step has run and no CONFIRM or EVAL-E row has
+been scored.
+
+## Governing record
+
+- Protocol lock: `STRATEGY_P33_PROTOCOL_LOCK_20260811.md`, SHA-256
+  `45e2221bc94cf6c13df38c7d0bcdbb4075256792dc5968cb33b1076336455c8d`.
+- Ratification: `PROGRAM_RECORD_P33_PROTOCOL_LOCK_RATIFIED_20260811.md`,
+  SHA-256
+  `4f3a333dbdee1d9379fbca2711fefbadd5bda0c17717e90f4988cba2c6af68f2`.
+- Ratification authorizes training only after A1-A5 pass and are receipted.
+
+## Source-to-lock discrepancies
+
+### 1. The fixed gate ceiling conflicts with migration equivalence
+
+The lock requires both exact E1 checkpoint writeback reproduction (A1) and a
+fixed `gamma = 0.02` ceiling for the whole pilot. The banked E1 confirmation
+receipt reports mean full-system bridge gates of `0.0840322599` for seed 0 and
+`0.0884889439` for seed 1. Clamping either checkpoint to `0.02` changes its
+writeback and therefore cannot be bit-exact with the Phase 2 source.
+
+Required ruling: either A1 is performed on the unclamped migrated model and the
+clamp is then recorded as an explicit pre-training intervention, or continuity
+takes precedence and the ceiling is amended. The two conditions cannot both
+hold on the optimizer's starting graph.
+
+### 2. `c = 0.15` is not a symbol in the implemented bridge equation
+
+The canonical Phase 3 bridge in `models/paper2_dc2_student.py` computes
+
+```text
+delta_hat = delta / RMS(delta) * min(RMS(h0), p99)
+writeback = position_gate * delta_hat
+hidden = h0 + rho * (previous - h0) + writeback
+```
+
+The source binds `p99`, `rho`, and the gate. It does not multiply by the legacy
+diagnostic radius constant `c = 0.15`. Adding that factor now would change the
+banked model and fail A1. The recommended erratum is to retire `c` from the P3.3
+forward-equation binding while preserving it in the V1d diagnostic receipt.
+
+### 3. The locked audit slice cannot estimate gate precision
+
+`prepare_training_rows` draws all 4,096 audit records from the strict positive
+write-candidate population before selecting negatives. This correctly supports
+the aim-capture denominator and positive-class gate recall. It contains no
+negative labels, so gate precision against the tri-state labels is undefined.
+
+Recommended repair: preserve the locked 4,096-row positive audit hash for
+`pi_dir` and `pi_dep`, and add a separately seeded, separately hashed,
+evaluation-only negative cohort for gate precision and collateral `chi`.
+Training counts and the original audit hash remain unchanged.
+
+### 4. The optimizer budget and look cadence are not numerically bound
+
+The lock specifies two seeds, one A100 session per seed, and a 20-point curve,
+but not optimizer, learning rate, batch size, warmup, update budget, or the
+update interval between looks. The guardrail calibration requires exactly 20
+looks, so these values cannot be selected after training begins.
+
+Recommended inherited pilot schedule: AdamW, learning rate `3e-4`, batch size
+`128`, 100-update linear warmup, 1,000 updates, and one registered look every
+50 updates. Parameter exclusions for weight decay follow the Phase 2 pilot:
+biases, normalization gains, and learned scalar parameters receive no decay.
+
+## Work that may proceed
+
+- Locate or regenerate and bank A5.
+- Mirror the governing documents and bind their hashes.
+- Build tests, telemetry, resumable checkpointing, and an optimizer-free A1-A4
+  preflight.
+- Do not construct the optimizer or launch P3.3 until the four rulings above are
+  recorded in a protocol erratum.
+
