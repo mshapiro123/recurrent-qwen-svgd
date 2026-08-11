@@ -3752,6 +3752,23 @@ def test_phase3_retention_preflight_target_is_wired_and_guarded() -> None:
     assert '"optimizer_constructed": False' in runner
 
 
+def test_phase3_p33_target_is_wired_and_guarded() -> None:
+    cell = (ROOT / "colab/STAGE5_PAPER2_PHASE3_P33_CELL.py").read_text(encoding="utf-8")
+    runner = (ROOT / "colab/run_stage5_paper2_phase3_p33.py").read_text(encoding="utf-8")
+    for bootstrap_path in (
+        ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py",
+        ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md",
+    ):
+        text = bootstrap_path.read_text(encoding="utf-8")
+        assert "paper2_phase3_p33" in text
+        assert "STAGE5_PAPER2_PHASE3_P33_CELL.py" in text
+        assert "e2 token-retention estimator only and no task capability scoring" in text
+    assert "paper2_phase3_p33_v1" in cell
+    assert "PAPER2_P33_SEED" in cell
+    assert "training.run_paper2_phase3_p33" in runner
+    assert "p33_retention_guardrail_recalibration.json" in runner
+
+
 def test_gradient_path_audit_target_is_wired_and_guarded() -> None:
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
     bootstrap_md = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")

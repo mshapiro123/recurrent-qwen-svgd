@@ -175,6 +175,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3_short_sha"
 #   "paper2_phase3_oracle_forecast" - GPU agreement-oracle cache plus document-disjoint ridge forecast.
 #   "paper2_phase3_p31_completion" - GPU sealed DEV/verified-train base and 14B reference pass.
 #   "paper2_phase3_guardrail_p33_prep" - CPU-only guardrail calibration and P3.3 build staging.
+#   "paper2_phase3_p33" - One resumable registered P3.3 aimed-writeback seed.
 #   "paper2_phase2_eval_de_freeze" - score-blind EVAL-D/E and own-base feature freeze.
 #   "paper2_phase2_e1_confirmation" - locked read-once EVAL-D confirmation; A100-80GB.
 #   "paper2_d0_prelock_publish_resume" - publish completed Drive-backed D0 lock receipts without inference.
@@ -4264,6 +4265,20 @@ TARGETS = {
             "colab/run_stage5_paper2_phase3_retention_preflight.py",
         ],
         "env": {},
+    },
+    "paper2_phase3_p33": {
+        "path": "colab/STAGE5_PAPER2_PHASE3_P33_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_PHASE3_P33_VERSION",
+            "paper2_phase3_p33_v1",
+            "e2 token-retention estimator only and no task capability scoring",
+            "exact 1000 updates and 20 looks one every 50 updates",
+            "A1 A2 A3 A4 A5 verified before optimizer construction",
+            "pi_dir pi_dep gate recall precision chi and Tier-1 observatory",
+            "resumable one A100 session per seed and end-of-run A_state battery",
+            "colab/run_stage5_paper2_phase3_p33.py",
+        ],
+        "env": {"PAPER2_P33_SEED": "0"},
     },
     "gradient_path_audit": {
         "path": "colab/STAGE5_GRADIENT_PATH_AUDIT_CELL.py",
