@@ -21,7 +21,7 @@ REPO = "mshapiro123/recurrent-qwen-svgd"
 ROOT = Path("/content/recurrent-qwen-svgd")
 REF = os.environ.get("STAGE5_BOOTSTRAP_REF", "main").strip() or "main"
 SOURCE_BRANCH = "codex/phase3-opening-build"
-GH = userdata.get("GH_TOKEN")
+GH = os.environ.get("GH_TOKEN") or userdata.get("GH_TOKEN")
 assert GH, "Missing GH_TOKEN in Colab secrets."
 
 
