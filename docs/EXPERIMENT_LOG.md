@@ -1903,3 +1903,17 @@ Colab/Drive backups for selected runs.
   The code and focused tests are complete; the empirical preflight receipt has
   not yet landed, so no P3.3 training step or task-level capability score exists.
   Governing erratum: `docs/STRATEGY_P33_LOCK_ERRATUM_E2_20260811.md`.
+- 2026-08-11 P3.3 token-retention preflight: the exact no-update Path A run
+  completed on an L4 after a GitHub-credential transport failure was bypassed
+  by uploading the pinned local commit directly. The infrastructure failure
+  occurred before scoring and did not alter any experimental input. The frozen
+  panel contains 1,024 confident-agreement positions, balanced at 256 per
+  horizon and disjoint from training and both audit cohorts. Both migrated
+  seeds retained 1,024/1,024 tokens at step zero under the operating clamp.
+  Tier S selected a -0.006 init-relative two-look margin: simulated familywise
+  false-stop probability 0.00003 and 99.408% power at the calibrated -0.0115
+  catastrophic drop. Tier W selected a -0.001 two-look warning margin with a
+  0.424% null-warning probability. All assertions passed, optimizer steps
+  remain zero, and P3.3 training is now authorized. Receipt:
+  `outputs/stage5/stage5_paper2_phase3_retention_preflight_20260811/summary.json`.
+  Handoff: `docs/PAPER2_PHASE3_P33_RETENTION_PREFLIGHT_HANDOFF_20260811.md`.

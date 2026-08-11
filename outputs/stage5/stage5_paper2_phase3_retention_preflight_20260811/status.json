@@ -1,0 +1,9 @@
+{
+  "kind": "paper2_phase3_retention_preflight_status_v1",
+  "optimizer_constructed": false,
+  "optimizer_steps": 0,
+  "status": "complete",
+  "summary": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase3_retention_preflight_20260811/receipts/summary.json",
+  "task_level_capability_scoring": false,
+  "updated_at_unix": 1786484484.4362285
+}

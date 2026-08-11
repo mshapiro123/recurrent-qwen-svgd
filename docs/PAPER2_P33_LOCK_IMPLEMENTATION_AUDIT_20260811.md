@@ -1,8 +1,8 @@
 # P3.3 Lock Implementation Audit
 
-Date: 2026-08-11. Status: optimizer construction blocked pending a narrow
-protocol erratum. No P3.3 training step has run and no CONFIRM or EVAL-E row has
-been scored.
+Date: 2026-08-11. Status: resolved by strategy errata e1 and e2 and the landed
+token-retention preflight. P3.3 training is authorized. No P3.3 training step
+has yet run and no CONFIRM or EVAL-E row has been scored.
 
 ## Governing record
 
@@ -78,8 +78,17 @@ ridge-extended loop-4 fits selected ridge `1e5` and produced holdout cosine
 `docs/PAPER2_PHASE3_LINEAR_DECODABILITY_FORECAST_RECEIPT_20260811.md` and
 `outputs/stage5/stage5_paper2_phase3_oracle_forecast_20260810/summary.json`.
 
-Pre-run assertion A5 is now satisfied. The four protocol discrepancies above
-remain unresolved and continue to block optimizer construction.
+Pre-run assertion A5 is satisfied. Erratum e1 resolved all four discrepancies:
+migration identity precedes clamp activation, `c = 0.15` is an audit magnitude
+rather than a forward factor, a disjoint negative audit supports precision and
+`chi`, and the 1,000-update AdamW schedule with twenty looks is bound.
+
+Erratum e2 then replaced the unavailable task-level guardrail estimator with an
+exact 1,024-position token-retention panel. The no-update preflight passed:
+step-zero retention is `1024/1024` in both seeds, Tier S controls the simulated
+familywise false-stop probability at `0.00003`, and Tier W controls the null
+warning probability at `0.00424`. Receipt:
+`outputs/stage5/stage5_paper2_phase3_retention_preflight_20260811/summary.json`.
 
 ## Work that may proceed
 
@@ -87,5 +96,8 @@ remain unresolved and continue to block optimizer construction.
 - Mirror the governing documents and bind their hashes.
 - Build tests, telemetry, resumable checkpointing, and an optimizer-free A1-A4
   preflight.
-- Do not construct the optimizer or launch P3.3 until the four rulings above are
-  recorded in a protocol erratum.
+- Construct the optimizer only inside the registered P3.3 runner after it
+  re-verifies the landed preflight hash and all A1-A5 assertions.
+- Run exactly 1,000 updates per seed with exactly twenty looks.
+- Continue to prohibit task-level capability scoring until the P3.4 inference
+  graph is separately locked.

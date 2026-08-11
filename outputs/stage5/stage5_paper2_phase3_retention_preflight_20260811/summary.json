@@ -1,0 +1,536 @@
+{
+  "assertions": {
+    "all_cohorts_disjoint": true,
+    "calibration_complete": true,
+    "optimizer_absent": true,
+    "panel_1024": true,
+    "panel_horizon_balanced": true,
+    "retention_excluded_from_training": true,
+    "step0_exact_estimator_complete": true,
+    "task_scoring_absent": true,
+    "training_steps_zero": true,
+    "twenty_looks": true
+  },
+  "kind": "paper2_phase3_p33_retention_preflight_summary_v1",
+  "optimizer_constructed": false,
+  "optimizer_steps": 0,
+  "p33_prep": {
+    "audit_by_horizon_decile": {
+      "h1_d0": 105,
+      "h1_d1": 105,
+      "h1_d2": 100,
+      "h1_d3": 106,
+      "h1_d4": 100,
+      "h1_d5": 101,
+      "h1_d6": 105,
+      "h1_d7": 105,
+      "h1_d8": 100,
+      "h1_d9": 100,
+      "h2_d0": 105,
+      "h2_d1": 104,
+      "h2_d2": 108,
+      "h2_d3": 107,
+      "h2_d4": 100,
+      "h2_d5": 100,
+      "h2_d6": 100,
+      "h2_d7": 103,
+      "h2_d8": 104,
+      "h2_d9": 101,
+      "h3_d0": 100,
+      "h3_d1": 102,
+      "h3_d2": 102,
+      "h3_d3": 98,
+      "h3_d4": 101,
+      "h3_d5": 104,
+      "h3_d6": 105,
+      "h3_d7": 100,
+      "h3_d8": 101,
+      "h3_d9": 100,
+      "h4_d0": 99,
+      "h4_d1": 98,
+      "h4_d2": 99,
+      "h4_d3": 100,
+      "h4_d4": 109,
+      "h4_d5": 105,
+      "h4_d6": 100,
+      "h4_d7": 102,
+      "h4_d8": 105,
+      "h4_d9": 107
+    },
+    "audit_cohorts_disjoint": true,
+    "audit_rows": 4096,
+    "audit_slice": {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase3_retention_preflight_20260811/private/p33_prep/p33_audit_slice.jsonl",
+      "rows": 4096,
+      "sha256": "6dea4392c8c9e19d4903cd86ab70c7c922389c03e0be5f25615e2756c80f0579"
+    },
+    "audit_slice_sha256": "0439336241215b82707c9a31f24e81e9fe0a1ca50cbf3bc0ea69bffdcccbf507",
+    "coverage_index": {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase3_p32_coverage_20260810/private/agreement_coverage_index.jsonl",
+      "rows": 727876,
+      "sha256": "cb50bee824abdc28638e07138d5079073b35a9fc6c528ef7a5be5a101e91e73b"
+    },
+    "fixed_instruments": {
+      "canonical_projection": {
+        "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_arbitration_build_20260804/private/canonicalizer/learned_mixture_rrr_seed_20260814.pt",
+        "sha256": "53215130a75c929def4bcc4b81ba9187d90a7b6fe2b1502391518d45c09476e3"
+      },
+      "random_projection": {
+        "orthogonality_max_abs_error": 4.76837158203125e-07,
+        "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase3_retention_preflight_20260811/private/p33_prep/p33_fixed_random_projection.pt",
+        "sha256": "a87f93e81631a308e8d6bd18b4dbec0d8306de93f84a07328842573835c7ebe1",
+        "shape": [
+          128,
+          1024
+        ]
+      }
+    },
+    "inverse_class_weights": {
+      "ignored": 0.0,
+      "negative": 0.6666666666666666,
+      "positive": 2.0
+    },
+    "kind": "paper2_phase3_p33_data_staging_receipt_v3",
+    "label_counts_all_records": {
+      "ignored": 589792,
+      "negative": 103563,
+      "positive": 34521
+    },
+    "negative_audit_excluded_from_training": true,
+    "negative_audit_rows": 12288,
+    "negative_audit_slice": {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase3_retention_preflight_20260811/private/p33_prep/p33_negative_audit_slice.jsonl",
+      "rows": 12288,
+      "selection": "next ranked confident-agreement rows after the frozen training negative cohort",
+      "sha256": "8aed17517c1931a0b7ce4f4ae1feb4c50affd3edf5219621c39215180305791a"
+    },
+    "negative_audit_slice_sha256": "09a12b3a93e94e84cb7e22f93ca7a1226cea8b05e33a1dfa77364cedd46b5b33",
+    "negative_confidence_statistic": "min(student_top1_probability,teacher_14b_top1_probability)",
+    "negative_to_positive_ratio": 3.0,
+    "optimizer_constructed": false,
+    "optimizer_steps": 0,
+    "p33_training_authorized": false,
+    "position_zero_excluded_from_positive_count": 11,
+    "position_zero_labels": {
+      "-1": 613
+    },
+    "realized_negative_confidence_cut": 0.9937900900840759,
+    "retention_panel": {
+      "estimand": "fraction of positions where augmented top1 matches frozen base top1",
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase3_retention_preflight_20260811/private/p33_prep/p33_retention_panel.jsonl",
+      "rows": 1024,
+      "selection": "next unused confident-agreement rows after training negatives and the negative audit, balanced 256 per horizon",
+      "sha256": "03167599552601caca753ae67233c569283757456065cade201c0312814a7418"
+    },
+    "retention_panel_by_horizon": {
+      "1": 256,
+      "2": 256,
+      "3": 256,
+      "4": 256
+    },
+    "retention_panel_estimand": "fraction of positions where augmented top1 matches frozen base top1",
+    "retention_panel_excluded_from_training": true,
+    "retention_panel_minimum_confidence": 0.9904632568359375,
+    "retention_panel_rows": 1024,
+    "retention_panel_sha256": "fd5d5c0b6733230a710a3bd439f14866424e25b58434fdf7dfb23308a41bb5b0",
+    "staged_labels": {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase3_retention_preflight_20260811/private/p33_prep/p33_staged_labels.jsonl",
+      "rows": 727876,
+      "sha256": "4ad95e8e7f4dc4e37a0f149d70a1150800699259b1140ac5a9cfb8d13c22e004"
+    },
+    "status": "staged_build_only_training_unauthorized",
+    "strict_concurrent_count_at_threshold_before_position_zero": 38628,
+    "strict_positive_count_before_audit": 38617,
+    "teachability_threshold": 0.7,
+    "teacher_tier_js_field": "teacher_js_divergence",
+    "tier1_observatory": {
+      "a_state_interventions": [
+        "zero",
+        "norm_matched_random",
+        "cross_example",
+        "stale",
+        "bypass"
+      ],
+      "a_state_ratio_clipped": false,
+      "analysis_rules": {
+        "instrumentation_rng_precision_kernel_equivalence_required_before_lock": true,
+        "norm_matched_controls": true,
+        "paired_same_cached_pre_intervention_state": true,
+        "prompt_level_bootstrap_only": true,
+        "randomness_sources_labeled_separately": true
+      },
+      "event_grain": "prompt_by_loop",
+      "paired_from_cached_pre_intervention_state": true,
+      "state_geometry": {
+        "bridge_hidden_width": 896,
+        "canonical_projection_is_existing_frozen_canonicalizer": true,
+        "canonical_scratch_shape": [
+          8,
+          128
+        ],
+        "flattened_width": 1024,
+        "random_projection_applies_to": "flattened_canonical_scratch_state",
+        "raw_and_normalized_states_preserved": true
+      },
+      "telemetry": [
+        "bridge_write_ratio_r_b",
+        "gradient_dot_write",
+        "tortuosity",
+        "turning_angle_radians",
+        "fixed_point_residual",
+        "effective_rank",
+        "participation_ratio"
+      ],
+      "training_loop_scaffolding_only": true
+    },
+    "train_negative_count": 103563,
+    "train_positive_count": 34521
+  },
+  "retention_guardrail": {
+    "assertions": {
+      "exact_panel_1024_both_seeds": true,
+      "optimizer_absent": true,
+      "requested_powers_reported_both_tiers": true,
+      "task_scoring_absent": true,
+      "tier_s_fwer_met": true,
+      "tier_s_power_met_at_delta_cat": true,
+      "tier_w_null_class_met": true,
+      "training_steps_zero": true,
+      "twenty_looks": true
+    },
+    "campaigns": 100000,
+    "estimand": "fraction of positions where augmented top1 matches frozen base top1",
+    "kind": "paper2_phase3_p33_token_retention_guardrail_recalibration_v1",
+    "looks": 20,
+    "noise_model": {
+      "adjacent_checkpoint_autocorrelation": 0.7387033141115205,
+      "autocorrelation_source": "banked Option B token-level DEV checkpoint trajectory",
+      "exact_panel_step0_nonretention_by_seed": {
+        "0": 0.0,
+        "1": 0.0
+      },
+      "hybrid_model_disclosed": true,
+      "prior_token_trajectory_discordance": 0.0064095380400946336,
+      "selected_discordance": 0.0064095380400946336,
+      "selection_rule": "maximum exact-panel seed rate, prior token-trajectory rate, and 1/n"
+    },
+    "optimizer_constructed": false,
+    "optimizer_steps": 0,
+    "panel_rows": 1024,
+    "panel_sha256": "fd5d5c0b6733230a710a3bd439f14866424e25b58434fdf7dfb23308a41bb5b0",
+    "seed": 20260811,
+    "status": "complete_before_optimizer_construction",
+    "superseded_task_scale_thresholds": {
+      "delta_cat_minus_8p5_points": "void_for_p33",
+      "tier_w_0p441_percent": "void_for_p33_except_as_null_warning_class"
+    },
+    "task_level_capability_scoring": false,
+    "threshold_reference": "step0_init_relative",
+    "tier_s": {
+      "consecutive_looks": 2,
+      "decision_margin_relative_to_init": -0.006,
+      "delta_cat": 0.0115,
+      "delta_cat_power": {
+        "campaigns": 100000,
+        "campaigns_with_action": 99408,
+        "consecutive_looks": 2,
+        "conservative_upper_95_probability": 0.9944733810271776,
+        "critical_value": 1.6463444953385555,
+        "decision_margin_relative_to_init": -0.006,
+        "estimated_action_probability": 0.99408,
+        "one_sided_alpha": 0.05,
+        "paired_null_discordance": 0.0064095380400946336,
+        "rows": 1024,
+        "simulation_method": "correlated_gaussian_paired_mean_exact_consecutive_pair_statistic",
+        "standard_error": 0.0025018622048945693,
+        "sustained_drop": -0.0115
+      },
+      "familywise_false_stop_target": 0.0001,
+      "null": {
+        "campaigns": 100000,
+        "campaigns_with_action": 3,
+        "consecutive_looks": 2,
+        "conservative_upper_95_probability": 7.753472238564708e-05,
+        "critical_value": 1.6463444953385555,
+        "decision_margin_relative_to_init": -0.006,
+        "estimated_action_probability": 3e-05,
+        "one_sided_alpha": 0.05,
+        "paired_null_discordance": 0.0064095380400946336,
+        "rows": 1024,
+        "simulation_method": "correlated_gaussian_paired_mean_exact_consecutive_pair_statistic",
+        "standard_error": 0.0025018622048945693,
+        "sustained_drop": -0.0
+      },
+      "one_sided_alpha": 0.05,
+      "power_target": 0.99,
+      "requested_power": {
+        "drop_0.005": {
+          "campaigns": 100000,
+          "campaigns_with_action": 8010,
+          "consecutive_looks": 2,
+          "conservative_upper_95_probability": 0.08152595009453349,
+          "critical_value": 1.6463444953385555,
+          "decision_margin_relative_to_init": -0.006,
+          "estimated_action_probability": 0.0801,
+          "one_sided_alpha": 0.05,
+          "paired_null_discordance": 0.0064095380400946336,
+          "rows": 1024,
+          "simulation_method": "correlated_gaussian_paired_mean_exact_consecutive_pair_statistic",
+          "standard_error": 0.0025018622048945693,
+          "sustained_drop": -0.005
+        },
+        "drop_0.010": {
+          "campaigns": 100000,
+          "campaigns_with_action": 93920,
+          "consecutive_looks": 2,
+          "conservative_upper_95_probability": 0.9404385395317734,
+          "critical_value": 1.6463444953385555,
+          "decision_margin_relative_to_init": -0.006,
+          "estimated_action_probability": 0.9392,
+          "one_sided_alpha": 0.05,
+          "paired_null_discordance": 0.0064095380400946336,
+          "rows": 1024,
+          "simulation_method": "correlated_gaussian_paired_mean_exact_consecutive_pair_statistic",
+          "standard_error": 0.0025018622048945693,
+          "sustained_drop": -0.01
+        },
+        "drop_0.020": {
+          "campaigns": 100000,
+          "campaigns_with_action": 100000,
+          "consecutive_looks": 2,
+          "conservative_upper_95_probability": 1.0,
+          "critical_value": 1.6463444953385555,
+          "decision_margin_relative_to_init": -0.006,
+          "estimated_action_probability": 1.0,
+          "one_sided_alpha": 0.05,
+          "paired_null_discordance": 0.0064095380400946336,
+          "rows": 1024,
+          "simulation_method": "correlated_gaussian_paired_mean_exact_consecutive_pair_statistic",
+          "standard_error": 0.0025018622048945693,
+          "sustained_drop": -0.02
+        }
+      }
+    },
+    "tier_w": {
+      "consecutive_looks": 2,
+      "decision_margin_relative_to_init": -0.001,
+      "delta_cat": 0.009000000000000001,
+      "delta_cat_power": {
+        "campaigns": 100000,
+        "campaigns_with_action": 99566,
+        "consecutive_looks": 2,
+        "conservative_upper_95_probability": 0.9959962331851945,
+        "critical_value": 2.580643766252022,
+        "decision_margin_relative_to_init": -0.001,
+        "estimated_action_probability": 0.99566,
+        "one_sided_alpha": 0.005,
+        "paired_null_discordance": 0.0064095380400946336,
+        "rows": 1024,
+        "simulation_method": "correlated_gaussian_paired_mean_exact_consecutive_pair_statistic",
+        "standard_error": 0.0025018622048945693,
+        "sustained_drop": -0.009000000000000001
+      },
+      "null": {
+        "campaigns": 100000,
+        "campaigns_with_action": 424,
+        "consecutive_looks": 2,
+        "conservative_upper_95_probability": 0.004593868935830299,
+        "critical_value": 2.580643766252022,
+        "decision_margin_relative_to_init": -0.001,
+        "estimated_action_probability": 0.00424,
+        "one_sided_alpha": 0.005,
+        "paired_null_discordance": 0.0064095380400946336,
+        "rows": 1024,
+        "simulation_method": "correlated_gaussian_paired_mean_exact_consecutive_pair_statistic",
+        "standard_error": 0.0025018622048945693,
+        "sustained_drop": -0.0
+      },
+      "null_warning_ceiling": 0.005,
+      "one_sided_alpha": 0.005,
+      "requested_power": {
+        "drop_0.005": {
+          "campaigns": 100000,
+          "campaigns_with_action": 54143,
+          "consecutive_looks": 2,
+          "conservative_upper_95_probability": 0.5440258869559678,
+          "critical_value": 2.580643766252022,
+          "decision_margin_relative_to_init": -0.001,
+          "estimated_action_probability": 0.54143,
+          "one_sided_alpha": 0.005,
+          "paired_null_discordance": 0.0064095380400946336,
+          "rows": 1024,
+          "simulation_method": "correlated_gaussian_paired_mean_exact_consecutive_pair_statistic",
+          "standard_error": 0.0025018622048945693,
+          "sustained_drop": -0.005
+        },
+        "drop_0.010": {
+          "campaigns": 100000,
+          "campaigns_with_action": 99950,
+          "consecutive_looks": 2,
+          "conservative_upper_95_probability": 0.9996103331198904,
+          "critical_value": 2.580643766252022,
+          "decision_margin_relative_to_init": -0.001,
+          "estimated_action_probability": 0.9995,
+          "one_sided_alpha": 0.005,
+          "paired_null_discordance": 0.0064095380400946336,
+          "rows": 1024,
+          "simulation_method": "correlated_gaussian_paired_mean_exact_consecutive_pair_statistic",
+          "standard_error": 0.0025018622048945693,
+          "sustained_drop": -0.01
+        },
+        "drop_0.020": {
+          "campaigns": 100000,
+          "campaigns_with_action": 100000,
+          "consecutive_looks": 2,
+          "conservative_upper_95_probability": 1.0,
+          "critical_value": 2.580643766252022,
+          "decision_margin_relative_to_init": -0.001,
+          "estimated_action_probability": 1.0,
+          "one_sided_alpha": 0.005,
+          "paired_null_discordance": 0.0064095380400946336,
+          "rows": 1024,
+          "simulation_method": "correlated_gaussian_paired_mean_exact_consecutive_pair_statistic",
+          "standard_error": 0.0025018622048945693,
+          "sustained_drop": -0.02
+        }
+      }
+    }
+  },
+  "status": "complete_e2_assertions_final_training_may_follow_in_separate_target",
+  "step0_retention": {
+    "assertions": {
+      "base_reader_exact": true,
+      "both_seeds": true,
+      "operating_clamp_0p02": true,
+      "optimizer_absent": true,
+      "panel_1024": true,
+      "rows_2048": true,
+      "task_scoring_absent": true,
+      "training_steps_zero": true
+    },
+    "by_seed": {
+      "0": {
+        "positions": 1024,
+        "retained": 1024,
+        "retention": 1.0
+      },
+      "1": {
+        "positions": 1024,
+        "retained": 1024,
+        "retention": 1.0
+      }
+    },
+    "checkpoints": [
+      {
+        "optimizer_state_absent": true,
+        "path": "/content/recurrent-qwen-svgd-stage/stage5_paper2_phase3_retention_preflight_20260811/migrated_checkpoints/seed_0_full_a2_phase3_migrated.pt",
+        "sha256": "d0f2b735825d29ab9801a5200493ca9aa65294778aea2fb7f728eb8e85dfc519",
+        "source_seed": 0,
+        "trainable_state_sha256": "97b4bd426f6a5ea265aa27c30520151761d460abebbb7112e23193f5e6a8d059"
+      },
+      {
+        "optimizer_state_absent": true,
+        "path": "/content/recurrent-qwen-svgd-stage/stage5_paper2_phase3_retention_preflight_20260811/migrated_checkpoints/seed_1_full_a2_phase3_migrated.pt",
+        "sha256": "3ca1cdf8dd16bf4f435e81a675d7514778144c5c881af52a70171659f7734b4f",
+        "source_seed": 1,
+        "trainable_state_sha256": "baa46ebb8465f2c632023a58d4db1c283bf4a1e5e34971784b3a09343f00d8d7"
+      }
+    ],
+    "estimand": "fraction of positions where augmented top1 matches frozen base top1",
+    "hidden_sources": {
+      "four_horizons_complete": true,
+      "selected_anchors": 1021,
+      "sources": [
+        {
+          "selected_anchors": 225,
+          "source": "old",
+          "student_hidden_files_sha256": "f10ebe27bd7b3cae83b9479a50a26f293ace55ee765bad816eb7eae02ee831ac",
+          "summary_path": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_paper2_phase2_stage0a_20260803/summary.json",
+          "summary_sha256": "654ca11335e34a6c8fc6136276943df637b95c044892e8591b20600a04a4cd91"
+        },
+        {
+          "selected_anchors": 796,
+          "source": "new",
+          "student_hidden_files_sha256": "1243b885cbce4853150d2f310d2c25559749b7ea8c5a9f6988a7e1fc2a0908c9",
+          "summary_path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_option_b_teacher_cache_20260806/receipts/full_cache_summary.json",
+          "summary_sha256": "fe7735267d03b13973a5f603aba38b2959101f725bdb1ef95230bee612c88b0e"
+        }
+      ]
+    },
+    "kind": "paper2_phase3_p33_retention_step0_v1",
+    "lm_head": {
+      "cross_population_bit_exact": true,
+      "sources": [
+        {
+          "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_20260803/private/stage0a/model_cache/student_0p5b/lm_head.pt",
+          "revision": "7ae557604adf67be50417f59c2c2f167def9a775",
+          "sha256": "c8df8c518c4ac72777279d843142774e449e1fa344df2c08ee6ab1e5535fbd2d",
+          "shape": [
+            151665,
+            896
+          ],
+          "source": "old"
+        },
+        {
+          "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_option_b_teacher_cache_20260806/private/full/model_cache/student_0p5b/lm_head.pt",
+          "revision": "7ae557604adf67be50417f59c2c2f167def9a775",
+          "sha256": "c8df8c518c4ac72777279d843142774e449e1fa344df2c08ee6ab1e5535fbd2d",
+          "shape": [
+            151665,
+            896
+          ],
+          "source": "new"
+        }
+      ]
+    },
+    "operating_clamp": [
+      {
+        "ceiling": 0.02,
+        "clamp_binds_at_init_by_loop": [
+          true,
+          false,
+          false,
+          false
+        ],
+        "seed": 0,
+        "unclamped_migrated_gate_by_loop": [
+          0.08403224498033524,
+          0.01798621006309986,
+          0.01798621006309986,
+          0.01798621006309986
+        ]
+      },
+      {
+        "ceiling": 0.02,
+        "clamp_binds_at_init_by_loop": [
+          true,
+          false,
+          false,
+          false
+        ],
+        "seed": 1,
+        "unclamped_migrated_gate_by_loop": [
+          0.08848896622657776,
+          0.01798621006309986,
+          0.01798621006309986,
+          0.01798621006309986
+        ]
+      }
+    ],
+    "optimizer_constructed": false,
+    "optimizer_steps": 0,
+    "retention_panel": {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase3_retention_preflight_20260811/private/p33_prep/p33_retention_panel.jsonl",
+      "positions": 1024,
+      "sha256": "03167599552601caca753ae67233c569283757456065cade201c0312814a7418"
+    },
+    "status": "complete_no_update_exact_estimator",
+    "step0_rows": {
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase3_retention_preflight_20260811/private/p33_retention_step0_rows.jsonl",
+      "rows": 2048,
+      "sha256": "cad5836f777d018d09d4dc0b8e6691e217918cd0a7157d6696a00cbb98c48e36"
+    },
+    "task_level_capability_scoring": false
+  },
+  "task_level_capability_scoring": false
+}

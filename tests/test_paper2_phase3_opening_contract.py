@@ -18,10 +18,10 @@ def test_governing_artifacts_are_byte_verified() -> None:
         assert hashlib.sha256(payload).hexdigest() == artifact["sha256"]
 
 
-def test_opening_contract_requires_e2_preflight_before_ratified_p33_training() -> None:
+def test_opening_contract_binds_completed_e2_preflight_before_p33_training() -> None:
     contract = json.loads(CONTRACT.read_text(encoding="utf-8"))
     assert contract["status"] == (
-        "p33_lock_ratified_amended_e2_retention_preflight_required_before_training"
+        "p33_lock_ratified_e2_retention_preflight_complete_training_authorized"
     )
     assert contract["authorization"]["per_position_gate_build"] is True
     assert contract["authorization"]["p31_infrastructure_build"] is True
@@ -29,11 +29,14 @@ def test_opening_contract_requires_e2_preflight_before_ratified_p33_training() -
     assert contract["authorization"]["p31_reference_scoring_dev_and_verified_train"] is True
     assert contract["authorization"]["p33_data_and_observatory_prep"] is True
     assert contract["authorization"]["p33_training"] == (
-        "authorized_by_ratified_lock_only_after_e2_retention_preflight_receipt"
+        "authorized_e2_retention_preflight_assertions_all_passed"
     )
     assert contract["p33_prep"]["retention_panel_rows"] == 1024
     assert contract["p33_prep"]["retention_panel_rows_per_horizon"] == 256
     assert contract["p33_prep"]["retention_recalibration_required_before_optimizer"] is True
+    assert contract["p33_prep"]["retention_recalibration_complete"] is True
+    assert contract["p33_prep"]["tier_s_margin_relative_to_init"] == -0.006
+    assert contract["p33_prep"]["tier_w_margin_relative_to_init"] == -0.001
     assert contract["p33_prep"]["task_level_capability_scoring"] is False
     assert contract["architecture"]["phase2_trainable_parameters_historical"] == 1_184_917
     assert contract["architecture"]["phase3_trainable_parameters"] == 1_185_973

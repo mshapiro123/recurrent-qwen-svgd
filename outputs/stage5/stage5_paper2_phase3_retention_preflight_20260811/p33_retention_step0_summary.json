@@ -1,0 +1,135 @@
+{
+  "assertions": {
+    "base_reader_exact": true,
+    "both_seeds": true,
+    "operating_clamp_0p02": true,
+    "optimizer_absent": true,
+    "panel_1024": true,
+    "rows_2048": true,
+    "task_scoring_absent": true,
+    "training_steps_zero": true
+  },
+  "by_seed": {
+    "0": {
+      "positions": 1024,
+      "retained": 1024,
+      "retention": 1.0
+    },
+    "1": {
+      "positions": 1024,
+      "retained": 1024,
+      "retention": 1.0
+    }
+  },
+  "checkpoints": [
+    {
+      "optimizer_state_absent": true,
+      "path": "/content/recurrent-qwen-svgd-stage/stage5_paper2_phase3_retention_preflight_20260811/migrated_checkpoints/seed_0_full_a2_phase3_migrated.pt",
+      "sha256": "d0f2b735825d29ab9801a5200493ca9aa65294778aea2fb7f728eb8e85dfc519",
+      "source_seed": 0,
+      "trainable_state_sha256": "97b4bd426f6a5ea265aa27c30520151761d460abebbb7112e23193f5e6a8d059"
+    },
+    {
+      "optimizer_state_absent": true,
+      "path": "/content/recurrent-qwen-svgd-stage/stage5_paper2_phase3_retention_preflight_20260811/migrated_checkpoints/seed_1_full_a2_phase3_migrated.pt",
+      "sha256": "3ca1cdf8dd16bf4f435e81a675d7514778144c5c881af52a70171659f7734b4f",
+      "source_seed": 1,
+      "trainable_state_sha256": "baa46ebb8465f2c632023a58d4db1c283bf4a1e5e34971784b3a09343f00d8d7"
+    }
+  ],
+  "estimand": "fraction of positions where augmented top1 matches frozen base top1",
+  "hidden_sources": {
+    "four_horizons_complete": true,
+    "selected_anchors": 1021,
+    "sources": [
+      {
+        "selected_anchors": 225,
+        "source": "old",
+        "student_hidden_files_sha256": "f10ebe27bd7b3cae83b9479a50a26f293ace55ee765bad816eb7eae02ee831ac",
+        "summary_path": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_paper2_phase2_stage0a_20260803/summary.json",
+        "summary_sha256": "654ca11335e34a6c8fc6136276943df637b95c044892e8591b20600a04a4cd91"
+      },
+      {
+        "selected_anchors": 796,
+        "source": "new",
+        "student_hidden_files_sha256": "1243b885cbce4853150d2f310d2c25559749b7ea8c5a9f6988a7e1fc2a0908c9",
+        "summary_path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_option_b_teacher_cache_20260806/receipts/full_cache_summary.json",
+        "summary_sha256": "fe7735267d03b13973a5f603aba38b2959101f725bdb1ef95230bee612c88b0e"
+      }
+    ]
+  },
+  "kind": "paper2_phase3_p33_retention_step0_v1",
+  "lm_head": {
+    "cross_population_bit_exact": true,
+    "sources": [
+      {
+        "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_stage0a_20260803/private/stage0a/model_cache/student_0p5b/lm_head.pt",
+        "revision": "7ae557604adf67be50417f59c2c2f167def9a775",
+        "sha256": "c8df8c518c4ac72777279d843142774e449e1fa344df2c08ee6ab1e5535fbd2d",
+        "shape": [
+          151665,
+          896
+        ],
+        "source": "old"
+      },
+      {
+        "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase2_option_b_teacher_cache_20260806/private/full/model_cache/student_0p5b/lm_head.pt",
+        "revision": "7ae557604adf67be50417f59c2c2f167def9a775",
+        "sha256": "c8df8c518c4ac72777279d843142774e449e1fa344df2c08ee6ab1e5535fbd2d",
+        "shape": [
+          151665,
+          896
+        ],
+        "source": "new"
+      }
+    ]
+  },
+  "operating_clamp": [
+    {
+      "ceiling": 0.02,
+      "clamp_binds_at_init_by_loop": [
+        true,
+        false,
+        false,
+        false
+      ],
+      "seed": 0,
+      "unclamped_migrated_gate_by_loop": [
+        0.08403224498033524,
+        0.01798621006309986,
+        0.01798621006309986,
+        0.01798621006309986
+      ]
+    },
+    {
+      "ceiling": 0.02,
+      "clamp_binds_at_init_by_loop": [
+        true,
+        false,
+        false,
+        false
+      ],
+      "seed": 1,
+      "unclamped_migrated_gate_by_loop": [
+        0.08848896622657776,
+        0.01798621006309986,
+        0.01798621006309986,
+        0.01798621006309986
+      ]
+    }
+  ],
+  "optimizer_constructed": false,
+  "optimizer_steps": 0,
+  "retention_panel": {
+    "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase3_retention_preflight_20260811/private/p33_prep/p33_retention_panel.jsonl",
+    "positions": 1024,
+    "sha256": "03167599552601caca753ae67233c569283757456065cade201c0312814a7418"
+  },
+  "status": "complete_no_update_exact_estimator",
+  "step0_rows": {
+    "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase3_retention_preflight_20260811/private/p33_retention_step0_rows.jsonl",
+    "rows": 2048,
+    "sha256": "cad5836f777d018d09d4dc0b8e6691e217918cd0a7157d6696a00cbb98c48e36"
+  },
+  "task_level_capability_scoring": false
+}

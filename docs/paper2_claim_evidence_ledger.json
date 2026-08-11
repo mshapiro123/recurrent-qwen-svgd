@@ -73,7 +73,11 @@
     "phase2_e1_sparse_support_qc": "outputs/stage5/stage5_paper2_phase2_e1_eval_d_20260808/receipts/e1_sparse_support_qc.json",
     "phase2_e1_endpoint_lock_preparation": "outputs/stage5/stage5_paper2_phase2_e1_eval_d_20260808/receipts/e1_endpoint_lock_preparation.json",
     "phase3_linear_decodability_forecast_summary": "outputs/stage5/stage5_paper2_phase3_oracle_forecast_20260810/summary.json",
-    "phase3_linear_decodability_forecast_receipt": "docs/PAPER2_PHASE3_LINEAR_DECODABILITY_FORECAST_RECEIPT_20260811.md"
+    "phase3_linear_decodability_forecast_receipt": "docs/PAPER2_PHASE3_LINEAR_DECODABILITY_FORECAST_RECEIPT_20260811.md",
+    "phase3_p33_retention_preflight_summary": "outputs/stage5/stage5_paper2_phase3_retention_preflight_20260811/summary.json",
+    "phase3_p33_retention_preflight_handoff": "docs/PAPER2_PHASE3_P33_RETENTION_PREFLIGHT_HANDOFF_20260811.md",
+    "phase3_p33_retention_preflight_handoff_drive_id": "1cgvtlAdPYqpGFc7M4Qabjzv-IeyX3LZA",
+    "phase3_p33_retention_preflight_handoff_sha256": "68ee194f6ea57f5ef3185b2a73fc595e04097f43ba9f7569f7f12bdf69163f7e"
   },
   "claims": [
     {
@@ -765,9 +769,9 @@
     },
     {
       "id": "phase3_p33_erratum_preflight",
-      "status": "e2_implementation_complete_retention_receipt_pending",
-      "claim": "Errata e1 and e2 are implemented in the P3.3 preflight code: positive, negative, and token-retention holdouts are disjoint and excluded from training, and estimator-specific calibration must complete before optimizer construction.",
-      "scope": "Build and tests only for the e2 retention path; the earlier e1 CPU receipt remains banked; no P3.3 model training, no task-level capability scoring, and no CONFIRM/EVAL-E scoring",
+      "status": "supported_pretraining_contract_complete",
+      "claim": "Errata e1 and e2 are implemented and their final no-update preflight passed: the positive, negative, and token-retention holdouts are disjoint and excluded from training, both migrated seeds preserve all panel top-1 tokens at initialization, and the estimator-specific twenty-look sequential rules meet their simulated false-alarm requirements.",
+      "scope": "Pre-training infrastructure and calibration only; 1,024 held-out token positions, two migrated seeds, 100,000 simulated twenty-look campaigns, no P3.3 model training, no task-level capability scoring, and no CONFIRM/EVAL-E scoring",
       "metrics": {
         "coverage_index_positions": 727876,
         "training_positives": 34521,
@@ -777,6 +781,15 @@
         "retention_panel_rows_registered": 1024,
         "retention_rows_per_horizon_registered": 256,
         "retention_guardrail_looks": 20,
+        "seed_0_step0_retention": 1.0,
+        "seed_1_step0_retention": 1.0,
+        "tier_s_margin_relative_to_init": -0.006,
+        "tier_s_familywise_false_stop_probability": 0.00003,
+        "tier_s_delta_cat": 0.0115,
+        "tier_s_delta_cat_power": 0.99408,
+        "tier_w_margin_relative_to_init": -0.001,
+        "tier_w_null_warning_probability": 0.00424,
+        "tier_w_delta_cat": 0.009,
         "negative_audit_ratio": 3.0,
         "negative_confidence_cut": 0.9937900900840759,
         "optimizer_steps": 0,
@@ -798,6 +811,14 @@
         {
           "path": "colab/run_stage5_paper2_phase3_retention_preflight.py",
           "locator": "score-blind panel build, exact step-zero scoring, and calibration-before-optimizer execution order"
+        },
+        {
+          "path": "outputs/stage5/stage5_paper2_phase3_retention_preflight_20260811/summary.json",
+          "locator": "all-green preflight assertions, exact step-zero retention, calibrated Tier-S and Tier-W rules, and evidence hashes"
+        },
+        {
+          "path": "docs/PAPER2_PHASE3_P33_RETENTION_PREFLIGHT_HANDOFF_20260811.md",
+          "locator": "design, panel provenance, thresholds, interpretation, limitations, and Drive artifact IDs"
         }
       ],
       "do_not_claim": [
@@ -805,7 +826,7 @@
         "aim capture is positive or negative",
         "the token-level audit is a general-capability panel",
         "P3.3 has task-level capability results or an implemented task inference graph",
-        "the 1,024-position retention panel or its calibrated thresholds have landed before the preflight receipt exists",
+        "the token-retention panel is a task-level or general-capability battery",
         "CONFIRM or EVAL-E has been scored"
       ]
     },

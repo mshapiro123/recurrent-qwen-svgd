@@ -1,7 +1,7 @@
 {
   "kind": "paper2_phase3_opening_contract_v1",
   "date": "2026-08-09",
-  "status": "p33_lock_ratified_amended_e2_retention_preflight_required_before_training",
+  "status": "p33_lock_ratified_e2_retention_preflight_complete_training_authorized",
   "governing_artifacts": {
     "opening_handoff_r2": {
       "drive_id": "1ZF7zOQQMvU_HEMQVEfwpuv8hQUhDRCW0",
@@ -86,6 +86,12 @@
       "path": "docs/STRATEGY_P33_LOCK_ERRATUM_E2_20260811.md",
       "bytes": 4442,
       "sha256": "4efc06f8435adb1a80027d217f17ad0d4b95ce1494565f9d8c28d6bdfa356f33"
+    },
+    "p33_retention_preflight": {
+      "path": "outputs/stage5/stage5_paper2_phase3_retention_preflight_20260811/summary.json",
+      "bytes": 20913,
+      "sha256": "9a71e3e59526383b3dd830a320a0e18ad3778571f67dac1e262ee2713ea0ffd0",
+      "status": "complete_before_optimizer_construction"
     }
   },
   "architecture": {
@@ -168,6 +174,14 @@
     "retention_threshold_reference": "step0_init_relative",
     "retention_guardrail_looks": 20,
     "retention_recalibration_required_before_optimizer": true,
+    "retention_recalibration_complete": true,
+    "tier_s_margin_relative_to_init": -0.006,
+    "tier_s_delta_cat": 0.0115,
+    "tier_s_false_stop_probability": 0.00003,
+    "tier_s_delta_cat_power": 0.99408,
+    "tier_w_margin_relative_to_init": -0.001,
+    "tier_w_null_warning_probability": 0.00424,
+    "tier_w_delta_cat": 0.009,
     "task_scale_p33_guardrail_thresholds_void": true,
     "task_level_capability_scoring": false,
     "task_inference_graph_deferred_to": "p34_lock_prerequisite",
@@ -185,6 +199,6 @@
     "p31_reference_scoring_dev_and_verified_train": true,
     "guardrail_recalibration_build": true,
     "p33_data_and_observatory_prep": true,
-    "p33_training": "authorized_by_ratified_lock_only_after_e2_retention_preflight_receipt"
+    "p33_training": "authorized_e2_retention_preflight_assertions_all_passed"
   }
 }
