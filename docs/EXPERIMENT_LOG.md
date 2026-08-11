@@ -1875,3 +1875,20 @@ Colab/Drive backups for selected runs.
   `docs/PAPER2_PHASE3_LINEAR_DECODABILITY_FORECAST_RECEIPT_20260811.md`.
   Summary:
   `outputs/stage5/stage5_paper2_phase3_oracle_forecast_20260810/summary.json`.
+- 2026-08-11 P3.3 erratum preflight: strategy erratum e1 was mirrored and
+  implemented at commit `3197999b`. A CPU-only Colab rerun regenerated the
+  P3.3 staging receipt with 34,521 training positives, 103,563 training
+  negatives, 4,096 held-out positive audit rows, and 12,288 held-out negative
+  audit rows. The audit cohorts are disjoint, the negative audit is excluded
+  from training, position zero remains ignored, and every build assertion
+  passed. The realized negative confidence cut is `0.9937900901`. No optimizer
+  was constructed, no training step ran, and CONFIRM/EVAL-E remain untouched.
+  The training core now binds the 1,000-update, 20-look AdamW recipe, migration
+  ordering, gate ceiling, and matched-magnitude forced-open audit. Launch is
+  held for one strategy ruling: the registered Tier-S stop names paired task
+  correctness, but the four-horizon sidecar has no specified benchmark
+  inference adapter. A token-level retention proxy cannot replace that
+  estimator silently. Receipt:
+  `outputs/stage5/stage5_paper2_phase3_guardrail_p33_prep_20260810/summary.json`.
+  Handoff:
+  `docs/PAPER2_PHASE3_P33_ERRATUM_PREFLIGHT_HANDOFF_20260811.md`.

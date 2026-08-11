@@ -764,6 +764,40 @@
       ]
     },
     {
+      "id": "phase3_p33_erratum_preflight",
+      "status": "build_complete_training_blocked_on_estimator_ruling",
+      "claim": "Erratum e1 is implemented and the P3.3 positive and negative audit cohorts are frozen, disjoint, and excluded from training; no optimizer step has run.",
+      "scope": "CPU-only data staging and code preflight at commit 3197999b; no model training, no CONFIRM/EVAL-E scoring, and no P3.3 aim-capture result",
+      "metrics": {
+        "coverage_index_positions": 727876,
+        "training_positives": 34521,
+        "training_negatives": 103563,
+        "positive_audit_rows": 4096,
+        "negative_audit_rows": 12288,
+        "negative_audit_ratio": 3.0,
+        "negative_confidence_cut": 0.9937900900840759,
+        "optimizer_steps": 0,
+        "training_steps": 0
+      },
+      "evidence": [
+        {
+          "path": "outputs/stage5/stage5_paper2_phase3_guardrail_p33_prep_20260810/summary.json",
+          "locator": "public counts, hashes, guardrail constants, and all-green preflight assertions"
+        },
+        {
+          "path": "docs/PAPER2_PHASE3_P33_ERRATUM_PREFLIGHT_HANDOFF_20260811.md",
+          "locator": "erratum implementation, CPU results, unresolved Tier-S deployment semantics, and requested ruling"
+        }
+      ],
+      "do_not_claim": [
+        "P3.3 training has started",
+        "aim capture is positive or negative",
+        "the token-level audit is a general-capability panel",
+        "the registered Tier-S task estimator has an implemented Phase-3 inference path",
+        "CONFIRM or EVAL-E has been scored"
+      ]
+    },
+    {
       "id": "speculative_depth_d0",
       "status": "not_recoverable_at_pilot_scale",
       "claim": "Under one 4,000-step seed, binary teacher-disagreement targets did not produce deployment-useful adaptive depth; the target omitted accepted-position harm and labeled many causally unactionable rejections as continue.",
