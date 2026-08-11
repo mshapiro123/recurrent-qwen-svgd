@@ -28,9 +28,10 @@ assert GH, "Missing GH_TOKEN in Colab secrets."
 def run(command: list[str], cwd: Path | None = None) -> None:
     print("$", " ".join(command).replace(GH, "****"), flush=True)
     tail: deque[str] = deque(maxlen=600)
+    effective_cwd = cwd or (ROOT if ROOT.is_dir() else Path("/content"))
     process = subprocess.Popen(
         command,
-        cwd=cwd or ROOT,
+        cwd=effective_cwd,
         env=os.environ.copy(),
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
