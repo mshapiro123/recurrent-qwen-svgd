@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import shutil
@@ -10,6 +11,7 @@ import subprocess
 import sys
 import time
 import traceback
+import zipfile
 from pathlib import Path
 
 
@@ -23,6 +25,16 @@ MIGRATION_ID = "stage5_paper2_phase3_p31_p32_receipts_20260810"
 ORACLE_ID = "stage5_paper2_phase3_oracle_forecast_20260810"
 CANONICALIZER_ID = "stage5_paper2_phase2_arbitration_build_20260804"
 P33_ID = "stage5_paper2_phase3_p33_20260811"
+PREFLIGHT_TRANSPORT_PARTS = (
+    (
+        "p33_retention_preflight.zip.part01",
+        "c783a473b0647d6d4902e08de6ca560488d9a3058c36f5b8b8ee978fcd3c4068",
+    ),
+    (
+        "p33_retention_preflight.zip.part02",
+        "7382e1076542978a8160dc98ea7e2c44150f3c88999aa91299cfac53d6242991",
+    ),
+)
 
 
 def write_json(path: Path, payload: object) -> None:
@@ -46,6 +58,48 @@ def rsync(source: Path, destination: Path) -> None:
         str(source) + (os.sep if source.is_dir() else ""),
         str(destination) + (os.sep if source.is_dir() else ""),
     ])
+
+
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as source:
+        while block := source.read(16 * 1024 * 1024):
+            digest.update(block)
+    return digest.hexdigest()
+
+
+def resolve_preflight(scratch: Path) -> Path:
+    canonical = DRIVE_STAGE5 / PREFLIGHT_ID
+    staged_labels = canonical / "private/p33_prep/p33_staged_labels.jsonl"
+    if staged_labels.exists():
+        return canonical
+
+    transport = scratch / "preflight_transport"
+    extracted = transport / "extracted"
+    extracted_labels = extracted / "drive/private/p33_prep/p33_staged_labels.jsonl"
+    if extracted_labels.exists():
+        return extracted / "drive"
+
+    transport.mkdir(parents=True, exist_ok=True)
+    archive = transport / "preflight.zip"
+    with archive.open("wb") as output:
+        for name, expected_sha256 in PREFLIGHT_TRANSPORT_PARTS:
+            part = Path("/content/drive/MyDrive") / name
+            observed_sha256 = sha256_file(part)
+            if observed_sha256 != expected_sha256:
+                raise RuntimeError(
+                    f"P3.3 preflight transport SHA mismatch for {name}: "
+                    f"expected={expected_sha256} observed={observed_sha256}"
+                )
+            with part.open("rb") as source:
+                shutil.copyfileobj(source, output, length=16 * 1024 * 1024)
+    with zipfile.ZipFile(archive) as bundle:
+        bundle.testzip()
+        bundle.extractall(extracted)
+    archive.unlink()
+    if not extracted_labels.exists():
+        raise RuntimeError("P3.3 preflight transport omitted staged labels")
+    return extracted / "drive"
 
 
 def scratch_root() -> Path:
@@ -78,7 +132,7 @@ def main() -> int:
         scratch = scratch_root()
         old = scratch / "old"
         new = scratch / "new"
-        preflight = DRIVE_STAGE5 / PREFLIGHT_ID
+        preflight = resolve_preflight(scratch)
         rsync(DRIVE_STAGE5 / OLD_ID / "private/stage0a/sample_manifest.jsonl", old / "sample_manifest.jsonl")
         rsync(DRIVE_STAGE5 / OLD_ID / "private/stage0a/lattice", old / "lattice")
         rsync(DRIVE_STAGE5 / OLD_ID / "private/stage0a/model_cache/student_0p5b", old / "model_cache/student_0p5b")
