@@ -45,7 +45,12 @@ EXPECTED_CHECKPOINT_SHA256 = {
 
 
 def _load_final_module(
-    *, checkpoint: Path, embedding_weight: torch.Tensor, seed: int, device: str
+    *,
+    checkpoint: Path,
+    source_checkpoint: Path,
+    embedding_weight: torch.Tensor,
+    seed: int,
+    device: str,
 ) -> tuple[Phase3StudentModules, dict[str, Any]]:
     observed = sha256_file(checkpoint)
     if observed != EXPECTED_CHECKPOINT_SHA256[int(seed)]:
@@ -56,16 +61,28 @@ def _load_final_module(
     if int(payload.get("seed", -1)) != int(seed) or int(payload.get("step", -1)) != 1000:
         raise RuntimeError("P3.3 verification checkpoint seed or step mismatch")
     state = payload.get("trainable_state")
+    source_observed = sha256_file(source_checkpoint)
+    source_receipt = payload.get("source_checkpoint") or {}
+    if source_observed != source_receipt.get("sha256"):
+        raise RuntimeError("P3.3 verification source-lineage checkpoint SHA mismatch")
+    source_payload = torch.load(source_checkpoint, map_location="cpu", weights_only=False)
+    source_state = source_payload.get("trainable_state")
+    if not isinstance(source_state, Mapping):
+        raise RuntimeError("P3.3 verification source checkpoint lacks trainable state")
     embedding = nn.Embedding.from_pretrained(embedding_weight.float(), freeze=True)
     module = Phase3StudentModules(
         tied_embedding=embedding, hidden_size=896, rms_cap=STATE_RMS_CAP
     ).float()
     target = {name: value for name, value in module.named_parameters() if value.requires_grad}
-    if set(target) != set(state):
-        raise RuntimeError("P3.3 verification trainable-state schema changed")
+    if set(target) != set(source_state):
+        raise RuntimeError("P3.3 verification source trainable-state schema changed")
+    if not set(state).issubset(target):
+        raise RuntimeError("P3.3 verification final trainable-state schema changed")
     with torch.no_grad():
         for name, value in target.items():
-            value.copy_(state[name].to(dtype=value.dtype))
+            value.copy_(source_state[name].to(dtype=value.dtype))
+        for name, saved in state.items():
+            target[name].copy_(saved.to(dtype=target[name].dtype))
     module.bridge.set_gate_ceiling(0.02)
     module.to(device).eval()
     return module, {
@@ -74,6 +91,8 @@ def _load_final_module(
         "seed": int(seed),
         "step": 1000,
         "trainable_state_sha256": tensor_state_digest(state),
+        "source_checkpoint_sha256": source_observed,
+        "source_trainable_state_sha256": tensor_state_digest(source_state),
     }
 
 
@@ -210,6 +229,7 @@ def evaluate_seed(args: argparse.Namespace, seed: int) -> tuple[dict[str, Any], 
     )
     module, checkpoint = _load_final_module(
         checkpoint=args.checkpoint[seed],
+        source_checkpoint=args.source_checkpoint[seed],
         embedding_weight=lm_head,
         seed=seed,
         device=args.device,
@@ -303,11 +323,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--retention_panel", type=Path, required=True)
     parser.add_argument("--direction_cache", type=Path, required=True)
     parser.add_argument("--checkpoint", action="append", type=Path, required=True)
+    parser.add_argument("--source_checkpoint", action="append", type=Path, required=True)
     parser.add_argument("--output_dir", type=Path, required=True)
     parser.add_argument("--device", default="cuda")
     args = parser.parse_args()
     if len(args.checkpoint) != 2:
         parser.error("exactly two --checkpoint arguments are required in seed order")
+    if len(args.source_checkpoint) != 2:
+        parser.error("exactly two --source_checkpoint arguments are required in seed order")
     return args
 
 

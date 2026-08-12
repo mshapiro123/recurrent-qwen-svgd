@@ -105,6 +105,7 @@ def main() -> int:
             direction_cache,
         )
         checkpoints = []
+        source_checkpoints = []
         for seed in (0, 1):
             destination = scratch / f"seed_{seed}_p33_step_1000.pt"
             rsync(
@@ -112,6 +113,14 @@ def main() -> int:
                 destination,
             )
             checkpoints.append(destination)
+            source_destination = scratch / f"seed_{seed}_phase3_migrated.pt"
+            rsync(
+                DRIVE_STAGE5
+                / "stage5_paper2_phase3_p31_p32_receipts_20260810"
+                / f"private/migrated_checkpoints/seed_{seed}_full_a2_phase3_migrated.pt",
+                source_destination,
+            )
+            source_checkpoints.append(source_destination)
         status("evaluating")
         command = [
             sys.executable,
@@ -138,6 +147,10 @@ def main() -> int:
             str(checkpoints[0]),
             "--checkpoint",
             str(checkpoints[1]),
+            "--source_checkpoint",
+            str(source_checkpoints[0]),
+            "--source_checkpoint",
+            str(source_checkpoints[1]),
             "--output_dir",
             str(run_dir),
             "--device",
