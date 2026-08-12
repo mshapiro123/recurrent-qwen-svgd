@@ -3769,6 +3769,21 @@ def test_phase3_p33_target_is_wired_and_guarded() -> None:
     assert "p33_retention_guardrail_recalibration.json" in runner
 
 
+def test_phase3_p33_i1_target_is_wired_and_guarded() -> None:
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    cell = (ROOT / "colab/STAGE5_PAPER2_PHASE3_P33_I1_CELL.py").read_text(encoding="utf-8")
+    runner = (ROOT / "colab/run_stage5_paper2_phase3_p33_i1.py").read_text(encoding="utf-8")
+    for marker in (
+        "paper2_phase3_p33_i1",
+        "STAGE5_PAPER2_PHASE3_P33_I1_CELL.py",
+        "paper2_phase3_p33_i1_v1",
+        "PAPER2_P33_I1_SEED",
+    ):
+        assert marker in bootstrap + cell
+    assert "training.run_paper2_phase3_p33_i1" in runner
+    assert "checkpoint_step_1000.pt" in runner
+
+
 def test_phase3_p33_verification_target_is_wired_and_guarded() -> None:
     cell = (
         ROOT / "colab/STAGE5_PAPER2_PHASE3_P33_VERIFICATION_CELL.py"

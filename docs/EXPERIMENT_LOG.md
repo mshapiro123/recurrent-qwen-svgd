@@ -1932,3 +1932,19 @@ Colab/Drive backups for selected runs.
   the weak component. No task, CONFIRM, or EVAL-E score was computed. Handoff:
   `docs/PAPER2_PHASE3_P33_RESULT_HANDOFF_20260811.md`. Combined receipt:
   `outputs/stage5/stage5_paper2_phase3_p33_20260811/combined_summary.json`.
+- 2026-08-12 P3.3 verification and i1 build: the final checkpoints were
+  reconstructed from their hash-asserted migrated sources and re-read on every
+  held-out row with the BF16 serving reader. Canonical pooled `pi_dir` is
+  `557/3738 = 0.149010` (95% CI `[0.132825, 0.165206]`) and `pi_dep` is
+  `101/515 = 0.196117`. The deployed path wrote nonzero hidden deltas on every
+  tested negative and retention row and produced 101 positive flips, while
+  collateral remained `0/24576` and retention harm `0/2048`. The trained
+  direction produced a monotone negative-control radius response of `0`, `23`,
+  and `1107` flips at radii `0.3`, `0.6`, and `1.0`; strategy therefore banked
+  V3 as a failed population assumption rather than an instrument failure. The
+  one authorized i1 continuation preserves 1,000 updates, 20 looks, cohorts,
+  clamp, optimizer settings, guardrails, and reader, removes gate loss, and
+  calibrates aim to at least 70% post-clip share. The implementation freezes
+  the selector function by exposing only the post-selector output projection;
+  this selector-scope clarification remains to be confirmed before the lock is
+  marked final or an optimizer is launched. P3.4 remains unauthorized.

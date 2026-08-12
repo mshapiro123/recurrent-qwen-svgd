@@ -836,14 +836,18 @@
       "claim": "On the held-out P3.3 token audit, direction-supervised writeback captured about one sixth of matched oracle forced-open flips in two closely replicating seed lineages, while the registered token-retention panel and held-out negative top-1 decisions showed no observed damage under the tested clamp.",
       "scope": "Two E1-confirmation seed lineages; 1,000 AdamW updates per seed; 4,096 held-out positive and 12,288 held-out negative rows per seed; 1,024-position token-retention panel per seed; local token-level audit only; no task-level scoring; CONFIRM and EVAL-E untouched",
       "metrics": {
-        "seed_0_pi_dir": 0.16400425985090522,
-        "seed_1_pi_dir": 0.16666666666666666,
-        "pooled_pi_dir": 0.16533546325878595,
-        "pooled_pi_dir_ci95_low": 0.1471776432728103,
-        "pooled_pi_dir_ci95_high": 0.18334253538040077,
-        "pooled_pi_dir_trained_flips": 621,
-        "pooled_pi_dir_oracle_flips": 3756,
-        "pooled_pi_dep": 0.2857142857142857,
+        "seed_0_pi_dir_canonical_bf16": 0.15034777956126378,
+        "seed_1_pi_dir_canonical_bf16": 0.1476725521669342,
+        "pooled_pi_dir_canonical_bf16": 0.14901016586409846,
+        "pooled_pi_dir_ci95_low": 0.1328246185165176,
+        "pooled_pi_dir_ci95_high": 0.1652062756830798,
+        "pooled_pi_dir_trained_flips": 557,
+        "pooled_pi_dir_oracle_flips": 3738,
+        "pooled_pi_dep_canonical_bf16": 0.19611650485436893,
+        "pooled_pi_dep_trained_flips": 101,
+        "pooled_pi_dep_oracle_flips": 515,
+        "superseded_fp32_pi_dir": 0.16533546325878595,
+        "superseded_fp32_pi_dep": 0.2857142857142857,
         "pooled_pi_dep_reader_matched_sensitivity": 0.13872832369942195,
         "pooled_pi_dir_reader_matched_sensitivity": 0.14643057897695336,
         "bf16_reader_match_rate": 0.962646484375,
@@ -852,6 +856,9 @@
         "pooled_gate_false_positive_rate": 0.14815266927083334,
         "observed_collateral_changes": 0,
         "negative_audit_executions": 24576,
+        "forced_trained_direction_negative_flips_radius_0p3": 0,
+        "forced_trained_direction_negative_flips_radius_0p6": 23,
+        "forced_trained_direction_negative_flips_radius_1p0": 1107,
         "seed_0_retention": 1.0,
         "seed_1_retention": 1.0,
         "mean_endpoint_aim_gradient_share": 0.04777965359609473,
@@ -876,13 +883,21 @@
         {
           "path": "docs/PAPER2_PHASE3_P33_RESULT_HANDOFF_20260811.md",
           "locator": "locked design, results, interpretation, limitations, registered reading, and strategy questions"
+        },
+        {
+          "path": "docs/PAPER2_PHASE3_P33_VERIFICATION_HANDOFF_20260812.md",
+          "locator": "canonical all-row BF16 re-read, live-path controls, and corrected V3 population diagnosis"
+        },
+        {
+          "path": "docs/STRATEGY_P33_VERIFICATION_RULING_20260812.md",
+          "locator": "banked canonical numbers, corrected V3 criterion, and i1 authorization"
         }
       ],
       "do_not_claim": [
         "P3.3 produced task-level capability improvement or gap_closed",
         "P3.4 is authorized or confirmed",
         "the primary full-speed reading of pi_dir at least 0.25 passed",
-        "deployed capture is 28.6 percent without the BF16-reader sensitivity",
+        "the superseded FP32 capture values are the canonical result",
         "collateral is universally zero or the system is generally safe",
         "the A-state battery proves semantic or current-loop state use",
         "either seed estimates population-level seed variability",

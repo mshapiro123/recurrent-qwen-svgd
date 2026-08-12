@@ -1,0 +1,68 @@
+{
+  "kind": "paper2_phase3_p33_i1_preregistration_v1",
+  "status": "draft_pending_selector_scope_confirmation",
+  "authority": {
+    "drive_id": "1oQkTW9VwI2Xbu8AyT2c0mLWHNy8Tew3n",
+    "file": "docs/STRATEGY_P33_VERIFICATION_RULING_20260812.md",
+    "sha256": "bf60468965c5feb117cb2a3dd110f6746a5a56d2fddfb4fdca4aefad0b0aea3f"
+  },
+  "baseline": {
+    "reader": "bf16_serving_matmul_v1",
+    "pi_dir": 0.14901016586409846,
+    "pi_dir_numerator": 557,
+    "pi_dir_denominator": 3738,
+    "pi_dep": 0.19611650485436893,
+    "collateral": "0/24576",
+    "retention_harm": "0/2048"
+  },
+  "lineages": {
+    "seeds": [0, 1],
+    "p33_final_checkpoint_sha256": {
+      "0": "84dc0fb2d1f69114b20888acd95101d6b31c810974a536dc36358b69fe13c70e",
+      "1": "e80ad205eb3c4712fdee5303a4887260488f67ff858a2b4b005d724675e52067"
+    }
+  },
+  "training": {
+    "steps": 1000,
+    "looks": 20,
+    "look_interval": 50,
+    "optimizer": "AdamW",
+    "learning_rate": 0.0003,
+    "warmup_steps": 100,
+    "betas": [0.9, 0.999],
+    "weight_decay": 0.01,
+    "batch_size": 128,
+    "positive_per_batch": 32,
+    "negative_per_batch": 96,
+    "gate_ceiling": 0.02,
+    "preservation_weight": 1.0,
+    "canonical_reader": "bf16_serving_matmul_v1"
+  },
+  "changed_surface": {
+    "gate_frozen": true,
+    "gate_loss": false,
+    "trainable": "bridge.output_projection.weight only; it is downstream of the attended-scratch feature consumed by the frozen selector",
+    "aim_share_floor_postclip": 0.70,
+    "preservation_share_ceiling_postclip": 0.25,
+    "calibration_target_aim_share_postclip": 0.75,
+    "calibration_batches": 4,
+    "calibration_weight_range": [1.0, 1000.0]
+  },
+  "share_tripwire": {
+    "pass": "aim >= 0.70 and preserve <= 0.25",
+    "marginal": "aim in [0.60,0.70) or preserve in (0.25,0.35]",
+    "gross": "aim < 0.60 or preserve > 0.35",
+    "stop": "gross immediately or marginal at two consecutive looks"
+  },
+  "readings": {
+    "p34_charter_funded": "pi_dir >= 0.25",
+    "middle_band_strategy_review": "0.05 <= pi_dir < 0.25",
+    "boundary_diagnostic": "pi_dir < 0.05"
+  },
+  "boundaries": {
+    "p34_authorized": false,
+    "task_level_capability_scoring": false,
+    "confirm_scored": false,
+    "eval_e_scored": false
+  }
+}

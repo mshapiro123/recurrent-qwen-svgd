@@ -177,6 +177,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3_short_sha"
 #   "paper2_phase3_guardrail_p33_prep" - CPU-only guardrail calibration and P3.3 build staging.
 #   "paper2_phase3_p33" - One resumable registered P3.3 aimed-writeback seed.
 #   "paper2_phase3_p33_verification" - Read-only BF16 re-score and zero-collateral controls.
+#   "paper2_phase3_p33_i1" - One resumable aim-focused i1 continuation seed.
 #   "paper2_phase2_eval_de_freeze" - score-blind EVAL-D/E and own-base feature freeze.
 #   "paper2_phase2_e1_confirmation" - locked read-once EVAL-D confirmation; A100-80GB.
 #   "paper2_d0_prelock_publish_resume" - publish completed Drive-backed D0 lock receipts without inference.
@@ -4293,6 +4294,19 @@ TARGETS = {
             "colab/run_stage5_paper2_phase3_p33_verification.py",
         ],
         "env": {},
+    },
+    "paper2_phase3_p33_i1": {
+        "path": "colab/STAGE5_PAPER2_PHASE3_P33_I1_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_PHASE3_P33_I1_VERSION",
+            "paper2_phase3_p33_i1_v1",
+            "exact 1000 updates and 20 looks one every 50 updates",
+            "gate and upstream selector frozen aim postclip share at least 70 percent",
+            "canonical BF16 pi_dir pi_dep gate recall precision chi and Tier-1 observatory",
+            "resumable one A100 session per seed and end-of-run A_state battery",
+            "colab/run_stage5_paper2_phase3_p33_i1.py",
+        ],
+        "env": {"PAPER2_P33_I1_SEED": "0"},
     },
     "gradient_path_audit": {
         "path": "colab/STAGE5_GRADIENT_PATH_AUDIT_CELL.py",
