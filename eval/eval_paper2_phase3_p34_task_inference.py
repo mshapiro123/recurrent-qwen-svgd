@@ -1,8 +1,8 @@
 """P3.4 v1 task-inference graph and score-blind contract checks.
 
-The graph intentionally recomputes the complete prefix for every emitted token.
-That is the simplest exact implementation of fresh per-token scratch state and
-keeps cross-token sidecar persistence out of the P3.4 v1 contract.
+The frozen base may use a KV cache, while the sidecar receives the complete
+prefix state and initializes fresh for every emitted token. Cross-token sidecar
+persistence remains outside the P3.4 v1 contract.
 """
 
 from __future__ import annotations

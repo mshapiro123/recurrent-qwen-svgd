@@ -115,8 +115,8 @@ def score_mcq(
     *,
     batch_size: int,
 ) -> list[dict[str, Any]]:
-    prompts: list[str] = []
-    metadata: list[tuple[str, dict[str, str], list[str], str]] = []
+    candidates: list[tuple[str, str]] = []
+    metadata: list[tuple[str, str, str]] = []
     answers: dict[str, str] = {}
     for row in rows:
         question, choices, answer = _mcq(row)
@@ -131,35 +131,73 @@ def score_mcq(
                 permuted.append((new_label, original_text))
                 label_map[new_label] = original_label
             prompt = _mcq_prompt(question, permuted)
-            prompts.append(prompt)
-            metadata.append((item_id, label_map, labels, prompt))
+            for new_label in labels:
+                candidates.append((prompt, new_label))
+                metadata.append((item_id, label_map[new_label], prompt))
 
     option_scores: dict[str, dict[str, list[float]]] = defaultdict(lambda: defaultdict(list))
     tokenizer.padding_side = "left"
-    for start in range(0, len(prompts), batch_size):
-        stop = min(len(prompts), start + batch_size)
-        batch_prompts = prompts[start:stop]
+    if tokenizer.pad_token_id is None:
+        tokenizer.pad_token_id = tokenizer.eos_token_id
+    for start in range(0, len(candidates), batch_size):
+        stop = min(len(candidates), start + batch_size)
+        batch_candidates = candidates[start:stop]
+        batch_prompts = [prompt for prompt, _label in batch_candidates]
+        continuation_ids = []
+        for prompt, label in batch_candidates:
+            prefix = tokenizer(prompt, add_special_tokens=True)["input_ids"]
+            complete = tokenizer(prompt + f" {label}", add_special_tokens=True)[
+                "input_ids"
+            ]
+            continuation = complete[len(prefix) :]
+            if not continuation:
+                raise RuntimeError(f"P3.4 MCQ candidate has no continuation: {label}")
+            continuation_ids.append([int(token) for token in continuation])
         encoded = tokenizer(
             batch_prompts,
             return_tensors="pt",
             padding=True,
             add_special_tokens=True,
         ).to(graph.device)
-        _state, output = graph.prefill_cached(
+        state, output = graph.prefill_cached(
             input_ids=encoded["input_ids"], attention_mask=encoded["attention_mask"]
         )
-        log_probabilities = torch.log_softmax(output.augmented_logits.float(), dim=-1)
-        for local, (item_id, label_map, labels, _prompt) in enumerate(metadata[start:stop]):
-            for new_label in labels:
-                token_ids = tokenizer(
-                    " " + new_label, add_special_tokens=False
-                )["input_ids"]
-                if len(token_ids) != 1:
-                    raise RuntimeError(f"P3.4 MCQ label is not one token: {new_label}/{token_ids}")
-                option_scores[item_id][label_map[new_label]].append(
-                    float(log_probabilities[local, token_ids[0]].cpu())
+        running_scores = torch.zeros(len(batch_candidates), device=graph.device)
+        score_counts = torch.zeros(len(batch_candidates), device=graph.device)
+        max_tokens = max(len(tokens) for tokens in continuation_ids)
+        for token_index in range(max_tokens):
+            targets = torch.tensor(
+                [
+                    tokens[token_index]
+                    if token_index < len(tokens)
+                    else tokenizer.pad_token_id
+                    for tokens in continuation_ids
+                ],
+                device=graph.device,
+                dtype=torch.long,
+            )
+            active = torch.tensor(
+                [token_index < len(tokens) for tokens in continuation_ids],
+                device=graph.device,
+                dtype=torch.bool,
+            )
+            token_scores = torch.log_softmax(
+                output.augmented_logits.float(), dim=-1
+            ).gather(1, targets[:, None])[:, 0]
+            running_scores[active] += token_scores[active]
+            score_counts[active] += 1
+            if token_index + 1 < max_tokens:
+                state, output = graph.advance_cached(
+                    state=state, selected_tokens=targets
                 )
-        print(f"p34_mcq_progress prompts={stop}/{len(prompts)}", flush=True)
+        means = (running_scores / score_counts.clamp_min(1)).cpu().tolist()
+        for (item_id, original_label, _prompt), score in zip(
+            metadata[start:stop], means
+        ):
+            option_scores[item_id][original_label].append(float(score))
+        print(
+            f"p34_mcq_progress candidates={stop}/{len(candidates)}", flush=True
+        )
 
     results = []
     for row in rows:
