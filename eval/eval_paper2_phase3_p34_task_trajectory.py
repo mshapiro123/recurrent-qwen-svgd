@@ -119,6 +119,7 @@ def score_mcq(
     prompt_candidates: list[list[int]] = []
     candidate_metadata: list[tuple[str, str]] = []
     candidate_tokens: list[list[int]] = []
+    verified_label_suffixes: dict[str, list[int]] = {}
     answers: dict[str, str] = {}
     for row in rows:
         question, choices, answer = _mcq(row)
@@ -133,17 +134,25 @@ def score_mcq(
                 permuted.append((new_label, original_text))
                 label_map[new_label] = original_label
             prompt = _mcq_prompt(question, permuted)
-            prompt_ids = tokenizer(prompt, add_special_tokens=True)["input_ids"]
             local_candidates = []
             for new_label in labels:
-                complete = tokenizer(prompt + f" {new_label}", add_special_tokens=True)[
-                    "input_ids"
-                ]
-                if complete[: len(prompt_ids)] != prompt_ids:
-                    raise RuntimeError(
-                        f"P3.4 MCQ tokenizer is not prefix-stable for label {new_label}"
-                    )
-                continuation = [int(token) for token in complete[len(prompt_ids) :]]
+                continuation = verified_label_suffixes.get(new_label)
+                if continuation is None:
+                    prompt_ids = tokenizer(prompt, add_special_tokens=True)["input_ids"]
+                    complete = tokenizer(
+                        prompt + f" {new_label}", add_special_tokens=True
+                    )["input_ids"]
+                    suffix = tokenizer(
+                        f" {new_label}", add_special_tokens=False
+                    )["input_ids"]
+                    if complete[: len(prompt_ids)] != prompt_ids or complete[
+                        len(prompt_ids) :
+                    ] != suffix:
+                        raise RuntimeError(
+                            f"P3.4 MCQ suffix tokenization is not stable for label {new_label}"
+                        )
+                    continuation = [int(token) for token in suffix]
+                    verified_label_suffixes[new_label] = continuation
                 if not continuation:
                     raise RuntimeError(f"P3.4 MCQ candidate has no continuation: {new_label}")
                 local_candidates.append(len(candidate_metadata))
