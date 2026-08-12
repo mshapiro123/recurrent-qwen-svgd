@@ -3782,6 +3782,8 @@ def test_phase3_p33_i1_target_is_wired_and_guarded() -> None:
         assert marker in bootstrap + cell
     assert "training.run_paper2_phase3_p33_i1" in runner
     assert "checkpoint_step_1000.pt" in runner
+    assert 'model_cache/teacher_14b", old' not in runner
+    assert 'model_cache/teacher_14b", new' not in runner
 
 
 def test_phase3_p33_verification_target_is_wired_and_guarded() -> None:
