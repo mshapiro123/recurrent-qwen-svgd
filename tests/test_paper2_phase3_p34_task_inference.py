@@ -11,6 +11,7 @@ from torch import nn
 from eval.eval_paper2_phase3_p34_task_inference import (
     P34TaskInferenceGraph,
     current_position_mask,
+    position_buckets,
     task_graph_preflight,
 )
 
@@ -135,3 +136,53 @@ def test_cached_prefix_matches_uncached_next_token_semantics() -> None:
     extended_attention = torch.ones_like(extended)
     repeated = graph.next_token(input_ids=extended, attention_mask=extended_attention)
     assert torch.equal(advanced.augmented_logits, repeated.augmented_logits)
+
+
+def test_compact_bridge_matches_full_current_position_path() -> None:
+    torch.manual_seed(13)
+    base = TinyCausalLM()
+    sidecar = Phase3StudentModules(
+        tied_embedding=base.embedding,
+        hidden_size=16,
+        latent_dim=8,
+        n_slots=8,
+        control_dim=6,
+        draft_rank=4,
+    )
+    graph = P34TaskInferenceGraph(base_model=base, sidecar=sidecar)
+    ids = torch.tensor([[2, 3, 4], [5, 6, 0]])
+    attention = torch.tensor([[1, 1, 1], [1, 1, 0]])
+    base_output = base(
+        input_ids=ids,
+        attention_mask=attention,
+        output_hidden_states=True,
+        use_cache=False,
+        return_dict=True,
+    )
+    positions = current_position_mask(attention)[1]
+    batch = torch.arange(ids.shape[0])
+    compact = graph._augment(
+        hidden=base_output.hidden_states[-1],
+        attention_mask=attention,
+        base_logits=base_output.logits[batch, positions],
+    )
+    full = sidecar(
+        hidden=base_output.hidden_states[-1],
+        previous_logits=base_output.logits[batch, positions].unsqueeze(1),
+        steps=4,
+        attention_mask=attention.bool(),
+        position_bucket=position_buckets(positions),
+        candidate_ids=None,
+        draft_active=False,
+        write_position_mask=current_position_mask(attention)[0],
+    )
+    expected = base.get_output_embeddings()(full.hidden[batch, positions])
+    assert torch.equal(compact.augmented_logits, expected)
+    assert torch.equal(
+        compact.writeback_ratio,
+        full.bridge.realized_writeback_ratio[batch, positions],
+    )
+    assert torch.equal(
+        compact.position_gate,
+        full.bridge.position_gate[batch, positions, 0],
+    )

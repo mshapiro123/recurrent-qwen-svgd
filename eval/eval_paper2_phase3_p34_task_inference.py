@@ -75,28 +75,48 @@ class P34TaskInferenceGraph:
         attention_mask: torch.Tensor,
         base_logits: torch.Tensor,
     ) -> P34NextTokenOutput:
-        write_mask, positions = current_position_mask(attention_mask)
+        _write_mask, positions = current_position_mask(attention_mask)
         batch_index = torch.arange(hidden.shape[0], device=hidden.device)
-        sidecar_output = self.sidecar(
-            hidden=hidden,
-            previous_logits=base_logits.unsqueeze(1),
+        scratch0 = self.sidecar.initializer(hidden, attention_mask.bool())
+        flow = self.sidecar.flow(
+            scratch0,
+            hidden.float().mean(dim=1),
             steps=P34_FLOW_LOOPS,
-            attention_mask=attention_mask.bool(),
-            position_bucket=position_buckets(positions),
-            candidate_ids=None,
-            draft_active=False,
-            write_position_mask=write_mask,
         )
-        augmented_hidden = sidecar_output.hidden[batch_index, positions]
+        innovation_norm = (
+            flow.updates[-1].float().square().mean(dim=-1).sqrt().mean(dim=1)
+        )
+        control = self.sidecar.control(
+            scratch=flow.state,
+            previous=None,
+            innovation_norm=innovation_norm,
+            student_entropy=hidden.new_zeros((hidden.shape[0],)),
+            top2_margin=hidden.new_zeros((hidden.shape[0],)),
+            position_bucket=position_buckets(positions),
+        )
+        current = hidden[batch_index, positions]
+        compact_hidden = torch.stack([torch.zeros_like(current), current], dim=1)
+        compact_write_mask = torch.zeros(
+            (hidden.shape[0], 2, 1), dtype=torch.bool, device=hidden.device
+        )
+        compact_write_mask[:, 1] = True
+        bridge = self.sidecar.bridge(
+            h0=compact_hidden,
+            previous=compact_hidden,
+            scratch=flow.state,
+            control_state=control,
+            loop_index=P34_FLOW_LOOPS - 1,
+            active=True,
+            write_position_mask=compact_write_mask,
+        )
+        augmented_hidden = bridge.hidden[:, 1]
         output_head = self.base_model.get_output_embeddings()
         augmented_logits = output_head(augmented_hidden.to(output_head.weight.dtype))
-        if not torch.equal(sidecar_output.logits, base_logits.unsqueeze(1)):
-            raise RuntimeError("draft-head-off P3.4 scoring changed the supplied logits")
         return P34NextTokenOutput(
             augmented_logits=augmented_logits,
             base_logits=base_logits,
-            writeback_ratio=sidecar_output.bridge.realized_writeback_ratio[batch_index, positions],
-            position_gate=sidecar_output.bridge.position_gate[batch_index, positions, 0],
+            writeback_ratio=bridge.realized_writeback_ratio[:, 1],
+            position_gate=bridge.position_gate[:, 1, 0],
             current_positions=positions,
         )
 
