@@ -142,12 +142,37 @@ def _row_metrics(
                 ]
             )
 
-        logits = canonical_logits(torch.cat(states, dim=0), embedding).float().split(len(local))
-        base_logits, deployed_logits, forced_logits = logits[:3]
+        initial_logits = canonical_logits(torch.cat(states, dim=0), embedding).float().split(len(local))
+        base_logits, deployed_logits, forced_logits = initial_logits[:3]
         top2 = base_logits.topk(2, dim=-1).indices
         winner, runner_up = top2[:, 0], top2[:, 1]
-        base_margin = fixed_pair_margin(base_logits, winner, runner_up)
-        deployed_margin = fixed_pair_margin(deployed_logits, winner, runner_up)
+        base_margin_bf16 = fixed_pair_margin(base_logits, winner, runner_up)
+        deployed_margin_bf16 = fixed_pair_margin(deployed_logits, winner, runner_up)
+        winner_embedding = embedding.index_select(0, winner).float()
+        runner_up_embedding = embedding.index_select(0, runner_up).float()
+        pair_direction = winner_embedding - runner_up_embedding
+        base_margin = (base.float() * pair_direction).sum(dim=-1)
+        deployed_margin = (deployed.float() * pair_direction).sum(dim=-1)
+        toward_runner_up = -pair_direction
+        toward_runner_up = toward_runner_up / toward_runner_up.square().mean(
+            dim=-1
+        ).sqrt().clamp_min(1e-8).unsqueeze(-1)
+        reference = base.square().mean(dim=-1).sqrt().clamp_max(module.bridge.rms_cap)
+        runner_up_control = (
+            base
+            + P33_VERIFICATION_AUDIT_RADIUS
+            * reference.unsqueeze(-1)
+            * toward_runner_up
+        )
+        trained_curve_states = [
+            base + radius * trained_delta for radius in (0.30, 0.60, 1.00)
+        ]
+        control_logits = canonical_logits(
+            torch.cat([runner_up_control, *trained_curve_states], dim=0), embedding
+        ).float().split(len(local))
+        runner_up_control_top1 = control_logits[0].argmax(dim=-1)
+        trained_curve_top1 = [values.argmax(dim=-1) for values in control_logits[1:]]
+        logits = initial_logits
         base_top1 = base_logits.argmax(dim=-1)
         deployed_top1 = deployed_logits.argmax(dim=-1)
         forced_top1 = forced_logits.argmax(dim=-1)
@@ -174,6 +199,11 @@ def _row_metrics(
                 "base_pair_margin": float(base_margin[offset]),
                 "deployed_pair_margin": float(deployed_margin[offset]),
                 "margin_delta": float(deployed_margin[offset] - base_margin[offset]),
+                "serving_bf16_base_pair_margin": float(base_margin_bf16[offset]),
+                "serving_bf16_deployed_pair_margin": float(deployed_margin_bf16[offset]),
+                "serving_bf16_margin_delta": float(
+                    deployed_margin_bf16[offset] - base_margin_bf16[offset]
+                ),
                 "hidden_delta_rms": float(hidden_delta[offset].square().mean().sqrt()),
                 "base_hidden_rms": float(base[offset].square().mean().sqrt()),
                 "gate_unclamped": float(gate_unclamped[offset]),
@@ -181,6 +211,14 @@ def _row_metrics(
                 "gate_predicted_open": bool(
                     gate_unclamped[offset] >= P33_GATE_OPEN_THRESHOLD
                 ),
+                "runner_up_control_top1": int(runner_up_control_top1[offset]),
+                "runner_up_control_change": bool(
+                    base_top1[offset] != runner_up_control_top1[offset]
+                ),
+                "trained_direction_change_by_radius": {
+                    str(radius): bool(base_top1[offset] != top1[offset])
+                    for radius, top1 in zip((0.30, 0.60, 1.00), trained_curve_top1)
+                },
             }
             if population == "positive":
                 assert oracle is not None

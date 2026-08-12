@@ -77,11 +77,22 @@ def verification_verdict(
     negative = margin_delta_summary(negative_rows)
     retention = margin_delta_summary(retention_rows)
     forced_flips = sum(bool(row["forced_open_collateral_change"]) for row in negative_rows)
+    reader_control_flips = sum(
+        bool(row["runner_up_control_change"]) for row in negative_rows
+    )
+    trained_curve = {
+        radius: sum(
+            bool(row["trained_direction_change_by_radius"][radius])
+            for row in negative_rows
+        )
+        for radius in ("0.3", "0.6", "1.0")
+    }
     checks = {
         "v1_negative_nonzero_delta": negative["passed_nonzero_delta_check"],
         "v1_retention_nonzero_delta": retention["passed_nonzero_delta_check"],
         "v2_shared_path_registered_positive_flips": int(positive_deployed_flips) > 0,
         "v3_forced_open_negative_flips": forced_flips > 0,
+        "reader_runner_up_positive_control": reader_control_flips > 0,
     }
     return {
         "checks": checks,
@@ -92,4 +103,11 @@ def verification_verdict(
         "forced_open_negative_flips": int(forced_flips),
         "forced_open_negative_rows": len(negative_rows),
         "forced_open_negative_collateral_rate": forced_flips / max(1, len(negative_rows)),
+        "runner_up_control_flips": int(reader_control_flips),
+        "runner_up_control_rate": reader_control_flips / max(1, len(negative_rows)),
+        "trained_direction_negative_flips_by_radius": trained_curve,
+        "trained_direction_negative_rates_by_radius": {
+            radius: count / max(1, len(negative_rows))
+            for radius, count in trained_curve.items()
+        },
     }

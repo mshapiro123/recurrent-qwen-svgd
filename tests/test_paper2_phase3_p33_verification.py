@@ -33,6 +33,12 @@ def _row(delta: float, *, opened: bool, forced: bool = False) -> dict[str, objec
         "hidden_delta_rms": 0.001,
         "gate_predicted_open": opened,
         "forced_open_collateral_change": forced,
+        "runner_up_control_change": forced,
+        "trained_direction_change_by_radius": {
+            "0.3": forced,
+            "0.6": forced,
+            "1.0": forced,
+        },
     }
 
 
