@@ -30,7 +30,8 @@
     "dev_panel_rows": 1024,
     "dev_panel_selection_rule": null,
     "dev_panel_sha256": null,
-    "preflight_receipt_sha256": null
+    "preflight_receipt_drive_id": "1UgqoPaHepWz2WYxFTwvnT9MB0bJ28dof",
+    "preflight_receipt_sha256": "849d4d146e272fb83c283130639db9f2c09f639a60d488a3ede77f8dfcd9f8cc"
   },
   "ar_pricing": {
     "receipt_drive_id": "1YkJYPo-jiVzkLEsWqXkhetEdgj9D3JwU",
@@ -95,7 +96,6 @@
   "unresolved_lock_fields": [
     "task_inference.dev_panel_selection_rule",
     "task_inference.dev_panel_sha256",
-    "task_inference.preflight_receipt_sha256",
     "ar_pricing.high_low_threshold",
     "ar_pricing.strategy_fork_confirmation_sha256",
     "ar_pricing.selected_arm",
