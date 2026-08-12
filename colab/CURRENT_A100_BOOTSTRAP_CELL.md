@@ -177,6 +177,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3_short_sha"
 #   "paper2_phase3_p31_completion" - GPU sealed DEV/verified-train base and 14B reference pass.
 #   "paper2_phase3_guardrail_p33_prep" - CPU-only guardrail calibration and P3.3 build staging.
 #   "paper2_phase3_p33" - One resumable registered P3.3 aimed-writeback seed.
+#   "paper2_phase3_p33_verification" - Read-only BF16 re-score and zero-collateral controls.
 #   "paper2_phase2_eval_de_freeze" - score-blind EVAL-D/E and own-base feature freeze.
 #   "paper2_phase2_e1_confirmation" - locked read-once EVAL-D confirmation; A100-80GB.
 #   "paper2_d0_prelock_publish_resume" - publish completed Drive-backed D0 lock receipts without inference.
@@ -4280,6 +4281,19 @@ TARGETS = {
             "colab/run_stage5_paper2_phase3_p33.py",
         ],
         "env": {"PAPER2_P33_SEED": "0"},
+    },
+    "paper2_phase3_p33_verification": {
+        "path": "colab/STAGE5_PAPER2_PHASE3_P33_VERIFICATION_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_PHASE3_P33_VERIFICATION_VERSION",
+            "paper2_phase3_p33_verification_v1",
+            "read-only final P3.3 checkpoints and zero optimizer steps",
+            "BF16 serving reader pinned end to end",
+            "V1 nonzero margin deltas V2 shared deployed path V3 forced-open radius 0.15",
+            "P3.4 remains unauthorized and i1 does not launch from this target",
+            "colab/run_stage5_paper2_phase3_p33_verification.py",
+        ],
+        "env": {},
     },
     "gradient_path_audit": {
         "path": "colab/STAGE5_GRADIENT_PATH_AUDIT_CELL.py",
