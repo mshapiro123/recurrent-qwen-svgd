@@ -9,6 +9,16 @@
     "sha256": "80cb1b13eb48ffff064ff7cc6c0d02de773dfec80924c1c50736115821c97ce4",
     "bytes": 10272
   },
+  "bindings_authority": {
+    "drive_id": "1mLkbVZYhKyoiOuiOwdbjT9_nwA3Z8eYI",
+    "repo_path": "docs/STRATEGY_P34_BINDINGS_20260812.md",
+    "sha256": "a650580f63e9556e6b5d77732d810e61052e8d3f041f27c79eabbf12f1106294",
+    "bytes": 6735,
+    "ratification_drive_id": "1em-sujz1D9I-GtSpFrmzz7WDxANTlY5R",
+    "ratification_repo_path": "docs/STRATEGY_P34_BINDINGS_RATIFICATION_20260812.md",
+    "ratification_sha256": "6311ae91478cd9cd306b9a61bc8788877e510fdc43c28abe5cd75ca80403bc0a",
+    "ratification_bytes": 1460
+  },
   "initialization": {
     "seed_0": {
       "drive_path": "stage5_paper2_phase3_p33_i1_20260812/private/seed_0/resume.pt",
@@ -28,8 +38,20 @@
     "position_zero_closed": true,
     "serving_reader": "bf16_serving_matmul_v1",
     "dev_panel_rows": 1024,
-    "dev_panel_selection_rule": null,
-    "dev_panel_sha256": null,
+    "dev_panel_selection_rule": "largest-remainder proportional allocation within ratified floor/target groups; SHA256(seed:battery:document_id:item_id) rank within battery",
+    "dev_panel_seed": 20260812,
+    "dev_panel_sha256": "3e6c62ac4ef36a22eeba961e5d4d84c3403fd55aa837d32746eb8f35d8fe3163",
+    "dev_panel_file_sha256": "c0e15a890b598544059ac337cc475123f97c05e3c1626febcdee1c6d8fe02615",
+    "dev_panel_drive_id": "1ZjtJwjpUkwKzdSsMNRIoJBDO8kBrKM9H",
+    "dev_panel_receipt_drive_id": "1gF4zNlEaaaeSok9so0B7Ew9-j947qL7z",
+    "dev_panel_battery_counts": {
+      "mmlu": 244,
+      "tier1": 25,
+      "arc_easy": 243,
+      "gsm8k": 369,
+      "mbpp": 67,
+      "arc_challenge": 76
+    },
     "preflight_receipt_drive_id": "1UgqoPaHepWz2WYxFTwvnT9MB0bJ28dof",
     "preflight_receipt_sha256": "849d4d146e272fb83c283130639db9f2c09f639a60d488a3ede77f8dfcd9f8cc"
   },
@@ -43,23 +65,27 @@
     ],
     "outside_readout_energy_fraction_by_seed": [0.7445375525390557, 0.736892524507408],
     "realized_pi_dir": 0.14901016586409846,
-    "high_low_threshold": null,
-    "strategy_fork_confirmation_sha256": null,
-    "selected_arm": null
+    "fork_rule": "strategy-ratified comparative A_r readout; no numerical high-low threshold was preregistered",
+    "strategy_fork_confirmation_sha256": "a650580f63e9556e6b5d77732d810e61052e8d3f041f27c79eabbf12f1106294",
+    "selected_arm": "slot_supervision_seed_0_only",
+    "campaign_of_record": "no_arm_both_seeds",
+    "capacity_arm": "shelved_to_p3_5"
   },
   "guardrails": {
     "task_calibration_receipt_sha256": null,
-    "look_count": null,
-    "look_schedule": null,
+    "look_count": 20,
+    "look_schedule": "every_200_steps_through_step_4000",
     "tier_s_delta_cat": null,
     "tier_s_one_sided_alpha": null,
     "tier_s_familywise_false_stop_ceiling": 0.0001,
     "tier_s_power_floor": 0.99,
     "tier_w_drop_class": -0.03,
     "tier_w_consecutive_looks": 2,
+    "chi_calibration_source": "banked adversarial-direction radius curve on held-out negative audit rows",
     "chi_calibration_receipt_sha256": null,
-    "chi_strategy_margin": null,
-    "chi_max": null
+    "chi_max_by_rung": [0.0005, 0.0005, 0.0005, 0.001],
+    "chi_estimator": "held-out negative audit-slice flips per window, both seeds pooled",
+    "chi_revisit_labeled": true
   },
   "controller": {
     "initial_rung": 1,
@@ -74,15 +100,23 @@
     "aim_floor": 0.15,
     "ce_floor": 0.1,
     "gate_floor": 0.03,
+    "slot_floor_seed_0_arm": 0.1,
     "preserve_ceiling": 0.25,
     "share_weight_calibration_receipt_sha256": null,
     "scalar_weights": null,
     "rule": "first trailing-window miss warns; two consecutive misses stop"
   },
   "run_dials": {
-    "optimizer": "adamw_phase2_banked_configuration",
-    "learning_rate": null,
-    "total_steps": null,
+    "optimizer": "AdamW",
+    "learning_rate": 0.0003,
+    "weight_decay": 0.01,
+    "betas": [0.9, 0.999],
+    "linear_warmup_steps": 100,
+    "batch_size": 128,
+    "total_steps": 4000,
+    "checkpoint_every_steps": 200,
+    "tier_2_looks": [5, 10, 15, 20],
+    "pi_and_gate_looks": [5, 10, 15, 20],
     "seeds": [0, 1],
     "resumable": true
   },
@@ -94,22 +128,11 @@
     "mark_approval_required_after_all_values_bound": true
   },
   "unresolved_lock_fields": [
-    "task_inference.dev_panel_selection_rule",
-    "task_inference.dev_panel_sha256",
-    "ar_pricing.high_low_threshold",
-    "ar_pricing.strategy_fork_confirmation_sha256",
-    "ar_pricing.selected_arm",
     "guardrails.task_calibration_receipt_sha256",
-    "guardrails.look_count",
-    "guardrails.look_schedule",
     "guardrails.tier_s_delta_cat",
     "guardrails.tier_s_one_sided_alpha",
     "guardrails.chi_calibration_receipt_sha256",
-    "guardrails.chi_strategy_margin",
-    "guardrails.chi_max",
     "loss_share_contract.share_weight_calibration_receipt_sha256",
-    "loss_share_contract.scalar_weights",
-    "run_dials.learning_rate",
-    "run_dials.total_steps"
+    "loss_share_contract.scalar_weights"
   ]
 }

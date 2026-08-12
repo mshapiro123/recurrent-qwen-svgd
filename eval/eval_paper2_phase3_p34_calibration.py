@@ -26,7 +26,11 @@ def read_jsonl(path: Path) -> list[dict[str, Any]]:
 
 
 def task_noise_model(
-    rows: Iterable[Mapping[str, Any]], *, expected_rows: int = 1_024
+    rows: Iterable[Mapping[str, Any]],
+    *,
+    expected_rows: int = 1_024,
+    bootstrap_draws: int = 2_000,
+    seed: int = 20260812,
 ) -> dict[str, Any]:
     records = [dict(row) for row in rows]
     if not records:
@@ -35,45 +39,86 @@ def task_noise_model(
         raise RuntimeError("P3.4 task calibration received a non-DEV row")
     if any(str(row.get("battery_role", "")).casefold() in {"confirm", "eval_e"} for row in records):
         raise RuntimeError("P3.4 task calibration touched a sealed role")
-    looks = sorted({int(row["look"]) for row in records})
-    vectors = []
+    conditions = sorted(
+        {(int(row["seed"]), int(row["look"])) for row in records}
+    )
+    vectors: dict[tuple[int, int], np.ndarray] = {}
     item_order: list[str] | None = None
-    for look in looks:
+    for condition in conditions:
         selected = sorted(
-            [row for row in records if int(row["look"]) == look],
+            [
+                row
+                for row in records
+                if (int(row["seed"]), int(row["look"])) == condition
+            ],
             key=lambda row: str(row["item_id"]),
         )
         ids = [str(row["item_id"]) for row in selected]
         if len(ids) != expected_rows or len(ids) != len(set(ids)):
-            raise RuntimeError(f"P3.4 task panel changed at look {look}: {len(ids)}")
+            raise RuntimeError(
+                f"P3.4 task panel changed at condition {condition}: {len(ids)}"
+            )
         if item_order is None:
             item_order = ids
         elif ids != item_order:
-            raise RuntimeError("P3.4 task panel item order differs between looks")
-        vectors.append(
-            np.asarray(
+            raise RuntimeError("P3.4 task panel item order differs between conditions")
+        vectors[condition] = np.asarray(
                 [int(bool(row["augmented_correct"])) - int(bool(row["base_correct"])) for row in selected],
                 dtype=np.float64,
             )
-        )
-    matrix = np.stack(vectors)
+    matrix = np.stack([vectors[condition] for condition in conditions])
     discordance = float(np.mean(np.abs(matrix)))
-    correlations = []
-    for left, right in zip(matrix[:-1], matrix[1:]):
+    adjacent_pairs = []
+    for source_seed in sorted({condition[0] for condition in conditions}):
+        seed_conditions = [condition for condition in conditions if condition[0] == source_seed]
+        adjacent_pairs.extend(zip(seed_conditions[:-1], seed_conditions[1:]))
+    correlations: list[float] = []
+    for left_condition, right_condition in adjacent_pairs:
+        left = vectors[left_condition]
+        right = vectors[right_condition]
         if float(left.std()) > 0.0 and float(right.std()) > 0.0:
             correlations.append(float(np.corrcoef(left, right)[0, 1]))
-    if len(looks) > 1 and not correlations:
+    if adjacent_pairs and not correlations:
         raise RuntimeError("P3.4 task trajectory cannot identify adjacent-look autocorrelation")
     correlation = float(np.median(correlations)) if correlations else 0.0
     correlation = min(0.999, max(-0.999, correlation))
+    if correlation < 0.0:
+        raise RuntimeError("negative P3.4 task autocorrelation requires strategy review")
+
+    if bootstrap_draws <= 0:
+        raise ValueError("P3.4 task correlation bootstrap requires positive draws")
+    rng = np.random.default_rng(seed)
+    bootstrap = []
+    for _draw in range(bootstrap_draws):
+        indexes = rng.integers(0, expected_rows, size=expected_rows)
+        draw_correlations = []
+        for left_condition, right_condition in adjacent_pairs:
+            left = vectors[left_condition][indexes]
+            right = vectors[right_condition][indexes]
+            if float(left.std()) > 0.0 and float(right.std()) > 0.0:
+                draw_correlations.append(float(np.corrcoef(left, right)[0, 1]))
+        if draw_correlations:
+            bootstrap.append(float(np.median(draw_correlations)))
+    if not bootstrap:
+        raise RuntimeError("P3.4 task correlation bootstrap produced no estimates")
+    upper = min(0.999, max(correlation, float(np.quantile(bootstrap, 0.95))))
     return {
         "rows_per_look": expected_rows,
-        "looks": looks,
-        "look_count": len(looks),
+        "conditions": [
+            {"seed": source_seed, "checkpoint_index": look}
+            for source_seed, look in conditions
+        ],
+        "source_condition_count": len(conditions),
+        "source_seeds": sorted({condition[0] for condition in conditions}),
         "paired_discordance": discordance,
         "adjacent_checkpoint_autocorrelation": correlation,
         "adjacent_correlations": correlations,
-        "mean_augmented_minus_base": [float(vector.mean()) for vector in vectors],
+        "autocorrelation_bootstrap_draws": bootstrap_draws,
+        "autocorrelation_bootstrap_upper_95": upper,
+        "autocorrelation_sensitivity_band": [correlation, upper],
+        "mean_augmented_minus_base": [
+            float(vectors[condition].mean()) for condition in conditions
+        ],
         "estimator": "paired augmented-minus-base task correctness on fixed DEV items",
     }
 
@@ -83,33 +128,45 @@ def task_guardrail_receipt(
     rows: Iterable[Mapping[str, Any]],
     campaigns: int,
     seed: int,
-    expected_looks: int,
+    campaign_looks: int,
+    bootstrap_draws: int = 2_000,
 ) -> dict[str, Any]:
-    noise = task_noise_model(rows)
-    if noise["look_count"] != expected_looks:
-        raise RuntimeError(
-            f"P3.4 guardrail look schedule changed: {noise['look_count']} != {expected_looks}"
-        )
+    noise = task_noise_model(rows, bootstrap_draws=bootstrap_draws, seed=seed)
+    if noise["source_condition_count"] != 6 or noise["source_seeds"] != [0, 1]:
+        raise RuntimeError("P3.4 guardrail calibration requires three checkpoints for each seed")
+    if campaign_looks != 20:
+        raise RuntimeError("P3.4 wave-1 calibration certificate requires exactly 20 looks")
     discordance = max(float(noise["paired_discordance"]), 0.005)
     max_effect = min(discordance, 0.30)
     effect_grid = [round(value, 3) for value in np.arange(0.005, max_effect + 0.0001, 0.005)]
     if not effect_grid:
         effect_grid = [0.005]
-    calibration = calibrate_panel(
-        rows=1_024,
-        looks=expected_looks,
-        discordance=discordance,
-        correlation=float(noise["adjacent_checkpoint_autocorrelation"]),
-        campaigns=campaigns,
-        seed=seed,
-        alphas=[0.10, 0.05, 0.02, 0.01, 0.005, 0.001, 0.0005, 0.0001, 0.00005],
-        effect_grid=effect_grid,
-    )
+    sensitivity = []
+    for index, correlation in enumerate(noise["autocorrelation_sensitivity_band"]):
+        sensitivity.append(
+            {
+                "correlation_role": "empirical" if index == 0 else "bootstrap_upper_95",
+                "correlation": float(correlation),
+                "result": calibrate_panel(
+                    rows=1_024,
+                    looks=campaign_looks,
+                    discordance=discordance,
+                    correlation=float(correlation),
+                    campaigns=campaigns,
+                    seed=seed + index * 10_000_000,
+                    alphas=[0.10, 0.05, 0.02, 0.01, 0.005, 0.001, 0.0005, 0.0001, 0.00005],
+                    effect_grid=effect_grid,
+                ),
+            }
+        )
+    conservative = sensitivity[-1]
     return {
         "kind": "paper2_phase3_p34_task_guardrail_calibration_v1",
         "status": "complete_dev_task_estimator",
         "noise_model": noise,
-        "calibration": calibration,
+        "campaign_looks": campaign_looks,
+        "sensitivity_band": sensitivity,
+        "conservative_edge": conservative,
         "tier_s_contract": {
             "familywise_false_stop_ceiling": 1e-4,
             "power_floor": 0.99,
@@ -184,7 +241,8 @@ def main() -> int:
     task.add_argument("--output", type=Path, required=True)
     task.add_argument("--campaigns", type=int, default=100_000)
     task.add_argument("--seed", type=int, default=20260812)
-    task.add_argument("--expected_looks", type=int, required=True)
+    task.add_argument("--campaign_looks", type=int, required=True)
+    task.add_argument("--bootstrap_draws", type=int, default=2_000)
     chi = subparsers.add_parser("chi")
     chi.add_argument("--summaries", type=Path, required=True)
     chi.add_argument("--output", type=Path, required=True)
@@ -195,7 +253,8 @@ def main() -> int:
             rows=read_jsonl(args.rows),
             campaigns=args.campaigns,
             seed=args.seed,
-            expected_looks=args.expected_looks,
+            campaign_looks=args.campaign_looks,
+            bootstrap_draws=args.bootstrap_draws,
         )
     else:
         result = chi_receipt(json.loads(args.summaries.read_text(encoding="utf-8")), margin=args.margin)

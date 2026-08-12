@@ -1,0 +1,33 @@
+# Strategy — P3.4 Bindings: The Fork, the Panel, the Schedule, and the Calibrations (For Ratification)
+
+Date: 2026-08-12. Responds to the P3.4 prerequisites handoff (Drive `1I0LhXReI-h942zn_7XSFqccndnI9iyDP`, SHA `65ec304b…773115`). Banked as delivered: the task-inference preflight (bit-exact repeated logits, correct current-position write selection, both seeds, 16 cases, no task scores, no sealed contact), the A_r audit, and 26 passing verifications. This memo binds the six values the executed lock needs. **On Mark's ratification of this document, the coding agent executes the lock and P3.4 runs.**
+
+## B1 — The fork: slot supervision, ratified
+
+The A_r receipt reads as follows. The learned readout span holds 25.55 and 26.31 percent of the cached oracle-direction energy across seeds, against 14.16 percent in the variance-matched PCA subspace — the readout has learned to orient toward aim-relevant directions at 1.8 times the rate variance alone would give. Realized capture (~15 percent forced-open, ~19.6 deployed) already extracts a substantial fraction of what the span contains, and the missing three quarters of oracle energy is concentrated in neither the readout span nor the leading state subspace: it is diffuse in the state spectrum's tail or absent from the state altogether. A wider funnel would chase thin residue. The deficit is information, and **the slot-supervision arm is ratified as the charter's §5 specifies**: each future slot projected through a zero-initialized lift and the frozen tied head, cross-entropy against the lattice's teacher tokens at the corresponding horizon, deep-supervised, with slot decodes joining the audit telemetry. The capacity arm stays shelved as a P3.5 lever, revisitable if slot supervision raises A_r while capture lags.
+
+**Arm execution binding:** the campaign of record is the no-arm configuration on both seeds. The slot arm runs as a third session on seed 0 only, identical in every declared value except the added loss, read as paired window-by-window gap_closed and A_r deltas against seed 0's main line. Promotion to both seeds requires a positive paired delta and a one-line strategy confirmation. This holds wave cost to three A100 sessions and keeps the arm's read clean.
+
+## B2 — The 1,024-row Tier-S/W DEV panel
+
+512 rows from the floor group (MMLU slice, Tier-1, ARC-Easy, proportional to DEV-half sizes) and 512 from the target batteries (GSM8K, MBPP, ARC-Challenge, proportional), document-stratified, drawn with seed 20260812 from DEV halves only, hashed before any scoring. Estimand per look: paired augmented-versus-base correctness under the 2a inference graph. The half-and-half split makes the damage guardrail watch general quality and target quality with equal power, which is what the fourth cliff protects.
+
+## B3 — The empirical task-trajectory source for calibration
+
+No task-capable training trajectory exists yet, so the calibration uses the best empirical object available: the three existing checkpoint generations per seed (P3.3 initialization, P3.3 endpoint, i1 endpoint) evaluated on the B2 panel under the 2a graph — six paired evaluations giving row-level discordance and a first between-checkpoint correlation estimate — with row-level bootstrap on top, and a sensitivity band on the autocorrelation parameter covering both the empirical estimate and a conservative high-correlation bound. Tier-S and Tier-W operating characteristics are reported across that band, and the lock takes the conservative edge. DEV contact for this purpose is exploration-legal by the governance.
+
+## B4 — Campaign schedule, wave 1
+
+4,000 steps per seed — four times the pilot, sized to give the distillation losses a real dose while staying inside resumable single sessions. Exactly 20 looks at every 200 steps (the certificate cadence), checkpoint windows coincident with looks, Tier-2 observatory audits at looks 5, 10, 15, and 20, audit-slice π and gate statistics every fifth look and at endpoint. Learning rate and optimizer per the banked A2-stage configuration, declared before the first step per e1.4 practice. Continuation waves are report-back decisions, not extensions of this declaration.
+
+## B5 — χ_max per rung, from the measured radius curve
+
+The banked adversarial-direction curve on the negative slice (0 flips at radii through 0.30, 0.094 percent at 0.60, 4.5 percent at 1.00) is the calibration source — it was measured with the trained direction on exactly the protected population. Binding, with the estimator in the clause: χ measured as flips on the held-out negative audit slice per window, both seeds pooled. **χ_max = 0.05 percent at rungs 1 and 2 (effective write bounds 0.08 and 0.20, both inside the measured zero-flip region, margin set above zero so noise cannot deadlock the controller), and 0.10 percent at rung 3 (bound 0.50, interpolated between the measured 0.30 and 0.60 points plus margin).** Revisit-labeled, refreshed if the radius curve is remeasured on a trained-forward checkpoint.
+
+## B6 — Loss-share calibration procedure
+
+Step-0 calibration on a fixed, hashed 128-example batch per stratum: measure raw post-clip gradient norms per loss over the trainable set, solve static weights so realized shares land on the v1 targets (L_KL 35, L_aim 15, L_CE 10, L_gate 3, L_slot 10 on the arm, preservation the remainder at or under 25), per the A1-era solver generalized. During training the contract binds as per-loss inequalities on trailing 100-step windows of the training stream itself — the matched estimator — with two consecutive breach windows warning and four stopping. Calibration receipt, weights, and estimator specification enter the executed lock.
+
+## Effect
+
+With B1 through B6 bound, every value the prerequisites handoff listed as open is closed. The coding agent assembles the executed lock — this memo, the charter, the bound hashes, the B3-calibrated guardrail numbers, and the declared run config — and returns it for Mark's final approval. Training remains structurally disabled until that approval. Plain language: the tiebreaker audit said the aiming bottleneck is information, not funnel width, so the scratchpad itself goes to school — learning to name the teacher's next words — as a measured side-experiment on one seed while the main campaign runs clean on both. The damage alarm watches easy and hard questions in equal measure, its trigger levels come from real noise measured on our own checkpoints, the collateral ceilings come from the flip curve we measured on the exact rows we protect, and every training signal has its share of the budget written into a contract before the first step. One signature assembles it. One more starts it.

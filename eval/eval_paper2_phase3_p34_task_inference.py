@@ -48,6 +48,13 @@ class P34NextTokenOutput:
     current_positions: torch.Tensor
 
 
+@dataclass
+class P34CachedPrefix:
+    hidden: torch.Tensor
+    attention_mask: torch.Tensor
+    past_key_values: Any
+
+
 class P34TaskInferenceGraph:
     """Exact, uncached v1 generation graph for the frozen base plus sidecar."""
 
@@ -60,6 +67,38 @@ class P34TaskInferenceGraph:
     @property
     def device(self) -> torch.device:
         return next(self.base_model.parameters()).device
+
+    def _augment(
+        self,
+        *,
+        hidden: torch.Tensor,
+        attention_mask: torch.Tensor,
+        base_logits: torch.Tensor,
+    ) -> P34NextTokenOutput:
+        write_mask, positions = current_position_mask(attention_mask)
+        batch_index = torch.arange(hidden.shape[0], device=hidden.device)
+        sidecar_output = self.sidecar(
+            hidden=hidden,
+            previous_logits=base_logits.unsqueeze(1),
+            steps=P34_FLOW_LOOPS,
+            attention_mask=attention_mask.bool(),
+            position_bucket=position_buckets(positions),
+            candidate_ids=None,
+            draft_active=False,
+            write_position_mask=write_mask,
+        )
+        augmented_hidden = sidecar_output.hidden[batch_index, positions]
+        output_head = self.base_model.get_output_embeddings()
+        augmented_logits = output_head(augmented_hidden.to(output_head.weight.dtype))
+        if not torch.equal(sidecar_output.logits, base_logits.unsqueeze(1)):
+            raise RuntimeError("draft-head-off P3.4 scoring changed the supplied logits")
+        return P34NextTokenOutput(
+            augmented_logits=augmented_logits,
+            base_logits=base_logits,
+            writeback_ratio=sidecar_output.bridge.realized_writeback_ratio[batch_index, positions],
+            position_gate=sidecar_output.bridge.position_gate[batch_index, positions, 0],
+            current_positions=positions,
+        )
 
     @torch.inference_mode()
     def next_token(
@@ -81,32 +120,80 @@ class P34TaskInferenceGraph:
             return_dict=True,
         )
         hidden = output.hidden_states[-1]
-        base_all_logits = output.logits
-        write_mask, positions = current_position_mask(attention_mask)
+        positions = current_position_mask(attention_mask)[1]
         batch_index = torch.arange(input_ids.shape[0], device=input_ids.device)
-        base_logits = base_all_logits[batch_index, positions]
-        sidecar_output = self.sidecar(
+        return self._augment(
             hidden=hidden,
-            previous_logits=base_logits.unsqueeze(1),
-            steps=flow_loops,
-            attention_mask=attention_mask.bool(),
-            position_bucket=position_buckets(positions),
-            candidate_ids=None,
-            draft_active=False,
-            write_position_mask=write_mask,
+            attention_mask=attention_mask,
+            base_logits=output.logits[batch_index, positions],
         )
-        augmented_hidden = sidecar_output.hidden[batch_index, positions]
-        output_head = self.base_model.get_output_embeddings()
-        augmented_logits = output_head(augmented_hidden.to(output_head.weight.dtype))
-        if not torch.equal(sidecar_output.logits, base_logits.unsqueeze(1)):
-            raise RuntimeError("draft-head-off P3.4 scoring changed the supplied logits")
-        return P34NextTokenOutput(
-            augmented_logits=augmented_logits,
-            base_logits=base_logits,
-            writeback_ratio=sidecar_output.bridge.realized_writeback_ratio[batch_index, positions],
-            position_gate=sidecar_output.bridge.position_gate[batch_index, positions, 0],
-            current_positions=positions,
+
+    @torch.inference_mode()
+    def prefill_cached(
+        self, *, input_ids: torch.Tensor, attention_mask: torch.Tensor
+    ) -> tuple[P34CachedPrefix, P34NextTokenOutput]:
+        """Create an exact frozen-base KV cache while retaining all prefix states."""
+
+        output = self.base_model(
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            output_hidden_states=True,
+            use_cache=True,
+            return_dict=True,
         )
+        positions = current_position_mask(attention_mask)[1]
+        batch_index = torch.arange(input_ids.shape[0], device=input_ids.device)
+        state = P34CachedPrefix(
+            hidden=output.hidden_states[-1],
+            attention_mask=attention_mask,
+            past_key_values=output.past_key_values,
+        )
+        augmented = self._augment(
+            hidden=state.hidden,
+            attention_mask=state.attention_mask,
+            base_logits=output.logits[batch_index, positions],
+        )
+        return state, augmented
+
+    @torch.inference_mode()
+    def advance_cached(
+        self, *, state: P34CachedPrefix, selected_tokens: torch.Tensor
+    ) -> tuple[P34CachedPrefix, P34NextTokenOutput]:
+        if selected_tokens.ndim == 1:
+            selected_tokens = selected_tokens[:, None]
+        if selected_tokens.shape != (state.hidden.shape[0], 1):
+            raise ValueError("cached P3.4 advance requires one token per batch row")
+        attention = torch.cat(
+            [
+                state.attention_mask,
+                torch.ones(
+                    (selected_tokens.shape[0], 1),
+                    dtype=state.attention_mask.dtype,
+                    device=state.attention_mask.device,
+                ),
+            ],
+            dim=1,
+        )
+        output = self.base_model(
+            input_ids=selected_tokens,
+            attention_mask=attention,
+            past_key_values=state.past_key_values,
+            output_hidden_states=True,
+            use_cache=True,
+            return_dict=True,
+        )
+        hidden = torch.cat([state.hidden, output.hidden_states[-1]], dim=1)
+        updated = P34CachedPrefix(
+            hidden=hidden,
+            attention_mask=attention,
+            past_key_values=output.past_key_values,
+        )
+        augmented = self._augment(
+            hidden=hidden,
+            attention_mask=attention,
+            base_logits=output.logits[:, -1],
+        )
+        return updated, augmented
 
     @torch.inference_mode()
     def greedy_generate(

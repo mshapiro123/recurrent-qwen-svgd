@@ -1,0 +1,43 @@
+{
+  "battery_counts": {
+    "arc_challenge": 76,
+    "arc_easy": 243,
+    "gsm8k": 369,
+    "mbpp": 67,
+    "mmlu": 244,
+    "tier1": 25
+  },
+  "group_counts": {
+    "floor": 512,
+    "target": 512
+  },
+  "kind": "paper2_phase3_p34_task_panel_v1",
+  "optimizer_constructed": false,
+  "optimizer_steps": 0,
+  "panel_base_score_rows": 1024,
+  "panel_base_score_source": ".codex_p34_lock_inputs\\base_scores.jsonl",
+  "panel_sha256": "3e6c62ac4ef36a22eeba961e5d4d84c3403fd55aa837d32746eb8f35d8fe3163",
+  "quotas_by_group": {
+    "floor": {
+      "arc_easy": 243,
+      "mmlu": 244,
+      "tier1": 25
+    },
+    "target": {
+      "arc_challenge": 76,
+      "gsm8k": 369,
+      "mbpp": 67
+    }
+  },
+  "rows": 1024,
+  "scores_computed": false,
+  "sealed_partitions_touched": false,
+  "seed": 20260812,
+  "selection_rule": "largest-remainder proportional allocation within ratified floor/target groups; SHA256(seed:battery:document_id:item_id) rank within battery",
+  "source_partitions": [
+    "dev"
+  ],
+  "status": "frozen_before_scoring",
+  "training_authorized": false,
+  "unique_documents": 1024
+}

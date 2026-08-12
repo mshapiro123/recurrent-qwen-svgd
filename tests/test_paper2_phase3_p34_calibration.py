@@ -11,26 +11,29 @@ from eval.eval_paper2_phase3_p34_calibration import (
 
 def _task_rows() -> list[dict[str, object]]:
     rows = []
-    for look in (1, 2):
-        for index in range(8):
-            rows.append(
-                {
-                    "partition": "dev",
-                    "battery_role": "target_primary",
-                    "look": look,
-                    "item_id": f"item-{index}",
-                    "base_correct": index % 2 == 0,
-                    "augmented_correct": (index + look) % 3 == 0,
-                }
-            )
+    for seed in (0, 1):
+        for look in (1, 2, 3):
+            for index in range(8):
+                rows.append(
+                    {
+                        "partition": "dev",
+                        "battery_role": "target_primary",
+                        "seed": seed,
+                        "look": look,
+                        "item_id": f"item-{index}",
+                        "base_correct": index % 2 == 0,
+                        "augmented_correct": (index + look + seed) % 3 == 0,
+                    }
+                )
     return rows
 
 
 def test_task_noise_model_uses_fixed_paired_panel() -> None:
-    result = task_noise_model(_task_rows(), expected_rows=8)
-    assert result["look_count"] == 2
+    result = task_noise_model(_task_rows(), expected_rows=8, bootstrap_draws=100)
+    assert result["source_condition_count"] == 6
     assert 0.0 <= result["paired_discordance"] <= 1.0
-    assert len(result["mean_augmented_minus_base"]) == 2
+    assert len(result["mean_augmented_minus_base"]) == 6
+    assert result["autocorrelation_bootstrap_upper_95"] >= result["adjacent_checkpoint_autocorrelation"]
 
 
 def test_task_noise_model_rejects_sealed_rows() -> None:

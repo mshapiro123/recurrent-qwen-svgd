@@ -1,0 +1,404 @@
+"""Score one P3.4 calibration checkpoint on the frozen DEV task panel."""
+
+from __future__ import annotations
+
+import argparse
+import gc
+import hashlib
+import json
+from collections import defaultdict
+from pathlib import Path
+from typing import Any, Callable, Iterable, Mapping, Sequence
+
+import torch
+from transformers import AutoModelForCausalLM, AutoTokenizer
+
+from eval.cache_paper2_phase3_agreement_oracle import _load_phase3_module
+from eval.eval_paper2_phase3_p31_references import (
+    MODEL_SPECS,
+    _chat_prompt,
+    _generation_prompt,
+    _mcq,
+    _mcq_prompt,
+    score_generated,
+)
+from eval.eval_paper2_phase3_p34_task_inference import P34TaskInferenceGraph
+from training.paper2_phase3_p34_lock import panel_identity_sha256
+
+
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for block in iter(lambda: handle.read(16 * 1024 * 1024), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+
+def read_jsonl(path: Path) -> list[dict[str, Any]]:
+    return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line]
+
+
+def append_jsonl(path: Path, rows: Iterable[Mapping[str, Any]]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8", newline="\n") as handle:
+        for row in rows:
+            handle.write(json.dumps(dict(row), sort_keys=True, ensure_ascii=True) + "\n")
+        handle.flush()
+
+
+def write_json(path: Path, payload: Mapping[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_suffix(path.suffix + ".tmp")
+    temporary.write_text(json.dumps(dict(payload), indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    temporary.replace(path)
+
+
+def _apply_state(module: Any, path: Path, *, expected_sha256: str, label: str) -> dict[str, Any]:
+    observed = sha256_file(path)
+    if observed != expected_sha256:
+        raise RuntimeError(f"P3.4 {label} checkpoint SHA mismatch")
+    payload = torch.load(path, map_location="cpu", weights_only=False)
+    state = payload.get("trainable_state")
+    if not isinstance(state, dict):
+        raise RuntimeError(f"P3.4 {label} checkpoint lacks trainable_state")
+    current = dict(module.named_parameters())
+    unknown = sorted(set(state) - set(current))
+    if unknown:
+        raise RuntimeError(f"P3.4 {label} state contains unknown tensors: {unknown}")
+    with torch.no_grad():
+        for name, value in state.items():
+            current[name].copy_(value.to(device=current[name].device, dtype=current[name].dtype))
+    return {
+        "label": label,
+        "path": str(path),
+        "sha256": observed,
+        "step": int(payload["step"]),
+        "state_keys": sorted(state),
+    }
+
+
+def load_condition(
+    *,
+    embedding_weight: torch.Tensor,
+    migrated: Path,
+    migrated_sha256: str,
+    p33: Path | None,
+    p33_sha256: str | None,
+    i1: Path | None,
+    i1_sha256: str | None,
+) -> tuple[Any, list[dict[str, Any]]]:
+    if sha256_file(migrated) != migrated_sha256:
+        raise RuntimeError("P3.4 migrated checkpoint SHA mismatch")
+    module, migrated_receipt = _load_phase3_module(
+        checkpoint=migrated,
+        embedding_weight=embedding_weight,
+        device="cuda",
+    )
+    receipts = [{"label": "migrated", **migrated_receipt}]
+    if p33 is not None:
+        if p33_sha256 is None:
+            raise ValueError("P3.4 P3.3 checkpoint requires an expected SHA")
+        receipts.append(_apply_state(module, p33, expected_sha256=p33_sha256, label="p33"))
+    if i1 is not None:
+        if p33 is None or i1_sha256 is None:
+            raise ValueError("P3.4 i1 condition requires P3.3 state and an expected SHA")
+        receipts.append(_apply_state(module, i1, expected_sha256=i1_sha256, label="i1"))
+    module.bridge.set_gate_ceiling(0.08)
+    return module.eval(), receipts
+
+
+@torch.inference_mode()
+def score_mcq(
+    graph: P34TaskInferenceGraph,
+    tokenizer: Any,
+    rows: Sequence[Mapping[str, Any]],
+    *,
+    batch_size: int,
+) -> list[dict[str, Any]]:
+    prompts: list[str] = []
+    metadata: list[tuple[str, dict[str, str], list[str], str]] = []
+    answers: dict[str, str] = {}
+    for row in rows:
+        question, choices, answer = _mcq(row)
+        item_id = str(row["item_id"])
+        answers[item_id] = answer
+        labels = [label for label, _text in choices]
+        for shift in range(len(choices)):
+            permuted = []
+            label_map = {}
+            for new_index, new_label in enumerate(labels):
+                original_label, original_text = choices[(new_index - shift) % len(choices)]
+                permuted.append((new_label, original_text))
+                label_map[new_label] = original_label
+            prompt = _mcq_prompt(question, permuted)
+            prompts.append(prompt)
+            metadata.append((item_id, label_map, labels, prompt))
+
+    option_scores: dict[str, dict[str, list[float]]] = defaultdict(lambda: defaultdict(list))
+    tokenizer.padding_side = "left"
+    for start in range(0, len(prompts), batch_size):
+        stop = min(len(prompts), start + batch_size)
+        batch_prompts = prompts[start:stop]
+        encoded = tokenizer(
+            batch_prompts,
+            return_tensors="pt",
+            padding=True,
+            add_special_tokens=True,
+        ).to(graph.device)
+        _state, output = graph.prefill_cached(
+            input_ids=encoded["input_ids"], attention_mask=encoded["attention_mask"]
+        )
+        log_probabilities = torch.log_softmax(output.augmented_logits.float(), dim=-1)
+        for local, (item_id, label_map, labels, _prompt) in enumerate(metadata[start:stop]):
+            for new_label in labels:
+                token_ids = tokenizer(
+                    " " + new_label, add_special_tokens=False
+                )["input_ids"]
+                if len(token_ids) != 1:
+                    raise RuntimeError(f"P3.4 MCQ label is not one token: {new_label}/{token_ids}")
+                option_scores[item_id][label_map[new_label]].append(
+                    float(log_probabilities[local, token_ids[0]].cpu())
+                )
+        print(f"p34_mcq_progress prompts={stop}/{len(prompts)}", flush=True)
+
+    results = []
+    for row in rows:
+        item_id = str(row["item_id"])
+        means = {
+            label: sum(values) / len(values)
+            for label, values in option_scores[item_id].items()
+        }
+        prediction = max(means, key=means.get)
+        results.append(
+            {
+                "item_id": item_id,
+                "prediction": prediction,
+                "augmented_correct": prediction == answers[item_id],
+                "option_scores": means,
+                "reader": "cyclic_label_aggregated_permutation_mean_v1",
+            }
+        )
+    return results
+
+
+@torch.inference_mode()
+def score_generation(
+    graph: P34TaskInferenceGraph,
+    tokenizer: Any,
+    rows: Sequence[Mapping[str, Any]],
+    *,
+    batch_size: int,
+    emit_batch: Callable[[list[dict[str, Any]]], None] | None = None,
+) -> list[dict[str, Any]]:
+    by_cap: dict[int, list[Mapping[str, Any]]] = defaultdict(list)
+    for row in rows:
+        _content, cap = _generation_prompt(row)
+        by_cap[cap].append(row)
+    tokenizer.padding_side = "left"
+    if tokenizer.pad_token_id is None:
+        tokenizer.pad_token_id = tokenizer.eos_token_id
+    results = []
+    for cap, selected in sorted(by_cap.items()):
+        for start in range(0, len(selected), batch_size):
+            batch = selected[start : start + batch_size]
+            prompts = [
+                _chat_prompt(tokenizer, _generation_prompt(row)[0]) for row in batch
+            ]
+            encoded = tokenizer(prompts, return_tensors="pt", padding=True).to(graph.device)
+            state, output = graph.prefill_cached(
+                input_ids=encoded["input_ids"], attention_mask=encoded["attention_mask"]
+            )
+            generated: list[list[int]] = [[] for _row in batch]
+            finished = [False for _row in batch]
+            for token_index in range(cap):
+                selected_tokens = output.augmented_logits.argmax(dim=-1)
+                for index, token in enumerate(selected_tokens.tolist()):
+                    if not finished[index]:
+                        generated[index].append(int(token))
+                        if tokenizer.eos_token_id is not None and int(token) == int(tokenizer.eos_token_id):
+                            finished[index] = True
+                if all(finished) or token_index + 1 == cap:
+                    break
+                state, output = graph.advance_cached(
+                    state=state, selected_tokens=selected_tokens
+                )
+            batch_results = []
+            for row, token_ids in zip(batch, generated):
+                text = tokenizer.decode(token_ids, skip_special_tokens=True)
+                correct, prediction = score_generated(row, text)
+                batch_results.append(
+                    {
+                        "item_id": str(row["item_id"]),
+                        "prediction": prediction,
+                        "generated_text": text,
+                        "generated_tokens": len(token_ids),
+                        "augmented_correct": bool(correct),
+                        "reader": str(row["reader"]),
+                    }
+                )
+            results.extend(batch_results)
+            if emit_batch is not None:
+                emit_batch(batch_results)
+            print(
+                f"p34_generation_progress battery={batch[0]['battery']} "
+                f"rows={min(start + len(batch), len(selected))}/{len(selected)} cap={cap}",
+                flush=True,
+            )
+    return results
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--panel", type=Path, required=True)
+    parser.add_argument("--base_scores", type=Path, required=True)
+    parser.add_argument("--output_jsonl", type=Path, required=True)
+    parser.add_argument("--summary", type=Path, required=True)
+    parser.add_argument("--condition", required=True)
+    parser.add_argument("--look", type=int, required=True)
+    parser.add_argument("--seed", type=int, choices=(0, 1), required=True)
+    parser.add_argument("--migrated", type=Path, required=True)
+    parser.add_argument("--migrated_sha256", required=True)
+    parser.add_argument("--p33", type=Path)
+    parser.add_argument("--p33_sha256")
+    parser.add_argument("--i1", type=Path)
+    parser.add_argument("--i1_sha256")
+    parser.add_argument("--mcq_batch_size", type=int, default=32)
+    parser.add_argument("--generation_batch_size", type=int, default=8)
+    args = parser.parse_args()
+
+    panel = read_jsonl(args.panel)
+    if len(panel) != 1_024 or any(str(row["partition"]) != "dev" for row in panel):
+        raise RuntimeError("P3.4 trajectory scorer requires the frozen 1,024-row DEV panel")
+    panel_sha256 = panel_identity_sha256(panel)
+    base_rows = {str(row["item_id"]): row for row in read_jsonl(args.base_scores)}
+    if any(str(row["item_id"]) not in base_rows for row in panel):
+        raise RuntimeError("P3.4 base-score coverage is incomplete")
+    existing = read_jsonl(args.output_jsonl) if args.output_jsonl.exists() else []
+    existing_lookup = {str(row["item_id"]): row for row in existing}
+    if len(existing_lookup) != len(existing):
+        raise RuntimeError("P3.4 resumable trajectory output contains duplicate items")
+    for row in existing:
+        if (
+            row.get("condition") != args.condition
+            or int(row.get("look", -1)) != args.look
+            or int(row.get("seed", -1)) != args.seed
+            or str(row.get("partition")) != "dev"
+        ):
+            raise RuntimeError("P3.4 resumable trajectory identity changed")
+    pending = [row for row in panel if str(row["item_id"]) not in existing_lookup]
+
+    spec = MODEL_SPECS["base"]
+    tokenizer = AutoTokenizer.from_pretrained(spec["model"], revision=spec["revision"])
+    model = AutoModelForCausalLM.from_pretrained(
+        spec["model"],
+        revision=spec["revision"],
+        torch_dtype=torch.bfloat16,
+        attn_implementation="sdpa",
+    ).to("cuda").eval()
+    sidecar, checkpoint_receipts = load_condition(
+        embedding_weight=model.get_output_embeddings().weight.detach().cpu(),
+        migrated=args.migrated,
+        migrated_sha256=args.migrated_sha256,
+        p33=args.p33,
+        p33_sha256=args.p33_sha256,
+        i1=args.i1,
+        i1_sha256=args.i1_sha256,
+    )
+    graph = P34TaskInferenceGraph(base_model=model, sidecar=sidecar)
+
+    # The cache changes transport only.  Require identical selected tokens on a
+    # real panel prompt before using it for the expensive trajectory pass.
+    first_prompt = _mcq_prompt(*_mcq(next(row for row in panel if row["battery"] in {"arc_easy", "arc_challenge", "mmlu"}))[:2])
+    probe = tokenizer(first_prompt, return_tensors="pt", add_special_tokens=True).to("cuda")
+    _cache, cached_probe = graph.prefill_cached(
+        input_ids=probe["input_ids"], attention_mask=probe["attention_mask"]
+    )
+    uncached_probe = graph.next_token(
+        input_ids=probe["input_ids"], attention_mask=probe["attention_mask"]
+    )
+    cache_max_abs = float(
+        (cached_probe.augmented_logits - uncached_probe.augmented_logits).abs().max().cpu()
+    )
+    cache_argmax_equal = bool(
+        torch.equal(
+            cached_probe.augmented_logits.argmax(dim=-1),
+            uncached_probe.augmented_logits.argmax(dim=-1),
+        )
+    )
+    if not cache_argmax_equal:
+        raise RuntimeError("P3.4 cached and uncached serving paths choose different tokens")
+
+    source_lookup = {str(row["item_id"]): row for row in panel}
+
+    def emit(scored_rows: list[dict[str, Any]]) -> None:
+        enriched = []
+        for augmented in scored_rows:
+            item_id = str(augmented["item_id"])
+            row = source_lookup[item_id]
+            enriched.append({
+                "kind": "paper2_phase3_p34_task_trajectory_row_v1",
+                "condition": args.condition,
+                "look": args.look,
+                "seed": args.seed,
+                "partition": "dev",
+                "battery": row["battery"],
+                "battery_role": row["battery_role"],
+                "panel_group": row["p34_panel_group"],
+                "document_id": row["document_id"],
+                "item_id": item_id,
+                "base_correct": bool(base_rows[item_id]["correct"]),
+                **augmented,
+            })
+        append_jsonl(args.output_jsonl, enriched)
+
+    mcq_rows = [row for row in pending if row["battery"] in {"arc_easy", "arc_challenge", "mmlu"}]
+    generated_rows = [row for row in pending if row["battery"] in {"gsm8k", "mbpp", "tier1"}]
+    if mcq_rows:
+        emit(score_mcq(graph, tokenizer, mcq_rows, batch_size=args.mcq_batch_size))
+    if generated_rows:
+        score_generation(
+            graph,
+            tokenizer,
+            generated_rows,
+            batch_size=args.generation_batch_size,
+            emit_batch=emit,
+        )
+    output_rows = read_jsonl(args.output_jsonl)
+    if len(output_rows) != 1_024 or {
+        str(row["item_id"]) for row in output_rows
+    } != set(source_lookup):
+        raise RuntimeError("P3.4 augmented score coverage changed")
+    summary = {
+        "kind": "paper2_phase3_p34_task_trajectory_condition_v1",
+        "status": "complete_dev_only",
+        "condition": args.condition,
+        "look": args.look,
+        "seed": args.seed,
+        "rows": len(output_rows),
+        "panel_sha256": panel_sha256,
+        "output_sha256": sha256_file(args.output_jsonl),
+        "checkpoint_receipts": checkpoint_receipts,
+        "cache_transport": {
+            "argmax_equal_on_real_prompt": cache_argmax_equal,
+            "maximum_absolute_logit_difference": cache_max_abs,
+            "base_kv_cache_only": True,
+            "full_hidden_prefix_retained_for_sidecar": True,
+        },
+        "base_accuracy": sum(row["base_correct"] for row in output_rows) / len(output_rows),
+        "augmented_accuracy": sum(row["augmented_correct"] for row in output_rows) / len(output_rows),
+        "confirm_scored": False,
+        "eval_e_scored": False,
+        "optimizer_constructed": False,
+        "optimizer_steps": 0,
+        "training_authorized": False,
+    }
+    write_json(args.summary, summary)
+    print(json.dumps(summary, indent=2, sort_keys=True))
+    del graph, sidecar, model
+    gc.collect()
+    torch.cuda.empty_cache()
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -49,9 +49,13 @@ class TinyCausalLM(nn.Module):
     def get_output_embeddings(self) -> nn.Module:
         return self.output
 
-    def forward(self, *, input_ids, attention_mask, **_kwargs):
+    def forward(self, *, input_ids, attention_mask, use_cache=False, **_kwargs):
         hidden = self.embedding(input_ids)
-        return SimpleNamespace(logits=self.output(hidden), hidden_states=(hidden,))
+        return SimpleNamespace(
+            logits=self.output(hidden),
+            hidden_states=(hidden,),
+            past_key_values=("tiny-cache",) if use_cache else None,
+        )
 
 
 def test_current_position_mask_supports_padding_and_closes_position_zero() -> None:
@@ -106,3 +110,28 @@ def test_write_mask_changes_only_current_nonzero_position() -> None:
     )
     assert torch.equal(output.hidden[:, :3], hidden[:, :3])
     assert torch.equal(output.logits, torch.zeros(1, 1, 31))
+
+
+def test_cached_prefix_matches_uncached_next_token_semantics() -> None:
+    torch.manual_seed(11)
+    base = TinyCausalLM()
+    sidecar = Phase3StudentModules(
+        tied_embedding=base.embedding,
+        hidden_size=16,
+        latent_dim=8,
+        n_slots=8,
+        control_dim=6,
+        draft_rank=4,
+    )
+    graph = P34TaskInferenceGraph(base_model=base, sidecar=sidecar)
+    ids = torch.tensor([[2, 3, 4]])
+    attention = torch.ones_like(ids)
+    state, cached = graph.prefill_cached(input_ids=ids, attention_mask=attention)
+    uncached = graph.next_token(input_ids=ids, attention_mask=attention)
+    assert torch.equal(cached.augmented_logits, uncached.augmented_logits)
+    selected = cached.augmented_logits.argmax(dim=-1)
+    state, advanced = graph.advance_cached(state=state, selected_tokens=selected)
+    extended = torch.cat([ids, selected[:, None]], dim=1)
+    extended_attention = torch.ones_like(extended)
+    repeated = graph.next_token(input_ids=extended, attention_mask=extended_attention)
+    assert torch.equal(advanced.augmented_logits, repeated.augmented_logits)
