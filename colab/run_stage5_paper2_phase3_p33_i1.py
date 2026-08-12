@@ -90,6 +90,8 @@ def main() -> int:
         migrated = scratch / f"seed_{seed}_migrated.pt"
         p33_checkpoint = scratch / f"seed_{seed}_p33_step_1000.pt"
         p33_gate_audit = scratch / f"seed_{seed}_p33_audit_rows_step_1000.jsonl"
+        strategy_authority = scratch / "STRATEGY_P33_VERIFICATION_RULING_20260812.md"
+        strategy_confirmation = scratch / "STRATEGY_I1_TRAINABLE_SET_CONFIRMATION_20260812.md"
         rsync(
             DRIVE_STAGE5 / CANONICALIZER_ID / "private/canonicalizer/learned_mixture_rrr_seed_20260814.pt",
             canonicalizer,
@@ -110,6 +112,8 @@ def main() -> int:
             DRIVE_STAGE5 / P33_ID / f"private/seed_{seed}/audit_rows_step_1000.jsonl",
             p33_gate_audit,
         )
+        rsync(drive_run / "authority" / strategy_authority.name, strategy_authority)
+        rsync(drive_run / "authority" / strategy_confirmation.name, strategy_confirmation)
         status("training")
         command = [
             sys.executable, "-u", "-m", "training.run_paper2_phase3_p33_i1",
@@ -130,8 +134,8 @@ def main() -> int:
             "--direction_cache", str(direction_cache),
             "--migrated_checkpoint", str(migrated),
             "--p33_checkpoint", str(p33_checkpoint),
-            "--strategy_authority", str(ROOT / "docs/STRATEGY_P33_VERIFICATION_RULING_20260812.md"),
-            "--strategy_confirmation", str(ROOT / "docs/STRATEGY_I1_TRAINABLE_SET_CONFIRMATION_20260812.md"),
+            "--strategy_authority", str(strategy_authority),
+            "--strategy_confirmation", str(strategy_confirmation),
             "--p33_gate_audit", str(p33_gate_audit),
             "--output_dir", str(run_dir),
             "--private_dir", str(private),
