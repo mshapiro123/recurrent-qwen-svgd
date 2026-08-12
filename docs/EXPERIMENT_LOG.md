@@ -1917,3 +1917,18 @@ Colab/Drive backups for selected runs.
   remain zero, and P3.3 training is now authorized. Receipt:
   `outputs/stage5/stage5_paper2_phase3_retention_preflight_20260811/summary.json`.
   Handoff: `docs/PAPER2_PHASE3_P33_RETENTION_PREFLIGHT_HANDOFF_20260811.md`.
+- 2026-08-11 P3.3 aimed-writeback pilot: both registered E1-confirmation seed
+  lineages completed 1,000 AdamW updates and all 20 looks on separate A100
+  sessions. Pooled forced-open direction capture was `0.165335` (621 trained
+  flips over 3,756 matched oracle flips; document-bootstrap 95% CI
+  `[0.147178, 0.183343]`). Seed endpoints were `0.164004` and `0.166667`, so
+  the primary result is the registered middle reading requiring one focused
+  iteration before re-read. Pooled deployed capture was `0.285714`, but a
+  BF16-reader sensitivity reduced it to `0.138728` on reader-matched rows;
+  `pi_dir` remained in-band at `0.146431`. Gate recall/precision were `94.51%`
+  and `68.01%`; collateral was `0/24576`; token retention was `1024/1024` at
+  every look in both seeds. No warning or hard stop fired. Gate gradients
+  carried about 95.2% of post-clip primary share, identifying aim learning as
+  the weak component. No task, CONFIRM, or EVAL-E score was computed. Handoff:
+  `docs/PAPER2_PHASE3_P33_RESULT_HANDOFF_20260811.md`. Combined receipt:
+  `outputs/stage5/stage5_paper2_phase3_p33_20260811/combined_summary.json`.

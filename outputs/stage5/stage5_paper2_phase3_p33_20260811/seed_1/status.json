@@ -1,0 +1,8 @@
+{
+  "kind": "paper2_phase3_p33_status_v1",
+  "seed": 1,
+  "status": "complete",
+  "step": 1000,
+  "stop_reason": null,
+  "summary": "/content/recurrent-qwen-svgd/outputs/stage5/stage5_paper2_phase3_p33_20260811/seed_1/summary.json"
+}
