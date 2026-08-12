@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import subprocess
+import sys
+from pathlib import Path
 from types import SimpleNamespace
 
 import torch
@@ -10,6 +13,29 @@ from eval.eval_paper2_phase3_p34_task_inference import (
     current_position_mask,
     task_graph_preflight,
 )
+
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def test_task_preflight_runner_imports_when_invoked_as_a_file() -> None:
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            (
+                "import runpy; "
+                "runpy.run_path('colab/run_stage5_paper2_phase3_p34_task_preflight.py', "
+                "run_name='p34_import_probe')"
+            ),
+        ],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, result.stderr
+
+
 from models.paper2_dc2_student import Phase3StudentModules
 
 

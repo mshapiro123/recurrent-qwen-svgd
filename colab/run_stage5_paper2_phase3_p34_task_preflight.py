@@ -13,6 +13,11 @@ from pathlib import Path
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
 from eval.cache_paper2_phase3_agreement_oracle import _load_phase3_module
 from eval.eval_paper2_phase3_p31_references import (
     MODEL_SPECS,
@@ -27,7 +32,6 @@ from eval.eval_paper2_phase3_p34_task_inference import (
 )
 
 
-ROOT = Path(__file__).resolve().parents[1]
 RUN_ID = "stage5_paper2_phase3_p34_prerequisites_20260812"
 DRIVE_STAGE5 = Path("/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5")
 DRIVE_RUN = DRIVE_STAGE5 / RUN_ID
