@@ -33,7 +33,15 @@
     "preflight_receipt_sha256": null
   },
   "ar_pricing": {
-    "receipt_sha256": null,
+    "receipt_drive_id": "1YkJYPo-jiVzkLEsWqXkhetEdgj9D3JwU",
+    "receipt_sha256": "68c697812804b3e113fcb8cde8f1888821ac81199fcdbe0bad6e964ada7a7c8d",
+    "readout_energy_fraction_by_seed": [0.25546244746094426, 0.263107475492592],
+    "matched_state_covariance_energy_fraction_by_seed": [
+      0.14164274283614872,
+      0.14164274283614872
+    ],
+    "outside_readout_energy_fraction_by_seed": [0.7445375525390557, 0.736892524507408],
+    "realized_pi_dir": 0.14901016586409846,
     "high_low_threshold": null,
     "strategy_fork_confirmation_sha256": null,
     "selected_arm": null
@@ -88,7 +96,6 @@
     "task_inference.dev_panel_selection_rule",
     "task_inference.dev_panel_sha256",
     "task_inference.preflight_receipt_sha256",
-    "ar_pricing.receipt_sha256",
     "ar_pricing.high_low_threshold",
     "ar_pricing.strategy_fork_confirmation_sha256",
     "ar_pricing.selected_arm",
