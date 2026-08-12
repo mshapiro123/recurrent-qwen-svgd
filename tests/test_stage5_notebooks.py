@@ -3809,6 +3809,46 @@ def test_phase3_p33_verification_target_is_wired_and_guarded() -> None:
     assert "checkpoint_step_1000.pt" in runner
 
 
+def test_phase3_p34_ar_target_is_wired_and_read_only() -> None:
+    cell = (ROOT / "colab/STAGE5_PAPER2_PHASE3_P34_AR_CELL.py").read_text(
+        encoding="utf-8"
+    )
+    runner = (ROOT / "colab/run_stage5_paper2_phase3_p34_ar.py").read_text(
+        encoding="utf-8"
+    )
+    for bootstrap_path in (
+        ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py",
+        ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md",
+    ):
+        text = bootstrap_path.read_text(encoding="utf-8")
+        assert "paper2_phase3_p34_ar" in text
+        assert "STAGE5_PAPER2_PHASE3_P34_AR_CELL.py" in text
+        assert "strategy fork remains unbound and requires explicit confirmation" in text
+    assert "paper2_phase3_p34_ar_v1" in cell
+    assert "eval.eval_paper2_phase3_p34_ar" in runner
+    assert "training.run" not in runner
+    assert 'result["optimizer_steps"] != 0' in runner
+
+
+def test_phase3_p34_task_preflight_is_score_blind_and_wired() -> None:
+    cell = (
+        ROOT / "colab/STAGE5_PAPER2_PHASE3_P34_TASK_PREFLIGHT_CELL.py"
+    ).read_text(encoding="utf-8")
+    runner = (
+        ROOT / "colab/run_stage5_paper2_phase3_p34_task_preflight.py"
+    ).read_text(encoding="utf-8")
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(
+        encoding="utf-8"
+    )
+    assert "paper2_phase3_p34_task_preflight" in bootstrap
+    assert "paper2_phase3_p34_task_preflight_v1" in cell
+    assert "score-blind DEV prompt preflight" in cell
+    assert "task_graph_preflight" in runner
+    assert '"task_scores_computed": False' in runner
+    assert '"optimizer_steps": 0' in runner
+    assert "training.run" not in runner
+
+
 def test_gradient_path_audit_target_is_wired_and_guarded() -> None:
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
     bootstrap_md = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")

@@ -285,6 +285,7 @@ class AnchoredBridge(nn.Module):
         scratch: torch.Tensor,
         loop_index: int,
         active: bool = True,
+        write_position_mask: Optional[torch.Tensor] = None,
     ) -> BridgeOutput:
         if loop_index < 0 or loop_index >= self.max_steps:
             raise ValueError(f"loop index violates loop cap {self.max_steps}")
@@ -313,6 +314,12 @@ class AnchoredBridge(nn.Module):
         rho = torch.sigmoid(self.rho_logits[loop_index])
         gate_mask = torch.ones_like(delta[..., :1])
         gate_mask[:, 0] = 0
+        if write_position_mask is not None:
+            if write_position_mask.shape != gate_mask.shape:
+                raise ValueError("write position mask must share [batch, sequence, 1]")
+            gate_mask = gate_mask * write_position_mask.to(
+                device=gate_mask.device, dtype=gate_mask.dtype
+            )
         writeback = gate * gate_mask * delta
         hidden = h0 + rho * (previous - h0) + writeback
         ratio = _rms(writeback) / _rms(h0).clamp_min(self.eps)
@@ -369,6 +376,7 @@ class Phase3PerPositionAnchoredBridge(AnchoredBridge):
         control_state: Optional[torch.Tensor],
         loop_index: int,
         active: bool = True,
+        write_position_mask: Optional[torch.Tensor] = None,
     ) -> BridgeOutput:
         if loop_index < 0 or loop_index >= self.max_steps:
             raise ValueError(f"loop index violates loop cap {self.max_steps}")
@@ -414,6 +422,12 @@ class Phase3PerPositionAnchoredBridge(AnchoredBridge):
         rho = torch.sigmoid(self.rho_logits[loop_index])
         gate_mask = torch.ones_like(delta[..., :1])
         gate_mask[:, 0] = 0
+        if write_position_mask is not None:
+            if write_position_mask.shape != gate_mask.shape:
+                raise ValueError("write position mask must share [batch, sequence, 1]")
+            gate_mask = gate_mask * write_position_mask.to(
+                device=gate_mask.device, dtype=gate_mask.dtype
+            )
         position_gate = position_gate * gate_mask
         writeback = position_gate * delta
         hidden = h0 + rho * (previous - h0) + writeback
@@ -595,6 +609,8 @@ class Phase2StudentModules(nn.Module):
         target_scratch: Optional[torch.Tensor] = None,
         apply_trust_penalty: bool = False,
         candidate_ids: Optional[torch.Tensor] = None,
+        draft_active: bool = True,
+        write_position_mask: Optional[torch.Tensor] = None,
     ) -> Phase2StudentOutput:
         if steps < 0 or steps > self.max_steps:
             raise ValueError(f"requested steps violate loop cap {self.max_steps}")
@@ -627,8 +643,9 @@ class Phase2StudentModules(nn.Module):
             scratch=flow.state,
             loop_index=max(0, steps - 1),
             active=steps > 0,
+            write_position_mask=write_position_mask,
         )
-        if steps > 0:
+        if steps > 0 and draft_active:
             draft = self.draft(
                 previous_logits=previous_logits,
                 scratch=flow.state,
@@ -699,6 +716,8 @@ class Phase3StudentModules(Phase2StudentModules):
         target_scratch: Optional[torch.Tensor] = None,
         apply_trust_penalty: bool = False,
         candidate_ids: Optional[torch.Tensor] = None,
+        draft_active: bool = True,
+        write_position_mask: Optional[torch.Tensor] = None,
     ) -> Phase2StudentOutput:
         if steps < 0 or steps > self.max_steps:
             raise ValueError(f"requested steps violate loop cap {self.max_steps}")
@@ -732,8 +751,9 @@ class Phase3StudentModules(Phase2StudentModules):
             control_state=control,
             loop_index=max(0, steps - 1),
             active=steps > 0,
+            write_position_mask=write_position_mask,
         )
-        if steps > 0:
+        if steps > 0 and draft_active:
             draft = self.draft(
                 previous_logits=previous_logits,
                 scratch=flow.state,

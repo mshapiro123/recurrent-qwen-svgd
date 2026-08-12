@@ -1,0 +1,108 @@
+{
+  "kind": "paper2_phase3_p34_executed_lock_v0_pending_prerequisites",
+  "status": "prerequisites_pending",
+  "locked_before_training": false,
+  "training_authorized": false,
+  "authority": {
+    "drive_id": "1lh2Vf3VG8yPXUjLPfr7IJkPCjnf2mKE6",
+    "repo_path": "docs/STRATEGY_P34_CHARTER_20260812.md",
+    "sha256": "80cb1b13eb48ffff064ff7cc6c0d02de773dfec80924c1c50736115821c97ce4",
+    "bytes": 10272
+  },
+  "initialization": {
+    "seed_0": {
+      "drive_path": "stage5_paper2_phase3_p33_i1_20260812/private/seed_0/resume.pt",
+      "sha256": "01c804bc69d35a01730fff236cf5a8d974899d2e4de7e15b92a227b2a9ce5d88"
+    },
+    "seed_1": {
+      "drive_path": "stage5_paper2_phase3_p33_i1_20260812/private/seed_1/resume.pt",
+      "sha256": "2ed3296f510a6c3a66c451051ecbe2284de03b35dde4052827174a66a10c1d4a"
+    }
+  },
+  "task_inference": {
+    "scratch_lifetime": "fresh_per_emitted_token",
+    "flow_loops": 4,
+    "draft_head_scoring": false,
+    "cross_token_state_persistence": false,
+    "decoding": "greedy",
+    "position_zero_closed": true,
+    "serving_reader": "bf16_serving_matmul_v1",
+    "dev_panel_rows": 1024,
+    "dev_panel_selection_rule": null,
+    "dev_panel_sha256": null,
+    "preflight_receipt_sha256": null
+  },
+  "ar_pricing": {
+    "receipt_sha256": null,
+    "high_low_threshold": null,
+    "strategy_fork_confirmation_sha256": null,
+    "selected_arm": null
+  },
+  "guardrails": {
+    "task_calibration_receipt_sha256": null,
+    "look_count": null,
+    "look_schedule": null,
+    "tier_s_delta_cat": null,
+    "tier_s_one_sided_alpha": null,
+    "tier_s_familywise_false_stop_ceiling": 0.0001,
+    "tier_s_power_floor": 0.99,
+    "tier_w_drop_class": -0.03,
+    "tier_w_consecutive_looks": 2,
+    "chi_calibration_receipt_sha256": null,
+    "chi_strategy_margin": null,
+    "chi_max": null
+  },
+  "controller": {
+    "initial_rung": 1,
+    "gate_ceilings": [0.02, 0.08, 0.2, 0.5],
+    "preservation_weights": [1.0, 0.5, 0.2, 0.05],
+    "advance_pi_dep": [0.1, 0.25, 0.4],
+    "at_most_one_rung_per_window": true,
+    "tier_w_demotes_one_rung": true
+  },
+  "loss_share_contract": {
+    "kl_floor": 0.35,
+    "aim_floor": 0.15,
+    "ce_floor": 0.1,
+    "gate_floor": 0.03,
+    "preserve_ceiling": 0.25,
+    "share_weight_calibration_receipt_sha256": null,
+    "scalar_weights": null,
+    "rule": "first trailing-window miss warns; two consecutive misses stop"
+  },
+  "run_dials": {
+    "optimizer": "adamw_phase2_banked_configuration",
+    "learning_rate": null,
+    "total_steps": null,
+    "seeds": [0, 1],
+    "resumable": true
+  },
+  "boundaries": {
+    "confirm_contact": false,
+    "eval_e_contact": false,
+    "p34_training_runner_present": false,
+    "optimizer_constructed_by_prerequisite_targets": false,
+    "mark_approval_required_after_all_values_bound": true
+  },
+  "unresolved_lock_fields": [
+    "task_inference.dev_panel_selection_rule",
+    "task_inference.dev_panel_sha256",
+    "task_inference.preflight_receipt_sha256",
+    "ar_pricing.receipt_sha256",
+    "ar_pricing.high_low_threshold",
+    "ar_pricing.strategy_fork_confirmation_sha256",
+    "ar_pricing.selected_arm",
+    "guardrails.task_calibration_receipt_sha256",
+    "guardrails.look_count",
+    "guardrails.look_schedule",
+    "guardrails.tier_s_delta_cat",
+    "guardrails.tier_s_one_sided_alpha",
+    "guardrails.chi_calibration_receipt_sha256",
+    "guardrails.chi_strategy_margin",
+    "guardrails.chi_max",
+    "loss_share_contract.share_weight_calibration_receipt_sha256",
+    "loss_share_contract.scalar_weights",
+    "run_dials.learning_rate",
+    "run_dials.total_steps"
+  ]
+}

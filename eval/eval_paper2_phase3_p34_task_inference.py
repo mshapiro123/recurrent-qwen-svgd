@@ -1,0 +1,191 @@
+"""P3.4 v1 task-inference graph and score-blind contract checks.
+
+The graph intentionally recomputes the complete prefix for every emitted token.
+That is the simplest exact implementation of fresh per-token scratch state and
+keeps cross-token sidecar persistence out of the P3.4 v1 contract.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Any
+
+import torch
+
+from models.paper2_dc2_student import Phase3StudentModules
+from training.paper2_phase3_p34 import P34_FLOW_LOOPS, TaskInferenceContract
+
+
+def position_buckets(positions: torch.Tensor) -> torch.Tensor:
+    buckets = torch.zeros_like(positions)
+    buckets[(positions >= 1) & (positions <= 3)] = 1
+    buckets[(positions >= 4) & (positions <= 31)] = 2
+    buckets[(positions >= 32) & (positions <= 127)] = 3
+    buckets[positions >= 128] = 4
+    return buckets
+
+
+def current_position_mask(attention_mask: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+    if attention_mask.ndim != 2:
+        raise ValueError("attention mask must be [batch, sequence]")
+    active = attention_mask.bool()
+    if bool((active.sum(dim=1) == 0).any()):
+        raise ValueError("every P3.4 prefix must contain at least one active token")
+    indexes = torch.arange(active.shape[1], device=active.device).expand_as(active)
+    positions = indexes.masked_fill(~active, -1).max(dim=1).values
+    mask = torch.zeros((*active.shape, 1), dtype=torch.bool, device=active.device)
+    mask[torch.arange(active.shape[0], device=active.device), positions, 0] = True
+    mask[:, 0] = False
+    return mask, positions
+
+
+@dataclass(frozen=True)
+class P34NextTokenOutput:
+    augmented_logits: torch.Tensor
+    base_logits: torch.Tensor
+    writeback_ratio: torch.Tensor
+    position_gate: torch.Tensor
+    current_positions: torch.Tensor
+
+
+class P34TaskInferenceGraph:
+    """Exact, uncached v1 generation graph for the frozen base plus sidecar."""
+
+    def __init__(self, *, base_model: Any, sidecar: Phase3StudentModules) -> None:
+        self.base_model = base_model
+        self.sidecar = sidecar
+        self.contract = TaskInferenceContract()
+        self.contract.validate()
+
+    @property
+    def device(self) -> torch.device:
+        return next(self.base_model.parameters()).device
+
+    @torch.inference_mode()
+    def next_token(
+        self,
+        *,
+        input_ids: torch.Tensor,
+        attention_mask: torch.Tensor,
+        flow_loops: int = P34_FLOW_LOOPS,
+    ) -> P34NextTokenOutput:
+        if flow_loops != P34_FLOW_LOOPS:
+            raise RuntimeError("P3.4 battery scoring requires K = 4")
+        if input_ids.shape != attention_mask.shape:
+            raise ValueError("input ids and attention mask must share [batch, sequence]")
+        output = self.base_model(
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            output_hidden_states=True,
+            use_cache=False,
+            return_dict=True,
+        )
+        hidden = output.hidden_states[-1]
+        base_all_logits = output.logits
+        write_mask, positions = current_position_mask(attention_mask)
+        batch_index = torch.arange(input_ids.shape[0], device=input_ids.device)
+        base_logits = base_all_logits[batch_index, positions]
+        sidecar_output = self.sidecar(
+            hidden=hidden,
+            previous_logits=base_logits.unsqueeze(1),
+            steps=flow_loops,
+            attention_mask=attention_mask.bool(),
+            position_bucket=position_buckets(positions),
+            candidate_ids=None,
+            draft_active=False,
+            write_position_mask=write_mask,
+        )
+        augmented_hidden = sidecar_output.hidden[batch_index, positions]
+        output_head = self.base_model.get_output_embeddings()
+        augmented_logits = output_head(augmented_hidden.to(output_head.weight.dtype))
+        if not torch.equal(sidecar_output.logits, base_logits.unsqueeze(1)):
+            raise RuntimeError("draft-head-off P3.4 scoring changed the supplied logits")
+        return P34NextTokenOutput(
+            augmented_logits=augmented_logits,
+            base_logits=base_logits,
+            writeback_ratio=sidecar_output.bridge.realized_writeback_ratio[batch_index, positions],
+            position_gate=sidecar_output.bridge.position_gate[batch_index, positions, 0],
+            current_positions=positions,
+        )
+
+    @torch.inference_mode()
+    def greedy_generate(
+        self,
+        *,
+        input_ids: torch.Tensor,
+        attention_mask: torch.Tensor,
+        max_new_tokens: int,
+        eos_token_id: int | None,
+    ) -> torch.Tensor:
+        if input_ids.shape[0] != 1:
+            raise ValueError("the v1 exact generation primitive is batch-size one")
+        tokens = input_ids
+        mask = attention_mask
+        for _ in range(max_new_tokens):
+            logits = self.next_token(input_ids=tokens, attention_mask=mask).augmented_logits
+            selected = logits.argmax(dim=-1, keepdim=True)
+            tokens = torch.cat([tokens, selected], dim=1)
+            mask = torch.cat([mask, torch.ones_like(selected, dtype=mask.dtype)], dim=1)
+            if eos_token_id is not None and int(selected.item()) == int(eos_token_id):
+                break
+        return tokens
+
+    @torch.inference_mode()
+    def continuation_log_score(
+        self,
+        *,
+        prefix_ids: torch.Tensor,
+        continuation_ids: torch.Tensor,
+    ) -> torch.Tensor:
+        if prefix_ids.ndim != 2 or continuation_ids.ndim != 2:
+            raise ValueError("prefix and continuation ids must be rank two")
+        if prefix_ids.shape[0] != continuation_ids.shape[0]:
+            raise ValueError("prefix and continuation batch sizes differ")
+        if prefix_ids.shape[0] != 1:
+            raise ValueError("the v1 exact continuation scorer is batch-size one")
+        tokens = prefix_ids
+        attention = torch.ones_like(tokens)
+        scores = []
+        for index in range(continuation_ids.shape[1]):
+            target = continuation_ids[:, index]
+            logits = self.next_token(input_ids=tokens, attention_mask=attention).augmented_logits
+            scores.append(torch.log_softmax(logits.float(), dim=-1).gather(1, target[:, None])[:, 0])
+            tokens = torch.cat([tokens, target[:, None]], dim=1)
+            attention = torch.cat([attention, torch.ones_like(target[:, None])], dim=1)
+        return torch.stack(scores, dim=1).mean(dim=1)
+
+
+@torch.inference_mode()
+def task_graph_preflight(
+    graph: P34TaskInferenceGraph,
+    *,
+    input_ids: torch.Tensor,
+    attention_mask: torch.Tensor,
+) -> dict[str, Any]:
+    first = graph.next_token(input_ids=input_ids, attention_mask=attention_mask)
+    second = graph.next_token(input_ids=input_ids, attention_mask=attention_mask)
+    write_mask, positions = current_position_mask(attention_mask)
+    return {
+        "kind": "paper2_phase3_p34_task_inference_preflight_v1",
+        "contract": graph.contract.__dict__,
+        "rows": int(input_ids.shape[0]),
+        "flow_loops": P34_FLOW_LOOPS,
+        "draft_head_scoring": False,
+        "current_positions": positions.detach().cpu().tolist(),
+        "selected_write_cells": int(write_mask.sum()),
+        "repeat_max_abs_difference": float(
+            (first.augmented_logits - second.augmented_logits).abs().max().cpu()
+        ),
+        "assertions": {
+            "fresh_state_repeat_exact": torch.equal(first.augmented_logits, second.augmented_logits),
+            "one_write_cell_per_nonzero_prefix": int(write_mask.sum())
+            == int((positions > 0).sum()),
+            "position_zero_closed": not bool(write_mask[:, 0].any()),
+            "k_equals_four": P34_FLOW_LOOPS == 4,
+            "draft_inactive": True,
+            "cross_token_persistence_absent": True,
+        },
+        "optimizer_constructed": False,
+        "optimizer_steps": 0,
+        "task_scores_computed": False,
+    }

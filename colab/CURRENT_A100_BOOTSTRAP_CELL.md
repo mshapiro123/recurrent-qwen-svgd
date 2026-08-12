@@ -4295,6 +4295,30 @@ TARGETS = {
         ],
         "env": {},
     },
+    "paper2_phase3_p34_ar": {
+        "path": "colab/STAGE5_PAPER2_PHASE3_P34_AR_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_PHASE3_P34_AR_VERSION",
+            "paper2_phase3_p34_ar_v1",
+            "cached A_r pricing only no model no optimizer no training",
+            "oracle energy readout span and matched covariance span reported separately",
+            "strategy fork remains unbound and requires explicit confirmation",
+            "colab/run_stage5_paper2_phase3_p34_ar.py",
+        ],
+        "env": {},
+    },
+    "paper2_phase3_p34_task_preflight": {
+        "path": "colab/STAGE5_PAPER2_PHASE3_P34_TASK_PREFLIGHT_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_PHASE3_P34_TASK_PREFLIGHT_VERSION",
+            "paper2_phase3_p34_task_preflight_v1",
+            "exact fresh-per-token K4 task graph on both i1 endpoints",
+            "draft head inactive current-position-only write and no cross-token sidecar state",
+            "score-blind DEV prompt preflight no correctness no gap_closed no optimizer no training",
+            "colab/run_stage5_paper2_phase3_p34_task_preflight.py",
+        ],
+        "env": {},
+    },
     "gradient_path_audit": {
         "path": "colab/STAGE5_GRADIENT_PATH_AUDIT_CELL.py",
         "markers": [
