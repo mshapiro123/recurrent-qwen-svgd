@@ -50,6 +50,7 @@ from training.paper2_phase3_p33_i1 import (
     P33_I1_CALIBRATION_WEIGHT_MIN,
     P33_I1_GATE_NAMES,
     P33_I1_PRESERVATION_SHARE_CEILING,
+    aim_convergence_classification,
     build_p33_i1_adamw_groups,
     i1_result_band,
     p33_i1_forward_losses,
@@ -90,6 +91,11 @@ EXPECTED_P33_FINAL_SHA256 = {
     1: "e80ad205eb3c4712fdee5303a4887260488f67ff858a2b4b005d724675e52067",
 }
 EXPECTED_STRATEGY_SHA256 = "bf60468965c5feb117cb2a3dd110f6746a5a56d2fddfb4fdca4aefad0b0aea3f"
+EXPECTED_CONFIRMATION_SHA256 = "aad152380068e2770943ac865d3bd150b598a24b2f3442c439123ba0942edc9e"
+EXPECTED_P33_GATE_AUDIT_SHA256 = {
+    0: "ad5a67b5c1a400863cc6c03ca4cb13bdf2e12f9d7c504e8a7dc8a4f6bb1415aa",
+    1: "2de1854639a0140de2b6aeaa4f373bd2c326ebd89be6f844e7fd042e87815798",
+}
 OBSERVATORY_ROWS = 128
 ASTATE_ROWS = 512
 
@@ -432,6 +438,7 @@ def directional_share_audit(
     module.train()
     parameters = list(set_p33_i1_trainable(module).values())
     rows = []
+    loss_rows = []
     for records in batches:
         losses, _ = _losses(
             module,
@@ -443,6 +450,7 @@ def directional_share_audit(
                 device=device,
             ),
         )
+        loss_rows.append({name: float(value.detach()) for name, value in losses.items()})
         rows.append(
             postclip_gradient_shares(
                 losses=losses,
@@ -477,6 +485,53 @@ def directional_share_audit(
         "preservation_share": shares["preserve"],
         "classification": classification,
         "per_batch": rows,
+        "mean_fixed_audit_losses": {
+            name: sum(row[name] for row in loss_rows) / len(loss_rows)
+            for name in ("aim", "preserve")
+        },
+    }
+
+
+def load_gate_reference(path: Path, *, seed: int) -> dict[str, dict[str, Any]]:
+    if sha256_file(path) != EXPECTED_P33_GATE_AUDIT_SHA256[seed]:
+        raise RuntimeError("P3.3 i1 R1 gate-reference SHA mismatch")
+    rows = read_jsonl(path)
+    if len(rows) != 16_384:
+        raise RuntimeError("P3.3 i1 R1 gate-reference row count changed")
+    result = {str(row["record_id"]): row for row in rows}
+    if len(result) != len(rows):
+        raise RuntimeError("P3.3 i1 R1 gate-reference ids are not unique")
+    return result
+
+
+def assert_gate_invariant(
+    rows: Sequence[Mapping[str, Any]],
+    reference: Mapping[str, Mapping[str, Any]],
+) -> dict[str, Any]:
+    if len(rows) != len(reference):
+        raise RuntimeError("P3.3 i1 R1 audit row count changed")
+    open_rows = 0
+    for row in rows:
+        record_id = str(row["record_id"])
+        if record_id not in reference:
+            raise RuntimeError(f"P3.3 i1 R1 unknown audit row: {record_id}")
+        baseline = reference[record_id]
+        for field in ("gate_unclamped", "gate_deployed"):
+            if float(row[field]) != float(baseline[field]):
+                raise RuntimeError(
+                    f"P3.3 i1 R1 selector drift: record={record_id} field={field}"
+                )
+        current_open = float(row["gate_unclamped"]) >= 0.5
+        baseline_open = float(baseline["gate_unclamped"]) >= 0.5
+        if current_open != baseline_open:
+            raise RuntimeError(f"P3.3 i1 R1 open-set drift: record={record_id}")
+        open_rows += int(current_open)
+    return {
+        "passed": True,
+        "rows": len(rows),
+        "open_rows": open_rows,
+        "bit_identical_fields": ["gate_unclamped", "gate_deployed"],
+        "open_set_membership_bit_identical": True,
     }
 
 
@@ -1082,6 +1137,8 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         raise RuntimeError("P3.3 i1 source endpoint SHA mismatch")
     if sha256_file(args.strategy_authority) != EXPECTED_STRATEGY_SHA256:
         raise RuntimeError("P3.3 i1 strategy authority SHA mismatch")
+    if sha256_file(args.strategy_confirmation) != EXPECTED_CONFIRMATION_SHA256:
+        raise RuntimeError("P3.3 i1 trainable-set confirmation SHA mismatch")
 
     output_dir = args.output_dir
     private_dir = args.private_dir
@@ -1118,6 +1175,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         retention_path=args.retention_panel,
         sources=sources,
     )
+    gate_reference = load_gate_reference(args.p33_gate_audit, seed=seed)
     module, checkpoint_receipt = _load_phase3_module(
         checkpoint=args.migrated_checkpoint,
         embedding_weight=lm_head,
@@ -1307,12 +1365,13 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             device=args.device,
         )
         retention, retained = retention_read(module=module, material=audit_material, device=args.device)
+        gate_invariant = assert_gate_invariant(rows, gate_reference)
         guardrail = guardrail_read(retained=retained, calibration=calibration)
         observatory, events = tier1_observatory_read(
             module=module, material=audit_material, step=0, device=args.device
         )
         observatory_history.append(observatory)
-        history.append({"step": 0, "learning_rate": 0.0, "audit": audit, "retention": retention, "guardrail": guardrail, "observatory": observatory})
+        history.append({"step": 0, "learning_rate": 0.0, "audit": audit, "retention": retention, "guardrail": guardrail, "selector_invariant": gate_invariant, "observatory": observatory})
         write_jsonl(private_dir / "audit_rows_step_0000.jsonl", rows)
         write_jsonl(private_dir / "observatory_events_step_0000.jsonl", events)
         save(archive=True)
@@ -1396,6 +1455,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
                 device=args.device,
             )
             retention, retained = retention_read(module=module, material=audit_material, device=args.device)
+            gate_invariant = assert_gate_invariant(rows, gate_reference)
             guardrail = guardrail_read(retained=retained, calibration=calibration)
             observatory, events = tier1_observatory_read(
                 module=module, material=audit_material, step=step, device=args.device
@@ -1419,6 +1479,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
                     "audit": audit,
                     "retention": retention,
                     "guardrail": guardrail,
+                    "selector_invariant": gate_invariant,
                     "directional_share": share,
                     "observatory": observatory,
                     "stop_reason": stop_reason,
@@ -1460,6 +1521,14 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         module=module, material=audit_material, seed=seed, device=args.device
     )
     final_pi_dir = history[-1]["audit"]["pi_dir"]["point"] if history else None
+    aim_loss_curve = [
+        {
+            "step": int(row["step"]),
+            "aim_loss": float(row["mean_fixed_audit_losses"]["aim"]),
+            "preserve_loss": float(row["mean_fixed_audit_losses"]["preserve"]),
+        }
+        for row in share_history
+    ]
     result = {
         "kind": RUN_KIND,
         "status": "stopped" if stop_reason else "complete",
@@ -1480,6 +1549,10 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         "strategy_authority": {
             "path": str(args.strategy_authority),
             "sha256": sha256_file(args.strategy_authority),
+        },
+        "strategy_confirmation": {
+            "path": str(args.strategy_confirmation),
+            "sha256": sha256_file(args.strategy_confirmation),
         },
         "direction_cache": direction_receipt,
         "lm_head": lm_head_receipt,
@@ -1512,6 +1585,16 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         "baseline_pi_dir": P33_I1_BASELINE_PI_DIR,
         "final_pi_dir": final_pi_dir,
         "result_band": i1_result_band(final_pi_dir) if final_pi_dir is not None else None,
+        "aim_loss_convergence": {
+            "curve": aim_loss_curve,
+            **aim_convergence_classification(aim_loss_curve),
+        },
+        "selector_invariant": {
+            "status": "bit_identical_at_every_audit",
+            "reference_path": str(args.p33_gate_audit),
+            "reference_sha256": sha256_file(args.p33_gate_audit),
+            "audits": len(history),
+        },
         "look_schedule": list(range(P33_LOOK_INTERVAL, P33_TOTAL_STEPS + 1, P33_LOOK_INTERVAL)),
         "schedule_sha256": hashlib.sha256("\n".join(schedule_hashes).encode("ascii")).hexdigest(),
         "preflight": {
@@ -1560,6 +1643,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--migrated_checkpoint", type=Path, required=True)
     parser.add_argument("--p33_checkpoint", type=Path, required=True)
     parser.add_argument("--strategy_authority", type=Path, required=True)
+    parser.add_argument("--strategy_confirmation", type=Path, required=True)
+    parser.add_argument("--p33_gate_audit", type=Path, required=True)
     parser.add_argument("--output_dir", type=Path, required=True)
     parser.add_argument("--private_dir", type=Path, required=True)
     parser.add_argument("--device", default="cuda")

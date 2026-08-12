@@ -91,6 +91,7 @@ def main() -> int:
         direction_cache = scratch / "agreement_oracle_directions.pt"
         migrated = scratch / f"seed_{seed}_migrated.pt"
         p33_checkpoint = scratch / f"seed_{seed}_p33_step_1000.pt"
+        p33_gate_audit = scratch / f"seed_{seed}_p33_audit_rows_step_1000.jsonl"
         rsync(
             DRIVE_STAGE5 / CANONICALIZER_ID / "private/canonicalizer/learned_mixture_rrr_seed_20260814.pt",
             canonicalizer,
@@ -106,6 +107,10 @@ def main() -> int:
         rsync(
             DRIVE_STAGE5 / P33_ID / f"private/seed_{seed}/checkpoint_step_1000.pt",
             p33_checkpoint,
+        )
+        rsync(
+            DRIVE_STAGE5 / P33_ID / f"private/seed_{seed}/audit_rows_step_1000.jsonl",
+            p33_gate_audit,
         )
         status("training")
         command = [
@@ -128,6 +133,8 @@ def main() -> int:
             "--migrated_checkpoint", str(migrated),
             "--p33_checkpoint", str(p33_checkpoint),
             "--strategy_authority", str(ROOT / "docs/STRATEGY_P33_VERIFICATION_RULING_20260812.md"),
+            "--strategy_confirmation", str(ROOT / "docs/STRATEGY_I1_TRAINABLE_SET_CONFIRMATION_20260812.md"),
+            "--p33_gate_audit", str(p33_gate_audit),
             "--output_dir", str(run_dir),
             "--private_dir", str(private),
             "--device", "cuda",

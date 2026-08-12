@@ -8,6 +8,7 @@ from training.paper2_phase3_p33_i1 import (
     P33_I1_AIM_SHARE_FLOOR,
     P33_I1_GATE_NAMES,
     P33_I1_PRESERVATION_SHARE_CEILING,
+    aim_convergence_classification,
     build_p33_i1_adamw_groups,
     i1_result_band,
     p33_i1_total,
@@ -93,3 +94,20 @@ def test_i1_result_bands_are_locked() -> None:
     assert i1_result_band(0.25) == "p34_charter_funded"
     assert i1_result_band(0.14901) == "middle_band_strategy_review"
     assert i1_result_band(0.04999) == "boundary_diagnostic"
+
+
+def test_r2_classifies_descending_and_plateau_curves() -> None:
+    descending = [
+        {"step": step, "aim_loss": loss}
+        for step, loss in zip((800, 850, 900, 950, 1000), (1.0, 0.98, 0.96, 0.94, 0.90))
+    ]
+    plateau = [
+        {"step": step, "aim_loss": loss}
+        for step, loss in zip((800, 850, 900, 950, 1000), (1.0, 1.005, 0.998, 1.002, 1.001))
+    ]
+    assert aim_convergence_classification(descending)["classification"] == (
+        "duration_next_still_descending"
+    )
+    assert aim_convergence_classification(plateau)["classification"] == (
+        "capacity_next_tail_plateau"
+    )

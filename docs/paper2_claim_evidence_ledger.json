@@ -891,6 +891,14 @@
         {
           "path": "docs/STRATEGY_P33_VERIFICATION_RULING_20260812.md",
           "locator": "banked canonical numbers, corrected V3 criterion, and i1 authorization"
+        },
+        {
+          "path": "docs/STRATEGY_I1_TRAINABLE_SET_CONFIRMATION_20260812.md",
+          "locator": "locked narrow trainable set, selector-invariance rider, and aim-loss convergence rider"
+        },
+        {
+          "path": "training/paper2_phase3_p33_i1_preregistration.json",
+          "locator": "locked-before-training i1 constants, hashes, riders, and decision bands"
         }
       ],
       "do_not_claim": [

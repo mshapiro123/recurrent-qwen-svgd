@@ -30,6 +30,8 @@ P33_I1_CALIBRATION_WEIGHT_MAX = 1_000.0
 P33_I1_BASELINE_PI_DIR = 0.14901016586409846
 P33_I1_P34_AUTOMATIC_THRESHOLD = 0.25
 P33_I1_BOUNDARY_THRESHOLD = 0.05
+P33_I1_CONVERGENCE_TAIL_LOOKS = 5
+P33_I1_CONVERGENCE_RELATIVE_THRESHOLD = 0.02
 
 P33_I1_GATE_NAMES = frozenset(
     {
@@ -201,3 +203,37 @@ def i1_result_band(pi_dir: float) -> str:
     if value < P33_I1_BOUNDARY_THRESHOLD:
         return "boundary_diagnostic"
     return "middle_band_strategy_review"
+
+
+def aim_convergence_classification(
+    curve: Sequence[Mapping[str, float | int]],
+) -> dict[str, Any]:
+    """Classify the fixed-audit aim curve without changing any run decision."""
+
+    if len(curve) < P33_I1_CONVERGENCE_TAIL_LOOKS:
+        return {"classification": "insufficient_looks", "looks": len(curve)}
+    tail = list(curve[-P33_I1_CONVERGENCE_TAIL_LOOKS:])
+    steps = torch.tensor([float(row["step"]) for row in tail], dtype=torch.float64)
+    values = torch.tensor([float(row["aim_loss"]) for row in tail], dtype=torch.float64)
+    centered = steps - steps.mean()
+    slope = float((centered * (values - values.mean())).sum() / centered.square().sum())
+    relative_change = float((values[-1] - values[0]) / max(abs(float(values[0])), 1e-12))
+    threshold = P33_I1_CONVERGENCE_RELATIVE_THRESHOLD
+    if relative_change <= -threshold and slope < 0.0:
+        classification = "duration_next_still_descending"
+    elif abs(relative_change) < threshold:
+        classification = "capacity_next_tail_plateau"
+    else:
+        classification = "mixed_or_rising_requires_review"
+    return {
+        "classification": classification,
+        "tail_looks": len(tail),
+        "tail_start_step": int(tail[0]["step"]),
+        "tail_end_step": int(tail[-1]["step"]),
+        "tail_start_aim_loss": float(values[0]),
+        "tail_end_aim_loss": float(values[-1]),
+        "tail_relative_change": relative_change,
+        "tail_ols_slope_per_step": slope,
+        "relative_threshold": threshold,
+        "descriptive_only": True,
+    }

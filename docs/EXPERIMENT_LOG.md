@@ -1945,6 +1945,9 @@ Colab/Drive backups for selected runs.
   one authorized i1 continuation preserves 1,000 updates, 20 looks, cohorts,
   clamp, optimizer settings, guardrails, and reader, removes gate loss, and
   calibrates aim to at least 70% post-clip share. The implementation freezes
-  the selector function by exposing only the post-selector output projection;
-  this selector-scope clarification remains to be confirmed before the lock is
-  marked final or an optimizer is launched. P3.4 remains unauthorized.
+  the selector function by exposing only the post-selector output projection.
+  Strategy confirmed that narrow trainable set and made two riders binding:
+  every audit must reproduce the P3.3 gate statistics and open-set membership
+  bit-for-bit, and the fixed-batch aim-loss convergence curve must classify any
+  middle-band result as duration-next or capacity-next. The i1 preregistration
+  is locked before training for both seeds. P3.4 remains unauthorized.

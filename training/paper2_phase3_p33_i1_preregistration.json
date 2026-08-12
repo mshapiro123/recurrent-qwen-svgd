@@ -1,10 +1,13 @@
 {
   "kind": "paper2_phase3_p33_i1_preregistration_v1",
-  "status": "draft_pending_selector_scope_confirmation",
+  "status": "locked_before_training",
   "authority": {
     "drive_id": "1oQkTW9VwI2Xbu8AyT2c0mLWHNy8Tew3n",
     "file": "docs/STRATEGY_P33_VERIFICATION_RULING_20260812.md",
-    "sha256": "bf60468965c5feb117cb2a3dd110f6746a5a56d2fddfb4fdca4aefad0b0aea3f"
+    "sha256": "bf60468965c5feb117cb2a3dd110f6746a5a56d2fddfb4fdca4aefad0b0aea3f",
+    "confirmation_drive_id": "1v0mwmGBoFAesjTaQ8ScgBZPBJDXcajKZ",
+    "confirmation_file": "docs/STRATEGY_I1_TRAINABLE_SET_CONFIRMATION_20260812.md",
+    "confirmation_sha256": "aad152380068e2770943ac865d3bd150b598a24b2f3442c439123ba0942edc9e"
   },
   "baseline": {
     "reader": "bf16_serving_matmul_v1",
@@ -53,6 +56,23 @@
     "marginal": "aim in [0.60,0.70) or preserve in (0.25,0.35]",
     "gross": "aim < 0.60 or preserve > 0.35",
     "stop": "gross immediately or marginal at two consecutive looks"
+  },
+  "riders": {
+    "r1_selector_invariant": {
+      "fields": ["gate_unclamped", "gate_deployed", "open_set_membership"],
+      "reference": "P3.3 endpoint audit rows for the same seed",
+      "cadence": "step 0 and all 20 audit looks",
+      "failure": "stop_class_implementation_fault"
+    },
+    "r2_aim_convergence": {
+      "surface": "mean aim loss on four fixed 128-row audit batches at every look",
+      "tail_looks": 5,
+      "relative_threshold": 0.02,
+      "duration_next": "tail relative change <= -0.02 and OLS slope < 0",
+      "capacity_next": "absolute tail relative change < 0.02",
+      "otherwise": "mixed_or_rising_requires_review",
+      "decision_role": "descriptive classification attached to the re-read"
+    }
   },
   "readings": {
     "p34_charter_funded": "pi_dir >= 0.25",
