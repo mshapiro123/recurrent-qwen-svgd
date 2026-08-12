@@ -1,0 +1,44 @@
+{
+  "groups": {
+    "code_negative": {
+      "eligible_rows": 88067,
+      "selected_rows": 96,
+      "selection_sha256": "8b1c1afb9ed6f1226dd711ad45931124d1cf55e64e8086b29e01acda07b2e46c"
+    },
+    "code_positive": {
+      "eligible_rows": 11853,
+      "selected_rows": 32,
+      "selection_sha256": "a621e23cbf3712eab894f669218dbc94e207eba2d0e9703be6766a4cda91cd87"
+    },
+    "general_negative": {
+      "eligible_rows": 15496,
+      "selected_rows": 96,
+      "selection_sha256": "a19fd5969099ddcb4e1b8dcd3802a6f42613c6cbfec7bf4f097f65dc022cbb3e"
+    },
+    "general_positive": {
+      "eligible_rows": 22668,
+      "selected_rows": 32,
+      "selection_sha256": "a5774e482a6e28cef45687920fa65c1ab74a4f4e642167258317c981e07e4cab"
+    }
+  },
+  "kind": "paper2_phase3_p34_share_calibration_selection_v1",
+  "negative_rows_per_stratum": 96,
+  "output_rows_file_sha256": "c6fe791d0689027201e3cbf98b4e7a13c6f12de61d3ba2eb5ab22064449fc4bb",
+  "output_rows_path": "outputs\\stage5\\stage5_paper2_phase3_p34_lock_20260812\\share_calibration\\p34_share_calibration_rows.jsonl",
+  "positive_rows_per_stratum": 32,
+  "rows": 256,
+  "rows_per_stratum": 128,
+  "seed": 20260812,
+  "selection_rule": "smallest SHA256(seed:stratum:gate_label:record_id) ranks among training-eligible non-audit rows",
+  "selection_sha256": "8bc475d01c261c7c7de8ca36219364c4d418603d4238c1464fc6a1d229e501b2",
+  "source_counts": {
+    "new": 201,
+    "old": 55
+  },
+  "source_path": ".codex_p33_retention_receipts2\\drive\\private\\p33_prep\\p33_staged_labels.jsonl",
+  "source_sha256": "4ad95e8e7f4dc4e37a0f149d70a1150800699259b1140ac5a9cfb8d13c22e004",
+  "strata": [
+    "code",
+    "general"
+  ]
+}

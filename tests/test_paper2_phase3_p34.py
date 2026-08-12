@@ -15,6 +15,7 @@ from training.paper2_phase3_p34 import (
     controller_transition,
     gap_closed,
     initial_annealing_state,
+    postclip_loss_gradient_norms,
     share_targets,
     slot_supervision_loss,
     solve_static_loss_weights,
@@ -54,16 +55,18 @@ def test_controller_uses_rung_specific_collateral_limits() -> None:
     assert receipt["chi_max_before"] == pytest.approx(0.0005)
 
 
-def test_loss_contract_warns_then_stops_per_named_loss() -> None:
+def test_loss_contract_observes_warns_then_stops_per_named_loss() -> None:
     bounds = LossShareBounds()
     shares = {"kl": 0.34, "aim": 0.20, "ce": 0.10, "gate": 0.03, "preserve": 0.20}
     first = classify_loss_shares(shares, bounds=bounds)
-    second = classify_loss_shares(
-        shares, bounds=bounds, prior_consecutive_misses=first["consecutive_misses"]
-    )
-    assert first["classification"] == "warn"
+    second = classify_loss_shares(shares, bounds=bounds, prior_consecutive_misses=1)
+    third = classify_loss_shares(shares, bounds=bounds, prior_consecutive_misses=2)
+    fourth = classify_loss_shares(shares, bounds=bounds, prior_consecutive_misses=3)
+    assert first["classification"] == "breach_observed"
     assert first["failed_contracts"] == ["kl"]
-    assert second["classification"] == "stop"
+    assert second["classification"] == "warn"
+    assert third["classification"] == "warn"
+    assert fourth["classification"] == "stop"
 
 
 def test_slot_arm_loss_contract_binds_slot_independently() -> None:
@@ -76,7 +79,7 @@ def test_slot_arm_loss_contract_binds_slot_independently() -> None:
         "preserve": 0.20,
     }
     result = classify_loss_shares(shares)
-    assert result["classification"] == "warn"
+    assert result["classification"] == "breach_observed"
     assert result["failed_contracts"] == ["slot"]
 
 
@@ -95,6 +98,36 @@ def test_share_solver_meets_every_arm_floor() -> None:
         assert solved["solved_shares"]["gate"] >= 0.03
         if slot_arm:
             assert solved["solved_shares"]["slot"] >= 0.10
+
+
+def test_postclip_attribution_includes_slot_lift_in_heads_group() -> None:
+    class ToyModule(torch.nn.Module):
+        def __init__(self) -> None:
+            super().__init__()
+            self.bridge = torch.nn.Linear(1, 1, bias=False)
+            self.control = torch.nn.Linear(1, 1, bias=False)
+
+    module = ToyModule()
+    lift = SlotSupervisionLift(latent_dim=1, hidden_size=1)
+    parameters = [*module.parameters(), *lift.parameters()]
+    values = [module.bridge.weight, module.control.weight, lift.lift.weight]
+    losses = {
+        "kl": values[0].sum(),
+        "aim": 2.0 * values[0].sum(),
+        "ce": values[1].sum(),
+        "gate": 2.0 * values[1].sum(),
+        "slot": values[2].sum(),
+        "preserve": 3.0 * values[0].sum(),
+    }
+    result = postclip_loss_gradient_norms(
+        losses=losses,
+        module=module,
+        parameters=parameters,
+        slot_lift=lift,
+    )
+    assert set(result["postclip_gradient_norms"]) == set(losses)
+    assert result["group_clip_ceilings"] == {"bridge": 0.5, "heads": 1.0}
+    assert sum(result["unit_weight_shares"].values()) == pytest.approx(1.0)
 
 
 def test_slot_lift_is_zero_init_and_only_lift_receives_gradients() -> None:

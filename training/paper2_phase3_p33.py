@@ -148,6 +148,7 @@ def p33_forward_losses(
         "positive_mask": positive,
         "negative_mask": negative,
         "writeback": output.hidden[:, 1:].float() - hidden4.float(),
+        "flow_states": output.flow.states,
     }
     return losses, metrics
 

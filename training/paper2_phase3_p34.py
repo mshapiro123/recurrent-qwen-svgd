@@ -7,8 +7,9 @@ is allowed to import these contracts into a run.
 
 from __future__ import annotations
 
+import math
 from dataclasses import asdict, dataclass
-from typing import Any, Mapping
+from typing import Any, Mapping, Sequence
 
 import torch
 from torch import nn
@@ -203,13 +204,24 @@ def classify_loss_shares(
         misses["slot"] = float(shares["slot"]) < bounds.slot_floor
     failed = sorted(name for name, missed in misses.items() if missed)
     consecutive = prior_consecutive_misses + 1 if failed else 0
+    if consecutive >= 4:
+        classification = "stop"
+    elif consecutive >= 2:
+        classification = "warn"
+    elif failed:
+        classification = "breach_observed"
+    else:
+        classification = "pass"
     return {
         "shares": {name: float(shares[name]) for name in names},
         "bounds": bounds.as_mapping(slot_arm=slot_arm),
         "failed_contracts": failed,
-        "classification": "stop" if consecutive >= 2 else "warn" if failed else "pass",
+        "classification": classification,
         "consecutive_misses": consecutive,
-        "rule": "first miss warns; two consecutive trailing-window misses stop",
+        "rule": (
+            "first breach is observed; two consecutive trailing-window breaches warn; "
+            "four consecutive breaches stop"
+        ),
     }
 
 
@@ -370,6 +382,97 @@ def solve_static_loss_weights(
         "static_weights_kl_normalized": weights,
         "solved_shares": realized,
         "preservation_at_or_below_25_percent": realized["preserve"] <= 0.25 + 1e-12,
+    }
+
+
+def postclip_loss_gradient_norms(
+    *,
+    losses: Mapping[str, torch.Tensor],
+    module: Phase3StudentModules,
+    parameters: Sequence[nn.Parameter],
+    slot_lift: SlotSupervisionLift | None = None,
+) -> dict[str, Any]:
+    """Attribute unit-weight losses after the registered group clipping operation."""
+
+    names = P34_SLOT_LOSS_NAMES if "slot" in losses else P34_LOSS_NAMES
+    if set(losses) != set(names):
+        raise ValueError("P3.4 post-clip attribution requires the complete arm loss set")
+    active = [parameter for parameter in parameters if parameter.requires_grad]
+    if not active:
+        raise ValueError("P3.4 post-clip attribution has no trainable parameters")
+
+    gradients: dict[str, dict[int, torch.Tensor]] = {}
+    for index, name in enumerate(names):
+        values = torch.autograd.grad(
+            losses[name],
+            active,
+            retain_graph=index + 1 < len(names),
+            allow_unused=True,
+        )
+        gradients[name] = {
+            id(parameter): gradient.detach()
+            for parameter, gradient in zip(active, values)
+            if gradient is not None
+        }
+
+    parameter_group: dict[int, tuple[str, float]] = {}
+    for parameter in module.bridge.parameters():
+        if parameter.requires_grad:
+            parameter_group[id(parameter)] = ("bridge", 0.5)
+    for parameter in module.control.parameters():
+        if parameter.requires_grad:
+            parameter_group[id(parameter)] = ("heads", 1.0)
+    if slot_lift is not None:
+        for parameter in slot_lift.parameters():
+            if parameter.requires_grad:
+                parameter_group[id(parameter)] = ("heads", 1.0)
+    uncovered = [parameter for parameter in active if id(parameter) not in parameter_group]
+    if uncovered:
+        raise RuntimeError("P3.4 clip attribution does not cover every trainable parameter")
+
+    group_combined_sq: dict[str, float] = {}
+    group_ceiling: dict[str, float] = {}
+    for parameter in active:
+        group_name, ceiling = parameter_group[id(parameter)]
+        group_ceiling[group_name] = ceiling
+        combined = sum(
+            (
+                gradients[name].get(id(parameter), torch.zeros_like(parameter))
+                for name in names
+            ),
+            torch.zeros_like(parameter),
+        )
+        group_combined_sq[group_name] = group_combined_sq.get(group_name, 0.0) + float(
+            combined.double().square().sum()
+        )
+    group_scales = {
+        name: min(1.0, group_ceiling[name] / max(math.sqrt(value), 1e-30))
+        for name, value in group_combined_sq.items()
+    }
+    postclip_norms: dict[str, float] = {}
+    for name in names:
+        squared = 0.0
+        for parameter in active:
+            gradient = gradients[name].get(id(parameter))
+            if gradient is None:
+                continue
+            group_name, _ = parameter_group[id(parameter)]
+            squared += float((gradient.double() * group_scales[group_name]).square().sum())
+        postclip_norms[name] = math.sqrt(squared)
+    if any(value <= 0.0 for value in postclip_norms.values()):
+        raise RuntimeError("P3.4 calibration found a loss with zero post-clip gradient")
+    denominator = sum(postclip_norms.values())
+    return {
+        "estimator": "unit-weight independent loss gradients under combined registered group clips",
+        "postclip_gradient_norms": postclip_norms,
+        "unit_weight_shares": {
+            name: value / denominator for name, value in postclip_norms.items()
+        },
+        "group_combined_norms": {
+            name: math.sqrt(value) for name, value in group_combined_sq.items()
+        },
+        "group_clip_scales": group_scales,
+        "group_clip_ceilings": group_ceiling,
     }
 
 
