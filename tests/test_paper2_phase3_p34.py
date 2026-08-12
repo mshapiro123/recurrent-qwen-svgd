@@ -16,9 +16,11 @@ from training.paper2_phase3_p34 import (
     gap_closed,
     initial_annealing_state,
     postclip_loss_gradient_norms,
+    loss_gradient_bundle,
     share_targets,
     slot_supervision_loss,
     solve_static_loss_weights,
+    solve_static_loss_weights_from_bundles,
     weighted_p34_total,
 )
 
@@ -128,6 +130,32 @@ def test_postclip_attribution_includes_slot_lift_in_heads_group() -> None:
     assert set(result["postclip_gradient_norms"]) == set(losses)
     assert result["group_clip_ceilings"] == {"bridge": 0.5, "heads": 1.0}
     assert sum(result["unit_weight_shares"].values()) == pytest.approx(1.0)
+
+
+def test_exact_share_solver_recomputes_group_clips_after_weighting() -> None:
+    class ToyModule(torch.nn.Module):
+        def __init__(self) -> None:
+            super().__init__()
+            self.bridge = torch.nn.Linear(1, 1, bias=False)
+            self.control = torch.nn.Linear(1, 1, bias=False)
+
+    module = ToyModule()
+    losses = {
+        "kl": 10.0 * module.bridge.weight.sum(),
+        "aim": module.bridge.weight.sum(),
+        "ce": 5.0 * module.control.weight.sum(),
+        "gate": module.control.weight.sum(),
+        "preserve": 3.0 * module.bridge.weight.sum(),
+    }
+    bundle = loss_gradient_bundle(
+        losses=losses, module=module, parameters=list(module.parameters())
+    )
+    solved = solve_static_loss_weights_from_bundles([bundle], slot_arm=False)
+    assert solved["converged"]
+    assert solved["maximum_share_error"] <= solved["tolerance"]
+    assert solved["solved_mean_postclip_shares"] == pytest.approx(
+        share_targets(slot_arm=False), abs=1e-7
+    )
 
 
 def test_slot_lift_is_zero_init_and_only_lift_receives_gradients() -> None:

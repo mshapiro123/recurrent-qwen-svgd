@@ -394,6 +394,24 @@ def postclip_loss_gradient_norms(
 ) -> dict[str, Any]:
     """Attribute unit-weight losses after the registered group clipping operation."""
 
+    bundle = loss_gradient_bundle(
+        losses=losses,
+        module=module,
+        parameters=parameters,
+        slot_lift=slot_lift,
+    )
+    return postclip_gradient_norms_from_bundle(bundle)
+
+
+def loss_gradient_bundle(
+    *,
+    losses: Mapping[str, torch.Tensor],
+    module: Phase3StudentModules,
+    parameters: Sequence[nn.Parameter],
+    slot_lift: SlotSupervisionLift | None = None,
+) -> dict[str, Any]:
+    """Detach one batch's per-loss gradients for exact static-weight solving."""
+
     names = P34_SLOT_LOSS_NAMES if "slot" in losses else P34_LOSS_NAMES
     if set(losses) != set(names):
         raise ValueError("P3.4 post-clip attribution requires the complete arm loss set")
@@ -430,18 +448,41 @@ def postclip_loss_gradient_norms(
     if uncovered:
         raise RuntimeError("P3.4 clip attribution does not cover every trainable parameter")
 
+    return {
+        "names": names,
+        "parameter_ids": [id(parameter) for parameter in active],
+        "gradients": gradients,
+        "parameter_groups": parameter_group,
+    }
+
+
+def postclip_gradient_norms_from_bundle(
+    bundle: Mapping[str, Any], *, weights: Mapping[str, float] | None = None
+) -> dict[str, Any]:
+    """Apply exact combined group clips to one detached gradient bundle."""
+
+    names = tuple(bundle["names"])
+    weights = {name: 1.0 for name in names} if weights is None else {
+        name: float(weights[name]) for name in names
+    }
+    if set(weights) != set(names) or any(value < 0.0 for value in weights.values()):
+        raise ValueError("P3.4 post-clip weights must cover every non-negative loss")
+    gradients = bundle["gradients"]
+    parameter_ids = list(bundle["parameter_ids"])
+    parameter_group = bundle["parameter_groups"]
     group_combined_sq: dict[str, float] = {}
     group_ceiling: dict[str, float] = {}
-    for parameter in active:
-        group_name, ceiling = parameter_group[id(parameter)]
-        group_ceiling[group_name] = ceiling
-        combined = sum(
-            (
-                gradients[name].get(id(parameter), torch.zeros_like(parameter))
-                for name in names
-            ),
-            torch.zeros_like(parameter),
-        )
+    for parameter_id in parameter_ids:
+        group_name, ceiling = parameter_group[parameter_id]
+        group_ceiling[group_name] = float(ceiling)
+        available = [
+            weights[name] * gradients[name][parameter_id]
+            for name in names
+            if parameter_id in gradients[name]
+        ]
+        if not available:
+            continue
+        combined = sum(available[1:], available[0])
         group_combined_sq[group_name] = group_combined_sq.get(group_name, 0.0) + float(
             combined.double().square().sum()
         )
@@ -452,18 +493,21 @@ def postclip_loss_gradient_norms(
     postclip_norms: dict[str, float] = {}
     for name in names:
         squared = 0.0
-        for parameter in active:
-            gradient = gradients[name].get(id(parameter))
+        for parameter_id in parameter_ids:
+            gradient = gradients[name].get(parameter_id)
             if gradient is None:
                 continue
-            group_name, _ = parameter_group[id(parameter)]
-            squared += float((gradient.double() * group_scales[group_name]).square().sum())
+            group_name, _ = parameter_group[parameter_id]
+            squared += float(
+                (weights[name] * gradient.double() * group_scales[group_name]).square().sum()
+            )
         postclip_norms[name] = math.sqrt(squared)
     if any(value <= 0.0 for value in postclip_norms.values()):
         raise RuntimeError("P3.4 calibration found a loss with zero post-clip gradient")
     denominator = sum(postclip_norms.values())
     return {
         "estimator": "unit-weight independent loss gradients under combined registered group clips",
+        "weights": weights,
         "postclip_gradient_norms": postclip_norms,
         "unit_weight_shares": {
             name: value / denominator for name, value in postclip_norms.items()
@@ -473,6 +517,72 @@ def postclip_loss_gradient_norms(
         },
         "group_clip_scales": group_scales,
         "group_clip_ceilings": group_ceiling,
+    }
+
+
+def solve_static_loss_weights_from_bundles(
+    bundles: Sequence[Mapping[str, Any]],
+    *,
+    slot_arm: bool,
+    tolerance: float = 1e-8,
+    maximum_iterations: int = 200,
+) -> dict[str, Any]:
+    """Solve weights against mean post-clip norms across fixed strata."""
+
+    if not bundles:
+        raise ValueError("P3.4 static-weight solve needs at least one stratum bundle")
+    names = P34_SLOT_LOSS_NAMES if slot_arm else P34_LOSS_NAMES
+    if any(tuple(bundle["names"]) != names for bundle in bundles):
+        raise ValueError("P3.4 gradient bundle loss names changed")
+    targets = share_targets(slot_arm=slot_arm)
+    unit_reads = [postclip_gradient_norms_from_bundle(bundle) for bundle in bundles]
+    unit_mean = {
+        name: sum(read["postclip_gradient_norms"][name] for read in unit_reads)
+        / len(unit_reads)
+        for name in names
+    }
+    initial = solve_static_loss_weights(unit_mean, slot_arm=slot_arm)
+    weights = dict(initial["static_weights_kl_normalized"])
+    converged = False
+    final_reads: list[dict[str, Any]] = []
+    shares: dict[str, float] = {}
+    for iteration in range(1, maximum_iterations + 1):
+        final_reads = [
+            postclip_gradient_norms_from_bundle(bundle, weights=weights)
+            for bundle in bundles
+        ]
+        mean_norms = {
+            name: sum(read["postclip_gradient_norms"][name] for read in final_reads)
+            / len(final_reads)
+            for name in names
+        }
+        denominator = sum(mean_norms.values())
+        shares = {name: mean_norms[name] / denominator for name in names}
+        maximum_error = max(abs(shares[name] - targets[name]) for name in names)
+        if maximum_error <= tolerance:
+            converged = True
+            break
+        weights = {
+            name: weights[name] * targets[name] / max(shares[name], 1e-30)
+            for name in names
+        }
+        anchor = weights["kl"]
+        weights = {name: value / anchor for name, value in weights.items()}
+    if not converged:
+        raise RuntimeError("P3.4 exact post-clip static-weight solve did not converge")
+    return {
+        "slot_arm": slot_arm,
+        "strata": len(bundles),
+        "unit_weight_mean_postclip_gradient_norms": unit_mean,
+        "target_shares": targets,
+        "static_weights_kl_normalized": weights,
+        "solved_mean_postclip_shares": shares,
+        "iterations": iteration,
+        "maximum_share_error": max(abs(shares[name] - targets[name]) for name in names),
+        "tolerance": tolerance,
+        "converged": converged,
+        "per_stratum_solved_reads": final_reads,
+        "preservation_at_or_below_25_percent": shares["preserve"] <= 0.25 + tolerance,
     }
 
 

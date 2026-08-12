@@ -15,11 +15,12 @@ from eval.eval_paper2_phase3_p34_task_trajectory import load_condition
 from training.paper2_phase3_p32 import GateLabel
 from training.paper2_phase3_p34 import (
     SlotSupervisionLift,
+    loss_gradient_bundle,
     p34_forward_losses,
-    postclip_loss_gradient_norms,
+    postclip_gradient_norms_from_bundle,
     set_p34_trainable,
     slot_supervision_loss,
-    solve_static_loss_weights,
+    solve_static_loss_weights_from_bundles,
 )
 from training.run_paper2_phase2_matched_alpha import _local_source, _parallel_receipts
 
@@ -255,7 +256,7 @@ def arm_read(
     module: Any,
     batch: Mapping[str, torch.Tensor],
     slot_arm: bool,
-) -> dict[str, Any]:
+) -> tuple[dict[str, Any], dict[str, Any]]:
     trainable = set_p34_trainable(module)
     slot_lift = SlotSupervisionLift().to(next(module.parameters()).device) if slot_arm else None
     parameters = list(trainable.values())
@@ -290,18 +291,19 @@ def arm_read(
         losses = {**losses, "slot": slot}
     else:
         telemetry = None
-    attribution = postclip_loss_gradient_norms(
+    bundle = loss_gradient_bundle(
         losses=losses,
         module=module,
         parameters=parameters,
         slot_lift=slot_lift,
     )
+    attribution = postclip_gradient_norms_from_bundle(bundle)
     return {
         "slot_arm": slot_arm,
         "losses": {name: float(value.detach()) for name, value in losses.items()},
         **attribution,
         "slot_telemetry": telemetry,
-    }
+    }, bundle
 
 
 def main() -> int:
@@ -367,27 +369,26 @@ def main() -> int:
 
     strata = sorted({str(row["stratum"]) for row in records})
     reads: dict[str, dict[str, Any]] = {"main": {}, "slot": {}}
+    bundles: dict[str, list[dict[str, Any]]] = {"main": [], "slot": []}
     for stratum in strata:
         indexes = torch.tensor(
             [index for index, row in enumerate(records) if str(row["stratum"]) == stratum],
             device=args.device,
         )
         stratum_batch = {key: value.index_select(0, indexes) for key, value in batch.items()}
-        reads["main"][stratum] = arm_read(
+        reads["main"][stratum], main_bundle = arm_read(
             module=module, batch=stratum_batch, slot_arm=False
         )
-        reads["slot"][stratum] = arm_read(
+        reads["slot"][stratum], slot_bundle = arm_read(
             module=module, batch=stratum_batch, slot_arm=True
         )
+        bundles["main"].append(main_bundle)
+        bundles["slot"].append(slot_bundle)
     solved = {}
     for arm, slot_arm in (("main", False), ("slot", True)):
-        names = tuple(reads[arm][strata[0]]["postclip_gradient_norms"])
-        mean_norms = {
-            name: sum(reads[arm][stratum]["postclip_gradient_norms"][name] for stratum in strata)
-            / len(strata)
-            for name in names
-        }
-        solved[arm] = solve_static_loss_weights(mean_norms, slot_arm=slot_arm)
+        solved[arm] = solve_static_loss_weights_from_bundles(
+            bundles[arm], slot_arm=slot_arm
+        )
     result = {
         "kind": "paper2_phase3_p34_step0_share_calibration_v1",
         "status": "complete_read_only_no_optimizer",
