@@ -76,6 +76,7 @@ def test_share_compaction_is_cpu_only_and_training_disabled() -> None:
         / "colab/run_stage5_paper2_phase3_p34_share_compaction.py"
     ).read_text(encoding="utf-8")
     assert 'device="cpu"' in source
+    assert "sys.path.insert(0, str(REPOSITORY_ROOT))" in source
     assert '"optimizer_steps": 0' in source
     assert '"training_authorized": False' in source
     assert "p34_share_compact_batch.pt" in source
