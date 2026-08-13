@@ -251,7 +251,9 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     share_window: deque[dict[str, float]] = deque(maxlen=SHARE_WINDOW_STEPS)
     share_contract_events: list[dict[str, Any]] = []
     share_misses = 0; tier_s_streak = 0; tier_w_streak = 0
-    controller = initial_annealing_state(tuple(lock["guardrails"]["chi_max_by_rung"]))
+    controller = initial_annealing_state(
+        chi_max_by_rung=tuple(lock["guardrails"]["chi_max_by_rung"])
+    )
     last_pi_dep = 0.0; last_chi = 0.0; stop_reason: str | None = None
     fixed_rows = read_jsonl(args.share_rows)
     if len(fixed_rows) != 256:

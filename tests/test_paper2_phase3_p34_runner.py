@@ -6,7 +6,11 @@ from pathlib import Path
 import pytest
 import torch
 
-from training.paper2_phase3_p34 import P34_FLOW_LOOPS, slot_supervision_loss
+from training.paper2_phase3_p34 import (
+    P34_FLOW_LOOPS,
+    initial_annealing_state,
+    slot_supervision_loss,
+)
 from training.run_paper2_phase3_p34 import _advance_sequential_rule, _task_guardrail
 
 
@@ -28,6 +32,17 @@ def test_task_guardrail_uses_paired_task_differences() -> None:
     assert read["mean_augmented_minus_base"] == -0.6
     assert read["tier_s_condition"]
     assert read["tier_w_condition"]
+
+
+def test_runner_controller_initialization_accepts_locked_chi_vector() -> None:
+    lock = json.loads(
+        (ROOT / "training/paper2_phase3_p34_preregistration.json").read_text()
+    )
+    state = initial_annealing_state(
+        chi_max_by_rung=tuple(lock["guardrails"]["chi_max_by_rung"])
+    )
+    assert state.rung == lock["controller"]["initial_rung"]
+    assert list(state.chi_max_by_rung) == lock["guardrails"]["chi_max_by_rung"]
 
 
 def test_runner_is_sealed_partition_blind_and_resumable() -> None:
