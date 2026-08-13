@@ -1,0 +1,334 @@
+{
+  "batch_receipt": {
+    "compact_batch_sha256": "f0207e6242424bcc44659d4c020af1cdc15a8e7f764cb3853a11f3086159b1df",
+    "direction_cache_sha256": "611be787dea0438761d279aa035d5bfe2aa37e74710d880be1066d7ae80a45a2",
+    "negative_rows": 192,
+    "positive_rows": 64,
+    "rows": 256
+  },
+  "calibrated_arms": [
+    "main"
+  ],
+  "calibration_seed": 1,
+  "checkpoint_receipts": [
+    {
+      "label": "migrated",
+      "optimizer_state_absent": true,
+      "path": "/mnt/local-scratch/p34-share-calibration/seed_1_migrated.pt",
+      "sha256": "3ca1cdf8dd16bf4f435e81a675d7514778144c5c881af52a70171659f7734b4f",
+      "source_seed": 1,
+      "trainable_state_sha256": "baa46ebb8465f2c632023a58d4db1c283bf4a1e5e34971784b3a09343f00d8d7"
+    },
+    {
+      "label": "p33",
+      "path": "/mnt/local-scratch/p34-share-calibration/seed_1_p33.pt",
+      "sha256": "e80ad205eb3c4712fdee5303a4887260488f67ff858a2b4b005d724675e52067",
+      "state_keys": [
+        "bridge.gate_control.weight",
+        "bridge.gate_hidden.weight",
+        "bridge.gate_logits",
+        "bridge.gate_scratch.weight",
+        "bridge.hidden_norm.weight",
+        "bridge.key.weight",
+        "bridge.output_projection.weight",
+        "bridge.query.weight",
+        "bridge.rho_logits",
+        "bridge.scratch_norm.weight",
+        "bridge.value.weight",
+        "control.cell.bias_hh",
+        "control.cell.bias_ih",
+        "control.cell.weight_hh",
+        "control.cell.weight_ih",
+        "control.position_embedding.weight"
+      ],
+      "step": 1000
+    },
+    {
+      "label": "i1",
+      "path": "/mnt/local-scratch/p34-share-calibration/seed_1_i1.pt",
+      "sha256": "2ed3296f510a6c3a66c451051ecbe2284de03b35dde4052827174a66a10c1d4a",
+      "state_keys": [
+        "bridge.output_projection.weight"
+      ],
+      "step": 1000
+    }
+  ],
+  "estimator": "mean across fixed code and general 128-row strata of unit-weight independent loss gradient norms after the registered combined bridge/head clipping factors",
+  "kind": "paper2_phase3_p34_step0_share_calibration_v1",
+  "lm_head_sha256": "c8df8c518c4ac72777279d843142774e449e1fa344df2c08ee6ab1e5535fbd2d",
+  "optimizer_constructed": false,
+  "optimizer_steps": 0,
+  "rows_file_sha256": "c6fe791d0689027201e3cbf98b4e7a13c6f12de61d3ba2eb5ab22064449fc4bb",
+  "selection": {
+    "groups": {
+      "code_negative": {
+        "eligible_rows": 88067,
+        "selected_rows": 96,
+        "selection_sha256": "8b1c1afb9ed6f1226dd711ad45931124d1cf55e64e8086b29e01acda07b2e46c"
+      },
+      "code_positive": {
+        "eligible_rows": 11853,
+        "selected_rows": 32,
+        "selection_sha256": "a621e23cbf3712eab894f669218dbc94e207eba2d0e9703be6766a4cda91cd87"
+      },
+      "general_negative": {
+        "eligible_rows": 15496,
+        "selected_rows": 96,
+        "selection_sha256": "a19fd5969099ddcb4e1b8dcd3802a6f42613c6cbfec7bf4f097f65dc022cbb3e"
+      },
+      "general_positive": {
+        "eligible_rows": 22668,
+        "selected_rows": 32,
+        "selection_sha256": "a5774e482a6e28cef45687920fa65c1ab74a4f4e642167258317c981e07e4cab"
+      }
+    },
+    "kind": "paper2_phase3_p34_share_calibration_selection_v1",
+    "negative_rows_per_stratum": 96,
+    "output_rows_file_sha256": "c6fe791d0689027201e3cbf98b4e7a13c6f12de61d3ba2eb5ab22064449fc4bb",
+    "output_rows_path": "outputs\\stage5\\stage5_paper2_phase3_p34_lock_20260812\\share_calibration\\p34_share_calibration_rows.jsonl",
+    "positive_rows_per_stratum": 32,
+    "rows": 256,
+    "rows_per_stratum": 128,
+    "seed": 20260812,
+    "selection_rule": "smallest SHA256(seed:stratum:gate_label:record_id) ranks among training-eligible non-audit rows",
+    "selection_sha256": "8bc475d01c261c7c7de8ca36219364c4d418603d4238c1464fc6a1d229e501b2",
+    "source_counts": {
+      "new": 201,
+      "old": 55
+    },
+    "source_path": ".codex_p33_retention_receipts2\\drive\\private\\p33_prep\\p33_staged_labels.jsonl",
+    "source_sha256": "4ad95e8e7f4dc4e37a0f149d70a1150800699259b1140ac5a9cfb8d13c22e004",
+    "strata": [
+      "code",
+      "general"
+    ]
+  },
+  "selection_receipt_sha256": "4f25c4cfebb1fa15f3616f8eae90e2c0d2fd29ea8653d46eae8dd30d16dbebcd",
+  "solved": {
+    "main": {
+      "converged": true,
+      "iterations": 2,
+      "maximum_share_error": 2.7755575615628914e-17,
+      "per_stratum_solved_reads": [
+        {
+          "estimator": "unit-weight independent loss gradients under combined registered group clips",
+          "group_clip_ceilings": {
+            "bridge": 0.5,
+            "heads": 1.0
+          },
+          "group_clip_scales": {
+            "bridge": 1.0,
+            "heads": 1.0
+          },
+          "group_combined_norms": {
+            "bridge": 0.004252207345994175,
+            "heads": 5.357912151222571e-08
+          },
+          "postclip_gradient_norms": {
+            "aim": 0.0014804189050520613,
+            "ce": 0.0009115248379940398,
+            "gate": 0.00023523116307794427,
+            "kl": 0.002807803901391499,
+            "preserve": 0.000542676188772996
+          },
+          "unit_weight_shares": {
+            "aim": 0.24765880700228385,
+            "ce": 0.15248869975935303,
+            "gate": 0.03935174633263323,
+            "kl": 0.46971662016875065,
+            "preserve": 0.09078412673697925
+          },
+          "weights": {
+            "aim": 0.021103036866760495,
+            "ce": 0.03310889414105432,
+            "gate": 6.162627051541333e-05,
+            "kl": 1.0,
+            "preserve": 9.890759602752988
+          }
+        },
+        {
+          "estimator": "unit-weight independent loss gradients under combined registered group clips",
+          "group_clip_ceilings": {
+            "bridge": 0.5,
+            "heads": 1.0
+          },
+          "group_clip_scales": {
+            "bridge": 1.0,
+            "heads": 1.0
+          },
+          "group_combined_norms": {
+            "bridge": 0.004331634350696591,
+            "heads": 1.2621482449070402e-06
+          },
+          "postclip_gradient_norms": {
+            "aim": 0.0007171415190349236,
+            "ce": 0.0005535154447306174,
+            "gate": 0.00020428092173945276,
+            "kl": 0.0023198370881447987,
+            "preserve": 0.002533908404948783
+          },
+          "unit_weight_shares": {
+            "aim": 0.11331606846694985,
+            "ce": 0.08746138993181675,
+            "gate": 0.03227858142346959,
+            "kl": 0.3665591955492177,
+            "preserve": 0.40038476462854616
+          },
+          "weights": {
+            "aim": 0.021103036866760495,
+            "ce": 0.03310889414105432,
+            "gate": 6.162627051541333e-05,
+            "kl": 1.0,
+            "preserve": 9.890759602752988
+          }
+        }
+      ],
+      "preservation_at_or_below_25_percent": true,
+      "slot_arm": false,
+      "solved_mean_postclip_shares": {
+        "aim": 0.17857142857142858,
+        "ce": 0.11904761904761908,
+        "gate": 0.03571428571428571,
+        "kl": 0.41666666666666663,
+        "preserve": 0.25
+      },
+      "static_weights_kl_normalized": {
+        "aim": 0.021103036866760495,
+        "ce": 0.03310889414105432,
+        "gate": 6.162627051541333e-05,
+        "kl": 1.0,
+        "preserve": 9.890759602752988
+      },
+      "strata": 2,
+      "target_shares": {
+        "aim": 0.17857142857142858,
+        "ce": 0.11904761904761905,
+        "gate": 0.03571428571428571,
+        "kl": 0.41666666666666663,
+        "preserve": 0.25
+      },
+      "tolerance": 1e-08,
+      "unit_weight_mean_postclip_gradient_norms": {
+        "aim": 0.007144096095719726,
+        "ce": 0.0030586572962822815,
+        "gate": 0.4992379131111968,
+        "kl": 0.0003582988541109924,
+        "preserve": 2.2899946954960896e-05
+      }
+    }
+  },
+  "source_receipts": [
+    {
+      "manifest_sha256": "43edbb74c5edf84dc5e6512dbe4beb1bbbf0f4df31b2c6830714ce2c8fc7ba93",
+      "selected_anchors": 55,
+      "source": "old",
+      "summary_sha256": "654ca11335e34a6c8fc6136276943df637b95c044892e8591b20600a04a4cd91",
+      "verified_file_ledger_sha256": "e6c8d215303df337e4e35fce20fc730550e8158c05242756c6a13a77ac283554",
+      "verified_files": 86
+    },
+    {
+      "manifest_sha256": "8a50b8ac3a9cc361be918b968a2a8ae490d4aff79a83d41fcdc774a951788187",
+      "selected_anchors": 201,
+      "source": "new",
+      "summary_sha256": "fe7735267d03b13973a5f603aba38b2959101f725bdb1ef95230bee612c88b0e",
+      "verified_file_ledger_sha256": "a632bad6e798ad830f29d75ffc43bf575e7274d954d30279d744d9eecd8ea7ab",
+      "verified_files": 260
+    }
+  ],
+  "status": "complete_read_only_no_optimizer",
+  "stratum_reads": {
+    "main": {
+      "code": {
+        "estimator": "unit-weight independent loss gradients under combined registered group clips",
+        "group_clip_ceilings": {
+          "bridge": 0.5,
+          "heads": 1.0
+        },
+        "group_clip_scales": {
+          "bridge": 0.13062595375213765,
+          "heads": 1.0
+        },
+        "group_combined_norms": {
+          "bridge": 3.8277232482355577,
+          "heads": 0.00020956475307370027
+        },
+        "losses": {
+          "aim": 0.9299430847167969,
+          "ce": 2.9024760723114014,
+          "gate": 0.4820217490196228,
+          "kl": 0.3760943114757538,
+          "preserve": 1.813611015677452e-05
+        },
+        "postclip_gradient_norms": {
+          "aim": 0.009163663630314576,
+          "ce": 0.0035962784202518026,
+          "gate": 0.4986071271603267,
+          "kl": 0.00036677206587145745,
+          "preserve": 7.167052643409222e-06
+        },
+        "slot_arm": false,
+        "slot_telemetry": null,
+        "unit_weight_shares": {
+          "aim": 0.0179068385788147,
+          "ce": 0.007027536120257293,
+          "gate": 0.9743349058306717,
+          "kl": 0.0007167142361109471,
+          "preserve": 1.400523414530771e-05
+        },
+        "weights": {
+          "aim": 1.0,
+          "ce": 1.0,
+          "gate": 1.0,
+          "kl": 1.0,
+          "preserve": 1.0
+        }
+      },
+      "general": {
+        "estimator": "unit-weight independent loss gradients under combined registered group clips",
+        "group_clip_ceilings": {
+          "bridge": 0.5,
+          "heads": 1.0
+        },
+        "group_clip_scales": {
+          "bridge": 0.1507974538912716,
+          "heads": 1.0
+        },
+        "group_combined_norms": {
+          "bridge": 3.3157058497851786,
+          "heads": 0.00011501442187733396
+        },
+        "losses": {
+          "aim": 0.8804160356521606,
+          "ce": 3.09806489944458,
+          "gate": 0.31485792994499207,
+          "kl": 0.36836302280426025,
+          "preserve": 3.76364441763144e-05
+        },
+        "postclip_gradient_norms": {
+          "aim": 0.005124528561124876,
+          "ce": 0.0025210361723127604,
+          "gate": 0.49986869906206693,
+          "kl": 0.0003498256423505274,
+          "preserve": 3.8632841266512574e-05
+        },
+        "slot_arm": false,
+        "slot_telemetry": null,
+        "unit_weight_shares": {
+          "aim": 0.010089586718750947,
+          "ce": 0.0049636201219793955,
+          "gate": 0.9841819646466878,
+          "kl": 0.0006887650469380201,
+          "preserve": 7.606346564388292e-05
+        },
+        "weights": {
+          "aim": 1.0,
+          "ce": 1.0,
+          "gate": 1.0,
+          "kl": 1.0,
+          "preserve": 1.0
+        }
+      }
+    }
+  },
+  "training_authorized": false
+}

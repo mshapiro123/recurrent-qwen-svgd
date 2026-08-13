@@ -262,7 +262,6 @@ def main() -> int:
     result = json.loads(OUTPUT.read_text(encoding="utf-8"))
     if result["optimizer_steps"] != 0 or result["training_authorized"]:
         raise RuntimeError("P3.4 share calibration crossed the no-training boundary")
-    copy_file_target = f"{RUN_ID}/receipts/p34_share_calibration_seed_{SEED}.json"
     print(f"P34_SHARE_CALIBRATION_RECEIPT={OUTPUT}", flush=True)
     print(
         "P34_SHARE_CALIBRATION_PUBLICATION=caller_managed_read_only_drive_credentials",

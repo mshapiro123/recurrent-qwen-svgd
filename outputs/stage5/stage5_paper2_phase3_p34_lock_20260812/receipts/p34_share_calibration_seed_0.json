@@ -1,0 +1,2160 @@
+{
+  "batch_receipt": {
+    "compact_batch_sha256": "f0207e6242424bcc44659d4c020af1cdc15a8e7f764cb3853a11f3086159b1df",
+    "direction_cache_sha256": "611be787dea0438761d279aa035d5bfe2aa37e74710d880be1066d7ae80a45a2",
+    "negative_rows": 192,
+    "positive_rows": 64,
+    "rows": 256
+  },
+  "calibrated_arms": [
+    "main",
+    "slot"
+  ],
+  "calibration_seed": 0,
+  "checkpoint_receipts": [
+    {
+      "label": "migrated",
+      "optimizer_state_absent": true,
+      "path": "/mnt/local-scratch/p34-share-calibration/seed_0_migrated.pt",
+      "sha256": "d0f2b735825d29ab9801a5200493ca9aa65294778aea2fb7f728eb8e85dfc519",
+      "source_seed": 0,
+      "trainable_state_sha256": "97b4bd426f6a5ea265aa27c30520151761d460abebbb7112e23193f5e6a8d059"
+    },
+    {
+      "label": "p33",
+      "path": "/mnt/local-scratch/p34-share-calibration/seed_0_p33.pt",
+      "sha256": "84dc0fb2d1f69114b20888acd95101d6b31c810974a536dc36358b69fe13c70e",
+      "state_keys": [
+        "bridge.gate_control.weight",
+        "bridge.gate_hidden.weight",
+        "bridge.gate_logits",
+        "bridge.gate_scratch.weight",
+        "bridge.hidden_norm.weight",
+        "bridge.key.weight",
+        "bridge.output_projection.weight",
+        "bridge.query.weight",
+        "bridge.rho_logits",
+        "bridge.scratch_norm.weight",
+        "bridge.value.weight",
+        "control.cell.bias_hh",
+        "control.cell.bias_ih",
+        "control.cell.weight_hh",
+        "control.cell.weight_ih",
+        "control.position_embedding.weight"
+      ],
+      "step": 1000
+    },
+    {
+      "label": "i1",
+      "path": "/mnt/local-scratch/p34-share-calibration/seed_0_i1.pt",
+      "sha256": "01c804bc69d35a01730fff236cf5a8d974899d2e4de7e15b92a227b2a9ce5d88",
+      "state_keys": [
+        "bridge.output_projection.weight"
+      ],
+      "step": 1000
+    }
+  ],
+  "estimator": "mean across fixed code and general 128-row strata of unit-weight independent loss gradient norms after the registered combined bridge/head clipping factors",
+  "kind": "paper2_phase3_p34_step0_share_calibration_v1",
+  "lm_head_sha256": "c8df8c518c4ac72777279d843142774e449e1fa344df2c08ee6ab1e5535fbd2d",
+  "optimizer_constructed": false,
+  "optimizer_steps": 0,
+  "rows_file_sha256": "c6fe791d0689027201e3cbf98b4e7a13c6f12de61d3ba2eb5ab22064449fc4bb",
+  "selection": {
+    "groups": {
+      "code_negative": {
+        "eligible_rows": 88067,
+        "selected_rows": 96,
+        "selection_sha256": "8b1c1afb9ed6f1226dd711ad45931124d1cf55e64e8086b29e01acda07b2e46c"
+      },
+      "code_positive": {
+        "eligible_rows": 11853,
+        "selected_rows": 32,
+        "selection_sha256": "a621e23cbf3712eab894f669218dbc94e207eba2d0e9703be6766a4cda91cd87"
+      },
+      "general_negative": {
+        "eligible_rows": 15496,
+        "selected_rows": 96,
+        "selection_sha256": "a19fd5969099ddcb4e1b8dcd3802a6f42613c6cbfec7bf4f097f65dc022cbb3e"
+      },
+      "general_positive": {
+        "eligible_rows": 22668,
+        "selected_rows": 32,
+        "selection_sha256": "a5774e482a6e28cef45687920fa65c1ab74a4f4e642167258317c981e07e4cab"
+      }
+    },
+    "kind": "paper2_phase3_p34_share_calibration_selection_v1",
+    "negative_rows_per_stratum": 96,
+    "output_rows_file_sha256": "c6fe791d0689027201e3cbf98b4e7a13c6f12de61d3ba2eb5ab22064449fc4bb",
+    "output_rows_path": "outputs\\stage5\\stage5_paper2_phase3_p34_lock_20260812\\share_calibration\\p34_share_calibration_rows.jsonl",
+    "positive_rows_per_stratum": 32,
+    "rows": 256,
+    "rows_per_stratum": 128,
+    "seed": 20260812,
+    "selection_rule": "smallest SHA256(seed:stratum:gate_label:record_id) ranks among training-eligible non-audit rows",
+    "selection_sha256": "8bc475d01c261c7c7de8ca36219364c4d418603d4238c1464fc6a1d229e501b2",
+    "source_counts": {
+      "new": 201,
+      "old": 55
+    },
+    "source_path": ".codex_p33_retention_receipts2\\drive\\private\\p33_prep\\p33_staged_labels.jsonl",
+    "source_sha256": "4ad95e8e7f4dc4e37a0f149d70a1150800699259b1140ac5a9cfb8d13c22e004",
+    "strata": [
+      "code",
+      "general"
+    ]
+  },
+  "selection_receipt_sha256": "4f25c4cfebb1fa15f3616f8eae90e2c0d2fd29ea8653d46eae8dd30d16dbebcd",
+  "solved": {
+    "main": {
+      "converged": true,
+      "iterations": 2,
+      "maximum_share_error": 0.0,
+      "per_stratum_solved_reads": [
+        {
+          "estimator": "unit-weight independent loss gradients under combined registered group clips",
+          "group_clip_ceilings": {
+            "bridge": 0.5,
+            "heads": 1.0
+          },
+          "group_clip_scales": {
+            "bridge": 1.0,
+            "heads": 1.0
+          },
+          "group_combined_norms": {
+            "bridge": 0.020544016344546702,
+            "heads": 4.902303570997348e-07
+          },
+          "postclip_gradient_norms": {
+            "aim": 0.0074758366344159066,
+            "ce": 0.0020626321284525945,
+            "gate": 0.0012058600216106757,
+            "kl": 0.012632534910640654,
+            "preserve": 0.0031944194994025254
+          },
+          "unit_weight_shares": {
+            "aim": 0.2813502298585656,
+            "ce": 0.07762636502544988,
+            "gate": 0.04538207706352934,
+            "kl": 0.4754205816166544,
+            "preserve": 0.12022074643580072
+          },
+          "weights": {
+            "aim": 0.054152212855378704,
+            "ce": 0.03458810145015469,
+            "gate": 0.0002288553910961714,
+            "kl": 1.0,
+            "preserve": 54.84346897703954
+          }
+        },
+        {
+          "estimator": "unit-weight independent loss gradients under combined registered group clips",
+          "group_clip_ceilings": {
+            "bridge": 0.5,
+            "heads": 1.0
+          },
+          "group_clip_scales": {
+            "bridge": 1.0,
+            "heads": 1.0
+          },
+          "group_combined_norms": {
+            "bridge": 0.011981390353662144,
+            "heads": 1.64301756865641e-06
+          },
+          "postclip_gradient_norms": {
+            "aim": 0.0021821723878750784,
+            "ce": 0.0043760405530747296,
+            "gate": 0.0007257417828475211,
+            "kl": 0.009902819474704977,
+            "preserve": 0.010326793131804854
+          },
+          "unit_weight_shares": {
+            "aim": 0.07931259373521292,
+            "ce": 0.15905027874209418,
+            "gate": 0.026377596701104296,
+            "kl": 0.35992495468941516,
+            "preserve": 0.3753345761321735
+          },
+          "weights": {
+            "aim": 0.054152212855378704,
+            "ce": 0.03458810145015469,
+            "gate": 0.0002288553910961714,
+            "kl": 1.0,
+            "preserve": 54.84346897703954
+          }
+        }
+      ],
+      "preservation_at_or_below_25_percent": true,
+      "slot_arm": false,
+      "solved_mean_postclip_shares": {
+        "aim": 0.17857142857142858,
+        "ce": 0.11904761904761905,
+        "gate": 0.03571428571428571,
+        "kl": 0.41666666666666663,
+        "preserve": 0.25
+      },
+      "static_weights_kl_normalized": {
+        "aim": 0.054152212855378704,
+        "ce": 0.03458810145015469,
+        "gate": 0.0002288553910961714,
+        "kl": 1.0,
+        "preserve": 54.84346897703954
+      },
+      "strata": 2,
+      "target_shares": {
+        "aim": 0.17857142857142858,
+        "ce": 0.11904761904761905,
+        "gate": 0.03571428571428571,
+        "kl": 0.41666666666666663,
+        "preserve": 0.25
+      },
+      "tolerance": 1e-08,
+      "unit_weight_mean_postclip_gradient_norms": {
+        "aim": 0.009640491626650132,
+        "ce": 0.012503438459585904,
+        "gate": 0.49276935437329006,
+        "kl": 0.001357182462475154,
+        "preserve": 1.715890784853305e-05
+      }
+    },
+    "slot": {
+      "converged": true,
+      "iterations": 2,
+      "maximum_share_error": 5.551115123125783e-17,
+      "per_stratum_solved_reads": [
+        {
+          "estimator": "unit-weight independent loss gradients under combined registered group clips",
+          "group_clip_ceilings": {
+            "bridge": 0.5,
+            "heads": 1.0
+          },
+          "group_clip_scales": {
+            "bridge": 1.0,
+            "heads": 1.0
+          },
+          "group_combined_norms": {
+            "bridge": 0.0206602148571567,
+            "heads": 0.003654566472821139
+          },
+          "postclip_gradient_norms": {
+            "aim": 0.0074758366344159066,
+            "ce": 0.0020626321284525945,
+            "gate": 0.0012058600216106757,
+            "kl": 0.012632534910640654,
+            "preserve": 0.0037014702135934026,
+            "slot": 0.0036545662708601396
+          },
+          "unit_weight_shares": {
+            "aim": 0.24325190889028828,
+            "ce": 0.06711478957080409,
+            "gate": 0.03923677930051492,
+            "kl": 0.41104272088961097,
+            "preserve": 0.12043999075796906,
+            "slot": 0.11891381059081263
+          },
+          "weights": {
+            "aim": 0.054152212855378704,
+            "ce": 0.03458810145015469,
+            "gate": 0.0002288553910961714,
+            "kl": 1.0,
+            "preserve": 63.54878151307756,
+            "slot": 0.017277156129739582
+          }
+        },
+        {
+          "estimator": "unit-weight independent loss gradients under combined registered group clips",
+          "group_clip_ceilings": {
+            "bridge": 0.5,
+            "heads": 1.0
+          },
+          "group_clip_scales": {
+            "bridge": 1.0,
+            "heads": 1.0
+          },
+          "group_combined_norms": {
+            "bridge": 0.01217543110915716,
+            "heads": 0.0027841071832232665
+          },
+          "postclip_gradient_norms": {
+            "aim": 0.0021821723878750784,
+            "ce": 0.0043760405530747296,
+            "gate": 0.0007257417828475211,
+            "kl": 0.009902819474704977,
+            "preserve": 0.011965966644789753,
+            "slot": 0.002784106410667185
+          },
+          "unit_weight_shares": {
+            "aim": 0.06832773349612811,
+            "ce": 0.13702168276902243,
+            "gate": 0.022724277605628403,
+            "kl": 0.31007504892259874,
+            "preserve": 0.3746758892522279,
+            "slot": 0.08717536795439432
+          },
+          "weights": {
+            "aim": 0.054152212855378704,
+            "ce": 0.03458810145015469,
+            "gate": 0.0002288553910961714,
+            "kl": 1.0,
+            "preserve": 63.54878151307756,
+            "slot": 0.017277156129739582
+          }
+        }
+      ],
+      "preservation_at_or_below_25_percent": true,
+      "slot_arm": true,
+      "solved_mean_postclip_shares": {
+        "aim": 0.15410958904109587,
+        "ce": 0.10273972602739724,
+        "gate": 0.030821917808219173,
+        "kl": 0.35958904109589035,
+        "preserve": 0.25,
+        "slot": 0.10273972602739725
+      },
+      "static_weights_kl_normalized": {
+        "aim": 0.054152212855378704,
+        "ce": 0.03458810145015469,
+        "gate": 0.0002288553910961714,
+        "kl": 1.0,
+        "preserve": 63.54878151307756,
+        "slot": 0.017277156129739582
+      },
+      "strata": 2,
+      "target_shares": {
+        "aim": 0.1541095890410959,
+        "ce": 0.10273972602739728,
+        "gate": 0.03082191780821918,
+        "kl": 0.3595890410958904,
+        "preserve": 0.25,
+        "slot": 0.10273972602739728
+      },
+      "tolerance": 1e-08,
+      "unit_weight_mean_postclip_gradient_norms": {
+        "aim": 0.009640491626650132,
+        "ce": 0.012503438459585904,
+        "gate": 0.49276935437329006,
+        "kl": 0.001357182462475154,
+        "preserve": 1.715890784853305e-05,
+        "slot": 0.18633485259892638
+      }
+    }
+  },
+  "source_receipts": [
+    {
+      "manifest_sha256": "43edbb74c5edf84dc5e6512dbe4beb1bbbf0f4df31b2c6830714ce2c8fc7ba93",
+      "selected_anchors": 55,
+      "source": "old",
+      "summary_sha256": "654ca11335e34a6c8fc6136276943df637b95c044892e8591b20600a04a4cd91",
+      "verified_file_ledger_sha256": "e6c8d215303df337e4e35fce20fc730550e8158c05242756c6a13a77ac283554",
+      "verified_files": 86
+    },
+    {
+      "manifest_sha256": "8a50b8ac3a9cc361be918b968a2a8ae490d4aff79a83d41fcdc774a951788187",
+      "selected_anchors": 201,
+      "source": "new",
+      "summary_sha256": "fe7735267d03b13973a5f603aba38b2959101f725bdb1ef95230bee612c88b0e",
+      "verified_file_ledger_sha256": "a632bad6e798ad830f29d75ffc43bf575e7274d954d30279d744d9eecd8ea7ab",
+      "verified_files": 260
+    }
+  ],
+  "status": "complete_read_only_no_optimizer",
+  "stratum_reads": {
+    "main": {
+      "code": {
+        "estimator": "unit-weight independent loss gradients under combined registered group clips",
+        "group_clip_ceilings": {
+          "bridge": 0.5,
+          "heads": 1.0
+        },
+        "group_clip_scales": {
+          "bridge": 0.09504688212274805,
+          "heads": 1.0
+        },
+        "group_combined_norms": {
+          "bridge": 5.2605618283646205,
+          "heads": 0.0012313247388345831
+        },
+        "losses": {
+          "aim": 0.919603168964386,
+          "ce": 2.889364242553711,
+          "gate": 0.7149964570999146,
+          "kl": 0.372892290353775,
+          "preserve": 1.5198686014628038e-05
+        },
+        "postclip_gradient_norms": {
+          "aim": 0.013121439104582664,
+          "ce": 0.005668040569152886,
+          "gate": 0.5008122309239075,
+          "kl": 0.0012006831323546137,
+          "preserve": 5.536112504352986e-06
+        },
+        "slot_arm": false,
+        "slot_telemetry": null,
+        "unit_weight_shares": {
+          "aim": 0.025194391929767142,
+          "ce": 0.010883168716088796,
+          "gate": 0.9616063854391743,
+          "kl": 0.0023054240604933056,
+          "preserve": 1.062985447634633e-05
+        },
+        "weights": {
+          "aim": 1.0,
+          "ce": 1.0,
+          "gate": 1.0,
+          "kl": 1.0,
+          "preserve": 1.0
+        }
+      },
+      "general": {
+        "estimator": "unit-weight independent loss gradients under combined registered group clips",
+        "group_clip_ceilings": {
+          "bridge": 0.5,
+          "heads": 1.0
+        },
+        "group_clip_scales": {
+          "bridge": 0.15285361857147312,
+          "heads": 1.0
+        },
+        "group_combined_norms": {
+          "bridge": 3.2711034561880785,
+          "heads": 0.00020837618846936552
+        },
+        "losses": {
+          "aim": 0.8835316896438599,
+          "ce": 3.103541612625122,
+          "gate": 0.3492084741592407,
+          "kl": 0.36883845925331116,
+          "preserve": 3.699987064464949e-05
+        },
+        "postclip_gradient_norms": {
+          "aim": 0.0061595441487176,
+          "ce": 0.01933883635001892,
+          "gate": 0.48472647782267264,
+          "kl": 0.0015136817925956944,
+          "preserve": 2.878170319271312e-05
+        },
+        "slot_arm": false,
+        "slot_telemetry": null,
+        "unit_weight_shares": {
+          "aim": 0.012035829343003224,
+          "ce": 0.03778833764014093,
+          "gate": 0.9471618392934752,
+          "kl": 0.0029577539011691315,
+          "preserve": 5.623982221161416e-05
+        },
+        "weights": {
+          "aim": 1.0,
+          "ce": 1.0,
+          "gate": 1.0,
+          "kl": 1.0,
+          "preserve": 1.0
+        }
+      }
+    },
+    "slot": {
+      "code": {
+        "estimator": "unit-weight independent loss gradients under combined registered group clips",
+        "group_clip_ceilings": {
+          "bridge": 0.5,
+          "heads": 1.0
+        },
+        "group_clip_scales": {
+          "bridge": 0.09504688212274805,
+          "heads": 1.0
+        },
+        "group_combined_norms": {
+          "bridge": 5.2605618283646205,
+          "heads": 0.21152949952442449
+        },
+        "losses": {
+          "aim": 0.919603168964386,
+          "ce": 2.889364242553711,
+          "gate": 0.7149964570999146,
+          "kl": 0.372892290353775,
+          "preserve": 1.5198686014628038e-05,
+          "slot": 11.92943000793457
+        },
+        "postclip_gradient_norms": {
+          "aim": 0.013121439104582664,
+          "ce": 0.005668040569152886,
+          "gate": 0.5008122309239075,
+          "kl": 0.0012006831323546137,
+          "preserve": 5.536112504352986e-06,
+          "slot": 0.2115259156898772
+        },
+        "slot_arm": true,
+        "slot_telemetry": {
+          "deep_supervision_weights": [
+            0.25,
+            0.5,
+            0.75,
+            1.0
+          ],
+          "final_slot_decodes": [
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ]
+          ],
+          "future_slot_indices": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "loop_accuracies": [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "loop_losses": [
+            11.929429054260254,
+            11.929429054260254,
+            11.929429054260254,
+            11.929429054260254
+          ],
+          "target_horizons": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "tied_head_frozen": true
+        },
+        "unit_weight_shares": {
+          "aim": 0.017917291662307197,
+          "ce": 0.007739694954331154,
+          "gate": 0.6838578251969711,
+          "kl": 0.0016395297577456113,
+          "preserve": 7.55954751801542e-06,
+          "slot": 0.28883809888112677
+        },
+        "weights": {
+          "aim": 1.0,
+          "ce": 1.0,
+          "gate": 1.0,
+          "kl": 1.0,
+          "preserve": 1.0,
+          "slot": 1.0
+        }
+      },
+      "general": {
+        "estimator": "unit-weight independent loss gradients under combined registered group clips",
+        "group_clip_ceilings": {
+          "bridge": 0.5,
+          "heads": 1.0
+        },
+        "group_clip_scales": {
+          "bridge": 0.15285361857147312,
+          "heads": 1.0
+        },
+        "group_combined_norms": {
+          "bridge": 3.2711034561880785,
+          "heads": 0.1611439242342902
+        },
+        "losses": {
+          "aim": 0.8835316896438599,
+          "ce": 3.103541612625122,
+          "gate": 0.3492084741592407,
+          "kl": 0.36883845925331116,
+          "preserve": 3.699987064464949e-05,
+          "slot": 11.92943000793457
+        },
+        "postclip_gradient_norms": {
+          "aim": 0.0061595441487176,
+          "ce": 0.01933883635001892,
+          "gate": 0.48472647782267264,
+          "kl": 0.0015136817925956944,
+          "preserve": 2.878170319271312e-05,
+          "slot": 0.16114378950797556
+        },
+        "slot_arm": true,
+        "slot_telemetry": {
+          "deep_supervision_weights": [
+            0.25,
+            0.5,
+            0.75,
+            1.0
+          ],
+          "final_slot_decodes": [
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ]
+          ],
+          "future_slot_indices": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "loop_accuracies": [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "loop_losses": [
+            11.929429054260254,
+            11.929429054260254,
+            11.929429054260254,
+            11.929429054260254
+          ],
+          "target_horizons": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "tied_head_frozen": true
+        },
+        "unit_weight_shares": {
+          "aim": 0.00915357770893027,
+          "ce": 0.02873906527109455,
+          "gate": 0.720342508341249,
+          "kl": 0.002249452813484949,
+          "preserve": 4.2771924416633445e-05,
+          "slot": 0.23947262394082464
+        },
+        "weights": {
+          "aim": 1.0,
+          "ce": 1.0,
+          "gate": 1.0,
+          "kl": 1.0,
+          "preserve": 1.0,
+          "slot": 1.0
+        }
+      }
+    }
+  },
+  "training_authorized": false
+}

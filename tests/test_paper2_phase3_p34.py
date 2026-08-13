@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import hashlib
 from pathlib import Path
 
 import pytest
@@ -194,14 +195,50 @@ def test_gap_closed_keeps_raw_delta_and_handles_nonpositive_gap() -> None:
     assert not gap_closed(augmented=0.60, base=0.70, teacher=0.60)["defined"]
 
 
-def test_pending_lock_cannot_authorize_training() -> None:
+def test_executed_lock_is_complete_but_cannot_authorize_training() -> None:
     path = Path(__file__).resolve().parents[1] / "training/paper2_phase3_p34_preregistration.json"
     lock = json.loads(path.read_text(encoding="utf-8"))
-    assert lock["status"] == "prerequisites_pending"
-    assert not lock["locked_before_training"]
+    assert lock["status"] == "executed_lock_pending_mark_approval"
+    assert lock["locked_before_training"]
     assert not lock["training_authorized"]
-    assert lock["unresolved_lock_fields"]
+    assert not lock["unresolved_lock_fields"]
     assert not lock["boundaries"]["p34_training_runner_present"]
+    assert lock["guardrails"]["tier_s_delta_cat"] == 0.055
+    assert lock["guardrails"]["tier_s_one_sided_alpha"] == 0.1
+    assert lock["loss_share_contract"]["scalar_weights_by_seed"]["seed_0_slot"]["slot"] > 0
+    assert lock["assembly"]["training_steps_before_mark_approval"] == 0
     assert lock["authority"]["sha256"] == (
         "80cb1b13eb48ffff064ff7cc6c0d02de773dfec80924c1c50736115821c97ce4"
     )
+
+
+def test_executed_lock_receipt_hashes_and_weights_match() -> None:
+    root = Path(__file__).resolve().parents[1]
+    lock = json.loads(
+        (root / "training/paper2_phase3_p34_preregistration.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    for seed in (0, 1):
+        key = f"seed_{seed}"
+        receipt_meta = lock["loss_share_contract"]["share_weight_calibration_receipts"][key]
+        receipt_path = root / receipt_meta["path"]
+        assert hashlib.sha256(receipt_path.read_bytes()).hexdigest() == receipt_meta["sha256"]
+        receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+        assert receipt["status"] == "complete_read_only_no_optimizer"
+        assert not receipt["training_authorized"]
+        assert receipt["optimizer_steps"] == 0
+        assert (
+            receipt["solved"]["main"]["static_weights_kl_normalized"]
+            == lock["loss_share_contract"]["scalar_weights_by_seed"][f"seed_{seed}_main"]
+        )
+        if seed == 0:
+            assert (
+                receipt["solved"]["slot"]["static_weights_kl_normalized"]
+                == lock["loss_share_contract"]["scalar_weights_by_seed"]["seed_0_slot"]
+            )
+    task_meta = lock["guardrails"]
+    task_path = root / task_meta["task_calibration_receipt_path"]
+    assert hashlib.sha256(task_path.read_bytes()).hexdigest() == task_meta[
+        "task_calibration_receipt_sha256"
+    ]
