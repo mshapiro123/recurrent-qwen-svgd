@@ -29,6 +29,7 @@ def test_cli_launcher_is_mount_free_private_and_durable() -> None:
     assert "campaign_release.upload" in source
     assert '"status": "running"' in source
     assert 'checkpoint_step = int(checkpoint["step"])' in source
+    assert 'campaign_release.upload(final_bundle, f"{label}-latest-receipts.tar.zst")' in source
     assert "--transport_only" in source
     assert "--guardrail_amendment_sha256" in source
     assert '"confirm_scored": False' not in source  # No evaluation code is embedded here.

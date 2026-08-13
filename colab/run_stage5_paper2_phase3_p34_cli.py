@@ -407,6 +407,7 @@ def run_campaign(args: argparse.Namespace) -> int:
     final_bundle = private_dir / "final-receipts.tar.zst"
     package_receipts(output_dir=output_dir, private_dir=private_dir, destination=final_bundle)
     campaign_release.upload(final_bundle, f"{label}-final-receipts.tar.zst")
+    campaign_release.upload(final_bundle, f"{label}-latest-receipts.tar.zst")
     if (private_dir / "resume.pt").is_file():
         campaign_release.upload(private_dir / "resume.pt", resume_name)
     campaign_summary_path = output_dir / "summary.json"
