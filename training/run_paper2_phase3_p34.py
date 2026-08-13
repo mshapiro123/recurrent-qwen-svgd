@@ -43,6 +43,7 @@ from training.paper2_phase3_p34 import (
     sampled_depth,
     set_p34_trainable,
     slot_supervision_loss,
+    solve_static_loss_weights_from_bundles,
 )
 from training.run_paper2_phase3_p33 import (
     _active_record_pools,
@@ -263,6 +264,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         directions=directions, device=args.device,
     )
     preflight_norms = {name: 0.0 for name in static_weights}
+    preflight_bundles: list[dict[str, Any]] = []
     preflight_depths = [1, 2, 3, 4]
     preflight_mass = [0.1, 0.2, 0.3, 0.4]
     effective_preflight = dict(static_weights)
@@ -275,6 +277,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             losses=preflight_losses, module=module, parameters=parameters,
             slot_lift=slot_lift,
         )
+        preflight_bundles.extend([preflight_bundle] * depth)
         read = postclip_gradient_norms_from_bundle(
             preflight_bundle, weights=effective_preflight
         )["postclip_gradient_norms"]
@@ -285,11 +288,20 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     }
     preflight_classification = classify_loss_shares(preflight_shares)
     if preflight_classification["classification"] != "pass":
+        sampled_depth_solve = solve_static_loss_weights_from_bundles(
+            preflight_bundles,
+            slot_arm=slot_lift is not None,
+        )
         write_json(output_dir / "blocked_pre_optimizer.json", {
             "kind": RUN_KIND, "status": "blocked_pre_optimizer_estimator_mismatch",
             "seed": args.seed, "arm": args.arm,
             "depth_distribution": dict(zip(preflight_depths, preflight_mass)),
             "loss_share_read": preflight_classification,
+            "sampled_depth_mixture_solve": sampled_depth_solve,
+            "repair_scope": (
+                "replace the full-depth step-zero weights only after an explicit lock "
+                "amendment; no optimizer was constructed"
+            ),
             "optimizer_constructed": False, "optimizer_steps": 0,
         })
         raise RuntimeError("P3.4 sampled-depth estimator violates the locked loss-share contract")
