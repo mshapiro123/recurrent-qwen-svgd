@@ -62,19 +62,29 @@ def _apply_state(module: Any, path: Path, *, expected_sha256: str, label: str) -
     if not isinstance(state, dict):
         raise RuntimeError(f"P3.4 {label} checkpoint lacks trainable_state")
     current = dict(module.named_parameters())
-    unknown = sorted(set(state) - set(current))
+    unknown = sorted(
+        name for name in set(state) - set(current) if not name.startswith("slot_lift.")
+    )
     if unknown:
         raise RuntimeError(f"P3.4 {label} state contains unknown tensors: {unknown}")
     with torch.no_grad():
         for name, value in state.items():
+            if name.startswith("slot_lift."):
+                continue
             current[name].copy_(value.to(device=current[name].device, dtype=current[name].dtype))
-    return {
+    receipt = {
         "label": label,
         "path": str(path),
         "sha256": observed,
         "step": int(payload["step"]),
         "state_keys": sorted(state),
     }
+    if label == "p34":
+        controller = payload.get("controller")
+        if not isinstance(controller, dict) or "rung" not in controller:
+            raise RuntimeError("P3.4 campaign checkpoint lacks controller state")
+        receipt["controller_rung"] = int(controller["rung"])
+    return receipt
 
 
 def load_condition(
@@ -86,6 +96,8 @@ def load_condition(
     p33_sha256: str | None,
     i1: Path | None,
     i1_sha256: str | None,
+    p34: Path | None = None,
+    p34_sha256: str | None = None,
 ) -> tuple[Any, list[dict[str, Any]]]:
     if sha256_file(migrated) != migrated_sha256:
         raise RuntimeError("P3.4 migrated checkpoint SHA mismatch")
@@ -103,7 +115,14 @@ def load_condition(
         if p33 is None or i1_sha256 is None:
             raise ValueError("P3.4 i1 condition requires P3.3 state and an expected SHA")
         receipts.append(_apply_state(module, i1, expected_sha256=i1_sha256, label="i1"))
-    module.bridge.set_gate_ceiling(0.08)
+    if p34 is not None:
+        if i1 is None or p34_sha256 is None:
+            raise ValueError("P3.4 campaign state requires i1 state and an expected SHA")
+        receipts.append(_apply_state(module, p34, expected_sha256=p34_sha256, label="p34"))
+    if p34 is None:
+        module.bridge.set_gate_ceiling(0.08)
+    else:
+        module.bridge.set_gate_ceiling((0.02, 0.08, 0.20, 0.50)[int(receipts[-1]["controller_rung"])])
     return module.eval(), receipts
 
 
@@ -338,6 +357,8 @@ def main() -> int:
     parser.add_argument("--p33_sha256")
     parser.add_argument("--i1", type=Path)
     parser.add_argument("--i1_sha256")
+    parser.add_argument("--p34", type=Path)
+    parser.add_argument("--p34_sha256")
     parser.add_argument("--mcq_batch_size", type=int, default=32)
     parser.add_argument("--generation_batch_size", type=int, default=8)
     args = parser.parse_args()
@@ -379,6 +400,8 @@ def main() -> int:
         p33_sha256=args.p33_sha256,
         i1=args.i1,
         i1_sha256=args.i1_sha256,
+        p34=args.p34,
+        p34_sha256=args.p34_sha256,
     )
     graph = P34TaskInferenceGraph(base_model=model, sidecar=sidecar)
 

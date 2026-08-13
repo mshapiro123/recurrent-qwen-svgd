@@ -234,6 +234,7 @@ def p34_forward_losses(
     teacher_token_index: torch.Tensor,
     kl_mask: torch.Tensor,
     ce_mask: torch.Tensor,
+    steps: int = P34_FLOW_LOOPS,
     **p33_inputs: torch.Tensor,
 ) -> tuple[dict[str, torch.Tensor], dict[str, torch.Tensor]]:
     """Compute the five P3.4 losses without choosing their scalar weights."""
@@ -241,7 +242,7 @@ def p34_forward_losses(
     inherited, metrics = p33_forward_losses(
         module=module,
         tied_embedding=tied_embedding,
-        steps=P34_FLOW_LOOPS,
+        steps=int(steps),
         **p33_inputs,
     )
     candidate_mask = p33_inputs["candidate_mask"].bool()
@@ -268,6 +269,66 @@ def p34_forward_losses(
         "preserve": inherited["preserve"],
     }
     return losses, {**metrics, "teacher_log": target, "kl_rows": kl_rows}
+
+
+def sampled_depth(*, generator: torch.Generator) -> int:
+    """Sample k from the registered depth weights w_k=k/K."""
+
+    weights = torch.arange(1, P34_FLOW_LOOPS + 1, dtype=torch.float64)
+    return int(torch.multinomial(weights, 1, generator=generator).item()) + 1
+
+
+def apply_weighted_gradient_bundle(
+    *,
+    bundle: Mapping[str, Any],
+    parameters: Sequence[nn.Parameter],
+    weights: Mapping[str, float],
+) -> dict[str, Any]:
+    """Install the same weighted, group-clipped gradient used by attribution."""
+
+    names = tuple(bundle["names"])
+    if set(weights) != set(names):
+        raise ValueError("P3.4 update weights must cover every loss")
+    parameter_ids = list(bundle["parameter_ids"])
+    active = [parameter for parameter in parameters if parameter.requires_grad]
+    if [id(parameter) for parameter in active] != parameter_ids:
+        raise RuntimeError("P3.4 gradient bundle parameter order changed")
+    gradients = bundle["gradients"]
+    parameter_group = bundle["parameter_groups"]
+    combined: dict[int, torch.Tensor] = {}
+    group_sq: dict[str, float] = {}
+    group_ceiling: dict[str, float] = {}
+    for parameter in active:
+        parameter_id = id(parameter)
+        available = [
+            float(weights[name]) * gradients[name][parameter_id]
+            for name in names
+            if parameter_id in gradients[name]
+        ]
+        if not available:
+            continue
+        value = sum(available[1:], available[0])
+        combined[parameter_id] = value
+        group_name, ceiling = parameter_group[parameter_id]
+        group_ceiling[group_name] = float(ceiling)
+        group_sq[group_name] = group_sq.get(group_name, 0.0) + float(
+            value.double().square().sum()
+        )
+    group_scales = {
+        name: min(1.0, group_ceiling[name] / max(math.sqrt(value), 1e-30))
+        for name, value in group_sq.items()
+    }
+    for parameter in active:
+        parameter_id = id(parameter)
+        value = combined.get(parameter_id)
+        parameter.grad = None if value is None else (
+            value * group_scales[parameter_group[parameter_id][0]]
+        ).to(dtype=parameter.dtype)
+    return {
+        "group_combined_norms": {name: math.sqrt(value) for name, value in group_sq.items()},
+        "group_clip_scales": group_scales,
+        "postclip": postclip_gradient_norms_from_bundle(bundle, weights=weights),
+    }
 
 
 def weighted_p34_total(

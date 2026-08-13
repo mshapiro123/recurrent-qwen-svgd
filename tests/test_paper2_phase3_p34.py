@@ -22,6 +22,7 @@ from training.paper2_phase3_p34 import (
     slot_supervision_loss,
     solve_static_loss_weights,
     solve_static_loss_weights_from_bundles,
+    sampled_depth,
     weighted_p34_total,
 )
 
@@ -195,14 +196,14 @@ def test_gap_closed_keeps_raw_delta_and_handles_nonpositive_gap() -> None:
     assert not gap_closed(augmented=0.60, base=0.70, teacher=0.60)["defined"]
 
 
-def test_executed_lock_is_complete_but_cannot_authorize_training() -> None:
+def test_executed_lock_is_complete_and_approved_for_training() -> None:
     path = Path(__file__).resolve().parents[1] / "training/paper2_phase3_p34_preregistration.json"
     lock = json.loads(path.read_text(encoding="utf-8"))
-    assert lock["status"] == "executed_lock_pending_mark_approval"
+    assert lock["status"] == "approved_for_training"
     assert lock["locked_before_training"]
-    assert not lock["training_authorized"]
+    assert lock["training_authorized"]
     assert not lock["unresolved_lock_fields"]
-    assert not lock["boundaries"]["p34_training_runner_present"]
+    assert lock["boundaries"]["p34_training_runner_present"]
     assert lock["guardrails"]["tier_s_delta_cat"] == 0.055
     assert lock["guardrails"]["tier_s_one_sided_alpha"] == 0.1
     assert lock["loss_share_contract"]["scalar_weights_by_seed"]["seed_0_slot"]["slot"] > 0
@@ -210,6 +211,13 @@ def test_executed_lock_is_complete_but_cannot_authorize_training() -> None:
     assert lock["authority"]["sha256"] == (
         "80cb1b13eb48ffff064ff7cc6c0d02de773dfec80924c1c50736115821c97ce4"
     )
+
+
+def test_sampled_depth_uses_registered_linear_weights() -> None:
+    generator = torch.Generator().manual_seed(7)
+    draws = [sampled_depth(generator=generator) for _ in range(20_000)]
+    frequencies = [draws.count(depth) / len(draws) for depth in range(1, 5)]
+    assert frequencies == pytest.approx((0.1, 0.2, 0.3, 0.4), abs=0.015)
 
 
 def test_executed_lock_receipt_hashes_and_weights_match() -> None:

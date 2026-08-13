@@ -1,8 +1,16 @@
 {
-  "kind": "paper2_phase3_p34_executed_lock_v1_pending_mark_approval",
-  "status": "executed_lock_pending_mark_approval",
+  "kind": "paper2_phase3_p34_executed_lock_v1_approved",
+  "status": "approved_for_training",
   "locked_before_training": true,
-  "training_authorized": false,
+  "training_authorized": true,
+  "approval_authority": {
+    "review_drive_id": "1gk44sM5jJgE6WgfNrjJm1zlJIyqBNKBQ",
+    "review_repo_path": "docs/STRATEGY_P34_LOCK_REVIEW_20260813.md",
+    "review_sha256": "4375f3356c4df2ccc46ee2b0686be1076fc9a25b00ebfc29141aea0f7dcac700",
+    "approval_drive_id": "1sTUmvJl9-zNRq6P0K2B7JfpRK592DG6y",
+    "approval_repo_path": "docs/STRATEGY_P34_APPROVAL_PROCESS_RELAXATION_20260813.md",
+    "approval_sha256": "5d3dd748d8865d5615aad6167851791ab8834591421092d3e3fb6a982fe16a44"
+  },
   "authority": {
     "drive_id": "1lh2Vf3VG8yPXUjLPfr7IJkPCjnf2mKE6",
     "repo_path": "docs/STRATEGY_P34_CHARTER_20260812.md",
@@ -220,7 +228,7 @@
   "boundaries": {
     "confirm_contact": false,
     "eval_e_contact": false,
-    "p34_training_runner_present": false,
+    "p34_training_runner_present": true,
     "optimizer_constructed_by_prerequisite_targets": false,
     "mark_approval_required_after_all_values_bound": true
   },

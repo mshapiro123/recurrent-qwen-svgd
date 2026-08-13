@@ -4332,6 +4332,18 @@ TARGETS = {
         ],
         "env": {},
     },
+    "paper2_phase3_p34": {
+        "path": "colab/STAGE5_PAPER2_PHASE3_P34_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_PHASE3_P34_VERSION",
+            "paper2_phase3_p34_campaign_v1",
+            "approved three-session P3.4 campaign main seeds zero one slot seed zero",
+            "exactly twenty DEV looks no CONFIRM no EVAL-E contact",
+            "deterministic resumable windows and hash-bound executed lock",
+            "colab/run_stage5_paper2_phase3_p34.py",
+        ],
+        "env": {"P34_SEED": "0", "P34_ARM": "main"},
+    },
     "gradient_path_audit": {
         "path": "colab/STAGE5_GRADIENT_PATH_AUDIT_CELL.py",
         "markers": [
