@@ -7,7 +7,7 @@ import pytest
 import torch
 
 from training.paper2_phase3_p34 import P34_FLOW_LOOPS, slot_supervision_loss
-from training.run_paper2_phase3_p34 import _task_guardrail
+from training.run_paper2_phase3_p34 import _advance_sequential_rule, _task_guardrail
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -80,3 +80,35 @@ def test_main_and_slot_use_the_same_depth_rng_schedule() -> None:
     assert "manual_seed(20260813 + args.seed)" in source
     assert "depth = sampled_depth(generator=generator)" in source
     assert "if slot_lift is not None else sampled_depth" not in source
+
+
+def test_sequential_rule_emits_non_overlapping_nested_events() -> None:
+    tier_w_streak = 0
+    tier_s_streak = 0
+    tier_w_events = []
+    tier_s_events = []
+    for look in range(1, 9):
+        tier_w_streak, tier_w_event = _advance_sequential_rule(
+            condition=True, prior_streak=tier_w_streak, required_looks=2
+        )
+        tier_s_streak, tier_s_event = _advance_sequential_rule(
+            condition=True, prior_streak=tier_s_streak, required_looks=4
+        )
+        if tier_w_event:
+            tier_w_events.append(look)
+        if tier_s_event:
+            tier_s_events.append(look)
+    assert tier_w_events == [2, 4, 6, 8]
+    assert tier_s_events == [4, 8]
+    assert set(tier_s_events).issubset(tier_w_events)
+
+
+def test_sequential_rule_resets_after_recovery() -> None:
+    streak = 0
+    events = []
+    for condition in (True, True, False, True, True, True, True):
+        streak, event = _advance_sequential_rule(
+            condition=condition, prior_streak=streak, required_looks=4
+        )
+        events.append(event)
+    assert events == [False, False, False, False, False, False, True]

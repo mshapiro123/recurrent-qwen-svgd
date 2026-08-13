@@ -175,6 +175,18 @@ def _task_guardrail(rows: Sequence[Mapping[str, Any]], lock: Mapping[str, Any]) 
     }
 
 
+def _advance_sequential_rule(
+    *, condition: bool, prior_streak: int, required_looks: int
+) -> tuple[int, bool]:
+    """Advance a consecutive-look rule and emit non-overlapping actions."""
+
+    if required_looks < 2:
+        raise ValueError("sequential guardrails require at least two consecutive looks")
+    streak = prior_streak + 1 if condition else 0
+    event = condition and streak >= required_looks and streak % required_looks == 0
+    return streak, event
+
+
 def _checkpoint_state(module: Any, slot_lift: SlotSupervisionLift | None) -> dict[str, torch.Tensor]:
     state = {
         name: value.detach().cpu()
@@ -236,7 +248,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     generator = torch.Generator().manual_seed(20260813 + args.seed)
     step = 0; history: list[dict[str, Any]] = []; schedule_hashes: list[str] = []
     share_window: deque[dict[str, float]] = deque(maxlen=100)
-    share_misses = 0; prior_tier_s = False; prior_tier_w = False
+    share_misses = 0; tier_s_streak = 0; tier_w_streak = 0
     controller = initial_annealing_state(tuple(lock["guardrails"]["chi_max_by_rung"]))
     last_pi_dep = 0.0; last_chi = 0.0; stop_reason: str | None = None
     fixed_rows = read_jsonl(args.share_rows)
@@ -292,8 +304,10 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         optimizer.load_state_dict(saved["optimizer_state"])
         step = int(saved["step"]); history = list(saved["history"])
         schedule_hashes = list(saved["schedule_hashes"]); share_window.extend(saved["share_window"])
-        share_misses = int(saved["share_misses"]); prior_tier_s = bool(saved["prior_tier_s"])
-        prior_tier_w = bool(saved["prior_tier_w"]); controller = AnnealingState(**saved["controller"])
+        share_misses = int(saved["share_misses"])
+        tier_s_streak = int(saved.get("tier_s_streak", int(saved.get("prior_tier_s", False))))
+        tier_w_streak = int(saved.get("tier_w_streak", int(saved.get("prior_tier_w", False))))
+        controller = AnnealingState(**saved["controller"])
         last_pi_dep = float(saved["last_pi_dep"]); last_chi = float(saved["last_chi"])
         stop_reason = saved.get("stop_reason"); generator.set_state(saved["generator_state"])
         restore_rng(saved["rng_state"])
@@ -304,8 +318,8 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             "trainable_state": _checkpoint_state(module, slot_lift),
             "optimizer_state": optimizer.state_dict(), "history": history,
             "schedule_hashes": schedule_hashes, "share_window": list(share_window),
-            "share_misses": share_misses, "prior_tier_s": prior_tier_s,
-            "prior_tier_w": prior_tier_w, "controller": controller.__dict__,
+            "share_misses": share_misses, "tier_s_streak": tier_s_streak,
+            "tier_w_streak": tier_w_streak, "controller": controller.__dict__,
             "last_pi_dep": last_pi_dep, "last_chi": last_chi,
             "stop_reason": stop_reason, "generator_state": generator.get_state(),
             "rng_state": rng_state(), "lock_sha256": sha256_file(args.lock),
@@ -369,8 +383,17 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             ]
             subprocess.run(command, check=True)
             task_rows = read_jsonl(task_rows_path); guardrail = _task_guardrail(task_rows, lock)
-            tier_s = bool(guardrail["tier_s_condition"]); tier_w = bool(guardrail["tier_w_condition"])
-            if tier_s and prior_tier_s: stop_reason = stop_reason or "tier_s_task_collapse"
+            tier_s_streak, tier_s_event = _advance_sequential_rule(
+                condition=bool(guardrail["tier_s_condition"]),
+                prior_streak=tier_s_streak,
+                required_looks=int(lock["guardrails"]["tier_s_consecutive_looks"]),
+            )
+            tier_w_streak, tier_w_event = _advance_sequential_rule(
+                condition=bool(guardrail["tier_w_condition"]),
+                prior_streak=tier_w_streak,
+                required_looks=int(lock["guardrails"]["tier_w_consecutive_looks"]),
+            )
+            if tier_s_event: stop_reason = stop_reason or "tier_s_task_collapse"
             audit = None
             if look in AUDIT_LOOKS:
                 audit, audit_rows = audit_model(
@@ -381,22 +404,24 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
                 last_pi_dep = float(audit["pi_dep"]["point"]); last_chi = float(audit["collateral_chi"])
                 controller, transition = controller_transition(
                     controller, pi_dep=last_pi_dep, chi=last_chi,
-                    tier_w_event=tier_w and prior_tier_w,
+                    tier_w_event=tier_w_event,
                 )
             else:
                 transition = {"reason": "hold_until_registered_pi_look", "rung_before": controller.rung,
                               "rung_after": controller.rung}
-                if tier_w and prior_tier_w and controller.rung > 0:
+                if tier_w_event and controller.rung > 0:
                     controller = AnnealingState(controller.rung - 1, controller.chi_max_by_rung, controller.window + 1)
                     transition = {"reason": "tier_w_demote", "rung_before": controller.rung + 1,
                                   "rung_after": controller.rung}
             module.bridge.set_gate_ceiling(controller.gate_ceiling)
-            prior_tier_s = tier_s; prior_tier_w = tier_w
             history.append({
                 "look": look, "step": step, "learning_rate": lr, "depth": depth,
                 "losses": {name: float(value.detach()) for name, value in losses.items()},
                 "task": json.loads(task_summary_path.read_text(encoding="utf-8")),
-                "guardrail": guardrail, "audit": audit, "controller": transition,
+                "guardrail": {**guardrail, "tier_s_streak": tier_s_streak,
+                              "tier_w_streak": tier_w_streak,
+                              "tier_s_event": tier_s_event, "tier_w_event": tier_w_event},
+                "audit": audit, "controller": transition,
                 "trailing_shares": classified if len(share_window) == 100 else None,
                 "stop_reason": stop_reason,
             })
