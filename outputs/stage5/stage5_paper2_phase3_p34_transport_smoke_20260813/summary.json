@@ -1,0 +1,41 @@
+{
+  "auth_identity": "mshapiro@pharmainitiatives.com",
+  "campaign_release": "p34-campaign-20260813",
+  "cli_source": {
+    "commit": "05a815a6d9d5318ed5601e858be2e6c44dbead26",
+    "path": "colab/run_stage5_paper2_phase3_p34_cli.py"
+  },
+  "confirm_scored": false,
+  "eval_e_scored": false,
+  "extracted_files": 806,
+  "hardware": "Colab CPU DEFAULT",
+  "kind": "paper2_phase3_p34_transport_smoke_v1",
+  "mode": "transport_only",
+  "optimizer_steps": 0,
+  "private_transport": {
+    "concatenated_zstd_sha256": "4bc7dc92015d65182cbec7c7df3cdb918e78a841d388b12092d613e4ce116494",
+    "parts": [
+      {
+        "bytes": 1992294400,
+        "github_digest": "sha256:8179a6b3e21ec3f647b5441f2acacdced803dd76399bf9b5d390bc169336b9ae",
+        "name": "p34-private-inputs-20260813.tar.zst.part-aa"
+      },
+      {
+        "bytes": 1472726516,
+        "github_digest": "sha256:44e9d0c51cf913f883183686f5bd85c223f4d376f6292924479413f4dcc39a41",
+        "name": "p34-private-inputs-20260813.tar.zst.part-ab"
+      }
+    ],
+    "release": "p34-transport-20260813",
+    "source_manifest_sha256": "c2fab0b144d647088013229aaeff053de408e2c7c550a0c0112732f20920e248",
+    "source_sha256s_sha256": "3d6c55e0e59996420b9096f3d593bb52e9f0e203e2e52169b281d88ad626a7a6"
+  },
+  "remote_checkout_verified": "05a815a6d9d5318ed5601e858be2e6c44dbead26",
+  "remote_test_exit_code": 0,
+  "session_name": "p34-transport-smoke",
+  "session_released": true,
+  "status": "complete",
+  "temporary_credential_destroyed": true,
+  "transport": "mount_free_private_github_release",
+  "transport_manifest_github_digest": "sha256:0cbde7030785d5702be8136109bae5f1d3960344fffc98dbaa5d07f127503982"
+}
