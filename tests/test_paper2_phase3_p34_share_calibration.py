@@ -4,7 +4,7 @@ from pathlib import Path
 
 import torch
 
-from eval.eval_paper2_phase3_p34_share_calibration import extend_main_bundle_with_slot
+from eval.eval_paper2_phase3_p34_share_calibration import extend_main_bundle_with_slot, json_safe
 from training.paper2_phase3_p34 import P34_LOSS_NAMES, P34_SLOT_LOSS_NAMES, SlotSupervisionLift
 
 from training.paper2_phase3_p32 import GateLabel
@@ -79,6 +79,11 @@ def test_share_calibration_reads_the_pinned_bfloat16_head_schema() -> None:
         / "eval/eval_paper2_phase3_p34_share_calibration.py"
     ).read_text(encoding="utf-8")
     assert '"weight_bfloat16", embedding.get("weight", embedding.get("lm_head"))' in source
+
+
+def test_share_calibration_receipt_serializes_nested_tensors() -> None:
+    payload = {"scalar": torch.tensor(1.25), "vector": [torch.tensor([1.0, 2.0])]}
+    assert json_safe(payload) == {"scalar": 1.25, "vector": [[1.0, 2.0]]}
 
 
 def test_share_compaction_is_cpu_only_and_training_disabled() -> None:

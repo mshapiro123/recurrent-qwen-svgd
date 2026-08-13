@@ -56,6 +56,19 @@ def canonical_jsonl_sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
+def json_safe(value: Any) -> Any:
+    if isinstance(value, torch.Tensor):
+        detached = value.detach().cpu()
+        return detached.item() if detached.numel() == 1 else detached.tolist()
+    if isinstance(value, Mapping):
+        return {str(key): json_safe(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [json_safe(item) for item in value]
+    if isinstance(value, Path):
+        return str(value)
+    return value
+
+
 def read_jsonl(path: Path) -> list[dict[str, Any]]:
     return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line]
 
@@ -523,6 +536,7 @@ def main() -> int:
         ),
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)
+    result = json_safe(result)
     args.output.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(json.dumps(result, indent=2, sort_keys=True), flush=True)
     return 0
