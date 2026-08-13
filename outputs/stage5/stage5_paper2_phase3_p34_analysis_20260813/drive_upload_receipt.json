@@ -1,0 +1,50 @@
+{
+  "kind": "paper2_phase3_p34_drive_upload_receipt_v1",
+  "uploaded_at_date": "2026-08-13",
+  "parent_folder_id": "1aSbU2i8JZ37g5bJpyweLuvFaV0y92Qjr",
+  "storage_policy": "raw files; no Google Workspace conversion",
+  "files": [
+    {
+      "path": "docs/PAPER2_PHASE3_P34_CAMPAIGN_HANDOFF_20260813.md",
+      "bytes": 20828,
+      "sha256": "38cab59b5d0a570aa5a39f481fb712e40d80d5c45ee3f9866dad873f48f99f3c",
+      "drive_id": "1-Pez1Xz9YcXVTwWHDWGsqUEFzuToskpK"
+    },
+    {
+      "path": "outputs/stage5/stage5_paper2_phase3_p34_analysis_20260813/summary.json",
+      "bytes": 76965,
+      "sha256": "15a69ba0662af6d60a970833fd13cdf2309e0f5eb9ecc95e198e01f32ea9844b",
+      "drive_id": "15cZfn8YSXC7V9ITc3JWwuquU0oHbk9Et"
+    },
+    {
+      "path": "docs/figures/p34_campaign_task_curve_20260813.svg",
+      "bytes": 33641,
+      "sha256": "755c8874353d1cf19a24f57261d727bfd57ebf09d8ce2ab05835cc5153ba05bb",
+      "drive_id": "1lQYxX5-QbyJ3uzk425xkE65Dc9OR84hy"
+    },
+    {
+      "path": "docs/figures/p34_campaign_task_curve_20260813.png",
+      "bytes": 185334,
+      "sha256": "3aa2e9288a09389ab570f652acc82567100a2b72be9ac3f56f9e106ddb42b40a",
+      "drive_id": "1FzfW1dTfo8WgjTuFBUrExAREBfTczGT1"
+    },
+    {
+      "path": "docs/figures/p34_campaign_controller_20260813.svg",
+      "bytes": 32019,
+      "sha256": "cd77b10532c41540bc9a249fe2eaf7c17970bf1216dc8da004072392f0c03922",
+      "drive_id": "14T3QGGcegGpo5QWckFhkJAIKcHws-Zfq"
+    },
+    {
+      "path": "docs/figures/p34_campaign_controller_20260813.png",
+      "bytes": 152777,
+      "sha256": "5b7462303f231769e84a9614d708c2afd5cc5d93500c869a778fdda58bf0a3a1",
+      "drive_id": "1k1MEUz9Gyf7KrOOFHxUXPg0hjiEagljW"
+    },
+    {
+      "path": "docs/MODELS_PACKAGE_CODE_REVIEW_RESPONSE_20260813.md",
+      "bytes": 3737,
+      "sha256": "2383be1b4a20823babd48d68588fbc805631b198305e6537d16e2254331a17a6",
+      "drive_id": "14enZwjVANQZ8elzUCuGHNinIARxaAL7M"
+    }
+  ]
+}

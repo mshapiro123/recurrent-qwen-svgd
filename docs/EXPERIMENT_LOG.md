@@ -1951,3 +1951,20 @@ Colab/Drive backups for selected runs.
   bit-for-bit, and the fixed-batch aim-loss convergence curve must classify any
   middle-band result as duration-next or capacity-next. The i1 preregistration
   is locked before training for both seeds. P3.4 remains unauthorized.
+- 2026-08-13 P3.4 DEV campaign: both independent main seeds and the registered
+  seed-0 slot fork launched from their hash-asserted i1 endpoints under one
+  governing lock and condition-specific sampled-depth schedules. All three
+  produced positive DEV endpoint differences against the frozen base: `+9`,
+  `+7`, and `+6` correct rows of 1,024, closing `3.08%`, `2.40%`, and `2.05%`
+  of the 292-row 14B gap. The paired sign-test p-values were `0.417`, `0.538`,
+  and `0.610`; every document-bootstrap 95% interval crossed zero. Both main
+  arms reached the step-1,000 causal audit and replicated nonzero `pi_dir`
+  (`16.13%` and `16.51%`) with measured collateral `chi=0`. All three runs
+  then exited 2 through the registered four-window loss-share stop at steps
+  1,500, 1,400, and 400. Rung demotion did not restore objective allocation:
+  seed 0 and the slot arm became aim-dominant with CE/KL starvation, while
+  seed 1 retained gate starvation. Frozen digests remained unchanged and
+  CONFIRM/EVAL-E were not scored. Reading:
+  `POSITIVE_SIGNAL_WITH_OBJECTIVE_CONTROLLER_STOP`, DEV-only and exploratory.
+  Handoff: `docs/PAPER2_PHASE3_P34_CAMPAIGN_HANDOFF_20260813.md`. Receipt:
+  `outputs/stage5/stage5_paper2_phase3_p34_analysis_20260813/summary.json`.
