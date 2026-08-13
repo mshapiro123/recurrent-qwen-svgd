@@ -73,6 +73,14 @@ def test_share_calibration_runner_binds_both_seed_endpoints() -> None:
     assert '"--direction_cache"' not in source
 
 
+def test_share_calibration_reads_the_pinned_bfloat16_head_schema() -> None:
+    source = (
+        Path(__file__).resolve().parents[1]
+        / "eval/eval_paper2_phase3_p34_share_calibration.py"
+    ).read_text(encoding="utf-8")
+    assert '"weight_bfloat16", embedding.get("weight", embedding.get("lm_head"))' in source
+
+
 def test_share_compaction_is_cpu_only_and_training_disabled() -> None:
     source = (
         Path(__file__).resolve().parents[1]

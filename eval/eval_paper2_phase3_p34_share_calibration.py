@@ -447,7 +447,9 @@ def main() -> int:
         raise RuntimeError("P3.4 tied-head hash changed")
     embedding = torch.load(args.lm_head, map_location="cpu", weights_only=False)
     if isinstance(embedding, Mapping):
-        embedding = embedding.get("weight", embedding.get("lm_head"))
+        embedding = embedding.get(
+            "weight_bfloat16", embedding.get("weight", embedding.get("lm_head"))
+        )
     if not isinstance(embedding, torch.Tensor) or embedding.shape != (151665, 896):
         raise RuntimeError("P3.4 tied-head tensor shape changed")
     module, checkpoint_receipts = load_condition(
