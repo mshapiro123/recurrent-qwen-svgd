@@ -68,6 +68,7 @@ def simulate_rule(
     campaigns: int,
     seed: int,
     batch_campaigns: int = 1_024,
+    consecutive_looks: int = 2,
 ) -> dict[str, Any]:
     """Simulate consecutive paired-UCB events from sufficient statistics.
 
@@ -79,6 +80,8 @@ def simulate_rule(
     sensitivity practical on a CPU runtime.
     """
 
+    if consecutive_looks < 2 or consecutive_looks > looks:
+        raise ValueError("consecutive_looks must be between two and the campaign look count")
     if abs(true_difference) > discordance:
         raise ValueError("true difference cannot exceed paired discordance")
     paired_variance = discordance - true_difference**2
@@ -94,17 +97,18 @@ def simulate_rule(
     while completed < campaigns:
         batch = min(batch_campaigns, campaigns - completed)
         latent = rng.standard_normal(batch)
-        previous = np.zeros(batch, dtype=bool)
+        streak = np.zeros(batch, dtype=np.int16)
         actions = np.zeros(batch, dtype=np.int32)
         for look in range(looks):
             if look:
                 latent = correlation * latent + scale * rng.standard_normal(batch)
             mean = true_difference + standard_error * latent
             below = mean + critical * standard_error < decision_margin
-            action = previous & below
+            streak = np.where(below, streak + 1, 0)
+            action = streak >= consecutive_looks
             actions += action
-            # An action consumes the pair; a third consecutive miss cannot double count it.
-            previous = below & ~action
+            # An action consumes its run so one long breach cannot double count it.
+            streak = np.where(action, 0, streak)
         campaigns_with_action += int((actions > 0).sum())
         action_count += int(actions.sum())
         completed += batch
@@ -134,7 +138,7 @@ def simulate_rule(
         "conservative_upper_95_probability": upper_95,
         "actions_total": action_count,
         "expected_actions_per_campaign": action_count / campaigns,
-        "consecutive_looks": 2,
+        "consecutive_looks": consecutive_looks,
         "simulation_method": "correlated_gaussian_paired_mean_sufficient_statistic",
         "paired_variance": paired_variance,
         "standard_error": standard_error,

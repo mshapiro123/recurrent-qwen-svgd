@@ -51,3 +51,18 @@ def test_sequential_simulator_reports_action_count_and_probability() -> None:
     assert 0.0 <= result["estimated_action_probability"] <= 1.0
     assert result["expected_actions_per_campaign"] >= result["estimated_action_probability"]
     assert result["consecutive_looks"] == 2
+
+
+def test_sequential_simulator_supports_nested_streak_rules() -> None:
+    two = simulate_rule(
+        rows=128, looks=10, discordance=0.2, correlation=0.7, alpha=0.1,
+        decision_margin=-0.03, true_difference=-0.05, campaigns=1_000,
+        seed=20260813, consecutive_looks=2,
+    )
+    four = simulate_rule(
+        rows=128, looks=10, discordance=0.2, correlation=0.7, alpha=0.1,
+        decision_margin=-0.03, true_difference=-0.05, campaigns=1_000,
+        seed=20260813, consecutive_looks=4,
+    )
+    assert four["consecutive_looks"] == 4
+    assert four["estimated_action_probability"] <= two["estimated_action_probability"]
