@@ -1,0 +1,475 @@
+{
+  "arm": "slot",
+  "confirm_scored": false,
+  "depth_distribution": {
+    "1": 0.1,
+    "2": 0.2,
+    "3": 0.3,
+    "4": 0.4
+  },
+  "eval_e_scored": false,
+  "kind": "paper2_phase3_p34_sampled_depth_share_preflight_v1",
+  "loss_share_read": {
+    "bounds": {
+      "aim": 0.15,
+      "ce": 0.1,
+      "gate": 0.03,
+      "kl": 0.35,
+      "preserve": 0.25,
+      "slot": 0.1
+    },
+    "classification": "breach_observed",
+    "consecutive_misses": 1,
+    "failed_contracts": [
+      "aim",
+      "gate",
+      "slot"
+    ],
+    "rule": "first breach is observed; two consecutive trailing-window breaches demote; four consecutive breaches stop",
+    "shares": {
+      "aim": 0.09837210333646418,
+      "ce": 0.10402452228303538,
+      "gate": 0.024837219558830406,
+      "kl": 0.5479270235242325,
+      "preserve": 0.14044395275572977,
+      "slot": 0.08439517854170779
+    }
+  },
+  "optimizer_constructed": false,
+  "optimizer_steps": 0,
+  "sampled_depth_mixture_solve": {
+    "converged": true,
+    "iterations": 2,
+    "maximum_share_error": 8.326672684688674e-17,
+    "per_stratum_solved_reads": [
+      {
+        "estimator": "unit-weight independent loss gradients under combined registered group clips",
+        "group_clip_ceilings": {
+          "bridge": 0.5,
+          "heads": 1.0
+        },
+        "group_clip_scales": {
+          "bridge": 1.0,
+          "heads": 1.0
+        },
+        "group_combined_norms": {
+          "bridge": 0.020619342676562,
+          "heads": 0.002379711437900945
+        },
+        "postclip_gradient_norms": {
+          "aim": 0.003322066885921179,
+          "ce": 0.0038401984098562765,
+          "gate": 0.0004602944780686623,
+          "kl": 0.015476653999651507,
+          "preserve": 0.006199642452862003,
+          "slot": 0.0023797111463407556
+        },
+        "unit_weight_shares": {
+          "aim": 0.10486796472949197,
+          "ce": 0.12122386611351754,
+          "gate": 0.014530154493833896,
+          "kl": 0.48855283818765155,
+          "preserve": 0.19570463461692605,
+          "slot": 0.07512054185857905
+        },
+        "weights": {
+          "aim": 0.12926774882921144,
+          "ce": 0.05205298866350135,
+          "gate": 0.0004327470356003924,
+          "kl": 1.0,
+          "preserve": 86.18475855441403,
+          "slot": 0.032048617321877956
+        }
+      },
+      {
+        "estimator": "unit-weight independent loss gradients under combined registered group clips",
+        "group_clip_ceilings": {
+          "bridge": 0.5,
+          "heads": 1.0
+        },
+        "group_clip_scales": {
+          "bridge": 1.0,
+          "heads": 1.0
+        },
+        "group_combined_norms": {
+          "bridge": 0.034117981743298394,
+          "heads": 0.002973318545950539
+        },
+        "postclip_gradient_norms": {
+          "aim": 0.0032245123254621127,
+          "ce": 0.005089507151562881,
+          "gate": 0.0008368615942909274,
+          "kl": 0.022982453845761985,
+          "preserve": 0.01421218537684181,
+          "slot": 0.0029733183479910804
+        },
+        "unit_weight_shares": {
+          "aim": 0.06538094598849586,
+          "ce": 0.10319600565853257,
+          "gate": 0.01696839620184747,
+          "kl": 0.4659974662548452,
+          "preserve": 0.2881695061806341,
+          "slot": 0.060287679715644714
+        },
+        "weights": {
+          "aim": 0.12926774882921144,
+          "ce": 0.05205298866350135,
+          "gate": 0.0004327470356003924,
+          "kl": 1.0,
+          "preserve": 86.18475855441403,
+          "slot": 0.032048617321877956
+        }
+      },
+      {
+        "estimator": "unit-weight independent loss gradients under combined registered group clips",
+        "group_clip_ceilings": {
+          "bridge": 0.5,
+          "heads": 1.0
+        },
+        "group_clip_scales": {
+          "bridge": 1.0,
+          "heads": 1.0
+        },
+        "group_combined_norms": {
+          "bridge": 0.034117981743298394,
+          "heads": 0.002973318545950539
+        },
+        "postclip_gradient_norms": {
+          "aim": 0.0032245123254621127,
+          "ce": 0.005089507151562881,
+          "gate": 0.0008368615942909274,
+          "kl": 0.022982453845761985,
+          "preserve": 0.01421218537684181,
+          "slot": 0.0029733183479910804
+        },
+        "unit_weight_shares": {
+          "aim": 0.06538094598849586,
+          "ce": 0.10319600565853257,
+          "gate": 0.01696839620184747,
+          "kl": 0.4659974662548452,
+          "preserve": 0.2881695061806341,
+          "slot": 0.060287679715644714
+        },
+        "weights": {
+          "aim": 0.12926774882921144,
+          "ce": 0.05205298866350135,
+          "gate": 0.0004327470356003924,
+          "kl": 1.0,
+          "preserve": 86.18475855441403,
+          "slot": 0.032048617321877956
+        }
+      },
+      {
+        "estimator": "unit-weight independent loss gradients under combined registered group clips",
+        "group_clip_ceilings": {
+          "bridge": 0.5,
+          "heads": 1.0
+        },
+        "group_clip_scales": {
+          "bridge": 1.0,
+          "heads": 1.0
+        },
+        "group_combined_norms": {
+          "bridge": 0.02428381893073324,
+          "heads": 0.003975651946525913
+        },
+        "postclip_gradient_norms": {
+          "aim": 0.004976937936648961,
+          "ce": 0.00417506861457414,
+          "gate": 0.0012623054835507856,
+          "kl": 0.016936444595072757,
+          "preserve": 0.00933228662820118,
+          "slot": 0.003975651763995099
+        },
+        "unit_weight_shares": {
+          "aim": 0.12240771460940243,
+          "ce": 0.10268575054636274,
+          "gate": 0.031046384613830632,
+          "kl": 0.41655160319067647,
+          "preserve": 0.22952745097061586,
+          "slot": 0.09778109606911185
+        },
+        "weights": {
+          "aim": 0.12926774882921144,
+          "ce": 0.05205298866350135,
+          "gate": 0.0004327470356003924,
+          "kl": 1.0,
+          "preserve": 86.18475855441403,
+          "slot": 0.032048617321877956
+        }
+      },
+      {
+        "estimator": "unit-weight independent loss gradients under combined registered group clips",
+        "group_clip_ceilings": {
+          "bridge": 0.5,
+          "heads": 1.0
+        },
+        "group_clip_scales": {
+          "bridge": 1.0,
+          "heads": 1.0
+        },
+        "group_combined_norms": {
+          "bridge": 0.02428381893073324,
+          "heads": 0.003975651946525913
+        },
+        "postclip_gradient_norms": {
+          "aim": 0.004976937936648961,
+          "ce": 0.00417506861457414,
+          "gate": 0.0012623054835507856,
+          "kl": 0.016936444595072757,
+          "preserve": 0.00933228662820118,
+          "slot": 0.003975651763995099
+        },
+        "unit_weight_shares": {
+          "aim": 0.12240771460940243,
+          "ce": 0.10268575054636274,
+          "gate": 0.031046384613830632,
+          "kl": 0.41655160319067647,
+          "preserve": 0.22952745097061586,
+          "slot": 0.09778109606911185
+        },
+        "weights": {
+          "aim": 0.12926774882921144,
+          "ce": 0.05205298866350135,
+          "gate": 0.0004327470356003924,
+          "kl": 1.0,
+          "preserve": 86.18475855441403,
+          "slot": 0.032048617321877956
+        }
+      },
+      {
+        "estimator": "unit-weight independent loss gradients under combined registered group clips",
+        "group_clip_ceilings": {
+          "bridge": 0.5,
+          "heads": 1.0
+        },
+        "group_clip_scales": {
+          "bridge": 1.0,
+          "heads": 1.0
+        },
+        "group_combined_norms": {
+          "bridge": 0.02428381893073324,
+          "heads": 0.003975651946525913
+        },
+        "postclip_gradient_norms": {
+          "aim": 0.004976937936648961,
+          "ce": 0.00417506861457414,
+          "gate": 0.0012623054835507856,
+          "kl": 0.016936444595072757,
+          "preserve": 0.00933228662820118,
+          "slot": 0.003975651763995099
+        },
+        "unit_weight_shares": {
+          "aim": 0.12240771460940243,
+          "ce": 0.10268575054636274,
+          "gate": 0.031046384613830632,
+          "kl": 0.41655160319067647,
+          "preserve": 0.22952745097061586,
+          "slot": 0.09778109606911185
+        },
+        "weights": {
+          "aim": 0.12926774882921144,
+          "ce": 0.05205298866350135,
+          "gate": 0.0004327470356003924,
+          "kl": 1.0,
+          "preserve": 86.18475855441403,
+          "slot": 0.032048617321877956
+        }
+      },
+      {
+        "estimator": "unit-weight independent loss gradients under combined registered group clips",
+        "group_clip_ceilings": {
+          "bridge": 0.5,
+          "heads": 1.0
+        },
+        "group_clip_scales": {
+          "bridge": 1.0,
+          "heads": 1.0
+        },
+        "group_combined_norms": {
+          "bridge": 0.016933549269048463,
+          "heads": 0.00521250167466214
+        },
+        "postclip_gradient_norms": {
+          "aim": 0.0092382648348417,
+          "ce": 0.0036397228085170673,
+          "gate": 0.0016025147049822366,
+          "kl": 0.007902672197827698,
+          "preserve": 0.009349295183266108,
+          "slot": 0.005212501664116128
+        },
+        "unit_weight_shares": {
+          "aim": 0.25005472967978315,
+          "ce": 0.098517407680343,
+          "gate": 0.04337571919901309,
+          "kl": 0.21390386566132727,
+          "preserve": 0.2530600195537872,
+          "slot": 0.1410882582257464
+        },
+        "weights": {
+          "aim": 0.12926774882921144,
+          "ce": 0.05205298866350135,
+          "gate": 0.0004327470356003924,
+          "kl": 1.0,
+          "preserve": 86.18475855441403,
+          "slot": 0.032048617321877956
+        }
+      },
+      {
+        "estimator": "unit-weight independent loss gradients under combined registered group clips",
+        "group_clip_ceilings": {
+          "bridge": 0.5,
+          "heads": 1.0
+        },
+        "group_clip_scales": {
+          "bridge": 1.0,
+          "heads": 1.0
+        },
+        "group_combined_norms": {
+          "bridge": 0.016933549269048463,
+          "heads": 0.00521250167466214
+        },
+        "postclip_gradient_norms": {
+          "aim": 0.0092382648348417,
+          "ce": 0.0036397228085170673,
+          "gate": 0.0016025147049822366,
+          "kl": 0.007902672197827698,
+          "preserve": 0.009349295183266108,
+          "slot": 0.005212501664116128
+        },
+        "unit_weight_shares": {
+          "aim": 0.25005472967978315,
+          "ce": 0.098517407680343,
+          "gate": 0.04337571919901309,
+          "kl": 0.21390386566132727,
+          "preserve": 0.2530600195537872,
+          "slot": 0.1410882582257464
+        },
+        "weights": {
+          "aim": 0.12926774882921144,
+          "ce": 0.05205298866350135,
+          "gate": 0.0004327470356003924,
+          "kl": 1.0,
+          "preserve": 86.18475855441403,
+          "slot": 0.032048617321877956
+        }
+      },
+      {
+        "estimator": "unit-weight independent loss gradients under combined registered group clips",
+        "group_clip_ceilings": {
+          "bridge": 0.5,
+          "heads": 1.0
+        },
+        "group_clip_scales": {
+          "bridge": 1.0,
+          "heads": 1.0
+        },
+        "group_combined_norms": {
+          "bridge": 0.016933549269048463,
+          "heads": 0.00521250167466214
+        },
+        "postclip_gradient_norms": {
+          "aim": 0.0092382648348417,
+          "ce": 0.0036397228085170673,
+          "gate": 0.0016025147049822366,
+          "kl": 0.007902672197827698,
+          "preserve": 0.009349295183266108,
+          "slot": 0.005212501664116128
+        },
+        "unit_weight_shares": {
+          "aim": 0.25005472967978315,
+          "ce": 0.098517407680343,
+          "gate": 0.04337571919901309,
+          "kl": 0.21390386566132727,
+          "preserve": 0.2530600195537872,
+          "slot": 0.1410882582257464
+        },
+        "weights": {
+          "aim": 0.12926774882921144,
+          "ce": 0.05205298866350135,
+          "gate": 0.0004327470356003924,
+          "kl": 1.0,
+          "preserve": 86.18475855441403,
+          "slot": 0.032048617321877956
+        }
+      },
+      {
+        "estimator": "unit-weight independent loss gradients under combined registered group clips",
+        "group_clip_ceilings": {
+          "bridge": 0.5,
+          "heads": 1.0
+        },
+        "group_clip_scales": {
+          "bridge": 1.0,
+          "heads": 1.0
+        },
+        "group_combined_norms": {
+          "bridge": 0.016933549269048463,
+          "heads": 0.00521250167466214
+        },
+        "postclip_gradient_norms": {
+          "aim": 0.0092382648348417,
+          "ce": 0.0036397228085170673,
+          "gate": 0.0016025147049822366,
+          "kl": 0.007902672197827698,
+          "preserve": 0.009349295183266108,
+          "slot": 0.005212501664116128
+        },
+        "unit_weight_shares": {
+          "aim": 0.25005472967978315,
+          "ce": 0.098517407680343,
+          "gate": 0.04337571919901309,
+          "kl": 0.21390386566132727,
+          "preserve": 0.2530600195537872,
+          "slot": 0.1410882582257464
+        },
+        "weights": {
+          "aim": 0.12926774882921144,
+          "ce": 0.05205298866350135,
+          "gate": 0.0004327470356003924,
+          "kl": 1.0,
+          "preserve": 86.18475855441403,
+          "slot": 0.032048617321877956
+        }
+      }
+    ],
+    "preservation_at_or_below_25_percent": true,
+    "slot_arm": true,
+    "solved_mean_postclip_shares": {
+      "aim": 0.1541095890410959,
+      "ce": 0.10273972602739728,
+      "gate": 0.03082191780821919,
+      "kl": 0.3595890410958904,
+      "preserve": 0.24999999999999992,
+      "slot": 0.10273972602739725
+    },
+    "static_weights_kl_normalized": {
+      "aim": 0.12926774882921144,
+      "ce": 0.05205298866350135,
+      "gate": 0.0004327470356003924,
+      "kl": 1.0,
+      "preserve": 86.18475855441403,
+      "slot": 0.032048617321877956
+    },
+    "strata": 10,
+    "target_shares": {
+      "aim": 0.1541095890410959,
+      "ce": 0.10273972602739728,
+      "gate": 0.03082191780821918,
+      "kl": 0.3595890410958904,
+      "preserve": 0.25,
+      "slot": 0.10273972602739728
+    },
+    "tolerance": 1e-08,
+    "unit_weight_mean_postclip_gradient_norms": {
+      "aim": 0.008275707847113544,
+      "ce": 0.016357730853083986,
+      "gate": 0.4971643757749023,
+      "kl": 0.0032053139089398565,
+      "preserve": 2.329083597399349e-05,
+      "slot": 0.1282529894439895
+    }
+  },
+  "seed": 0,
+  "status": "complete_read_only_no_optimizer"
+}

@@ -1,0 +1,83 @@
+{
+  "kind": "paper2_phase3_p34_sampled_depth_preflight_consolidated_v1",
+  "status": "strategy_amendment_required",
+  "training_steps": 0,
+  "confirm_scored": false,
+  "eval_e_scored": false,
+  "depth_distribution": {"1": 0.1, "2": 0.2, "3": 0.3, "4": 0.4},
+  "finding": "The locked weights were solved at full depth four, while training samples depth with probability proportional to depth. The mismatch changes the realized loss shares and blocks a matched launch.",
+  "arms": {
+    "main_seed_0": {
+      "old_weight_preflight": {
+        "kl": 0.6112760525175248,
+        "aim": 0.1097454741665985,
+        "ce": 0.11605140213235524,
+        "gate": 0.027708794922690027,
+        "preserve": 0.1352182762608314
+      },
+      "failed_contracts": ["aim", "gate"],
+      "proposed_weights": {
+        "kl": 1.0,
+        "aim": 0.12926774882921147,
+        "ce": 0.05205298866350136,
+        "gate": 0.0004327470356003924,
+        "preserve": 74.37862724559022
+      },
+      "receipt": "receipts/main_seed_0.json",
+      "receipt_sha256": "39d7c7e7cd7676508bc5df415a60286d9eb67ac27678a67b3d17a9b67e35e762"
+    },
+    "main_seed_1": {
+      "old_weight_preflight": {
+        "kl": 0.45993220410393976,
+        "aim": 0.20233528690083527,
+        "ce": 0.11085596826189273,
+        "gate": 0.03610245988798175,
+        "preserve": 0.19077408084535058
+      },
+      "failed_contracts": [],
+      "proposed_weights": {
+        "kl": 1.0,
+        "aim": 0.020558449735476,
+        "ce": 0.03924744331765692,
+        "gate": 0.00006729396560346335,
+        "preserve": 7.153611503510368
+      },
+      "receipt": "receipts/main_seed_1.json",
+      "receipt_sha256": "c4d1f9d136abc2a64214d3502c3d985e5c3349f56851d8c37140e9454ab897d2"
+    },
+    "slot_seed_0": {
+      "old_weight_preflight": {
+        "kl": 0.5479270235242325,
+        "aim": 0.09837210333646418,
+        "ce": 0.10402452228303538,
+        "gate": 0.024837219558830406,
+        "slot": 0.08439517854170779,
+        "preserve": 0.14044395275572977
+      },
+      "failed_contracts": ["aim", "gate", "slot"],
+      "proposed_weights": {
+        "kl": 1.0,
+        "aim": 0.12926774882921144,
+        "ce": 0.05205298866350135,
+        "gate": 0.0004327470356003924,
+        "slot": 0.032048617321877956,
+        "preserve": 86.18475855441403
+      },
+      "receipt": "receipts/slot_seed_0.json",
+      "receipt_sha256": "70562b1588e2cbee8130fb1e0a4897462a268c8519d7ce05bc0e03a3701d2df4"
+    }
+  },
+  "target_shares": {
+    "main": {"kl": 0.41666666666666663, "aim": 0.17857142857142858, "ce": 0.11904761904761905, "gate": 0.03571428571428571, "preserve": 0.25},
+    "slot": {"kl": 0.3595890410958904, "aim": 0.1541095890410959, "ce": 0.10273972602739728, "gate": 0.03082191780821918, "slot": 0.10273972602739728, "preserve": 0.25}
+  },
+  "attempt_accounting": {
+    "main_seed_0_optimizer_constructed": false,
+    "main_seed_0_optimizer_steps": 0,
+    "main_seed_1_step_zero_checkpoint_created": true,
+    "main_seed_1_optimizer_steps": 0,
+    "slot_seed_0_optimizer_constructed": false,
+    "slot_seed_0_optimizer_steps": 0
+  },
+  "requested_amendment": "Replace all three locked scalar vectors with the sampled-depth-mixture solves, rerun all pre-optimizer assertions, park the stale seed-1 step-zero resume, and launch all arms from their original i1 endpoints."
+}
