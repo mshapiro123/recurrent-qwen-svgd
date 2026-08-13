@@ -263,18 +263,11 @@ def main() -> int:
     if result["optimizer_steps"] != 0 or result["training_authorized"]:
         raise RuntimeError("P3.4 share calibration crossed the no-training boundary")
     copy_file_target = f"{RUN_ID}/receipts/p34_share_calibration_seed_{SEED}.json"
-    run(
-        [
-            RCLONE,
-            "copyto",
-            OUTPUT,
-            f"{DRIVE_REMOTE}/{copy_file_target}",
-            "--config",
-            RCLONE_CONFIG,
-        ],
-        cwd=Path("/content"),
-    )
     print(f"P34_SHARE_CALIBRATION_RECEIPT={OUTPUT}", flush=True)
+    print(
+        "P34_SHARE_CALIBRATION_PUBLICATION=caller_managed_read_only_drive_credentials",
+        flush=True,
+    )
     print(f"P34_SHARE_CALIBRATION_SHA256={sha256_file(OUTPUT)}", flush=True)
     return 0
 
