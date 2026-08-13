@@ -297,6 +297,8 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         saved = torch.load(resume_path, map_location="cpu", weights_only=False)
         if saved["kind"] != RUN_KIND or saved["seed"] != args.seed or saved["arm"] != args.arm:
             raise RuntimeError("P3.4 resume identity mismatch")
+        if saved.get("lock_sha256") != sha256_file(args.lock):
+            raise RuntimeError("P3.4 resume lock SHA mismatch")
         current = {**dict(module.named_parameters())}
         if slot_lift is not None:
             current.update({f"slot_lift.{name}": value for name, value in slot_lift.named_parameters()})

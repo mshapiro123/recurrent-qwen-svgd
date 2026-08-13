@@ -34,6 +34,7 @@ def test_runner_is_sealed_partition_blind_and_resumable() -> None:
     source = (ROOT / "training/run_paper2_phase3_p34.py").read_text(encoding="utf-8")
     assert "task_rows_look_" in source
     assert "checkpoint_step_" in source
+    assert 'saved.get("lock_sha256") != sha256_file(args.lock)' in source
     assert '"confirm_scored": False' in source
     assert '"eval_e_scored": False' in source
     lock = json.loads((ROOT / "training/paper2_phase3_p34_preregistration.json").read_text())
