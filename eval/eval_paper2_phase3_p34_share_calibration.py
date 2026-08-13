@@ -324,6 +324,8 @@ def main() -> int:
     parser.add_argument("--i1", type=Path, required=True)
     parser.add_argument("--i1_sha256", required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--seed", type=int, choices=(0, 1), required=True)
+    parser.add_argument("--main_only", action="store_true")
     parser.add_argument("--device", default="cuda")
     args = parser.parse_args()
 
@@ -368,24 +370,24 @@ def main() -> int:
     )
 
     strata = sorted({str(row["stratum"]) for row in records})
-    reads: dict[str, dict[str, Any]] = {"main": {}, "slot": {}}
-    bundles: dict[str, list[dict[str, Any]]] = {"main": [], "slot": []}
+    arm_specs = [("main", False)]
+    if not args.main_only:
+        arm_specs.append(("slot", True))
+    reads: dict[str, dict[str, Any]] = {arm: {} for arm, _slot in arm_specs}
+    bundles: dict[str, list[dict[str, Any]]] = {arm: [] for arm, _slot in arm_specs}
     for stratum in strata:
         indexes = torch.tensor(
             [index for index, row in enumerate(records) if str(row["stratum"]) == stratum],
             device=args.device,
         )
         stratum_batch = {key: value.index_select(0, indexes) for key, value in batch.items()}
-        reads["main"][stratum], main_bundle = arm_read(
-            module=module, batch=stratum_batch, slot_arm=False
-        )
-        reads["slot"][stratum], slot_bundle = arm_read(
-            module=module, batch=stratum_batch, slot_arm=True
-        )
-        bundles["main"].append(main_bundle)
-        bundles["slot"].append(slot_bundle)
+        for arm, slot_arm in arm_specs:
+            reads[arm][stratum], bundle = arm_read(
+                module=module, batch=stratum_batch, slot_arm=slot_arm
+            )
+            bundles[arm].append(bundle)
     solved = {}
-    for arm, slot_arm in (("main", False), ("slot", True)):
+    for arm, slot_arm in arm_specs:
         solved[arm] = solve_static_loss_weights_from_bundles(
             bundles[arm], slot_arm=slot_arm
         )
@@ -395,6 +397,8 @@ def main() -> int:
         "optimizer_constructed": False,
         "optimizer_steps": 0,
         "training_authorized": False,
+        "calibration_seed": args.seed,
+        "calibrated_arms": [arm for arm, _slot in arm_specs],
         "selection": selection,
         "selection_receipt_sha256": sha256_file(args.selection_receipt),
         "rows_file_sha256": sha256_file(args.rows),

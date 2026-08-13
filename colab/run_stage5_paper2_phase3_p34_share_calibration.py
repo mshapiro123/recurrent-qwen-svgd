@@ -20,7 +20,28 @@ DRIVE_REMOTE = os.environ.get(
 RCLONE = Path(os.environ.get("P34_RCLONE", "/content/bin/rclone"))
 RCLONE_CONFIG = Path(os.environ.get("P34_RCLONE_CONFIG", "/content/rclone.conf"))
 STAGE = Path("/mnt/local-scratch/p34-share-calibration")
-OUTPUT = ROOT / "outputs/stage5" / RUN_ID / "receipts/p34_share_calibration.json"
+SEED = int(os.environ.get("P34_SHARE_SEED", "0"))
+if SEED not in (0, 1):
+    raise ValueError("P34_SHARE_SEED must be 0 or 1")
+OUTPUT = (
+    ROOT
+    / "outputs/stage5"
+    / RUN_ID
+    / f"receipts/p34_share_calibration_seed_{SEED}.json"
+)
+
+MIGRATED_SHA256 = {
+    0: "d0f2b735825d29ab9801a5200493ca9aa65294778aea2fb7f728eb8e85dfc519",
+    1: "3ca1cdf8dd16bf4f435e81a675d7514778144c5c881af52a70171659f7734b4f",
+}
+P33_SHA256 = {
+    0: "84dc0fb2d1f69114b20888acd95101d6b31c810974a536dc36358b69fe13c70e",
+    1: "e80ad205eb3c4712fdee5303a4887260488f67ff858a2b4b005d724675e52067",
+}
+I1_SHA256 = {
+    0: "01c804bc69d35a01730fff236cf5a8d974899d2e4de7e15b92a227b2a9ce5d88",
+    1: "2ed3296f510a6c3a66c451051ecbe2284de03b35dde4052827174a66a10c1d4a",
+}
 
 
 def run(command: Sequence[str], *, cwd: Path = ROOT) -> None:
@@ -200,23 +221,23 @@ def main() -> int:
         lm_head,
     )
     direction = STAGE / "agreement_oracle_directions.pt"
-    migrated = STAGE / "seed_0_migrated.pt"
-    p33 = STAGE / "seed_0_p33.pt"
-    i1 = STAGE / "seed_0_i1.pt"
+    migrated = STAGE / f"seed_{SEED}_migrated.pt"
+    p33 = STAGE / f"seed_{SEED}_p33.pt"
+    i1 = STAGE / f"seed_{SEED}_i1.pt"
     copy_file(
         "stage5_paper2_phase3_oracle_forecast_20260810/private/oracle_cache/agreement_oracle_directions.pt",
         direction,
     )
     copy_file(
-        "stage5_paper2_phase3_p31_p32_receipts_20260810/private/migrated_checkpoints/seed_0_full_a2_phase3_migrated.pt",
+        f"stage5_paper2_phase3_p31_p32_receipts_20260810/private/migrated_checkpoints/seed_{SEED}_full_a2_phase3_migrated.pt",
         migrated,
     )
     copy_file(
-        "stage5_paper2_phase3_p33_20260811/private/seed_0/checkpoint_step_1000.pt",
+        f"stage5_paper2_phase3_p33_20260811/private/seed_{SEED}/checkpoint_step_1000.pt",
         p33,
     )
     copy_file(
-        "stage5_paper2_phase3_p33_i1_20260812/private/seed_0/resume.pt",
+        f"stage5_paper2_phase3_p33_i1_20260812/private/seed_{SEED}/resume.pt",
         i1,
     )
     run(
@@ -246,15 +267,18 @@ def main() -> int:
             "--migrated",
             migrated,
             "--migrated_sha256",
-            "d0f2b735825d29ab9801a5200493ca9aa65294778aea2fb7f728eb8e85dfc519",
+            MIGRATED_SHA256[SEED],
             "--p33",
             p33,
             "--p33_sha256",
-            "84dc0fb2d1f69114b20888acd95101d6b31c810974a536dc36358b69fe13c70e",
+            P33_SHA256[SEED],
             "--i1",
             i1,
             "--i1_sha256",
-            "01c804bc69d35a01730fff236cf5a8d974899d2e4de7e15b92a227b2a9ce5d88",
+            I1_SHA256[SEED],
+            "--seed",
+            str(SEED),
+            *(["--main_only"] if SEED == 1 else []),
             "--output",
             OUTPUT,
             "--device",
@@ -264,7 +288,7 @@ def main() -> int:
     result = json.loads(OUTPUT.read_text(encoding="utf-8"))
     if result["optimizer_steps"] != 0 or result["training_authorized"]:
         raise RuntimeError("P3.4 share calibration crossed the no-training boundary")
-    copy_file_target = f"{RUN_ID}/receipts/p34_share_calibration.json"
+    copy_file_target = f"{RUN_ID}/receipts/p34_share_calibration_seed_{SEED}.json"
     run(
         [
             RCLONE,
