@@ -1,0 +1,46 @@
+{
+  "kind": "paper2_phase3_p34_executed_lock_publication",
+  "status": "complete",
+  "published_utc_date": "2026-08-13",
+  "git_commit": "c452181fe23f5d71cd2db8e2462fe928c7d3f1d3",
+  "git_branch": "codex/phase3-opening-build",
+  "drive_parent_folder_id": "1aSbU2i8JZ37g5bJpyweLuvFaV0y92Qjr",
+  "training_authorized": false,
+  "artifacts": [
+    {
+      "path": "docs/PAPER2_PHASE3_P34_EXECUTED_LOCK_20260813.md",
+      "bytes": 7726,
+      "sha256": "9526c986e9b84feb4361337cf0290aac73c9d93009f3315ffa7fbb92318d45a3",
+      "drive_id": "1XNXZdovLLbxGUeZOJZ5yApLBH3s12-Cb",
+      "drive_url": "https://drive.google.com/file/d/1XNXZdovLLbxGUeZOJZ5yApLBH3s12-Cb/view"
+    },
+    {
+      "path": "docs/PAPER2_PHASE3_P34_EXECUTED_LOCK_HANDOFF_20260813.md",
+      "bytes": 12356,
+      "sha256": "e37ab08ba12fdd44f68359c1ddfb64cea4ba02ade73b6aa0e8cf350453fb9d2d",
+      "drive_id": "1LtsuxgBWT4IgFassCNEPtIigMQzLohVH",
+      "drive_url": "https://drive.google.com/file/d/1LtsuxgBWT4IgFassCNEPtIigMQzLohVH/view"
+    },
+    {
+      "path": "training/paper2_phase3_p34_preregistration.json",
+      "bytes": 10219,
+      "sha256": "93c17f7add7820c8b1d36378347a116d0fe36fbbee5b8978befdfcbc3459eb6c",
+      "drive_id": "13lN3_3y8Zzkebck5evrQSXq89cj7oss9",
+      "drive_url": "https://drive.google.com/file/d/13lN3_3y8Zzkebck5evrQSXq89cj7oss9/view"
+    },
+    {
+      "path": "docs/figures/p34_executed_lock_calibration_summary_20260813.svg",
+      "bytes": 58919,
+      "sha256": "f1b387c343def96332f1114cf927619960da5d3f67e62382b07514ac9790ab93",
+      "drive_id": "1TnIA9dcsRMaDIZdX_5FdGfMfmxgpKt39",
+      "drive_url": "https://drive.google.com/file/d/1TnIA9dcsRMaDIZdX_5FdGfMfmxgpKt39/view"
+    },
+    {
+      "path": "docs/figures/p34_executed_lock_calibration_summary_20260813.png",
+      "bytes": 157661,
+      "sha256": "8a22fe32a2db1c76b2bce9d1df568c0aa75471e2d7c4ad91960dd4481e7dbef0",
+      "drive_id": "1Y5YmFjw41hBmoX_hZ0dRF5udMdTsdHMV",
+      "drive_url": "https://drive.google.com/file/d/1Y5YmFjw41hBmoX_hZ0dRF5udMdTsdHMV/view"
+    }
+  ]
+}
