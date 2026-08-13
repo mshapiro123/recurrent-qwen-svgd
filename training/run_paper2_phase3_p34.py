@@ -172,7 +172,7 @@ def _task_guardrail(rows: Sequence[Mapping[str, Any]], lock: Mapping[str, Any]) 
         "mean_augmented_minus_base": mean, "standard_error": se,
         "upper_bound": upper,
         "tier_s_condition": upper < float(guard["tier_s_decision_margin"]),
-        "tier_w_condition": mean <= float(guard["tier_w_drop_class"]),
+        "tier_w_condition": upper < float(guard["tier_w_drop_class"]),
         "rows": len(rows),
     }
 
