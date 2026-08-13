@@ -64,6 +64,21 @@ def test_share_calibration_runner_binds_both_seed_endpoints() -> None:
     assert '1: "e80ad205eb3c4712fdee5303a4887260488f67ff858a2b4b005d724675e52067"' in source
     assert '1: "2ed3296f510a6c3a66c451051ecbe2284de03b35dde4052827174a66a10c1d4a"' in source
     assert '["--main_only"] if SEED == 1' in source
+    assert "p34_share_compact_batch.pt" in source
+    assert 'old = json.loads(old_summary.read_text(encoding="utf-8"))' in source
+    assert '"--compact_batch"' in source
+    assert '"--direction_cache"' not in source
+
+
+def test_share_compaction_is_cpu_only_and_training_disabled() -> None:
+    source = (
+        Path(__file__).resolve().parents[1]
+        / "colab/run_stage5_paper2_phase3_p34_share_compaction.py"
+    ).read_text(encoding="utf-8")
+    assert 'device="cpu"' in source
+    assert '"optimizer_steps": 0' in source
+    assert '"training_authorized": False' in source
+    assert "p34_share_compact_batch.pt" in source
 
 
 def test_zero_init_slot_bundle_reuses_main_gradients_exactly() -> None:

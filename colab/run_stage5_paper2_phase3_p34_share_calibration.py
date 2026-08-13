@@ -167,51 +167,11 @@ def main() -> int:
     rows = ROOT / f"outputs/stage5/{RUN_ID}/share_calibration/p34_share_calibration_rows.jsonl"
     selection = ROOT / f"outputs/stage5/{RUN_ID}/receipts/p34_share_calibration_selection.json"
     records = read_jsonl(rows)
-
     old_summary = ROOT / "outputs/stage5/stage5_paper2_phase2_stage0a_20260803/summary.json"
-    new_summary = STAGE / "new_summary.json"
-    old_manifest = STAGE / "old_manifest.jsonl"
-    new_manifest = STAGE / "new_manifest.jsonl"
-    copy_file(
-        "stage5_paper2_phase2_option_b_teacher_cache_20260806/receipts/full_cache_summary.json",
-        new_summary,
-    )
-    copy_file(
-        "stage5_paper2_phase2_stage0a_20260803/private/stage0a/sample_manifest.jsonl",
-        old_manifest,
-    )
-    copy_file(
-        "stage5_paper2_phase2_option_b_teacher_cache_20260806/private/full/sample_manifest.jsonl",
-        new_manifest,
-    )
     old = json.loads(old_summary.read_text(encoding="utf-8"))
-    new = json.loads(new_summary.read_text(encoding="utf-8"))
-    old_private = STAGE / "old"
-    new_private = STAGE / "new"
-    staging = [
-        stage_source(
-            source="old",
-            run_id="stage5_paper2_phase2_stage0a_20260803",
-            private_prefix="private/stage0a",
-            summary=old,
-            summary_path=old_summary,
-            manifest_path=old_manifest,
-            records=records,
-            private_root=old_private,
-        ),
-        stage_source(
-            source="new",
-            run_id="stage5_paper2_phase2_option_b_teacher_cache_20260806",
-            private_prefix="private/full",
-            summary=new,
-            summary_path=new_summary,
-            manifest_path=new_manifest,
-            records=records,
-            private_root=new_private,
-        ),
-    ]
-    staging_path = STAGE / "staging_receipt.json"
-    staging_path.write_text(json.dumps(staging, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    compact = STAGE / "p34_share_compact_batch.pt"
+    copy_file(f"{RUN_ID}/private/p34_share_compact_batch.pt", compact)
+    compact_sha256 = sha256_file(compact)
 
     lm_head_receipt = old["model_caches"]["student_0p5b"]["lm_head"]
     lm_head = STAGE / "lm_head.pt"
@@ -220,14 +180,9 @@ def main() -> int:
         + relative_private(str(lm_head_receipt["path"])),
         lm_head,
     )
-    direction = STAGE / "agreement_oracle_directions.pt"
     migrated = STAGE / f"seed_{SEED}_migrated.pt"
     p33 = STAGE / f"seed_{SEED}_p33.pt"
     i1 = STAGE / f"seed_{SEED}_i1.pt"
-    copy_file(
-        "stage5_paper2_phase3_oracle_forecast_20260810/private/oracle_cache/agreement_oracle_directions.pt",
-        direction,
-    )
     copy_file(
         f"stage5_paper2_phase3_p31_p32_receipts_20260810/private/migrated_checkpoints/seed_{SEED}_full_a2_phase3_migrated.pt",
         migrated,
@@ -250,20 +205,14 @@ def main() -> int:
             rows,
             "--selection_receipt",
             selection,
-            "--old_summary",
-            old_summary,
-            "--old_private",
-            old_private,
-            "--new_summary",
-            new_summary,
-            "--new_private",
-            new_private,
+            "--compact_batch",
+            compact,
+            "--compact_batch_sha256",
+            compact_sha256,
             "--lm_head",
             lm_head,
             "--lm_head_sha256",
             lm_head_receipt["sha256"],
-            "--direction_cache",
-            direction,
             "--migrated",
             migrated,
             "--migrated_sha256",

@@ -356,13 +356,15 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--rows", type=Path, required=True)
     parser.add_argument("--selection_receipt", type=Path, required=True)
-    parser.add_argument("--old_summary", type=Path, required=True)
-    parser.add_argument("--old_private", type=Path, required=True)
-    parser.add_argument("--new_summary", type=Path, required=True)
-    parser.add_argument("--new_private", type=Path, required=True)
+    parser.add_argument("--old_summary", type=Path)
+    parser.add_argument("--old_private", type=Path)
+    parser.add_argument("--new_summary", type=Path)
+    parser.add_argument("--new_private", type=Path)
+    parser.add_argument("--compact_batch", type=Path)
+    parser.add_argument("--compact_batch_sha256")
     parser.add_argument("--lm_head", type=Path, required=True)
     parser.add_argument("--lm_head_sha256", required=True)
-    parser.add_argument("--direction_cache", type=Path, required=True)
+    parser.add_argument("--direction_cache", type=Path)
     parser.add_argument("--migrated", type=Path, required=True)
     parser.add_argument("--migrated_sha256", required=True)
     parser.add_argument("--p33", type=Path, required=True)
@@ -379,25 +381,45 @@ def main() -> int:
     selection = json.loads(args.selection_receipt.read_text(encoding="utf-8"))
     if len(records) != 256 or selection["rows"] != 256:
         raise RuntimeError("P3.4 step-zero calibration requires 128 rows per stratum")
-    sources = {}
-    source_receipts = []
-    for name, summary, private in (
-        ("old", args.old_summary, args.old_private),
-        ("new", args.new_summary, args.new_private),
-    ):
-        sources[name], receipt = _selected_source_cache(
-            source=name,
+    if args.compact_batch is not None:
+        if not args.compact_batch_sha256 or sha256_file(args.compact_batch) != args.compact_batch_sha256:
+            raise RuntimeError("P3.4 compact calibration batch hash changed")
+        compact = torch.load(args.compact_batch, map_location="cpu", weights_only=False)
+        if compact.get("kind") != "paper2_phase3_p34_compact_share_batch_v1":
+            raise RuntimeError("P3.4 compact calibration batch kind changed")
+        if compact["selection_receipt_sha256"] != sha256_file(args.selection_receipt):
+            raise RuntimeError("P3.4 compact batch selection receipt changed")
+        if compact["rows_file_sha256"] != sha256_file(args.rows):
+            raise RuntimeError("P3.4 compact batch rows changed")
+        batch = {key: value.to(args.device) for key, value in compact["batch"].items()}
+        batch_receipt = dict(compact["batch_receipt"])
+        batch_receipt["compact_batch_sha256"] = args.compact_batch_sha256
+        source_receipts = list(compact["source_receipts"])
+    else:
+        legacy = (args.old_summary, args.old_private, args.new_summary, args.new_private)
+        if any(value is None for value in legacy):
+            raise RuntimeError("P3.4 calibration needs either a compact batch or both source caches")
+        sources = {}
+        source_receipts = []
+        for name, summary, private in (
+            ("old", args.old_summary, args.old_private),
+            ("new", args.new_summary, args.new_private),
+        ):
+            sources[name], receipt = _selected_source_cache(
+                source=name,
+                records=records,
+                summary_path=summary,
+                private_root=private,
+            )
+            source_receipts.append(receipt)
+        if args.direction_cache is None:
+            raise RuntimeError("P3.4 legacy cache path needs the direction cache")
+        batch, batch_receipt = build_selected_batch(
             records=records,
-            summary_path=summary,
-            private_root=private,
+            sources=sources,
+            direction_cache=args.direction_cache,
+            device=args.device,
         )
-        source_receipts.append(receipt)
-    batch, batch_receipt = build_selected_batch(
-        records=records,
-        sources=sources,
-        direction_cache=args.direction_cache,
-        device=args.device,
-    )
     if sha256_file(args.lm_head) != args.lm_head_sha256:
         raise RuntimeError("P3.4 tied-head hash changed")
     embedding = torch.load(args.lm_head, map_location="cpu", weights_only=False)
