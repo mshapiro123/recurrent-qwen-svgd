@@ -1,0 +1,23 @@
+{
+  "kind": "paper2_phase3_p34_pre_amendment_asset_parking_receipt_v1",
+  "status": "complete",
+  "private_repository": "mshapiro123/recurrent-qwen-svgd-runtime-private",
+  "release": "p34-campaign-20260813",
+  "reason": "Prevent corrected runs from restoring pre-amendment receipts or the seed-1 zero-step resume while preserving all artifacts as calibration archaeology.",
+  "optimizer_steps_in_parked_attempts": 0,
+  "active_campaign_asset_names_remaining": 0,
+  "parked_assets": [
+    {"name": "main_seed_0-final-receipts-pre-amendment-a1.tar.zst", "sha256": "876b93560c85be53790360ed93e03feba00d0bb17fec46953cebc773a780842d"},
+    {"name": "main_seed_0-latest-receipts-pre-amendment-a1.tar.zst", "sha256": "876b93560c85be53790360ed93e03feba00d0bb17fec46953cebc773a780842d"},
+    {"name": "main_seed_0-status-pre-amendment-a1.json", "sha256": "9f9b0ad0c176571a8182c0eced36d8d2965204e87da05f2983d20e7f70f6e0cb"},
+    {"name": "main_seed_1-final-receipts-pre-amendment-a1.tar.zst", "sha256": "1085cdcd1898be3fc1a7075f35472573a240c059ad3f44d14e10e80f21b03f3a"},
+    {"name": "main_seed_1-latest-receipts-pre-amendment-a1.tar.zst", "sha256": "1085cdcd1898be3fc1a7075f35472573a240c059ad3f44d14e10e80f21b03f3a"},
+    {"name": "main_seed_1-resume-pre-amendment-a1.pt", "sha256": "804bc7c8b56692a3794d04713317d06a691d00810f5712dbd0b42b73d8865c17"},
+    {"name": "main_seed_1-status-pre-amendment-a1.json", "sha256": "e3ea4ed6cdc9ff9beafc102039c402efd9c19d118be7b009dbd5100dd12380c9"},
+    {"name": "slot_seed_0-final-receipts-pre-amendment-a1.tar.zst", "sha256": "181cb7165338e5ede8577e22ff737a608f5c2f84b012692b0587ea78dd77411d"},
+    {"name": "slot_seed_0-latest-receipts-pre-amendment-a1.tar.zst", "sha256": "181cb7165338e5ede8577e22ff737a608f5c2f84b012692b0587ea78dd77411d"},
+    {"name": "slot_seed_0-status-pre-amendment-a1.json", "sha256": "f10ae900abcd85f23f1c6a086966a16d52743b42cd2319582b652dac6958814d"}
+  ],
+  "confirm_scored": false,
+  "eval_e_scored": false
+}
