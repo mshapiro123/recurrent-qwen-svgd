@@ -65,6 +65,9 @@ def test_share_calibration_runner_binds_both_seed_endpoints() -> None:
     assert '1: "2ed3296f510a6c3a66c451051ecbe2284de03b35dde4052827174a66a10c1d4a"' in source
     assert '["--main_only"] if SEED == 1' in source
     assert "p34_share_compact_batch.pt" in source
+    assert "1NvWNpSie9lYnNjpmoJrWldyFMMmKpiK6" in source
+    assert "d34be99c003e59364c80991cbdfb4ad698f499bc868d421c8f431cbe01799fb7" in source
+    assert '"--drive-root-folder-id"' in source
     assert 'old = json.loads(old_summary.read_text(encoding="utf-8"))' in source
     assert '"--compact_batch"' in source
     assert '"--direction_cache"' not in source

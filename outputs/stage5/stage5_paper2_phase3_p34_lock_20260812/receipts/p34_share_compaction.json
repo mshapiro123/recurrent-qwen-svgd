@@ -1,0 +1,57 @@
+{
+  "batch_receipt": {
+    "direction_cache_sha256": "611be787dea0438761d279aa035d5bfe2aa37e74710d880be1066d7ae80a45a2",
+    "negative_rows": 192,
+    "positive_rows": 64,
+    "rows": 256
+  },
+  "compact_batch_bytes": 9699014,
+  "compact_batch_sha256": "d34be99c003e59364c80991cbdfb4ad698f499bc868d421c8f431cbe01799fb7",
+  "kind": "paper2_phase3_p34_compact_share_batch_v1",
+  "local_compaction": true,
+  "optimizer_constructed": false,
+  "optimizer_steps": 0,
+  "rows_file_sha256": "c6fe791d0689027201e3cbf98b4e7a13c6f12de61d3ba2eb5ab22064449fc4bb",
+  "selection_receipt_sha256": "c4543ec734eeae3999b0f87f0dfc1fd93310df6e3e30dbb6bbab1d7bcae32a2c",
+  "source_receipts": [
+    {
+      "manifest_sha256": "43edbb74c5edf84dc5e6512dbe4beb1bbbf0f4df31b2c6830714ce2c8fc7ba93",
+      "selected_anchors": 55,
+      "source": "old",
+      "summary_sha256": "654ca11335e34a6c8fc6136276943df637b95c044892e8591b20600a04a4cd91",
+      "verified_file_ledger_sha256": "e6c8d215303df337e4e35fce20fc730550e8158c05242756c6a13a77ac283554",
+      "verified_files": 86
+    },
+    {
+      "manifest_sha256": "8a50b8ac3a9cc361be918b968a2a8ae490d4aff79a83d41fcdc774a951788187",
+      "selected_anchors": 201,
+      "source": "new",
+      "summary_sha256": "fe7735267d03b13973a5f603aba38b2959101f725bdb1ef95230bee612c88b0e",
+      "verified_file_ledger_sha256": "a632bad6e798ad830f29d75ffc43bf575e7274d954d30279d744d9eecd8ea7ab",
+      "verified_files": 260
+    }
+  ],
+  "staging_receipts": [
+    {
+      "copied_file_ledger_sha256": "81136e1d40c3731ff9f1f7644e46817ae37f600e631c77e94bb6ba36bd7aaff0",
+      "manifest_sha256": "43edbb74c5edf84dc5e6512dbe4beb1bbbf0f4df31b2c6830714ce2c8fc7ba93",
+      "selected_anchors": 55,
+      "selected_sample_indices": 220,
+      "selected_shards": 43,
+      "source": "old",
+      "summary_path": "C:\\Users\\mshap\\Documents\\Codex\\2026-06-15\\option-b-pilot-contract-fix\\outputs\\stage5\\stage5_paper2_phase2_stage0a_20260803\\summary.json",
+      "summary_sha256": "654ca11335e34a6c8fc6136276943df637b95c044892e8591b20600a04a4cd91"
+    },
+    {
+      "copied_file_ledger_sha256": "bcdc212cd755a24a9a6ea01ad88691721af294eeab1b8d888541bdc2f0f38f3d",
+      "manifest_sha256": "8a50b8ac3a9cc361be918b968a2a8ae490d4aff79a83d41fcdc774a951788187",
+      "selected_anchors": 201,
+      "selected_sample_indices": 804,
+      "selected_shards": 130,
+      "source": "new",
+      "summary_path": "C:\\Users\\mshap\\Documents\\Codex\\2026-06-15\\option-b-pilot-contract-fix\\.codex_p34_local_stage\\new_summary.json",
+      "summary_sha256": "fe7735267d03b13973a5f603aba38b2959101f725bdb1ef95230bee612c88b0e"
+    }
+  ],
+  "training_authorized": false
+}

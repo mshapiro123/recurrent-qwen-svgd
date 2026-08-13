@@ -20,6 +20,10 @@ DRIVE_REMOTE = os.environ.get(
 RCLONE = Path(os.environ.get("P34_RCLONE", "/content/bin/rclone"))
 RCLONE_CONFIG = Path(os.environ.get("P34_RCLONE_CONFIG", "/content/rclone.conf"))
 STAGE = Path("/mnt/local-scratch/p34-share-calibration")
+RESEARCH_FOLDER_ID = "1aSbU2i8JZ37g5bJpyweLuvFaV0y92Qjr"
+COMPACT_FILE_NAME = "p34_share_compact_batch_20260812.pt"
+COMPACT_DRIVE_ID = "1NvWNpSie9lYnNjpmoJrWldyFMMmKpiK6"
+COMPACT_SHA256 = "d34be99c003e59364c80991cbdfb4ad698f499bc868d421c8f431cbe01799fb7"
 SEED = int(os.environ.get("P34_SHARE_SEED", "0"))
 if SEED not in (0, 1):
     raise ValueError("P34_SHARE_SEED must be 0 or 1")
@@ -71,6 +75,23 @@ def copy_file(remote_relative: str, destination: Path) -> None:
             RCLONE_CONFIG,
             "--transfers",
             "8",
+        ],
+        cwd=Path("/content"),
+    )
+
+
+def copy_research_file(file_name: str, destination: Path) -> None:
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    run(
+        [
+            RCLONE,
+            "copyto",
+            f"research:{file_name}",
+            destination,
+            "--config",
+            RCLONE_CONFIG,
+            "--drive-root-folder-id",
+            RESEARCH_FOLDER_ID,
         ],
         cwd=Path("/content"),
     )
@@ -170,8 +191,12 @@ def main() -> int:
     old_summary = ROOT / "outputs/stage5/stage5_paper2_phase2_stage0a_20260803/summary.json"
     old = json.loads(old_summary.read_text(encoding="utf-8"))
     compact = STAGE / "p34_share_compact_batch.pt"
-    copy_file(f"{RUN_ID}/private/p34_share_compact_batch.pt", compact)
+    copy_research_file(COMPACT_FILE_NAME, compact)
     compact_sha256 = sha256_file(compact)
+    if compact_sha256 != COMPACT_SHA256:
+        raise RuntimeError(
+            f"P3.4 compact batch hash mismatch for Drive file {COMPACT_DRIVE_ID}"
+        )
 
     lm_head_receipt = old["model_caches"]["student_0p5b"]["lm_head"]
     lm_head = STAGE / "lm_head.pt"
