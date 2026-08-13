@@ -339,6 +339,22 @@ def run_campaign(args: argparse.Namespace) -> int:
                         snapshot = Path(temporary) / "resume.pt"
                         shutil.copy2(resume, snapshot)
                         campaign_release.upload(snapshot, resume_name)
+                        import torch
+
+                        checkpoint = torch.load(
+                            snapshot, map_location="cpu", weights_only=False
+                        )
+                        checkpoint_step = int(checkpoint["step"])
+                        checkpoint_sha256 = sha256_file(snapshot)
+                    write_json(status_path, {
+                        "kind": KIND,
+                        "status": "running",
+                        "label": label,
+                        "ref": args.ref,
+                        "step": checkpoint_step,
+                        "resume_sha256": checkpoint_sha256,
+                        "updated_at_unix": time.time(),
+                    })
                     package_receipts(
                         output_dir=output_dir, private_dir=private_dir,
                         destination=private_dir / "latest-receipts.tar.zst",
@@ -346,6 +362,7 @@ def run_campaign(args: argparse.Namespace) -> int:
                     campaign_release.upload(
                         private_dir / "latest-receipts.tar.zst", f"{label}-latest-receipts.tar.zst"
                     )
+                    campaign_release.upload(status_path, f"{label}-status.json")
                     last_resume = signature
                 except Exception as error:  # Preserve the latest local checkpoint, then stop safely.
                     upload_error = error

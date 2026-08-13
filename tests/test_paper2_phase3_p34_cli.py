@@ -26,6 +26,8 @@ def test_cli_launcher_is_mount_free_private_and_durable() -> None:
     assert "transport_parts_manifest.json" in source
     assert "resume_name" in source
     assert "campaign_release.upload" in source
+    assert '"status": "running"' in source
+    assert 'checkpoint_step = int(checkpoint["step"])' in source
     assert "--transport_only" in source
     assert "--guardrail_amendment_sha256" in source
     assert '"confirm_scored": False' not in source  # No evaluation code is embedded here.
