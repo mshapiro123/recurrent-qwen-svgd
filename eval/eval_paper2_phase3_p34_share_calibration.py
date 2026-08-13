@@ -14,6 +14,8 @@ from eval.cache_paper2_phase2_stage0a import _load_flat_shard
 from eval.eval_paper2_phase3_p34_task_trajectory import load_condition
 from training.paper2_phase3_p32 import GateLabel
 from training.paper2_phase3_p34 import (
+    P34_LOSS_NAMES,
+    P34_SLOT_LOSS_NAMES,
     SlotSupervisionLift,
     loss_gradient_bundle,
     p34_forward_losses,
@@ -255,13 +257,9 @@ def arm_read(
     *,
     module: Any,
     batch: Mapping[str, torch.Tensor],
-    slot_arm: bool,
-) -> tuple[dict[str, Any], dict[str, Any]]:
+) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
     trainable = set_p34_trainable(module)
-    slot_lift = SlotSupervisionLift().to(next(module.parameters()).device) if slot_arm else None
     parameters = list(trainable.values())
-    if slot_lift is not None:
-        parameters.extend(slot_lift.parameters())
     module.train()
     losses, metrics = p34_forward_losses(
         module=module,
@@ -280,27 +278,75 @@ def arm_read(
         oracle_directions=batch["oracle_directions"],
         position_bucket=batch["position_bucket"],
     )
-    if slot_lift is not None:
-        slot, telemetry = slot_supervision_loss(
-            lift=slot_lift,
-            flow_states=metrics["flow_states"],
-            tied_weight=module.draft.tied_embedding.weight,
-            teacher_tokens=batch["teacher_tokens"],
-            teacher_mask=batch["teacher_mask"],
-        )
-        losses = {**losses, "slot": slot}
-    else:
-        telemetry = None
     bundle = loss_gradient_bundle(
         losses=losses,
         module=module,
         parameters=parameters,
-        slot_lift=slot_lift,
     )
     attribution = postclip_gradient_norms_from_bundle(bundle)
     return {
-        "slot_arm": slot_arm,
+        "slot_arm": False,
         "losses": {name: float(value.detach()) for name, value in losses.items()},
+        **attribution,
+        "slot_telemetry": None,
+    }, bundle, metrics
+
+
+def extend_main_bundle_with_slot(
+    *,
+    main_bundle: Mapping[str, Any],
+    slot_lift: SlotSupervisionLift,
+    slot_loss: torch.Tensor,
+) -> dict[str, Any]:
+    """Add the zero-init slot gradient without repeating the sidecar forward."""
+
+    if tuple(main_bundle["names"]) != P34_LOSS_NAMES:
+        raise RuntimeError("P3.4 slot extension requires a complete main bundle")
+    slot_parameters = [parameter for parameter in slot_lift.parameters() if parameter.requires_grad]
+    slot_gradients = torch.autograd.grad(slot_loss, slot_parameters, allow_unused=False)
+    gradients = {
+        name: dict(main_bundle["gradients"][name]) for name in P34_LOSS_NAMES
+    }
+    gradients["slot"] = {
+        id(parameter): gradient.detach()
+        for parameter, gradient in zip(slot_parameters, slot_gradients)
+    }
+    parameter_groups = dict(main_bundle["parameter_groups"])
+    parameter_groups.update({id(parameter): ("heads", 1.0) for parameter in slot_parameters})
+    return {
+        "names": P34_SLOT_LOSS_NAMES,
+        "parameter_ids": [*main_bundle["parameter_ids"], *(id(p) for p in slot_parameters)],
+        "gradients": gradients,
+        "parameter_groups": parameter_groups,
+    }
+
+
+def slot_read_from_main(
+    *,
+    module: Any,
+    batch: Mapping[str, torch.Tensor],
+    main_read: Mapping[str, Any],
+    main_bundle: Mapping[str, Any],
+    flow_states: tuple[torch.Tensor, ...],
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    slot_lift = SlotSupervisionLift().to(next(module.parameters()).device)
+    slot, telemetry = slot_supervision_loss(
+        lift=slot_lift,
+        # The zero-initialized lift is the only slot-arm parameter at step zero.
+        flow_states=tuple(state.detach() for state in flow_states),
+        tied_weight=module.draft.tied_embedding.weight,
+        teacher_tokens=batch["teacher_tokens"],
+        teacher_mask=batch["teacher_mask"],
+    )
+    bundle = extend_main_bundle_with_slot(
+        main_bundle=main_bundle,
+        slot_lift=slot_lift,
+        slot_loss=slot,
+    )
+    attribution = postclip_gradient_norms_from_bundle(bundle)
+    return {
+        "slot_arm": True,
+        "losses": {**dict(main_read["losses"]), "slot": float(slot.detach())},
         **attribution,
         "slot_telemetry": telemetry,
     }, bundle
@@ -376,20 +422,36 @@ def main() -> int:
     reads: dict[str, dict[str, Any]] = {arm: {} for arm, _slot in arm_specs}
     bundles: dict[str, list[dict[str, Any]]] = {arm: [] for arm, _slot in arm_specs}
     for stratum in strata:
+        print(f"p34_share_stratum_start seed={args.seed} stratum={stratum}", flush=True)
         indexes = torch.tensor(
             [index for index, row in enumerate(records) if str(row["stratum"]) == stratum],
             device=args.device,
         )
         stratum_batch = {key: value.index_select(0, indexes) for key, value in batch.items()}
-        for arm, slot_arm in arm_specs:
-            reads[arm][stratum], bundle = arm_read(
-                module=module, batch=stratum_batch, slot_arm=slot_arm
+        main_read, main_bundle, metrics = arm_read(module=module, batch=stratum_batch)
+        reads["main"][stratum] = main_read
+        bundles["main"].append(main_bundle)
+        if not args.main_only:
+            slot_read, slot_bundle = slot_read_from_main(
+                module=module,
+                batch=stratum_batch,
+                main_read=main_read,
+                main_bundle=main_bundle,
+                flow_states=metrics["flow_states"],
             )
-            bundles[arm].append(bundle)
+            reads["slot"][stratum] = slot_read
+            bundles["slot"].append(slot_bundle)
+        print(f"p34_share_stratum_complete seed={args.seed} stratum={stratum}", flush=True)
     solved = {}
     for arm, slot_arm in arm_specs:
+        print(f"p34_share_solve_start seed={args.seed} arm={arm}", flush=True)
         solved[arm] = solve_static_loss_weights_from_bundles(
             bundles[arm], slot_arm=slot_arm
+        )
+        print(
+            f"p34_share_solve_complete seed={args.seed} arm={arm} "
+            f"iterations={solved[arm]['iterations']}",
+            flush=True,
         )
     result = {
         "kind": "paper2_phase3_p34_step0_share_calibration_v1",
