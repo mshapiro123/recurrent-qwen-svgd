@@ -313,6 +313,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         last_pi_dep = float(saved["last_pi_dep"]); last_chi = float(saved["last_chi"])
         stop_reason = saved.get("stop_reason"); generator.set_state(saved["generator_state"])
         restore_rng(saved["rng_state"])
+        module.bridge.set_gate_ceiling(controller.gate_ceiling)
 
     def save(archive: bool) -> tuple[Path, str]:
         payload = {

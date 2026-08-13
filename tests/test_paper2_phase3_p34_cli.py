@@ -10,6 +10,7 @@ from colab.run_stage5_paper2_phase3_p34_cli import (
     PrivateRelease,
     assert_training_amendment,
     package_receipts,
+    restore_receipts,
     verify_sha256s,
 )
 
@@ -95,3 +96,23 @@ def test_receipt_bundle_does_not_archive_itself_or_prior_bundles(tmp_path: Path)
     assert "private/campaign.log" in names
     assert all("resume.pt" not in name for name in names)
     assert all("receipts.tar.zst" not in name for name in names)
+
+
+def test_receipt_bundle_restores_prior_scientific_artifacts(tmp_path: Path) -> None:
+    old_output = tmp_path / "old-output"
+    old_private = tmp_path / "old-private"
+    old_output.mkdir()
+    old_private.mkdir()
+    (old_output / "task_summary_look_01.json").write_text("{}\n", encoding="utf-8")
+    (old_private / "task_rows_look_01.jsonl").write_text("{}\n", encoding="utf-8")
+    bundle = tmp_path / "latest-receipts.tar.zst"
+    package_receipts(
+        output_dir=old_output, private_dir=old_private, destination=bundle
+    )
+    new_output = tmp_path / "new-output"
+    new_private = tmp_path / "new-private"
+    restore_receipts(
+        bundle=bundle, output_dir=new_output, private_dir=new_private
+    )
+    assert (new_output / "task_summary_look_01.json").is_file()
+    assert (new_private / "task_rows_look_01.jsonl").is_file()

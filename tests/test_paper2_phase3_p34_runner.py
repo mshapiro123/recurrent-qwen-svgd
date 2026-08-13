@@ -35,6 +35,7 @@ def test_runner_is_sealed_partition_blind_and_resumable() -> None:
     assert "task_rows_look_" in source
     assert "checkpoint_step_" in source
     assert 'saved.get("lock_sha256") != sha256_file(args.lock)' in source
+    assert source.count("module.bridge.set_gate_ceiling(controller.gate_ceiling)") == 2
     assert '"confirm_scored": False' in source
     assert '"eval_e_scored": False' in source
     lock = json.loads((ROOT / "training/paper2_phase3_p34_preregistration.json").read_text())

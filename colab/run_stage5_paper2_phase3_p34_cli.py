@@ -117,6 +117,11 @@ class PrivateRelease:
                     if block:
                         output.write(block)
         temporary.replace(destination)
+        if destination.stat().st_size != int(asset["size"]):
+            raise RuntimeError(f"private release download size mismatch: {name}")
+        expected_digest = asset.get("digest")
+        if expected_digest not in (None, f"sha256:{sha256_file(destination)}"):
+            raise RuntimeError(f"private release download digest mismatch: {name}")
         return True
 
     def upload(self, source: Path, name: str) -> None:
@@ -270,6 +275,21 @@ def package_receipts(*, output_dir: Path, private_dir: Path, destination: Path) 
     temporary.replace(destination)
 
 
+def restore_receipts(*, bundle: Path, output_dir: Path, private_dir: Path) -> None:
+    with tempfile.TemporaryDirectory(dir=bundle.parent) as temporary:
+        staging = Path(temporary)
+        with bundle.open("rb") as source:
+            with zstandard.ZstdDecompressor().stream_reader(source) as decoded:
+                with tarfile.open(fileobj=decoded, mode="r|") as archive:
+                    archive.extractall(staging, filter="data")
+        restored_output = staging / "outputs"
+        restored_private = staging / "private"
+        if restored_output.is_dir():
+            shutil.copytree(restored_output, output_dir, dirs_exist_ok=True)
+        if restored_private.is_dir():
+            shutil.copytree(restored_private, private_dir, dirs_exist_ok=True)
+
+
 def run_campaign(args: argparse.Namespace) -> int:
     if SCRATCH is None:
         raise RuntimeError("P3.4 CLI campaign requires at least 30 GiB local scratch")
@@ -297,6 +317,14 @@ def run_campaign(args: argparse.Namespace) -> int:
     private_dir = SCRATCH / "p34-runs" / label
     private_dir.mkdir(parents=True, exist_ok=True)
     resume_name = f"{label}-resume.pt"
+    prior_bundle = private_dir / "restore-latest-receipts.tar.zst"
+    if campaign_release.download(
+        f"{label}-latest-receipts.tar.zst", prior_bundle, required=False
+    ):
+        restore_receipts(
+            bundle=prior_bundle, output_dir=output_dir, private_dir=private_dir
+        )
+        prior_bundle.unlink()
     campaign_release.download(resume_name, private_dir / "resume.pt", required=False)
     command = [
         sys.executable, "-u", "-m", "training.run_paper2_phase3_p34",
