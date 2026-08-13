@@ -1,6 +1,6 @@
-# P3.4 Executed Lock - Awaiting Mark Approval
+# P3.4 Executed Lock - Approved for Training
 
-Date: 2026-08-13. Status: assembled and locked before training. Training remains structurally disabled.
+Date: 2026-08-13. Status: assembled, amended, ratified, and locked before training. The three registered sessions are authorized.
 
 ## 1. Authority and effect
 
@@ -9,9 +9,11 @@ This executed lock combines:
 - `STRATEGY_P34_CHARTER_20260812.md`, Drive `1lh2Vf3VG8yPXUjLPfr7IJkPCjnf2mKE6`, SHA-256 `80cb1b13eb48ffff064ff7cc6c0d02de773dfec80924c1c50736115821c97ce4`.
 - `STRATEGY_P34_BINDINGS_20260812.md`, Drive `1mLkbVZYhKyoiOuiOwdbjT9_nwA3Z8eYI`, SHA-256 `a650580f63e9556e6b5d77732d810e61052e8d3f041f27c79eabbf12f1106294`.
 - `STRATEGY_P34_BINDINGS_RATIFICATION_20260812.md`, Drive `1em-sujz1D9I-GtSpFrmzz7WDxANTlY5R`, SHA-256 `6311ae91478cd9cd306b9a61bc8788877e510fdc43c28abe5cd75ca80403bc0a`.
+- `PAPER2_PHASE3_P34_GUARDRAIL_COLLISION_ADDENDUM_20260813.md`, SHA-256 `d6c6fb5d0131b20ab32601113e5834e68b7d32b7776eba249fb12d4e67eea31d`, with calibration receipt SHA-256 `344426ffd0fbba57cdbe58a6c6c976e543ee9dddac106b1b5aa0109331159249`.
+- `STRATEGY_P34_SHARE_CONTRACT_CONFIRMATION_20260813_r2.md`, Drive `10RmusIfW1ggZH92L9wmJJD_5CJW8cvD_`, SHA-256 `69210d1c02e9d4b6f26f45cc86eb4b43957e4b74c0d2f020357a6e874cec3cd3`.
 - Machine-readable lock: `training/paper2_phase3_p34_preregistration.json`.
 
-All prerequisite values are now bound. `locked_before_training = true`, `training_authorized = false`, the unresolved-field list is empty, no P3.4 training runner exists, no optimizer was constructed by a prerequisite job, and zero P3.4 training steps have occurred. Mark's approval of this assembled lock is still required before any training launcher may be added or run.
+All prerequisite and amendment values are bound. `locked_before_training = true`, `training_authorized = true`, and the unresolved-field list is empty. No optimizer was constructed by a prerequisite job and zero P3.4 training steps occurred before approval.
 
 ## 2. Campaign configuration
 
@@ -40,10 +42,10 @@ The conservative operating contract is:
 
 | Guardrail | Bound value | False-action estimate | Detection power |
 |---|---:|---:|---:|
-| Tier-S absolute stop | sustained 5.5-point drop; one-sided alpha 0.10; two consecutive looks | 0 observed in 100,000 simulations; upper-95 `2.996e-5` | `0.99822` at -5.5 points |
+| Tier-S absolute stop | paired upper bound below -3 points for four consecutive looks | 0 observed in 100,000 simulations; upper-95 `2.996e-5` | `0.99036` at a sustained -5.5 points |
 | Tier-W demotion | sustained 3-point drop; same alpha; two consecutive looks | `3e-5`; upper-95 `7.753e-5` | `0.30694` at -3 points; `0.98601` at -5 points |
 
-Tier-S satisfies the registered familywise false-stop ceiling of `1e-4` and power floor of 0.99. Tier-W is a demote-and-review signal, not a high-power 3-point detector on this panel. Its limited 3-point sensitivity is disclosed rather than upgraded by narrative.
+Tier-S is nested inside Tier-W. A persistent drop first causes a reversible demotion at look two and stops only if it remains through look four. The four-look Tier-S rule retains the registered familywise false-stop ceiling of `1e-4` and power floor of 0.99 at the sustained 5.5-point catastrophe class.
 
 Task calibration receipt: `outputs/stage5/stage5_paper2_phase3_p34_lock_20260812/receipts/p34_task_guardrail_calibration.json`, repository SHA-256 `2efad887a5beade3bd21fc4d10caecae3675d6f1e25129b23cb0d9596d191476`; Drive `1r0jUt6S8Eibe4jwm2-IebYk7qnz3zPaF`, Drive-byte SHA-256 `eb50fcacf1197e2436c34cb2d40e0a8cafbdd0cb6ba8dea7211e738209bcc17a`.
 
@@ -83,6 +85,8 @@ The resulting main-arm shares are KL 41.667%, aim 17.857%, CE 11.905%, gate 3.57
 
 The raw gradient geometry is seed-dependent. Unit-weight gate gradients dominate both seeds, while preservation is tiny before weighting. Seed-specific weights are consequently binding experimental constants, not interchangeable formatting.
 
+During training, shares are read on non-overlapping 100-step windows. The first breach is observed, the second consecutive breach demotes one controller rung and flags strategy review, and the fourth consecutive breach stops. This cadence avoids treating highly overlapping sliding windows as independent persistence evidence. If a share demotion and task look coincide, only one controller transition is permitted at that step; a Tier-S stop still dominates.
+
 Receipts:
 
 - Seed 0: `outputs/stage5/stage5_paper2_phase3_p34_lock_20260812/receipts/p34_share_calibration_seed_0.json`, SHA-256 `bdcc62eecb5272fee4e4cf3245733e55253b41cd8be7a2df2a19c17caf8f7942`, Drive `1SqneiMuzpB5HqDnhfaKUbPYv3__HZV-r`.
@@ -90,13 +94,6 @@ Receipts:
 
 ## 6. Approval boundary
 
-This document is an assembled lock for review, not authorization to train. Before Mark's approval:
+Mark approved the amended lock before training. The authorized sessions are main seed 0, main seed 1, and slot seed 0. CONFIRM and EVAL-E remain untouched. Any change to the task graph, initialization, population, estimator, weights, schedule, thresholds, or arm design remains an amendment.
 
-- no P3.4 runner may be created;
-- no optimizer may be constructed;
-- no training step may execute;
-- CONFIRM and EVAL-E remain untouched.
-
-On explicit approval, implementation may add the runner for three sessions: main seed 0, main seed 1, and slot seed 0, all using only the values in this lock. Any change to the task graph, initialization, population, estimator, weights, schedule, thresholds, or arm design is an amendment.
-
-**Mark approval:** pending.
+**Mark approval:** recorded through the ratified authorities above.

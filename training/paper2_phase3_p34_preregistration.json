@@ -11,6 +11,19 @@
     "approval_repo_path": "docs/STRATEGY_P34_APPROVAL_PROCESS_RELAXATION_20260813.md",
     "approval_sha256": "5d3dd748d8865d5615aad6167851791ab8834591421092d3e3fb6a982fe16a44"
   },
+  "guardrail_amendment": {
+    "drive_id": "10RmusIfW1ggZH92L9wmJJD_5CJW8cvD_",
+    "repo_path": "docs/STRATEGY_P34_SHARE_CONTRACT_CONFIRMATION_20260813_r2.md",
+    "sha256": "69210d1c02e9d4b6f26f45cc86eb4b43957e4b74c0d2f020357a6e874cec3cd3",
+    "bytes": 1235,
+    "status": "ratified",
+    "task_nested_rule_addendum": {
+      "repo_path": "docs/PAPER2_PHASE3_P34_GUARDRAIL_COLLISION_ADDENDUM_20260813.md",
+      "sha256": "d6c6fb5d0131b20ab32601113e5834e68b7d32b7776eba249fb12d4e67eea31d",
+      "receipt_path": "outputs/stage5/stage5_paper2_phase3_p34_guardrail_collision_20260813/summary.json",
+      "receipt_sha256": "344426ffd0fbba57cdbe58a6c6c976e543ee9dddac106b1b5aa0109331159249"
+    }
+  },
   "authority": {
     "drive_id": "1lh2Vf3VG8yPXUjLPfr7IJkPCjnf2mKE6",
     "repo_path": "docs/STRATEGY_P34_CHARTER_20260812.md",
@@ -93,12 +106,12 @@
     "tier_s_delta_cat": 0.055,
     "tier_s_decision_margin": -0.03,
     "tier_s_one_sided_alpha": 0.1,
-    "tier_s_consecutive_looks": 2,
+    "tier_s_consecutive_looks": 4,
     "tier_s_familywise_false_stop_ceiling": 0.0001,
     "tier_s_power_floor": 0.99,
     "tier_s_conservative_null_estimated_action_probability": 0.0,
     "tier_s_conservative_null_upper_95": 0.00002995687401942795,
-    "tier_s_conservative_power_at_delta_cat": 0.99822,
+    "tier_s_conservative_power_at_delta_cat": 0.99036,
     "tier_w_drop_class": -0.03,
     "tier_w_consecutive_looks": 2,
     "tier_w_consequence": "demote one controller rung and flag strategy review; training continues",
@@ -115,7 +128,7 @@
       },
       "conservative_autocorrelation": {
         "tier_s_delta_cat": 0.055,
-        "tier_s_power_at_delta_cat": 0.99822,
+        "tier_s_power_at_delta_cat": 0.99036,
         "tier_w_power_at_drop_0.03": 0.30694,
         "tier_w_power_at_drop_0.05": 0.98601
       }
@@ -209,7 +222,9 @@
       "iterations_each": 2,
       "preservation_ceiling_met_all_arms": true
     },
-    "rule": "first trailing-window breach is observed; two consecutive breaches warn; four consecutive breaches stop"
+    "estimator_cadence": "non-overlapping trailing 100-step windows read at steps divisible by 100",
+    "two_breach_consequence": "demote one controller rung and flag strategy review; no termination",
+    "rule": "first trailing-window breach is observed; two consecutive breaches demote one controller rung and flag review; four consecutive breaches stop"
   },
   "run_dials": {
     "optimizer": "AdamW",

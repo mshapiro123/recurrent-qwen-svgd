@@ -252,6 +252,13 @@ def assert_training_amendment(*, lock_path: Path, expected_sha256: str) -> None:
         raise RuntimeError("P3.4 Tier-S must require four consecutive looks")
     if int(guardrails["tier_w_consecutive_looks"]) != EXPECTED_TIER_W_LOOKS:
         raise RuntimeError("P3.4 Tier-W must require two consecutive looks")
+    share_contract = lock["loss_share_contract"]
+    if share_contract.get("estimator_cadence") != (
+        "non-overlapping trailing 100-step windows read at steps divisible by 100"
+    ):
+        raise RuntimeError("P3.4 loss-share estimator cadence is not ratified")
+    if "two consecutive breaches demote one controller rung" not in share_contract["rule"]:
+        raise RuntimeError("P3.4 loss-share demotion consequence is not ratified")
 
 
 def package_receipts(*, output_dir: Path, private_dir: Path, destination: Path) -> None:

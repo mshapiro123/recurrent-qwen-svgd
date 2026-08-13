@@ -59,7 +59,7 @@ def test_controller_uses_rung_specific_collateral_limits() -> None:
     assert receipt["chi_max_before"] == pytest.approx(0.0005)
 
 
-def test_loss_contract_observes_warns_then_stops_per_named_loss() -> None:
+def test_loss_contract_observes_demotes_then_stops_per_named_loss() -> None:
     bounds = LossShareBounds()
     shares = {"kl": 0.34, "aim": 0.20, "ce": 0.10, "gate": 0.03, "preserve": 0.20}
     first = classify_loss_shares(shares, bounds=bounds)
@@ -68,8 +68,8 @@ def test_loss_contract_observes_warns_then_stops_per_named_loss() -> None:
     fourth = classify_loss_shares(shares, bounds=bounds, prior_consecutive_misses=3)
     assert first["classification"] == "breach_observed"
     assert first["failed_contracts"] == ["kl"]
-    assert second["classification"] == "warn"
-    assert third["classification"] == "warn"
+    assert second["classification"] == "demote"
+    assert third["classification"] == "post_demote_breach"
     assert fourth["classification"] == "stop"
 
 
@@ -206,6 +206,11 @@ def test_executed_lock_is_complete_and_approved_for_training() -> None:
     assert lock["boundaries"]["p34_training_runner_present"]
     assert lock["guardrails"]["tier_s_delta_cat"] == 0.055
     assert lock["guardrails"]["tier_s_one_sided_alpha"] == 0.1
+    assert lock["guardrails"]["tier_s_consecutive_looks"] == 4
+    assert lock["guardrails"]["tier_w_consecutive_looks"] == 2
+    assert lock["guardrail_amendment"]["sha256"] == (
+        "69210d1c02e9d4b6f26f45cc86eb4b43957e4b74c0d2f020357a6e874cec3cd3"
+    )
     assert lock["loss_share_contract"]["scalar_weights_by_seed"]["seed_0_slot"]["slot"] > 0
     assert lock["assembly"]["training_steps_before_mark_approval"] == 0
     assert lock["authority"]["sha256"] == (

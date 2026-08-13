@@ -1,12 +1,12 @@
 # Handoff: P3.4 Prerequisites Complete and Executed Lock Assembled
 
-Date: 2026-08-13. Audience: strategy and research review. Experimental status: prerequisite batch complete; P3.4 training has not started.
+Date: 2026-08-13. Audience: strategy and research review. Experimental status: prerequisite batch complete; amended lock ratified; P3.4 training authorized.
 
 ## 0. Executive result
 
 The P3.4 charter can now be reviewed as an executed lock with no open transcription fields. The task inference contract, A_r fork, DEV task panel, empirical guardrail calibration, collateral ceiling, initialization hashes, schedule, slot-arm design, and seed-specific loss weights are all bound and receipted. No optimizer was constructed and no P3.4 training step ran.
 
-The prerequisite measurements support launch, with one important qualification. Tier-S is a properly calibrated catastrophe stop: at the conservative autocorrelation edge it has a familywise false-stop upper bound of `2.996e-5` and 99.822% power for a sustained 5.5-point drop. Tier-W is much less sensitive to its nominal 3-point class: only 30.694% power, rising to 98.601% at 5 points. Tier-W is therefore useful as a conservative demotion trigger but cannot support a claim that every 3-point degradation will be detected.
+The prerequisite measurements and collision repair support launch. Tier-W demotes after two consecutive task breaches. Tier-S is nested at four consecutive breaches and has a familywise false-stop upper bound of `2.996e-5` with 99.036% power for a sustained 5.5-point drop. The separate per-loss contract now uses non-overlapping 100-step reads: breach two demotes and flags review; breach four stops.
 
 Summary figure: `docs/figures/p34_executed_lock_calibration_summary_20260813.svg` (PNG companion in the same directory).
 
@@ -68,13 +68,13 @@ Measured paired discordance was 9.310%. Empirical adjacent-checkpoint autocorrel
 | Quantity | Empirical correlation | Conservative correlation |
 |---|---:|---:|
 | Tier-S delta_cat | 5.0 points | 5.5 points |
-| Tier-S power at delta_cat | 99.145% | 99.822% |
+| Tier-S power at delta_cat | not bound after nested-rule amendment | 99.036% |
 | Tier-S null upper-95 | `2.996e-5` | `2.996e-5` |
 | Tier-W power at -3 points | 32.585% | 30.694% |
 | Tier-W power at -5 points | 99.146% | 98.601% |
 | Tier-W null upper-95 | `4.744e-5` | `7.753e-5` |
 
-The conservative edge is bound. Tier-S clears both its false-stop and power requirements. Tier-W's low 3-point power is not a contract failure because its consequence is demotion and review, not a capability claim or absolute safety stop, but it is a meaningful limitation.
+The conservative edge is bound. Tier-S clears both its false-stop and power requirements under the nested four-look rule. Tier-W remains the reversible two-look response; its low 3-point power is disclosed rather than treated as a complete detector.
 
 ### 4.2 Loss-share weights
 
@@ -104,24 +104,23 @@ The seed-0 slot loss has a unit-weight mean post-clip norm of `0.18633`, requiri
 
 - No task improvement, gap closed, or better-model claim exists yet. No P3.4 training has occurred.
 - Tier-W does not reliably detect every 3-point drop at this panel size.
-- Step-zero share matching does not guarantee trailing-window shares will remain in bounds. The registered warning and stop logic still has to operate during training.
+- Step-zero share matching does not guarantee trailing-window shares will remain in bounds. The registered demote-and-stop logic operates on non-overlapping 100-step training windows.
 - The slot arm is single-seed by design and cannot be generalized or promoted before its paired result.
 - The calibration is DEV-only and does not spend or preview CONFIRM or EVAL-E.
 
-## 6. Questions for strategy review
+## 6. Strategy resolutions
 
-1. Does strategy accept Tier-W's measured 30.694% power at the nominal 3-point class given that its consequence is demotion and review, with 98.601% power at 5 points? The executed lock keeps the ratified rule unchanged and discloses the operating characteristic.
-2. Does strategy affirm seed-specific static weights as the only matched implementation of B6? A shared vector would be a new, unsupported invariance assumption contradicted by the measured norms.
-3. Should preservation landing exactly at its 25% ceiling be accepted as intended, or should the later runner treat equality as a watch condition? The current lock follows B6 literally: at or under 25%.
-4. After Mark's approval, should the three sessions launch concurrently or should the slot seed-0 arm trail the two main lines by one look to reduce review concurrency? This is an operations choice only; the experimental constants are already fixed.
+1. The nested task rule is ratified: Tier-W at two consecutive looks, Tier-S at four.
+2. Seed-specific static weights remain binding.
+3. Preservation equality at the 25% ceiling is accepted as written.
+4. All three sessions are authorized to launch concurrently.
+5. The per-loss share contract demotes at two consecutive non-overlapping 100-step breach windows and stops at four.
 
 ## 7. Next steps
 
-1. Strategy reviews this handoff and `PAPER2_PHASE3_P34_EXECUTED_LOCK_20260813.md` against the charter and bindings.
-2. Mark either approves the executed lock or identifies a specific amendment. No training occurs before explicit approval.
-3. On approval, the coding lane adds a runner that can only read the locked JSON and asserts all hashes and constants before optimizer construction.
-4. Launch main seed 0, main seed 1, and slot seed 0. Report all 20 windows as curves, with the controller state, loss shares, task guardrails, chi, gate statistics, and registered diagnostics.
-5. Strategy reads the campaign against the prewritten failure-signature table and decides whether P3.6 confirmation, a P3.5 lever, or a boundary result is warranted.
+1. Launch main seed 0, main seed 1, and slot seed 0 from the exact amended lock.
+2. Report all 20 task looks and all 40 non-overlapping share reads as curves, with controller state, task guardrails, chi, gate statistics, and registered diagnostics.
+3. Strategy reads the completed campaign against the prewritten failure-signature table and decides whether P3.6 confirmation, a P3.5 lever, or a boundary result is warranted.
 
 ## 8. Plain-language summary
 

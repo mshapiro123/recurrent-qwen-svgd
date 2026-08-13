@@ -206,8 +206,10 @@ def classify_loss_shares(
     consecutive = prior_consecutive_misses + 1 if failed else 0
     if consecutive >= 4:
         classification = "stop"
-    elif consecutive >= 2:
-        classification = "warn"
+    elif consecutive == 3:
+        classification = "post_demote_breach"
+    elif consecutive == 2:
+        classification = "demote"
     elif failed:
         classification = "breach_observed"
     else:
@@ -219,7 +221,7 @@ def classify_loss_shares(
         "classification": classification,
         "consecutive_misses": consecutive,
         "rule": (
-            "first breach is observed; two consecutive trailing-window breaches warn; "
+            "first breach is observed; two consecutive trailing-window breaches demote; "
             "four consecutive breaches stop"
         ),
     }

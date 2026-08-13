@@ -58,7 +58,10 @@ def test_training_amendment_gate_requires_ratified_nested_rule(tmp_path: Path) -
     lock.write_text(
         '{"guardrail_amendment":{"sha256":"approved"},'
         '"guardrails":{"tier_s_consecutive_looks":4,'
-        '"tier_w_consecutive_looks":2}}\n',
+        '"tier_w_consecutive_looks":2},'
+        '"loss_share_contract":{'
+        '"estimator_cadence":"non-overlapping trailing 100-step windows read at steps divisible by 100",'
+        '"rule":"two consecutive breaches demote one controller rung; four stop"}}\n',
         encoding="utf-8",
     )
     assert_training_amendment(lock_path=lock, expected_sha256="approved")
@@ -69,7 +72,10 @@ def test_training_amendment_gate_requires_ratified_nested_rule(tmp_path: Path) -
     lock.write_text(
         '{"guardrail_amendment":{"sha256":"approved"},'
         '"guardrails":{"tier_s_consecutive_looks":2,'
-        '"tier_w_consecutive_looks":2}}\n',
+        '"tier_w_consecutive_looks":2},'
+        '"loss_share_contract":{'
+        '"estimator_cadence":"non-overlapping trailing 100-step windows read at steps divisible by 100",'
+        '"rule":"two consecutive breaches demote one controller rung; four stop"}}\n',
         encoding="utf-8",
     )
     with pytest.raises(RuntimeError, match="Tier-S"):

@@ -35,7 +35,11 @@ def test_runner_is_sealed_partition_blind_and_resumable() -> None:
     assert "task_rows_look_" in source
     assert "checkpoint_step_" in source
     assert 'saved.get("lock_sha256") != sha256_file(args.lock)' in source
-    assert source.count("module.bridge.set_gate_ceiling(controller.gate_ceiling)") == 2
+    assert source.count("module.bridge.set_gate_ceiling(controller.gate_ceiling)") == 3
+    assert "step % SHARE_WINDOW_STEPS == 0" in source
+    assert '"overlap_with_prior_window_steps": 0' in source
+    assert '"reason": "loss_share_contract_demote"' in source
+    assert "share_transition is not None or stop_reason is not None" in source
     assert '"confirm_scored": False' in source
     assert '"eval_e_scored": False' in source
     lock = json.loads((ROOT / "training/paper2_phase3_p34_preregistration.json").read_text())

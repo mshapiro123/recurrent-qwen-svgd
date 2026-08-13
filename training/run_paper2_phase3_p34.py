@@ -62,6 +62,7 @@ from training.run_paper2_phase3_p33 import (
 RUN_KIND = "paper2_phase3_p34_campaign_v1"
 TOTAL_STEPS = 4_000
 LOOK_INTERVAL = 200
+SHARE_WINDOW_STEPS = 100
 POSITIVE_PER_BATCH = 32
 NEGATIVE_PER_BATCH = 96
 AUDIT_LOOKS = {5, 10, 15, 20}
@@ -247,7 +248,8 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     resume_path = private_dir / "resume.pt"
     generator = torch.Generator().manual_seed(20260813 + args.seed)
     step = 0; history: list[dict[str, Any]] = []; schedule_hashes: list[str] = []
-    share_window: deque[dict[str, float]] = deque(maxlen=100)
+    share_window: deque[dict[str, float]] = deque(maxlen=SHARE_WINDOW_STEPS)
+    share_contract_events: list[dict[str, Any]] = []
     share_misses = 0; tier_s_streak = 0; tier_w_streak = 0
     controller = initial_annealing_state(tuple(lock["guardrails"]["chi_max_by_rung"]))
     last_pi_dep = 0.0; last_chi = 0.0; stop_reason: str | None = None
@@ -306,6 +308,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         optimizer.load_state_dict(saved["optimizer_state"])
         step = int(saved["step"]); history = list(saved["history"])
         schedule_hashes = list(saved["schedule_hashes"]); share_window.extend(saved["share_window"])
+        share_contract_events = list(saved.get("share_contract_events", []))
         share_misses = int(saved["share_misses"])
         tier_s_streak = int(saved.get("tier_s_streak", int(saved.get("prior_tier_s", False))))
         tier_w_streak = int(saved.get("tier_w_streak", int(saved.get("prior_tier_w", False))))
@@ -321,7 +324,8 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             "trainable_state": _checkpoint_state(module, slot_lift),
             "optimizer_state": optimizer.state_dict(), "history": history,
             "schedule_hashes": schedule_hashes, "share_window": list(share_window),
-            "share_misses": share_misses, "tier_s_streak": tier_s_streak,
+            "share_misses": share_misses, "share_contract_events": share_contract_events,
+            "tier_s_streak": tier_s_streak,
             "tier_w_streak": tier_w_streak, "controller": controller.__dict__,
             "last_pi_dep": last_pi_dep, "last_chi": last_chi,
             "stop_reason": stop_reason, "generator_state": generator.get_state(),
@@ -363,11 +367,41 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         lr = 3e-4 * min(1.0, next_step / 100)
         for group in optimizer.param_groups: group["lr"] = lr
         optimizer.step(); step = next_step
-        if len(share_window) == 100:
-            trailing = {name: sum(row[name] for row in share_window) / 100 for name in share_window[0]}
+        share_transition = None
+        classified = None
+        if step % SHARE_WINDOW_STEPS == 0:
+            if len(share_window) != SHARE_WINDOW_STEPS:
+                raise RuntimeError("P3.4 loss-share window is incomplete at its registered read")
+            trailing = {
+                name: sum(row[name] for row in share_window) / SHARE_WINDOW_STEPS
+                for name in share_window[0]
+            }
             classified = classify_loss_shares(trailing, prior_consecutive_misses=share_misses)
             share_misses = int(classified["consecutive_misses"])
-            if classified["classification"] == "stop": stop_reason = "loss_share_contract"
+            if classified["classification"] == "demote":
+                before = controller.rung
+                controller = AnnealingState(
+                    max(0, before - 1), controller.chi_max_by_rung, controller.window + 1
+                )
+                module.bridge.set_gate_ceiling(controller.gate_ceiling)
+                share_transition = {
+                    "reason": "loss_share_contract_demote",
+                    "rung_before": before,
+                    "rung_after": controller.rung,
+                    "strategy_review_flagged": True,
+                    "at_most_one_rung": before - controller.rung <= 1,
+                }
+            elif classified["classification"] == "stop":
+                stop_reason = "loss_share_contract"
+            share_contract_events.append({
+                "step": step,
+                "window_index": step // SHARE_WINDOW_STEPS,
+                "window_steps": SHARE_WINDOW_STEPS,
+                "overlap_with_prior_window_steps": 0,
+                "read": classified,
+                "controller": share_transition,
+            })
+            share_window.clear()
         if step % LOOK_INTERVAL == 0 or stop_reason:
             look = max(1, step // LOOK_INTERVAL)
             checkpoint, checkpoint_sha = save(archive=True)
@@ -397,6 +431,8 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
                 required_looks=int(lock["guardrails"]["tier_w_consecutive_looks"]),
             )
             if tier_s_event: stop_reason = stop_reason or "tier_s_task_collapse"
+            controller_transition_blocked = share_transition is not None or stop_reason is not None
+            task_tier_w_event = tier_w_event and not controller_transition_blocked
             audit = None
             if look in AUDIT_LOOKS:
                 audit, audit_rows = audit_model(
@@ -405,14 +441,22 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
                 )
                 write_jsonl(private_dir / f"audit_rows_look_{look:02d}.jsonl", audit_rows)
                 last_pi_dep = float(audit["pi_dep"]["point"]); last_chi = float(audit["collateral_chi"])
-                controller, transition = controller_transition(
-                    controller, pi_dep=last_pi_dep, chi=last_chi,
-                    tier_w_event=tier_w_event,
-                )
+                if controller_transition_blocked:
+                    transition = {
+                        "reason": "hold_after_share_transition_or_stop",
+                        "rung_before": controller.rung,
+                        "rung_after": controller.rung,
+                        "at_most_one_rung": True,
+                    }
+                else:
+                    controller, transition = controller_transition(
+                        controller, pi_dep=last_pi_dep, chi=last_chi,
+                        tier_w_event=task_tier_w_event,
+                    )
             else:
                 transition = {"reason": "hold_until_registered_pi_look", "rung_before": controller.rung,
                               "rung_after": controller.rung}
-                if tier_w_event and controller.rung > 0:
+                if task_tier_w_event and controller.rung > 0:
                     controller = AnnealingState(controller.rung - 1, controller.chi_max_by_rung, controller.window + 1)
                     transition = {"reason": "tier_w_demote", "rung_before": controller.rung + 1,
                                   "rung_after": controller.rung}
@@ -425,7 +469,8 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
                               "tier_w_streak": tier_w_streak,
                               "tier_s_event": tier_s_event, "tier_w_event": tier_w_event},
                 "audit": audit, "controller": transition,
-                "trailing_shares": classified if len(share_window) == 100 else None,
+                "trailing_shares": classified,
+                "share_controller": share_transition,
                 "stop_reason": stop_reason,
             })
             save(archive=False)
@@ -439,6 +484,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         "kind": RUN_KIND, "status": "stopped" if stop_reason else "complete",
         "seed": args.seed, "arm": args.arm, "step": step, "target_steps": TOTAL_STEPS,
         "stop_reason": stop_reason, "history": history,
+        "share_contract_events": share_contract_events,
         "checkpoint": {"path": str(checkpoint), "sha256": checkpoint_sha},
         "lock_sha256": sha256_file(args.lock), "chain": chain,
         "direction_cache": direction_receipt, "embedding": embedding_receipt,
