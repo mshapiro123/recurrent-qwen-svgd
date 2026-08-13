@@ -291,6 +291,19 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         preflight_bundles,
         slot_arm=slot_lift is not None,
     )
+    sampled_depth_weights = sampled_depth_solve["static_weights_kl_normalized"]
+    sampled_depth_weight_match = (
+        set(sampled_depth_weights) == set(static_weights)
+        and all(
+            math.isclose(
+                float(sampled_depth_weights[name]),
+                float(static_weights[name]),
+                rel_tol=0.0,
+                abs_tol=1e-12,
+            )
+            for name in static_weights
+        )
+    )
     preflight_receipt = {
         "kind": "paper2_phase3_p34_sampled_depth_share_preflight_v1",
         "status": "complete_read_only_no_optimizer",
@@ -299,6 +312,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         "depth_distribution": dict(zip(preflight_depths, preflight_mass)),
         "loss_share_read": preflight_classification,
         "sampled_depth_mixture_solve": sampled_depth_solve,
+        "locked_weights_match_sampled_depth_solve": sampled_depth_weight_match,
         "optimizer_constructed": False,
         "optimizer_steps": 0,
         "confirm_scored": False,
@@ -313,6 +327,18 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         }
         write_json(output_dir / "summary.json", result)
         return result
+    if not sampled_depth_weight_match:
+        write_json(output_dir / "blocked_pre_optimizer.json", {
+            "kind": RUN_KIND,
+            "status": "blocked_pre_optimizer_lock_weight_mismatch",
+            "seed": args.seed,
+            "arm": args.arm,
+            "locked_weights": static_weights,
+            "sampled_depth_mixture_solve": sampled_depth_solve,
+            "optimizer_constructed": False,
+            "optimizer_steps": 0,
+        })
+        raise RuntimeError("P3.4 locked weights do not match the ratified sampled-depth solve")
     if preflight_classification["classification"] != "pass":
         write_json(output_dir / "blocked_pre_optimizer.json", {
             "kind": RUN_KIND, "status": "blocked_pre_optimizer_estimator_mismatch",

@@ -1,0 +1,11 @@
+# Strategy Ruling — P3.4 Amendment a1 Ratified: Sampled-Depth Calibration Weights
+
+Date: 2026-08-13. Ratifies the sampled-depth estimator amendment request (Drive `1LnuyjrAgY_unrylBJL55qsLLRUV4Sjy1`; consolidated receipt SHA `e6d681223b10fbad89682eb837fa0fbc2c61aced6bda7ac98731fedf01d5468f`; commits `33d24501`, `2ef34843`, `0d04b437`) under Mark's approved lock and the governance-tiering record.
+
+**Ratified: replace all three scalar weight vectors in the machine lock with the sampled-depth-mixture solves** (main seed 0: aim 0.12926775, CE 0.05205299, gate 0.000432747, preserve 74.37863; main seed 1: aim 0.02055845, CE 0.03924744, gate 0.0000672940, preserve 7.15361; slot seed 0: as main seed 0 plus slot 0.03204862, preserve 86.18476; all KL-normalized). The registered targets, floors, losses, data, depth lottery, schedule, controller, thresholds, seeds, and arm definitions are unchanged — this amendment makes the calibration estimator match the registered training estimator, which the matched-estimator rule required all along. The original full-depth weights were the defect; the pre-optimizer assertion that refused to run them is the A1-stop lesson operating as designed, before a single scientific step was spent.
+
+Also ratified as proposed: **seed 1 restarts from the original i1 endpoint** — its old-weight floor pass was endpoint geometry on the wrong estimator, and a replication must not straddle two calibration definitions; the stale step-zero resume is parked under a pre-amendment name; superseded receipts are retained as calibration archaeology; all three pre-optimizer assertions rerun and must pass before optimizer construction; launch order main 0 + main 1 concurrent, slot on the freed session.
+
+Watch-item note carried forward: the preservation amplification grew again under the corrected estimator (74× and 86× on seed 0 arms). It remains ceiling-bounded and annealing-shrunk, and the share telemetry is its monitor — no action, sharpened attention.
+
+**Update the lock and launch.**

@@ -53,6 +53,13 @@ P33_SHA = {
 }
 EXPECTED_TIER_S_LOOKS = 4
 EXPECTED_TIER_W_LOOKS = 2
+EXPECTED_SAMPLED_DEPTH_AMENDMENT_SHA256 = (
+    "ae60905992f6c4a3a66b8be8294a440c98675f968f6dba5ce849d1476e989d7b"
+)
+EXPECTED_SAMPLED_DEPTH_ESTIMATOR = (
+    "fixed B6 population evaluated at depths 1,2,3,4 and aggregated with "
+    "registered masses 0.1,0.2,0.3,0.4"
+)
 
 
 def sha256_file(path: Path) -> str:
@@ -259,6 +266,16 @@ def assert_training_amendment(*, lock_path: Path, expected_sha256: str) -> None:
         raise RuntimeError("P3.4 loss-share estimator cadence is not ratified")
     if "two consecutive breaches demote one controller rung" not in share_contract["rule"]:
         raise RuntimeError("P3.4 loss-share demotion consequence is not ratified")
+    sampled_depth_amendment = lock.get("sampled_depth_calibration_amendment")
+    if (
+        not isinstance(sampled_depth_amendment, dict)
+        or sampled_depth_amendment.get("sha256")
+        != EXPECTED_SAMPLED_DEPTH_AMENDMENT_SHA256
+        or sampled_depth_amendment.get("status") != "ratified"
+    ):
+        raise RuntimeError("P3.4 sampled-depth calibration amendment is absent or mismatched")
+    if share_contract.get("calibration_estimator") != EXPECTED_SAMPLED_DEPTH_ESTIMATOR:
+        raise RuntimeError("P3.4 calibration estimator does not match the training depth lottery")
 
 
 def package_receipts(*, output_dir: Path, private_dir: Path, destination: Path) -> None:

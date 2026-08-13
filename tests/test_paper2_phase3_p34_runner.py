@@ -58,6 +58,8 @@ def test_runner_is_sealed_partition_blind_and_resumable() -> None:
     assert '"sampled_depth_mixture_solve": sampled_depth_solve' in source
     assert '"optimizer_constructed": False' in source
     assert 'if args.preflight_only:' in source
+    assert '"locked_weights_match_sampled_depth_solve": sampled_depth_weight_match' in source
+    assert "blocked_pre_optimizer_lock_weight_mismatch" in source
     assert '"training_authorized_by_this_mode": False' in source
     assert '"confirm_scored": False' in source
     assert '"eval_e_scored": False' in source

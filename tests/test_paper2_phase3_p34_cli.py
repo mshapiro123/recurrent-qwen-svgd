@@ -7,6 +7,8 @@ import pytest
 import zstandard
 
 from colab.run_stage5_paper2_phase3_p34_cli import (
+    EXPECTED_SAMPLED_DEPTH_AMENDMENT_SHA256,
+    EXPECTED_SAMPLED_DEPTH_ESTIMATOR,
     PrivateRelease,
     assert_training_amendment,
     package_receipts,
@@ -58,9 +60,11 @@ def test_training_amendment_gate_requires_ratified_nested_rule(tmp_path: Path) -
     lock = tmp_path / "lock.json"
     lock.write_text(
         '{"guardrail_amendment":{"sha256":"approved"},'
+        f'"sampled_depth_calibration_amendment":{{"sha256":"{EXPECTED_SAMPLED_DEPTH_AMENDMENT_SHA256}","status":"ratified"}},'
         '"guardrails":{"tier_s_consecutive_looks":4,'
         '"tier_w_consecutive_looks":2},'
         '"loss_share_contract":{'
+        f'"calibration_estimator":"{EXPECTED_SAMPLED_DEPTH_ESTIMATOR}",'
         '"estimator_cadence":"non-overlapping trailing 100-step windows read at steps divisible by 100",'
         '"rule":"two consecutive breaches demote one controller rung; four stop"}}\n',
         encoding="utf-8",
@@ -72,9 +76,11 @@ def test_training_amendment_gate_requires_ratified_nested_rule(tmp_path: Path) -
 
     lock.write_text(
         '{"guardrail_amendment":{"sha256":"approved"},'
+        f'"sampled_depth_calibration_amendment":{{"sha256":"{EXPECTED_SAMPLED_DEPTH_AMENDMENT_SHA256}","status":"ratified"}},'
         '"guardrails":{"tier_s_consecutive_looks":2,'
         '"tier_w_consecutive_looks":2},'
         '"loss_share_contract":{'
+        f'"calibration_estimator":"{EXPECTED_SAMPLED_DEPTH_ESTIMATOR}",'
         '"estimator_cadence":"non-overlapping trailing 100-step windows read at steps divisible by 100",'
         '"rule":"two consecutive breaches demote one controller rung; four stop"}}\n',
         encoding="utf-8",

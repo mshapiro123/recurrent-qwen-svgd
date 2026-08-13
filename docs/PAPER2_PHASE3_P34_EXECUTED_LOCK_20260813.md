@@ -11,6 +11,7 @@ This executed lock combines:
 - `STRATEGY_P34_BINDINGS_RATIFICATION_20260812.md`, Drive `1em-sujz1D9I-GtSpFrmzz7WDxANTlY5R`, SHA-256 `6311ae91478cd9cd306b9a61bc8788877e510fdc43c28abe5cd75ca80403bc0a`.
 - `PAPER2_PHASE3_P34_GUARDRAIL_COLLISION_ADDENDUM_20260813.md`, SHA-256 `d6c6fb5d0131b20ab32601113e5834e68b7d32b7776eba249fb12d4e67eea31d`, with calibration receipt SHA-256 `344426ffd0fbba57cdbe58a6c6c976e543ee9dddac106b1b5aa0109331159249`.
 - `STRATEGY_P34_SHARE_CONTRACT_CONFIRMATION_20260813_r2.md`, Drive `10RmusIfW1ggZH92L9wmJJD_5CJW8cvD_`, SHA-256 `69210d1c02e9d4b6f26f45cc86eb4b43957e4b74c0d2f020357a6e874cec3cd3`.
+- `STRATEGY_P34_AMENDMENT_A1_RATIFICATION_20260813.md`, Drive `14CEdVw6gPE1JtMOn8HKLixemCw0r17sT`, SHA-256 `ae60905992f6c4a3a66b8be8294a440c98675f968f6dba5ce849d1476e989d7b`.
 - Machine-readable lock: `training/paper2_phase3_p34_preregistration.json`.
 
 All prerequisite and amendment values are bound. `locked_before_training = true`, `training_authorized = true`, and the unresolved-field list is empty. No optimizer was constructed by a prerequisite job and zero P3.4 training steps occurred before approval.
@@ -71,15 +72,15 @@ To prevent Colab filesystem reclamation during dispersed-shard staging, 346 sour
 - Compaction receipt: repository SHA-256 `09c49d6d710e8c9d545b1e8b98e4c1e3af168b8455b3f8fd7601f33df181fe87`; Drive `1egPmflIyT-TSQ3zt5GUwXPbR9jr3X87m`, Drive-byte SHA-256 `13764a81040944a0a9b19ca4d79c05b1fbbc6ecfb50060eb2a88f8e559ce2435`.
 - Direction cache SHA-256: `611be787dea0438761d279aa035d5bfe2aa37e74710d880be1066d7ae80a45a2`.
 
-The estimator is the mean over the fixed code and general strata of independent, unit-weight loss-gradient norms after the registered combined bridge/head clipping factors. Static weights are KL-normalized and seed-specific:
+The estimator uses independent, unit-weight loss-gradient norms after the registered combined bridge/head clipping factors on the fixed code and general strata. Amendment a1 requires the same estimator to match the training depth lottery: the fixed B6 population is evaluated at depths one through four and aggregated with masses `0.1`, `0.2`, `0.3`, and `0.4`. Static weights are KL-normalized and seed-specific:
 
 | Configuration | KL | Aim | CE | Gate | Preserve | Slot |
 |---|---:|---:|---:|---:|---:|---:|
-| Seed 0 main | 1 | 0.0541522 | 0.0345881 | 0.000228855 | 54.843469 | - |
-| Seed 1 main | 1 | 0.0211030 | 0.0331089 | 0.0000616263 | 9.890760 | - |
-| Seed 0 slot | 1 | 0.0541522 | 0.0345881 | 0.000228855 | 63.548782 | 0.0172772 |
+| Seed 0 main | 1 | 0.12926775 | 0.05205299 | 0.000432747 | 74.37863 | - |
+| Seed 1 main | 1 | 0.02055845 | 0.03924744 | 0.0000672940 | 7.15361 | - |
+| Seed 0 slot | 1 | 0.12926775 | 0.05205299 | 0.000432747 | 86.18476 | 0.03204862 |
 
-Every solver converged in two iterations. Maximum target-share error was zero for seed 0 main, `2.78e-17` for seed 1 main, and `5.55e-17` for seed 0 slot. Preservation landed at the 25% ceiling in every configuration.
+Every solver converged in two iterations. Maximum target-share error was `2.78e-17` for seed 0 main, `5.55e-17` for seed 1 main, and `8.33e-17` for seed 0 slot. Preservation landed at the 25% ceiling in every configuration.
 
 The resulting main-arm shares are KL 41.667%, aim 17.857%, CE 11.905%, gate 3.571%, and preservation 25%. The slot-arm shares are KL 35.959%, aim 15.411%, CE 10.274%, gate 3.082%, slot 10.274%, and preservation 25%. All registered per-loss floors are therefore met at step zero.
 
@@ -87,10 +88,14 @@ The raw gradient geometry is seed-dependent. Unit-weight gate gradients dominate
 
 During training, shares are read on non-overlapping 100-step windows. The first breach is observed, the second consecutive breach demotes one controller rung and flags strategy review, and the fourth consecutive breach stops. This cadence avoids treating highly overlapping sliding windows as independent persistence evidence. If a share demotion and task look coincide, only one controller transition is permitted at that step; a Tier-S stop still dominates.
 
-Receipts:
+Current sampled-depth receipts:
 
-- Seed 0: `outputs/stage5/stage5_paper2_phase3_p34_lock_20260812/receipts/p34_share_calibration_seed_0.json`, SHA-256 `bdcc62eecb5272fee4e4cf3245733e55253b41cd8be7a2df2a19c17caf8f7942`, Drive `1SqneiMuzpB5HqDnhfaKUbPYv3__HZV-r`.
-- Seed 1: `outputs/stage5/stage5_paper2_phase3_p34_lock_20260812/receipts/p34_share_calibration_seed_1.json`, SHA-256 `072bdf418e32b7b65b1002cec0505f402efb5ff9f66a7ed26c9d32849a5c46f6`, Drive `1SwrOp4-h9w0wTppHxpph65f2RtYBkLRv`.
+- Main seed 0: `outputs/stage5/stage5_paper2_phase3_p34_sampled_depth_preflight_20260813/receipts/main_seed_0.json`, SHA-256 `39d7c7e7cd7676508bc5df415a60286d9eb67ac27678a67b3d17a9b67e35e762`.
+- Main seed 1: `outputs/stage5/stage5_paper2_phase3_p34_sampled_depth_preflight_20260813/receipts/main_seed_1.json`, SHA-256 `c4d1f9d136abc2a64214d3502c3d985e5c3349f56851d8c37140e9454ab897d2`.
+- Slot seed 0: `outputs/stage5/stage5_paper2_phase3_p34_sampled_depth_preflight_20260813/receipts/slot_seed_0.json`, SHA-256 `70562b1588e2cbee8130fb1e0a4897462a268c8519d7ce05bc0e03a3701d2df4`.
+- Consolidated receipt: `outputs/stage5/stage5_paper2_phase3_p34_sampled_depth_preflight_20260813/summary.json`, SHA-256 `e6d681223b10fbad89682eb837fa0fbc2c61aced6bda7ac98731fedf01d5468f`.
+
+The original full-depth calibration receipts remain linked in the machine lock as superseded archaeology. They are not valid inputs to training after amendment a1. The seed-0 preservation multipliers of approximately 74 and 86 are watch items; the 25% share ceiling, controller annealing, and live share telemetry remain the governing safeguards.
 
 ## 6. Approval boundary
 

@@ -211,6 +211,10 @@ def test_executed_lock_is_complete_and_approved_for_training() -> None:
     assert lock["guardrail_amendment"]["sha256"] == (
         "69210d1c02e9d4b6f26f45cc86eb4b43957e4b74c0d2f020357a6e874cec3cd3"
     )
+    assert lock["sampled_depth_calibration_amendment"]["sha256"] == (
+        "ae60905992f6c4a3a66b8be8294a440c98675f968f6dba5ce849d1476e989d7b"
+    )
+    assert lock["sampled_depth_calibration_amendment"]["optimizer_steps_before_amendment"] == 0
     assert lock["loss_share_contract"]["scalar_weights_by_seed"]["seed_0_slot"]["slot"] > 0
     assert lock["assembly"]["training_steps_before_mark_approval"] == 0
     assert lock["authority"]["sha256"] == (
@@ -232,24 +236,26 @@ def test_executed_lock_receipt_hashes_and_weights_match() -> None:
             encoding="utf-8"
         )
     )
-    for seed in (0, 1):
-        key = f"seed_{seed}"
+    configurations = (
+        ("seed_0_main", 0, "main"),
+        ("seed_1_main", 1, "main"),
+        ("seed_0_slot", 0, "slot"),
+    )
+    for key, seed, arm in configurations:
         receipt_meta = lock["loss_share_contract"]["share_weight_calibration_receipts"][key]
         receipt_path = root / receipt_meta["path"]
         assert hashlib.sha256(receipt_path.read_bytes()).hexdigest() == receipt_meta["sha256"]
         receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
-        assert receipt["status"] == "complete_read_only_no_optimizer"
-        assert not receipt["training_authorized"]
+        assert receipt["seed"] == seed
+        assert receipt["arm"] == arm
+        assert receipt["optimizer_constructed"] is False
         assert receipt["optimizer_steps"] == 0
         assert (
-            receipt["solved"]["main"]["static_weights_kl_normalized"]
-            == lock["loss_share_contract"]["scalar_weights_by_seed"][f"seed_{seed}_main"]
+            receipt["sampled_depth_mixture_solve"]["static_weights_kl_normalized"]
+            == lock["loss_share_contract"]["scalar_weights_by_seed"][key]
         )
-        if seed == 0:
-            assert (
-                receipt["solved"]["slot"]["static_weights_kl_normalized"]
-                == lock["loss_share_contract"]["scalar_weights_by_seed"]["seed_0_slot"]
-            )
+        assert receipt["sampled_depth_mixture_solve"]["converged"]
+        assert receipt["sampled_depth_mixture_solve"]["maximum_share_error"] <= 1e-8
     task_meta = lock["guardrails"]
     task_path = root / task_meta["task_calibration_receipt_path"]
     assert hashlib.sha256(task_path.read_bytes()).hexdigest() == task_meta[

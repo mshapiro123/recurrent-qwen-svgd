@@ -24,6 +24,18 @@
       "receipt_sha256": "344426ffd0fbba57cdbe58a6c6c976e543ee9dddac106b1b5aa0109331159249"
     }
   },
+  "sampled_depth_calibration_amendment": {
+    "drive_id": "14CEdVw6gPE1JtMOn8HKLixemCw0r17sT",
+    "repo_path": "docs/STRATEGY_P34_AMENDMENT_A1_RATIFICATION_20260813.md",
+    "sha256": "ae60905992f6c4a3a66b8be8294a440c98675f968f6dba5ce849d1476e989d7b",
+    "bytes": 2030,
+    "status": "ratified",
+    "amendment_request_path": "docs/PAPER2_PHASE3_P34_SAMPLED_DEPTH_ESTIMATOR_AMENDMENT_REQUEST_20260813.md",
+    "consolidated_receipt_path": "outputs/stage5/stage5_paper2_phase3_p34_sampled_depth_preflight_20260813/summary.json",
+    "consolidated_receipt_sha256": "e6d681223b10fbad89682eb837fa0fbc2c61aced6bda7ac98731fedf01d5468f",
+    "depth_distribution": {"1": 0.1, "2": 0.2, "3": 0.3, "4": 0.4},
+    "optimizer_steps_before_amendment": 0
+  },
   "authority": {
     "drive_id": "1lh2Vf3VG8yPXUjLPfr7IJkPCjnf2mKE6",
     "repo_path": "docs/STRATEGY_P34_CHARTER_20260812.md",
@@ -179,7 +191,7 @@
       "receipt_drive_sha256": "13764a81040944a0a9b19ca4d79c05b1fbbc6ecfb50060eb2a88f8e559ce2435",
       "source_files_verified": 346
     },
-    "share_weight_calibration_receipts": {
+    "superseded_full_depth_calibration_receipts": {
       "seed_0": {
         "path": "outputs/stage5/stage5_paper2_phase3_p34_lock_20260812/receipts/p34_share_calibration_seed_0.json",
         "sha256": "bdcc62eecb5272fee4e4cf3245733e55253b41cd8be7a2df2a19c17caf8f7942",
@@ -191,37 +203,52 @@
         "drive_id": "1SwrOp4-h9w0wTppHxpph65f2RtYBkLRv"
       }
     },
+    "share_weight_calibration_receipts": {
+      "seed_0_main": {
+        "path": "outputs/stage5/stage5_paper2_phase3_p34_sampled_depth_preflight_20260813/receipts/main_seed_0.json",
+        "sha256": "39d7c7e7cd7676508bc5df415a60286d9eb67ac27678a67b3d17a9b67e35e762"
+      },
+      "seed_1_main": {
+        "path": "outputs/stage5/stage5_paper2_phase3_p34_sampled_depth_preflight_20260813/receipts/main_seed_1.json",
+        "sha256": "c4d1f9d136abc2a64214d3502c3d985e5c3349f56851d8c37140e9454ab897d2"
+      },
+      "seed_0_slot": {
+        "path": "outputs/stage5/stage5_paper2_phase3_p34_sampled_depth_preflight_20260813/receipts/slot_seed_0.json",
+        "sha256": "70562b1588e2cbee8130fb1e0a4897462a268c8519d7ce05bc0e03a3701d2df4"
+      }
+    },
     "scalar_weights_by_seed": {
       "seed_0_main": {
         "kl": 1.0,
-        "aim": 0.054152212855378704,
-        "ce": 0.03458810145015469,
-        "gate": 0.0002288553910961714,
-        "preserve": 54.84346897703954
+        "aim": 0.12926774882921147,
+        "ce": 0.05205298866350136,
+        "gate": 0.0004327470356003924,
+        "preserve": 74.37862724559022
       },
       "seed_1_main": {
         "kl": 1.0,
-        "aim": 0.021103036866760495,
-        "ce": 0.03310889414105432,
-        "gate": 0.00006162627051541333,
-        "preserve": 9.890759602752988
+        "aim": 0.020558449735476,
+        "ce": 0.03924744331765692,
+        "gate": 0.00006729396560346335,
+        "preserve": 7.153611503510368
       },
       "seed_0_slot": {
         "kl": 1.0,
-        "aim": 0.054152212855378704,
-        "ce": 0.03458810145015469,
-        "gate": 0.0002288553910961714,
-        "preserve": 63.54878151307756,
-        "slot": 0.017277156129739582
+        "aim": 0.12926774882921144,
+        "ce": 0.05205298866350135,
+        "gate": 0.0004327470356003924,
+        "preserve": 86.18475855441403,
+        "slot": 0.032048617321877956
       }
     },
     "solved_share_checks": {
-      "seed_0_main_maximum_error": 0.0,
-      "seed_1_main_maximum_error": 2.7755575615628914e-17,
-      "seed_0_slot_maximum_error": 5.551115123125783e-17,
+      "seed_0_main_maximum_error": 2.7755575615628914e-17,
+      "seed_1_main_maximum_error": 5.551115123125783e-17,
+      "seed_0_slot_maximum_error": 8.326672684688674e-17,
       "iterations_each": 2,
       "preservation_ceiling_met_all_arms": true
     },
+    "calibration_estimator": "fixed B6 population evaluated at depths 1,2,3,4 and aggregated with registered masses 0.1,0.2,0.3,0.4",
     "estimator_cadence": "non-overlapping trailing 100-step windows read at steps divisible by 100",
     "two_breach_consequence": "demote one controller rung and flag strategy review; no termination",
     "rule": "first trailing-window breach is observed; two consecutive breaches demote one controller rung and flag review; four consecutive breaches stop"
