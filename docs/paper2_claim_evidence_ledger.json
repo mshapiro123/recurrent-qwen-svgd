@@ -913,6 +913,55 @@
       ]
     },
     {
+      "id": "phase3_p34_dev_campaign",
+      "status": "positive_signal_with_objective_controller_stop",
+      "claim": "Across two independent main seeds and one slot fork, P3.4 produced small positive DEV endpoint differences before every run exited through the registered four-window loss-share stop; the paired endpoint uncertainty remains compatible with zero.",
+      "scope": "DEV-only 1,024-row task panel, registered P3.4 inference graph, main seeds 0 and 1 plus slot seed 0; interrupted at 400-1,500 of 4,000 planned steps; no CONFIRM or EVAL-E scoring",
+      "metrics": {
+        "panel_rows": 1024,
+        "frozen_base_correct": 502,
+        "teacher_14b_correct": 794,
+        "teacher_gap_denominator": 292,
+        "main_seed_0_final_correct": 511,
+        "main_seed_0_gap_closed": 0.030821917808219176,
+        "main_seed_0_sign_test_p": 0.4167748410890993,
+        "main_seed_1_final_correct": 509,
+        "main_seed_1_gap_closed": 0.023972602739726026,
+        "main_seed_1_sign_test_p": 0.5383940262921683,
+        "slot_seed_0_final_correct": 508,
+        "slot_seed_0_gap_closed": 0.02054794520547945,
+        "slot_seed_0_sign_test_p": 0.6100682661051768,
+        "main_seed_0_pi_dir_step_1000": 0.16134185303514376,
+        "main_seed_1_pi_dir_step_1000": 0.1650692225772098
+      },
+      "evidence": [
+        {
+          "path": "outputs/stage5/stage5_paper2_phase3_p34_analysis_20260813/summary.json",
+          "locator": "recomputed task trajectories, endpoint paired statistics, battery decomposition, causal audits, loss-share windows, and source hashes"
+        },
+        {
+          "path": "docs/PAPER2_PHASE3_P34_CAMPAIGN_HANDOFF_20260813.md",
+          "locator": "design, results, controller-stop diagnosis, limitations, claim boundaries, and strategy questions"
+        },
+        {
+          "path": "docs/figures/p34_campaign_task_curve_20260813.svg",
+          "locator": "DEV task trajectories and endpoint battery decomposition"
+        },
+        {
+          "path": "docs/figures/p34_campaign_controller_20260813.svg",
+          "locator": "loss-share contract margin and step-1,000 causal capture"
+        }
+      ],
+      "do_not_claim": [
+        "P3.4 completed its registered 4,000-step campaigns",
+        "the augmented model is better than the frozen base",
+        "the endpoint differences are statistically resolved",
+        "the slot arm improves on the main arm",
+        "the result generalizes beyond DEV",
+        "CONFIRM or EVAL-E has been scored"
+      ]
+    },
+    {
       "id": "speculative_depth_d0",
       "status": "not_recoverable_at_pilot_scale",
       "claim": "Under one 4,000-step seed, binary teacher-disagreement targets did not produce deployment-useful adaptive depth; the target omitted accepted-position harm and labeled many causally unactionable rejections as continue.",
