@@ -3,6 +3,10 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+import torch
+
+from training.paper2_phase3_p34 import P34_FLOW_LOOPS, slot_supervision_loss
 from training.run_paper2_phase3_p34 import _task_guardrail
 
 
@@ -44,3 +48,35 @@ def test_colab_target_wires_the_approved_three_arm_campaign() -> None:
     assert "paper2_phase3_p34_campaign_v1" in cell
     assert 'parser.add_argument("--arm"' in launcher
     assert "I1_ID" in launcher
+
+
+class _IdentityLift(torch.nn.Module):
+    def forward(self, state: torch.Tensor, tied_weight: torch.Tensor) -> torch.Tensor:
+        return state @ tied_weight.T
+
+
+def test_slot_supervision_accepts_the_registered_sampled_depths() -> None:
+    tied_weight = torch.eye(4)
+    teacher_tokens = torch.zeros((2, 4), dtype=torch.long)
+    teacher_mask = torch.ones((2, 4), dtype=torch.bool)
+    for depth in range(1, P34_FLOW_LOOPS + 1):
+        states = [torch.zeros((2, 4, 4)) for _ in range(depth + 1)]
+        loss, metrics = slot_supervision_loss(
+            lift=_IdentityLift(),
+            flow_states=states,
+            tied_weight=tied_weight,
+            teacher_tokens=teacher_tokens,
+            teacher_mask=teacher_mask,
+        )
+        assert torch.isfinite(loss)
+        assert metrics["executed_loops"] == depth
+        assert metrics["deep_supervision_weights"] == pytest.approx(
+            [index / P34_FLOW_LOOPS for index in range(1, depth + 1)]
+        )
+
+
+def test_main_and_slot_use_the_same_depth_rng_schedule() -> None:
+    source = (ROOT / "training/run_paper2_phase3_p34.py").read_text(encoding="utf-8")
+    assert "manual_seed(20260813 + args.seed)" in source
+    assert "depth = sampled_depth(generator=generator)" in source
+    assert "if slot_lift is not None else sampled_depth" not in source

@@ -146,8 +146,6 @@ def _losses(
         position_bucket=batch["position_bucket"],
     )
     if slot_lift is not None:
-        if depth != P34_FLOW_LOOPS:
-            raise RuntimeError("slot arm requires all four flow states")
         slot, slot_metrics = slot_supervision_loss(
             lift=slot_lift, flow_states=metrics["flow_states"],
             tied_weight=module.draft.tied_embedding.weight,
@@ -188,6 +186,11 @@ def _checkpoint_state(module: Any, slot_lift: SlotSupervisionLift | None) -> dic
 
 
 def run(args: argparse.Namespace) -> dict[str, Any]:
+    random.seed(20260813 + args.seed)
+    np.random.seed(20260813 + args.seed)
+    torch.manual_seed(20260813 + args.seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(20260813 + args.seed)
     lock = json.loads(args.lock.read_text(encoding="utf-8"))
     if not lock["training_authorized"] or lock["status"] != "approved_for_training":
         raise RuntimeError("P3.4 executed lock is not approved")
@@ -230,7 +233,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     output_dir, private_dir = args.output_dir, args.private_dir
     output_dir.mkdir(parents=True, exist_ok=True); private_dir.mkdir(parents=True, exist_ok=True)
     resume_path = private_dir / "resume.pt"
-    generator = torch.Generator().manual_seed(20260813 + args.seed + (10_000 if args.arm == "slot" else 0))
+    generator = torch.Generator().manual_seed(20260813 + args.seed)
     step = 0; history: list[dict[str, Any]] = []; schedule_hashes: list[str] = []
     share_window: deque[dict[str, float]] = deque(maxlen=100)
     share_misses = 0; prior_tier_s = False; prior_tier_w = False
@@ -244,8 +247,8 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         directions=directions, device=args.device,
     )
     preflight_norms = {name: 0.0 for name in static_weights}
-    preflight_depths = [4] if slot_lift is not None else [1, 2, 3, 4]
-    preflight_mass = [1.0] if slot_lift is not None else [0.1, 0.2, 0.3, 0.4]
+    preflight_depths = [1, 2, 3, 4]
+    preflight_mass = [0.1, 0.2, 0.3, 0.4]
     effective_preflight = dict(static_weights)
     effective_preflight["preserve"] *= controller.preservation_weight
     for depth, mass in zip(preflight_depths, preflight_mass):
@@ -325,7 +328,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         schedule_hashes.append(hashlib.sha256("\n".join(str(row["record_id"]) for row in rows).encode()).hexdigest())
         batch = _source_batch(rows=rows, sources=sources, direction_index=direction_index,
                               directions=directions, device=args.device)
-        depth = P34_FLOW_LOOPS if slot_lift is not None else sampled_depth(generator=generator)
+        depth = sampled_depth(generator=generator)
         module.train(); losses, metrics = _losses(module=module, batch=batch, depth=depth, slot_lift=slot_lift)
         if any(not bool(torch.isfinite(value)) for value in losses.values()):
             stop_reason = "non_finite_loss"; break

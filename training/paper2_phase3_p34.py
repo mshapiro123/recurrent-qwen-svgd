@@ -367,8 +367,8 @@ def slot_supervision_loss(
 ) -> tuple[torch.Tensor, dict[str, Any]]:
     """Deep-supervise slots 0..3 against horizons 1..4 through the frozen head."""
 
-    if len(flow_states) != P34_FLOW_LOOPS + 1:
-        raise ValueError("P3.4 slot loss requires initial plus four flow states")
+    if len(flow_states) < 2 or len(flow_states) > P34_FLOW_LOOPS + 1:
+        raise ValueError("P3.4 slot loss requires initial plus one to four flow states")
     if teacher_tokens.shape != teacher_mask.shape or teacher_tokens.ndim != 2:
         raise ValueError("P3.4 slot token targets and mask must share [batch,horizon]")
     if teacher_tokens.shape[1] != 4 or not bool(teacher_mask.any()):
@@ -384,9 +384,10 @@ def slot_supervision_loss(
         predictions = logits.argmax(dim=-1)
         accuracies.append(float(predictions[teacher_mask].eq(selected_tokens).float().mean().detach()))
         decoded.append(predictions.detach())
+    executed_loops = len(losses)
     weights = torch.arange(
         1,
-        P34_FLOW_LOOPS + 1,
+        executed_loops + 1,
         device=losses[0].device,
         dtype=losses[0].dtype,
     ) / P34_FLOW_LOOPS
@@ -399,6 +400,7 @@ def slot_supervision_loss(
         "deep_supervision_weights": weights.detach().cpu().tolist(),
         "future_slot_indices": [0, 1, 2, 3],
         "target_horizons": [1, 2, 3, 4],
+        "executed_loops": executed_loops,
         "tied_head_frozen": True,
     }
 
