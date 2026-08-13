@@ -1,0 +1,36 @@
+{
+  "kind": "paper2_phase3_p34_sampled_depth_drive_upload_receipt_v1",
+  "uploaded_at": "2026-08-13T19:48:24Z",
+  "parent_folder_id": "1aSbU2i8JZ37g5bJpyweLuvFaV0y92Qjr",
+  "source_commit": "296fca91671ed5af9cda3e54d0b35ff9e2ef4112",
+  "files": [
+    {
+      "name": "PAPER2_PHASE3_P34_SAMPLED_DEPTH_ESTIMATOR_AMENDMENT_REQUEST_20260813.md",
+      "drive_id": "1LnuyjrAgY_unrylBJL55qsLLRUV4Sjy1",
+      "url": "https://drive.google.com/file/d/1LnuyjrAgY_unrylBJL55qsLLRUV4Sjy1/view",
+      "size_bytes": 7694,
+      "sha256": "bd5a11c9bf979b868a78f45c967b0f423b13657b6b3e309a5f96b14400311440"
+    },
+    {
+      "name": "summary.json",
+      "drive_id": "1SCx8zqNxDkbvVuCD2Ik8mmCEMK8zHXVS",
+      "url": "https://drive.google.com/file/d/1SCx8zqNxDkbvVuCD2Ik8mmCEMK8zHXVS/view",
+      "size_bytes": 3330,
+      "sha256": "e6d681223b10fbad89682eb837fa0fbc2c61aced6bda7ac98731fedf01d5468f"
+    },
+    {
+      "name": "p34_sampled_depth_preflight_20260813.svg",
+      "drive_id": "1x31nBg6j_Lp1kzVgZRDzFm4xUmCmYbjG",
+      "url": "https://drive.google.com/file/d/1x31nBg6j_Lp1kzVgZRDzFm4xUmCmYbjG/view",
+      "size_bytes": 83640,
+      "sha256": "ae33a17bc33be7155d898f8f1f8c6b835ad3349ade77e8f8c809b0d1893625eb"
+    },
+    {
+      "name": "p34_sampled_depth_preflight_20260813.png",
+      "drive_id": "1mZCdH_8BfSch-tNznyX5aFAPAZD06Lxh",
+      "url": "https://drive.google.com/file/d/1mZCdH_8BfSch-tNznyX5aFAPAZD06Lxh/view",
+      "size_bytes": 72829,
+      "sha256": "d64fda6e4c91900725d18ae2cbe118ae8ec6f0afa805e7eacdfd049f04d43926"
+    }
+  ]
+}
