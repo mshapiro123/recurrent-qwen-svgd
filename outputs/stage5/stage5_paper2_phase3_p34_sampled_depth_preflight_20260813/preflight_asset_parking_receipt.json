@@ -1,0 +1,65 @@
+{
+    "kind":  "paper2_phase3_p34_preflight_asset_parking",
+    "release_repo":  "mshapiro123/recurrent-qwen-svgd-runtime-private",
+    "release_tag":  "p34-campaign-20260813",
+    "scientific_optimizer_steps":  0,
+    "reason":  "Preserve corrected sampled-depth preflight receipts while clearing active names before full campaign launch.",
+    "assets":  [
+                   {
+                       "source_name":  "main_seed_0-final-receipts.tar.zst",
+                       "parked_name":  "main_seed_0-final-receipts-preflight-a1.tar.zst",
+                       "sha256":  "2f2fece24d56bfa85f2c8c807237fbc27b730a1ce42479e85dc593022b9bb45c",
+                       "bytes":  2145
+                   },
+                   {
+                       "source_name":  "main_seed_0-latest-receipts.tar.zst",
+                       "parked_name":  "main_seed_0-latest-receipts-preflight-a1.tar.zst",
+                       "sha256":  "2f2fece24d56bfa85f2c8c807237fbc27b730a1ce42479e85dc593022b9bb45c",
+                       "bytes":  2145
+                   },
+                   {
+                       "source_name":  "main_seed_0-status.json",
+                       "parked_name":  "main_seed_0-status-preflight-a1.json",
+                       "sha256":  "625961c03ac8ec7c7725aeaac79aeacc7bdf2fe830ed3d64a80a0ae072bc26b3",
+                       "bytes":  317
+                   },
+                   {
+                       "source_name":  "main_seed_1-final-receipts.tar.zst",
+                       "parked_name":  "main_seed_1-final-receipts-preflight-a1.tar.zst",
+                       "sha256":  "133db0981f4920f9b63cf0d6e0d9e852b5f3179e87fdc10a2f494abd2c2fd829",
+                       "bytes":  2151
+                   },
+                   {
+                       "source_name":  "main_seed_1-latest-receipts.tar.zst",
+                       "parked_name":  "main_seed_1-latest-receipts-preflight-a1.tar.zst",
+                       "sha256":  "133db0981f4920f9b63cf0d6e0d9e852b5f3179e87fdc10a2f494abd2c2fd829",
+                       "bytes":  2151
+                   },
+                   {
+                       "source_name":  "main_seed_1-status.json",
+                       "parked_name":  "main_seed_1-status-preflight-a1.json",
+                       "sha256":  "12fc05a07d415a94acdf0e9e294a11312bb30a06851bb41b0e07dff1bf49d8bc",
+                       "bytes":  317
+                   },
+                   {
+                       "source_name":  "slot_seed_0-final-receipts.tar.zst",
+                       "parked_name":  "slot_seed_0-final-receipts-preflight-a1.tar.zst",
+                       "sha256":  "6b0b1c7dc350b4fff70cbd5250df504b152b59c025a2c1da10ba02de6bd21715",
+                       "bytes":  2334
+                   },
+                   {
+                       "source_name":  "slot_seed_0-latest-receipts.tar.zst",
+                       "parked_name":  "slot_seed_0-latest-receipts-preflight-a1.tar.zst",
+                       "sha256":  "6b0b1c7dc350b4fff70cbd5250df504b152b59c025a2c1da10ba02de6bd21715",
+                       "bytes":  2334
+                   },
+                   {
+                       "source_name":  "slot_seed_0-status.json",
+                       "parked_name":  "slot_seed_0-status-preflight-a1.json",
+                       "sha256":  "1d49dbbd6456e86be99616ccb3e5a0c6daa59de963fae04c275fb67546c54c23",
+                       "bytes":  317
+                   }
+               ],
+    "active_names_absent":  true,
+    "parked_names_present":  true
+}
