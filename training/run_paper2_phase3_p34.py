@@ -287,11 +287,33 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         name: value / preflight_denominator for name, value in preflight_norms.items()
     }
     preflight_classification = classify_loss_shares(preflight_shares)
+    sampled_depth_solve = solve_static_loss_weights_from_bundles(
+        preflight_bundles,
+        slot_arm=slot_lift is not None,
+    )
+    preflight_receipt = {
+        "kind": "paper2_phase3_p34_sampled_depth_share_preflight_v1",
+        "status": "complete_read_only_no_optimizer",
+        "seed": args.seed,
+        "arm": args.arm,
+        "depth_distribution": dict(zip(preflight_depths, preflight_mass)),
+        "loss_share_read": preflight_classification,
+        "sampled_depth_mixture_solve": sampled_depth_solve,
+        "optimizer_constructed": False,
+        "optimizer_steps": 0,
+        "confirm_scored": False,
+        "eval_e_scored": False,
+    }
+    write_json(output_dir / "pre_optimizer_estimator_receipt.json", preflight_receipt)
+    if args.preflight_only:
+        result = {
+            **preflight_receipt,
+            "status": "complete_preflight_only",
+            "training_authorized_by_this_mode": False,
+        }
+        write_json(output_dir / "summary.json", result)
+        return result
     if preflight_classification["classification"] != "pass":
-        sampled_depth_solve = solve_static_loss_weights_from_bundles(
-            preflight_bundles,
-            slot_arm=slot_lift is not None,
-        )
         write_json(output_dir / "blocked_pre_optimizer.json", {
             "kind": RUN_KIND, "status": "blocked_pre_optimizer_estimator_mismatch",
             "seed": args.seed, "arm": args.arm,
@@ -521,6 +543,7 @@ def parse_args() -> argparse.Namespace:
         parser.add_argument(f"--{name}", type=Path, required=True)
     parser.add_argument("--migrated_sha256", required=True)
     parser.add_argument("--p33_sha256", required=True)
+    parser.add_argument("--preflight_only", action="store_true")
     parser.add_argument("--device", default="cuda")
     return parser.parse_args()
 

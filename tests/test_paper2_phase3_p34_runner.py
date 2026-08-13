@@ -57,6 +57,8 @@ def test_runner_is_sealed_partition_blind_and_resumable() -> None:
     assert "share_transition is not None or stop_reason is not None" in source
     assert '"sampled_depth_mixture_solve": sampled_depth_solve' in source
     assert '"optimizer_constructed": False' in source
+    assert 'if args.preflight_only:' in source
+    assert '"training_authorized_by_this_mode": False' in source
     assert '"confirm_scored": False' in source
     assert '"eval_e_scored": False' in source
     lock = json.loads((ROOT / "training/paper2_phase3_p34_preregistration.json").read_text())

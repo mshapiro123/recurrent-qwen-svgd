@@ -357,6 +357,8 @@ def run_campaign(args: argparse.Namespace) -> int:
         "--output_dir", str(output_dir), "--private_dir", str(private_dir),
         "--device", "cuda",
     ]
+    if args.preflight_only:
+        command.append("--preflight_only")
     log_path = private_dir / "campaign.log"
     status_path = private_dir / "cli_status.json"
     write_json(status_path, {"kind": KIND, "status": "starting", "label": label, "ref": args.ref})
@@ -445,6 +447,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--ref", required=True)
     parser.add_argument("--token_file", type=Path, required=True)
     parser.add_argument("--transport_only", action="store_true")
+    parser.add_argument("--preflight_only", action="store_true")
     parser.add_argument("--guardrail_amendment_sha256")
     args = parser.parse_args()
     if args.arm == "slot" and args.seed != 0:
