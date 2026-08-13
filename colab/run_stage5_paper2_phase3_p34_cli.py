@@ -173,8 +173,11 @@ def verify_sha256s(root: Path) -> None:
 def stage_transport(*, release: PrivateRelease, cache: Path) -> Path:
     extracted = cache / "p34-private-transport-stage"
     if extracted.is_dir():
-        verify_sha256s(extracted)
-        return extracted
+        try:
+            verify_sha256s(extracted)
+            return extracted
+        except (FileNotFoundError, RuntimeError):
+            shutil.rmtree(extracted)
     parts_dir = cache / "parts"
     manifest_path = parts_dir / "transport_parts_manifest.json"
     release.download("transport_parts_manifest.json", manifest_path)
@@ -183,7 +186,13 @@ def stage_transport(*, release: PrivateRelease, cache: Path) -> Path:
     combined = hashlib.sha256()
     for receipt in manifest["parts"]:
         path = parts_dir / receipt["name"]
-        release.download(receipt["name"], path)
+        valid_cached_part = (
+            path.is_file()
+            and path.stat().st_size == int(receipt["bytes"])
+            and sha256_file(path) == receipt["sha256"]
+        )
+        if not valid_cached_part:
+            release.download(receipt["name"], path)
         if path.stat().st_size != int(receipt["bytes"]) or sha256_file(path) != receipt["sha256"]:
             raise RuntimeError(f"P3.4 private transport part mismatch: {path.name}")
         parts.append(path)
@@ -242,6 +251,7 @@ def assert_training_amendment(*, lock_path: Path, expected_sha256: str) -> None:
 
 def package_receipts(*, output_dir: Path, private_dir: Path, destination: Path) -> None:
     temporary = destination.with_suffix(destination.suffix + ".tmp")
+    excluded = {destination.resolve(), temporary.resolve()}
     with temporary.open("wb") as raw:
         with zstandard.ZstdCompressor(level=3, threads=-1).stream_writer(raw) as encoded:
             with tarfile.open(fileobj=encoded, mode="w|") as archive:
@@ -249,7 +259,13 @@ def package_receipts(*, output_dir: Path, private_dir: Path, destination: Path) 
                     archive.add(output_dir, arcname="outputs")
                 if private_dir.exists():
                     for path in private_dir.rglob("*"):
-                        if path.is_file() and path.name != "resume.pt":
+                        if (
+                            path.is_file()
+                            and path.name != "resume.pt"
+                            and path.resolve() not in excluded
+                            and not path.name.endswith("-receipts.tar.zst")
+                            and not path.name.endswith("-receipts.tar.zst.tmp")
+                        ):
                             archive.add(path, arcname=str(Path("private") / path.relative_to(private_dir)))
     temporary.replace(destination)
 
@@ -336,7 +352,11 @@ def run_campaign(args: argparse.Namespace) -> int:
                     process.terminate()
                     break
             time.sleep(10)
-        return_code = process.wait(timeout=120)
+        try:
+            return_code = process.wait(timeout=120)
+        except subprocess.TimeoutExpired:
+            process.kill()
+            return_code = process.wait(timeout=30)
     if upload_error is not None:
         raise RuntimeError(f"P3.4 durable checkpoint publication failed: {upload_error}")
     final_bundle = private_dir / "final-receipts.tar.zst"
@@ -344,9 +364,18 @@ def run_campaign(args: argparse.Namespace) -> int:
     campaign_release.upload(final_bundle, f"{label}-final-receipts.tar.zst")
     if (private_dir / "resume.pt").is_file():
         campaign_release.upload(private_dir / "resume.pt", resume_name)
+    campaign_summary_path = output_dir / "summary.json"
+    campaign_summary = (
+        json.loads(campaign_summary_path.read_text(encoding="utf-8"))
+        if campaign_summary_path.is_file() else {}
+    )
     final_status = {
-        "kind": KIND, "status": "complete" if return_code in (0, 2) else "failed",
+        "kind": KIND,
+        "status": campaign_summary.get("status", "failed"),
+        "landed": return_code in (0, 2),
         "label": label, "ref": args.ref, "return_code": return_code,
+        "step": campaign_summary.get("step"),
+        "stop_reason": campaign_summary.get("stop_reason"),
         "resume_sha256": sha256_file(private_dir / "resume.pt") if (private_dir / "resume.pt").is_file() else None,
         "training_release": CAMPAIGN_TAG,
     }

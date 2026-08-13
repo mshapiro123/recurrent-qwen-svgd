@@ -1,12 +1,15 @@
 from __future__ import annotations
 
+import tarfile
 from pathlib import Path
 
 import pytest
+import zstandard
 
 from colab.run_stage5_paper2_phase3_p34_cli import (
     PrivateRelease,
     assert_training_amendment,
+    package_receipts,
     verify_sha256s,
 )
 
@@ -67,3 +70,26 @@ def test_training_amendment_gate_requires_ratified_nested_rule(tmp_path: Path) -
     )
     with pytest.raises(RuntimeError, match="Tier-S"):
         assert_training_amendment(lock_path=lock, expected_sha256="approved")
+
+
+def test_receipt_bundle_does_not_archive_itself_or_prior_bundles(tmp_path: Path) -> None:
+    output = tmp_path / "output"
+    private = tmp_path / "private"
+    output.mkdir()
+    private.mkdir()
+    (output / "summary.json").write_text("{}\n", encoding="utf-8")
+    (private / "campaign.log").write_text("healthy\n", encoding="utf-8")
+    (private / "resume.pt").write_bytes(b"checkpoint")
+    (private / "old-receipts.tar.zst").write_bytes(b"old")
+    destination = private / "latest-receipts.tar.zst"
+
+    package_receipts(output_dir=output, private_dir=private, destination=destination)
+
+    with destination.open("rb") as source:
+        with zstandard.ZstdDecompressor().stream_reader(source) as decoded:
+            with tarfile.open(fileobj=decoded, mode="r|") as archive:
+                names = [member.name for member in archive]
+    assert "outputs/summary.json" in names
+    assert "private/campaign.log" in names
+    assert all("resume.pt" not in name for name in names)
+    assert all("receipts.tar.zst" not in name for name in names)
