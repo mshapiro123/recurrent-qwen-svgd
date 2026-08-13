@@ -6,13 +6,13 @@
     "rows": 256
   },
   "compact_batch_bytes": 9699014,
-  "compact_batch_sha256": "d34be99c003e59364c80991cbdfb4ad698f499bc868d421c8f431cbe01799fb7",
-  "kind": "paper2_phase3_p34_compact_share_batch_v1",
+  "compact_batch_sha256": "f0207e6242424bcc44659d4c020af1cdc15a8e7f764cb3853a11f3086159b1df",
+  "kind": "paper2_phase3_p34_compact_share_batch_v2",
   "local_compaction": true,
   "optimizer_constructed": false,
   "optimizer_steps": 0,
-  "rows_file_sha256": "c6fe791d0689027201e3cbf98b4e7a13c6f12de61d3ba2eb5ab22064449fc4bb",
-  "selection_receipt_sha256": "c4543ec734eeae3999b0f87f0dfc1fd93310df6e3e30dbb6bbab1d7bcae32a2c",
+  "rows_file_canonical_sha256": "074d5e6fc4257c0e06763f21ce66f74a08def2f4dec2b7031da17d215b17356d",
+  "selection_receipt_canonical_sha256": "19dec3123e5ee628997e4dfe70cb249c6bc076ece6a0894929333020433b1c2c",
   "source_receipts": [
     {
       "manifest_sha256": "43edbb74c5edf84dc5e6512dbe4beb1bbbf0f4df31b2c6830714ce2c8fc7ba93",

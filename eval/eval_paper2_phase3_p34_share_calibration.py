@@ -35,6 +35,27 @@ def sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
+def canonical_json_sha256(path: Path) -> str:
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def canonical_jsonl_sha256(path: Path) -> str:
+    records = [
+        json.loads(line)
+        for line in path.read_text(encoding="utf-8").splitlines()
+        if line
+    ]
+    digest = hashlib.sha256()
+    for record in records:
+        digest.update(
+            json.dumps(record, sort_keys=True, separators=(",", ":")).encode("utf-8")
+        )
+        digest.update(b"\n")
+    return digest.hexdigest()
+
+
 def read_jsonl(path: Path) -> list[dict[str, Any]]:
     return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line]
 
@@ -385,11 +406,13 @@ def main() -> int:
         if not args.compact_batch_sha256 or sha256_file(args.compact_batch) != args.compact_batch_sha256:
             raise RuntimeError("P3.4 compact calibration batch hash changed")
         compact = torch.load(args.compact_batch, map_location="cpu", weights_only=False)
-        if compact.get("kind") != "paper2_phase3_p34_compact_share_batch_v1":
+        if compact.get("kind") != "paper2_phase3_p34_compact_share_batch_v2":
             raise RuntimeError("P3.4 compact calibration batch kind changed")
-        if compact["selection_receipt_sha256"] != sha256_file(args.selection_receipt):
+        if compact["selection_receipt_canonical_sha256"] != canonical_json_sha256(
+            args.selection_receipt
+        ):
             raise RuntimeError("P3.4 compact batch selection receipt changed")
-        if compact["rows_file_sha256"] != sha256_file(args.rows):
+        if compact["rows_file_canonical_sha256"] != canonical_jsonl_sha256(args.rows):
             raise RuntimeError("P3.4 compact batch rows changed")
         batch = {key: value.to(args.device) for key, value in compact["batch"].items()}
         batch_receipt = dict(compact["batch_receipt"])

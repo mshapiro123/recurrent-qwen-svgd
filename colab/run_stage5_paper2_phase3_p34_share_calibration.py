@@ -23,7 +23,7 @@ STAGE = Path("/mnt/local-scratch/p34-share-calibration")
 RESEARCH_FOLDER_ID = "1aSbU2i8JZ37g5bJpyweLuvFaV0y92Qjr"
 COMPACT_FILE_NAME = "p34_share_compact_batch_20260812.pt"
 COMPACT_DRIVE_ID = "1NvWNpSie9lYnNjpmoJrWldyFMMmKpiK6"
-COMPACT_SHA256 = "d34be99c003e59364c80991cbdfb4ad698f499bc868d421c8f431cbe01799fb7"
+COMPACT_SHA256 = "f0207e6242424bcc44659d4c020af1cdc15a8e7f764cb3853a11f3086159b1df"
 SEED = int(os.environ.get("P34_SHARE_SEED", "0"))
 if SEED not in (0, 1):
     raise ValueError("P34_SHARE_SEED must be 0 or 1")

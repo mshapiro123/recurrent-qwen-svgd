@@ -29,6 +29,8 @@ from colab.run_stage5_paper2_phase3_p34_share_calibration import (
 from eval.eval_paper2_phase3_p34_share_calibration import (
     _selected_source_cache,
     build_selected_batch,
+    canonical_json_sha256,
+    canonical_jsonl_sha256,
 )
 
 
@@ -108,9 +110,9 @@ def main() -> int:
         device="cpu",
     )
     payload = {
-        "kind": "paper2_phase3_p34_compact_share_batch_v1",
-        "selection_receipt_sha256": sha256_file(selection),
-        "rows_file_sha256": sha256_file(rows),
+        "kind": "paper2_phase3_p34_compact_share_batch_v2",
+        "selection_receipt_canonical_sha256": canonical_json_sha256(selection),
+        "rows_file_canonical_sha256": canonical_jsonl_sha256(rows),
         "source_receipts": source_receipts,
         "batch_receipt": batch_receipt,
         "batch": {key: value.cpu() for key, value in batch.items()},
