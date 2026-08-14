@@ -914,7 +914,7 @@
     },
     {
       "id": "phase3_p34_dev_campaign",
-      "status": "positive_signal_with_objective_controller_stop",
+      "status": "exploratory_positive_interrupted",
       "claim": "Across two independent main seeds and one slot fork, P3.4 produced small positive DEV endpoint differences before every run exited through the registered four-window loss-share stop; the paired endpoint uncertainty remains compatible with zero.",
       "scope": "DEV-only 1,024-row task panel, registered P3.4 inference graph, main seeds 0 and 1 plus slot seed 0; interrupted at 400-1,500 of 4,000 planned steps; no CONFIRM or EVAL-E scoring",
       "metrics": {
@@ -925,9 +925,13 @@
         "main_seed_0_final_correct": 511,
         "main_seed_0_gap_closed": 0.030821917808219176,
         "main_seed_0_sign_test_p": 0.4167748410890993,
+        "main_seed_0_net_correct_vs_i1_training_start": 5,
+        "main_seed_0_target_net_correct_vs_i1_training_start": 2,
         "main_seed_1_final_correct": 509,
         "main_seed_1_gap_closed": 0.023972602739726026,
         "main_seed_1_sign_test_p": 0.5383940262921683,
+        "main_seed_1_net_correct_vs_i1_training_start": 5,
+        "main_seed_1_target_net_correct_vs_i1_training_start": 3,
         "slot_seed_0_final_correct": 508,
         "slot_seed_0_gap_closed": 0.02054794520547945,
         "slot_seed_0_sign_test_p": 0.6100682661051768,
@@ -950,6 +954,14 @@
         {
           "path": "docs/figures/p34_campaign_controller_20260813.svg",
           "locator": "loss-share contract margin and step-1,000 causal capture"
+        },
+        {
+          "path": "docs/STRATEGY_P34_RESULT_RESPONSE_20260814.md",
+          "locator": "strategy banking decision, continuation rule, controller-amendment charter, and claim boundaries"
+        },
+        {
+          "path": "outputs/stage5/stage5_paper2_phase3_p34_a2_autopsy_20260814/summary.json",
+          "locator": "CPU-only rung reconstruction, local controller replay, training-start task attribution, and CONFIRM power planning"
         }
       ],
       "do_not_claim": [
@@ -958,6 +970,7 @@
         "the endpoint differences are statistically resolved",
         "the slot arm improves on the main arm",
         "the result generalizes beyond DEV",
+        "all base-relative battery changes were caused by P3.4 training",
         "CONFIRM or EVAL-E has been scored"
       ]
     },
