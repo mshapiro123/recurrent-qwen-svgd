@@ -1968,3 +1968,23 @@ Colab/Drive backups for selected runs.
   `POSITIVE_SIGNAL_WITH_OBJECTIVE_CONTROLLER_STOP`, DEV-only and exploratory.
   Handoff: `docs/PAPER2_PHASE3_P34_CAMPAIGN_HANDOFF_20260813.md`. Receipt:
   `outputs/stage5/stage5_paper2_phase3_p34_analysis_20260813/summary.json`.
+- 2026-08-14 P3.4 a2 CPU autopsy: strategy banked the campaign as
+  `exploratory_positive_interrupted` and authorized cached DEV analysis only.
+  The latest share-healthy main checkpoints are seed 0 step 400 (SHA-256
+  `56dfa30d...b9230`) and seed 1 step 1,000 (`2ff122cd...e66f`); the slot arm
+  has no eligible checkpoint and is shelved. Rebased to the actual i1 starts,
+  both main endpoints added five pooled rows, with target-half gains of two and
+  three. Both shared Tier-1 misses predated P3.4, while P3.4 added four GSM8K
+  rows in each seed. A hard-floor static solve was feasible only by driving the
+  preservation weight to approximately `1e-8`. A bounded dynamic log-weight
+  controller limited the local fixed-clip replay to one and two consecutive
+  failed windows, but exact re-clipping remains unavailable because per-window
+  gradient bundles were not persisted. The draft therefore requires an exact
+  pre-optimizer gradient-bundle preflight. CONFIRM power planning found that
+  the sealed 1,502-row pooled panel needs about 2.06 points (31 net rows) for
+  80% power at one-sided alpha 0.05; the current 0.6-to-1.1-point effect is
+  underpowered. No model or optimizer was loaded and no sealed row was scored.
+  Receipt:
+  `outputs/stage5/stage5_paper2_phase3_p34_a2_autopsy_20260814/summary.json`.
+  Amendment draft:
+  `docs/PAPER2_PHASE3_P34_AMENDMENT_A2_DRAFT_20260814.md`.

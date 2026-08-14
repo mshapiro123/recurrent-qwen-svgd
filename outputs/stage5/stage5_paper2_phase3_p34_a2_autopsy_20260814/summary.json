@@ -1,0 +1,3586 @@
+{
+  "analysis_date": "2026-08-14",
+  "confirmation_power": {
+    "confirm_rows": {
+      "pooled": 1502,
+      "target": 926
+    },
+    "confirm_unspent": true,
+    "pooled": {
+      "dev_discordance_by_seed": [
+        0.0947265625,
+        0.0927734375
+      ],
+      "dev_endpoint_delta_by_seed": [
+        0.0087890625,
+        0.0068359375
+      ],
+      "mean_discordance": 0.09375,
+      "power_at_ceiling_consistent_effects": {
+        "0.006": 0.16573121150776077,
+        "0.008": 0.23644632051118716,
+        "0.011": 0.3680964598071249
+      },
+      "single_seed_exact_sign_test": {
+        "alpha_one_sided": 0.05,
+        "minimum_accuracy_delta": 0.020639147802929428,
+        "minimum_accuracy_points": 2.0639147802929427,
+        "minimum_net_rows": 31,
+        "power": 0.8151682608683144,
+        "power_target": 0.8,
+        "projected_gap_closed": 0.07237838133630045
+      },
+      "two_seed_joint_normal_approximation": {
+        "minimum_accuracy_delta": 0.019233469561869058,
+        "minimum_accuracy_points": 1.9233469561869059,
+        "minimum_average_net_rows": 29,
+        "row_delta_correlation": 0.9166801436660267,
+        "warning": "planning approximation only; the P3.6 lock must pin a cluster-level joint estimator and simulation before spending CONFIRM"
+      }
+    },
+    "reading": "The sealed panel is underpowered for the observed 0.6-1.1 point effect in a single-seed paired test; high cross-seed row-delta correlation means naive seed pooling adds little power.",
+    "target_half": {
+      "dev_discordance_by_seed": [
+        0.15625,
+        0.150390625
+      ],
+      "dev_endpoint_delta_by_seed": [
+        0.0078125,
+        0.005859375
+      ],
+      "mean_discordance": 0.1533203125,
+      "power_at_ceiling_consistent_effects": {
+        "0.006": 0.10315160246457133,
+        "0.008": 0.13383113613144026,
+        "0.011": 0.1907129939254461
+      },
+      "single_seed_exact_sign_test": {
+        "alpha_one_sided": 0.05,
+        "minimum_accuracy_delta": 0.03347732181425486,
+        "minimum_accuracy_points": 3.3477321814254863,
+        "minimum_net_rows": 31,
+        "power": 0.8124479447132718,
+        "power_target": 0.8,
+        "projected_gap_closed": 0.10917445075731522
+      },
+      "two_seed_joint_normal_approximation": {
+        "minimum_accuracy_delta": 0.031455084097271005,
+        "minimum_accuracy_points": 3.1455084097271007,
+        "minimum_average_net_rows": 30,
+        "row_delta_correlation": 0.9300953297746922,
+        "warning": "planning approximation only; the P3.6 lock must pin a cluster-level joint estimator and simulation before spending CONFIRM"
+      }
+    }
+  },
+  "controller_autopsy": {
+    "conditions": {
+      "main_seed_0": {
+        "by_rung": {
+          "0": {
+            "geometric_mean_target_fit_weights": {
+              "aim": 0.009288848698417044,
+              "ce": 0.04278537278309192,
+              "gate": 8.358404681867993e-05,
+              "kl": 1.0,
+              "preserve": 16.83218935172781
+            },
+            "hard_floor_feasibility": {
+              "feasible_under_fixed_clip_geometry": true,
+              "preserve_weight_degenerate": true,
+              "share_ranges": {
+                "aim": [
+                  0.14999999999999997,
+                  0.15370434127258378
+                ],
+                "ce": [
+                  0.09999999999999999,
+                  0.10222772231726175
+                ],
+                "gate": [
+                  0.030000000000000134,
+                  0.034321404032954805
+                ],
+                "kl": [
+                  0.7140679363971261,
+                  0.7156785959516915
+                ],
+                "preserve": [
+                  1.3028330983563967e-11,
+                  1.5353780127430532e-11
+                ]
+              },
+              "solver_message": "Optimization terminated successfully. (HiGHS Status 7: Optimal)",
+              "solver_status": 0,
+              "weights_kl_normalized": {
+                "aim": 0.004603610692477809,
+                "ce": 0.021179657183696587,
+                "gate": 4.37708069679229e-05,
+                "kl": 1.0,
+                "preserve": 1e-08
+              }
+            },
+            "preservation_target": 0.018164773304902626,
+            "steps": [
+              1400,
+              1500
+            ],
+            "target_fit_passing_windows": 2,
+            "target_shares": {
+              "aim": 0.23377029207026126,
+              "ce": 0.1558468613801742,
+              "gate": 0.04675405841405225,
+              "kl": 0.5454640148306096,
+              "preserve": 0.018164773304902626
+            },
+            "window_count": 2
+          },
+          "1": {
+            "geometric_mean_target_fit_weights": {
+              "aim": 0.058235545964894865,
+              "ce": 0.04092957599624987,
+              "gate": 0.00028316573929735043,
+              "kl": 1.0,
+              "preserve": 46.21853790264294
+            },
+            "hard_floor_feasibility": {
+              "feasible_under_fixed_clip_geometry": true,
+              "preserve_weight_degenerate": true,
+              "share_ranges": {
+                "aim": [
+                  0.15000000000000002,
+                  0.24470813885883783
+                ],
+                "ce": [
+                  0.09999999999999991,
+                  0.11687152673394037
+                ],
+                "gate": [
+                  0.03,
+                  0.06090130126487384
+                ],
+                "kl": [
+                  0.6128569799975964,
+                  0.6949426838777064
+                ],
+                "preserve": [
+                  1.909582346698593e-11,
+                  4.7040363778998934e-11
+                ]
+              },
+              "solver_message": "Optimization terminated successfully. (HiGHS Status 7: Optimal)",
+              "solver_status": 0,
+              "weights_kl_normalized": {
+                "aim": 0.04203190178248702,
+                "ce": 0.02360229234795757,
+                "gate": 0.00021146613980481442,
+                "kl": 1.0,
+                "preserve": 1e-08
+              }
+            },
+            "preservation_target": 0.10858693150350851,
+            "steps": [
+              100,
+              200,
+              300,
+              400,
+              500,
+              600,
+              700,
+              800,
+              900,
+              1000,
+              1100,
+              1200,
+              1300
+            ],
+            "target_fit_passing_windows": 13,
+            "target_shares": {
+              "aim": 0.21224120678487893,
+              "ce": 0.14149413785658596,
+              "gate": 0.04244824135697579,
+              "kl": 0.4952294824980508,
+              "preserve": 0.10858693150350851
+            },
+            "window_count": 13
+          }
+        },
+        "dynamic_replay": {
+          "events": [
+            {
+              "classification_before_update": {
+                "bounds": {
+                  "aim": 0.15,
+                  "ce": 0.1,
+                  "gate": 0.03,
+                  "kl": 0.35,
+                  "preserve": 0.25
+                },
+                "classification": "breach_observed",
+                "consecutive_misses": 1,
+                "failed_contracts": [
+                  "kl"
+                ],
+                "rule": "first breach is observed; two consecutive trailing-window breaches demote; four consecutive breaches stop",
+                "shares": {
+                  "aim": 0.3507280829980038,
+                  "ce": 0.11757731265514385,
+                  "gate": 0.05466808549507086,
+                  "kl": 0.30721372671648073,
+                  "preserve": 0.16981279213530084
+                }
+              },
+              "log_weight_delta": {
+                "aim": -0.251143917582712,
+                "ce": 0.09258109519785548,
+                "gate": -0.12649730483680274,
+                "kl": 0.23873878627399217,
+                "preserve": -0.2235727716650273
+              },
+              "rung": 1,
+              "same_window_counterfactual_shares_after_update": {
+                "aim": 0.2795914390416856,
+                "ce": 0.13217664800633044,
+                "gate": 0.04936515772416699,
+                "kl": 0.3997121039434917,
+                "preserve": 0.13915465128432536
+              },
+              "shares_before_update": {
+                "aim": 0.3507280829980038,
+                "ce": 0.11757731265514385,
+                "gate": 0.05466808549507086,
+                "kl": 0.30721372671648073,
+                "preserve": 0.16981279213530084
+              },
+              "step": 100,
+              "weights_after_update": {
+                "aim": 0.07920212440848517,
+                "ce": 0.044974898428002334,
+                "gate": 0.0003003406266679953,
+                "kl": 1.0,
+                "preserve": 46.84559938668833
+              }
+            },
+            {
+              "classification_before_update": {
+                "bounds": {
+                  "aim": 0.15,
+                  "ce": 0.1,
+                  "gate": 0.03,
+                  "kl": 0.35,
+                  "preserve": 0.25
+                },
+                "classification": "pass",
+                "consecutive_misses": 0,
+                "failed_contracts": [],
+                "rule": "first breach is observed; two consecutive trailing-window breaches demote; four consecutive breaches stop",
+                "shares": {
+                  "aim": 0.20203846461358102,
+                  "ce": 0.14200467983768597,
+                  "gate": 0.05728933480717722,
+                  "kl": 0.4504636821710298,
+                  "preserve": 0.14820383857052605
+                }
+              },
+              "log_weight_delta": {
+                "aim": 0.02463264880248011,
+                "ce": -0.0018008630059425876,
+                "gate": -0.1499144970265692,
+                "kl": 0.04737189952944677,
+                "preserve": -0.1555187748083712
+              },
+              "rung": 1,
+              "same_window_counterfactual_shares_after_update": {
+                "aim": 0.20763461118104762,
+                "ce": 0.1421308712410972,
+                "gate": 0.049446391925696366,
+                "kl": 0.473588342011158,
+                "preserve": 0.12719978364100082
+              },
+              "shares_before_update": {
+                "aim": 0.20203846461358102,
+                "ce": 0.14200467983768597,
+                "gate": 0.05728933480717722,
+                "kl": 0.4504636821710298,
+                "preserve": 0.14820383857052605
+              },
+              "step": 200,
+              "weights_after_update": {
+                "aim": 0.07742144977458171,
+                "ce": 0.04281685180636351,
+                "gate": 0.00024656628357554893,
+                "kl": 1.0,
+                "preserve": 38.24322422317166
+              }
+            },
+            {
+              "classification_before_update": {
+                "bounds": {
+                  "aim": 0.15,
+                  "ce": 0.1,
+                  "gate": 0.03,
+                  "kl": 0.35,
+                  "preserve": 0.25
+                },
+                "classification": "pass",
+                "consecutive_misses": 0,
+                "failed_contracts": [],
+                "rule": "first breach is observed; two consecutive trailing-window breaches demote; four consecutive breaches stop",
+                "shares": {
+                  "aim": 0.2056513528235436,
+                  "ce": 0.15435106756706302,
+                  "gate": 0.05234883040695314,
+                  "kl": 0.49557530658551185,
+                  "preserve": 0.09207344261692854
+                }
+              },
+              "log_weight_delta": {
+                "aim": 0.015770561410918465,
+                "ce": -0.04348568990438405,
+                "gate": -0.10482205597332876,
+                "kl": -0.0003490335385078081,
+                "preserve": 0.08248225814768682
+              },
+              "rung": 1,
+              "same_window_counterfactual_shares_after_update": {
+                "aim": 0.2090803079565512,
+                "ce": 0.1478960363695768,
+                "gate": 0.0471754264852366,
+                "kl": 0.4957817858779593,
+                "preserve": 0.10006644331067606
+              },
+              "shares_before_update": {
+                "aim": 0.2056513528235436,
+                "ce": 0.15435106756706302,
+                "gate": 0.05234883040695314,
+                "kl": 0.49557530658551185,
+                "preserve": 0.09207344261692854
+              },
+              "step": 300,
+              "weights_after_update": {
+                "aim": 0.07867956509763585,
+                "ce": 0.04100914548839802,
+                "gate": 0.0002221066859519075,
+                "kl": 1.0,
+                "preserve": 41.54585229019268
+              }
+            },
+            {
+              "classification_before_update": {
+                "bounds": {
+                  "aim": 0.15,
+                  "ce": 0.1,
+                  "gate": 0.03,
+                  "kl": 0.35,
+                  "preserve": 0.25
+                },
+                "classification": "pass",
+                "consecutive_misses": 0,
+                "failed_contracts": [],
+                "rule": "first breach is observed; two consecutive trailing-window breaches demote; four consecutive breaches stop",
+                "shares": {
+                  "aim": 0.2598240186946024,
+                  "ce": 0.13720949267106447,
+                  "gate": 0.03624921975397398,
+                  "kl": 0.4970029175201995,
+                  "preserve": 0.06971435136015956
+                }
+              },
+              "log_weight_delta": {
+                "aim": -0.10114057745792311,
+                "ce": 0.015374693093382342,
+                "gate": 0.07893381314153518,
+                "kl": -0.0017873200981303515,
+                "preserve": 0.22157243287819448
+              },
+              "rung": 1,
+              "same_window_counterfactual_shares_after_update": {
+                "aim": 0.2356520163312798,
+                "ce": 0.1398227894446698,
+                "gate": 0.03936369350242631,
+                "kl": 0.49785098872746486,
+                "preserve": 0.08731051199415932
+              },
+              "shares_before_update": {
+                "aim": 0.2598240186946024,
+                "ce": 0.13720949267106447,
+                "gate": 0.03624921975397398,
+                "kl": 0.4970029175201995,
+                "preserve": 0.06971435136015956
+              },
+              "step": 400,
+              "weights_after_update": {
+                "aim": 0.07123827246813687,
+                "ce": 0.04171901898999609,
+                "gate": 0.00024077887159210806,
+                "kl": 1.0,
+                "preserve": 51.943544429467465
+              }
+            },
+            {
+              "classification_before_update": {
+                "bounds": {
+                  "aim": 0.15,
+                  "ce": 0.1,
+                  "gate": 0.03,
+                  "kl": 0.35,
+                  "preserve": 0.25
+                },
+                "classification": "pass",
+                "consecutive_misses": 0,
+                "failed_contracts": [],
+                "rule": "first breach is observed; two consecutive trailing-window breaches demote; four consecutive breaches stop",
+                "shares": {
+                  "aim": 0.19370343415782323,
+                  "ce": 0.1573984104848235,
+                  "gate": 0.033127680775361865,
+                  "kl": 0.5294935935377996,
+                  "preserve": 0.08627688104419184
+                }
+              },
+              "log_weight_delta": {
+                "aim": 0.04569754812064204,
+                "ce": -0.05326097485546437,
+                "gate": 0.1239581366122355,
+                "kl": -0.03344990487220172,
+                "preserve": 0.11499469628034063
+              },
+              "rung": 1,
+              "same_window_counterfactual_shares_after_update": {
+                "aim": 0.20309346924086627,
+                "ce": 0.14947956993661887,
+                "gate": 0.03756105760745042,
+                "kl": 0.5129157625142076,
+                "preserve": 0.09695014070085695
+              },
+              "shares_before_update": {
+                "aim": 0.19370343415782323,
+                "ce": 0.1573984104848235,
+                "gate": 0.033127680775361865,
+                "kl": 0.5294935935377996,
+                "preserve": 0.08627688104419184
+              },
+              "step": 500,
+              "weights_after_update": {
+                "aim": 0.07710573499504077,
+                "ce": 0.04090065369692176,
+                "gate": 0.0002818251965958942,
+                "kl": 1.0,
+                "preserve": 60.255993578439
+              }
+            },
+            {
+              "classification_before_update": {
+                "bounds": {
+                  "aim": 0.15,
+                  "ce": 0.1,
+                  "gate": 0.03,
+                  "kl": 0.35,
+                  "preserve": 0.25
+                },
+                "classification": "pass",
+                "consecutive_misses": 0,
+                "failed_contracts": [],
+                "rule": "first breach is observed; two consecutive trailing-window breaches demote; four consecutive breaches stop",
+                "shares": {
+                  "aim": 0.2504994471158073,
+                  "ce": 0.11893098868912928,
+                  "gate": 0.042092796106417994,
+                  "kl": 0.43064123342223404,
+                  "preserve": 0.15783553466641134
+                }
+              },
+              "log_weight_delta": {
+                "aim": -0.08286665882102638,
+                "ce": 0.08685744487150587,
+                "gate": 0.004204435569460792,
+                "kl": 0.06987295886782288,
+                "preserve": -0.18700125343271065
+              },
+              "rung": 1,
+              "same_window_counterfactual_shares_after_update": {
+                "aim": 0.231668341593364,
+                "ce": 0.13033624027506252,
+                "gate": 0.04246999301879015,
+                "kl": 0.46399094152873877,
+                "preserve": 0.13153448358404446
+              },
+              "shares_before_update": {
+                "aim": 0.2504994471158073,
+                "ce": 0.11893098868912928,
+                "gate": 0.042092796106417994,
+                "kl": 0.43064123342223404,
+                "preserve": 0.15783553466641134
+              },
+              "step": 600,
+              "weights_after_update": {
+                "aim": 0.06618395380880472,
+                "ce": 0.04160126318101835,
+                "gate": 0.00026391273129281725,
+                "kl": 1.0,
+                "preserve": 46.60593220671674
+              }
+            },
+            {
+              "classification_before_update": {
+                "bounds": {
+                  "aim": 0.15,
+                  "ce": 0.1,
+                  "gate": 0.03,
+                  "kl": 0.35,
+                  "preserve": 0.25
+                },
+                "classification": "pass",
+                "consecutive_misses": 0,
+                "failed_contracts": [],
+                "rule": "first breach is observed; two consecutive trailing-window breaches demote; four consecutive breaches stop",
+                "shares": {
+                  "aim": 0.22821049860815032,
+                  "ce": 0.13028843927410452,
+                  "gate": 0.03557746413795027,
+                  "kl": 0.4732643291255048,
+                  "preserve": 0.13265926885429016
+                }
+              },
+              "log_weight_delta": {
+                "aim": -0.036272523391251796,
+                "ce": 0.041253765684191576,
+                "gate": 0.08828653787332989,
+                "kl": 0.022683594191515395,
+                "preserve": -0.10011644423064338
+              },
+              "rung": 1,
+              "same_window_counterfactual_shares_after_update": {
+                "aim": 0.22033189661227975,
+                "ce": 0.13593048744056807,
+                "gate": 0.03890559446221555,
+                "kl": 0.48467413246695884,
+                "preserve": 0.12015788901797782
+              },
+              "shares_before_update": {
+                "aim": 0.22821049860815032,
+                "ce": 0.13028843927410452,
+                "gate": 0.03557746413795027,
+                "kl": 0.4732643291255048,
+                "preserve": 0.13265926885429016
+              },
+              "step": 700,
+              "weights_after_update": {
+                "aim": 0.06239479923967952,
+                "ce": 0.04238102350576265,
+                "gate": 0.00028180671521357565,
+                "kl": 1.0,
+                "preserve": 41.220173937160205
+              }
+            },
+            {
+              "classification_before_update": {
+                "bounds": {
+                  "aim": 0.15,
+                  "ce": 0.1,
+                  "gate": 0.03,
+                  "kl": 0.35,
+                  "preserve": 0.25
+                },
+                "classification": "pass",
+                "consecutive_misses": 0,
+                "failed_contracts": [],
+                "rule": "first breach is observed; two consecutive trailing-window breaches demote; four consecutive breaches stop",
+                "shares": {
+                  "aim": 0.23038050511581212,
+                  "ce": 0.1414560603568975,
+                  "gate": 0.041116567336502735,
+                  "kl": 0.4842266478534042,
+                  "preserve": 0.1028202193373835
+                }
+              },
+              "log_weight_delta": {
+                "aim": -0.041004458135655064,
+                "ce": 0.000134573151596091,
+                "gate": 0.01593717241606419,
+                "kl": 0.011234089174405078,
+                "preserve": 0.02728452217660841
+              },
+              "rung": 1,
+              "same_window_counterfactual_shares_after_update": {
+                "aim": 0.22118276516436672,
+                "ce": 0.14151209805453097,
+                "gate": 0.041788024716832954,
+                "kl": 0.48982523514682513,
+                "preserve": 0.10569187691744418
+              },
+              "shares_before_update": {
+                "aim": 0.23038050511581212,
+                "ce": 0.1414560603568975,
+                "gate": 0.041116567336502735,
+                "kl": 0.4842266478534042,
+                "preserve": 0.1028202193373835
+              },
+              "step": 800,
+              "weights_after_update": {
+                "aim": 0.05921905582756376,
+                "ce": 0.041913215679318154,
+                "gate": 0.00028313519718520984,
+                "kl": 1.0,
+                "preserve": 41.887113594600585
+              }
+            },
+            {
+              "classification_before_update": {
+                "bounds": {
+                  "aim": 0.15,
+                  "ce": 0.1,
+                  "gate": 0.03,
+                  "kl": 0.35,
+                  "preserve": 0.25
+                },
+                "classification": "pass",
+                "consecutive_misses": 0,
+                "failed_contracts": [],
+                "rule": "first breach is observed; two consecutive trailing-window breaches demote; four consecutive breaches stop",
+                "shares": {
+                  "aim": 0.23821454984119306,
+                  "ce": 0.1539145576063055,
+                  "gate": 0.040472375640156266,
+                  "kl": 0.5041950265903603,
+                  "preserve": 0.06320349032198494
+                }
+              },
+              "log_weight_delta": {
+                "aim": -0.05772417087728353,
+                "ce": -0.04206967002781669,
+                "gate": 0.023832912447414246,
+                "kl": -0.008970947299031374,
+                "preserve": 0.27059576897692417
+              },
+              "rung": 1,
+              "same_window_counterfactual_shares_after_update": {
+                "aim": 0.22566300887353716,
+                "ce": 0.1481052495048253,
+                "gate": 0.04159782072687551,
+                "kl": 0.5014918781165889,
+                "preserve": 0.08314204277817328
+              },
+              "shares_before_update": {
+                "aim": 0.23821454984119306,
+                "ce": 0.1539145576063055,
+                "gate": 0.040472375640156266,
+                "kl": 0.5041950265903603,
+                "preserve": 0.06320349032198494
+              },
+              "step": 900,
+              "weights_after_update": {
+                "aim": 0.05640118424276287,
+                "ce": 0.04054864905522496,
+                "gate": 0.0002925771439455338,
+                "kl": 1.0,
+                "preserve": 55.39808046234864
+              }
+            },
+            {
+              "classification_before_update": {
+                "bounds": {
+                  "aim": 0.15,
+                  "ce": 0.1,
+                  "gate": 0.03,
+                  "kl": 0.35,
+                  "preserve": 0.25
+                },
+                "classification": "pass",
+                "consecutive_misses": 0,
+                "failed_contracts": [],
+                "rule": "first breach is observed; two consecutive trailing-window breaches demote; four consecutive breaches stop",
+                "shares": {
+                  "aim": 0.2385948460940921,
+                  "ce": 0.12826861346762522,
+                  "gate": 0.03097922032342645,
+                  "kl": 0.4715013981220612,
+                  "preserve": 0.1306559219927949
+                }
+              },
+              "log_weight_delta": {
+                "aim": -0.05852175653054853,
+                "ce": 0.04906583993966475,
+                "gate": 0.15748440787291254,
+                "kl": 0.02454959440590612,
+                "preserve": -0.09250812694945991
+              },
+              "rung": 1,
+              "same_window_counterfactual_shares_after_update": {
+                "aim": 0.22540537316756534,
+                "ce": 0.13494236145842464,
+                "gate": 0.036323189367130124,
+                "kl": 0.48402034895956053,
+                "preserve": 0.11930872704731935
+              },
+              "shares_before_update": {
+                "aim": 0.2385948460940921,
+                "ce": 0.12826861346762522,
+                "gate": 0.03097922032342645,
+                "kl": 0.4715013981220612,
+                "preserve": 0.1306559219927949
+              },
+              "step": 1000,
+              "weights_after_update": {
+                "aim": 0.05190519100628861,
+                "ce": 0.041555035695942724,
+                "gate": 0.0003341744577991083,
+                "kl": 1.0,
+                "preserve": 49.27846760694652
+              }
+            },
+            {
+              "classification_before_update": {
+                "bounds": {
+                  "aim": 0.15,
+                  "ce": 0.1,
+                  "gate": 0.03,
+                  "kl": 0.35,
+                  "preserve": 0.25
+                },
+                "classification": "pass",
+                "consecutive_misses": 0,
+                "failed_contracts": [],
+                "rule": "first breach is observed; two consecutive trailing-window breaches demote; four consecutive breaches stop",
+                "shares": {
+                  "aim": 0.21447220787076454,
+                  "ce": 0.1384175221934926,
+                  "gate": 0.03972374897769383,
+                  "kl": 0.5087483188657337,
+                  "preserve": 0.09863820209231537
+                }
+              },
+              "log_weight_delta": {
+                "aim": -0.005228383589785043,
+                "ce": 0.010991823517827008,
+                "gate": 0.033168131731258044,
+                "kl": -0.013466088082708959,
+                "preserve": 0.04804621623449365
+              },
+              "rung": 1,
+              "same_window_counterfactual_shares_after_update": {
+                "aim": 0.2133962458400301,
+                "ce": 0.13997522341915497,
+                "gate": 0.04107157674296759,
+                "kl": 0.5020432701352805,
+                "preserve": 0.10351368386256686
+              },
+              "shares_before_update": {
+                "aim": 0.21447220787076454,
+                "ce": 0.1384175221934926,
+                "gate": 0.03972374897769383,
+                "kl": 0.5087483188657337,
+                "preserve": 0.09863820209231537
+              },
+              "step": 1100,
+              "weights_after_update": {
+                "aim": 0.05233453661463199,
+                "ce": 0.042583915928172095,
+                "gate": 0.00035012751095987526,
+                "kl": 1.0,
+                "preserve": 52.404870077610965
+              }
+            },
+            {
+              "classification_before_update": {
+                "bounds": {
+                  "aim": 0.15,
+                  "ce": 0.1,
+                  "gate": 0.03,
+                  "kl": 0.35,
+                  "preserve": 0.25
+                },
+                "classification": "pass",
+                "consecutive_misses": 0,
+                "failed_contracts": [],
+                "rule": "first breach is observed; two consecutive trailing-window breaches demote; four consecutive breaches stop",
+                "shares": {
+                  "aim": 0.2195861532970543,
+                  "ce": 0.1439164181813244,
+                  "gate": 0.044891889552375976,
+                  "kl": 0.4754277742061085,
+                  "preserve": 0.1161777647631368
+                }
+              },
+              "log_weight_delta": {
+                "aim": -0.01701062884331061,
+                "ce": -0.008487207057803476,
+                "gate": -0.027985830765410873,
+                "kl": 0.02040314005543062,
+                "preserve": -0.033785204377438344
+              },
+              "rung": 1,
+              "same_window_counterfactual_shares_after_update": {
+                "aim": 0.21592964299129833,
+                "ce": 0.14273133655797476,
+                "gate": 0.04366251340816856,
+                "kl": 0.48533371147194043,
+                "preserve": 0.11234279557061792
+              },
+              "shares_before_update": {
+                "aim": 0.2195861532970543,
+                "ce": 0.1439164181813244,
+                "gate": 0.044891889552375976,
+                "kl": 0.4754277742061085,
+                "preserve": 0.1161777647631368
+              },
+              "step": 1200,
+              "weights_after_update": {
+                "aim": 0.05041268047475024,
+                "ce": 0.04137125328272982,
+                "gate": 0.00033358857901883744,
+                "kl": 1.0,
+                "preserve": 49.64070601743876
+              }
+            },
+            {
+              "classification_before_update": {
+                "bounds": {
+                  "aim": 0.15,
+                  "ce": 0.1,
+                  "gate": 0.03,
+                  "kl": 0.35,
+                  "preserve": 0.25
+                },
+                "classification": "pass",
+                "consecutive_misses": 0,
+                "failed_contracts": [],
+                "rule": "first breach is observed; two consecutive trailing-window breaches demote; four consecutive breaches stop",
+                "shares": {
+                  "aim": 0.2286512843955422,
+                  "ce": 0.1474550955981676,
+                  "gate": 0.03776013739890929,
+                  "kl": 0.4803492259819518,
+                  "preserve": 0.10578425662542909
+                }
+              },
+              "log_weight_delta": {
+                "aim": -0.03723733581496615,
+                "ce": -0.020632702578652542,
+                "gate": 0.05851575165541207,
+                "kl": 0.015253931326654036,
+                "preserve": 0.013074679502899197
+              },
+              "rung": 1,
+              "same_window_counterfactual_shares_after_update": {
+                "aim": 0.22036356394604167,
+                "ce": 0.144489812656278,
+                "gate": 0.0400483608809295,
+                "kl": 0.4878877402940063,
+                "preserve": 0.10721052222274452
+              },
+              "shares_before_update": {
+                "aim": 0.2286512843955422,
+                "ce": 0.1474550955981676,
+                "gate": 0.03776013739890929,
+                "kl": 0.4803492259819518,
+                "preserve": 0.10578425662542909
+              },
+              "step": 1300,
+              "weights_after_update": {
+                "aim": 0.047834707436373865,
+                "ce": 0.0399129024218245,
+                "gate": 0.00034833694868336833,
+                "kl": 1.0,
+                "preserve": 49.532644208032096
+              }
+            },
+            {
+              "classification_before_update": {
+                "bounds": {
+                  "aim": 0.15,
+                  "ce": 0.1,
+                  "gate": 0.03,
+                  "kl": 0.35,
+                  "preserve": 0.25
+                },
+                "classification": "breach_observed",
+                "consecutive_misses": 1,
+                "failed_contracts": [
+                  "ce",
+                  "kl"
+                ],
+                "rule": "first breach is observed; two consecutive trailing-window breaches demote; four consecutive breaches stop",
+                "shares": {
+                  "aim": 0.5542846486998637,
+                  "ce": 0.0670179969914605,
+                  "gate": 0.09713530210748357,
+                  "kl": 0.2545159995438035,
+                  "preserve": 0.02704605265738855
+                }
+              },
+              "log_weight_delta": {
+                "aim": -0.43166969285737417,
+                "ce": 0.42195633607721533,
+                "gate": -0.3656019053524172,
+                "kl": 0.38113656759626274,
+                "preserve": -0.19902844059237004
+              },
+              "rung": 0,
+              "same_window_counterfactual_shares_after_update": {
+                "aim": 0.389439345177285,
+                "ce": 0.11056648246530862,
+                "gate": 0.07290829571902141,
+                "kl": 0.40310606999048393,
+                "preserve": 0.023979806647901062
+              },
+              "shares_before_update": {
+                "aim": 0.5542846486998637,
+                "ce": 0.0670179969914605,
+                "gate": 0.09713530210748357,
+                "kl": 0.2545159995438035,
+                "preserve": 0.02704605265738855
+              },
+              "step": 1400,
+              "weights_after_update": {
+                "aim": 0.021220022904292913,
+                "ce": 0.04157584747316033,
+                "gate": 0.00016508026030481954,
+                "kl": 1.0,
+                "preserve": 27.728670748494228
+              }
+            },
+            {
+              "classification_before_update": {
+                "bounds": {
+                  "aim": 0.15,
+                  "ce": 0.1,
+                  "gate": 0.03,
+                  "kl": 0.35,
+                  "preserve": 0.25
+                },
+                "classification": "pass",
+                "consecutive_misses": 0,
+                "failed_contracts": [],
+                "rule": "first breach is observed; two consecutive trailing-window breaches demote; four consecutive breaches stop",
+                "shares": {
+                  "aim": 0.3997116949369534,
+                  "ce": 0.11321509409344156,
+                  "gate": 0.06383300787087688,
+                  "kl": 0.40285893052479355,
+                  "preserve": 0.02038127257393454
+                }
+              },
+              "log_weight_delta": {
+                "aim": -0.26820227458968593,
+                "ce": 0.15979218518019347,
+                "gate": -0.1556846791742113,
+                "kl": 0.15152519172201073,
+                "preserve": -0.05756614115857568
+              },
+              "rung": 0,
+              "same_window_counterfactual_shares_after_update": {
+                "aim": 0.3115524916583285,
+                "ce": 0.13538306363250605,
+                "gate": 0.05567951629334425,
+                "kl": 0.4777741974715558,
+                "preserve": 0.01961073094426552
+              },
+              "shares_before_update": {
+                "aim": 0.3997116949369534,
+                "ce": 0.11321509409344156,
+                "gate": 0.06383300787087688,
+                "kl": 0.40285893052479355,
+                "preserve": 0.02038127257393454
+              },
+              "step": 1500,
+              "weights_after_update": {
+                "aim": 0.013946348897689002,
+                "ce": 0.04192097936818315,
+                "gate": 0.00012141590835154787,
+                "kl": 1.0,
+                "preserve": 22.496856539507334
+              }
+            }
+          ],
+          "gain": 0.5,
+          "max_abs_log_update": 0.5,
+          "maximum_consecutive_misses": 1,
+          "passing_windows": 13,
+          "window_count": 15,
+          "would_reach_four_miss_stop_under_fixed_clip_replay": false
+        },
+        "fixed_locked_weights": {
+          "aim": 0.12926774882921147,
+          "ce": 0.05205298866350136,
+          "gate": 0.0004327470356003924,
+          "kl": 1.0,
+          "preserve": 74.37862724559022
+        },
+        "last_healthy_evaluation": {
+          "checkpoint": {
+            "bytes": 3444842,
+            "path": ".codex_p34_final_download/main_seed_0/private/checkpoint_step_0400.pt",
+            "sha256": "56dfa30d19166dfd3a788e2e6f68e0613f366e55601b5d690b087e1a3edb9230"
+          },
+          "continuation_eligible": true,
+          "disposition": "resume_from_pinned_last_healthy",
+          "step": 400
+        },
+        "windows": [
+          {
+            "observed_shares": {
+              "aim": 0.3507280829980038,
+              "ce": 0.11757731265514383,
+              "gate": 0.05466808549507086,
+              "kl": 0.30721372671648073,
+              "preserve": 0.16981279213530084
+            },
+            "rung": 1,
+            "step": 100,
+            "unit_masses_fixed_clip": {
+              "aim": 2.713190924840702,
+              "ce": 2.2588004199956147,
+              "gate": 126.32804155255381,
+              "kl": 0.30721372671648073,
+              "preserve": 0.0022830858597940678
+            }
+          },
+          {
+            "observed_shares": {
+              "aim": 0.26120550038443563,
+              "ce": 0.13018862469738468,
+              "gate": 0.0653865919763227,
+              "kl": 0.3568245164577275,
+              "preserve": 0.18639476648412945
+            },
+            "rung": 1,
+            "step": 200,
+            "unit_masses_fixed_clip": {
+              "aim": 2.02065482496752,
+              "ce": 2.5010787668503394,
+              "gate": 151.0965681962569,
+              "kl": 0.3568245164577275,
+              "preserve": 0.0025060259026920997
+            }
+          },
+          {
+            "observed_shares": {
+              "aim": 0.26463045657539297,
+              "ce": 0.14461719874868603,
+              "gate": 0.07080872337986753,
+              "kl": 0.3819346210880109,
+              "preserve": 0.13800900020804255
+            },
+            "rung": 1,
+            "step": 300,
+            "unit_masses_fixed_clip": {
+              "aim": 2.047149880555456,
+              "ce": 2.778268884493256,
+              "gate": 163.62613156119636,
+              "kl": 0.3819346210880109,
+              "preserve": 0.0018554927042731197
+            }
+          },
+          {
+            "observed_shares": {
+              "aim": 0.3300257338017931,
+              "ce": 0.13464473724195467,
+              "gate": 0.05460235913794327,
+              "kl": 0.38423702649899233,
+              "preserve": 0.09649014331931659
+            },
+            "rung": 1,
+            "step": 400,
+            "unit_masses_fixed_clip": {
+              "aim": 2.5530400025595177,
+              "ce": 2.586686003994333,
+              "gate": 126.17615984864706,
+              "kl": 0.38423702649899233,
+              "preserve": 0.0012972831966999944
+            }
+          },
+          {
+            "observed_shares": {
+              "aim": 0.278861055885896,
+              "ce": 0.1558065335159205,
+              "gate": 0.047236803345164835,
+              "kl": 0.42008236516049147,
+              "preserve": 0.09801324209252721
+            },
+            "rung": 1,
+            "step": 500,
+            "unit_masses_fixed_clip": {
+              "aim": 2.157236111958035,
+              "ce": 2.9932293517887727,
+              "gate": 109.15569480361334,
+              "kl": 0.42008236516049147,
+              "preserve": 0.0013177608369793923
+            }
+          },
+          {
+            "observed_shares": {
+              "aim": 0.3329265973704652,
+              "ce": 0.11999099816065258,
+              "gate": 0.051238956277365945,
+              "kl": 0.3413923827728218,
+              "preserve": 0.15445106541869447
+            },
+            "rung": 1,
+            "step": 600,
+            "unit_masses_fixed_clip": {
+              "aim": 2.5754807396725674,
+              "ce": 2.3051701975527132,
+              "gate": 118.40394517382913,
+              "kl": 0.3413923827728218,
+              "preserve": 0.0020765517076392613
+            }
+          },
+          {
+            "observed_shares": {
+              "aim": 0.3296667145354568,
+              "ce": 0.12057215868595918,
+              "gate": 0.0431470146691805,
+              "kl": 0.3500304083431061,
+              "preserve": 0.15658370376629743
+            },
+            "rung": 1,
+            "step": 700,
+            "unit_masses_fixed_clip": {
+              "aim": 2.5502626720220247,
+              "ce": 2.3163349844406196,
+              "gate": 99.70493410617686,
+              "kl": 0.3500304083431061,
+              "preserve": 0.0021052244383225156
+            }
+          },
+          {
+            "observed_shares": {
+              "aim": 0.3448839848916409,
+              "ce": 0.12553976037318557,
+              "gate": 0.04562313466377982,
+              "kl": 0.3498921455057527,
+              "preserve": 0.134060974565641
+            },
+            "rung": 1,
+            "step": 800,
+            "unit_masses_fixed_clip": {
+              "aim": 2.6679816738148783,
+              "ce": 2.4117685381091643,
+              "gate": 105.42679882366465,
+              "kl": 0.3498921455057527,
+              "preserve": 0.0018024125952605457
+            }
+          },
+          {
+            "observed_shares": {
+              "aim": 0.37424983458201116,
+              "ce": 0.13757483866050157,
+              "gate": 0.04452086195916101,
+              "kl": 0.36288012586476953,
+              "preserve": 0.08077433893355675
+            },
+            "rung": 1,
+            "step": 900,
+            "unit_masses_fixed_clip": {
+              "aim": 2.8951524101844615,
+              "ce": 2.6429767472115704,
+              "gate": 102.87964629819555,
+              "kl": 0.36288012586476953,
+              "preserve": 0.0010859885685554343
+            }
+          },
+          {
+            "observed_shares": {
+              "aim": 0.3894209117235723,
+              "ce": 0.11725893049962609,
+              "gate": 0.032630252685020046,
+              "kl": 0.3357679452658704,
+              "preserve": 0.12492195982591124
+            },
+            "rung": 1,
+            "step": 1000,
+            "unit_masses_fixed_clip": {
+              "aim": 3.0125140667381403,
+              "ce": 2.252683919028188,
+              "gate": 75.40260244590445,
+              "kl": 0.3357679452658704,
+              "preserve": 0.0016795410785605436
+            }
+          },
+          {
+            "observed_shares": {
+              "aim": 0.37705652520776733,
+              "ce": 0.12239653606029371,
+              "gate": 0.036313417635738345,
+              "kl": 0.359136076096881,
+              "preserve": 0.10509744499931963
+            },
+            "rung": 1,
+            "step": 1100,
+            "unit_masses_fixed_clip": {
+              "aim": 2.9168646365609288,
+              "ce": 2.3513834498827926,
+              "gate": 83.91372938085452,
+              "kl": 0.359136076096881,
+              "preserve": 0.001413005978885563
+            }
+          },
+          {
+            "observed_shares": {
+              "aim": 0.3835522889026147,
+              "ce": 0.12440225170590191,
+              "gate": 0.03923679959439863,
+              "kl": 0.3362036118413225,
+              "preserve": 0.11660504795576225
+            },
+            "rung": 1,
+            "step": 1200,
+            "unit_masses_fixed_clip": {
+              "aim": 2.9671150954238708,
+              "ce": 2.3899156398128314,
+              "gate": 90.66913546839568,
+              "kl": 0.3362036118413225,
+              "preserve": 0.00156772250677261
+            }
+          },
+          {
+            "observed_shares": {
+              "aim": 0.40167088630281966,
+              "ce": 0.12710220676029593,
+              "gate": 0.03355852062686982,
+              "kl": 0.3290814548065061,
+              "preserve": 0.10858693150350851
+            },
+            "rung": 1,
+            "step": 1300,
+            "unit_masses_fixed_clip": {
+              "aim": 3.1072784197201977,
+              "ce": 2.4417849968606657,
+              "gate": 77.54766148845086,
+              "kl": 0.3290814548065061,
+              "preserve": 0.0014599211564495019
+            }
+          },
+          {
+            "observed_shares": {
+              "aim": 0.7485353632090166,
+              "ce": 0.043677343027701446,
+              "gate": 0.06030371420694455,
+              "kl": 0.12718839786779354,
+              "preserve": 0.020295181688544002
+            },
+            "rung": 0,
+            "step": 1400,
+            "unit_masses_fixed_clip": {
+              "aim": 5.790580945274923,
+              "ce": 0.8390938570320216,
+              "gate": 139.35095851847788,
+              "kl": 0.12718839786779354,
+              "preserve": 0.00027286308500332353
+            }
+          },
+          {
+            "observed_shares": {
+              "aim": 0.7605519429356785,
+              "ce": 0.04427377755810385,
+              "gate": 0.05226632363924999,
+              "kl": 0.1258318793431334,
+              "preserve": 0.017076076523834242
+            },
+            "rung": 0,
+            "step": 1500,
+            "unit_masses_fixed_clip": {
+              "aim": 5.883539783310682,
+              "ce": 0.8505520757763491,
+              "gate": 120.77800502257813,
+              "kl": 0.1258318793431334,
+              "preserve": 0.00022958310950605307
+            }
+          }
+        ]
+      },
+      "main_seed_1": {
+        "by_rung": {
+          "0": {
+            "geometric_mean_target_fit_weights": {
+              "aim": 0.008508170431708739,
+              "ce": 0.04198621328110956,
+              "gate": 5.193821194998494e-05,
+              "kl": 1.0,
+              "preserve": 6.487919146855157
+            },
+            "hard_floor_feasibility": {
+              "feasible_under_fixed_clip_geometry": true,
+              "preserve_weight_degenerate": true,
+              "share_ranges": {
+                "aim": [
+                  0.14999999999999997,
+                  0.18987948739081878
+                ],
+                "ce": [
+                  0.10000000000000005,
+                  0.11207254531328215
+                ],
+                "gate": [
+                  0.030000000000000006,
+                  0.10869954622523227
+                ],
+                "kl": [
+                  0.6299746609348519,
+                  0.6773771422414286
+                ],
+                "preserve": [
+                  1.5543927774524548e-11,
+                  5.109785095943491e-11
+                ]
+              },
+              "solver_message": "Optimization terminated successfully. (HiGHS Status 7: Optimal)",
+              "solver_status": 0,
+              "weights_kl_normalized": {
+                "aim": 0.00506710546158547,
+                "ce": 0.023403786663758773,
+                "gate": 6.324771703093127e-05,
+                "kl": 1.0,
+                "preserve": 1e-08
+              }
+            },
+            "preservation_target": 0.018164773304902626,
+            "steps": [
+              300,
+              400,
+              500,
+              600,
+              700,
+              800,
+              900,
+              1000,
+              1300,
+              1400
+            ],
+            "target_fit_passing_windows": 8,
+            "target_shares": {
+              "aim": 0.23377029207026126,
+              "ce": 0.1558468613801742,
+              "gate": 0.04675405841405225,
+              "kl": 0.5454640148306096,
+              "preserve": 0.018164773304902626
+            },
+            "window_count": 10
+          },
+          "1": {
+            "geometric_mean_target_fit_weights": {
+              "aim": 0.03682194323162819,
+              "ce": 0.04144462416964409,
+              "gate": 0.00024550878732012795,
+              "kl": 1.0,
+              "preserve": 24.44434750719747
+            },
+            "hard_floor_feasibility": {
+              "feasible_under_fixed_clip_geometry": true,
+              "preserve_weight_degenerate": true,
+              "share_ranges": {
+                "aim": [
+                  0.14999999999999997,
+                  0.18767425033618354
+                ],
+                "ce": [
+                  0.09999999999999995,
+                  0.10777708984531222
+                ],
+                "gate": [
+                  0.030000000000000002,
+                  0.10225189557584685
+                ],
+                "kl": [
+                  0.6420470740243831,
+                  0.6745486597902413
+                ],
+                "preserve": [
+                  2.8263139310224128e-11,
+                  8.644756216665827e-11
+                ]
+              },
+              "solver_message": "Optimization terminated successfully. (HiGHS Status 7: Optimal)",
+              "solver_status": 0,
+              "weights_kl_normalized": {
+                "aim": 0.02192304859951083,
+                "ce": 0.023092952545597064,
+                "gate": 0.00026527908252334384,
+                "kl": 1.0,
+                "preserve": 1e-08
+              }
+            },
+            "preservation_target": 0.10858693150350851,
+            "steps": [
+              100,
+              200,
+              1100,
+              1200
+            ],
+            "target_fit_passing_windows": 3,
+            "target_shares": {
+              "aim": 0.21224120678487893,
+              "ce": 0.14149413785658596,
+              "gate": 0.04244824135697579,
+              "kl": 0.4952294824980508,
+              "preserve": 0.10858693150350851
+            },
+            "window_count": 4
+          }
+        },
+        "dynamic_replay": {
+          "events": [
+            {
+              "classification_before_update": {
+                "bounds": {
+                  "aim": 0.15,
+                  "ce": 0.1,
+                  "gate": 0.03,
+                  "kl": 0.35,
+                  "preserve": 0.25
+                },
+                "classification": "breach_observed",
+                "consecutive_misses": 1,
+                "failed_contracts": [
+                  "aim",
+                  "gate"
+                ],
+                "rule": "first breach is observed; two consecutive trailing-window breaches demote; four consecutive breaches stop",
+                "shares": {
+                  "aim": 0.1337554098888458,
+                  "ce": 0.16763365130802566,
+                  "gate": 0.023730032106635362,
+                  "kl": 0.6160766474955043,
+                  "preserve": 0.058804259200988855
+                }
+              },
+              "log_weight_delta": {
+                "aim": 0.2308552815163534,
+                "ce": -0.084761331852357,
+                "gate": 0.29077202993967527,
+                "kl": -0.10917506370018114,
+                "preserve": 0.3066683882615903
+              },
+              "rung": 1,
+              "same_window_counterfactual_shares_after_update": {
+                "aim": 0.17079374136760292,
+                "ce": 0.15611737729726766,
+                "gate": 0.03217217590851666,
+                "kl": 0.5599149197897865,
+                "preserve": 0.08100178563682646
+              },
+              "shares_before_update": {
+                "aim": 0.1337554098888458,
+                "ce": 0.16763365130802566,
+                "gate": 0.023730032106635362,
+                "kl": 0.6160766474955043,
+                "preserve": 0.058804259200988855
+              },
+              "step": 100,
+              "weights_after_update": {
+                "aim": 0.028884420912288097,
+                "ce": 0.040217411974794164,
+                "gate": 0.00010038548871815332,
+                "kl": 1.0,
+                "preserve": 10.842361106334982
+              }
+            },
+            {
+              "classification_before_update": {
+                "bounds": {
+                  "aim": 0.15,
+                  "ce": 0.1,
+                  "gate": 0.03,
+                  "kl": 0.35,
+                  "preserve": 0.25
+                },
+                "classification": "pass",
+                "consecutive_misses": 0,
+                "failed_contracts": [],
+                "rule": "first breach is observed; two consecutive trailing-window breaches demote; four consecutive breaches stop",
+                "shares": {
+                  "aim": 0.1813540410226097,
+                  "ce": 0.15395992438224773,
+                  "gate": 0.03420679074662181,
+                  "kl": 0.5675967543814932,
+                  "preserve": 0.06288248946702762
+                }
+              },
+              "log_weight_delta": {
+                "aim": 0.07863612363708498,
+                "ce": -0.042217024806873234,
+                "gate": 0.10793064956144952,
+                "kl": -0.06819498549023931,
+                "preserve": 0.27314166304876875
+              },
+              "rung": 1,
+              "same_window_counterfactual_shares_after_update": {
+                "aim": 0.19723520114223322,
+                "ce": 0.14838124945254214,
+                "gate": 0.038308219926808516,
+                "kl": 0.5330023859079891,
+                "preserve": 0.08307294357042709
+              },
+              "shares_before_update": {
+                "aim": 0.1813540410226097,
+                "ce": 0.15395992438224773,
+                "gate": 0.03420679074662181,
+                "kl": 0.5675967543814932,
+                "preserve": 0.06288248946702762
+              },
+              "step": 200,
+              "weights_after_update": {
+                "aim": 0.033452733095153654,
+                "ce": 0.0412758670494296,
+                "gate": 0.00011971851718107867,
+                "kl": 1.0,
+                "preserve": 15.253323825423298
+              }
+            },
+            {
+              "classification_before_update": {
+                "bounds": {
+                  "aim": 0.15,
+                  "ce": 0.1,
+                  "gate": 0.03,
+                  "kl": 0.35,
+                  "preserve": 0.25
+                },
+                "classification": "breach_observed",
+                "consecutive_misses": 1,
+                "failed_contracts": [
+                  "ce",
+                  "kl"
+                ],
+                "rule": "first breach is observed; two consecutive trailing-window breaches demote; four consecutive breaches stop",
+                "shares": {
+                  "aim": 0.4789744065036828,
+                  "ce": 0.08706822947769265,
+                  "gate": 0.09752720229325217,
+                  "kl": 0.3102272899617858,
+                  "preserve": 0.026202871763586474
+                }
+              },
+              "log_weight_delta": {
+                "aim": -0.3586540947439649,
+                "ce": 0.2910909045624105,
+                "gate": -0.3676151370040152,
+                "kl": 0.2821658067672981,
+                "preserve": -0.18319241411821957
+              },
+              "rung": 0,
+              "same_window_counterfactual_shares_after_update": {
+                "aim": 0.3515607219422571,
+                "ce": 0.12238506440759156,
+                "gate": 0.07094504597948746,
+                "kl": 0.4321878821621581,
+                "preserve": 0.022921285508505657
+              },
+              "shares_before_update": {
+                "aim": 0.4789744065036828,
+                "ce": 0.08706822947769265,
+                "gate": 0.09752720229325217,
+                "kl": 0.3102272899617858,
+                "preserve": 0.026202871763586474
+              },
+              "step": 300,
+              "weights_after_update": {
+                "aim": 0.017624916103566625,
+                "ce": 0.04164590706472148,
+                "gate": 6.251223848994852e-05,
+                "kl": 1.0,
+                "preserve": 9.577716612857392
+              }
+            },
+            {
+              "classification_before_update": {
+                "bounds": {
+                  "aim": 0.15,
+                  "ce": 0.1,
+                  "gate": 0.03,
+                  "kl": 0.35,
+                  "preserve": 0.25
+                },
+                "classification": "pass",
+                "consecutive_misses": 0,
+                "failed_contracts": [],
+                "rule": "first breach is observed; two consecutive trailing-window breaches demote; four consecutive breaches stop",
+                "shares": {
+                  "aim": 0.3698772771966692,
+                  "ce": 0.1172932240335713,
+                  "gate": 0.07081653231704366,
+                  "kl": 0.41525016182413294,
+                  "preserve": 0.026762804628582926
+                }
+              },
+              "log_weight_delta": {
+                "aim": -0.22941614598512922,
+                "ce": 0.14209843971117742,
+                "gate": -0.20759570889067697,
+                "kl": 0.13637784879383816,
+                "preserve": -0.1937644253476398
+              },
+              "rung": 0,
+              "same_window_counterfactual_shares_after_update": {
+                "aim": 0.29859976543147076,
+                "ce": 0.1372939716964841,
+                "gate": 0.058430952033971306,
+                "kl": 0.4832856879111575,
+                "preserve": 0.022389622926916337
+              },
+              "shares_before_update": {
+                "aim": 0.3698772771966692,
+                "ce": 0.1172932240335713,
+                "gate": 0.07081653231704366,
+                "kl": 0.41525016182413294,
+                "preserve": 0.026762804628582926
+              },
+              "step": 400,
+              "weights_after_update": {
+                "aim": 0.012225446935413671,
+                "ce": 0.041884828998178664,
+                "gate": 4.431790607521532e-05,
+                "kl": 1.0,
+                "preserve": 6.884668205127378
+              }
+            },
+            {
+              "classification_before_update": {
+                "bounds": {
+                  "aim": 0.15,
+                  "ce": 0.1,
+                  "gate": 0.03,
+                  "kl": 0.35,
+                  "preserve": 0.25
+                },
+                "classification": "pass",
+                "consecutive_misses": 0,
+                "failed_contracts": [],
+                "rule": "first breach is observed; two consecutive trailing-window breaches demote; four consecutive breaches stop",
+                "shares": {
+                  "aim": 0.29692535529665404,
+                  "ce": 0.1381213937248241,
+                  "gate": 0.04681614221974493,
+                  "kl": 0.4968798048563018,
+                  "preserve": 0.02125730390247514
+                }
+              },
+              "log_weight_delta": {
+                "aim": -0.11957090142503847,
+                "ce": 0.060370452068461374,
+                "gate": -0.0006634998576745342,
+                "kl": 0.0466443401355126,
+                "preserve": -0.07860818177556637
+              },
+              "rung": 0,
+              "same_window_counterfactual_shares_after_update": {
+                "aim": 0.26419673071288813,
+                "ce": 0.14712573423513506,
+                "gate": 0.04691552779574976,
+                "kl": 0.5220569265079112,
+                "preserve": 0.01970508074831581
+              },
+              "shares_before_update": {
+                "aim": 0.29692535529665404,
+                "ce": 0.1381213937248241,
+                "gate": 0.04681614221974493,
+                "kl": 0.4968798048563018,
+                "preserve": 0.02125730390247514
+              },
+              "step": 500,
+              "weights_after_update": {
+                "aim": 0.010353290089763099,
+                "ce": 0.042463708644028896,
+                "gate": 4.227014123088789e-05,
+                "kl": 1.0,
+                "preserve": 6.07416431308413
+              }
+            },
+            {
+              "classification_before_update": {
+                "bounds": {
+                  "aim": 0.15,
+                  "ce": 0.1,
+                  "gate": 0.03,
+                  "kl": 0.35,
+                  "preserve": 0.25
+                },
+                "classification": "pass",
+                "consecutive_misses": 0,
+                "failed_contracts": [],
+                "rule": "first breach is observed; two consecutive trailing-window breaches demote; four consecutive breaches stop",
+                "shares": {
+                  "aim": 0.2879386846033763,
+                  "ce": 0.1490621463822945,
+                  "gate": 0.042260834600972526,
+                  "kl": 0.49939037910462214,
+                  "preserve": 0.021347955308734377
+                }
+              },
+              "log_weight_delta": {
+                "aim": -0.10420429069497356,
+                "ce": 0.022255279243403682,
+                "gate": 0.050520150887452604,
+                "kl": 0.0441243615162288,
+                "preserve": -0.0807358895922709
+              },
+              "rung": 0,
+              "same_window_counterfactual_shares_after_update": {
+                "aim": 0.2599845364237063,
+                "ce": 0.15273394343633434,
+                "gate": 0.04454321314720704,
+                "kl": 0.5230051767133235,
+                "preserve": 0.019733130279428794
+              },
+              "shares_before_update": {
+                "aim": 0.2879386846033763,
+                "ce": 0.1490621463822945,
+                "gate": 0.042260834600972526,
+                "kl": 0.49939037910462214,
+                "preserve": 0.021347955308734377
+              },
+              "step": 600,
+              "weights_after_update": {
+                "aim": 0.008926065462166205,
+                "ce": 0.04154514696528179,
+                "gate": 4.2541358550781714e-05,
+                "kl": 1.0,
+                "preserve": 5.361180358750075
+              }
+            },
+            {
+              "classification_before_update": {
+                "bounds": {
+                  "aim": 0.15,
+                  "ce": 0.1,
+                  "gate": 0.03,
+                  "kl": 0.35,
+                  "preserve": 0.25
+                },
+                "classification": "pass",
+                "consecutive_misses": 0,
+                "failed_contracts": [],
+                "rule": "first breach is observed; two consecutive trailing-window breaches demote; four consecutive breaches stop",
+                "shares": {
+                  "aim": 0.24359236693556724,
+                  "ce": 0.15022604942275009,
+                  "gate": 0.04717290881633751,
+                  "kl": 0.5362895588447173,
+                  "preserve": 0.022719115980627976
+                }
+              },
+              "log_weight_delta": {
+                "aim": -0.020578612764622528,
+                "ce": 0.018366355709898217,
+                "gate": -0.004459349545969492,
+                "kl": 0.008481299427558797,
+                "preserve": -0.11186124898573617
+              },
+              "rung": 0,
+              "same_window_counterfactual_shares_after_update": {
+                "aim": 0.2386841430996501,
+                "ce": 0.1530448513186142,
+                "gate": 0.04697351467103681,
+                "kl": 0.5409782361365927,
+                "preserve": 0.020319254774106225
+              },
+              "shares_before_update": {
+                "aim": 0.24359236693556724,
+                "ce": 0.15022604942275009,
+                "gate": 0.04717290881633751,
+                "kl": 0.5362895588447173,
+                "preserve": 0.022719115980627976
+              },
+              "step": 700,
+              "weights_after_update": {
+                "aim": 0.008670407474174685,
+                "ce": 0.04195785956427033,
+                "gate": 4.1994392444021803e-05,
+                "kl": 1.0,
+                "preserve": 4.753311906743247
+              }
+            },
+            {
+              "classification_before_update": {
+                "bounds": {
+                  "aim": 0.15,
+                  "ce": 0.1,
+                  "gate": 0.03,
+                  "kl": 0.35,
+                  "preserve": 0.25
+                },
+                "classification": "pass",
+                "consecutive_misses": 0,
+                "failed_contracts": [],
+                "rule": "first breach is observed; two consecutive trailing-window breaches demote; four consecutive breaches stop",
+                "shares": {
+                  "aim": 0.23856098064524603,
+                  "ce": 0.1555921650052303,
+                  "gate": 0.04371061603261648,
+                  "kl": 0.5428709734907048,
+                  "preserve": 0.019265264826202503
+                }
+              },
+              "log_weight_delta": {
+                "aim": -0.010142993148621873,
+                "ce": 0.0008178051244273558,
+                "gate": 0.03365503027778785,
+                "kl": 0.0023825809832090403,
+                "preserve": -0.029409769328132187
+              },
+              "rung": 0,
+              "same_window_counterfactual_shares_after_update": {
+                "aim": 0.23616469203256046,
+                "ce": 0.1557268487341615,
+                "gate": 0.04520887754329894,
+                "kl": 0.5441917658510156,
+                "preserve": 0.01870781583896346
+              },
+              "shares_before_update": {
+                "aim": 0.23856098064524603,
+                "ce": 0.1555921650052303,
+                "gate": 0.04371061603261648,
+                "kl": 0.5428709734907048,
+                "preserve": 0.019265264826202503
+              },
+              "step": 800,
+              "weights_after_update": {
+                "aim": 0.00856248296186297,
+                "ce": 0.04189225625915799,
+                "gate": 4.332841023737663e-05,
+                "kl": 1.0,
+                "preserve": 4.604569906599812
+              }
+            },
+            {
+              "classification_before_update": {
+                "bounds": {
+                  "aim": 0.15,
+                  "ce": 0.1,
+                  "gate": 0.03,
+                  "kl": 0.35,
+                  "preserve": 0.25
+                },
+                "classification": "pass",
+                "consecutive_misses": 0,
+                "failed_contracts": [],
+                "rule": "first breach is observed; two consecutive trailing-window breaches demote; four consecutive breaches stop",
+                "shares": {
+                  "aim": 0.22997319643754927,
+                  "ce": 0.15307926125402088,
+                  "gate": 0.0383757301285487,
+                  "kl": 0.5628391446523143,
+                  "preserve": 0.015732667527566697
+                }
+              },
+              "log_weight_delta": {
+                "aim": 0.00818810524627583,
+                "ce": 0.008959016312222118,
+                "gate": 0.09873791554256851,
+                "kl": -0.015678520217726366,
+                "preserve": 0.071872450478159
+              },
+              "rung": 0,
+              "same_window_counterfactual_shares_after_update": {
+                "aim": 0.23194106932387862,
+                "ce": 0.15450822152727986,
+                "gate": 0.0423723321299978,
+                "kl": 0.5542677170061783,
+                "preserve": 0.016910660012665436
+              },
+              "shares_before_update": {
+                "aim": 0.22997319643754927,
+                "ce": 0.15307926125402088,
+                "gate": 0.0383757301285487,
+                "kl": 0.5628391446523143,
+                "preserve": 0.015732667527566697
+              },
+              "step": 900,
+              "weights_after_update": {
+                "aim": 0.008769298715791435,
+                "ce": 0.042937197788813684,
+                "gate": 4.858063434297879e-05,
+                "kl": 1.0,
+                "preserve": 5.025878371634673
+              }
+            },
+            {
+              "classification_before_update": {
+                "bounds": {
+                  "aim": 0.15,
+                  "ce": 0.1,
+                  "gate": 0.03,
+                  "kl": 0.35,
+                  "preserve": 0.25
+                },
+                "classification": "pass",
+                "consecutive_misses": 0,
+                "failed_contracts": [],
+                "rule": "first breach is observed; two consecutive trailing-window breaches demote; four consecutive breaches stop",
+                "shares": {
+                  "aim": 0.2198256957018926,
+                  "ce": 0.16210137371468697,
+                  "gate": 0.04141337124524023,
+                  "kl": 0.5654073626667627,
+                  "preserve": 0.011252196671417474
+                }
+              },
+              "log_weight_delta": {
+                "aim": 0.030752017668934383,
+                "ce": -0.019674017953150037,
+                "gate": 0.060648628669497426,
+                "kl": -0.01795481572012339,
+                "preserve": 0.23946040827492682
+              },
+              "rung": 0,
+              "same_window_counterfactual_shares_after_update": {
+                "aim": 0.22685419575041013,
+                "ce": 0.1590579226307435,
+                "gate": 0.044034480652099785,
+                "kl": 0.5557464668721196,
+                "preserve": 0.014306934094627084
+              },
+              "shares_before_update": {
+                "aim": 0.2198256957018926,
+                "ce": 0.16210137371468697,
+                "gate": 0.04141337124524023,
+                "kl": 0.5654073626667627,
+                "preserve": 0.011252196671417474
+              },
+              "step": 1000,
+              "weights_after_update": {
+                "aim": 0.009206996393418973,
+                "ce": 0.04286344347994753,
+                "gate": 5.255332800510609e-05,
+                "kl": 1.0,
+                "preserve": 6.501386507428828
+              }
+            },
+            {
+              "classification_before_update": {
+                "bounds": {
+                  "aim": 0.15,
+                  "ce": 0.1,
+                  "gate": 0.03,
+                  "kl": 0.35,
+                  "preserve": 0.25
+                },
+                "classification": "breach_observed",
+                "consecutive_misses": 1,
+                "failed_contracts": [
+                  "aim",
+                  "gate"
+                ],
+                "rule": "first breach is observed; two consecutive trailing-window breaches demote; four consecutive breaches stop",
+                "shares": {
+                  "aim": 0.07595568648833963,
+                  "ce": 0.19944183077610989,
+                  "gate": 0.009032909157488788,
+                  "kl": 0.6664639350847404,
+                  "preserve": 0.0491056384933213
+                }
+              },
+              "log_weight_delta": {
+                "aim": 0.5,
+                "ce": -0.1716321655534061,
+                "gate": 0.5,
+                "kl": -0.14848238555449622,
+                "preserve": 0.3967885995285029
+              },
+              "rung": 1,
+              "same_window_counterfactual_shares_after_update": {
+                "aim": 0.13104359495671297,
+                "ce": 0.17578653845634098,
+                "gate": 0.01558415101806053,
+                "kl": 0.6011735116384942,
+                "preserve": 0.07641220393039133
+              },
+              "shares_before_update": {
+                "aim": 0.07595568648833963,
+                "ce": 0.19944183077610989,
+                "gate": 0.009032909157488788,
+                "kl": 0.6664639350847404,
+                "preserve": 0.0491056384933213
+              },
+              "step": 1100,
+              "weights_after_update": {
+                "aim": 0.017609632582284075,
+                "ce": 0.04188256159843729,
+                "gate": 0.00010051538608266133,
+                "kl": 1.0,
+                "preserve": 11.215384457917015
+              }
+            },
+            {
+              "classification_before_update": {
+                "bounds": {
+                  "aim": 0.15,
+                  "ce": 0.1,
+                  "gate": 0.03,
+                  "kl": 0.35,
+                  "preserve": 0.25
+                },
+                "classification": "breach_observed",
+                "consecutive_misses": 1,
+                "failed_contracts": [
+                  "aim",
+                  "gate"
+                ],
+                "rule": "first breach is observed; two consecutive trailing-window breaches demote; four consecutive breaches stop",
+                "shares": {
+                  "aim": 0.14170351453497826,
+                  "ce": 0.1837413104663603,
+                  "gate": 0.010685070129963578,
+                  "kl": 0.6340738864830925,
+                  "preserve": 0.029796218385605533
+                }
+              },
+              "log_weight_delta": {
+                "aim": 0.2019932233612842,
+                "ce": -0.13063527967300362,
+                "gate": 0.5,
+                "kl": -0.12357211584799423,
+                "preserve": 0.5
+              },
+              "rung": 1,
+              "same_window_counterfactual_shares_after_update": {
+                "aim": 0.18031539545666603,
+                "ce": 0.16764873199731242,
+                "gate": 0.018316912150843873,
+                "kl": 0.582640707472344,
+                "preserve": 0.05107825292283374
+              },
+              "shares_before_update": {
+                "aim": 0.14170351453497826,
+                "ce": 0.1837413104663603,
+                "gate": 0.010685070129963578,
+                "kl": 0.6340738864830925,
+                "preserve": 0.029796218385605533
+              },
+              "step": 1200,
+              "weights_after_update": {
+                "aim": 0.02438605365437291,
+                "ce": 0.04158778047365425,
+                "gate": 0.00018751951630974385,
+                "kl": 1.0,
+                "preserve": 20.923199429855224
+              }
+            },
+            {
+              "classification_before_update": {
+                "bounds": {
+                  "aim": 0.15,
+                  "ce": 0.1,
+                  "gate": 0.03,
+                  "kl": 0.35,
+                  "preserve": 0.25
+                },
+                "classification": "pass",
+                "consecutive_misses": 0,
+                "failed_contracts": [],
+                "rule": "first breach is observed; two consecutive trailing-window breaches demote; four consecutive breaches stop",
+                "shares": {
+                  "aim": 0.4725277287654725,
+                  "ce": 0.105722954369864,
+                  "gate": 0.047218623007459645,
+                  "kl": 0.3572651879923504,
+                  "preserve": 0.017265505864853578
+                }
+              },
+              "log_weight_delta": {
+                "aim": -0.35187872751655425,
+                "ce": 0.1940259163557572,
+                "gate": -0.0049436535276186355,
+                "kl": 0.21157925312656078,
+                "preserve": 0.025386777693973874
+              },
+              "rung": 0,
+              "same_window_counterfactual_shares_after_update": {
+                "aim": 0.3437505717889184,
+                "ce": 0.13276047442310102,
+                "gate": 0.048596102195056445,
+                "kl": 0.4565764665355575,
+                "preserve": 0.01831638505736655
+              },
+              "shares_before_update": {
+                "aim": 0.4725277287654725,
+                "ce": 0.105722954369864,
+                "gate": 0.047218623007459645,
+                "kl": 0.3572651879923504,
+                "preserve": 0.017265505864853578
+              },
+              "step": 1300,
+              "weights_after_update": {
+                "aim": 0.013881450003102477,
+                "ce": 0.040864145839077506,
+                "gate": 0.00015101210819544052,
+                "kl": 1.0,
+                "preserve": 17.36863665155009
+              }
+            },
+            {
+              "classification_before_update": {
+                "bounds": {
+                  "aim": 0.15,
+                  "ce": 0.1,
+                  "gate": 0.03,
+                  "kl": 0.35,
+                  "preserve": 0.25
+                },
+                "classification": "pass",
+                "consecutive_misses": 0,
+                "failed_contracts": [],
+                "rule": "first breach is observed; two consecutive trailing-window breaches demote; four consecutive breaches stop",
+                "shares": {
+                  "aim": 0.35077010272859416,
+                  "ce": 0.12853218621752696,
+                  "gate": 0.05054605915535361,
+                  "kl": 0.4515018176495992,
+                  "preserve": 0.018649834248925957
+                }
+              },
+              "log_weight_delta": {
+                "aim": -0.2028960277480788,
+                "ce": 0.09634725895812994,
+                "gate": -0.038991960062348834,
+                "kl": 0.09452871856649273,
+                "preserve": -0.013176536386066008
+              },
+              "rung": 0,
+              "same_window_counterfactual_shares_after_update": {
+                "aim": 0.2889066101256787,
+                "ce": 0.14279286629215093,
+                "gate": 0.04904614096665517,
+                "kl": 0.5006847200064625,
+                "preserve": 0.01856966260905266
+              },
+              "shares_before_update": {
+                "aim": 0.35077010272859416,
+                "ce": 0.12853218621752696,
+                "gate": 0.05054605915535361,
+                "kl": 0.4515018176495992,
+                "preserve": 0.018649834248925957
+              },
+              "step": 1400,
+              "weights_after_update": {
+                "aim": 0.010310148180109063,
+                "ce": 0.040938526550521055,
+                "gate": 0.00013213701037878502,
+                "kl": 1.0,
+                "preserve": 15.595163490661795
+              }
+            }
+          ],
+          "gain": 0.5,
+          "max_abs_log_update": 0.5,
+          "maximum_consecutive_misses": 2,
+          "passing_windows": 10,
+          "window_count": 14,
+          "would_reach_four_miss_stop_under_fixed_clip_replay": false
+        },
+        "fixed_locked_weights": {
+          "aim": 0.020558449735476,
+          "ce": 0.03924744331765692,
+          "gate": 6.729396560346335e-05,
+          "kl": 1.0,
+          "preserve": 7.153611503510368
+        },
+        "last_healthy_evaluation": {
+          "checkpoint": {
+            "bytes": 3501162,
+            "path": ".codex_p34_final_download/main_seed_1/private/checkpoint_step_1000.pt",
+            "sha256": "2ff122cdc1d3c3208c9eb367345f360a31676f0f821c311ed98f6cc690c8e66f"
+          },
+          "continuation_eligible": true,
+          "disposition": "resume_from_pinned_last_healthy",
+          "step": 1000
+        },
+        "windows": [
+          {
+            "observed_shares": {
+              "aim": 0.1337554098888458,
+              "ce": 0.16763365130802566,
+              "gate": 0.023730032106635362,
+              "kl": 0.6160766474955043,
+              "preserve": 0.05880425920098885
+            },
+            "rung": 1,
+            "step": 100,
+            "unit_masses_fixed_clip": {
+              "aim": 6.5061038944991685,
+              "ce": 4.2711992715359735,
+              "gate": 352.63239272399295,
+              "kl": 0.6160766474955043,
+              "preserve": 0.008220219838906943
+            }
+          },
+          {
+            "observed_shares": {
+              "aim": 0.14163571700050095,
+              "ce": 0.16486322492728767,
+              "gate": 0.02516149061359564,
+              "kl": 0.6228145562862276,
+              "preserve": 0.04552501117238813
+            },
+            "rung": 1,
+            "step": 200,
+            "unit_masses_fixed_clip": {
+              "aim": 6.889416216831371,
+              "ce": 4.200610561888952,
+              "gate": 373.9041144025056,
+              "kl": 0.6228145562862276,
+              "preserve": 0.006363919979446526
+            }
+          },
+          {
+            "observed_shares": {
+              "aim": 0.3901423155057911,
+              "ce": 0.10973037705509553,
+              "gate": 0.07265952444608739,
+              "kl": 0.41118000863302173,
+              "preserve": 0.016287774360004243
+            },
+            "rung": 0,
+            "step": 300,
+            "unit_masses_fixed_clip": {
+              "aim": 18.97722447585895,
+              "ce": 2.795860514198876,
+              "gate": 1079.733134977379,
+              "kl": 0.41118000863302173,
+              "preserve": 0.002276860345576724
+            }
+          },
+          {
+            "observed_shares": {
+              "aim": 0.4095495259294894,
+              "ce": 0.10492946068811398,
+              "gate": 0.07236543872287854,
+              "kl": 0.3941806323907533,
+              "preserve": 0.018974942268764724
+            },
+            "rung": 0,
+            "step": 400,
+            "unit_masses_fixed_clip": {
+              "aim": 19.921226123522533,
+              "ce": 2.6735362056286496,
+              "gate": 1075.3629701257223,
+              "kl": 0.3941806323907533,
+              "preserve": 0.002652498288375526
+            }
+          },
+          {
+            "observed_shares": {
+              "aim": 0.4096785780149251,
+              "ce": 0.10619056445253515,
+              "gate": 0.05832609031000931,
+              "kl": 0.4076821519685844,
+              "preserve": 0.0181226152539461
+            },
+            "rung": 0,
+            "step": 500,
+            "unit_masses_fixed_clip": {
+              "aim": 19.927503449249727,
+              "ce": 2.705668330878546,
+              "gate": 866.7358177953403,
+              "kl": 0.4076821519685844,
+              "preserve": 0.002533351894361764
+            }
+          },
+          {
+            "observed_shares": {
+              "aim": 0.43936041390938235,
+              "ce": 0.10586922859469908,
+              "gate": 0.05169986644820539,
+              "kl": 0.38375062866324255,
+              "preserve": 0.01931986238447061
+            },
+            "rung": 0,
+            "step": 600,
+            "unit_masses_fixed_clip": {
+              "aim": 21.37128137396541,
+              "ce": 2.6974808967255677,
+              "gate": 768.2689819894431,
+              "kl": 0.38375062866324255,
+              "preserve": 0.0027007145097256266
+            }
+          },
+          {
+            "observed_shares": {
+              "aim": 0.41738389088453515,
+              "ce": 0.10557911829158823,
+              "gate": 0.05551356741155499,
+              "kl": 0.39897074772558183,
+              "preserve": 0.022552675686739777
+            },
+            "rung": 0,
+            "step": 700,
+            "unit_masses_fixed_clip": {
+              "aim": 20.30230373666214,
+              "ce": 2.6900890699315827,
+              "gate": 824.9412397342494,
+              "kl": 0.39897074772558183,
+              "preserve": 0.0031526279664017107
+            }
+          },
+          {
+            "observed_shares": {
+              "aim": 0.41804145202849335,
+              "ce": 0.1075610050441443,
+              "gate": 0.05176554949277775,
+              "kl": 0.40120441453449307,
+              "preserve": 0.021427578900091532
+            },
+            "rung": 0,
+            "step": 800,
+            "unit_masses_fixed_clip": {
+              "aim": 20.334288694303353,
+              "ce": 2.740586289241266,
+              "gate": 769.2450434235308,
+              "kl": 0.40120441453449307,
+              "preserve": 0.0029953512137997356
+            }
+          },
+          {
+            "observed_shares": {
+              "aim": 0.41130687941336114,
+              "ce": 0.10682971920331545,
+              "gate": 0.04439746037833483,
+              "kl": 0.41925900964912943,
+              "preserve": 0.018206931355859157
+            },
+            "rung": 0,
+            "step": 900,
+            "unit_masses_fixed_clip": {
+              "aim": 20.006706960185,
+              "ce": 2.7219535891463824,
+              "gate": 659.7539612979781,
+              "kl": 0.41925900964912943,
+              "preserve": 0.0025451384027389222
+            }
+          },
+          {
+            "observed_shares": {
+              "aim": 0.3957206844367897,
+              "ce": 0.11377560811194512,
+              "gate": 0.04404923018723327,
+              "kl": 0.4341564489696244,
+              "preserve": 0.012298028294407504
+            },
+            "rung": 0,
+            "step": 1000,
+            "unit_masses_fixed_clip": {
+              "aim": 19.248566381633708,
+              "ce": 2.898930439648764,
+              "gate": 654.5792002628871,
+              "kl": 0.4341564489696244,
+              "preserve": 0.0017191356126024884
+            }
+          },
+          {
+            "observed_shares": {
+              "aim": 0.1564193580431826,
+              "ce": 0.1684218300172696,
+              "gate": 0.010667468215385197,
+              "kl": 0.6146593177630786,
+              "preserve": 0.0498320259610841
+            },
+            "rung": 1,
+            "step": 1100,
+            "unit_masses_fixed_clip": {
+              "aim": 7.608519127454576,
+              "ce": 4.291281565887345,
+              "gate": 158.52042779354625,
+              "kl": 0.6146593177630786,
+              "preserve": 0.0069659955585554085
+            }
+          },
+          {
+            "observed_shares": {
+              "aim": 0.16578956365624653,
+              "ce": 0.1725525745511444,
+              "gate": 0.007168981384385828,
+              "kl": 0.6354426588058996,
+              "preserve": 0.019046221602323637
+            },
+            "rung": 1,
+            "step": 1200,
+            "unit_masses_fixed_clip": {
+              "aim": 8.06430279468774,
+              "ce": 4.396530320575435,
+              "gate": 106.53230672464441,
+              "kl": 0.6354426588058996,
+              "preserve": 0.0026624623930132933
+            }
+          },
+          {
+            "observed_shares": {
+              "aim": 0.45358575704833576,
+              "ce": 0.1136051950183638,
+              "gate": 0.019294176117254938,
+              "kl": 0.406793470349625,
+              "preserve": 0.006721401466420529
+            },
+            "rung": 0,
+            "step": 1300,
+            "unit_masses_fixed_clip": {
+              "aim": 22.063227669624364,
+              "ce": 2.8945884219483484,
+              "gate": 286.71480338887835,
+              "kl": 0.406793470349625,
+              "preserve": 0.000939581561442392
+            }
+          },
+          {
+            "observed_shares": {
+              "aim": 0.4619153655011123,
+              "ce": 0.10976532054167354,
+              "gate": 0.0200279252870748,
+              "kl": 0.4014614169198184,
+              "preserve": 0.006829971750321019
+            },
+            "rung": 0,
+            "step": 1400,
+            "unit_masses_fixed_clip": {
+              "aim": 22.468394817923627,
+              "ce": 2.796750852106882,
+              "gate": 297.61844331022814,
+              "kl": 0.4014614169198184,
+              "preserve": 0.0009547585505544247
+            }
+          }
+        ]
+      },
+      "slot_seed_0": {
+        "by_rung": {
+          "0": {
+            "geometric_mean_target_fit_weights": {
+              "aim": 0.011048216749976593,
+              "ce": 0.04049588689074627,
+              "gate": 3.728367851691083e-05,
+              "kl": 1.0,
+              "preserve": 7.024586889274694,
+              "slot": 0.0036466821836649128
+            },
+            "hard_floor_feasibility": {
+              "feasible_under_fixed_clip_geometry": true,
+              "preserve_weight_degenerate": true,
+              "share_ranges": {
+                "aim": [
+                  0.15000000000000002,
+                  0.1697779281500711
+                ],
+                "ce": [
+                  0.10000000000000006,
+                  0.10131387351758804
+                ],
+                "gate": [
+                  0.03000000000000001,
+                  0.04210120058255665
+                ],
+                "kl": [
+                  0.5687004433907611,
+                  0.5989081983081437
+                ],
+                "preserve": [
+                  2.4197294708147577e-11,
+                  4.247445448544866e-11
+                ],
+                "slot": [
+                  0.09999999999999998,
+                  0.13919835598420788
+                ]
+              },
+              "solver_message": "Optimization terminated successfully. (HiGHS Status 7: Optimal)",
+              "solver_status": 0,
+              "weights_kl_normalized": {
+                "aim": 0.007049094016609866,
+                "ce": 0.024445082463799638,
+                "gate": 2.6488142209616812e-05,
+                "kl": 1.0,
+                "preserve": 1e-08,
+                "slot": 0.002580245920891403
+              }
+            },
+            "preservation_target": 0.018164773304902626,
+            "steps": [
+              300,
+              400
+            ],
+            "target_fit_passing_windows": 2,
+            "target_shares": {
+              "aim": 0.20174696438940357,
+              "ce": 0.1344979762596024,
+              "gate": 0.04034939287788071,
+              "kl": 0.4707429169086083,
+              "preserve": 0.018164773304902626,
+              "slot": 0.1344979762596024
+            },
+            "window_count": 2
+          },
+          "1": {
+            "geometric_mean_target_fit_weights": {
+              "aim": 0.06588042917870493,
+              "ce": 0.04120318944337665,
+              "gate": 0.00022614463576353755,
+              "kl": 1.0,
+              "preserve": 38.3843315456106,
+              "slot": 0.01654176119112177
+            },
+            "hard_floor_feasibility": {
+              "feasible_under_fixed_clip_geometry": true,
+              "preserve_weight_degenerate": true,
+              "share_ranges": {
+                "aim": [
+                  0.14999999999999997,
+                  0.2190435820414732
+                ],
+                "ce": [
+                  0.09999999999999999,
+                  0.10618979044023802
+                ],
+                "gate": [
+                  0.029999999999999995,
+                  0.03428217788289725
+                ],
+                "kl": [
+                  0.5324610659654521,
+                  0.6095280316390064
+                ],
+                "preserve": [
+                  3.755935078254424e-11,
+                  3.785840035575151e-11
+                ],
+                "slot": [
+                  0.10000000000000003,
+                  0.11849535195551536
+                ]
+              },
+              "solver_message": "Optimization terminated successfully. (HiGHS Status 7: Optimal)",
+              "solver_status": 0,
+              "weights_kl_normalized": {
+                "aim": 0.048910638323726136,
+                "ce": 0.02608551954857576,
+                "gate": 0.00014852075194406395,
+                "kl": 1.0,
+                "preserve": 1e-08,
+                "slot": 0.011062662890909444
+              }
+            },
+            "preservation_target": 0.10858693150350851,
+            "steps": [
+              100,
+              200
+            ],
+            "target_fit_passing_windows": 2,
+            "target_shares": {
+              "aim": 0.18316706886914208,
+              "ce": 0.12211137924609472,
+              "gate": 0.036633413773828415,
+              "kl": 0.4273898273613315,
+              "preserve": 0.10858693150350851,
+              "slot": 0.12211137924609472
+            },
+            "window_count": 2
+          }
+        },
+        "dynamic_replay": {
+          "events": [
+            {
+              "classification_before_update": {
+                "bounds": {
+                  "aim": 0.15,
+                  "ce": 0.1,
+                  "gate": 0.03,
+                  "kl": 0.35,
+                  "preserve": 0.25,
+                  "slot": 0.1
+                },
+                "classification": "breach_observed",
+                "consecutive_misses": 1,
+                "failed_contracts": [
+                  "ce",
+                  "kl"
+                ],
+                "rule": "first breach is observed; two consecutive trailing-window breaches demote; four consecutive breaches stop",
+                "shares": {
+                  "aim": 0.28030384509316203,
+                  "ce": 0.09661795616464477,
+                  "gate": 0.04232333522958747,
+                  "kl": 0.2578098609674995,
+                  "preserve": 0.15673291594482572,
+                  "slot": 0.16621208660028064
+                }
+              },
+              "log_weight_delta": {
+                "aim": -0.21273774742678367,
+                "ce": 0.11708448366333833,
+                "gate": -0.07218891282531567,
+                "kl": 0.2527371005794578,
+                "preserve": -0.18349606009507485,
+                "slot": -0.1541655150554892
+              },
+              "rung": 1,
+              "same_window_counterfactual_shares_after_update": {
+                "aim": 0.2313431869919346,
+                "ce": 0.11089845100874021,
+                "gate": 0.04020195068547417,
+                "kl": 0.33890684576967156,
+                "preserve": 0.13319483244026356,
+                "slot": 0.1454547331039159
+              },
+              "shares_before_update": {
+                "aim": 0.28030384509316203,
+                "ce": 0.09661795616464477,
+                "gate": 0.04232333522958747,
+                "kl": 0.2578098609674995,
+                "preserve": 0.15673291594482572,
+                "slot": 0.16621208660028064
+              },
+              "step": 100,
+              "weights_after_update": {
+                "aim": 0.08115906363756127,
+                "ce": 0.045449853422186534,
+                "gate": 0.000312694704789529,
+                "kl": 1.0,
+                "preserve": 55.71560038520594,
+                "slot": 0.02133505352698136
+              }
+            },
+            {
+              "classification_before_update": {
+                "bounds": {
+                  "aim": 0.15,
+                  "ce": 0.1,
+                  "gate": 0.03,
+                  "kl": 0.35,
+                  "preserve": 0.25,
+                  "slot": 0.1
+                },
+                "classification": "pass",
+                "consecutive_misses": 0,
+                "failed_contracts": [],
+                "rule": "first breach is observed; two consecutive trailing-window breaches demote; four consecutive breaches stop",
+                "shares": {
+                  "aim": 0.1638134928773505,
+                  "ce": 0.12177004713339479,
+                  "gate": 0.047503598116320205,
+                  "kl": 0.4011607159422026,
+                  "preserve": 0.13882375550605253,
+                  "slot": 0.1269283904246793
+                }
+              },
+              "log_weight_delta": {
+                "aim": 0.05583506943801926,
+                "ce": 0.0013995831525096887,
+                "gate": -0.12992234471102207,
+                "kl": 0.03166720324495031,
+                "preserve": -0.12282705920599725,
+                "slot": -0.019344749807977547
+              },
+              "rung": 1,
+              "same_window_counterfactual_shares_after_update": {
+                "aim": 0.1735292569272928,
+                "ce": 0.12215815909453304,
+                "gate": 0.04179036099398365,
+                "kl": 0.4148064141927311,
+                "preserve": 0.12299709347789917,
+                "slot": 0.12471871531356017
+              },
+              "shares_before_update": {
+                "aim": 0.1638134928773505,
+                "ce": 0.12177004713339479,
+                "gate": 0.047503598116320205,
+                "kl": 0.4011607159422026,
+                "preserve": 0.13882375550605253,
+                "slot": 0.1269283904246793
+              },
+              "step": 200,
+              "weights_after_update": {
+                "aim": 0.08314439905536734,
+                "ce": 0.04409480501901279,
+                "gate": 0.0002660376346787702,
+                "kl": 1.0,
+                "preserve": 47.73982350964676,
+                "slot": 0.020274003963667242
+              }
+            },
+            {
+              "classification_before_update": {
+                "bounds": {
+                  "aim": 0.15,
+                  "ce": 0.1,
+                  "gate": 0.03,
+                  "kl": 0.35,
+                  "preserve": 0.25,
+                  "slot": 0.1
+                },
+                "classification": "breach_observed",
+                "consecutive_misses": 1,
+                "failed_contracts": [
+                  "ce",
+                  "kl"
+                ],
+                "rule": "first breach is observed; two consecutive trailing-window breaches demote; four consecutive breaches stop",
+                "shares": {
+                  "aim": 0.41750422000763915,
+                  "ce": 0.04256629344498221,
+                  "gate": 0.09978286603229214,
+                  "kl": 0.13420029843673706,
+                  "preserve": 0.04784962446388003,
+                  "slot": 0.25809669761446946
+                }
+              },
+              "log_weight_delta": {
+                "aim": -0.36364019570135175,
+                "ce": 0.5,
+                "gate": -0.4527100686646407,
+                "kl": 0.5,
+                "preserve": -0.48428954192612284,
+                "slot": -0.3258925795632019
+              },
+              "rung": 0,
+              "same_window_counterfactual_shares_after_update": {
+                "aim": 0.3371124406421351,
+                "ce": 0.08151807514014393,
+                "gate": 0.07370336726733634,
+                "kl": 0.2570049944784485,
+                "preserve": 0.03424483662490076,
+                "slot": 0.2164162858470353
+              },
+              "shares_before_update": {
+                "aim": 0.41750422000763915,
+                "ce": 0.04256629344498221,
+                "gate": 0.09978286603229214,
+                "kl": 0.13420029843673706,
+                "preserve": 0.04784962446388003,
+                "slot": 0.25809669761446946
+              },
+              "step": 300,
+              "weights_after_update": {
+                "aim": 0.035055714830736995,
+                "ce": 0.04409480501901279,
+                "gate": 0.00010260921195718289,
+                "kl": 1.0,
+                "preserve": 17.840593277612303,
+                "slot": 0.008876851141199528
+              }
+            },
+            {
+              "classification_before_update": {
+                "bounds": {
+                  "aim": 0.15,
+                  "ce": 0.1,
+                  "gate": 0.03,
+                  "kl": 0.35,
+                  "preserve": 0.25,
+                  "slot": 0.1
+                },
+                "classification": "breach_observed",
+                "consecutive_misses": 1,
+                "failed_contracts": [
+                  "ce",
+                  "kl"
+                ],
+                "rule": "first breach is observed; two consecutive trailing-window breaches demote; four consecutive breaches stop",
+                "shares": {
+                  "aim": 0.3965067509700349,
+                  "ce": 0.08582398424214184,
+                  "gate": 0.0545757785405787,
+                  "kl": 0.2812574858464346,
+                  "preserve": 0.020273089545469032,
+                  "slot": 0.1615629108553409
+                }
+              },
+              "log_weight_delta": {
+                "aim": -0.3378394033481222,
+                "ce": 0.22462532423957646,
+                "gate": -0.1510069098226464,
+                "kl": 0.2575207757598777,
+                "preserve": -0.05490509131840421,
+                "slot": -0.0916727275898044
+              },
+              "rung": 0,
+              "same_window_counterfactual_shares_after_update": {
+                "aim": 0.29228270977623644,
+                "ce": 0.11102902819013426,
+                "gate": 0.048494535043827294,
+                "kl": 0.37602634195417717,
+                "preserve": 0.01983121340835707,
+                "slot": 0.15233617162726779
+              },
+              "shares_before_update": {
+                "aim": 0.3965067509700349,
+                "ce": 0.08582398424214184,
+                "gate": 0.0545757785405787,
+                "kl": 0.2812574858464346,
+                "preserve": 0.020273089545469032,
+                "slot": 0.1615629108553409
+              },
+              "step": 400,
+              "weights_after_update": {
+                "aim": 0.01932845706006818,
+                "ce": 0.04266788476275869,
+                "gate": 6.819696267369966e-05,
+                "kl": 1.0,
+                "preserve": 13.05342452421206,
+                "slot": 0.00626045827656965
+              }
+            }
+          ],
+          "gain": 0.5,
+          "max_abs_log_update": 0.5,
+          "maximum_consecutive_misses": 2,
+          "passing_windows": 1,
+          "window_count": 4,
+          "would_reach_four_miss_stop_under_fixed_clip_replay": false
+        },
+        "fixed_locked_weights": {
+          "aim": 0.12926774882921144,
+          "ce": 0.05205298866350135,
+          "gate": 0.0004327470356003924,
+          "kl": 1.0,
+          "preserve": 86.18475855441403,
+          "slot": 0.032048617321877956
+        },
+        "last_healthy_evaluation": {
+          "checkpoint": null,
+          "continuation_eligible": false,
+          "disposition": "shelved_restart_if_reopened",
+          "step": null
+        },
+        "windows": [
+          {
+            "observed_shares": {
+              "aim": 0.280303845093162,
+              "ce": 0.09661795616464476,
+              "gate": 0.042323335229587464,
+              "kl": 0.25780986096749947,
+              "preserve": 0.1567329159448257,
+              "slot": 0.1662120866002806
+            },
+            "rung": 1,
+            "step": 100,
+            "unit_masses_fixed_clip": {
+              "aim": 2.1683973584432064,
+              "ce": 1.8561461819077372,
+              "gate": 97.80156014441127,
+              "kl": 0.25780986096749947,
+              "preserve": 0.0018185688348348742,
+              "slot": 5.18624828431572
+            }
+          },
+          {
+            "observed_shares": {
+              "aim": 0.20501250608088953,
+              "ce": 0.10957997148868565,
+              "gate": 0.05165562335106248,
+              "kl": 0.3152070508928344,
+              "preserve": 0.168731034569604,
+              "slot": 0.14981381361692395
+            },
+            "rung": 1,
+            "step": 200,
+            "unit_masses_fixed_clip": {
+              "aim": 1.5859524741298936,
+              "ce": 2.1051619571177707,
+              "gate": 119.36678729501999,
+              "kl": 0.3152070508928344,
+              "preserve": 0.0019577827611256013,
+              "slot": 4.674579627329311
+            }
+          },
+          {
+            "observed_shares": {
+              "aim": 0.43557251540530045,
+              "ce": 0.03371836359255629,
+              "gate": 0.10891542963354311,
+              "kl": 0.09005252467708756,
+              "preserve": 0.05796563599207946,
+              "slot": 0.27377553069943317
+            },
+            "rung": 0,
+            "step": 300,
+            "unit_masses_fixed_clip": {
+              "aim": 3.3695374085981715,
+              "ce": 0.6477699832094179,
+              "gate": 251.68382605425376,
+              "kl": 0.09005252467708756,
+              "preserve": 0.0006725740950528044,
+              "slot": 8.542506778054996
+            }
+          },
+          {
+            "observed_shares": {
+              "aim": 0.5305033753971515,
+              "ce": 0.0367597985347303,
+              "gate": 0.08351296370272002,
+              "kl": 0.10204936281260375,
+              "preserve": 0.03553426383205907,
+              "slot": 0.2116402357207354
+            },
+            "rung": 0,
+            "step": 400,
+            "unit_masses_fixed_clip": {
+              "aim": 4.1039113019447155,
+              "ce": 0.706199576211954,
+              "gate": 192.98332936435784,
+              "kl": 0.10204936281260375,
+              "preserve": 0.00041230334026664335,
+              "slot": 6.603724385209573
+            }
+          }
+        ]
+      }
+    },
+    "controller_candidate": {
+      "cadence": "non-overlapping 100-step boundaries only",
+      "counterfactual_logged_before_application": true,
+      "formula": "delta_log_w_i = clip(0.5 * log(target_share_i / observed_share_i), -0.5, 0.5)",
+      "normalization": "KL weight normalized to 1 after every update",
+      "rung_changes_reserved_for_task_and_causal_controller": true
+    },
+    "descriptive_all_condition_preservation_medians_by_rung": {
+      "0": 0.018590936812311942,
+      "1": 0.11660504795576225
+    },
+    "estimator": "local counterfactual shares from observed post-clip shares divided by the active scalar weights; combined group-clip scales held fixed",
+    "exact_reclip_available": false,
+    "exact_reclip_blocker": "per-window gradient bundles were not persisted",
+    "main_joint_static_analysis_by_rung": {
+      "0": {
+        "condition_steps": [
+          {
+            "condition": "main_seed_0",
+            "step": 1400
+          },
+          {
+            "condition": "main_seed_0",
+            "step": 1500
+          },
+          {
+            "condition": "main_seed_1",
+            "step": 300
+          },
+          {
+            "condition": "main_seed_1",
+            "step": 400
+          },
+          {
+            "condition": "main_seed_1",
+            "step": 500
+          },
+          {
+            "condition": "main_seed_1",
+            "step": 600
+          },
+          {
+            "condition": "main_seed_1",
+            "step": 700
+          },
+          {
+            "condition": "main_seed_1",
+            "step": 800
+          },
+          {
+            "condition": "main_seed_1",
+            "step": 900
+          },
+          {
+            "condition": "main_seed_1",
+            "step": 1000
+          },
+          {
+            "condition": "main_seed_1",
+            "step": 1300
+          },
+          {
+            "condition": "main_seed_1",
+            "step": 1400
+          }
+        ],
+        "geometric_mean_target_fit_weights": {
+          "aim": 0.008633571013941506,
+          "ce": 0.04211836232969978,
+          "gate": 5.6224602574967444e-05,
+          "kl": 1.0,
+          "preserve": 7.605211429100489
+        },
+        "hard_floor_feasibility": {
+          "feasible_under_fixed_clip_geometry": true,
+          "preserve_weight_degenerate": true,
+          "share_ranges": {
+            "aim": [
+              0.14999999999999997,
+              0.18987948739081878
+            ],
+            "ce": [
+              0.10000000000000005,
+              0.11207254531328215
+            ],
+            "gate": [
+              0.030000000000000006,
+              0.10869954622523227
+            ],
+            "kl": [
+              0.6299746609348519,
+              0.6875736634174262
+            ],
+            "preserve": [
+              1.2532549583853183e-11,
+              5.109785095943491e-11
+            ]
+          },
+          "solver_message": "Optimization terminated successfully. (HiGHS Status 7: Optimal)",
+          "solver_status": 0,
+          "weights_kl_normalized": {
+            "aim": 0.00506710546158547,
+            "ce": 0.023403786663758773,
+            "gate": 6.324771703093127e-05,
+            "kl": 1.0,
+            "preserve": 1e-08
+          }
+        },
+        "preservation_target": 0.018164773304902626,
+        "target_fit_passing_windows": 10,
+        "target_shares": {
+          "aim": 0.23377029207026126,
+          "ce": 0.1558468613801742,
+          "gate": 0.04675405841405225,
+          "kl": 0.5454640148306096,
+          "preserve": 0.018164773304902626
+        },
+        "window_count": 12
+      },
+      "1": {
+        "condition_steps": [
+          {
+            "condition": "main_seed_0",
+            "step": 100
+          },
+          {
+            "condition": "main_seed_0",
+            "step": 200
+          },
+          {
+            "condition": "main_seed_0",
+            "step": 300
+          },
+          {
+            "condition": "main_seed_0",
+            "step": 400
+          },
+          {
+            "condition": "main_seed_0",
+            "step": 500
+          },
+          {
+            "condition": "main_seed_0",
+            "step": 600
+          },
+          {
+            "condition": "main_seed_0",
+            "step": 700
+          },
+          {
+            "condition": "main_seed_0",
+            "step": 800
+          },
+          {
+            "condition": "main_seed_0",
+            "step": 900
+          },
+          {
+            "condition": "main_seed_0",
+            "step": 1000
+          },
+          {
+            "condition": "main_seed_0",
+            "step": 1100
+          },
+          {
+            "condition": "main_seed_0",
+            "step": 1200
+          },
+          {
+            "condition": "main_seed_0",
+            "step": 1300
+          },
+          {
+            "condition": "main_seed_1",
+            "step": 100
+          },
+          {
+            "condition": "main_seed_1",
+            "step": 200
+          },
+          {
+            "condition": "main_seed_1",
+            "step": 1100
+          },
+          {
+            "condition": "main_seed_1",
+            "step": 1200
+          }
+        ],
+        "geometric_mean_target_fit_weights": {
+          "aim": 0.05228118923948076,
+          "ce": 0.04105018499289775,
+          "gate": 0.0002738159025867219,
+          "kl": 1.0,
+          "preserve": 39.785513392034645
+        },
+        "hard_floor_feasibility": {
+          "feasible_under_fixed_clip_geometry": true,
+          "preserve_weight_degenerate": true,
+          "share_ranges": {
+            "aim": [
+              0.15000000000000002,
+              0.3100561982992242
+            ],
+            "ce": [
+              0.1,
+              0.13093275107618801
+            ],
+            "gate": [
+              0.03,
+              0.10380001346089156
+            ],
+            "kl": [
+              0.5350720983452635,
+              0.663145335291999
+            ],
+            "preserve": [
+              1.8188041459649562e-11,
+              7.239831364890386e-11
+            ]
+          },
+          "solver_message": "Optimization terminated successfully. (HiGHS Status 7: Optimal)",
+          "solver_status": 0,
+          "weights_kl_normalized": {
+            "aim": 0.04411814895570812,
+            "ce": 0.02770984070807844,
+            "gate": 0.0003231347130017529,
+            "kl": 1.0,
+            "preserve": 1e-08
+          }
+        },
+        "preservation_target": 0.10858693150350851,
+        "target_fit_passing_windows": 13,
+        "target_shares": {
+          "aim": 0.21224120678487893,
+          "ce": 0.14149413785658596,
+          "gate": 0.04244824135697579,
+          "kl": 0.4952294824980508,
+          "preserve": 0.10858693150350851
+        },
+        "window_count": 17
+      }
+    },
+    "preservation_targets_by_rung": {
+      "0": 0.018164773304902626,
+      "1": 0.10858693150350851
+    }
+  },
+  "figure_receipts": [
+    {
+      "bytes": 36745,
+      "path": "docs/figures/p34_a2_controller_and_task_autopsy_20260814.svg",
+      "sha256": "7f961cc202bd6671442fade855e6347482c6f58d3f2d06466a2b4c93b1655c14"
+    },
+    {
+      "bytes": 205697,
+      "path": "docs/figures/p34_a2_controller_and_task_autopsy_20260814.png",
+      "sha256": "ed4dc6c17b36bd4d6eb69dcf95314ce69f8d810ab8b2ef7dce7537a254fc95b6"
+    }
+  ],
+  "integrity": {
+    "campaign_verdict": "positive_signal_with_objective_controller_stop",
+    "confirm_scored": false,
+    "eval_e_scored": false,
+    "model_loaded": false,
+    "optimizer_constructed": false,
+    "optimizer_steps": 0
+  },
+  "kind": "paper2_phase3_p34_a2_cpu_autopsy_v1",
+  "scope": "cached P3.4 DEV receipts only; CONFIRM and EVAL-E untouched",
+  "source_receipts": {
+    "campaign": {
+      "bytes": 76965,
+      "path": "outputs/stage5/stage5_paper2_phase3_p34_analysis_20260813/summary.json",
+      "sha256": "15a69ba0662af6d60a970833fd13cdf2309e0f5eb9ecc95e198e01f32ea9844b"
+    },
+    "lock": {
+      "bytes": 13279,
+      "path": "training/paper2_phase3_p34_preregistration.json",
+      "sha256": "4dc4cf82856552375e976bf1b4813c29f6ca8d1eb0b7c1084c6843b40ccc19c3"
+    },
+    "p31": {
+      "bytes": 16901,
+      "path": ".codex_p31_reference/summary.json",
+      "sha256": "1b6e40149034047a35cd669a6f8fd045c26330ac9b67075e0cb39b0271d1802b"
+    },
+    "panel": {
+      "bytes": 821716,
+      "path": "outputs/stage5/stage5_paper2_phase3_p34_lock_20260812/panel/p34_task_panel.jsonl",
+      "sha256": "c0e15a890b598544059ac337cc475123f97c05e3c1626febcdee1c6d8fe02615"
+    }
+  },
+  "status": "complete_dev_only_no_model_no_optimizer",
+  "task_diagnostic": {
+    "conditions": {
+      "main_seed_0": {
+        "by_battery": {
+          "arc_challenge": {
+            "endpoint_minus_frozen_base": {
+              "fixes": 1,
+              "net": 0,
+              "regressions": 1
+            },
+            "endpoint_minus_i1_training_start": {
+              "fixes": 1,
+              "net": -1,
+              "regressions": 2
+            }
+          },
+          "arc_easy": {
+            "endpoint_minus_frozen_base": {
+              "fixes": 4,
+              "net": 2,
+              "regressions": 2
+            },
+            "endpoint_minus_i1_training_start": {
+              "fixes": 2,
+              "net": 0,
+              "regressions": 2
+            }
+          },
+          "gsm8k": {
+            "endpoint_minus_frozen_base": {
+              "fixes": 32,
+              "net": -1,
+              "regressions": 33
+            },
+            "endpoint_minus_i1_training_start": {
+              "fixes": 19,
+              "net": 4,
+              "regressions": 15
+            }
+          },
+          "mbpp": {
+            "endpoint_minus_frozen_base": {
+              "fixes": 9,
+              "net": 5,
+              "regressions": 4
+            },
+            "endpoint_minus_i1_training_start": {
+              "fixes": 2,
+              "net": -1,
+              "regressions": 3
+            }
+          },
+          "mmlu": {
+            "endpoint_minus_frozen_base": {
+              "fixes": 7,
+              "net": 5,
+              "regressions": 2
+            },
+            "endpoint_minus_i1_training_start": {
+              "fixes": 5,
+              "net": 3,
+              "regressions": 2
+            }
+          },
+          "tier1": {
+            "endpoint_minus_frozen_base": {
+              "fixes": 0,
+              "net": -2,
+              "regressions": 2
+            },
+            "endpoint_minus_i1_training_start": {
+              "fixes": 0,
+              "net": 0,
+              "regressions": 0
+            }
+          }
+        },
+        "look": 7,
+        "pooled": {
+          "endpoint_minus_frozen_base": {
+            "fixes": 53,
+            "net": 9,
+            "regressions": 44
+          },
+          "endpoint_minus_i1_training_start": {
+            "fixes": 29,
+            "net": 5,
+            "regressions": 24
+          }
+        },
+        "source_i1": {
+          "bytes": 892255,
+          "path": "outputs/stage5/stage5_paper2_phase3_p34_lock_20260812/task_calibration/seed_0/seed_0_i1_rows.jsonl",
+          "sha256": "ae1023f1de7931d0b0e8d839e8a4e5cc0ff9a2eb9d1678af168aa141be8239c4"
+        },
+        "target_half": {
+          "endpoint_minus_frozen_base": {
+            "fixes": 42,
+            "net": 4,
+            "regressions": 38
+          },
+          "endpoint_minus_i1_training_start": {
+            "fixes": 22,
+            "net": 2,
+            "regressions": 20
+          }
+        },
+        "tier1_regressions_already_present_at_i1": [
+          "base_capability_addition_00",
+          "base_capability_addition_02"
+        ],
+        "tier1_regressions_vs_base": [
+          "base_capability_addition_00",
+          "base_capability_addition_02"
+        ]
+      },
+      "main_seed_1": {
+        "by_battery": {
+          "arc_challenge": {
+            "endpoint_minus_frozen_base": {
+              "fixes": 0,
+              "net": 0,
+              "regressions": 0
+            },
+            "endpoint_minus_i1_training_start": {
+              "fixes": 0,
+              "net": -1,
+              "regressions": 1
+            }
+          },
+          "arc_easy": {
+            "endpoint_minus_frozen_base": {
+              "fixes": 4,
+              "net": 2,
+              "regressions": 2
+            },
+            "endpoint_minus_i1_training_start": {
+              "fixes": 2,
+              "net": 1,
+              "regressions": 1
+            }
+          },
+          "gsm8k": {
+            "endpoint_minus_frozen_base": {
+              "fixes": 30,
+              "net": -4,
+              "regressions": 34
+            },
+            "endpoint_minus_i1_training_start": {
+              "fixes": 18,
+              "net": 4,
+              "regressions": 14
+            }
+          },
+          "mbpp": {
+            "endpoint_minus_frozen_base": {
+              "fixes": 10,
+              "net": 7,
+              "regressions": 3
+            },
+            "endpoint_minus_i1_training_start": {
+              "fixes": 2,
+              "net": 0,
+              "regressions": 2
+            }
+          },
+          "mmlu": {
+            "endpoint_minus_frozen_base": {
+              "fixes": 7,
+              "net": 4,
+              "regressions": 3
+            },
+            "endpoint_minus_i1_training_start": {
+              "fixes": 3,
+              "net": 1,
+              "regressions": 2
+            }
+          },
+          "tier1": {
+            "endpoint_minus_frozen_base": {
+              "fixes": 0,
+              "net": -2,
+              "regressions": 2
+            },
+            "endpoint_minus_i1_training_start": {
+              "fixes": 0,
+              "net": 0,
+              "regressions": 0
+            }
+          }
+        },
+        "look": 7,
+        "pooled": {
+          "endpoint_minus_frozen_base": {
+            "fixes": 51,
+            "net": 7,
+            "regressions": 44
+          },
+          "endpoint_minus_i1_training_start": {
+            "fixes": 25,
+            "net": 5,
+            "regressions": 20
+          }
+        },
+        "source_i1": {
+          "bytes": 886411,
+          "path": "outputs/stage5/stage5_paper2_phase3_p34_lock_20260812/task_calibration/seed_1/seed_1_i1_rows.jsonl",
+          "sha256": "83f7ff718ee6a6c840ddbe4659916caf9870e5bcf9030bbeddb4a460470ccfa7"
+        },
+        "target_half": {
+          "endpoint_minus_frozen_base": {
+            "fixes": 40,
+            "net": 3,
+            "regressions": 37
+          },
+          "endpoint_minus_i1_training_start": {
+            "fixes": 20,
+            "net": 3,
+            "regressions": 17
+          }
+        },
+        "tier1_regressions_already_present_at_i1": [
+          "base_capability_addition_00",
+          "base_capability_addition_02"
+        ],
+        "tier1_regressions_vs_base": [
+          "base_capability_addition_00",
+          "base_capability_addition_02"
+        ]
+      },
+      "slot_seed_0": {
+        "by_battery": {
+          "arc_challenge": {
+            "endpoint_minus_frozen_base": {
+              "fixes": 0,
+              "net": -1,
+              "regressions": 1
+            },
+            "endpoint_minus_i1_training_start": {
+              "fixes": 0,
+              "net": -2,
+              "regressions": 2
+            }
+          },
+          "arc_easy": {
+            "endpoint_minus_frozen_base": {
+              "fixes": 3,
+              "net": 1,
+              "regressions": 2
+            },
+            "endpoint_minus_i1_training_start": {
+              "fixes": 1,
+              "net": -1,
+              "regressions": 2
+            }
+          },
+          "gsm8k": {
+            "endpoint_minus_frozen_base": {
+              "fixes": 32,
+              "net": -2,
+              "regressions": 34
+            },
+            "endpoint_minus_i1_training_start": {
+              "fixes": 18,
+              "net": 3,
+              "regressions": 15
+            }
+          },
+          "mbpp": {
+            "endpoint_minus_frozen_base": {
+              "fixes": 10,
+              "net": 6,
+              "regressions": 4
+            },
+            "endpoint_minus_i1_training_start": {
+              "fixes": 2,
+              "net": 0,
+              "regressions": 2
+            }
+          },
+          "mmlu": {
+            "endpoint_minus_frozen_base": {
+              "fixes": 6,
+              "net": 4,
+              "regressions": 2
+            },
+            "endpoint_minus_i1_training_start": {
+              "fixes": 4,
+              "net": 2,
+              "regressions": 2
+            }
+          },
+          "tier1": {
+            "endpoint_minus_frozen_base": {
+              "fixes": 0,
+              "net": -2,
+              "regressions": 2
+            },
+            "endpoint_minus_i1_training_start": {
+              "fixes": 0,
+              "net": 0,
+              "regressions": 0
+            }
+          }
+        },
+        "look": 2,
+        "pooled": {
+          "endpoint_minus_frozen_base": {
+            "fixes": 51,
+            "net": 6,
+            "regressions": 45
+          },
+          "endpoint_minus_i1_training_start": {
+            "fixes": 25,
+            "net": 2,
+            "regressions": 23
+          }
+        },
+        "source_i1": {
+          "bytes": 892255,
+          "path": "outputs/stage5/stage5_paper2_phase3_p34_lock_20260812/task_calibration/seed_0/seed_0_i1_rows.jsonl",
+          "sha256": "ae1023f1de7931d0b0e8d839e8a4e5cc0ff9a2eb9d1678af168aa141be8239c4"
+        },
+        "target_half": {
+          "endpoint_minus_frozen_base": {
+            "fixes": 42,
+            "net": 3,
+            "regressions": 39
+          },
+          "endpoint_minus_i1_training_start": {
+            "fixes": 20,
+            "net": 1,
+            "regressions": 19
+          }
+        },
+        "tier1_regressions_already_present_at_i1": [
+          "base_capability_addition_00",
+          "base_capability_addition_02"
+        ],
+        "tier1_regressions_vs_base": [
+          "base_capability_addition_00",
+          "base_capability_addition_02"
+        ]
+      }
+    },
+    "gate_telemetry": {
+      "available_in_cached_task_rows": false,
+      "gate_by_battery_answered": false,
+      "gsm8k_regression_gate_colocation_answered": false,
+      "reason": "task_rows contain correctness, predictions, generated text, and option scores, but omit position_gate and realized_writeback_ratio",
+      "required_followup": "add score-preserving telemetry to the resumed DEV task pass; do not use it for checkpoint selection"
+    },
+    "tier1_shared_regressions": [
+      {
+        "answer": "20",
+        "inherited_from_i1_all_conditions": true,
+        "item_id": "base_capability_addition_00",
+        "prompt": "What is 13 + 7? Answer with only the number."
+      },
+      {
+        "answer": "28",
+        "inherited_from_i1_all_conditions": true,
+        "item_id": "base_capability_addition_02",
+        "prompt": "What is 15 + 13? Answer with only the number."
+      }
+    ]
+  }
+}
