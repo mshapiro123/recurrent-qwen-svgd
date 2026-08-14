@@ -227,6 +227,113 @@ def classify_loss_shares(
     }
 
 
+def normalize_objective_weights(
+    weights: Mapping[str, float], *, anchor: str = "kl"
+) -> dict[str, float]:
+    """Normalize a positive objective vector without changing its ratios."""
+
+    if anchor not in weights or float(weights[anchor]) <= 0.0:
+        raise ValueError("P3.4 objective weights require a positive KL anchor")
+    if any(not math.isfinite(float(value)) or float(value) <= 0.0 for value in weights.values()):
+        raise ValueError("P3.4 objective weights must be finite and positive")
+    scale = float(weights[anchor])
+    return {name: float(value) / scale for name, value in weights.items()}
+
+
+def objective_share_controller_update(
+    *,
+    weights: Mapping[str, float],
+    observed_shares: Mapping[str, float],
+    target_shares: Mapping[str, float],
+    gain: float = 0.5,
+    maximum_absolute_log_update: float = 0.5,
+) -> dict[str, Any]:
+    """Apply the ratified bounded log-space objective-share controller."""
+
+    names = set(weights)
+    if names != set(observed_shares) or names != set(target_shares):
+        raise ValueError("P3.4 controller inputs must name the same objectives")
+    if not 0.0 < float(gain) <= 1.0 or float(maximum_absolute_log_update) <= 0.0:
+        raise ValueError("P3.4 controller constants are outside the ratified range")
+    if any(float(value) <= 0.0 for value in observed_shares.values()):
+        raise ValueError("P3.4 controller requires positive observed shares")
+    if any(float(value) <= 0.0 for value in target_shares.values()):
+        raise ValueError("P3.4 controller requires positive target shares")
+
+    log_updates = {
+        name: max(
+            -float(maximum_absolute_log_update),
+            min(
+                float(maximum_absolute_log_update),
+                float(gain)
+                * math.log(float(target_shares[name]) / float(observed_shares[name])),
+            ),
+        )
+        for name in sorted(names)
+    }
+    proposed = normalize_objective_weights(
+        {
+            name: float(weights[name]) * math.exp(log_updates[name])
+            for name in names
+        }
+    )
+
+    # This is intentionally a local projection. Exact group clipping is
+    # recomputed in the mandatory restart preflight, not inferred here.
+    local_masses = {
+        name: float(observed_shares[name])
+        * (float(proposed[name]) / float(weights[name]))
+        for name in names
+    }
+    denominator = sum(local_masses.values())
+    local_counterfactual = {
+        name: value / denominator for name, value in local_masses.items()
+    }
+    return {
+        "weights_before": normalize_objective_weights(weights),
+        "weights_after": proposed,
+        "observed_shares": {name: float(observed_shares[name]) for name in sorted(names)},
+        "target_shares": {name: float(target_shares[name]) for name in sorted(names)},
+        "log_weight_updates": log_updates,
+        "maximum_absolute_log_update": max(abs(value) for value in log_updates.values()),
+        "gain": float(gain),
+        "clip": float(maximum_absolute_log_update),
+        "local_fixed_clip_counterfactual_shares": local_counterfactual,
+        "counterfactual_scope": (
+            "local fixed-clip projection for telemetry only; exact group clipping "
+            "is recomputed in the restart preflight"
+        ),
+    }
+
+
+def aggregate_postclip_bundle_reads(
+    bundles: Sequence[Mapping[str, Any]],
+    *,
+    weights: Mapping[str, float],
+) -> dict[str, Any]:
+    """Aggregate exact per-bundle post-clip norms under one weight vector."""
+
+    if not bundles:
+        raise ValueError("P3.4 exact share read requires at least one gradient bundle")
+    reads = [postclip_gradient_norms_from_bundle(bundle, weights=weights) for bundle in bundles]
+    names = tuple(reads[0]["postclip_gradient_norms"])
+    if any(set(read["postclip_gradient_norms"]) != set(names) for read in reads):
+        raise RuntimeError("P3.4 exact share-read bundle names changed")
+    norms = {
+        name: sum(float(read["postclip_gradient_norms"][name]) for read in reads)
+        / len(reads)
+        for name in names
+    }
+    denominator = sum(norms.values())
+    return {
+        "weights": normalize_objective_weights(weights),
+        "mean_postclip_gradient_norms": norms,
+        "shares": {name: value / denominator for name, value in norms.items()},
+        "bundle_count": len(reads),
+        "per_bundle": reads,
+    }
+
+
 def p34_forward_losses(
     *,
     module: Phase3StudentModules,

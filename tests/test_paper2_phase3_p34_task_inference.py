@@ -14,6 +14,7 @@ from eval.eval_paper2_phase3_p34_task_inference import (
     position_buckets,
     task_graph_preflight,
 )
+from eval.eval_paper2_phase3_p34_task_trajectory import _telemetry_summary
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -84,6 +85,17 @@ def test_exact_task_graph_disables_draft_and_is_repeatable() -> None:
     receipt = task_graph_preflight(graph, input_ids=ids, attention_mask=attention)
     assert all(receipt["assertions"].values())
     assert receipt["selected_write_cells"] == 2
+
+
+def test_score_preserving_telemetry_summary_keeps_gate_and_write_separate() -> None:
+    read = _telemetry_summary([0.1, 0.3], [0.01, 0.02])
+    assert read == {
+        "telemetry_positions": 2,
+        "position_gate_mean": 0.2,
+        "position_gate_max": 0.3,
+        "realized_writeback_ratio_mean": 0.015,
+        "realized_writeback_ratio_max": 0.02,
+    }
 
 
 def test_write_mask_changes_only_current_nonzero_position() -> None:

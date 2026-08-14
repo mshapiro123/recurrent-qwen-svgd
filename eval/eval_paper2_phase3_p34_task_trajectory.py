@@ -53,6 +53,18 @@ def write_json(path: Path, payload: Mapping[str, Any]) -> None:
     temporary.replace(path)
 
 
+def _telemetry_summary(gates: Sequence[float], ratios: Sequence[float]) -> dict[str, Any]:
+    if len(gates) != len(ratios) or not gates:
+        raise ValueError("P3.4 DEV telemetry requires paired nonempty gate/write reads")
+    return {
+        "telemetry_positions": len(gates),
+        "position_gate_mean": sum(gates) / len(gates),
+        "position_gate_max": max(gates),
+        "realized_writeback_ratio_mean": sum(ratios) / len(ratios),
+        "realized_writeback_ratio_max": max(ratios),
+    }
+
+
 def _apply_state(module: Any, path: Path, *, expected_sha256: str, label: str) -> dict[str, Any]:
     observed = sha256_file(path)
     if observed != expected_sha256:
@@ -140,6 +152,10 @@ def score_mcq(
     candidate_tokens: list[list[int]] = []
     verified_label_suffixes: dict[str, list[int]] = {}
     answers: dict[str, str] = {}
+    prompt_item_ids: list[str] = []
+    telemetry: dict[str, dict[str, list[float]]] = defaultdict(
+        lambda: {"gates": [], "ratios": []}
+    )
     for row in rows:
         question, choices, answer = _mcq(row)
         item_id = str(row["item_id"])
@@ -179,6 +195,7 @@ def score_mcq(
                 candidate_tokens.append(continuation)
             prompts.append(prompt)
             prompt_candidates.append(local_candidates)
+            prompt_item_ids.append(item_id)
 
     option_scores: dict[str, dict[str, list[float]]] = defaultdict(lambda: defaultdict(list))
     candidate_scores: list[list[float]] = [[] for _row in candidate_metadata]
@@ -197,6 +214,9 @@ def score_mcq(
             input_ids=encoded["input_ids"], attention_mask=encoded["attention_mask"]
         )
         log_probabilities = torch.log_softmax(output.augmented_logits.float(), dim=-1)
+        for local, item_id in enumerate(prompt_item_ids[start:stop]):
+            telemetry[item_id]["gates"].append(float(output.position_gate[local].cpu()))
+            telemetry[item_id]["ratios"].append(float(output.writeback_ratio[local].cpu()))
         for local, candidate_indexes in enumerate(prompt_candidates[start:stop]):
             for candidate_index in candidate_indexes:
                 token = candidate_tokens[candidate_index][0]
@@ -219,13 +239,13 @@ def score_mcq(
                     (candidate_index, tokens[depth])
                 )
     branches = [
-        ([*prompt_ids[prompt_index], *prefix], targets)
+        ([*prompt_ids[prompt_index], *prefix], targets, prompt_index)
         for (prompt_index, prefix), targets in branch_lookup.items()
     ]
     for start in range(0, len(branches), batch_size):
         stop = min(len(branches), start + batch_size)
         batch = branches[start:stop]
-        width = max(len(prefix) for prefix, _targets in batch)
+        width = max(len(prefix) for prefix, _targets, _prompt_index in batch)
         input_ids = torch.full(
             (len(batch), width),
             tokenizer.pad_token_id,
@@ -233,7 +253,7 @@ def score_mcq(
             device=graph.device,
         )
         attention_mask = torch.zeros_like(input_ids)
-        for local, (prefix, _targets) in enumerate(batch):
+        for local, (prefix, _targets, _prompt_index) in enumerate(batch):
             input_ids[local, -len(prefix) :] = torch.tensor(
                 prefix, device=graph.device, dtype=torch.long
             )
@@ -242,7 +262,10 @@ def score_mcq(
             input_ids=input_ids, attention_mask=attention_mask
         )
         log_probabilities = torch.log_softmax(output.augmented_logits.float(), dim=-1)
-        for local, (_prefix, targets) in enumerate(batch):
+        for local, (_prefix, targets, prompt_index) in enumerate(batch):
+            item_id = prompt_item_ids[prompt_index]
+            telemetry[item_id]["gates"].append(float(output.position_gate[local].cpu()))
+            telemetry[item_id]["ratios"].append(float(output.writeback_ratio[local].cpu()))
             for candidate_index, target in targets:
                 candidate_scores[candidate_index].append(
                     float(log_probabilities[local, target].cpu())
@@ -271,6 +294,9 @@ def score_mcq(
                 "augmented_correct": prediction == answers[item_id],
                 "option_scores": means,
                 "reader": "cyclic_label_aggregated_permutation_mean_v1",
+                **_telemetry_summary(
+                    telemetry[item_id]["gates"], telemetry[item_id]["ratios"]
+                ),
             }
         )
     return results
@@ -305,10 +331,14 @@ def score_generation(
             )
             generated: list[list[int]] = [[] for _row in batch]
             finished = [False for _row in batch]
+            gates: list[list[float]] = [[] for _row in batch]
+            ratios: list[list[float]] = [[] for _row in batch]
             for token_index in range(cap):
                 selected_tokens = output.augmented_logits.argmax(dim=-1)
                 for index, token in enumerate(selected_tokens.tolist()):
                     if not finished[index]:
+                        gates[index].append(float(output.position_gate[index].cpu()))
+                        ratios[index].append(float(output.writeback_ratio[index].cpu()))
                         generated[index].append(int(token))
                         if tokenizer.eos_token_id is not None and int(token) == int(tokenizer.eos_token_id):
                             finished[index] = True
@@ -318,7 +348,7 @@ def score_generation(
                     state=state, selected_tokens=selected_tokens
                 )
             batch_results = []
-            for row, token_ids in zip(batch, generated):
+            for row, token_ids, row_gates, row_ratios in zip(batch, generated, gates, ratios):
                 text = tokenizer.decode(token_ids, skip_special_tokens=True)
                 correct, prediction = score_generated(row, text)
                 batch_results.append(
@@ -329,6 +359,7 @@ def score_generation(
                         "generated_tokens": len(token_ids),
                         "augmented_correct": bool(correct),
                         "reader": str(row["reader"]),
+                        **_telemetry_summary(row_gates, row_ratios),
                     }
                 )
             results.extend(batch_results)
@@ -435,7 +466,7 @@ def main() -> int:
             item_id = str(augmented["item_id"])
             row = source_lookup[item_id]
             enriched.append({
-                "kind": "paper2_phase3_p34_task_trajectory_row_v1",
+                "kind": "paper2_phase3_p34_task_trajectory_row_v2",
                 "condition": args.condition,
                 "look": args.look,
                 "seed": args.seed,
@@ -467,8 +498,31 @@ def main() -> int:
         str(row["item_id"]) for row in output_rows
     } != set(source_lookup):
         raise RuntimeError("P3.4 augmented score coverage changed")
+    telemetry_groups: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for row in output_rows:
+        if not bool(row["base_correct"]) and bool(row["augmented_correct"]):
+            outcome = "fix"
+        elif bool(row["base_correct"]) and not bool(row["augmented_correct"]):
+            outcome = "regression"
+        else:
+            outcome = "unchanged"
+        telemetry_groups[f"battery:{row['battery']}"].append(row)
+        telemetry_groups[f"outcome:{outcome}"].append(row)
+
+    telemetry_summary = {}
+    for key, selected in sorted(telemetry_groups.items()):
+        telemetry_summary[key] = {
+            "rows": len(selected),
+            "position_gate_mean": sum(float(row["position_gate_mean"]) for row in selected)
+            / len(selected),
+            "realized_writeback_ratio_mean": sum(
+                float(row["realized_writeback_ratio_mean"]) for row in selected
+            )
+            / len(selected),
+            "telemetry_positions": sum(int(row["telemetry_positions"]) for row in selected),
+        }
     summary = {
-        "kind": "paper2_phase3_p34_task_trajectory_condition_v1",
+        "kind": "paper2_phase3_p34_task_trajectory_condition_v2",
         "status": "complete_dev_only",
         "condition": args.condition,
         "look": args.look,
@@ -485,6 +539,12 @@ def main() -> int:
         },
         "base_accuracy": sum(row["base_correct"] for row in output_rows) / len(output_rows),
         "augmented_accuracy": sum(row["augmented_correct"] for row in output_rows) / len(output_rows),
+        "score_preserving_telemetry": {
+            "instrumentation_only": True,
+            "used_by_scoring": False,
+            "used_by_controller": False,
+            "by_battery_and_outcome": telemetry_summary,
+        },
         "confirm_scored": False,
         "eval_e_scored": False,
         "optimizer_constructed": False,

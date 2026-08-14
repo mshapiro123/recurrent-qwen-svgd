@@ -8,7 +8,9 @@ import torch
 
 from training.paper2_phase3_p34 import (
     P34_FLOW_LOOPS,
+    aggregate_postclip_bundle_reads,
     initial_annealing_state,
+    objective_share_controller_update,
     slot_supervision_loss,
 )
 from training.run_paper2_phase3_p34 import _advance_sequential_rule, _task_guardrail
@@ -49,22 +51,58 @@ def test_runner_is_sealed_partition_blind_and_resumable() -> None:
     source = (ROOT / "training/run_paper2_phase3_p34.py").read_text(encoding="utf-8")
     assert "task_rows_look_" in source
     assert "checkpoint_step_" in source
-    assert 'saved.get("lock_sha256") != sha256_file(args.lock)' in source
+    assert 'saved.get("amendment_sha256") != sha256_file(args.amendment)' in source
     assert source.count("module.bridge.set_gate_ceiling(controller.gate_ceiling)") == 3
     assert "step % SHARE_WINDOW_STEPS == 0" in source
     assert '"overlap_with_prior_window_steps": 0' in source
     assert '"reason": "loss_share_contract_demote"' in source
     assert "share_transition is not None or stop_reason is not None" in source
-    assert '"sampled_depth_mixture_solve": sampled_depth_solve' in source
     assert '"optimizer_constructed": False' in source
     assert 'if args.preflight_only:' in source
-    assert '"locked_weights_match_sampled_depth_solve": sampled_depth_weight_match' in source
-    assert "blocked_pre_optimizer_lock_weight_mismatch" in source
+    assert '"gradient_bundle_receipt"' in source
+    assert "objective_share_controller_update" in source
+    assert "controlled_lock_migration" in source
     assert '"training_authorized_by_this_mode": False' in source
     assert '"confirm_scored": False' in source
     assert '"eval_e_scored": False' in source
     lock = json.loads((ROOT / "training/paper2_phase3_p34_preregistration.json").read_text())
     assert lock["guardrails"]["look_count"] == 20
+
+
+def test_a2_objective_controller_is_bounded_and_kl_normalized() -> None:
+    update = objective_share_controller_update(
+        weights={"kl": 1.0, "aim": 1.0, "ce": 1.0, "gate": 1.0, "preserve": 1.0},
+        observed_shares={
+            "kl": 0.70, "aim": 0.05, "ce": 0.08, "gate": 0.02, "preserve": 0.15,
+        },
+        target_shares={
+            "kl": 0.50, "aim": 0.21, "ce": 0.14, "gate": 0.04, "preserve": 0.11,
+        },
+    )
+    assert update["weights_after"]["kl"] == pytest.approx(1.0)
+    assert update["maximum_absolute_log_update"] <= 0.5
+    assert update["weights_after"]["aim"] > update["weights_before"]["aim"]
+    assert update["weights_after"]["kl"] <= update["weights_before"]["kl"]
+    assert sum(update["local_fixed_clip_counterfactual_shares"].values()) == pytest.approx(1.0)
+
+
+def test_exact_bundle_aggregation_recomputes_group_clipping() -> None:
+    parameter = torch.nn.Parameter(torch.tensor([0.0]))
+    bundle = {
+        "names": ("kl", "aim"),
+        "parameter_ids": [id(parameter)],
+        "gradients": {
+            "kl": {id(parameter): torch.tensor([2.0])},
+            "aim": {id(parameter): torch.tensor([1.0])},
+        },
+        "parameter_groups": {id(parameter): ("bridge", 0.5)},
+    }
+    read = aggregate_postclip_bundle_reads(
+        [bundle, bundle], weights={"kl": 1.0, "aim": 2.0}
+    )
+    assert read["bundle_count"] == 2
+    assert sum(read["shares"].values()) == pytest.approx(1.0)
+    assert read["per_bundle"][0]["group_clip_scales"]["bridge"] < 1.0
 
 
 def test_colab_target_wires_the_approved_three_arm_campaign() -> None:
@@ -75,6 +113,38 @@ def test_colab_target_wires_the_approved_three_arm_campaign() -> None:
     assert "paper2_phase3_p34_campaign_v1" in cell
     assert 'parser.add_argument("--arm"' in launcher
     assert "I1_ID" in launcher
+
+
+def test_a2_colab_target_preflights_both_seeds_before_training() -> None:
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    cell = (ROOT / "colab/STAGE5_PAPER2_PHASE3_P34_A2_CELL.py").read_text(encoding="utf-8")
+    launcher = (ROOT / "colab/run_stage5_paper2_phase3_p34_a2.py").read_text(
+        encoding="utf-8"
+    )
+    assert '"paper2_phase3_p34_a2"' in bootstrap
+    assert "paper2_phase3_p34_a2_campaign_v1" in cell
+    assert 'reads = [execute(seed, preflight_only=True) for seed in (0, 1)]' in launcher
+    assert "complete_both_preflights_passed" in launcher
+    assert "both-seed preflight receipt is missing" in launcher
+    assert '"--continuation"' in launcher
+    assert '"--amendment"' in launcher
+
+
+def test_a2_machine_lock_is_ratified_and_has_two_confirmation_triggers() -> None:
+    amendment = json.loads(
+        (ROOT / "training/paper2_phase3_p34_amendment_a2.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert amendment["mark_ratified"]
+    assert amendment["locked_before_resumed_training"]
+    assert amendment["training_authorized"]
+    assert amendment["both_preflights_required_before_either_optimizer"]
+    planning = amendment["confirmation_planning"]
+    assert planning["trigger_a"]["minimum_mean_dev_pooled_net_rows"] == 22
+    assert planning["trigger_b"]["minimum_mean_dev_pooled_net_rows"] == 10
+    assert planning["confirm_spent"] is False
+    assert planning["eval_e_spent"] is False
 
 
 class _IdentityLift(torch.nn.Module):
