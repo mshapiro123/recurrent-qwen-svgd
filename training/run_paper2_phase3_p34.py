@@ -33,11 +33,14 @@ from training.paper2_phase3_p34 import (
     AnnealingState,
     LossShareBounds,
     SlotSupervisionLift,
+    aggregate_postclip_bundle_reads,
     apply_weighted_gradient_bundle,
     classify_loss_shares,
     controller_transition,
     initial_annealing_state,
     loss_gradient_bundle,
+    normalize_objective_weights,
+    objective_share_controller_update,
     p34_forward_losses,
     postclip_gradient_norms_from_bundle,
     sampled_depth,
@@ -60,7 +63,8 @@ from training.run_paper2_phase3_p33 import (
 )
 
 
-RUN_KIND = "paper2_phase3_p34_campaign_v1"
+BASE_RUN_KIND = "paper2_phase3_p34_campaign_v1"
+RUN_KIND = "paper2_phase3_p34_a2_campaign_v1"
 TOTAL_STEPS = 4_000
 LOOK_INTERVAL = 200
 SHARE_WINDOW_STEPS = 100
@@ -206,10 +210,17 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(20260813 + args.seed)
     lock = json.loads(args.lock.read_text(encoding="utf-8"))
-    if not lock["training_authorized"] or lock["status"] != "approved_for_training":
-        raise RuntimeError("P3.4 executed lock is not approved")
-    if args.arm not in {"main", "slot"} or (args.arm == "slot" and args.seed != 0):
-        raise ValueError("P3.4 arm/seed combination is not authorized")
+    amendment = json.loads(args.amendment.read_text(encoding="utf-8"))
+    if not lock.get("training_authorized") or lock["status"] != "approved_for_training":
+        raise RuntimeError("P3.4 base executed lock is not approved")
+    if not (
+        amendment.get("mark_ratified")
+        and amendment.get("locked_before_resumed_training")
+        and amendment.get("training_authorized")
+    ):
+        raise RuntimeError("P3.4 a2 amendment is not ratified, locked, and authorized")
+    if args.arm != "main":
+        raise ValueError("P3.4 a2 authorizes the two main seeds only")
     expected_endpoint = lock["initialization"][f"seed_{args.seed}"]["sha256"]
     if sha256_file(args.i1) != expected_endpoint:
         raise RuntimeError("P3.4 i1 endpoint SHA mismatch")
@@ -237,13 +248,11 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         retention_path=args.retention_panel, sources=sources_spec,
     )
     trainable = set_p34_trainable(module)
-    slot_lift = SlotSupervisionLift().to(args.device) if args.arm == "slot" else None
-    if slot_lift is not None:
-        trainable.update({f"slot_lift.{name}": value for name, value in slot_lift.named_parameters()})
+    slot_lift = None
     parameters = list(trainable.values())
     frozen_before = tensor_digest({name: value for name, value in module.named_parameters() if not value.requires_grad})
-    weights_key = f"seed_{args.seed}_{'slot' if args.arm == 'slot' else 'main'}"
-    static_weights = dict(lock["loss_share_contract"]["scalar_weights_by_seed"][weights_key])
+    weights_key = f"seed_{args.seed}_main"
+    original_weights = dict(lock["loss_share_contract"]["scalar_weights_by_seed"][weights_key])
     output_dir, private_dir = args.output_dir, args.private_dir
     output_dir.mkdir(parents=True, exist_ok=True); private_dir.mkdir(parents=True, exist_ok=True)
     resume_path = private_dir / "resume.pt"
@@ -256,6 +265,72 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         chi_max_by_rung=tuple(lock["guardrails"]["chi_max_by_rung"])
     )
     last_pi_dep = 0.0; last_chi = 0.0; stop_reason: str | None = None
+    objective_weights = normalize_objective_weights(original_weights)
+    objective_controller_events: list[dict[str, Any]] = []
+    continuation_receipt: dict[str, Any]
+    resumed_a2 = resume_path.is_file()
+    saved: dict[str, Any]
+    source_path = resume_path if resumed_a2 else args.continuation
+    expected_source_sha = (
+        sha256_file(resume_path)
+        if resumed_a2
+        else str(amendment["continuations"][f"main_seed_{args.seed}"]["checkpoint_sha256"])
+    )
+    observed_source_sha = sha256_file(source_path)
+    if observed_source_sha != expected_source_sha:
+        raise RuntimeError("P3.4 a2 continuation checkpoint SHA mismatch")
+    saved = torch.load(source_path, map_location="cpu", weights_only=False)
+    expected_kind = RUN_KIND if resumed_a2 else BASE_RUN_KIND
+    expected_step = int(
+        saved["step"]
+        if resumed_a2
+        else amendment["continuations"][f"main_seed_{args.seed}"]["step"]
+    )
+    if (
+        saved.get("kind") != expected_kind
+        or int(saved.get("seed", -1)) != args.seed
+        or saved.get("arm") != "main"
+        or int(saved.get("step", -1)) != expected_step
+    ):
+        raise RuntimeError("P3.4 a2 continuation identity mismatch")
+    if saved.get("lock_sha256") != sha256_file(args.lock):
+        raise RuntimeError("P3.4 a2 continuation base-lock SHA mismatch")
+    if resumed_a2 and saved.get("amendment_sha256") != sha256_file(args.amendment):
+        raise RuntimeError("P3.4 a2 resume amendment SHA mismatch")
+    current = dict(module.named_parameters())
+    for name, value in saved["trainable_state"].items():
+        if name.startswith("slot_lift.") or name not in current:
+            raise RuntimeError("P3.4 a2 continuation trainable surface changed")
+        current[name].data.copy_(value.to(args.device))
+    step = int(saved["step"]); history = list(saved["history"])
+    schedule_hashes = list(saved["schedule_hashes"]); share_window.extend(saved["share_window"])
+    share_contract_events = list(saved.get("share_contract_events", []))
+    objective_controller_events = list(saved.get("objective_controller_events", []))
+    share_misses = int(saved["share_misses"])
+    tier_s_streak = int(saved.get("tier_s_streak", int(saved.get("prior_tier_s", False))))
+    tier_w_streak = int(saved.get("tier_w_streak", int(saved.get("prior_tier_w", False))))
+    controller = AnnealingState(**saved["controller"])
+    last_pi_dep = float(saved["last_pi_dep"]); last_chi = float(saved["last_chi"])
+    stop_reason = saved.get("stop_reason"); generator.set_state(saved["generator_state"])
+    restore_rng(saved["rng_state"])
+    module.bridge.set_gate_ceiling(controller.gate_ceiling)
+    if resumed_a2:
+        objective_weights = normalize_objective_weights(saved["objective_weights"])
+    else:
+        # Reconstruct the exact effective vector that produced the pinned
+        # checkpoint before applying the a2 controller once.
+        objective_weights = dict(original_weights)
+        objective_weights["preserve"] *= controller.preservation_weight
+        objective_weights = normalize_objective_weights(objective_weights)
+    continuation_receipt = {
+        "path": str(source_path),
+        "sha256": observed_source_sha,
+        "source_kind": expected_kind,
+        "source_step": step,
+        "controlled_lock_migration": not resumed_a2,
+        "base_lock_sha256": sha256_file(args.lock),
+        "amendment_sha256": sha256_file(args.amendment),
+    }
     fixed_rows = read_jsonl(args.share_rows)
     if len(fixed_rows) != 256:
         raise RuntimeError("P3.4 locked share-calibration population changed")
@@ -263,13 +338,10 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         rows=fixed_rows, sources=sources, direction_index=direction_index,
         directions=directions, device=args.device,
     )
-    preflight_norms = {name: 0.0 for name in static_weights}
     preflight_bundles: list[dict[str, Any]] = []
     preflight_depths = [1, 2, 3, 4]
     preflight_mass = [0.1, 0.2, 0.3, 0.4]
-    effective_preflight = dict(static_weights)
-    effective_preflight["preserve"] *= controller.preservation_weight
-    for depth, mass in zip(preflight_depths, preflight_mass):
+    for depth in preflight_depths:
         preflight_losses, _ = _losses(
             module=module, batch=fixed_batch, depth=depth, slot_lift=slot_lift
         )
@@ -278,41 +350,76 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             slot_lift=slot_lift,
         )
         preflight_bundles.extend([preflight_bundle] * depth)
-        read = postclip_gradient_norms_from_bundle(
-            preflight_bundle, weights=effective_preflight
-        )["postclip_gradient_norms"]
-        for name, value in read.items(): preflight_norms[name] += mass * value
-    preflight_denominator = sum(preflight_norms.values())
-    preflight_shares = {
-        name: value / preflight_denominator for name, value in preflight_norms.items()
-    }
-    preflight_classification = classify_loss_shares(preflight_shares)
-    sampled_depth_solve = solve_static_loss_weights_from_bundles(
-        preflight_bundles,
-        slot_arm=slot_lift is not None,
+    before_read = aggregate_postclip_bundle_reads(
+        preflight_bundles, weights=objective_weights
     )
-    sampled_depth_weights = sampled_depth_solve["static_weights_kl_normalized"]
-    sampled_depth_weight_match = (
-        set(sampled_depth_weights) == set(static_weights)
-        and all(
-            math.isclose(
-                float(sampled_depth_weights[name]),
-                float(static_weights[name]),
-                rel_tol=0.0,
-                abs_tol=1e-12,
-            )
-            for name in static_weights
+    target_shares = amendment["rung_targets"][str(controller.rung)]
+    if resumed_a2:
+        preflight_update = {
+            "status": "not_reapplied_on_amended_resume",
+            "weights_before": objective_weights,
+            "weights_after": objective_weights,
+            "observed_shares": before_read["shares"],
+            "target_shares": target_shares,
+            "reason": "the restart calibration update is applied exactly once at lock migration",
+        }
+        proposed_weights = objective_weights
+    else:
+        preflight_update = objective_share_controller_update(
+            weights=objective_weights,
+            observed_shares=before_read["shares"],
+            target_shares=target_shares,
+            gain=float(amendment["objective_share_controller"]["gain"]),
+            maximum_absolute_log_update=float(
+                amendment["objective_share_controller"]["maximum_absolute_log_weight_update"]
+            ),
         )
+        proposed_weights = preflight_update["weights_after"]
+    after_read = aggregate_postclip_bundle_reads(
+        preflight_bundles, weights=proposed_weights
+    )
+    preflight_classification = classify_loss_shares(after_read["shares"])
+    arithmetic_residual = max(
+        abs(sum(before_read["shares"].values()) - 1.0),
+        abs(sum(after_read["shares"].values()) - 1.0),
+        abs(float(proposed_weights["kl"]) - 1.0),
+    )
+    bundle_path = private_dir / "pre_optimizer_gradient_bundles.pt"
+    bundle_sha = atomic_torch_save(
+        {
+            "kind": "paper2_phase3_p34_a2_exact_gradient_bundles_v1",
+            "seed": args.seed,
+            "arm": args.arm,
+            "continuation": continuation_receipt,
+            "depth_distribution": dict(zip(preflight_depths, preflight_mass)),
+            "bundles": preflight_bundles,
+            "weights_before": objective_weights,
+            "weights_after": proposed_weights,
+        },
+        bundle_path,
     )
     preflight_receipt = {
-        "kind": "paper2_phase3_p34_sampled_depth_share_preflight_v1",
+        "kind": "paper2_phase3_p34_a2_exact_preoptimizer_preflight_v1",
         "status": "complete_read_only_no_optimizer",
         "seed": args.seed,
         "arm": args.arm,
+        "continuation": continuation_receipt,
         "depth_distribution": dict(zip(preflight_depths, preflight_mass)),
+        "rung": controller.rung,
+        "target_shares": target_shares,
+        "before": before_read,
+        "controller_update": preflight_update,
+        "after": after_read,
         "loss_share_read": preflight_classification,
-        "sampled_depth_mixture_solve": sampled_depth_solve,
-        "locked_weights_match_sampled_depth_solve": sampled_depth_weight_match,
+        "gradient_bundle_receipt": {"path": str(bundle_path), "sha256": bundle_sha},
+        "gradient_bundle_reuse": {
+            "same_per_loss_bundles_for_before_and_after": True,
+            "reason": (
+                "scalar objective weights are applied after per-loss gradients are formed; "
+                "combined group clipping is recomputed exactly for each weight vector"
+            ),
+        },
+        "maximum_arithmetic_residual": arithmetic_residual,
         "optimizer_constructed": False,
         "optimizer_steps": 0,
         "confirm_scored": False,
@@ -327,58 +434,28 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         }
         write_json(output_dir / "summary.json", result)
         return result
-    if not sampled_depth_weight_match:
-        write_json(output_dir / "blocked_pre_optimizer.json", {
-            "kind": RUN_KIND,
-            "status": "blocked_pre_optimizer_lock_weight_mismatch",
-            "seed": args.seed,
-            "arm": args.arm,
-            "locked_weights": static_weights,
-            "sampled_depth_mixture_solve": sampled_depth_solve,
-            "optimizer_constructed": False,
-            "optimizer_steps": 0,
-        })
-        raise RuntimeError("P3.4 locked weights do not match the ratified sampled-depth solve")
     if preflight_classification["classification"] != "pass":
         write_json(output_dir / "blocked_pre_optimizer.json", {
             "kind": RUN_KIND, "status": "blocked_pre_optimizer_estimator_mismatch",
             "seed": args.seed, "arm": args.arm,
             "depth_distribution": dict(zip(preflight_depths, preflight_mass)),
             "loss_share_read": preflight_classification,
-            "sampled_depth_mixture_solve": sampled_depth_solve,
+            "controller_update": preflight_update,
+            "before": before_read,
+            "after": after_read,
             "repair_scope": (
-                "replace the full-depth step-zero weights only after an explicit lock "
-                "amendment; no optimizer was constructed"
+                "return to strategy without changing controller constants or targets; "
+                "no optimizer was constructed"
             ),
             "optimizer_constructed": False, "optimizer_steps": 0,
         })
-        raise RuntimeError("P3.4 sampled-depth estimator violates the locked loss-share contract")
+        raise RuntimeError("P3.4 a2 exact preflight violates the locked loss-share contract")
+    objective_weights = normalize_objective_weights(
+        saved["objective_weights"] if resumed_a2 else proposed_weights
+    )
     optimizer_groups = build_adamw_groups(module, weight_decay=0.01)
-    if slot_lift is not None:
-        optimizer_groups.append({"params": list(slot_lift.parameters()), "weight_decay": 0.01})
     optimizer = torch.optim.AdamW(optimizer_groups, lr=0.0, betas=(0.9, 0.999))
-    if resume_path.is_file():
-        saved = torch.load(resume_path, map_location="cpu", weights_only=False)
-        if saved["kind"] != RUN_KIND or saved["seed"] != args.seed or saved["arm"] != args.arm:
-            raise RuntimeError("P3.4 resume identity mismatch")
-        if saved.get("lock_sha256") != sha256_file(args.lock):
-            raise RuntimeError("P3.4 resume lock SHA mismatch")
-        current = {**dict(module.named_parameters())}
-        if slot_lift is not None:
-            current.update({f"slot_lift.{name}": value for name, value in slot_lift.named_parameters()})
-        for name, value in saved["trainable_state"].items(): current[name].data.copy_(value.to(args.device))
-        optimizer.load_state_dict(saved["optimizer_state"])
-        step = int(saved["step"]); history = list(saved["history"])
-        schedule_hashes = list(saved["schedule_hashes"]); share_window.extend(saved["share_window"])
-        share_contract_events = list(saved.get("share_contract_events", []))
-        share_misses = int(saved["share_misses"])
-        tier_s_streak = int(saved.get("tier_s_streak", int(saved.get("prior_tier_s", False))))
-        tier_w_streak = int(saved.get("tier_w_streak", int(saved.get("prior_tier_w", False))))
-        controller = AnnealingState(**saved["controller"])
-        last_pi_dep = float(saved["last_pi_dep"]); last_chi = float(saved["last_chi"])
-        stop_reason = saved.get("stop_reason"); generator.set_state(saved["generator_state"])
-        restore_rng(saved["rng_state"])
-        module.bridge.set_gate_ceiling(controller.gate_ceiling)
+    optimizer.load_state_dict(saved["optimizer_state"])
 
     def save(archive: bool) -> tuple[Path, str]:
         payload = {
@@ -387,11 +464,15 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             "optimizer_state": optimizer.state_dict(), "history": history,
             "schedule_hashes": schedule_hashes, "share_window": list(share_window),
             "share_misses": share_misses, "share_contract_events": share_contract_events,
+            "objective_weights": objective_weights,
+            "objective_controller_events": objective_controller_events,
             "tier_s_streak": tier_s_streak,
             "tier_w_streak": tier_w_streak, "controller": controller.__dict__,
             "last_pi_dep": last_pi_dep, "last_chi": last_chi,
             "stop_reason": stop_reason, "generator_state": generator.get_state(),
             "rng_state": rng_state(), "lock_sha256": sha256_file(args.lock),
+            "amendment_sha256": sha256_file(args.amendment),
+            "continuation_receipt": continuation_receipt,
         }
         if archive:
             destination = private_dir / f"checkpoint_step_{step:04d}.pt"
@@ -400,7 +481,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         digest = atomic_torch_save(payload, resume_path)
         return resume_path, digest
 
-    if step == 0 and not resume_path.is_file():
+    if not resume_path.is_file():
         save(archive=False)
 
     while step < TOTAL_STEPS and stop_reason is None:
@@ -415,8 +496,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         module.train(); losses, metrics = _losses(module=module, batch=batch, depth=depth, slot_lift=slot_lift)
         if any(not bool(torch.isfinite(value)) for value in losses.values()):
             stop_reason = "non_finite_loss"; break
-        effective = dict(static_weights)
-        effective["preserve"] *= controller.preservation_weight
+        effective = dict(objective_weights)
         bundle = loss_gradient_bundle(losses=losses, module=module, parameters=parameters, slot_lift=slot_lift)
         optimizer.zero_grad(set_to_none=True)
         update = apply_weighted_gradient_bundle(bundle=bundle, parameters=parameters, weights=effective)
@@ -440,6 +520,25 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             }
             classified = classify_loss_shares(trailing, prior_consecutive_misses=share_misses)
             share_misses = int(classified["consecutive_misses"])
+            objective_update = objective_share_controller_update(
+                weights=objective_weights,
+                observed_shares=trailing,
+                target_shares=amendment["rung_targets"][str(controller.rung)],
+                gain=float(amendment["objective_share_controller"]["gain"]),
+                maximum_absolute_log_update=float(
+                    amendment["objective_share_controller"][
+                        "maximum_absolute_log_weight_update"
+                    ]
+                ),
+            )
+            objective_weights = objective_update["weights_after"]
+            objective_event = {
+                "step": step,
+                "window_index": step // SHARE_WINDOW_STEPS,
+                "rung_used_for_target": controller.rung,
+                **objective_update,
+            }
+            objective_controller_events.append(objective_event)
             if classified["classification"] == "demote":
                 before = controller.rung
                 controller = AnnealingState(
@@ -462,6 +561,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
                 "overlap_with_prior_window_steps": 0,
                 "read": classified,
                 "controller": share_transition,
+                "objective_controller": objective_event,
             })
             share_window.clear()
         if step % LOOK_INTERVAL == 0 or stop_reason:
@@ -533,6 +633,12 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
                 "audit": audit, "controller": transition,
                 "trailing_shares": classified,
                 "share_controller": share_transition,
+                "objective_share_controller": (
+                    objective_controller_events[-1]
+                    if objective_controller_events
+                    and objective_controller_events[-1]["step"] == step
+                    else None
+                ),
                 "stop_reason": stop_reason,
             })
             save(archive=False)
@@ -547,8 +653,12 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         "seed": args.seed, "arm": args.arm, "step": step, "target_steps": TOTAL_STEPS,
         "stop_reason": stop_reason, "history": history,
         "share_contract_events": share_contract_events,
+        "objective_controller_events": objective_controller_events,
+        "objective_weights": objective_weights,
         "checkpoint": {"path": str(checkpoint), "sha256": checkpoint_sha},
         "lock_sha256": sha256_file(args.lock), "chain": chain,
+        "amendment_sha256": sha256_file(args.amendment),
+        "continuation": continuation_receipt,
         "direction_cache": direction_receipt, "embedding": embedding_receipt,
         "pre_optimizer_loss_share": preflight_classification,
         "frozen_digest_before": frozen_before, "frozen_digest_after": frozen_after,
@@ -565,7 +675,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--arm", choices=("main", "slot"), required=True)
     for name in ("old_summary", "old_private", "new_summary", "new_private", "staged_labels",
                  "positive_audit", "negative_audit", "retention_panel", "direction_cache",
-                 "dev_panel", "base_scores", "share_rows", "migrated", "p33", "i1", "lock", "output_dir", "private_dir"):
+                 "dev_panel", "base_scores", "share_rows", "migrated", "p33", "i1",
+                 "continuation", "lock", "amendment", "output_dir", "private_dir"):
         parser.add_argument(f"--{name}", type=Path, required=True)
     parser.add_argument("--migrated_sha256", required=True)
     parser.add_argument("--p33_sha256", required=True)

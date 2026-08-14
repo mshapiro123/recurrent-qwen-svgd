@@ -4344,6 +4344,18 @@ TARGETS = {
         ],
         "env": {"P34_SEED": "0", "P34_ARM": "main"},
     },
+    "paper2_phase3_p34_a2": {
+        "path": "colab/STAGE5_PAPER2_PHASE3_P34_A2_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_PHASE3_P34_A2_VERSION",
+            "paper2_phase3_p34_a2_campaign_v1",
+            "ratified dynamic objective share controller exact preflight before optimizer",
+            "both main checkpoint preflights pass before either continuation trains",
+            "score preserving gate write telemetry no CONFIRM no EVAL-E contact",
+            "colab/run_stage5_paper2_phase3_p34_a2.py",
+        ],
+        "env": {"P34_A2_MODE": "preflight", "P34_A2_SEED": "0"},
+    },
     "gradient_path_audit": {
         "path": "colab/STAGE5_GRADIENT_PATH_AUDIT_CELL.py",
         "markers": [

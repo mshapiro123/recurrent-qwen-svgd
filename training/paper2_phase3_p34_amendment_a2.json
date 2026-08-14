@@ -1,0 +1,127 @@
+{
+  "kind": "paper2_phase3_p34_amendment_a2_locked_v1",
+  "status": "ratified_locked_preflight_gated",
+  "locked_before_resumed_training": true,
+  "training_authorized": true,
+  "training_authorization_condition": "both exact no-update continuation preflights pass before either optimizer is constructed",
+  "mark_ratified": true,
+  "ratification": {
+    "drive_id": "1PrUIh20K9ZQf37PWQuDOZ68lZq12eFoc",
+    "path": "docs/STRATEGY_P34_A2_RATIFICATION_REVIEW_20260814_r2.md",
+    "bytes": 8857,
+    "sha256": "b713ae8540e8d83a82f6e7363eccbf27a5fb348162e427b78fef1c2880413ee5"
+  },
+  "strategy_response": {
+    "drive_id": "16lVxjVNEPUurmZ-TLN1hIh94QFXf13Go",
+    "path": "docs/STRATEGY_P34_RESULT_RESPONSE_20260814.md",
+    "bytes": 12943,
+    "sha256": "76b4dd29024f86fb6b01c76ba747e7f60eea0280315b233ab51923f61308a761"
+  },
+  "amendment_document": {
+    "path": "docs/PAPER2_PHASE3_P34_AMENDMENT_A2_20260814.md",
+    "bytes": 11748,
+    "sha256": "e33178a16f04cf2fb609cf9b5d03f29d28245d9670208a37b4c3531e68da9d01"
+  },
+  "cpu_autopsy": {
+    "path": "outputs/stage5/stage5_paper2_phase3_p34_a2_autopsy_20260814/summary.json",
+    "bytes": 129060,
+    "sha256": "25836439b34bebd83fd63286a1876cf974305f324479a0687c75e15e5037b1d4",
+    "scope": "landed DEV receipts only; no model, optimizer, CONFIRM, or EVAL-E"
+  },
+  "continuations": {
+    "main_seed_0": {
+      "step": 400,
+      "checkpoint_path": ".codex_p34_final_download/main_seed_0/private/checkpoint_step_0400.pt",
+      "checkpoint_sha256": "56dfa30d19166dfd3a788e2e6f68e0613f366e55601b5d690b087e1a3edb9230"
+    },
+    "main_seed_1": {
+      "step": 1000,
+      "checkpoint_path": ".codex_p34_final_download/main_seed_1/private/checkpoint_step_1000.pt",
+      "checkpoint_sha256": "2ff122cdc1d3c3208c9eb367345f360a31676f0f821c311ed98f6cc690c8e66f"
+    }
+  },
+  "slot_seed_0": {
+    "status": "shelved",
+    "continuation_authorized": false
+  },
+  "objective_share_controller": {
+    "cadence_steps": 100,
+    "windowing": "non_overlapping",
+    "gain": 0.5,
+    "maximum_absolute_log_weight_update": 0.5,
+    "formula": "delta_i=clip(0.5*log(target_share_i/observed_share_i),-0.5,0.5)",
+    "normalization": "kl_weight_equals_1_after_each_update",
+    "counterfactual_logged_before_application": true,
+    "may_change_annealing_rung": false
+  },
+  "rung_targets": {
+    "0": {
+      "kl": 0.5454640148306096,
+      "aim": 0.23377029207026126,
+      "ce": 0.1558468613801742,
+      "gate": 0.04675405841405225,
+      "preserve": 0.018164773304902626
+    },
+    "1": {
+      "kl": 0.4952294824980508,
+      "aim": 0.21224120678487893,
+      "ce": 0.14149413785658596,
+      "gate": 0.04244824135697579,
+      "preserve": 0.10858693150350851
+    }
+  },
+  "exact_preoptimizer_preflight_required": true,
+  "exact_preoptimizer_preflight_status": "not_run",
+  "both_preflights_required_before_either_optimizer": true,
+  "dev_telemetry_additions": [
+    "position_gate",
+    "realized_writeback_ratio",
+    "battery_fix_regression_unchanged_strata"
+  ],
+  "confirmation_planning": {
+    "alpha_one_sided": 0.05,
+    "power_target": 0.8,
+    "confirm_rows_pooled": 1502,
+    "confirm_rows_target_group": 926,
+    "minimum_confirm_net_rows_pooled": 31,
+    "minimum_confirm_accuracy_points_pooled": 2.0639147802929427,
+    "minimum_confirm_net_rows_target_group": 31,
+    "minimum_confirm_accuracy_points_target_group": 3.3477321814254863,
+    "coherence_gates": {
+      "each_main_seed_positive_vs_frozen_base": true,
+      "each_main_seed_target_half_non_negative": true
+    },
+    "trigger_a": {
+      "minimum_mean_dev_pooled_net_rows": 22,
+      "minimum_mean_dev_pooled_accuracy_points": 2.1484375,
+      "grade": "confirmatory",
+      "projected_power": 0.8
+    },
+    "trigger_b": {
+      "minimum_mean_dev_pooled_net_rows": 10,
+      "minimum_mean_dev_pooled_accuracy_points": 0.9765625,
+      "grade": "good_enough",
+      "projected_power_approximate": 0.3333333333333333,
+      "required_claim_ladder": [
+        "significant reports as confirmed",
+        "positive but unresolved reports as an independent positive estimate at exploratory grade",
+        "negative reports as negative"
+      ]
+    },
+    "below_trigger_b": "keep CONFIRM sealed and move effect growth to P3.5",
+    "joint_seed_cluster_estimator_locked": false,
+    "confirm_spent": false,
+    "eval_e_spent": false
+  },
+  "unchanged_contracts": [
+    "model_path",
+    "trainable_surface",
+    "data",
+    "losses",
+    "sampled_depth_estimator",
+    "task_inference_graph",
+    "task_panel",
+    "catastrophe_tripwires",
+    "registered_step_4000_endpoint"
+  ]
+}
