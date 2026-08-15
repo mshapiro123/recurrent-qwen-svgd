@@ -62,6 +62,32 @@ class ProbePool(nn.Module):
         return query
 
 
+class GatedSidecarInjection(nn.Module):
+    """Add a sidecar memory value through an exactly inert bridge attachment."""
+
+    def __init__(self, *, memory_dim: int, hidden_dim: int, seed: int = 20_260_815) -> None:
+        super().__init__()
+        if min(int(memory_dim), int(hidden_dim)) < 1:
+            raise ValueError("memory_dim and hidden_dim must be positive")
+        generator = torch.Generator().manual_seed(int(seed))
+        self.projection = nn.Parameter(
+            torch.randn((int(hidden_dim), int(memory_dim)), generator=generator) * 1e-3
+        )
+        self.gate = nn.Parameter(torch.zeros(()))
+
+    def forward(self, base: torch.Tensor, memory: torch.Tensor) -> torch.Tensor:
+        if base.shape[:-1] != memory.shape[:-1]:
+            raise ValueError("base and memory leading dimensions differ")
+        if base.shape[-1] != self.projection.shape[0]:
+            raise ValueError("base width and injection output width differ")
+        if memory.shape[-1] != self.projection.shape[1]:
+            raise ValueError("memory width and injection input width differ")
+        projected = memory @ self.projection.to(dtype=memory.dtype).T
+        return base + torch.tanh(self.gate).to(dtype=base.dtype) * projected.to(
+            dtype=base.dtype
+        )
+
+
 def fast_wht(x: torch.Tensor) -> torch.Tensor:
     """Apply an orthonormal Walsh-Hadamard transform on the final axis.
 
