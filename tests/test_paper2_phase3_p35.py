@@ -84,6 +84,13 @@ def test_real_module_probe_attachment_is_identity() -> None:
         tied_embedding=embedding, hidden_size=16, latent_dim=8, control_dim=6
     )
     assert _probe_attachment_identity(module) <= 1e-6
+    assert isinstance(module.control, ProbeControlState)
+    assert all(
+        not torch.is_inference(parameter)
+        for parameter in module.control.reader.parameters()
+    )
+    trainable = set_p35_trainable(module, arm="probe_reader")
+    assert "control.reader.probes" in trainable
 
 
 def test_landing_contract_lr_and_ema() -> None:

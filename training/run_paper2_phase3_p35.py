@@ -170,7 +170,6 @@ def _validate_executed_lock(lock: Mapping[str, Any]) -> dict[str, Any]:
     }
 
 
-@torch.inference_mode()
 def _probe_attachment_identity(module: torch.nn.Module) -> float:
     control = module.control
     latent_dim = int(control.cell.input_size - 11)
@@ -187,9 +186,11 @@ def _probe_attachment_identity(module: torch.nn.Module) -> float:
         "top2_margin": torch.tensor([0.5, 0.6], device=device),
         "position_bucket": torch.tensor([1, 4], device=device),
     }
-    before = control(**inputs)
+    with torch.inference_mode():
+        before = control(**inputs)
     install_probe_control_reader(module, n_probes=4)
-    after = module.control(**inputs)
+    with torch.inference_mode():
+        after = module.control(**inputs)
     return float((before.float() - after.float()).abs().max().item())
 
 
