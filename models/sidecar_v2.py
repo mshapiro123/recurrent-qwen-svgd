@@ -1,0 +1,110 @@
+"""Loss-free Sidecar v2 primitives used by the Stage 2A build."""
+
+from __future__ import annotations
+
+import math
+from collections.abc import Sequence
+
+import torch
+from torch import nn
+
+
+def fast_wht(x: torch.Tensor) -> torch.Tensor:
+    """Apply an orthonormal Walsh-Hadamard transform on the final axis.
+
+    The implementation is allocation-safe for autograd and accepts arbitrary
+    leading dimensions. The transformed width must be a positive power of two.
+    """
+
+    width = int(x.shape[-1]) if x.ndim else 0
+    if width < 1 or width & (width - 1):
+        raise ValueError(f"WHT requires a positive power-of-two width, got {width}")
+    result = x
+    block = 1
+    while block < width:
+        shaped = result.reshape(*result.shape[:-1], width // (2 * block), 2, block)
+        left = shaped[..., 0, :]
+        right = shaped[..., 1, :]
+        result = torch.stack((left + right, left - right), dim=-2).flatten(-3)
+        block *= 2
+    return result / math.sqrt(width)
+
+
+class LiteralNGramMemory(nn.Module):
+    """Causal hashed prefix n-gram memory for the Stage 2A T3b control.
+
+    Addressing uses only existing token IDs ending at each position. The module
+    returns a sidecar value and never mutates or embeds tokens in the substrate.
+    Separate tables make each hash function independently auditable.
+    """
+
+    def __init__(
+        self,
+        *,
+        value_dim: int,
+        num_slots: int,
+        ngram_sizes: Sequence[int] = (2, 3),
+        hashes_per_ngram: int = 2,
+        seed: int = 20_260_815,
+    ) -> None:
+        super().__init__()
+        sizes = tuple(int(size) for size in ngram_sizes)
+        if not sizes or any(size < 1 for size in sizes):
+            raise ValueError("ngram_sizes must contain positive integers")
+        if len(set(sizes)) != len(sizes):
+            raise ValueError("ngram_sizes must be unique")
+        if int(num_slots) < 1 or int(hashes_per_ngram) < 1:
+            raise ValueError("num_slots and hashes_per_ngram must be positive")
+        self.value_dim = int(value_dim)
+        self.num_slots = int(num_slots)
+        self.ngram_sizes = sizes
+        self.hashes_per_ngram = int(hashes_per_ngram)
+        self.seed = int(seed)
+        self.tables = nn.ModuleList(
+            nn.Embedding(self.num_slots, self.value_dim)
+            for _ in range(len(sizes) * self.hashes_per_ngram)
+        )
+        for table in self.tables:
+            nn.init.normal_(table.weight, std=0.02)
+
+    def _indices(self, tokens: torch.Tensor, size: int, hash_index: int) -> torch.Tensor:
+        batch, length = tokens.shape
+        valid_length = length - size + 1
+        if valid_length <= 0:
+            return tokens.new_empty((batch, 0), dtype=torch.long)
+        windows = tokens.unfold(dimension=1, size=size, step=1).long()
+        state = torch.full(
+            (batch, valid_length),
+            self.seed + 104_729 * (size + 17 * hash_index),
+            dtype=torch.long,
+            device=tokens.device,
+        )
+        multiplier = 1_000_003 + 2 * hash_index
+        for offset in range(size):
+            state = state * multiplier + windows[..., offset] + 1 + 97 * offset
+        return torch.remainder(state, self.num_slots)
+
+    def forward(
+        self, token_ids: torch.Tensor
+    ) -> tuple[torch.Tensor, dict[str, torch.Tensor]]:
+        if token_ids.ndim != 2:
+            raise ValueError("token_ids must have shape [batch, sequence]")
+        if token_ids.dtype not in (torch.int32, torch.int64):
+            raise TypeError("token_ids must use an integer dtype")
+        batch, length = token_ids.shape
+        output = next(self.parameters()).new_zeros((batch, length, self.value_dim))
+        count = output.new_zeros((batch, length, 1))
+        audit: dict[str, torch.Tensor] = {}
+        table_index = 0
+        for size in self.ngram_sizes:
+            start = size - 1
+            for hash_index in range(self.hashes_per_ngram):
+                indices = self._indices(token_ids, size, hash_index)
+                audit[f"n{size}_h{hash_index}"] = indices
+                if indices.numel():
+                    output[:, start:, :] += self.tables[table_index](indices)
+                    count[:, start:, :] += 1
+                table_index += 1
+        output = output / count.clamp_min(1)
+        return output, audit
+
