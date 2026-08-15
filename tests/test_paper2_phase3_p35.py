@@ -29,6 +29,7 @@ from training.paper2_phase3_p35 import (
 )
 from training.paper2_phase2_matched_alpha import build_adamw_groups
 from training.run_paper2_phase3_p35 import (
+    _assert_direction_coverage,
     _audit_ema_state,
     _adamw_group_names,
     _probe_attachment_identity,
@@ -337,3 +338,23 @@ def test_executed_lock_matches_code_and_is_ratified() -> None:
     assert receipt["primary_evaluation_ceiling"] == 0.02
     assert receipt["causal_instrument"] == "repaired v2 only"
     assert receipt["execution_build_commit"] == "6071d8b23b66bd74ccf188c2d3fe0637042b1c50"
+
+
+def test_direction_coverage_separates_training_and_audit_populations() -> None:
+    rows = [
+        {"record_id": "positive-a", "gate_label": 1},
+        {"record_id": "negative-b", "gate_label": 0},
+        {"record_id": "positive-c", "gate_label": 1},
+    ]
+    receipt = _assert_direction_coverage(
+        rows=rows,
+        direction_index={"positive-a": 0, "positive-c": 1},
+        population="training",
+    )
+    assert receipt["covered_positive_record_ids"] == 2
+    with pytest.raises(RuntimeError, match="training direction coverage incomplete"):
+        _assert_direction_coverage(
+            rows=rows,
+            direction_index={"positive-a": 0},
+            population="training",
+        )

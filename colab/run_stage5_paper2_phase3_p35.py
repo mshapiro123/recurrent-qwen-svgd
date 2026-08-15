@@ -19,6 +19,7 @@ from colab.run_stage5_paper2_phase3_p34_a2 import (
     MIGRATION_ID,
     NEW_ID,
     OLD_ID,
+    ORACLE_ID,
     P33_ID,
     P33_SHA,
     resolve_preflight,
@@ -87,11 +88,17 @@ def stage_common(scratch: Path) -> dict[str, Path]:
         / "private/serving_oracle/agreement_oracle_directions_v2.pt",
         direction_cache,
     )
+    training_direction_cache = scratch / "agreement_oracle_directions.pt"
+    rsync(
+        DRIVE_STAGE5 / ORACLE_ID / "private/oracle_cache/agreement_oracle_directions.pt",
+        training_direction_cache,
+    )
     return {
         "old": old,
         "new": new,
         "preflight": preflight,
         "direction_cache": direction_cache,
+        "training_direction_cache": training_direction_cache,
     }
 
 
@@ -167,7 +174,9 @@ def runner_command(
         str(common["preflight"] / "private/p33_prep/p33_negative_audit_slice.jsonl"),
         "--retention_panel",
         str(common["preflight"] / "private/p33_prep/p33_retention_panel.jsonl"),
-        "--direction_cache",
+        "--training_direction_cache",
+        str(common["training_direction_cache"]),
+        "--audit_direction_cache",
         str(common["direction_cache"]),
         "--dev_panel",
         str(
