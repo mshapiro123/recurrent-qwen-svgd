@@ -3849,6 +3849,23 @@ def test_phase3_p34_task_preflight_is_score_blind_and_wired() -> None:
     assert "training.run" not in runner
 
 
+def test_phase3_p34_fixed_ceiling_probe_is_wired_and_guarded() -> None:
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(
+        encoding="utf-8"
+    )
+    cell = (
+        ROOT / "colab/STAGE5_PAPER2_PHASE3_P34_FIXED_CEILING_PROBE_CELL.py"
+    ).read_text(encoding="utf-8")
+    runner = (
+        ROOT / "colab/run_stage5_paper2_phase3_p34_fixed_ceiling_probe.py"
+    ).read_text(encoding="utf-8")
+    assert "paper2_phase3_p34_fixed_ceiling_probe" in bootstrap
+    assert "paper2_phase3_p34_fixed_ceiling_probe_v1" in cell
+    assert "score-only two-seed two-ceiling DEV probe no optimizer no training" in cell
+    assert "--gate_ceiling_override" in runner
+    assert "checkpoint_step_4000.pt" in runner
+
+
 def test_gradient_path_audit_target_is_wired_and_guarded() -> None:
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
     bootstrap_md = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")
