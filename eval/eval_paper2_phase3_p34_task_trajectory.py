@@ -23,8 +23,10 @@ from eval.eval_paper2_phase3_p31_references import (
     score_generated,
 )
 from eval.eval_paper2_phase3_p34_task_inference import P34TaskInferenceGraph
+from models.paper2_dc2_student import install_probe_control_reader
 from training.paper2_phase3_p34 import P34_GATE_CEILINGS
 from training.paper2_phase3_p34_lock import panel_identity_sha256
+from training.paper2_phase3_p35 import margin_summary
 
 
 def sha256_file(path: Path) -> str:
@@ -73,6 +75,9 @@ def resolve_evaluation_gate_ceiling(
     """Resolve the score-only ruler independently of training controller state."""
 
     campaign = [item for item in checkpoint_receipts if item.get("label") == "p34"]
+    p35 = [item for item in checkpoint_receipts if item.get("label") == "p35"]
+    if p35 and override is None:
+        return float(p35[-1]["evaluation_gate_ceiling"]), "p35_checkpoint_contract"
     registered = 0.08 if not campaign else P34_GATE_CEILINGS[int(campaign[-1]["controller_rung"])]
     if override is None:
         return float(registered), "checkpoint_controller_rung"
@@ -113,6 +118,11 @@ def _apply_state(module: Any, path: Path, *, expected_sha256: str, label: str) -
         if not isinstance(controller, dict) or "rung" not in controller:
             raise RuntimeError("P3.4 campaign checkpoint lacks controller state")
         receipt["controller_rung"] = int(controller["rung"])
+    if label == "p35":
+        receipt["evaluation_gate_ceiling"] = float(
+            payload["evaluation_gate_ceiling"]
+        )
+        receipt["control_reader"] = str(payload["control_reader"])
     return receipt
 
 
@@ -127,6 +137,9 @@ def load_condition(
     i1_sha256: str | None,
     p34: Path | None = None,
     p34_sha256: str | None = None,
+    p35: Path | None = None,
+    p35_sha256: str | None = None,
+    control_reader: str = "mean",
 ) -> tuple[Any, list[dict[str, Any]]]:
     if sha256_file(migrated) != migrated_sha256:
         raise RuntimeError("P3.4 migrated checkpoint SHA mismatch")
@@ -148,7 +161,17 @@ def load_condition(
         if i1 is None or p34_sha256 is None:
             raise ValueError("P3.4 campaign state requires i1 state and an expected SHA")
         receipts.append(_apply_state(module, p34, expected_sha256=p34_sha256, label="p34"))
-    if p34 is None:
+    if p35 is not None:
+        if p34 is None or p35_sha256 is None:
+            raise ValueError("P3.5 state requires P3.4 state and an expected SHA")
+        if control_reader == "probe":
+            install_probe_control_reader(module, n_probes=4)
+        elif control_reader != "mean":
+            raise ValueError("P3.5 control reader must be mean or probe")
+        receipts.append(_apply_state(module, p35, expected_sha256=p35_sha256, label="p35"))
+    if p35 is not None:
+        module.bridge.set_gate_ceiling(float(receipts[-1]["evaluation_gate_ceiling"]))
+    elif p34 is None:
         module.bridge.set_gate_ceiling(0.08)
     else:
         module.bridge.set_gate_ceiling((0.02, 0.08, 0.20, 0.50)[int(receipts[-1]["controller_rung"])])
@@ -304,13 +327,18 @@ def score_mcq(
             for label, values in option_scores[item_id].items()
         }
         prediction = max(means, key=means.get)
+        ordered_scores = sorted(means.values(), reverse=True)
+        decision_margin = float(ordered_scores[0] - ordered_scores[1])
         results.append(
             {
                 "item_id": item_id,
+                "battery": str(row["battery"]),
                 "prediction": prediction,
                 "augmented_correct": prediction == answers[item_id],
                 "option_scores": means,
                 "reader": "cyclic_label_aggregated_permutation_mean_v1",
+                "answer_token_margins": [decision_margin],
+                "answer_token_margin_minimum": decision_margin,
                 **_telemetry_summary(
                     telemetry[item_id]["gates"], telemetry[item_id]["ratios"]
                 ),
@@ -350,12 +378,14 @@ def score_generation(
             finished = [False for _row in batch]
             gates: list[list[float]] = [[] for _row in batch]
             ratios: list[list[float]] = [[] for _row in batch]
+            margins: list[list[float]] = [[] for _row in batch]
             for token_index in range(cap):
                 selected_tokens = output.augmented_logits.argmax(dim=-1)
                 for index, token in enumerate(selected_tokens.tolist()):
                     if not finished[index]:
                         gates[index].append(float(output.position_gate[index].cpu()))
                         ratios[index].append(float(output.writeback_ratio[index].cpu()))
+                        margins[index].append(float(output.answer_token_margin[index].cpu()))
                         generated[index].append(int(token))
                         if tokenizer.eos_token_id is not None and int(token) == int(tokenizer.eos_token_id):
                             finished[index] = True
@@ -365,17 +395,23 @@ def score_generation(
                     state=state, selected_tokens=selected_tokens
                 )
             batch_results = []
-            for row, token_ids, row_gates, row_ratios in zip(batch, generated, gates, ratios):
+            for row, token_ids, row_gates, row_ratios, row_margins in zip(
+                batch, generated, gates, ratios, margins
+            ):
                 text = tokenizer.decode(token_ids, skip_special_tokens=True)
                 correct, prediction = score_generated(row, text)
                 batch_results.append(
                     {
                         "item_id": str(row["item_id"]),
+                        "battery": str(row["battery"]),
                         "prediction": prediction,
                         "generated_text": text,
+                        "generated_token_ids": token_ids,
                         "generated_tokens": len(token_ids),
                         "augmented_correct": bool(correct),
                         "reader": str(row["reader"]),
+                        "answer_token_margins": row_margins,
+                        "answer_token_margin_minimum": min(row_margins),
                         **_telemetry_summary(row_gates, row_ratios),
                     }
                 )
@@ -407,6 +443,9 @@ def main() -> int:
     parser.add_argument("--i1_sha256")
     parser.add_argument("--p34", type=Path)
     parser.add_argument("--p34_sha256")
+    parser.add_argument("--p35", type=Path)
+    parser.add_argument("--p35_sha256")
+    parser.add_argument("--control_reader", choices=("mean", "probe"), default="mean")
     parser.add_argument("--mcq_batch_size", type=int, default=32)
     parser.add_argument("--generation_batch_size", type=int, default=8)
     parser.add_argument("--gate_ceiling_override", type=float)
@@ -456,6 +495,9 @@ def main() -> int:
         i1_sha256=args.i1_sha256,
         p34=args.p34,
         p34_sha256=args.p34_sha256,
+        p35=args.p35,
+        p35_sha256=args.p35_sha256,
+        control_reader=args.control_reader,
     )
     evaluation_gate_ceiling, evaluation_gate_ceiling_source = resolve_evaluation_gate_ceiling(
         checkpoint_receipts, args.gate_ceiling_override
@@ -575,6 +617,7 @@ def main() -> int:
             "used_by_controller": False,
             "by_battery_and_outcome": telemetry_summary,
         },
+        "answer_token_margins": margin_summary(output_rows),
         "confirm_scored": False,
         "eval_e_scored": False,
         "optimizer_constructed": False,

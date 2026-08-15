@@ -479,6 +479,116 @@ class ControlState(nn.Module):
         return self.cell(features, previous.float())
 
 
+class DetachedMultiProbePool(nn.Module):
+    """Attention-pool detached scratch cells with a mean-preserving attach."""
+
+    def __init__(self, *, cell_dim: int = 128, n_probes: int = 4) -> None:
+        super().__init__()
+        if int(n_probes) < 1:
+            raise ValueError("multi-probe pooling requires at least one probe")
+        self.cell_dim = int(cell_dim)
+        self.n_probes = int(n_probes)
+        self.probes = nn.Parameter(torch.zeros(self.n_probes, self.cell_dim))
+        self.out = nn.Linear(self.n_probes * self.cell_dim, self.cell_dim, bias=False)
+        self.reset_parameters()
+
+    def reset_parameters(self) -> None:
+        # Uniform attention plus averaged identity blocks reproduces mean pooling
+        # exactly at attachment while leaving every probe trainable.
+        nn.init.zeros_(self.probes)
+        with torch.no_grad():
+            self.out.weight.zero_()
+            identity = torch.eye(self.cell_dim, dtype=self.out.weight.dtype)
+            for index in range(self.n_probes):
+                start = index * self.cell_dim
+                self.out.weight[:, start : start + self.cell_dim].copy_(
+                    identity / self.n_probes
+                )
+
+    def forward(
+        self, cells: torch.Tensor, cell_mask: Optional[torch.Tensor] = None
+    ) -> torch.Tensor:
+        if cells.ndim != 3 or cells.shape[-1] != self.cell_dim:
+            raise ValueError("probe cells must have shape [batch, cells, cell_dim]")
+        if cell_mask is None:
+            cell_mask = torch.ones(
+                cells.shape[:2], dtype=torch.bool, device=cells.device
+            )
+        if cell_mask.shape != cells.shape[:2]:
+            raise ValueError("probe cell mask must match [batch, cells]")
+        if bool((~cell_mask.bool()).all(dim=1).any()):
+            raise ValueError("every probe-pool row requires one visible cell")
+        detached = cells.detach()
+        scores = (
+            detached.float() @ self.probes.float().T / math.sqrt(self.cell_dim)
+        )
+        scores = scores.masked_fill(
+            ~cell_mask.bool().unsqueeze(-1), torch.finfo(scores.dtype).min
+        )
+        weights = torch.softmax(scores, dim=1)
+        pooled = torch.einsum("bca,bcd->bad", weights, detached.float())
+        return self.out(pooled.flatten(1))
+
+
+class ProbeControlState(ControlState):
+    """Control state whose scratch read is a detached four-probe pool."""
+
+    def __init__(
+        self, *, latent_dim: int = 128, control_dim: int = 32, n_probes: int = 4
+    ) -> None:
+        super().__init__(latent_dim=latent_dim, control_dim=control_dim)
+        self.reader = DetachedMultiProbePool(
+            cell_dim=latent_dim, n_probes=n_probes
+        )
+
+    def forward(
+        self,
+        *,
+        scratch: torch.Tensor,
+        previous: Optional[torch.Tensor],
+        innovation_norm: torch.Tensor,
+        student_entropy: torch.Tensor,
+        top2_margin: torch.Tensor,
+        position_bucket: torch.Tensor,
+    ) -> torch.Tensor:
+        batch = scratch.shape[0]
+        if previous is None:
+            previous = scratch.new_zeros((batch, self.control_dim))
+        position = self.position_embedding(position_bucket.long().clamp(0, 4))
+        scalars = torch.stack(
+            [innovation_norm, student_entropy, top2_margin], dim=-1
+        ).float()
+        pooled = self.reader(scratch)
+        features = torch.cat([pooled, scalars, position], dim=-1)
+        return self.cell(features, previous.float())
+
+
+def install_probe_control_reader(
+    module: nn.Module, *, n_probes: int = 4
+) -> ProbeControlState:
+    """Attach the probe reader while preserving existing control parameter objects."""
+
+    inherited = module.control
+    if isinstance(inherited, ProbeControlState):
+        if inherited.reader.n_probes != int(n_probes):
+            raise RuntimeError("installed probe count differs from the P3.5 arm")
+        return inherited
+    if not isinstance(inherited, ControlState):
+        raise TypeError("probe reader requires the registered ControlState")
+    replacement = ProbeControlState(
+        latent_dim=inherited.cell.input_size - 11,
+        control_dim=inherited.control_dim,
+        n_probes=n_probes,
+    )
+    replacement.position_embedding = inherited.position_embedding
+    replacement.cell = inherited.cell
+    module.control = replacement.to(
+        device=next(inherited.parameters()).device,
+        dtype=next(inherited.parameters()).dtype,
+    )
+    return module.control
+
+
 @dataclass
 class DraftHeadOutput:
     logits: torch.Tensor
@@ -686,6 +796,8 @@ class Phase3StudentModules(Phase2StudentModules):
         draft_rank: int = 64,
         max_steps: int = 4,
         rms_cap: float = 0.550893,
+        control_reader: str = "mean",
+        control_probes: int = 4,
     ) -> None:
         super().__init__(
             tied_embedding=tied_embedding,
@@ -704,6 +816,10 @@ class Phase3StudentModules(Phase2StudentModules):
             max_steps=max_steps,
             rms_cap=rms_cap,
         )
+        if control_reader == "probe":
+            install_probe_control_reader(self, n_probes=control_probes)
+        elif control_reader != "mean":
+            raise ValueError(f"unknown control reader: {control_reader}")
 
     def forward(
         self,

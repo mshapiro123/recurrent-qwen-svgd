@@ -1,0 +1,168 @@
+{
+  "kind": "paper2_phase3_p35_executed_lock_v1",
+  "status": "assembled_awaiting_estimator_receipt_and_ratification",
+  "locked_before_training": false,
+  "training_authorized": false,
+  "mark_ratified": false,
+  "authority": {
+    "drive_id": "1ZzWO3MzkFW5Ph0wAuF5r-ZpdYCzAEi6F",
+    "repo_receipt": "docs/STRATEGY_P35_CHARTER_RESPONSE_20260815.receipt.json",
+    "sha256": "3bf476f1db8ebe451d798c941aeef3110129b8d946515125488b7871e0cf7c82",
+    "bytes": 13242
+  },
+  "inherited_verdict": "REPLICATED_POSITIVE_BELOW_TRIGGER_B",
+  "sealed_partitions": {
+    "confirm_contact": false,
+    "eval_e_contact": false,
+    "remain_sealed": true
+  },
+  "initialization": {
+    "seed_0": {
+      "source": "P3.4 A2 scored step-4000 resumable checkpoint",
+      "sha256": "381955ec5b78d0a00883c29e9f940feac8cfc8665f7a3a4446c79734532f4ed7",
+      "optimizer_state_required": true,
+      "generator_state_required": true,
+      "rng_state_required": true
+    },
+    "seed_1": {
+      "source": "P3.4 A2 scored step-4000 resumable checkpoint",
+      "sha256": "97ad532a5bffd72b2563799047b517e531e00115793bf4808f060148dfffc1ec",
+      "optimizer_state_required": true,
+      "generator_state_required": true,
+      "rng_state_required": true
+    }
+  },
+  "estimator_repair": {
+    "population_rows": 4096,
+    "source_reader": "bf16_serving_matmul_v1",
+    "rows_may_be_dropped": false,
+    "required_identity_rate": 1.0,
+    "prior_identity_rate": 0.962646484375,
+    "cache_kind": "paper2_phase3_serving_oracle_direction_cache_v2",
+    "cache_path": null,
+    "cache_sha256": null,
+    "receipt_path": null,
+    "receipt_sha256": null,
+    "gates_training": true,
+    "gates_registered_pi_dir": true
+  },
+  "arms": {
+    "S": {
+      "name": "stabilized",
+      "seeds": [0, 1],
+      "control_reader": "mean_pool_v1",
+      "source_checkpoint": "matching seed P3.4 step-4000 endpoint",
+      "trainable_surface": ["bridge.*", "control.*"],
+      "fresh_parameters": [],
+      "registered_role": "spine and causal test of stabilized landing"
+    },
+    "R": {
+      "name": "probe_reader",
+      "seeds": [0],
+      "control_reader": "detached_multi_probe_pool_v1",
+      "probe_count": 4,
+      "probe_cells": "eight final flow-state slots",
+      "cell_stop_gradient": true,
+      "mean_preserving_initialization": true,
+      "trainable_surface": ["bridge.*", "control.*"],
+      "source_checkpoint": "seed-0 P3.4 step-4000 endpoint",
+      "registered_role": "paired reader A/B against Arm S seed 0"
+    }
+  },
+  "landing": {
+    "source_step": 4000,
+    "landing_steps": 400,
+    "target_step": 4400,
+    "selection_rationale": "directly tests endpoint stabilization from exact resumable endpoints at one tenth the original training dose",
+    "optimizer": "AdamW restored by parameter name from the P3.4 endpoint",
+    "random_streams": "batch generator and global RNG states restored from each P3.4 endpoint",
+    "base_learning_rate": 0.0003,
+    "schedule": "cosine_to_zero over steps 4001-4400",
+    "weight_decay": 0.01,
+    "betas": [0.9, 0.999],
+    "batch_size": 128,
+    "depth_lottery": {"1": 0.1, "2": 0.2, "3": 0.3, "4": 0.4},
+    "look_steps": [4100, 4200, 4300, 4400],
+    "runtime_annealing_controller_frozen": true,
+    "objective_share_weights_frozen": true,
+    "training_rung": 0,
+    "counterfactual_controller_logged": true
+  },
+  "checkpoint_policy": {
+    "ema_decay": 0.995,
+    "ema_initialized_from_source_endpoint": true,
+    "ema_updated_after_every_optimizer_step": true,
+    "ema_primary": true,
+    "raw_after_decay_secondary": true,
+    "raw_and_ema_saved_at_every_look": true
+  },
+  "evaluation": {
+    "panel": "unchanged frozen 1024-row P3.4 DEV panel",
+    "decoding": "greedy",
+    "flow_loops": 4,
+    "scratch_lifetime": "fresh_per_emitted_token",
+    "draft_head_scoring": false,
+    "primary_gate_ceiling": 0.02,
+    "secondary_gate_ceiling": 0.08,
+    "primary_live_read": "EMA at ceiling 0.02 every look",
+    "score_only_bundle": "raw and EMA at ceilings 0.02 and 0.08 for all four looks",
+    "exact_row_ids_every_look": true,
+    "answer_token_margin_per_token": true,
+    "answer_token_margin_row_minimum": true,
+    "margin_strata": ["pooled", "battery"],
+    "registered_pi_dir_cache": "repaired v2 only"
+  },
+  "p34_lock": {
+    "guardrails": {
+      "tier_s_one_sided_alpha": 0.1,
+      "tier_s_decision_margin": -0.03,
+      "tier_s_consecutive_looks": 4,
+      "tier_w_drop_class": -0.03,
+      "tier_w_consecutive_looks": 2
+    }
+  },
+  "safety": {
+    "hard_stops": [
+      "non_finite_loss",
+      "non_finite_gradient",
+      "frozen_lineage_digest_change",
+      "tier_s_task_collapse",
+      "source_anchor_identity_below_1.0",
+      "sealed_partition_contact"
+    ],
+    "share_contract_during_landing": "observe_only_with_counterfactual; no objective or rung shaping",
+    "reader_attachment_identity_tolerance": 1e-6
+  },
+  "readings": {
+    "arm_S_success": "EMA endpoint reaches or exceeds the registered late-window benchmark and adjacent row churn falls while continuous margins hold or rise",
+    "late_window_benchmarks_rows": {"seed_0": 8, "seed_1": 9},
+    "arm_R_primary_comparisons": [
+      "gate precision at matched recall",
+      "repaired pi_dep enrichment",
+      "row-minimum answer-token margin",
+      "net correct rows"
+    ],
+    "arm_R_promotion": "noninferior task net plus improved gate behavior",
+    "no_posthoc_arm_selection": true
+  },
+  "persistence_probe": {
+    "training_authorized": false,
+    "optimizer_steps": 0,
+    "conditions": ["fresh_scratch_per_token", "controlled_cross_token_carry"],
+    "population": "DEV GSM8K and MBPP; hash-ranked up to 128 rows per battery",
+    "selection_seed": 20260815,
+    "seed": 0,
+    "seed_rationale": "seed 0 is the predeclared stress case with the larger measured deployed-source change rate",
+    "directions": "re-anchored from current source token; no frozen-source reuse",
+    "gates_p35_nonpersistent_training": false,
+    "gates_any_future_persistent_training": true
+  },
+  "unresolved_before_ratification": [
+    "estimator_repair.cache_path",
+    "estimator_repair.cache_sha256",
+    "estimator_repair.receipt_path",
+    "estimator_repair.receipt_sha256",
+    "implementation_commit",
+    "mark_ratified"
+  ]
+}

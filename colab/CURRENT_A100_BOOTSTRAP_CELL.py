@@ -4368,6 +4368,18 @@ TARGETS = {
         ],
         "env": {},
     },
+    "paper2_phase3_p35_prerequisites": {
+        "path": "colab/STAGE5_PAPER2_PHASE3_P35_PREREQUISITES_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_PHASE3_P35_PREREQUISITES_VERSION",
+            "paper2_phase3_p35_prerequisites_v1",
+            "exact BF16 serving-reader cache repair all 4096 rows no drops",
+            "DEV-only fresh-versus-carried scratch probe no optimizer no training",
+            "CONFIRM and EVAL-E remain sealed and P3.5 training stays disabled",
+            "colab/run_stage5_paper2_phase3_p35_prerequisites.py",
+        ],
+        "env": {},
+    },
     "gradient_path_audit": {
         "path": "colab/STAGE5_GRADIENT_PATH_AUDIT_CELL.py",
         "markers": [
