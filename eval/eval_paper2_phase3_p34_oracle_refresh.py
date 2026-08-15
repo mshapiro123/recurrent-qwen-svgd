@@ -59,9 +59,16 @@ def direction_refresh_read(
     target_reached = [row for row in positive if row["deployed_top1"] == row["teacher_top1"]]
     refreshable = [row for row in positive if row["deployed_top1"] != row["teacher_top1"]]
     if refreshable:
-        base_source = torch.tensor([row["base_top1"] for row in refreshable])
-        deployed_source = torch.tensor([row["deployed_top1"] for row in refreshable])
-        target = torch.tensor([row["teacher_top1"] for row in refreshable])
+        device = lm_head_weight.device
+        base_source = torch.tensor(
+            [row["base_top1"] for row in refreshable], device=device
+        )
+        deployed_source = torch.tensor(
+            [row["deployed_top1"] for row in refreshable], device=device
+        )
+        target = torch.tensor(
+            [row["teacher_top1"] for row in refreshable], device=device
+        )
         old = analytic_oracle_directions(
             lm_head_weight=lm_head_weight,
             source_tokens=base_source,
