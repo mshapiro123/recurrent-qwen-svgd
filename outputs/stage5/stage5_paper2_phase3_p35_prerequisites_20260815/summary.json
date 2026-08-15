@@ -1,0 +1,87 @@
+{
+  "confirm_scored": false,
+  "eval_e_scored": false,
+  "kind": "paper2_phase3_p35_prerequisite_public_summary_v1",
+  "optimizer_constructed": false,
+  "optimizer_steps": 0,
+  "persistence": {
+    "gsm8k": {
+      "carried_accuracy": 0.3203125,
+      "carried_correct": 41,
+      "carried_minus_fresh_points": -1.5625,
+      "carried_minus_fresh_rows": -2,
+      "changed_rows_with_correctness_transition": 4,
+      "discordant_rows": 4,
+      "exact_paired_sign_pvalue_two_sided": 0.625,
+      "fixes": 1,
+      "fresh_accuracy": 0.3359375,
+      "fresh_correct": 43,
+      "later_token_changed_rate": 0.2265625,
+      "later_token_changed_rows": 29,
+      "nontrivial_reanchors": 3662,
+      "paired_bootstrap_95ci_points": [
+        -4.6875,
+        1.5625
+      ],
+      "regressions": 3,
+      "rows": 128
+    },
+    "mbpp": {
+      "carried_accuracy": 0.5074626865671642,
+      "carried_correct": 34,
+      "carried_minus_fresh_points": 1.4925373134328357,
+      "carried_minus_fresh_rows": 1,
+      "changed_rows_with_correctness_transition": 1,
+      "discordant_rows": 1,
+      "exact_paired_sign_pvalue_two_sided": 1.0,
+      "fixes": 1,
+      "fresh_accuracy": 0.4925373134328358,
+      "fresh_correct": 33,
+      "later_token_changed_rate": 0.08955223880597014,
+      "later_token_changed_rows": 6,
+      "nontrivial_reanchors": 361,
+      "paired_bootstrap_95ci_points": [
+        0.0,
+        4.477611940298507
+      ],
+      "regressions": 0,
+      "rows": 67
+    },
+    "pooled": {
+      "carried_accuracy": 0.38461538461538464,
+      "carried_correct": 75,
+      "carried_minus_fresh_points": -0.5128205128205128,
+      "carried_minus_fresh_rows": -1,
+      "changed_rows_with_correctness_transition": 5,
+      "discordant_rows": 5,
+      "exact_paired_sign_pvalue_two_sided": 1.0,
+      "fixes": 2,
+      "fresh_accuracy": 0.38974358974358975,
+      "fresh_correct": 76,
+      "later_token_changed_rate": 0.1794871794871795,
+      "later_token_changed_rows": 35,
+      "nontrivial_reanchors": 4023,
+      "paired_bootstrap_95ci_points": [
+        -2.564102564102564,
+        1.5384615384615385
+      ],
+      "regressions": 3,
+      "rows": 195
+    },
+    "scope": "seed 0, DEV only, fresh scratch versus controlled cross-token carry"
+  },
+  "serving_oracle_cache": {
+    "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase3_p35_prerequisites_20260815/private/serving_oracle/agreement_oracle_directions_v2.pt",
+    "sha256": "294358a7dacc746b733e9f08296494c6f461443a92c093f8019a1dda56422294",
+    "source_anchor_identity": {
+      "identity_rate": 1.0,
+      "matched_rows": 4096,
+      "mismatched_rows": 0,
+      "reader": "bf16_serving_matmul_v1",
+      "rows": 4096
+    },
+    "summary_path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase3_p35_prerequisites_20260815/private/serving_oracle/agreement_oracle_directions_v2.summary.json",
+    "summary_sha256": "ab584b6ba008b0ade9247bee099f9bee4cce02ed1c58de94be68a8bb5c4197e6"
+  },
+  "status": "complete_no_training"
+}

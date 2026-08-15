@@ -2018,3 +2018,15 @@ Colab/Drive backups for selected runs.
   post-hoc DEV diagnostics; the registered `REPLICATED_POSITIVE_BELOW_TRIGGER_B`
   verdict is unchanged and CONFIRM/EVAL-E remain sealed. Handoff:
   `docs/PAPER2_PHASE3_P34_STABILITY_AND_REFRESH_HANDOFF_20260815.md`.
+- 2026-08-15 P3.5 no-training prerequisites: the exact BF16 serving-reader
+  repair selected all 4,096 registered audit rows from the 43,204-row strict
+  oracle cache and achieved `4096/4096` source-token identity with no drops.
+  The seed-0 controlled persistence probe compared fresh scratch with
+  cross-token carry on 128 GSM8K and 67 MBPP DEV rows. Carry changed later
+  tokens on `35/195` rows but scored `75/195` versus `76/195` fresh, with two
+  fixes and three regressions. Reading:
+  `NO_FREE_PERSISTENCE_GAIN_ON_THIS_SEED0_DEV_PROBE`; trained persistence
+  remains untested and unauthorized. No optimizer was constructed, optimizer
+  steps were zero, and CONFIRM/EVAL-E remained sealed. Handoff:
+  `docs/PAPER2_PHASE3_P35_PREREQUISITES_HANDOFF_20260815.md`. Receipt:
+  `outputs/stage5/stage5_paper2_phase3_p35_prerequisites_20260815/summary.json`.

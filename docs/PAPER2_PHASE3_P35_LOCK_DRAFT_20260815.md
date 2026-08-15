@@ -44,9 +44,14 @@ The inherited task-collapse guardrail remains armed. Non-finite loss or gradient
 
 Before P3.5 training, the oracle direction cache is rebuilt on all 4,096 positive rows with the exact BF16 serving matmul used by audit. No mismatched rows may be dropped. Cache construction and audit must report 4,096/4,096 source-token identity. Until that receipt lands, registered `pi_dir` is suspended and the runner remains disabled.
 
+This prerequisite landed on 2026-08-15. The registered 4,096 audit IDs were selected without loss from the 43,204-row source cache and preserved in audit order. Exact source-token identity was `4,096/4,096`. The repaired cache is
+`/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase3_p35_prerequisites_20260815/private/serving_oracle/agreement_oracle_directions_v2.pt`, SHA-256 `294358a7dacc746b733e9f08296494c6f461443a92c093f8019a1dda56422294`. Its summary SHA-256 is `ab584b6ba008b0ade9247bee099f9bee4cce02ed1c58de94be68a8bb5c4197e6`.
+
 ## 6. Persistence probe
 
 The no-training probe compares fresh scratch against controlled cross-token carry on a deterministic, hash-ranked DEV sample of up to 128 GSM8K and 128 MBPP rows. It never reuses a frozen-source direction: direction telemetry is recomputed from the current source token at every generated step. The probe is mandatory before any persistent training, but it does not block these nonpersistent landing arms once the serving-reader cache is repaired.
+
+The probe landed on 195 available rows: 128 GSM8K and 67 MBPP. Fresh scratch scored `76/195`; controlled carry scored `75/195`, with two fixes and three regressions. Carry changed later generated tokens on `35/195` rows, including `29/128` GSM8K and `6/67` MBPP rows, but produced no pooled accuracy gain. The bounded reading is `no_free_persistence_gain_on_this_seed0_dev_probe`. Persistent training remains gated; the nonpersistent Arm S/Arm R landing comparison is unaffected.
 
 ## 7. Registered readings
 
@@ -56,4 +61,4 @@ Arm R is compared with Arm S seed 0 on gate precision at matched recall, repaire
 
 ## 8. Approval boundary
 
-The code, tests, and no-training prerequisites may run under this draft. Training cannot start until the exact serving-cache path and SHA, its 100% identity receipt, and the implementation commit are inserted into the machine lock, the unresolved list is empty, and Mark sets `mark_ratified = true`, `locked_before_training = true`, `training_authorized = true`, and status `approved_for_training`.
+The code, tests, and no-training prerequisites are complete. The exact serving-cache path and SHA, its 100% identity receipt, persistence receipt, and implementation commit `87bac2a4364284dccb08976aa9b048521cde1469` are inserted into the machine lock. Training remains disabled until strategy ratifies the assembled lock and Mark sets `mark_ratified = true`, `locked_before_training = true`, `training_authorized = true`, clears the unresolved list, and sets status `approved_for_training`.
