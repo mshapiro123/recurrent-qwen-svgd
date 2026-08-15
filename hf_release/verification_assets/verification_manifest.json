@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "repos": {
+    "recurrent-qwen2.5-0.5b-full-block": {
+      "expected_correct_by_depth": {
+        "1": 128,
+        "2": 127,
+        "3": 127,
+        "4": 128
+      },
+      "source_data": "outputs/stage5/stage5_synthetic_depth_frozen_eval_v3_depth22_n24/data/test_chain_mcq.jsonl",
+      "source_receipt": "outputs/stage5/stage5_n24_support12_rung_20260707_140139/eval/frozen_depth22_step_6000/active_summary.json",
+      "identity_check": false,
+      "verification_data": "hf_release/verification_assets/recurrent-qwen2.5-0.5b-full-block.jsonl",
+      "verification_data_sha256": "76de261d06dc95b94574b5fe3bb06045add47faf03011cd2b2b2f2bdd5cfefb4",
+      "row_count": 512,
+      "rows_by_depth": {
+        "1": 128,
+        "2": 128,
+        "3": 128,
+        "4": 128
+      }
+    },
+    "recurrent-qwen2.5-0.5b-r16-adapter": {
+      "expected_correct_by_depth": {
+        "1": 128,
+        "2": 128,
+        "3": 127,
+        "4": 128
+      },
+      "source_data": "outputs/stage5/stage5_synthetic_depth_frozen_eval_v2_depth14/data/test_chain_mcq.jsonl",
+      "source_receipt": "outputs/stage5/stage5_adapter_budget_arm_e_20260718/eval/final_phase_a_1792/summary.json",
+      "identity_check": false,
+      "verification_data": "hf_release/verification_assets/recurrent-qwen2.5-0.5b-r16-adapter.jsonl",
+      "verification_data_sha256": "3105202fac702cd3c1c684a0b3493fcc6906de3eb5deb45602c964787df25575",
+      "row_count": 512,
+      "rows_by_depth": {
+        "1": 128,
+        "2": 128,
+        "3": 128,
+        "4": 128
+      }
+    },
+    "recurrent-qwen2.5-0.5b-natural-keeper": {
+      "expected_correct_by_depth": {
+        "1": 8
+      },
+      "source_data": "outputs/stage5/stage5_natural_surface_receipts_20260709_210151/data/robust_relay_fronted_d1_12.jsonl",
+      "source_receipt": "outputs/stage5/stage5_natural_surface_followups_2_3_20260710/active/step_2000/step_2000_robust_relay_fronted_d1_12_active_rows_sample.jsonl",
+      "identity_check": true,
+      "verification_data": "hf_release/verification_assets/recurrent-qwen2.5-0.5b-natural-keeper.jsonl",
+      "verification_data_sha256": "81e598aab8cc77cdde5dc5484a66eb2804f3759640ce92244fcf897b648231dd",
+      "row_count": 8,
+      "rows_by_depth": {
+        "1": 8
+      }
+    }
+  }
+}

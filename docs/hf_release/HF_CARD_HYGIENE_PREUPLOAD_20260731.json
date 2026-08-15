@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "kind": "paper_one_hf_card_hygiene",
+  "status": "red",
+  "cards": [
+    {
+      "repo_name": "recurrent-qwen2.5-0.5b-full-block",
+      "card": "docs\\hf_cards\\README_full_block.md",
+      "metadata": {
+        "base_model": "Qwen/Qwen2.5-0.5B-Instruct",
+        "library_name": "transformers",
+        "license": "apache-2.0",
+        "tags": [
+          "recurrent-depth",
+          "latent-reasoning",
+          "qwen2.5",
+          "research"
+        ]
+      },
+      "errors": [
+        "loading prose does not match the selected in-repo custom loader"
+      ],
+      "status": "red"
+    },
+    {
+      "repo_name": "recurrent-qwen2.5-0.5b-natural-keeper",
+      "card": "docs\\hf_cards\\README_natural_keeper.md",
+      "metadata": {
+        "base_model": "Qwen/Qwen2.5-0.5B-Instruct",
+        "library_name": "transformers",
+        "license": "apache-2.0",
+        "tags": [
+          "recurrent-depth",
+          "latent-reasoning",
+          "qwen2.5",
+          "research"
+        ]
+      },
+      "errors": [
+        "loading prose does not match the selected in-repo custom loader"
+      ],
+      "status": "red"
+    },
+    {
+      "repo_name": "recurrent-qwen2.5-0.5b-r16-adapter",
+      "card": "docs\\hf_cards\\README_r16_adapter.md",
+      "metadata": {
+        "base_model": "Qwen/Qwen2.5-0.5B-Instruct",
+        "library_name": "peft",
+        "license": "apache-2.0",
+        "tags": [
+          "recurrent-depth",
+          "latent-reasoning",
+          "lora",
+          "qwen2.5",
+          "research"
+        ]
+      },
+      "errors": [
+        "selected in-repo custom loader requires library_name: transformers",
+        "loading prose does not match the selected in-repo custom loader"
+      ],
+      "status": "red"
+    }
+  ]
+}
