@@ -5,8 +5,9 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 from pathlib import Path
-from typing import Any, Iterable, Mapping
+from typing import Any, Iterable, Mapping, Sequence
 
 import torch
 from torch import nn
@@ -54,6 +55,23 @@ def read_strict_records(path: Path) -> list[dict[str, Any]]:
 
 def _student_receipts(summary: Mapping[str, Any]) -> list[dict[str, Any]]:
     return list(summary["model_caches"]["student_0p5b"]["shards"])
+
+
+def _selected_student_receipts(
+    *, summary: Mapping[str, Any], samples: Sequence[Mapping[str, Any]], needed: set[int]
+) -> list[dict[str, Any]]:
+    needed_samples = {
+        index for index, sample in enumerate(samples) if int(sample["anchor_index"]) in needed
+    }
+    selected = []
+    for receipt in _student_receipts(summary):
+        match = re.fullmatch(r"rows_(\d+)_(\d+)", Path(receipt["path"]).stem)
+        if match is None:
+            raise RuntimeError(f"unrecognized P3.2 student hidden shard name: {receipt['path']}")
+        start, stop = map(int, match.groups())
+        if any(start <= sample_index < stop for sample_index in needed_samples):
+            selected.append(receipt)
+    return selected
 
 
 def _lm_head(
@@ -104,7 +122,9 @@ def load_selected_anchor_hidden(
             anchor for record_source, anchor in anchor_keys if record_source == source
         }
         files = []
-        for receipt in _student_receipts(summary):
+        for receipt in _selected_student_receipts(
+            summary=summary, samples=samples, needed=needed
+        ):
             path = _resolve(receipt["path"], private_root)
             observed = sha256_file(path)
             if observed != receipt["sha256"]:

@@ -12,15 +12,40 @@ import torch
 import torch.nn.functional as F
 from transformers import AutoModelForCausalLM
 
-from eval.cache_paper2_phase3_agreement_oracle import analytic_oracle_directions
+from eval.cache_paper2_phase3_agreement_oracle import (
+    analytic_oracle_directions,
+    load_selected_anchor_hidden,
+)
 from eval.eval_paper2_phase3_p31_references import MODEL_SPECS
 from eval.eval_paper2_phase3_p34_task_trajectory import load_condition, sha256_file, write_json
 from training.run_paper2_phase3_p33 import (
     _direction_lookup,
     audit_model,
-    load_audit_material,
+    read_jsonl,
     write_jsonl,
 )
+
+
+def load_oracle_audit_material(
+    *, positive_path: Path, negative_path: Path, sources: Mapping[str, tuple[Path, Path]]
+) -> dict[str, Any]:
+    populations = {
+        "positive": read_jsonl(positive_path),
+        "negative": read_jsonl(negative_path),
+    }
+    if (len(populations["positive"]), len(populations["negative"])) != (4096, 12288):
+        raise RuntimeError("P3.4 oracle refresh audit population counts changed")
+    material = {}
+    for name, records in populations.items():
+        hidden, record_anchor, _lookup, receipt = load_selected_anchor_hidden(
+            records=records, sources=sources
+        )
+        material[name] = {
+            "records": records,
+            "hidden4": hidden.index_select(0, record_anchor),
+            "hidden_receipt": receipt,
+        }
+    return material
 
 
 def direction_refresh_read(
@@ -79,7 +104,6 @@ def main() -> int:
     parser.add_argument("--new_private", type=Path, required=True)
     parser.add_argument("--positive_audit", type=Path, required=True)
     parser.add_argument("--negative_audit", type=Path, required=True)
-    parser.add_argument("--retention_panel", type=Path, required=True)
     parser.add_argument("--direction_cache", type=Path, required=True)
     parser.add_argument("--migrated", type=Path, nargs=2, required=True)
     parser.add_argument("--migrated_sha256", nargs=2, required=True)
@@ -97,10 +121,9 @@ def main() -> int:
         "old": (args.old_summary, args.old_private),
         "new": (args.new_summary, args.new_private),
     }
-    material = load_audit_material(
+    material = load_oracle_audit_material(
         positive_path=args.positive_audit,
         negative_path=args.negative_audit,
-        retention_path=args.retention_panel,
         sources=sources,
     )
     direction_index, directions, direction_receipt = _direction_lookup(args.direction_cache)
