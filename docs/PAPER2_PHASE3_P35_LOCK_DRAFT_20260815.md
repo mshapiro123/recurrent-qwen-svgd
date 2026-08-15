@@ -1,10 +1,12 @@
 # P3.5 Lock Draft: Stabilized Landing and Probe-Reader A/B
 
-Date: 2026-08-15. Status: assembled for prerequisite execution and strategy signature. Training is disabled.
+Date: 2026-08-15. Status: ratified and approved for training.
 
 ## 1. Authority and scope
 
 The governing strategy response is `STRATEGY_P35_CHARTER_RESPONSE_20260815.md`, Drive `1ZzWO3MzkFW5Ph0wAuF5r-ZpdYCzAEi6F`, 13,242 bytes, SHA-256 `3bf476f1db8ebe451d798c941aeef3110129b8d946515125488b7871e0cf7c82`. The machine companion is `training/paper2_phase3_p35_preregistration.draft.json`.
+
+Execution authority: `docs/STRATEGY_P35_EXECUTION_HANDOFF_20260815.md`, Drive `15ylK6jk2vXDTX0TRk5XJ949D6xzIAA-X`, 4,876 bytes, SHA-256 `314b51a34a0d451dd8045b69eb794ebff4ecd3efb3483dcebcdc78bae3628efe`. Mark ratified the assembled lock and authorized Arm S seeds 0 and 1 plus Arm R seed 0 on 2026-08-15.
 
 The registered P3.4 verdict remains `REPLICATED_POSITIVE_BELOW_TRIGGER_B`. CONFIRM and EVAL-E remain sealed. This lock tests two questions only: whether a deliberate landing stabilizes the existing mechanism, and whether a detached four-probe reader improves the gate/control path relative to the landed mean reader.
 
@@ -61,4 +63,4 @@ Arm R is compared with Arm S seed 0 on gate precision at matched recall, repaire
 
 ## 8. Approval boundary
 
-The code, tests, and no-training prerequisites are complete. The exact serving-cache path and SHA, its 100% identity receipt, persistence receipt, and implementation commit `87bac2a4364284dccb08976aa9b048521cde1469` are inserted into the machine lock. Training remains disabled until strategy ratifies the assembled lock and Mark sets `mark_ratified = true`, `locked_before_training = true`, `training_authorized = true`, clears the unresolved list, and sets status `approved_for_training`.
+The code, tests, and no-training prerequisites are complete. The exact serving-cache path and SHA, its 100% identity receipt, persistence receipt, and implementation commit `87bac2a4364284dccb08976aa9b048521cde1469` are inserted into the machine lock. Strategy and Mark ratified the assembled lock in the execution authority above. The four authorization fields are set, the unresolved list is empty, and training may start only after the registered preflight receipt passes for all three arms.

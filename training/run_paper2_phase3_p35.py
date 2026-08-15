@@ -35,6 +35,7 @@ from training.paper2_phase3_p35 import (
     P35_LOOK_STEPS,
     P35_PRIMARY_EVAL_CEILING,
     P35_SOURCE_STEP,
+    P35LandingContract,
     initialize_ema,
     landing_learning_rate,
     load_p35_direction_lookup,
@@ -68,6 +69,9 @@ from training.paper2_phase3_p33_prep import sha256_file
 
 
 RUN_KIND = "paper2_phase3_p35_landing_v1"
+EXECUTION_AUTHORITY_SHA256 = (
+    "314b51a34a0d451dd8045b69eb794ebff4ecd3efb3483dcebcdc78bae3628efe"
+)
 
 
 def _adamw_group_names(module: torch.nn.Module) -> list[list[str]]:
@@ -115,6 +119,74 @@ def _restore_optimizer_by_name(
         "source_named_parameters": len(old_name_to_id),
         "destination_named_parameters": len(new_name_to_id),
     }
+
+
+def _validate_executed_lock(lock: Mapping[str, Any]) -> dict[str, Any]:
+    P35LandingContract().validate()
+    if not (
+        lock.get("kind") == "paper2_phase3_p35_executed_lock_v1"
+        and lock.get("status") == "approved_for_training"
+        and lock.get("locked_before_training") is True
+        and lock.get("training_authorized") is True
+        and lock.get("mark_ratified") is True
+        and lock.get("unresolved_before_ratification") == []
+    ):
+        raise RuntimeError("P3.5 training remains disabled until the executed lock is ratified")
+    authority = lock.get("execution_authority", {})
+    if (
+        authority.get("drive_id") != "15ylK6jk2vXDTX0TRk5XJ949D6xzIAA-X"
+        or authority.get("sha256") != EXECUTION_AUTHORITY_SHA256
+        or authority.get("bytes") != 4876
+        or authority.get("status") != "ratified_locked_go"
+    ):
+        raise RuntimeError("P3.5 execution authority changed")
+    if lock.get("sealed_partitions") != {
+        "confirm_contact": False,
+        "eval_e_contact": False,
+        "remain_sealed": True,
+    }:
+        raise RuntimeError("P3.5 sealed-partition contract changed")
+    if lock["evaluation"].get("primary_gate_ceiling") != P35_PRIMARY_EVAL_CEILING:
+        raise RuntimeError("P3.5 primary evaluation ceiling changed")
+    if lock["evaluation"].get("registered_pi_dir_cache") != "repaired v2 only":
+        raise RuntimeError("P3.5 causal-instrument contract changed")
+    if lock["persistence_probe"].get("training_authorized") is not False:
+        raise RuntimeError("P3.5 persistence entered the registered training matrix")
+    return {
+        "ratified_lock": True,
+        "execution_authority_sha256": EXECUTION_AUTHORITY_SHA256,
+        "ema_primary": bool(lock["checkpoint_policy"]["ema_primary"]),
+        "primary_evaluation_ceiling": float(
+            lock["evaluation"]["primary_gate_ceiling"]
+        ),
+        "causal_instrument": str(lock["evaluation"]["registered_pi_dir_cache"]),
+        "persistence_training": False,
+        "confirm_scored": False,
+        "eval_e_scored": False,
+    }
+
+
+@torch.inference_mode()
+def _probe_attachment_identity(module: torch.nn.Module) -> float:
+    control = module.control
+    latent_dim = int(control.cell.input_size - 11)
+    control_dim = int(control.control_dim)
+    device = next(control.parameters()).device
+    scratch = torch.linspace(
+        -1.0, 1.0, steps=2 * 8 * latent_dim, device=device
+    ).reshape(2, 8, latent_dim)
+    inputs = {
+        "scratch": scratch,
+        "previous": torch.zeros((2, control_dim), device=device),
+        "innovation_norm": torch.tensor([0.1, 0.2], device=device),
+        "student_entropy": torch.tensor([0.3, 0.4], device=device),
+        "top2_margin": torch.tensor([0.5, 0.6], device=device),
+        "position_bucket": torch.tensor([1, 4], device=device),
+    }
+    before = control(**inputs)
+    install_probe_control_reader(module, n_probes=4)
+    after = module.control(**inputs)
+    return float((before.float() - after.float()).abs().max().item())
 
 
 def _save_p35_checkpoint(
@@ -205,14 +277,7 @@ def _audit_ema_state(
 
 def run(args: argparse.Namespace) -> dict[str, Any]:
     lock = json.loads(args.lock.read_text(encoding="utf-8"))
-    if not (
-        lock.get("kind") == "paper2_phase3_p35_executed_lock_v1"
-        and lock.get("status") == "approved_for_training"
-        and lock.get("locked_before_training")
-        and lock.get("training_authorized")
-        and lock.get("mark_ratified")
-    ):
-        raise RuntimeError("P3.5 training remains disabled until the executed lock is ratified")
+    lock_receipt = _validate_executed_lock(lock)
     expected = lock["initialization"][f"seed_{args.seed}"]["sha256"]
     if sha256_file(args.p34) != expected:
         raise RuntimeError("P3.5 source endpoint SHA mismatch")
@@ -256,29 +321,29 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     module.train()
     set_p35_trainable(module, arm="stabilized")
     old_group_names = _adamw_group_names(module)
+    reader_attachment_max_abs_diff = 0.0
     if args.arm == "probe_reader":
-        install_probe_control_reader(module, n_probes=4)
+        reader_attachment_max_abs_diff = _probe_attachment_identity(module)
+        tolerance = float(lock["safety"]["reader_attachment_identity_tolerance"])
+        if reader_attachment_max_abs_diff > tolerance:
+            raise RuntimeError(
+                "P3.5 probe-reader attachment changed control output: "
+                f"max_abs_diff={reader_attachment_max_abs_diff} tolerance={tolerance}"
+            )
     trainable = set_p35_trainable(module, arm=args.arm)
     parameters = list(trainable.values())
     new_group_names = _adamw_group_names(module)
-    optimizer = torch.optim.AdamW(
-        build_adamw_groups(module, weight_decay=0.01), lr=0.0, betas=(0.9, 0.999)
-    )
-    optimizer_receipt = _restore_optimizer_by_name(
-        optimizer=optimizer,
-        saved=source_payload["optimizer_state"],
-        old_group_names=old_group_names,
-        new_group_names=new_group_names,
-    )
     objective_weights = normalize_objective_weights(source_payload["objective_weights"])
     module.bridge.set_gate_ceiling(P35_PRIMARY_EVAL_CEILING)
-    ema_state = initialize_ema(_checkpoint_state(module, None))
 
     direction_payload = torch.load(args.direction_cache, map_location="cpu", weights_only=False)
+    direction_sha256 = sha256_file(args.direction_cache)
+    if direction_sha256 != lock["estimator_repair"]["cache_sha256"]:
+        raise RuntimeError("P3.5 exact serving-reader cache SHA mismatch")
     direction_index, directions = load_p35_direction_lookup(direction_payload)
     direction_receipt = {
         "path": str(args.direction_cache),
-        "sha256": sha256_file(args.direction_cache),
+        "sha256": direction_sha256,
         "rows": len(direction_index),
         "source_anchor_identity_rate": direction_payload["source_anchor_identity_rate"],
     }
@@ -301,6 +366,49 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     private_dir.mkdir(parents=True, exist_ok=True)
     lock_sha = sha256_file(args.lock)
     source_receipt = {"path": str(args.p34), "sha256": expected, "step": 4000}
+    if args.preflight_only:
+        preflight = {
+            "kind": "paper2_phase3_p35_preflight_v1",
+            "status": "complete_preflight_only",
+            "seed": args.seed,
+            "arm": args.arm,
+            "contracts": lock_receipt,
+            "source": source_receipt,
+            "source_optimizer_state_present": True,
+            "source_generator_state_present": True,
+            "source_rng_state_present": True,
+            "trainable_parameter_names": sorted(trainable),
+            "trainable_parameter_count": sum(value.numel() for value in trainable.values()),
+            "reader_attachment_max_abs_diff": reader_attachment_max_abs_diff,
+            "reader_attachment_tolerance": float(
+                lock["safety"]["reader_attachment_identity_tolerance"]
+            ),
+            "direction_cache": direction_receipt,
+            "positive_training_rows": len(positives),
+            "negative_training_rows": len(negatives),
+            "audit_positive_rows": len(audit_material["positive"]["records"]),
+            "audit_negative_rows": len(audit_material["negative"]["records"]),
+            "retention_rows": len(audit_material["retention"]["records"]),
+            "objective_weights_frozen": objective_weights,
+            "optimizer_constructed": False,
+            "optimizer_steps": 0,
+            "confirm_scored": False,
+            "eval_e_scored": False,
+            "lock_sha256": lock_sha,
+        }
+        write_json(output_dir / "summary.json", preflight)
+        return preflight
+
+    optimizer = torch.optim.AdamW(
+        build_adamw_groups(module, weight_decay=0.01), lr=0.0, betas=(0.9, 0.999)
+    )
+    optimizer_receipt = _restore_optimizer_by_name(
+        optimizer=optimizer,
+        saved=source_payload["optimizer_state"],
+        old_group_names=old_group_names,
+        new_group_names=new_group_names,
+    )
+    ema_state = initialize_ema(_checkpoint_state(module, None))
     history: list[dict[str, Any]] = []
     schedule_hashes: list[str] = []
     share_window: deque[dict[str, float]] = deque(maxlen=SHARE_WINDOW_STEPS)
@@ -561,6 +669,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--migrated_sha256", required=True)
     parser.add_argument("--p33_sha256", required=True)
     parser.add_argument("--i1_sha256", required=True)
+    parser.add_argument("--preflight_only", action="store_true")
     parser.add_argument("--device", default="cuda")
     return parser.parse_args()
 
@@ -568,7 +677,7 @@ def parse_args() -> argparse.Namespace:
 def main() -> int:
     result = run(parse_args())
     print(json.dumps(result, indent=2, sort_keys=True))
-    return 0 if result["status"] == "complete" else 2
+    return 0 if result["status"] in ("complete", "complete_preflight_only") else 2
 
 
 if __name__ == "__main__":

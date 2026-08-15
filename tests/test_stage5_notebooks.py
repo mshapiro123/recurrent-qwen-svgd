@@ -3887,6 +3887,33 @@ def test_phase3_p35_prerequisites_target_is_wired_and_training_disabled() -> Non
     assert '"eval_e_scored": False' in runner
 
 
+def test_phase3_p35_target_is_wired_and_ratified() -> None:
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(
+        encoding="utf-8"
+    )
+    cell = (ROOT / "colab/STAGE5_PAPER2_PHASE3_P35_CELL.py").read_text(
+        encoding="utf-8"
+    )
+    orchestrator = (ROOT / "colab/run_stage5_paper2_phase3_p35.py").read_text(
+        encoding="utf-8"
+    )
+    lock = json.loads(
+        (ROOT / "training/paper2_phase3_p35_preregistration.draft.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert "paper2_phase3_p35" in bootstrap
+    assert "paper2_phase3_p35_campaign_v1" in bootstrap
+    assert "all three exact preflights pass before any P3.5 optimizer exists" in cell
+    assert "EMA primary pinned 0.02 ceiling repaired v2 causal cache only" in cell
+    assert '"preflight", "train"' in orchestrator
+    assert "REGISTERED_ARMS" in orchestrator
+    assert "eval.eval_paper2_phase3_p35_score_bundle" in orchestrator
+    assert lock["status"] == "approved_for_training"
+    assert lock["mark_ratified"] is True
+    assert lock["execution_authority"]["drive_id"] == "15ylK6jk2vXDTX0TRk5XJ949D6xzIAA-X"
+
+
 def test_gradient_path_audit_target_is_wired_and_guarded() -> None:
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
     bootstrap_md = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")
