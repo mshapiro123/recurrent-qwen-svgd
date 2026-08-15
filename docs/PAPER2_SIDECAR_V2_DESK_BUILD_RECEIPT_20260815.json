@@ -1,0 +1,89 @@
+{
+  "kind": "paper2_sidecar_v2_desk_build_receipt_v1",
+  "date": "2026-08-15",
+  "status": "build_complete_t1_state_extraction_blocked",
+  "scope": "P3.5 parallel desk track only; no Sidecar v2 model training and no frozen evaluation contact",
+  "implemented": {
+    "probe_pool": {
+      "properties": [
+        "detached input cells",
+        "deterministic four-probe pooling",
+        "mean-pool-equivalent initialization"
+      ]
+    },
+    "fingerprint_spine": {
+      "properties": [
+        "canonical expert projection",
+        "relevance-weighted expert distance",
+        "deterministic k-medoids",
+        "cluster routing aggregation",
+        "ridge plus SVD low-rank initialization",
+        "tensor SHA recording"
+      ]
+    },
+    "t3b_literal_ngram_control": {
+      "properties": [
+        "causal lookup only",
+        "zero recurrent-substrate contact",
+        "seed-deterministic initialization"
+      ]
+    },
+    "fast_wht": {
+      "properties": [
+        "dense Hadamard right-orientation equivalence",
+        "dense Hadamard left-orientation equivalence",
+        "norm preservation",
+        "gradient equivalence"
+      ]
+    },
+    "gated_injection": {
+      "properties": [
+        "exact identity at zero gate",
+        "input non-mutation"
+      ]
+    }
+  },
+  "files": {
+    "models/sidecar_v2.py": {
+      "bytes": 7931,
+      "sha256": "106297f80d8017715c351d73f40fae507b6a0d24b5330caa5eef06221085b24f"
+    },
+    "training/sidecar_v2_data_spine.py": {
+      "bytes": 8443,
+      "sha256": "9ce7d789d45616eef301c9d88afbf0f6e4814992fdd0875470729b51b37ac1ba"
+    },
+    "tests/test_sidecar_v2.py": {
+      "bytes": 5399,
+      "sha256": "ed2d0676d20ad6dd7ff53d05df881d132ef8cc8fc9539ef595c4747e8d9b079a"
+    },
+    "tests/test_sidecar_v2_data_spine.py": {
+      "bytes": 2828,
+      "sha256": "384969b0c393ca2d4ecf6c536d92d4d2b16b895681ed78017aff137055c71fad"
+    }
+  },
+  "verification": {
+    "command": "python -m pytest -q tests/test_paper2_phase3_p35.py tests/test_build_paper2_p35_results.py tests/test_sidecar_v2.py tests/test_sidecar_v2_data_spine.py tests/test_stage5_notebooks.py::test_phase3_p35_target_is_wired_and_ratified",
+    "passed": 40,
+    "failed": 0
+  },
+  "t1_artifact_preflight": {
+    "status": "blocked_missing_required_p34_cached_states",
+    "local_receipt": "outputs/stage5/stage5_paper2_sidecar_v2_desk_20260815/receipts/t1_artifact_preflight.json",
+    "bytes": 16078,
+    "sha256": "74ada7fc4255bfae0fd174fadd1c4ab5ff685806c208acc02e01da39f820968d",
+    "finding": "The promised P3.4 cached hidden/cell states do not exist in the durable artifacts. Older D0/D1 feature caches are not valid substitutes.",
+    "unblock": "Separate authorization for no-training, fixed-row P3.4 state extraction across the named late-window checkpoints, with row manifest SHA, checkpoint SHAs, schema and mask receipt, frozen-lineage digests, and optimizer_constructed=false / optimizer_steps=0."
+  },
+  "boundaries": [
+    "No T2 or T3 training is authorized by this receipt.",
+    "The literal n-gram component is a build-only Engram-style control primitive, not a result.",
+    "The missing T1 state cache is reported as a blocker and was not silently reconstructed or substituted."
+  ],
+  "implementation_commits": [
+    "6f4659a4",
+    "ecfb6411",
+    "d2fdd0c4",
+    "f50d9591",
+    "df9481fa"
+  ]
+}
