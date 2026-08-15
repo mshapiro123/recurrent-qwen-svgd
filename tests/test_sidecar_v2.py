@@ -3,7 +3,12 @@ import math
 import pytest
 import torch
 
-from models.sidecar_v2 import LiteralNGramMemory, ProbePool, fast_wht
+from models.sidecar_v2 import (
+    GatedSidecarInjection,
+    LiteralNGramMemory,
+    ProbePool,
+    fast_wht,
+)
 
 
 def dense_hadamard(width: int, *, dtype: torch.dtype = torch.float64) -> torch.Tensor:
@@ -98,3 +103,26 @@ def test_probe_pool_initialization_is_seed_deterministic() -> None:
     second = ProbePool(cell_dim=4, n_probes=2, query_dim=3, seed=29)
     torch.testing.assert_close(first.probes, second.probes)
     torch.testing.assert_close(first.output, second.output)
+
+
+def test_sidecar_injection_is_exact_identity_at_attach() -> None:
+    injection = GatedSidecarInjection(memory_dim=5, hidden_dim=7, seed=31)
+    base = torch.randn((2, 3, 7))
+    memory = torch.randn((2, 3, 5))
+    attached = injection(base, memory)
+    assert torch.equal(attached, base)
+    assert {name for name, _ in injection.named_parameters()} == {"gate", "projection"}
+
+
+def test_sidecar_injection_opens_without_mutating_inputs() -> None:
+    injection = GatedSidecarInjection(memory_dim=3, hidden_dim=4, seed=37)
+    base = torch.randn((2, 4))
+    memory = torch.randn((2, 3))
+    base_before = base.clone()
+    memory_before = memory.clone()
+    with torch.no_grad():
+        injection.gate.fill_(0.2)
+    output = injection(base, memory)
+    assert not torch.equal(output, base)
+    torch.testing.assert_close(base, base_before)
+    torch.testing.assert_close(memory, memory_before)
