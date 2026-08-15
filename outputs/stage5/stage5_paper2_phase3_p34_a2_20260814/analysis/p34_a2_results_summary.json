@@ -1,0 +1,1927 @@
+{
+  "date": "2026-08-14",
+  "joint_endpoint": {
+    "both_seeds_positive": true,
+    "mean_delta_points": 0.732421875,
+    "mean_delta_rows": 7.5,
+    "registered_reading": "below_trigger_b_confirm_remains_sealed",
+    "seed_delta_rows": [
+      5,
+      10
+    ],
+    "trigger_a_met": false,
+    "trigger_b_met": false
+  },
+  "kind": "paper2_phase3_p34_a2_results_analysis_v1",
+  "locked_thresholds": {
+    "both_seeds_positive_required": true,
+    "each_seed_target_half_nonnegative_required": true,
+    "trigger_a_mean_delta_rows": 22,
+    "trigger_b_mean_delta_rows": 10
+  },
+  "receipt_limitations": [
+    "Seed 1 final private task rows were not copied by the post-run Drive sync because the runtime token lacked Drive write scope.",
+    "The pooled seed-1 endpoint and all mechanism/controller summaries are complete; only its final per-battery and target-half decomposition is absent."
+  ],
+  "sealed_data": {
+    "confirm_scored": false,
+    "eval_e_scored": false
+  },
+  "seeds": {
+    "0": {
+      "audits": [
+        {
+          "collateral_chi": 0.0,
+          "gate_false_positive_rate": 0.09171549479166667,
+          "gate_precision": 0.7466276978417267,
+          "gate_recall": 0.810791015625,
+          "look": 5,
+          "mean_direction_cosine": 0.06577226217711996,
+          "pi_dep": 0.16090909090909092,
+          "pi_dep_ci95": [
+            0.13738415490938885,
+            0.18277585848822997
+          ],
+          "pi_dir": 0.15122470713525027,
+          "pi_dir_ci95": [
+            0.13476225186504248,
+            0.1681131976131976
+          ],
+          "step": 1000
+        },
+        {
+          "collateral_chi": 0.0,
+          "gate_false_positive_rate": 0.15763346354166666,
+          "gate_precision": 0.6521817202370264,
+          "gate_recall": 0.88671875,
+          "look": 10,
+          "mean_direction_cosine": 0.06716832467452605,
+          "pi_dep": 0.15723270440251572,
+          "pi_dep_ci95": [
+            0.1325055229625622,
+            0.17946731856964815
+          ],
+          "pi_dir": 0.14643237486687966,
+          "pi_dir_ci95": [
+            0.12842930388679252,
+            0.16344568205487037
+          ],
+          "step": 2000
+        },
+        {
+          "collateral_chi": 0.0,
+          "gate_false_positive_rate": 0.15787760416666666,
+          "gate_precision": 0.6549270722162931,
+          "gate_recall": 0.89892578125,
+          "look": 15,
+          "mean_direction_cosine": 0.06896919957341652,
+          "pi_dep": 0.1564748201438849,
+          "pi_dep_ci95": [
+            0.1336401505242187,
+            0.17882756795900173
+          ],
+          "pi_dir": 0.14749733759318423,
+          "pi_dir_ci95": [
+            0.13147143628678423,
+            0.16416391595421378
+          ],
+          "step": 3000
+        },
+        {
+          "collateral_chi": 0.0,
+          "gate_false_positive_rate": 0.14127604166666666,
+          "gate_precision": 0.6790534294694028,
+          "gate_recall": 0.896728515625,
+          "look": 20,
+          "mean_direction_cosine": 0.06760473639172915,
+          "pi_dep": 0.15703971119133575,
+          "pi_dep_ci95": [
+            0.1350299050776529,
+            0.17888892687179062
+          ],
+          "pi_dir": 0.14749733759318423,
+          "pi_dir_ci95": [
+            0.13088454295651505,
+            0.16375290886231425
+          ],
+          "step": 4000
+        }
+      ],
+      "checkpoint": {
+        "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase3_p34_a2_20260814/private/main_seed_0/resume.pt",
+        "sha256": "56d4f0340eb6e291628756e506528382fbc205ace5a7f4ac1e850e7bf940705b"
+      },
+      "final_group_breakdown": {
+        "battery": {
+          "arc_challenge": {
+            "augmented_correct": 42,
+            "base_correct": 41,
+            "delta_rows": 1,
+            "rows": 76
+          },
+          "arc_easy": {
+            "augmented_correct": 191,
+            "base_correct": 189,
+            "delta_rows": 2,
+            "rows": 243
+          },
+          "gsm8k": {
+            "augmented_correct": 105,
+            "base_correct": 107,
+            "delta_rows": -2,
+            "rows": 369
+          },
+          "mbpp": {
+            "augmented_correct": 35,
+            "base_correct": 28,
+            "delta_rows": 7,
+            "rows": 67
+          },
+          "mmlu": {
+            "augmented_correct": 114,
+            "base_correct": 115,
+            "delta_rows": -1,
+            "rows": 244
+          },
+          "tier1": {
+            "augmented_correct": 20,
+            "base_correct": 22,
+            "delta_rows": -2,
+            "rows": 25
+          }
+        },
+        "panel_group": {
+          "floor": {
+            "augmented_correct": 325,
+            "base_correct": 326,
+            "delta_rows": -1,
+            "rows": 512
+          },
+          "target": {
+            "augmented_correct": 182,
+            "base_correct": 176,
+            "delta_rows": 6,
+            "rows": 512
+          }
+        }
+      },
+      "frozen_digest_equal": true,
+      "share_contract": {
+        "bounds": {
+          "aim": 0.15,
+          "ce": 0.1,
+          "gate": 0.03,
+          "kl": 0.35,
+          "preserve": 0.25
+        },
+        "classifications": {
+          "breach_observed": 1,
+          "pass": 39
+        },
+        "demotions": [],
+        "failed_contracts": {
+          "kl": 1
+        },
+        "final_objective_weights": {
+          "aim": 0.03188304818664419,
+          "ce": 0.03885929804513429,
+          "gate": 0.0010164844222602292,
+          "kl": 1.0,
+          "preserve": 83.15326154730823
+        },
+        "windows": [
+          {
+            "classification": "breach_observed",
+            "consecutive_misses": 1,
+            "failed_contracts": [
+              "kl"
+            ],
+            "minimum_relative_contract_margin": -0.12224649509576924,
+            "shares": {
+              "aim": 0.3507280829980038,
+              "ce": 0.11757731265514383,
+              "gate": 0.05466808549507086,
+              "kl": 0.30721372671648073,
+              "preserve": 0.16981279213530084
+            },
+            "step": 100
+          },
+          {
+            "classification": "pass",
+            "consecutive_misses": 0,
+            "failed_contracts": [],
+            "minimum_relative_contract_margin": 0.01949861845065004,
+            "shares": {
+              "aim": 0.26120550038443563,
+              "ce": 0.13018862469738468,
+              "gate": 0.0653865919763227,
+              "kl": 0.3568245164577275,
+              "preserve": 0.18639476648412945
+            },
+            "step": 200
+          },
+          {
+            "classification": "pass",
+            "consecutive_misses": 0,
+            "failed_contracts": [],
+            "minimum_relative_contract_margin": 0.09124177453717408,
+            "shares": {
+              "aim": 0.26463045657539297,
+              "ce": 0.14461719874868603,
+              "gate": 0.07080872337986753,
+              "kl": 0.3819346210880109,
+              "preserve": 0.13800900020804255
+            },
+            "step": 300
+          },
+          {
+            "classification": "pass",
+            "consecutive_misses": 0,
+            "failed_contracts": [],
+            "minimum_relative_contract_margin": 0.09782007571140672,
+            "shares": {
+              "aim": 0.3300257338017931,
+              "ce": 0.13464473724195467,
+              "gate": 0.05460235913794327,
+              "kl": 0.38423702649899233,
+              "preserve": 0.09649014331931659
+            },
+            "step": 400
+          },
+          {
+            "classification": "pass",
+            "consecutive_misses": 0,
+            "failed_contracts": [],
+            "minimum_relative_contract_margin": 0.17995128573242059,
+            "shares": {
+              "aim": 0.3316026469871622,
+              "ce": 0.12893072952888648,
+              "gate": 0.047873071873065394,
+              "kl": 0.41298295000634716,
+              "preserve": 0.07861060160453881
+            },
+            "step": 500
+          },
+          {
+            "classification": "pass",
+            "consecutive_misses": 0,
+            "failed_contracts": [],
+            "minimum_relative_contract_margin": 0.01663449634992431,
+            "shares": {
+              "aim": 0.3237602406640157,
+              "ce": 0.10762307238303444,
+              "gate": 0.043354526947107896,
+              "kl": 0.3558220737224735,
+              "preserve": 0.16944008628336854
+            },
+            "step": 600
+          },
+          {
+            "classification": "pass",
+            "consecutive_misses": 0,
+            "failed_contracts": [],
+            "minimum_relative_contract_margin": 0.12660330838837308,
+            "shares": {
+              "aim": 0.28392944075159443,
+              "ce": 0.11722313900670646,
+              "gate": 0.04511434080205648,
+              "kl": 0.3943111579359306,
+              "preserve": 0.1594219215037121
+            },
+            "step": 700
+          },
+          {
+            "classification": "pass",
+            "consecutive_misses": 0,
+            "failed_contracts": [],
+            "minimum_relative_contract_margin": 0.333021880761015,
+            "shares": {
+              "aim": 0.2557575563283973,
+              "ce": 0.1373826998949047,
+              "gate": 0.04029641700302549,
+              "kl": 0.46655765826635526,
+              "preserve": 0.10000566850731728
+            },
+            "step": 800
+          },
+          {
+            "classification": "pass",
+            "consecutive_misses": 0,
+            "failed_contracts": [],
+            "minimum_relative_contract_margin": 0.409341577265113,
+            "shares": {
+              "aim": 0.2528341441332259,
+              "ce": 0.147273340364586,
+              "gate": 0.04320440304765539,
+              "kl": 0.49326955204278955,
+              "preserve": 0.06341856041174322
+            },
+            "step": 900
+          },
+          {
+            "classification": "pass",
+            "consecutive_misses": 0,
+            "failed_contracts": [],
+            "minimum_relative_contract_margin": 0.2748011668745054,
+            "shares": {
+              "aim": 0.2493606445607044,
+              "ce": 0.13931512918496564,
+              "gate": 0.03824403500623516,
+              "kl": 0.49390728614380414,
+              "preserve": 0.07917290510429068
+            },
+            "step": 1000
+          },
+          {
+            "classification": "pass",
+            "consecutive_misses": 0,
+            "failed_contracts": [],
+            "minimum_relative_contract_margin": 0.39106260232345535,
+            "shares": {
+              "aim": 0.2295126166016204,
+              "ce": 0.13910626023234554,
+              "gate": 0.0417319879599201,
+              "kl": 0.488103580377718,
+              "preserve": 0.10154555482839597
+            },
+            "step": 1100
+          },
+          {
+            "classification": "pass",
+            "consecutive_misses": 0,
+            "failed_contracts": [],
+            "minimum_relative_contract_margin": 0.39088600556961683,
+            "shares": {
+              "aim": 0.23464041064022667,
+              "ce": 0.1476400565020756,
+              "gate": 0.0417265801670885,
+              "kl": 0.48909432048991247,
+              "preserve": 0.0868986322006967
+            },
+            "step": 1200
+          },
+          {
+            "classification": "pass",
+            "consecutive_misses": 0,
+            "failed_contracts": [],
+            "minimum_relative_contract_margin": 0.14139587143402865,
+            "shares": {
+              "aim": 0.23790685316226257,
+              "ce": 0.134707589771812,
+              "gate": 0.034241876143020857,
+              "kl": 0.4928390050351665,
+              "preserve": 0.10030467588773809
+            },
+            "step": 1300
+          },
+          {
+            "classification": "pass",
+            "consecutive_misses": 0,
+            "failed_contracts": [],
+            "minimum_relative_contract_margin": 0.15658930651763003,
+            "shares": {
+              "aim": 0.2246448922828776,
+              "ce": 0.14017312879804952,
+              "gate": 0.0346976791955289,
+              "kl": 0.5035037921478511,
+              "preserve": 0.09698050757569295
+            },
+            "step": 1400
+          },
+          {
+            "classification": "pass",
+            "consecutive_misses": 0,
+            "failed_contracts": [],
+            "minimum_relative_contract_margin": 0.1156617273492957,
+            "shares": {
+              "aim": 0.21930513741406593,
+              "ce": 0.14173210653344634,
+              "gate": 0.03346985182047887,
+              "kl": 0.5130087213530338,
+              "preserve": 0.0924841828789751
+            },
+            "step": 1500
+          },
+          {
+            "classification": "pass",
+            "consecutive_misses": 0,
+            "failed_contracts": [],
+            "minimum_relative_contract_margin": 0.17158177372408234,
+            "shares": {
+              "aim": 0.21968020958223206,
+              "ce": 0.14358102935971145,
+              "gate": 0.03514745321172247,
+              "kl": 0.4998673130986648,
+              "preserve": 0.10172399474766922
+            },
+            "step": 1600
+          },
+          {
+            "classification": "pass",
+            "consecutive_misses": 0,
+            "failed_contracts": [],
+            "minimum_relative_contract_margin": 0.19706997091564116,
+            "shares": {
+              "aim": 0.21415514763545943,
+              "ce": 0.1386249979544189,
+              "gate": 0.03591209912746923,
+              "kl": 0.5022756214242654,
+              "preserve": 0.10903213385838707
+            },
+            "step": 1700
+          },
+          {
+            "classification": "pass",
+            "consecutive_misses": 0,
+            "failed_contracts": [],
+            "minimum_relative_contract_margin": 0.37011824458874787,
+            "shares": {
+              "aim": 0.2254608523061512,
+              "ce": 0.14955249688183075,
+              "gate": 0.04110354733766244,
+              "kl": 0.5054583481307213,
+              "preserve": 0.07842475534363427
+            },
+            "step": 1800
+          },
+          {
+            "classification": "pass",
+            "consecutive_misses": 0,
+            "failed_contracts": [],
+            "minimum_relative_contract_margin": 0.08021397936275654,
+            "shares": {
+              "aim": 0.22176559300876345,
+              "ce": 0.14089811382937348,
+              "gate": 0.03240641938088269,
+              "kl": 0.49670223451383444,
+              "preserve": 0.10822763926714594
+            },
+            "step": 1900
+          },
+          {
+            "classification": "pass",
+            "consecutive_misses": 0,
+            "failed_contracts": [],
+            "minimum_relative_contract_margin": 0.3026916734021612,
+            "shares": {
+              "aim": 0.22318788315146867,
+              "ce": 0.14449933905736057,
+              "gate": 0.039080750202064835,
+              "kl": 0.5006709426466924,
+              "preserve": 0.09256108494241348
+            },
+            "step": 2000
+          },
+          {
+            "classification": "pass",
+            "consecutive_misses": 0,
+            "failed_contracts": [],
+            "minimum_relative_contract_margin": 0.2689292162382457,
+            "shares": {
+              "aim": 0.22603400054639877,
+              "ce": 0.1438186434782062,
+              "gate": 0.03806787648714737,
+              "kl": 0.48943977067843086,
+              "preserve": 0.1026397088098168
+            },
+            "step": 2100
+          },
+          {
+            "classification": "pass",
+            "consecutive_misses": 0,
+            "failed_contracts": [],
+            "minimum_relative_contract_margin": 0.3931914377982575,
+            "shares": {
+              "aim": 0.2089787156697386,
+              "ce": 0.14087463020495583,
+              "gate": 0.04251621278905413,
+              "kl": 0.507395367606245,
+              "preserve": 0.10023507373000635
+            },
+            "step": 2200
+          },
+          {
+            "classification": "pass",
+            "consecutive_misses": 0,
+            "failed_contracts": [],
+            "minimum_relative_contract_margin": 0.2899489174658374,
+            "shares": {
+              "aim": 0.2232680231170523,
+              "ce": 0.14722418422840466,
+              "gate": 0.03869846752397512,
+              "kl": 0.49811611317163484,
+              "preserve": 0.0926932119589331
+            },
+            "step": 2300
+          },
+          {
+            "classification": "pass",
+            "consecutive_misses": 0,
+            "failed_contracts": [],
+            "minimum_relative_contract_margin": 0.31112537933204343,
+            "shares": {
+              "aim": 0.22738447714638693,
+              "ce": 0.14866381402486864,
+              "gate": 0.0393337613799613,
+              "kl": 0.4907806907877235,
+              "preserve": 0.09383725666105956
+            },
+            "step": 2400
+          },
+          {
+            "classification": "pass",
+            "consecutive_misses": 0,
+            "failed_contracts": [],
+            "minimum_relative_contract_margin": 0.2767412676084142,
+            "shares": {
+              "aim": 0.21457876022871591,
+              "ce": 0.14508419308970624,
+              "gate": 0.038302238028252424,
+              "kl": 0.5005689510681468,
+              "preserve": 0.1014658575851786
+            },
+            "step": 2500
+          },
+          {
+            "classification": "pass",
+            "consecutive_misses": 0,
+            "failed_contracts": [],
+            "minimum_relative_contract_margin": 0.3433456423611756,
+            "shares": {
+              "aim": 0.21734844912494491,
+              "ce": 0.14425782082422514,
+              "gate": 0.040300369270835266,
+              "kl": 0.5047207882484155,
+              "preserve": 0.09337257253157924
+            },
+            "step": 2600
+          },
+          {
+            "classification": "pass",
+            "consecutive_misses": 0,
+            "failed_contracts": [],
+            "minimum_relative_contract_margin": 0.3687014740806711,
+            "shares": {
+              "aim": 0.21414522737024796,
+              "ce": 0.1426827002059076,
+              "gate": 0.04106104422242013,
+              "kl": 0.498305662048284,
+              "preserve": 0.1038053661531403
+            },
+            "step": 2700
+          },
+          {
+            "classification": "pass",
+            "consecutive_misses": 0,
+            "failed_contracts": [],
+            "minimum_relative_contract_margin": 0.3463765305395201,
+            "shares": {
+              "aim": 0.20195647958092802,
+              "ce": 0.14066162161419904,
+              "gate": 0.0410738023117676,
+              "kl": 0.5075793458781326,
+              "preserve": 0.10872875061497281
+            },
+            "step": 2800
+          },
+          {
+            "classification": "pass",
+            "consecutive_misses": 0,
+            "failed_contracts": [],
+            "minimum_relative_contract_margin": 0.38514449256449157,
+            "shares": {
+              "aim": 0.22316926031143866,
+              "ce": 0.14367724829619635,
+              "gate": 0.04202817291578837,
+              "kl": 0.484800572397572,
+              "preserve": 0.1063247460790046
+            },
+            "step": 2900
+          },
+          {
+            "classification": "pass",
+            "consecutive_misses": 0,
+            "failed_contracts": [],
+            "minimum_relative_contract_margin": 0.32164296339967935,
+            "shares": {
+              "aim": 0.21408595699764033,
+              "ce": 0.14083749543107657,
+              "gate": 0.039649288901990376,
+              "kl": 0.5016165893378431,
+              "preserve": 0.10381066933144964
+            },
+            "step": 3000
+          },
+          {
+            "classification": "pass",
+            "consecutive_misses": 0,
+            "failed_contracts": [],
+            "minimum_relative_contract_margin": 0.37435777035963125,
+            "shares": {
+              "aim": 0.21527901922658252,
+              "ce": 0.13743577703596313,
+              "gate": 0.042406978494690606,
+              "kl": 0.49928263647736104,
+              "preserve": 0.1055955887654027
+            },
+            "step": 3100
+          },
+          {
+            "classification": "pass",
+            "consecutive_misses": 0,
+            "failed_contracts": [],
+            "minimum_relative_contract_margin": 0.26200479230608087,
+            "shares": {
+              "aim": 0.21841354391005952,
+              "ce": 0.14689167475233572,
+              "gate": 0.037860143769182425,
+              "kl": 0.5064844219453328,
+              "preserve": 0.09035021562308954
+            },
+            "step": 3200
+          },
+          {
+            "classification": "pass",
+            "consecutive_misses": 0,
+            "failed_contracts": [],
+            "minimum_relative_contract_margin": 0.3574752073095011,
+            "shares": {
+              "aim": 0.22039606322851024,
+              "ce": 0.14619506951987005,
+              "gate": 0.040724256219285035,
+              "kl": 0.48897741730525573,
+              "preserve": 0.10370719372707894
+            },
+            "step": 3300
+          },
+          {
+            "classification": "pass",
+            "consecutive_misses": 0,
+            "failed_contracts": [],
+            "minimum_relative_contract_margin": 0.37076019807460137,
+            "shares": {
+              "aim": 0.2056140297111902,
+              "ce": 0.13871906615757587,
+              "gate": 0.043740045444367215,
+              "kl": 0.4970837433081608,
+              "preserve": 0.11484311537870598
+            },
+            "step": 3400
+          },
+          {
+            "classification": "pass",
+            "consecutive_misses": 0,
+            "failed_contracts": [],
+            "minimum_relative_contract_margin": 0.4370781508298198,
+            "shares": {
+              "aim": 0.22023437950025346,
+              "ce": 0.143707815082982,
+              "gate": 0.043307855760799735,
+              "kl": 0.5091964957507842,
+              "preserve": 0.08355345390518065
+            },
+            "step": 3500
+          },
+          {
+            "classification": "pass",
+            "consecutive_misses": 0,
+            "failed_contracts": [],
+            "minimum_relative_contract_margin": 0.18774905837078304,
+            "shares": {
+              "aim": 0.20364224033395562,
+              "ce": 0.13864732596827922,
+              "gate": 0.03563247175112349,
+              "kl": 0.4944729742754454,
+              "preserve": 0.12760498767119624
+            },
+            "step": 3600
+          },
+          {
+            "classification": "pass",
+            "consecutive_misses": 0,
+            "failed_contracts": [],
+            "minimum_relative_contract_margin": 0.42232206153818375,
+            "shares": {
+              "aim": 0.21786993107347122,
+              "ce": 0.1430752352206125,
+              "gate": 0.043487291731300656,
+              "kl": 0.4978127215383643,
+              "preserve": 0.0977548204362513
+            },
+            "step": 3700
+          },
+          {
+            "classification": "pass",
+            "consecutive_misses": 0,
+            "failed_contracts": [],
+            "minimum_relative_contract_margin": 0.38951366088614825,
+            "shares": {
+              "aim": 0.2112040273908378,
+              "ce": 0.14355579672528074,
+              "gate": 0.041685409826584446,
+              "kl": 0.5096852125037783,
+              "preserve": 0.09386955355351874
+            },
+            "step": 3800
+          },
+          {
+            "classification": "pass",
+            "consecutive_misses": 0,
+            "failed_contracts": [],
+            "minimum_relative_contract_margin": 0.39624079362712084,
+            "shares": {
+              "aim": 0.21127956486651558,
+              "ce": 0.1396240793627121,
+              "gate": 0.04294823430840534,
+              "kl": 0.49584895293427356,
+              "preserve": 0.11029916852809339
+            },
+            "step": 3900
+          },
+          {
+            "classification": "pass",
+            "consecutive_misses": 0,
+            "failed_contracts": [],
+            "minimum_relative_contract_margin": 0.3495709300912606,
+            "shares": {
+              "aim": 0.2227574150601322,
+              "ce": 0.14915461654734896,
+              "gate": 0.04228026183283006,
+              "kl": 0.4723498255319412,
+              "preserve": 0.11345788102774758
+            },
+            "step": 4000
+          }
+        ]
+      },
+      "status": "complete",
+      "step": 4000,
+      "task_curve": [
+        {
+          "augmented_correct": 510,
+          "base_correct": 502,
+          "controller_reason": "hold_until_registered_pi_look",
+          "controller_rung_after": 1,
+          "delta_rows": 8,
+          "look": 1,
+          "step": 200
+        },
+        {
+          "augmented_correct": 510,
+          "base_correct": 502,
+          "controller_reason": "hold_until_registered_pi_look",
+          "controller_rung_after": 1,
+          "delta_rows": 8,
+          "look": 3,
+          "step": 600
+        },
+        {
+          "augmented_correct": 504,
+          "base_correct": 502,
+          "controller_reason": "hold_until_registered_pi_look",
+          "controller_rung_after": 1,
+          "delta_rows": 2,
+          "look": 4,
+          "step": 800
+        },
+        {
+          "augmented_correct": 509,
+          "base_correct": 502,
+          "controller_reason": "hold",
+          "controller_rung_after": 1,
+          "delta_rows": 7,
+          "look": 5,
+          "step": 1000
+        },
+        {
+          "augmented_correct": 507,
+          "base_correct": 502,
+          "controller_reason": "hold_until_registered_pi_look",
+          "controller_rung_after": 1,
+          "delta_rows": 5,
+          "look": 6,
+          "step": 1200
+        },
+        {
+          "augmented_correct": 511,
+          "base_correct": 502,
+          "controller_reason": "hold_until_registered_pi_look",
+          "controller_rung_after": 1,
+          "delta_rows": 9,
+          "look": 7,
+          "step": 1400
+        },
+        {
+          "augmented_correct": 513,
+          "base_correct": 502,
+          "controller_reason": "hold_until_registered_pi_look",
+          "controller_rung_after": 1,
+          "delta_rows": 11,
+          "look": 8,
+          "step": 1600
+        },
+        {
+          "augmented_correct": 510,
+          "base_correct": 502,
+          "controller_reason": "hold_until_registered_pi_look",
+          "controller_rung_after": 1,
+          "delta_rows": 8,
+          "look": 9,
+          "step": 1800
+        },
+        {
+          "augmented_correct": 505,
+          "base_correct": 502,
+          "controller_reason": "hold",
+          "controller_rung_after": 1,
+          "delta_rows": 3,
+          "look": 10,
+          "step": 2000
+        },
+        {
+          "augmented_correct": 514,
+          "base_correct": 502,
+          "controller_reason": "hold_until_registered_pi_look",
+          "controller_rung_after": 1,
+          "delta_rows": 12,
+          "look": 11,
+          "step": 2200
+        },
+        {
+          "augmented_correct": 507,
+          "base_correct": 502,
+          "controller_reason": "hold_until_registered_pi_look",
+          "controller_rung_after": 1,
+          "delta_rows": 5,
+          "look": 12,
+          "step": 2400
+        },
+        {
+          "augmented_correct": 503,
+          "base_correct": 502,
+          "controller_reason": "hold_until_registered_pi_look",
+          "controller_rung_after": 1,
+          "delta_rows": 1,
+          "look": 13,
+          "step": 2600
+        },
+        {
+          "augmented_correct": 508,
+          "base_correct": 502,
+          "controller_reason": "hold_until_registered_pi_look",
+          "controller_rung_after": 1,
+          "delta_rows": 6,
+          "look": 14,
+          "step": 2800
+        },
+        {
+          "augmented_correct": 506,
+          "base_correct": 502,
+          "controller_reason": "hold",
+          "controller_rung_after": 1,
+          "delta_rows": 4,
+          "look": 15,
+          "step": 3000
+        },
+        {
+          "augmented_correct": 506,
+          "base_correct": 502,
+          "controller_reason": "hold_until_registered_pi_look",
+          "controller_rung_after": 1,
+          "delta_rows": 4,
+          "look": 16,
+          "step": 3200
+        },
+        {
+          "augmented_correct": 506,
+          "base_correct": 502,
+          "controller_reason": "hold_until_registered_pi_look",
+          "controller_rung_after": 1,
+          "delta_rows": 4,
+          "look": 17,
+          "step": 3400
+        },
+        {
+          "augmented_correct": 503,
+          "base_correct": 502,
+          "controller_reason": "hold_until_registered_pi_look",
+          "controller_rung_after": 1,
+          "delta_rows": 1,
+          "look": 18,
+          "step": 3600
+        },
+        {
+          "augmented_correct": 518,
+          "base_correct": 502,
+          "controller_reason": "hold_until_registered_pi_look",
+          "controller_rung_after": 1,
+          "delta_rows": 16,
+          "look": 19,
+          "step": 3800
+        },
+        {
+          "augmented_correct": 507,
+          "base_correct": 502,
+          "controller_reason": "hold",
+          "controller_rung_after": 1,
+          "delta_rows": 5,
+          "look": 20,
+          "step": 4000
+        }
+      ],
+      "task_endpoint": {
+        "augmented_correct": 507,
+        "base_correct": 502,
+        "battery_writeback_telemetry": {
+          "arc_challenge": {
+            "position_gate_mean": 0.07999999821186066,
+            "realized_writeback_ratio_mean": 0.004729304067471898,
+            "rows": 76,
+            "telemetry_positions": 308
+          },
+          "arc_easy": {
+            "position_gate_mean": 0.07993086205542456,
+            "realized_writeback_ratio_mean": 0.004689130166099012,
+            "rows": 243,
+            "telemetry_positions": 1001
+          },
+          "gsm8k": {
+            "position_gate_mean": 0.0421695489123425,
+            "realized_writeback_ratio_mean": 0.002785234187863469,
+            "rows": 369,
+            "telemetry_positions": 87254
+          },
+          "mbpp": {
+            "position_gate_mean": 0.02714953799353903,
+            "realized_writeback_ratio_mean": 0.0017592113456772304,
+            "rows": 67,
+            "telemetry_positions": 11187
+          },
+          "mmlu": {
+            "position_gate_mean": 0.07999584077262,
+            "realized_writeback_ratio_mean": 0.004761980930495946,
+            "rows": 244,
+            "telemetry_positions": 976
+          },
+          "tier1": {
+            "position_gate_mean": 0.07999999821186066,
+            "realized_writeback_ratio_mean": 0.005476475823670625,
+            "rows": 25,
+            "telemetry_positions": 73
+          }
+        },
+        "delta_points": 0.48828125,
+        "delta_rows": 5,
+        "fixes": 50,
+        "guardrail": {
+          "mean_augmented_minus_base": 0.0048828125,
+          "rows": 1024,
+          "standard_error": 0.009521781155103241,
+          "tier_s_condition": false,
+          "tier_s_event": false,
+          "tier_s_streak": 0,
+          "tier_w_condition": false,
+          "tier_w_event": false,
+          "tier_w_streak": 0,
+          "upper_bound": 0.017093351003002133
+        },
+        "paired_one_sided_p": 0.34087125295909276,
+        "regressions": 45,
+        "unchanged": 929
+      }
+    },
+    "1": {
+      "audits": [
+        {
+          "collateral_chi": 0.0,
+          "gate_false_positive_rate": 0.235595703125,
+          "gate_precision": 0.564792543595911,
+          "gate_recall": 0.917236328125,
+          "look": 10,
+          "mean_direction_cosine": 0.07678506905392624,
+          "pi_dep": 0.28213166144200624,
+          "pi_dep_ci95": [
+            0.23432120239050933,
+            0.3333333333333333
+          ],
+          "pi_dir": 0.1645367412140575,
+          "pi_dir_ci95": [
+            0.1479393726171971,
+            0.18238019537260414
+          ],
+          "step": 2000
+        },
+        {
+          "collateral_chi": 0.0,
+          "gate_false_positive_rate": 0.3115234375,
+          "gate_precision": 0.5044018643190057,
+          "gate_recall": 0.951171875,
+          "look": 15,
+          "mean_direction_cosine": 0.07642418684980612,
+          "pi_dep": 0.2727272727272727,
+          "pi_dep_ci95": [
+            0.22836611424755662,
+            0.32268047480620154
+          ],
+          "pi_dir": 0.1645367412140575,
+          "pi_dir_ci95": [
+            0.14715189857939148,
+            0.1815578546045526
+          ],
+          "step": 3000
+        },
+        {
+          "collateral_chi": 0.0,
+          "gate_false_positive_rate": 0.3699544270833333,
+          "gate_precision": 0.46258422981439884,
+          "gate_recall": 0.955322265625,
+          "look": 20,
+          "mean_direction_cosine": 0.07302645485540893,
+          "pi_dep": 0.27586206896551724,
+          "pi_dep_ci95": [
+            0.22866252483671937,
+            0.3271118533631696
+          ],
+          "pi_dir": 0.15495207667731628,
+          "pi_dir_ci95": [
+            0.13854036681173307,
+            0.171356783919598
+          ],
+          "step": 4000
+        }
+      ],
+      "checkpoint": {
+        "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase3_p34_a2_20260814/private/main_seed_1/resume.pt",
+        "sha256": "bf29ca6945dffbef0517144b33eff1076cfb0c3ad568b1515416831e072a61f4"
+      },
+      "frozen_digest_equal": true,
+      "share_contract": {
+        "bounds": {
+          "aim": 0.15,
+          "ce": 0.1,
+          "gate": 0.03,
+          "kl": 0.35,
+          "preserve": 0.25
+        },
+        "classifications": {
+          "breach_observed": 3,
+          "demote": 3,
+          "pass": 34
+        },
+        "demotions": [
+          {
+            "at_most_one_rung": true,
+            "reason": "loss_share_contract_demote",
+            "rung_after": 0,
+            "rung_before": 1,
+            "step": 200,
+            "strategy_review_flagged": true
+          },
+          {
+            "at_most_one_rung": true,
+            "reason": "loss_share_contract_demote",
+            "rung_after": 0,
+            "rung_before": 1,
+            "step": 2200,
+            "strategy_review_flagged": true
+          },
+          {
+            "at_most_one_rung": true,
+            "reason": "loss_share_contract_demote",
+            "rung_after": 0,
+            "rung_before": 1,
+            "step": 3200,
+            "strategy_review_flagged": true
+          }
+        ],
+        "failed_contracts": {
+          "aim": 6,
+          "gate": 6
+        },
+        "final_objective_weights": {
+          "aim": 0.008154969079427218,
+          "ce": 0.03999459010991263,
+          "gate": 0.0003410908711013801,
+          "kl": 1.0,
+          "preserve": 28.99759040371937
+        },
+        "windows": [
+          {
+            "classification": "breach_observed",
+            "consecutive_misses": 1,
+            "failed_contracts": [
+              "aim",
+              "gate"
+            ],
+            "minimum_relative_contract_margin": -0.20899892977882129,
+            "shares": {
+              "aim": 0.1337554098888458,
+              "ce": 0.16763365130802566,
+              "gate": 0.023730032106635362,
+              "kl": 0.6160766474955043,
+              "preserve": 0.05880425920098885
+            },
+            "step": 100
+          },
+          {
+            "classification": "demote",
+            "consecutive_misses": 2,
+            "failed_contracts": [
+              "aim",
+              "gate"
+            ],
+            "minimum_relative_contract_margin": -0.16128364621347857,
+            "shares": {
+              "aim": 0.14163571700050095,
+              "ce": 0.16486322492728767,
+              "gate": 0.02516149061359564,
+              "kl": 0.6228145562862276,
+              "preserve": 0.04552501117238813
+            },
+            "step": 200
+          },
+          {
+            "classification": "pass",
+            "consecutive_misses": 0,
+            "failed_contracts": [],
+            "minimum_relative_contract_margin": 0.09730377055095518,
+            "shares": {
+              "aim": 0.3901423155057911,
+              "ce": 0.10973037705509553,
+              "gate": 0.07265952444608739,
+              "kl": 0.41118000863302173,
+              "preserve": 0.016287774360004243
+            },
+            "step": 300
+          },
+          {
+            "classification": "pass",
+            "consecutive_misses": 0,
+            "failed_contracts": [],
+            "minimum_relative_contract_margin": 0.049294606881139735,
+            "shares": {
+              "aim": 0.4095495259294894,
+              "ce": 0.10492946068811398,
+              "gate": 0.07236543872287854,
+              "kl": 0.3941806323907533,
+              "preserve": 0.018974942268764724
+            },
+            "step": 400
+          },
+          {
+            "classification": "pass",
+            "consecutive_misses": 0,
+            "failed_contracts": [],
+            "minimum_relative_contract_margin": 0.06190564452535141,
+            "shares": {
+              "aim": 0.4096785780149251,
+              "ce": 0.10619056445253515,
+              "gate": 0.05832609031000931,
+              "kl": 0.4076821519685844,
+              "preserve": 0.0181226152539461
+            },
+            "step": 500
+          },
+          {
+            "classification": "pass",
+            "consecutive_misses": 0,
+            "failed_contracts": [],
+            "minimum_relative_contract_margin": 0.05869228594699072,
+            "shares": {
+              "aim": 0.43936041390938235,
+              "ce": 0.10586922859469908,
+              "gate": 0.05169986644820539,
+              "kl": 0.38375062866324255,
+              "preserve": 0.01931986238447061
+            },
+            "step": 600
+          },
+          {
+            "classification": "pass",
+            "consecutive_misses": 0,
+            "failed_contracts": [],
+            "minimum_relative_contract_margin": 0.05579118291588214,
+            "shares": {
+              "aim": 0.41738389088453515,
+              "ce": 0.10557911829158823,
+              "gate": 0.05551356741155499,
+              "kl": 0.39897074772558183,
+              "preserve": 0.022552675686739777
+            },
+            "step": 700
+          },
+          {
+            "classification": "pass",
+            "consecutive_misses": 0,
+            "failed_contracts": [],
+            "minimum_relative_contract_margin": 0.07561005044144298,
+            "shares": {
+              "aim": 0.41804145202849335,
+              "ce": 0.1075610050441443,
+              "gate": 0.05176554949277775,
+              "kl": 0.40120441453449307,
+              "preserve": 0.021427578900091532
+            },
+            "step": 800
+          },
+          {
+            "classification": "pass",
+            "consecutive_misses": 0,
+            "failed_contracts": [],
+            "minimum_relative_contract_margin": 0.06829719203315454,
+            "shares": {
+              "aim": 0.41130687941336114,
+              "ce": 0.10682971920331545,
+              "gate": 0.04439746037833483,
+              "kl": 0.41925900964912943,
+              "preserve": 0.018206931355859157
+            },
+            "step": 900
+          },
+          {
+            "classification": "pass",
+            "consecutive_misses": 0,
+            "failed_contracts": [],
+            "minimum_relative_contract_margin": 0.13775608111945115,
+            "shares": {
+              "aim": 0.3957206844367897,
+              "ce": 0.11377560811194512,
+              "gate": 0.04404923018723327,
+              "kl": 0.4341564489696244,
+              "preserve": 0.012298028294407504
+            },
+            "step": 1000
+          },
+          {
+            "classification": "pass",
+            "consecutive_misses": 0,
+            "failed_contracts": [],
+            "minimum_relative_contract_margin": 0.28616609280677063,
+            "shares": {
+              "aim": 0.3498717256727465,
+              "ce": 0.13597120693388606,
+              "gate": 0.04165886399791157,
+              "kl": 0.4501581324823697,
+              "preserve": 0.022340070913086194
+            },
+            "step": 1100
+          },
+          {
+            "classification": "pass",
+            "consecutive_misses": 0,
+            "failed_contracts": [],
+            "minimum_relative_contract_margin": 0.29252794254811154,
+            "shares": {
+              "aim": 0.285253543929762,
+              "ce": 0.1498388297690076,
+              "gate": 0.03877583827644335,
+              "kl": 0.5122042939868665,
+              "preserve": 0.013927494037920617
+            },
+            "step": 1200
+          },
+          {
+            "classification": "pass",
+            "consecutive_misses": 0,
+            "failed_contracts": [],
+            "minimum_relative_contract_margin": 0.3708481524278342,
+            "shares": {
+              "aim": 0.2576600629335737,
+              "ce": 0.15465188465122107,
+              "gate": 0.041125444572835027,
+              "kl": 0.5316325940772615,
+              "preserve": 0.014930013765108774
+            },
+            "step": 1300
+          },
+          {
+            "classification": "pass",
+            "consecutive_misses": 0,
+            "failed_contracts": [],
+            "minimum_relative_contract_margin": 0.48494627853041794,
+            "shares": {
+              "aim": 0.2646973445582837,
+              "ce": 0.15341243065661084,
+              "gate": 0.047421255617247395,
+              "kl": 0.5197311974856462,
+              "preserve": 0.014737771682211862
+            },
+            "step": 1400
+          },
+          {
+            "classification": "pass",
+            "consecutive_misses": 0,
+            "failed_contracts": [],
+            "minimum_relative_contract_margin": 0.18168412943488166,
+            "shares": {
+              "aim": 0.24924132252154724,
+              "ce": 0.16450417877819493,
+              "gate": 0.035450523883046446,
+              "kl": 0.5377492772608957,
+              "preserve": 0.01305469755631567
+            },
+            "step": 1500
+          },
+          {
+            "classification": "pass",
+            "consecutive_misses": 0,
+            "failed_contracts": [],
+            "minimum_relative_contract_margin": 0.5455627515287675,
+            "shares": {
+              "aim": 0.2319587908069879,
+              "ce": 0.15455627515287676,
+              "gate": 0.04677301568349799,
+              "kl": 0.5454452298113422,
+              "preserve": 0.021266688545295072
+            },
+            "step": 1600
+          },
+          {
+            "classification": "pass",
+            "consecutive_misses": 0,
+            "failed_contracts": [],
+            "minimum_relative_contract_margin": 0.3987761079324763,
+            "shares": {
+              "aim": 0.23971951546479311,
+              "ce": 0.15842491899916053,
+              "gate": 0.04196328323797429,
+              "kl": 0.541685524510347,
+              "preserve": 0.01820675778772505
+            },
+            "step": 1700
+          },
+          {
+            "classification": "pass",
+            "consecutive_misses": 0,
+            "failed_contracts": [],
+            "minimum_relative_contract_margin": 0.41789004035189814,
+            "shares": {
+              "aim": 0.2231848649776142,
+              "ce": 0.1505651226668029,
+              "gate": 0.04253670121055694,
+              "kl": 0.5655386384660248,
+              "preserve": 0.01817467267900116
+            },
+            "step": 1800
+          },
+          {
+            "classification": "pass",
+            "consecutive_misses": 0,
+            "failed_contracts": [],
+            "minimum_relative_contract_margin": 0.3211981575785967,
+            "shares": {
+              "aim": 0.23240087338994375,
+              "ce": 0.16274372735901735,
+              "gate": 0.0396359447273579,
+              "kl": 0.5496132004418929,
+              "preserve": 0.015606254081788017
+            },
+            "step": 1900
+          },
+          {
+            "classification": "pass",
+            "consecutive_misses": 0,
+            "failed_contracts": [],
+            "minimum_relative_contract_margin": 0.19298352017271192,
+            "shares": {
+              "aim": 0.2333788326354871,
+              "ce": 0.16039199939003834,
+              "gate": 0.035789505605181356,
+              "kl": 0.5565594286323536,
+              "preserve": 0.013880233736939578
+            },
+            "step": 2000
+          },
+          {
+            "classification": "breach_observed",
+            "consecutive_misses": 1,
+            "failed_contracts": [
+              "aim",
+              "gate"
+            ],
+            "minimum_relative_contract_margin": -0.6418690487235855,
+            "shares": {
+              "aim": 0.068343390517558,
+              "ce": 0.1805960529449828,
+              "gate": 0.010743928538292435,
+              "kl": 0.6434181735934585,
+              "preserve": 0.09689845440570827
+            },
+            "step": 2100
+          },
+          {
+            "classification": "demote",
+            "consecutive_misses": 2,
+            "failed_contracts": [
+              "aim",
+              "gate"
+            ],
+            "minimum_relative_contract_margin": -0.2746465837338299,
+            "shares": {
+              "aim": 0.1192265875832134,
+              "ce": 0.1829497069591949,
+              "gate": 0.021760602487985104,
+              "kl": 0.6195879517630992,
+              "preserve": 0.056475151206507326
+            },
+            "step": 2200
+          },
+          {
+            "classification": "pass",
+            "consecutive_misses": 0,
+            "failed_contracts": [],
+            "minimum_relative_contract_margin": 0.01143014247867602,
+            "shares": {
+              "aim": 0.45479446927360634,
+              "ce": 0.10616007043061174,
+              "gate": 0.07045077925419879,
+              "kl": 0.3540005498675366,
+              "preserve": 0.014594131174046532
+            },
+            "step": 2300
+          },
+          {
+            "classification": "pass",
+            "consecutive_misses": 0,
+            "failed_contracts": [],
+            "minimum_relative_contract_margin": 0.28371464095849896,
+            "shares": {
+              "aim": 0.33159699527324354,
+              "ce": 0.1283714640958499,
+              "gate": 0.04817083116379761,
+              "kl": 0.4730251959083733,
+              "preserve": 0.018835513558735674
+            },
+            "step": 2400
+          },
+          {
+            "classification": "pass",
+            "consecutive_misses": 0,
+            "failed_contracts": [],
+            "minimum_relative_contract_margin": 0.4405715276434705,
+            "shares": {
+              "aim": 0.28301850742141704,
+              "ce": 0.15027929075360255,
+              "gate": 0.04685380018512615,
+              "kl": 0.5042000346752147,
+              "preserve": 0.0156483669646396
+            },
+            "step": 2500
+          },
+          {
+            "classification": "pass",
+            "consecutive_misses": 0,
+            "failed_contracts": [],
+            "minimum_relative_contract_margin": 0.4453749814409078,
+            "shares": {
+              "aim": 0.2631187653481891,
+              "ce": 0.15334026890532063,
+              "gate": 0.04336124944322723,
+              "kl": 0.5179818411607449,
+              "preserve": 0.022197875142518274
+            },
+            "step": 2600
+          },
+          {
+            "classification": "pass",
+            "consecutive_misses": 0,
+            "failed_contracts": [],
+            "minimum_relative_contract_margin": 0.4214731958099118,
+            "shares": {
+              "aim": 0.25123059990394325,
+              "ce": 0.15198927981451976,
+              "gate": 0.04264419587429735,
+              "kl": 0.534149959595165,
+              "preserve": 0.01998596481207455
+            },
+            "step": 2700
+          },
+          {
+            "classification": "pass",
+            "consecutive_misses": 0,
+            "failed_contracts": [],
+            "minimum_relative_contract_margin": 0.42701281701867755,
+            "shares": {
+              "aim": 0.2424230384748753,
+              "ce": 0.15498632399574622,
+              "gate": 0.04281038451056032,
+              "kl": 0.5434226561667073,
+              "preserve": 0.01635759685211094
+            },
+            "step": 2800
+          },
+          {
+            "classification": "pass",
+            "consecutive_misses": 0,
+            "failed_contracts": [],
+            "minimum_relative_contract_margin": 0.43460370525846725,
+            "shares": {
+              "aim": 0.23584468605830913,
+              "ce": 0.15563530775647844,
+              "gate": 0.043038111157754015,
+              "kl": 0.5487478474058666,
+              "preserve": 0.016734047621591905
+            },
+            "step": 2900
+          },
+          {
+            "classification": "pass",
+            "consecutive_misses": 0,
+            "failed_contracts": [],
+            "minimum_relative_contract_margin": 0.4011036283656966,
+            "shares": {
+              "aim": 0.2297196132134805,
+              "ce": 0.1521884662843501,
+              "gate": 0.0420331088509709,
+              "kl": 0.5561522790051108,
+              "preserve": 0.019906532646087646
+            },
+            "step": 3000
+          },
+          {
+            "classification": "breach_observed",
+            "consecutive_misses": 1,
+            "failed_contracts": [
+              "aim",
+              "gate"
+            ],
+            "minimum_relative_contract_margin": -0.5919200132462707,
+            "shares": {
+              "aim": 0.07072601967434804,
+              "ce": 0.18257618091354252,
+              "gate": 0.012242399602611878,
+              "kl": 0.6606120290477077,
+              "preserve": 0.07384337076178983
+            },
+            "step": 3100
+          },
+          {
+            "classification": "demote",
+            "consecutive_misses": 2,
+            "failed_contracts": [
+              "aim",
+              "gate"
+            ],
+            "minimum_relative_contract_margin": -0.2672618030004297,
+            "shares": {
+              "aim": 0.12139531757596264,
+              "ce": 0.17036862728671348,
+              "gate": 0.021982145909987108,
+              "kl": 0.6041325433074002,
+              "preserve": 0.08212136591993657
+            },
+            "step": 3200
+          },
+          {
+            "classification": "pass",
+            "consecutive_misses": 0,
+            "failed_contracts": [],
+            "minimum_relative_contract_margin": 0.03279256194394198,
+            "shares": {
+              "aim": 0.4338262812864183,
+              "ce": 0.10559037307871323,
+              "gate": 0.0847560840617915,
+              "kl": 0.3614773966803797,
+              "preserve": 0.014349864892697262
+            },
+            "step": 3300
+          },
+          {
+            "classification": "pass",
+            "consecutive_misses": 0,
+            "failed_contracts": [],
+            "minimum_relative_contract_margin": 0.32942011380789227,
+            "shares": {
+              "aim": 0.3259657601694906,
+              "ce": 0.1347688340423716,
+              "gate": 0.05624444647239622,
+              "kl": 0.46529703983276227,
+              "preserve": 0.01772391948297929
+            },
+            "step": 3400
+          },
+          {
+            "classification": "pass",
+            "consecutive_misses": 0,
+            "failed_contracts": [],
+            "minimum_relative_contract_margin": 0.42293874529257725,
+            "shares": {
+              "aim": 0.28382132579263386,
+              "ce": 0.14686473082313506,
+              "gate": 0.05125205272344474,
+              "kl": 0.498028560852402,
+              "preserve": 0.020033329808384348
+            },
+            "step": 3500
+          },
+          {
+            "classification": "pass",
+            "consecutive_misses": 0,
+            "failed_contracts": [],
+            "minimum_relative_contract_margin": 0.48438212394534386,
+            "shares": {
+              "aim": 0.2552543457255742,
+              "ce": 0.15264793734989904,
+              "gate": 0.053111618065313754,
+              "kl": 0.5195337433808703,
+              "preserve": 0.019452355478342606
+            },
+            "step": 3600
+          },
+          {
+            "classification": "pass",
+            "consecutive_misses": 0,
+            "failed_contracts": [],
+            "minimum_relative_contract_margin": 0.4827574106940353,
+            "shares": {
+              "aim": 0.2411466496902127,
+              "ce": 0.15349328420447436,
+              "gate": 0.04448272232082106,
+              "kl": 0.5442124602523932,
+              "preserve": 0.016664883532098603
+            },
+            "step": 3700
+          },
+          {
+            "classification": "pass",
+            "consecutive_misses": 0,
+            "failed_contracts": [],
+            "minimum_relative_contract_margin": 0.5019380130983646,
+            "shares": {
+              "aim": 0.24038859952922903,
+              "ce": 0.15019380130983648,
+              "gate": 0.047268825770686675,
+              "kl": 0.5447203466788574,
+              "preserve": 0.017428426711390502
+            },
+            "step": 3800
+          },
+          {
+            "classification": "pass",
+            "consecutive_misses": 0,
+            "failed_contracts": [],
+            "minimum_relative_contract_margin": 0.4633175984667759,
+            "shares": {
+              "aim": 0.2361500952714577,
+              "ce": 0.15452198976776094,
+              "gate": 0.04389952795400327,
+              "kl": 0.5476568804216799,
+              "preserve": 0.017771506585098202
+            },
+            "step": 3900
+          },
+          {
+            "classification": "pass",
+            "consecutive_misses": 0,
+            "failed_contracts": [],
+            "minimum_relative_contract_margin": 0.34703324403140035,
+            "shares": {
+              "aim": 0.2445727168763582,
+              "ce": 0.1583032209509865,
+              "gate": 0.040410997320942006,
+              "kl": 0.5380400340152125,
+              "preserve": 0.018673030836500782
+            },
+            "step": 4000
+          }
+        ]
+      },
+      "status": "complete",
+      "step": 4000,
+      "task_curve": [
+        {
+          "augmented_correct": 510,
+          "base_correct": 502,
+          "controller_reason": "hold_until_registered_pi_look",
+          "controller_rung_after": 0,
+          "delta_rows": 8,
+          "look": 1,
+          "step": 200
+        },
+        {
+          "augmented_correct": 507,
+          "base_correct": 502,
+          "controller_reason": "hold_until_registered_pi_look",
+          "controller_rung_after": 0,
+          "delta_rows": 5,
+          "look": 2,
+          "step": 400
+        },
+        {
+          "augmented_correct": 507,
+          "base_correct": 502,
+          "controller_reason": "hold_until_registered_pi_look",
+          "controller_rung_after": 0,
+          "delta_rows": 5,
+          "look": 3,
+          "step": 600
+        },
+        {
+          "augmented_correct": 510,
+          "base_correct": 502,
+          "controller_reason": "hold_until_registered_pi_look",
+          "controller_rung_after": 0,
+          "delta_rows": 8,
+          "look": 4,
+          "step": 800
+        },
+        {
+          "augmented_correct": 505,
+          "base_correct": 502,
+          "controller_reason": "hold_until_registered_pi_look",
+          "controller_rung_after": 0,
+          "delta_rows": 3,
+          "look": 6,
+          "step": 1200
+        },
+        {
+          "augmented_correct": 506,
+          "base_correct": 502,
+          "controller_reason": "hold_until_registered_pi_look",
+          "controller_rung_after": 0,
+          "delta_rows": 4,
+          "look": 7,
+          "step": 1400
+        },
+        {
+          "augmented_correct": 506,
+          "base_correct": 502,
+          "controller_reason": "hold_until_registered_pi_look",
+          "controller_rung_after": 0,
+          "delta_rows": 4,
+          "look": 8,
+          "step": 1600
+        },
+        {
+          "augmented_correct": 506,
+          "base_correct": 502,
+          "controller_reason": "hold_until_registered_pi_look",
+          "controller_rung_after": 0,
+          "delta_rows": 4,
+          "look": 9,
+          "step": 1800
+        },
+        {
+          "augmented_correct": 506,
+          "base_correct": 502,
+          "controller_reason": "advance",
+          "controller_rung_after": 1,
+          "delta_rows": 4,
+          "look": 10,
+          "step": 2000
+        },
+        {
+          "augmented_correct": 509,
+          "base_correct": 502,
+          "controller_reason": "hold_until_registered_pi_look",
+          "controller_rung_after": 0,
+          "delta_rows": 7,
+          "look": 11,
+          "step": 2200
+        },
+        {
+          "augmented_correct": 509,
+          "base_correct": 502,
+          "controller_reason": "hold_until_registered_pi_look",
+          "controller_rung_after": 0,
+          "delta_rows": 7,
+          "look": 12,
+          "step": 2400
+        },
+        {
+          "augmented_correct": 509,
+          "base_correct": 502,
+          "controller_reason": "hold_until_registered_pi_look",
+          "controller_rung_after": 0,
+          "delta_rows": 7,
+          "look": 13,
+          "step": 2600
+        },
+        {
+          "augmented_correct": 509,
+          "base_correct": 502,
+          "controller_reason": "hold_until_registered_pi_look",
+          "controller_rung_after": 0,
+          "delta_rows": 7,
+          "look": 14,
+          "step": 2800
+        },
+        {
+          "augmented_correct": 507,
+          "base_correct": 502,
+          "controller_reason": "advance",
+          "controller_rung_after": 1,
+          "delta_rows": 5,
+          "look": 15,
+          "step": 3000
+        },
+        {
+          "augmented_correct": 509,
+          "base_correct": 502,
+          "controller_reason": "hold_until_registered_pi_look",
+          "controller_rung_after": 0,
+          "delta_rows": 7,
+          "look": 16,
+          "step": 3200
+        },
+        {
+          "augmented_correct": 513,
+          "base_correct": 502,
+          "controller_reason": "hold_until_registered_pi_look",
+          "controller_rung_after": 0,
+          "delta_rows": 11,
+          "look": 17,
+          "step": 3400
+        },
+        {
+          "augmented_correct": 513,
+          "base_correct": 502,
+          "controller_reason": "hold_until_registered_pi_look",
+          "controller_rung_after": 0,
+          "delta_rows": 11,
+          "look": 18,
+          "step": 3600
+        },
+        {
+          "augmented_correct": 511,
+          "base_correct": 502,
+          "controller_reason": "hold_until_registered_pi_look",
+          "controller_rung_after": 0,
+          "delta_rows": 9,
+          "look": 19,
+          "step": 3800
+        },
+        {
+          "augmented_correct": 512,
+          "base_correct": 502,
+          "controller_reason": "advance",
+          "controller_rung_after": 1,
+          "delta_rows": 10,
+          "look": 20,
+          "step": 4000
+        }
+      ],
+      "task_endpoint": {
+        "augmented_correct": 512,
+        "base_correct": 502,
+        "battery_writeback_telemetry": {
+          "arc_challenge": {
+            "position_gate_mean": 0.019999999552965164,
+            "realized_writeback_ratio_mean": 0.0011868811529175698,
+            "rows": 76,
+            "telemetry_positions": 308
+          },
+          "arc_easy": {
+            "position_gate_mean": 0.019999999552965164,
+            "realized_writeback_ratio_mean": 0.0011780368422762654,
+            "rows": 243,
+            "telemetry_positions": 1001
+          },
+          "gsm8k": {
+            "position_gate_mean": 0.016750846843596113,
+            "realized_writeback_ratio_mean": 0.0011370892163550237,
+            "rows": 369,
+            "telemetry_positions": 87143
+          },
+          "mbpp": {
+            "position_gate_mean": 0.013363408244516373,
+            "realized_writeback_ratio_mean": 0.0008914715643174017,
+            "rows": 67,
+            "telemetry_positions": 10580
+          },
+          "mmlu": {
+            "position_gate_mean": 0.019999999552965164,
+            "realized_writeback_ratio_mean": 0.0011951453237342038,
+            "rows": 244,
+            "telemetry_positions": 976
+          },
+          "tier1": {
+            "position_gate_mean": 0.019999999552965164,
+            "realized_writeback_ratio_mean": 0.0013743919700694581,
+            "rows": 25,
+            "telemetry_positions": 73
+          }
+        },
+        "delta_points": 0.9765625,
+        "delta_rows": 10,
+        "fixes": 54,
+        "guardrail": {
+          "mean_augmented_minus_base": 0.009765625,
+          "rows": 1024,
+          "standard_error": 0.009667379093730409,
+          "tier_s_condition": false,
+          "tier_s_event": false,
+          "tier_s_streak": 0,
+          "tier_w_condition": false,
+          "tier_w_event": false,
+          "tier_w_streak": 0,
+          "upper_bound": 0.022162875338383056
+        },
+        "paired_one_sided_p": 0.18167709383202676,
+        "regressions": 44,
+        "unchanged": 926
+      }
+    }
+  },
+  "status": "complete_dev_only"
+}

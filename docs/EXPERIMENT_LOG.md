@@ -1988,3 +1988,18 @@ Colab/Drive backups for selected runs.
   `outputs/stage5/stage5_paper2_phase3_p34_a2_autopsy_20260814/summary.json`.
   Amendment draft:
   `docs/PAPER2_PHASE3_P34_AMENDMENT_A2_DRAFT_20260814.md`.
+- 2026-08-14 P3.4 a2 repaired campaign: both registered main seeds completed
+  all 4,000 steps and 20 looks under the dynamic per-loss share controller.
+  Endpoints were `507/1024` and `512/1024` against the fixed `502/1024` base,
+  net gains of `+5` and `+10` rows; the mean `+7.5/1024` (`+0.732` points)
+  replicated in sign but missed the ratified Trigger-B requirement of mean
+  `+10/1024`. CONFIRM and EVAL-E remain sealed. Seed 0 recorded 39 passing
+  share windows and one isolated KL warning. Seed 1 recorded 34 passes, three
+  warnings, and three reversible rung demotions, then ended with five passing
+  windows. No stop, task guardrail, non-finite value, collateral event, or
+  frozen-lineage change occurred. Final `pi_dir` was `14.75%` and `15.50%`;
+  final `pi_dep` was `15.70%` and `27.59%`. Reading:
+  `REPLICATED_POSITIVE_BELOW_TRIGGER_B`; next action is strategy selection of
+  one P3.5 lever. Handoff:
+  `docs/PAPER2_PHASE3_P34_A2_RESULTS_HANDOFF_20260814.md`. Receipt:
+  `outputs/stage5/stage5_paper2_phase3_p34_a2_20260814/analysis/p34_a2_results_summary.json`.
