@@ -33,7 +33,53 @@ def _first_difference(left: list[int], right: list[int]) -> int | None:
 
 
 @torch.inference_mode()
+def _generate_batch(
+    *,
+    graph: P34TaskInferenceGraph,
+    tokenizer: Any,
+    prompts: list[str],
+    caps: list[int],
+    device: str,
+) -> tuple[list[list[int]], list[list[int]]]:
+    encoded = tokenizer(
+        [_chat_prompt(tokenizer, prompt) for prompt in prompts],
+        return_tensors="pt",
+        padding=True,
+    ).to(device)
+    state, output = graph.prefill_cached(
+        input_ids=encoded["input_ids"], attention_mask=encoded["attention_mask"]
+    )
+    generated = [[] for _prompt in prompts]
+    source_tokens = [[] for _prompt in prompts]
+    active = [True for _prompt in prompts]
+    for _token_index in range(max(caps)):
+        selected = output.augmented_logits.argmax(dim=-1)
+        source = output.base_logits.argmax(dim=-1)
+        for index, (token, source_token) in enumerate(
+            zip(selected.tolist(), source.tolist())
+        ):
+            if not active[index]:
+                continue
+            generated[index].append(int(token))
+            source_tokens[index].append(int(source_token))
+            if (
+                len(generated[index]) >= caps[index]
+                or tokenizer.eos_token_id is not None
+                and int(token) == int(tokenizer.eos_token_id)
+            ):
+                active[index] = False
+        if not any(active):
+            break
+        state, output = graph.advance_cached(
+            state=state, selected_tokens=selected
+        )
+    return generated, source_tokens
+
+
+@torch.inference_mode()
 def run(args: argparse.Namespace) -> dict[str, Any]:
+    if args.batch_size < 1:
+        raise ValueError("P3.5 persistence batch size must be positive")
     population = [
         row for row in read_jsonl(args.panel)
         if str(row["battery"]) in {"gsm8k", "mbpp"}
@@ -82,68 +128,68 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     )
     lm_head = model.get_output_embeddings().weight.detach()
     rows: list[dict[str, Any]] = []
-    for row in panel:
-        prompt, cap = _generation_prompt(row)
-        encoded = tokenizer(
-            [_chat_prompt(tokenizer, prompt)], return_tensors="pt", padding=True
-        ).to(args.device)
-        fresh_state, fresh_output = fresh.prefill_cached(
-            input_ids=encoded["input_ids"], attention_mask=encoded["attention_mask"]
+    for start in range(0, len(panel), args.batch_size):
+        batch = panel[start : start + args.batch_size]
+        prompt_caps = [_generation_prompt(row) for row in batch]
+        prompts = [value[0] for value in prompt_caps]
+        caps = [value[1] for value in prompt_caps]
+        fresh_tokens, _fresh_sources = _generate_batch(
+            graph=fresh,
+            tokenizer=tokenizer,
+            prompts=prompts,
+            caps=caps,
+            device=args.device,
         )
-        carry_state, carry_output = carried.prefill_cached(
-            input_ids=encoded["input_ids"], attention_mask=encoded["attention_mask"]
+        carry_tokens, carry_sources = _generate_batch(
+            graph=carried,
+            tokenizer=tokenizer,
+            prompts=prompts,
+            caps=caps,
+            device=args.device,
         )
-        fresh_tokens: list[int] = []
-        carry_tokens: list[int] = []
-        reanchors = 0
-        for token_index in range(cap):
-            fresh_token = int(fresh_output.augmented_logits.argmax(dim=-1).item())
-            carry_token = int(carry_output.augmented_logits.argmax(dim=-1).item())
-            fresh_tokens.append(fresh_token)
-            carry_tokens.append(carry_token)
-            current_source = carry_output.base_logits.argmax(dim=-1)
-            target = torch.tensor([fresh_token], device=args.device)
-            if int(current_source.item()) != fresh_token:
+        for row, fresh_row, carry_row, sources_row in zip(
+            batch, fresh_tokens, carry_tokens, carry_sources
+        ):
+            pairs = [
+                (source_token, target_token)
+                for source_token, target_token in zip(sources_row, fresh_row)
+                if source_token != target_token
+            ]
+            if pairs:
                 direction = analytic_oracle_directions(
                     lm_head_weight=lm_head,
-                    source_tokens=current_source,
-                    target_tokens=target,
+                    source_tokens=torch.tensor(
+                        [pair[0] for pair in pairs], device=args.device
+                    ),
+                    target_tokens=torch.tensor(
+                        [pair[1] for pair in pairs], device=args.device
+                    ),
                 )
                 if not bool(torch.isfinite(direction).all()):
-                    raise RuntimeError("P3.5 persistence re-anchor produced non-finite direction")
-                reanchors += 1
-            fresh_done = tokenizer.eos_token_id is not None and fresh_token == tokenizer.eos_token_id
-            carry_done = tokenizer.eos_token_id is not None and carry_token == tokenizer.eos_token_id
-            if (fresh_done and carry_done) or token_index + 1 == cap:
-                break
-            fresh_state, fresh_output = fresh.advance_cached(
-                state=fresh_state,
-                selected_tokens=torch.tensor([fresh_token], device=args.device),
+                    raise RuntimeError(
+                        "P3.5 persistence re-anchor produced non-finite direction"
+                    )
+            fresh_text = tokenizer.decode(fresh_row, skip_special_tokens=True)
+            carry_text = tokenizer.decode(carry_row, skip_special_tokens=True)
+            fresh_correct, fresh_prediction = score_generated(row, fresh_text)
+            carry_correct, carry_prediction = score_generated(row, carry_text)
+            difference = _first_difference(fresh_row, carry_row)
+            rows.append(
+                {
+                    "item_id": str(row["item_id"]),
+                    "document_id": str(row["document_id"]),
+                    "battery": str(row["battery"]),
+                    "fresh_correct": bool(fresh_correct),
+                    "carried_correct": bool(carry_correct),
+                    "fresh_prediction": fresh_prediction,
+                    "carried_prediction": carry_prediction,
+                    "fresh_tokens": fresh_row,
+                    "carried_tokens": carry_row,
+                    "first_token_difference": difference,
+                    "later_token_changed": difference not in (None, 0),
+                    "on_the_fly_reanchors": len(pairs),
+                }
             )
-            carry_state, carry_output = carried.advance_cached(
-                state=carry_state,
-                selected_tokens=torch.tensor([carry_token], device=args.device),
-            )
-        fresh_text = tokenizer.decode(fresh_tokens, skip_special_tokens=True)
-        carry_text = tokenizer.decode(carry_tokens, skip_special_tokens=True)
-        fresh_correct, fresh_prediction = score_generated(row, fresh_text)
-        carry_correct, carry_prediction = score_generated(row, carry_text)
-        rows.append(
-            {
-                "item_id": str(row["item_id"]),
-                "document_id": str(row["document_id"]),
-                "battery": str(row["battery"]),
-                "fresh_correct": bool(fresh_correct),
-                "carried_correct": bool(carry_correct),
-                "fresh_prediction": fresh_prediction,
-                "carried_prediction": carry_prediction,
-                "fresh_tokens": fresh_tokens,
-                "carried_tokens": carry_tokens,
-                "first_token_difference": _first_difference(fresh_tokens, carry_tokens),
-                "later_token_changed": _first_difference(fresh_tokens, carry_tokens) not in (None, 0),
-                "on_the_fly_reanchors": reanchors,
-            }
-        )
         print(f"p35_persistence_progress rows={len(rows)}/{len(panel)}", flush=True)
     args.output_dir.mkdir(parents=True, exist_ok=True)
     rows_path = args.output_dir / "rows.jsonl"
@@ -204,6 +250,7 @@ def parse_args() -> argparse.Namespace:
         parser.add_argument(f"--{name}_sha256", required=True)
     parser.add_argument("--output_dir", type=Path, required=True)
     parser.add_argument("--device", default="cuda")
+    parser.add_argument("--batch_size", type=int, default=8)
     return parser.parse_args()
 
 
