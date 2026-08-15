@@ -174,6 +174,7 @@
     "registered_reading": "no_free_persistence_gain_on_this_seed0_dev_probe"
   },
   "implementation_commit": "87bac2a4364284dccb08976aa9b048521cde1469",
+  "execution_build_commit": "6071d8b23b66bd74ccf188c2d3fe0637042b1c50",
   "prerequisite_bindings": {
     "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase3_p35_prerequisites_20260815/receipts/bindings.json",
     "sha256": "d3235d09a85e2d2bb5a774acd7baa3ecbfa6da727e8373c792ad4f7d906566f6",

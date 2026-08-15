@@ -72,6 +72,7 @@ RUN_KIND = "paper2_phase3_p35_landing_v1"
 EXECUTION_AUTHORITY_SHA256 = (
     "314b51a34a0d451dd8045b69eb794ebff4ecd3efb3483dcebcdc78bae3628efe"
 )
+EXECUTION_BUILD_COMMIT = "6071d8b23b66bd74ccf188c2d3fe0637042b1c50"
 
 
 def _adamw_group_names(module: torch.nn.Module) -> list[list[str]]:
@@ -152,9 +153,12 @@ def _validate_executed_lock(lock: Mapping[str, Any]) -> dict[str, Any]:
         raise RuntimeError("P3.5 causal-instrument contract changed")
     if lock["persistence_probe"].get("training_authorized") is not False:
         raise RuntimeError("P3.5 persistence entered the registered training matrix")
+    if lock.get("execution_build_commit") != EXECUTION_BUILD_COMMIT:
+        raise RuntimeError("P3.5 execution build commit changed")
     return {
         "ratified_lock": True,
         "execution_authority_sha256": EXECUTION_AUTHORITY_SHA256,
+        "execution_build_commit": EXECUTION_BUILD_COMMIT,
         "ema_primary": bool(lock["checkpoint_policy"]["ema_primary"]),
         "primary_evaluation_ceiling": float(
             lock["evaluation"]["primary_gate_ceiling"]
