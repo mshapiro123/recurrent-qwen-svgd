@@ -4356,6 +4356,18 @@ TARGETS = {
         ],
         "env": {"P34_A2_MODE": "preflight", "P34_A2_SEED": "0"},
     },
+    "paper2_phase3_p34_fixed_ceiling_probe": {
+        "path": "colab/STAGE5_PAPER2_PHASE3_P34_FIXED_CEILING_PROBE_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_PHASE3_P34_FIXED_CEILING_PROBE_VERSION",
+            "paper2_phase3_p34_fixed_ceiling_probe_v1",
+            "score-only two-seed two-ceiling DEV probe no optimizer no training",
+            "checkpoint-selection-barred full frozen DEV panel and sealed CONFIRM untouched",
+            "reconstruct seed-one target and floor while preserving exact registered endpoint reads",
+            "colab/run_stage5_paper2_phase3_p34_fixed_ceiling_probe.py",
+        ],
+        "env": {},
+    },
     "gradient_path_audit": {
         "path": "colab/STAGE5_GRADIENT_PATH_AUDIT_CELL.py",
         "markers": [

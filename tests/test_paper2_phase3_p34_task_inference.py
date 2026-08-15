@@ -14,7 +14,10 @@ from eval.eval_paper2_phase3_p34_task_inference import (
     position_buckets,
     task_graph_preflight,
 )
-from eval.eval_paper2_phase3_p34_task_trajectory import _telemetry_summary
+from eval.eval_paper2_phase3_p34_task_trajectory import (
+    _telemetry_summary,
+    resolve_evaluation_gate_ceiling,
+)
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -96,6 +99,24 @@ def test_score_preserving_telemetry_summary_keeps_gate_and_write_separate() -> N
         "realized_writeback_ratio_mean": 0.015,
         "realized_writeback_ratio_max": 0.02,
     }
+
+
+def test_fixed_ceiling_override_is_score_only_and_narrow() -> None:
+    receipts = [{"label": "p34", "controller_rung": 1}]
+    assert resolve_evaluation_gate_ceiling(receipts, None) == (
+        0.08,
+        "checkpoint_controller_rung",
+    )
+    assert resolve_evaluation_gate_ceiling(receipts, 0.02) == (
+        0.02,
+        "score_only_fixed_ceiling_override",
+    )
+    try:
+        resolve_evaluation_gate_ceiling(receipts, 0.20)
+    except ValueError as error:
+        assert "only 0.02 or 0.08" in str(error)
+    else:
+        raise AssertionError("unauthorized fixed ceiling was accepted")
 
 
 def test_write_mask_changes_only_current_nonzero_position() -> None:

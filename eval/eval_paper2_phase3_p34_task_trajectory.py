@@ -23,6 +23,7 @@ from eval.eval_paper2_phase3_p31_references import (
     score_generated,
 )
 from eval.eval_paper2_phase3_p34_task_inference import P34TaskInferenceGraph
+from training.paper2_phase3_p34 import P34_GATE_CEILINGS
 from training.paper2_phase3_p34_lock import panel_identity_sha256
 
 
@@ -63,6 +64,22 @@ def _telemetry_summary(gates: Sequence[float], ratios: Sequence[float]) -> dict[
         "realized_writeback_ratio_mean": sum(ratios) / len(ratios),
         "realized_writeback_ratio_max": max(ratios),
     }
+
+
+def resolve_evaluation_gate_ceiling(
+    checkpoint_receipts: Sequence[Mapping[str, Any]],
+    override: float | None,
+) -> tuple[float, str]:
+    """Resolve the score-only ruler independently of training controller state."""
+
+    campaign = [item for item in checkpoint_receipts if item.get("label") == "p34"]
+    registered = 0.08 if not campaign else P34_GATE_CEILINGS[int(campaign[-1]["controller_rung"])]
+    if override is None:
+        return float(registered), "checkpoint_controller_rung"
+    value = float(override)
+    if value not in (0.02, 0.08):
+        raise ValueError("P3.4 fixed-ceiling probe authorizes only 0.02 or 0.08")
+    return value, "score_only_fixed_ceiling_override"
 
 
 def _apply_state(module: Any, path: Path, *, expected_sha256: str, label: str) -> dict[str, Any]:
@@ -392,6 +409,7 @@ def main() -> int:
     parser.add_argument("--p34_sha256")
     parser.add_argument("--mcq_batch_size", type=int, default=32)
     parser.add_argument("--generation_batch_size", type=int, default=8)
+    parser.add_argument("--gate_ceiling_override", type=float)
     args = parser.parse_args()
 
     panel = read_jsonl(args.panel)
@@ -411,6 +429,11 @@ def main() -> int:
             or int(row.get("look", -1)) != args.look
             or int(row.get("seed", -1)) != args.seed
             or str(row.get("partition")) != "dev"
+            or (
+                args.gate_ceiling_override is not None
+                and float(row.get("evaluation_gate_ceiling", -1.0))
+                != float(args.gate_ceiling_override)
+            )
         ):
             raise RuntimeError("P3.4 resumable trajectory identity changed")
     pending = [row for row in panel if str(row["item_id"]) not in existing_lookup]
@@ -434,6 +457,10 @@ def main() -> int:
         p34=args.p34,
         p34_sha256=args.p34_sha256,
     )
+    evaluation_gate_ceiling, evaluation_gate_ceiling_source = resolve_evaluation_gate_ceiling(
+        checkpoint_receipts, args.gate_ceiling_override
+    )
+    sidecar.bridge.set_gate_ceiling(evaluation_gate_ceiling)
     graph = P34TaskInferenceGraph(base_model=model, sidecar=sidecar)
 
     # The cache changes transport only.  Require identical selected tokens on a
@@ -477,6 +504,7 @@ def main() -> int:
                 "document_id": row["document_id"],
                 "item_id": item_id,
                 "base_correct": bool(base_rows[item_id]["correct"]),
+                "evaluation_gate_ceiling": evaluation_gate_ceiling,
                 **augmented,
             })
         append_jsonl(args.output_jsonl, enriched)
@@ -531,6 +559,8 @@ def main() -> int:
         "panel_sha256": panel_sha256,
         "output_sha256": sha256_file(args.output_jsonl),
         "checkpoint_receipts": checkpoint_receipts,
+        "evaluation_gate_ceiling": evaluation_gate_ceiling,
+        "evaluation_gate_ceiling_source": evaluation_gate_ceiling_source,
         "cache_transport": {
             "argmax_equal_on_real_prompt": cache_argmax_equal,
             "maximum_absolute_logit_difference": cache_max_abs,
