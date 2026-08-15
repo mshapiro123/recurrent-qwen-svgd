@@ -352,6 +352,12 @@ def test_direction_coverage_separates_training_and_audit_populations() -> None:
         population="training",
     )
     assert receipt["covered_positive_record_ids"] == 2
+    audit_receipt = _assert_direction_coverage(
+        rows=[{"record_id": "audit-a"}, {"record_id": "audit-b"}],
+        direction_index={"audit-a": 0, "audit-b": 1},
+        population="registered_positive_audit",
+    )
+    assert audit_receipt["covered_positive_record_ids"] == 2
     with pytest.raises(RuntimeError, match="training direction coverage incomplete"):
         _assert_direction_coverage(
             rows=rows,

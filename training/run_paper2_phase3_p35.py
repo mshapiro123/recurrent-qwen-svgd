@@ -86,7 +86,8 @@ def _assert_direction_coverage(
     required = {
         str(row["record_id"])
         for row in rows
-        if int(row["gate_label"]) == int(GateLabel.POSITIVE)
+        if "gate_label" not in row
+        or int(row["gate_label"]) == int(GateLabel.POSITIVE)
     }
     missing = sorted(required - set(direction_index))
     if missing:
