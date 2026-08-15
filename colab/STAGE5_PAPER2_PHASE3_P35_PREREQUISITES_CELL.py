@@ -44,5 +44,5 @@ run([
     "tests/test_paper2_phase3_p34_task_inference.py",
     "tests/test_paper2_phase3_p34_oracle_refresh.py",
 ])
-run([sys.executable, "-u", "colab/run_stage5_paper2_phase3_p35_prerequisites.py"])
+run([sys.executable, "-u", "-m", "colab.run_stage5_paper2_phase3_p35_prerequisites"])
 print("P3.5 no-training prerequisites landed; release this GPU session.", flush=True)
