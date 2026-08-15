@@ -83,6 +83,13 @@ def test_literal_ngram_memory_has_zero_substrate_contact() -> None:
     assert all(parameter.grad is not None for parameter in memory.parameters())
 
 
+def test_literal_ngram_memory_initialization_is_seed_deterministic() -> None:
+    first = LiteralNGramMemory(value_dim=5, num_slots=31, seed=43)
+    second = LiteralNGramMemory(value_dim=5, num_slots=31, seed=43)
+    for first_table, second_table in zip(first.tables, second.tables, strict=True):
+        torch.testing.assert_close(first_table.weight, second_table.weight)
+
+
 def test_probe_pool_detaches_cells_and_respects_mask() -> None:
     pool = ProbePool(cell_dim=5, n_probes=3, query_dim=7, seed=11)
     cells = torch.randn((2, 4, 5), requires_grad=True)

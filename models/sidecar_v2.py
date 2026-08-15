@@ -132,8 +132,8 @@ class LiteralNGramMemory(nn.Module):
             raise ValueError("ngram_sizes must contain positive integers")
         if len(set(sizes)) != len(sizes):
             raise ValueError("ngram_sizes must be unique")
-        if int(num_slots) < 1 or int(hashes_per_ngram) < 1:
-            raise ValueError("num_slots and hashes_per_ngram must be positive")
+        if min(int(value_dim), int(num_slots), int(hashes_per_ngram)) < 1:
+            raise ValueError("value_dim, num_slots, and hashes_per_ngram must be positive")
         self.value_dim = int(value_dim)
         self.num_slots = int(num_slots)
         self.ngram_sizes = sizes
@@ -143,8 +143,9 @@ class LiteralNGramMemory(nn.Module):
             nn.Embedding(self.num_slots, self.value_dim)
             for _ in range(len(sizes) * self.hashes_per_ngram)
         )
+        generator = torch.Generator().manual_seed(self.seed)
         for table in self.tables:
-            nn.init.normal_(table.weight, std=0.02)
+            nn.init.normal_(table.weight, std=0.02, generator=generator)
 
     def _indices(self, tokens: torch.Tensor, size: int, hash_index: int) -> torch.Tensor:
         batch, length = tokens.shape
