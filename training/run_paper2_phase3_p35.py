@@ -21,6 +21,7 @@ from eval.eval_paper2_phase3_p34_task_trajectory import load_condition
 from eval.eval_paper2_phase3_retention_step0 import position_buckets
 from models.paper2_dc2_student import install_probe_control_reader
 from training.paper2_phase2_matched_alpha import build_adamw_groups
+from training.paper2_phase3_p32 import GateLabel
 from training.paper2_phase3_p34 import (
     AnnealingState,
     classify_loss_shares,
@@ -54,6 +55,7 @@ from training.run_paper2_phase3_p34 import (
 )
 from training.run_paper2_phase3_p33 import (
     _active_record_pools,
+    _direction_lookup,
     atomic_torch_save,
     audit_model,
     load_audit_material,
@@ -73,6 +75,31 @@ EXECUTION_AUTHORITY_SHA256 = (
     "314b51a34a0d451dd8045b69eb794ebff4ecd3efb3483dcebcdc78bae3628efe"
 )
 EXECUTION_BUILD_COMMIT = "6071d8b23b66bd74ccf188c2d3fe0637042b1c50"
+P35_TRAINING_DIRECTION_SHA256 = (
+    "611be787dea0438761d279aa035d5bfe2aa37e74710d880be1066d7ae80a45a2"
+)
+
+
+def _assert_direction_coverage(
+    *, rows: list[dict[str, Any]], direction_index: Mapping[str, int], population: str
+) -> dict[str, Any]:
+    required = {
+        str(row["record_id"])
+        for row in rows
+        if int(row["gate_label"]) == int(GateLabel.POSITIVE)
+    }
+    missing = sorted(required - set(direction_index))
+    if missing:
+        raise RuntimeError(
+            f"P3.5 {population} direction coverage incomplete: "
+            f"required={len(required)} missing={len(missing)} first={missing[0]}"
+        )
+    return {
+        "population": population,
+        "required_positive_record_ids": len(required),
+        "covered_positive_record_ids": len(required),
+        "missing_positive_record_ids": 0,
+    }
 
 
 def _adamw_group_names(module: torch.nn.Module) -> list[list[str]]:
@@ -341,16 +368,32 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     objective_weights = normalize_objective_weights(source_payload["objective_weights"])
     module.bridge.set_gate_ceiling(P35_PRIMARY_EVAL_CEILING)
 
-    direction_payload = torch.load(args.direction_cache, map_location="cpu", weights_only=False)
-    direction_sha256 = sha256_file(args.direction_cache)
-    if direction_sha256 != lock["estimator_repair"]["cache_sha256"]:
+    audit_direction_payload = torch.load(
+        args.audit_direction_cache, map_location="cpu", weights_only=False
+    )
+    audit_direction_sha256 = sha256_file(args.audit_direction_cache)
+    if audit_direction_sha256 != lock["estimator_repair"]["cache_sha256"]:
         raise RuntimeError("P3.5 exact serving-reader cache SHA mismatch")
-    direction_index, directions = load_p35_direction_lookup(direction_payload)
-    direction_receipt = {
-        "path": str(args.direction_cache),
-        "sha256": direction_sha256,
-        "rows": len(direction_index),
-        "source_anchor_identity_rate": direction_payload["source_anchor_identity_rate"],
+    audit_direction_index, audit_directions = load_p35_direction_lookup(
+        audit_direction_payload
+    )
+    audit_direction_receipt = {
+        "role": "registered_causal_audit_only",
+        "path": str(args.audit_direction_cache),
+        "sha256": audit_direction_sha256,
+        "rows": len(audit_direction_index),
+        "source_anchor_identity_rate": audit_direction_payload[
+            "source_anchor_identity_rate"
+        ],
+    }
+    training_direction_index, training_directions, training_direction_receipt = (
+        _direction_lookup(args.training_direction_cache)
+    )
+    if training_direction_receipt["sha256"] != P35_TRAINING_DIRECTION_SHA256:
+        raise RuntimeError("P3.5 inherited P3.4 training-direction SHA mismatch")
+    training_direction_receipt = {
+        **training_direction_receipt,
+        "role": "inherited_p34_training_objective_only",
     }
     records = read_jsonl(args.staged_labels)
     positives, negatives = _active_record_pools(records)
@@ -364,6 +407,16 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         negative_path=args.negative_audit,
         retention_path=args.retention_panel,
         sources=sources_spec,
+    )
+    training_coverage = _assert_direction_coverage(
+        rows=positives,
+        direction_index=training_direction_index,
+        population="training",
+    )
+    audit_coverage = _assert_direction_coverage(
+        rows=audit_material["positive"]["records"],
+        direction_index=audit_direction_index,
+        population="registered_positive_audit",
     )
 
     output_dir, private_dir = args.output_dir, args.private_dir
@@ -388,7 +441,12 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             "reader_attachment_tolerance": float(
                 lock["safety"]["reader_attachment_identity_tolerance"]
             ),
-            "direction_cache": direction_receipt,
+            "training_direction_cache": training_direction_receipt,
+            "audit_direction_cache": audit_direction_receipt,
+            "direction_coverage": {
+                "training": training_coverage,
+                "registered_positive_audit": audit_coverage,
+            },
             "positive_training_rows": len(positives),
             "negative_training_rows": len(negatives),
             "audit_positive_rows": len(audit_material["positive"]["records"]),
@@ -471,8 +529,8 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         batch = _source_batch(
             rows=rows,
             sources=sources,
-            direction_index=direction_index,
-            directions=directions,
+            direction_index=training_direction_index,
+            directions=training_directions,
             device=args.device,
         )
         depth = sampled_depth(generator=generator)
@@ -561,8 +619,8 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
                 module=module,
                 ema_state=ema_state,
                 material=audit_material,
-                direction_index=direction_index,
-                directions=directions,
+                direction_index=audit_direction_index,
+                directions=audit_directions,
                 seed=args.seed,
                 step=step,
                 device=args.device,
@@ -639,7 +697,12 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         "runtime_controller_frozen": True,
         "training_rung": 0,
         "primary_evaluation_ceiling": P35_PRIMARY_EVAL_CEILING,
-        "direction_cache": direction_receipt,
+        "training_direction_cache": training_direction_receipt,
+        "audit_direction_cache": audit_direction_receipt,
+        "direction_coverage": {
+            "training": training_coverage,
+            "registered_positive_audit": audit_coverage,
+        },
         "embedding": embedding_receipt,
         "chain": chain,
         "source": source_receipt,
@@ -666,7 +729,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--arm", choices=("stabilized", "probe_reader"), required=True)
     for name in (
         "old_summary", "old_private", "new_summary", "new_private", "staged_labels",
-        "positive_audit", "negative_audit", "retention_panel", "direction_cache",
+        "positive_audit", "negative_audit", "retention_panel",
+        "training_direction_cache", "audit_direction_cache",
         "dev_panel", "base_scores", "migrated", "p33", "i1", "p34", "lock",
         "output_dir", "private_dir",
     ):
