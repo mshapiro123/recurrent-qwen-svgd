@@ -2,6 +2,7 @@ import math
 from argparse import Namespace
 import json
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 import torch
@@ -13,6 +14,7 @@ from models.paper2_dc2_student import (
     ProbeControlState,
     install_probe_control_reader,
 )
+from eval.eval_paper2_phase3_p35_persistence import _generate_batch
 from training.paper2_phase3_p35 import (
     P35LandingContract,
     assert_source_anchor_identity,
@@ -206,6 +208,49 @@ def test_ema_audit_restores_raw_parameters(monkeypatch) -> None:
     assert rows == []
     assert torch.equal(seen["weight"], ema["weight"])
     assert torch.equal(module.weight, raw)
+
+
+def test_persistence_batch_stops_each_path_at_its_own_eos() -> None:
+    class Batch(dict):
+        def to(self, _device):
+            return self
+
+    class Tokenizer:
+        eos_token_id = 9
+
+        def apply_chat_template(self, *_args, **_kwargs):
+            return "prompt"
+
+        def __call__(self, _prompts, **_kwargs):
+            return Batch(
+                input_ids=torch.ones(2, 2, dtype=torch.long),
+                attention_mask=torch.ones(2, 2, dtype=torch.long),
+            )
+
+    def output(tokens, sources):
+        augmented = torch.full((2, 10), -1.0)
+        base = torch.full((2, 10), -1.0)
+        augmented[torch.arange(2), torch.tensor(tokens)] = 1.0
+        base[torch.arange(2), torch.tensor(sources)] = 1.0
+        return SimpleNamespace(augmented_logits=augmented, base_logits=base)
+
+    class Graph:
+        def prefill_cached(self, **_kwargs):
+            return 0, output([9, 1], [2, 3])
+
+        def advance_cached(self, *, state, selected_tokens):
+            assert selected_tokens.tolist() == [9, 1]
+            return state + 1, output([5, 9], [4, 6])
+
+    generated, sources = _generate_batch(
+        graph=Graph(),
+        tokenizer=Tokenizer(),
+        prompts=["a", "b"],
+        caps=[4, 4],
+        device="cpu",
+    )
+    assert generated == [[9], [1, 9]]
+    assert sources == [[2], [3, 6]]
 
 
 def test_runner_refuses_unratified_lock_before_reading_run_inputs(tmp_path) -> None:
