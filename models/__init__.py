@@ -20,7 +20,7 @@ from .paper2_dc2_student import (
     SharedResidualFlow,
 )
 from .recurrent_wrapper import LayerSplit, RecurrentQwenForCausalLM, RecurrentQwenOutput
-from .sidecar_v2 import LiteralNGramMemory, fast_wht
+from .sidecar_v2 import LiteralNGramMemory, ProbePool, fast_wht
 
 __all__ = [
     "IdentityGatedBridge",
@@ -32,6 +32,7 @@ __all__ = [
     "LatentPolicyHead",
     "LatentTrajectoryModule",
     "LiteralNGramMemory",
+    "ProbePool",
     "LoRALinear",
     "ControlState",
     "Phase2StudentModules",

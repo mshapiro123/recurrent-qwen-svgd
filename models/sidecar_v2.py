@@ -7,6 +7,59 @@ from collections.abc import Sequence
 
 import torch
 from torch import nn
+from torch.nn import functional as F
+
+
+class ProbePool(nn.Module):
+    """Attention-pool a detached cell set with deterministic learned probes."""
+
+    def __init__(
+        self,
+        *,
+        cell_dim: int,
+        n_probes: int = 4,
+        query_dim: int = 256,
+        seed: int = 20_260_815,
+    ) -> None:
+        super().__init__()
+        if min(int(cell_dim), int(n_probes), int(query_dim)) < 1:
+            raise ValueError("cell_dim, n_probes, and query_dim must be positive")
+        self.cell_dim = int(cell_dim)
+        self.n_probes = int(n_probes)
+        self.query_dim = int(query_dim)
+        generator = torch.Generator().manual_seed(int(seed))
+        self.probes = nn.Parameter(
+            torch.randn((self.n_probes, self.cell_dim), generator=generator) * 0.02
+        )
+        self.output = nn.Parameter(
+            torch.randn(
+                (self.query_dim, self.n_probes * self.cell_dim), generator=generator
+            )
+            / math.sqrt(self.n_probes * self.cell_dim)
+        )
+
+    def pool_with_weights(
+        self, cells: torch.Tensor, cell_mask: torch.Tensor
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        if cells.ndim != 3 or cells.shape[-1] != self.cell_dim:
+            raise ValueError("cells must have shape [batch, n_cells, cell_dim]")
+        if cell_mask.shape != cells.shape[:2]:
+            raise ValueError("cell_mask must have shape [batch, n_cells]")
+        mask = cell_mask.bool()
+        if not bool(mask.any(dim=1).all()):
+            raise ValueError("every example requires at least one readable cell")
+        detached = cells.detach()
+        scores = detached.float() @ self.probes.float().T / math.sqrt(self.cell_dim)
+        scores = scores.masked_fill(~mask.unsqueeze(-1), float("-inf"))
+        weights = torch.softmax(scores, dim=1)
+        pooled = torch.einsum("bca,bcd->bad", weights, detached.float())
+        query = pooled.flatten(1) @ self.output.float().T
+        query = F.normalize(query, dim=-1)
+        return query.to(dtype=cells.dtype), weights
+
+    def forward(self, cells: torch.Tensor, cell_mask: torch.Tensor) -> torch.Tensor:
+        query, _ = self.pool_with_weights(cells, cell_mask)
+        return query
 
 
 def fast_wht(x: torch.Tensor) -> torch.Tensor:
@@ -107,4 +160,3 @@ class LiteralNGramMemory(nn.Module):
                 table_index += 1
         output = output / count.clamp_min(1)
         return output, audit
-
