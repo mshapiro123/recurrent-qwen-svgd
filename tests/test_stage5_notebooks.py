@@ -3866,6 +3866,26 @@ def test_phase3_p34_fixed_ceiling_probe_is_wired_and_guarded() -> None:
     assert "checkpoint_step_4000.pt" in runner
 
 
+def test_phase3_p35_prerequisites_target_is_wired_and_training_disabled() -> None:
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(
+        encoding="utf-8"
+    )
+    launcher = (
+        ROOT / "colab/STAGE5_PAPER2_PHASE3_P35_PREREQUISITES_CELL.py"
+    ).read_text(encoding="utf-8")
+    runner = (
+        ROOT / "colab/run_stage5_paper2_phase3_p35_prerequisites.py"
+    ).read_text(encoding="utf-8")
+    assert "paper2_phase3_p35_prerequisites" in bootstrap
+    assert "paper2_phase3_p35_prerequisites_v1" in bootstrap
+    assert "exact BF16 serving-reader cache repair all 4096 rows no drops" in bootstrap
+    assert "DEV-only fresh-versus-carried scratch probe no optimizer no training" in launcher
+    assert "training.run_paper2_phase3_p35" not in launcher
+    assert '"optimizer_steps": 0' in runner
+    assert '"confirm_scored": False' in runner
+    assert '"eval_e_scored": False' in runner
+
+
 def test_gradient_path_audit_target_is_wired_and_guarded() -> None:
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
     bootstrap_md = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")

@@ -1,0 +1,10 @@
+{
+  "kind": "drive_governing_document_receipt_v1",
+  "title": "STRATEGY_P35_CHARTER_RESPONSE_20260815.md",
+  "drive_id": "1ZzWO3MzkFW5Ph0wAuF5r-ZpdYCzAEi6F",
+  "bytes": 13242,
+  "sha256": "3bf476f1db8ebe451d798c941aeef3110129b8d946515125488b7871e0cf7c82",
+  "mime_type": "text/markdown",
+  "verified_from_drive_bytes": true,
+  "governing_scope": "P3.5 stability landing, Arm R reader comparison, estimator repair, and persistence probe"
+}

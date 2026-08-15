@@ -46,6 +46,8 @@ class P34NextTokenOutput:
     writeback_ratio: torch.Tensor
     position_gate: torch.Tensor
     current_positions: torch.Tensor
+    scratch_state: torch.Tensor
+    answer_token_margin: torch.Tensor
 
 
 @dataclass
@@ -53,16 +55,27 @@ class P34CachedPrefix:
     hidden: torch.Tensor
     attention_mask: torch.Tensor
     past_key_values: Any
+    sidecar_scratch: torch.Tensor | None = None
 
 
 class P34TaskInferenceGraph:
     """Exact, uncached v1 generation graph for the frozen base plus sidecar."""
 
-    def __init__(self, *, base_model: Any, sidecar: Phase3StudentModules) -> None:
+    def __init__(
+        self,
+        *,
+        base_model: Any,
+        sidecar: Phase3StudentModules,
+        cross_token_persistence: bool = False,
+    ) -> None:
         self.base_model = base_model
         self.sidecar = sidecar
-        self.contract = TaskInferenceContract()
-        self.contract.validate()
+        self.cross_token_persistence = bool(cross_token_persistence)
+        self.contract = TaskInferenceContract(
+            cross_token_state_persistence=self.cross_token_persistence
+        )
+        if not self.cross_token_persistence:
+            self.contract.validate()
 
     @property
     def device(self) -> torch.device:
@@ -74,10 +87,22 @@ class P34TaskInferenceGraph:
         hidden: torch.Tensor,
         attention_mask: torch.Tensor,
         base_logits: torch.Tensor,
+        initial_scratch: torch.Tensor | None = None,
     ) -> P34NextTokenOutput:
         _write_mask, positions = current_position_mask(attention_mask)
         batch_index = torch.arange(hidden.shape[0], device=hidden.device)
-        scratch0 = self.sidecar.initializer(hidden, attention_mask.bool())
+        scratch0 = (
+            self.sidecar.initializer(hidden, attention_mask.bool())
+            if initial_scratch is None
+            else initial_scratch
+        )
+        expected_scratch = (
+            hidden.shape[0],
+            self.sidecar.initializer.n_slots,
+            self.sidecar.initializer.latent_dim,
+        )
+        if scratch0.shape != expected_scratch:
+            raise RuntimeError("persistent scratch shape changed")
         flow = self.sidecar.flow(
             scratch0,
             hidden.float().mean(dim=1),
@@ -112,12 +137,15 @@ class P34TaskInferenceGraph:
         augmented_hidden = bridge.hidden[:, 1]
         output_head = self.base_model.get_output_embeddings()
         augmented_logits = output_head(augmented_hidden.to(output_head.weight.dtype))
+        top2 = augmented_logits.float().topk(2, dim=-1).values
         return P34NextTokenOutput(
             augmented_logits=augmented_logits,
             base_logits=base_logits,
             writeback_ratio=bridge.realized_writeback_ratio[:, 1],
             position_gate=bridge.position_gate[:, 1, 0],
             current_positions=positions,
+            scratch_state=flow.state,
+            answer_token_margin=top2[:, 0] - top2[:, 1],
         )
 
     @torch.inference_mode()
@@ -167,12 +195,15 @@ class P34TaskInferenceGraph:
             hidden=output.hidden_states[-1],
             attention_mask=attention_mask,
             past_key_values=output.past_key_values,
+            sidecar_scratch=None,
         )
         augmented = self._augment(
             hidden=state.hidden,
             attention_mask=state.attention_mask,
             base_logits=output.logits[batch_index, positions],
         )
+        if self.cross_token_persistence:
+            state.sidecar_scratch = augmented.scratch_state.detach()
         return state, augmented
 
     @torch.inference_mode()
@@ -207,11 +238,20 @@ class P34TaskInferenceGraph:
             hidden=hidden,
             attention_mask=attention,
             past_key_values=output.past_key_values,
+            sidecar_scratch=None,
         )
         augmented = self._augment(
             hidden=hidden,
             attention_mask=attention,
             base_logits=output.logits[:, -1],
+            initial_scratch=(
+                state.sidecar_scratch if self.cross_token_persistence else None
+            ),
+        )
+        updated.sidecar_scratch = (
+            augmented.scratch_state.detach()
+            if self.cross_token_persistence
+            else None
         )
         return updated, augmented
 
