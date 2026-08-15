@@ -6,7 +6,7 @@ Date: 2026-08-15. Status: ratified and approved for training.
 
 The governing strategy response is `STRATEGY_P35_CHARTER_RESPONSE_20260815.md`, Drive `1ZzWO3MzkFW5Ph0wAuF5r-ZpdYCzAEi6F`, 13,242 bytes, SHA-256 `3bf476f1db8ebe451d798c941aeef3110129b8d946515125488b7871e0cf7c82`. The machine companion is `training/paper2_phase3_p35_preregistration.draft.json`.
 
-Execution authority: `docs/STRATEGY_P35_EXECUTION_HANDOFF_20260815.md`, Drive `15ylK6jk2vXDTX0TRk5XJ949D6xzIAA-X`, 4,876 bytes, SHA-256 `314b51a34a0d451dd8045b69eb794ebff4ecd3efb3483dcebcdc78bae3628efe`. Mark ratified the assembled lock and authorized Arm S seeds 0 and 1 plus Arm R seed 0 on 2026-08-15.
+Execution authority: `docs/STRATEGY_P35_EXECUTION_HANDOFF_20260815.md`, Drive `15ylK6jk2vXDTX0TRk5XJ949D6xzIAA-X`, 4,876 bytes, SHA-256 `314b51a34a0d451dd8045b69eb794ebff4ecd3efb3483dcebcdc78bae3628efe`. Mark ratified the assembled lock and authorized Arm S seeds 0 and 1 plus Arm R seed 0 on 2026-08-15. The training implementation is bound to build commit `6071d8b23b66bd74ccf188c2d3fe0637042b1c50`.
 
 The registered P3.4 verdict remains `REPLICATED_POSITIVE_BELOW_TRIGGER_B`. CONFIRM and EVAL-E remain sealed. This lock tests two questions only: whether a deliberate landing stabilizes the existing mechanism, and whether a detached four-probe reader improves the gate/control path relative to the landed mean reader.
 

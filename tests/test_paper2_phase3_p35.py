@@ -329,3 +329,4 @@ def test_executed_lock_matches_code_and_is_ratified() -> None:
     assert lock["unresolved_before_ratification"] == []
     assert receipt["primary_evaluation_ceiling"] == 0.02
     assert receipt["causal_instrument"] == "repaired v2 only"
+    assert receipt["execution_build_commit"] == "6071d8b23b66bd74ccf188c2d3fe0637042b1c50"
