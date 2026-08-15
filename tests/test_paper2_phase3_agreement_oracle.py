@@ -5,10 +5,36 @@ import json
 import torch
 
 from eval.cache_paper2_phase3_agreement_oracle import (
+    _selected_student_receipts,
     actual_head_equivalence,
     analytic_oracle_directions,
     read_strict_records,
 )
+
+
+def test_selected_hidden_receipts_skip_unneeded_sparse_shards() -> None:
+    samples = [
+        {"anchor_index": anchor}
+        for anchor in (10, 11, 12, 13, 20, 21, 22, 23, 30, 31, 32, 33)
+    ]
+    summary = {
+        "model_caches": {
+            "student_0p5b": {
+                "shards": [
+                    {"path": "/cache/rows_000000_000004.pt"},
+                    {"path": "/cache/rows_000004_000008.pt"},
+                    {"path": "/cache/rows_000008_000012.pt"},
+                ]
+            }
+        }
+    }
+    selected = _selected_student_receipts(
+        summary=summary, samples=samples, needed={20, 31}
+    )
+    assert [receipt["path"] for receipt in selected] == [
+        "/cache/rows_000004_000008.pt",
+        "/cache/rows_000008_000012.pt",
+    ]
 from eval.eval_paper2_phase3_linear_forecast import (
     fit_ridge,
     fit_ridge_family,
