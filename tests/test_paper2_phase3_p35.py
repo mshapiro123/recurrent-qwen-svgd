@@ -15,6 +15,7 @@ from models.paper2_dc2_student import (
     install_probe_control_reader,
 )
 from eval.eval_paper2_phase3_p35_persistence import _generate_batch
+from eval.repair_paper2_phase3_serving_oracle_cache import subset_prior_cache
 from training.paper2_phase3_p35 import (
     P35LandingContract,
     assert_source_anchor_identity,
@@ -125,6 +126,31 @@ def test_repaired_oracle_is_exact_for_pinned_reader() -> None:
         assert_source_anchor_identity(
             cache=changed, selected_hidden=hidden, lm_head_weight=weight
         )
+
+
+def test_serving_cache_repair_subsets_registered_rows_in_audit_order() -> None:
+    prior = {
+        "kind": "paper2_phase3_agreement_oracle_direction_cache_v1",
+        "record_ids": ["a", "b", "c", "d"],
+        "documents": ["da", "db", "dc", "dd"],
+        "directions": torch.arange(12).reshape(4, 3),
+        "teachability": torch.tensor([0.1, 0.2, 0.3, 0.4]),
+        "horizons": torch.tensor([1, 2, 3, 4]),
+        "sources": ["old", "new", "old", "new"],
+        "strata": ["x", "y", "z", "w"],
+        "source_tokens": torch.tensor([11, 12, 13, 14]),
+        "target_tokens": torch.tensor([21, 22, 23, 24]),
+        "global_receipt": {"kept": True},
+    }
+    subset = subset_prior_cache(prior, ["d", "b"])
+    assert subset["record_ids"] == ["d", "b"]
+    assert subset["documents"] == ["dd", "db"]
+    assert subset["sources"] == ["new", "new"]
+    assert subset["target_tokens"].tolist() == [24, 22]
+    assert subset["directions"].tolist() == [[9, 10, 11], [3, 4, 5]]
+    assert subset["global_receipt"] == {"kept": True}
+    assert subset["source_cache_rows"] == 4
+    assert subset["selected_audit_rows"] == 2
 
 
 def test_reanchoring_uses_current_source_and_margin_summary_is_stratified() -> None:

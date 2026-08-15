@@ -21,6 +21,53 @@ from training.run_paper2_phase3_p33 import atomic_torch_save, read_jsonl, write_
 from training.paper2_phase3_p33_prep import sha256_file
 
 
+ROW_ALIGNED_FIELDS = (
+    "record_ids",
+    "documents",
+    "directions",
+    "teachability",
+    "horizons",
+    "sources",
+    "strata",
+    "source_tokens",
+    "target_tokens",
+)
+
+
+def subset_prior_cache(
+    prior: Mapping[str, Any], requested_record_ids: list[str]
+) -> dict[str, Any]:
+    prior_record_ids = [str(value) for value in prior["record_ids"]]
+    if len(set(prior_record_ids)) != len(prior_record_ids):
+        raise RuntimeError("registered oracle cache has duplicate record IDs")
+    if len(set(requested_record_ids)) != len(requested_record_ids):
+        raise RuntimeError("P3.5 audit population has duplicate record IDs")
+    lookup = {record_id: index for index, record_id in enumerate(prior_record_ids)}
+    missing = [record_id for record_id in requested_record_ids if record_id not in lookup]
+    if missing:
+        raise RuntimeError(f"P3.5 audit rows absent from registered oracle cache: {len(missing)}")
+    indices = [lookup[record_id] for record_id in requested_record_ids]
+    tensor_indices = torch.tensor(indices, dtype=torch.long)
+    subset = dict(prior)
+    for field in ROW_ALIGNED_FIELDS:
+        value = prior[field]
+        if len(value) != len(prior_record_ids):
+            raise RuntimeError(f"registered oracle row field changed length: {field}")
+        if torch.is_tensor(value):
+            subset[field] = value.index_select(0, tensor_indices)
+        else:
+            subset[field] = [value[index] for index in indices]
+    subset.update(
+        {
+            "record_ids": list(requested_record_ids),
+            "source_cache_rows": len(prior_record_ids),
+            "selected_audit_rows": len(requested_record_ids),
+            "selection_contract": "exact_positive_audit_ids_in_audit_order_v1",
+        }
+    )
+    return subset
+
+
 def selected_hidden_in_cache_order(
     *,
     records: list[dict[str, Any]],
@@ -57,7 +104,8 @@ def build_repaired_cache(
     prior = torch.load(prior_cache, map_location="cpu", weights_only=False)
     if prior.get("kind") != "paper2_phase3_agreement_oracle_direction_cache_v1":
         raise RuntimeError("P3.5 serving-cache repair requires the registered v1 cache")
-    record_ids = [str(value) for value in prior["record_ids"]]
+    record_ids = [str(row["record_id"]) for row in records]
+    selected_prior = subset_prior_cache(prior, record_ids)
     sources = {
         "old": (old_summary, old_private),
         "new": (new_summary, new_private),
@@ -67,7 +115,7 @@ def build_repaired_cache(
     )
     lm_head, lm_head_receipt = _lm_head(sources)
     repaired = repaired_oracle_payload(
-        prior=prior,
+        prior=selected_prior,
         selected_hidden=selected.to(device),
         lm_head_weight=lm_head.to(device),
     )
@@ -101,6 +149,8 @@ def build_repaired_cache(
         "source_anchor_identity": identity,
         "prior_cache_sha256": repaired["prior_cache_sha256"],
         "positive_audit_sha256": repaired["positive_audit_sha256"],
+        "source_cache_rows": len(prior["record_ids"]),
+        "selected_audit_rows": len(record_ids),
         "optimizer_constructed": False,
         "optimizer_steps": 0,
         "confirm_scored": False,

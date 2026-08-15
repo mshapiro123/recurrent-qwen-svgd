@@ -3881,6 +3881,7 @@ def test_phase3_p35_prerequisites_target_is_wired_and_training_disabled() -> Non
     assert "exact BF16 serving-reader cache repair all 4096 rows no drops" in bootstrap
     assert "DEV-only fresh-versus-carried scratch probe no optimizer no training" in launcher
     assert "training.run_paper2_phase3_p35" not in launcher
+    assert '"-m", "colab.run_stage5_paper2_phase3_p35_prerequisites"' in launcher
     assert '"optimizer_steps": 0' in runner
     assert '"confirm_scored": False' in runner
     assert '"eval_e_scored": False' in runner
