@@ -60,8 +60,10 @@ def _student_receipts(summary: Mapping[str, Any]) -> list[dict[str, Any]]:
 def _selected_student_receipts(
     *, summary: Mapping[str, Any], samples: Sequence[Mapping[str, Any]], needed: set[int]
 ) -> list[dict[str, Any]]:
-    needed_samples = {
-        index for index, sample in enumerate(samples) if int(sample["anchor_index"]) in needed
+    needed_rows = {
+        int(sample["row_index"])
+        for sample in samples
+        if int(sample["anchor_index"]) in needed
     }
     selected = []
     for receipt in _student_receipts(summary):
@@ -69,7 +71,7 @@ def _selected_student_receipts(
         if match is None:
             raise RuntimeError(f"unrecognized P3.2 student hidden shard name: {receipt['path']}")
         start, stop = map(int, match.groups())
-        if any(start <= sample_index < stop for sample_index in needed_samples):
+        if any(start <= row_index < stop for row_index in needed_rows):
             selected.append(receipt)
     return selected
 

@@ -14,8 +14,12 @@ from eval.cache_paper2_phase3_agreement_oracle import (
 
 def test_selected_hidden_receipts_skip_unneeded_sparse_shards() -> None:
     samples = [
-        {"anchor_index": anchor}
-        for anchor in (10, 11, 12, 13, 20, 21, 22, 23, 30, 31, 32, 33)
+        {"anchor_index": 10, "row_index": 0},
+        {"anchor_index": 10, "row_index": 0},
+        {"anchor_index": 20, "row_index": 5},
+        {"anchor_index": 20, "row_index": 5},
+        {"anchor_index": 30, "row_index": 9},
+        {"anchor_index": 31, "row_index": 10},
     ]
     summary = {
         "model_caches": {
