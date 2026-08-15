@@ -178,6 +178,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3_short_sha"
 #   "paper2_phase3_guardrail_p33_prep" - CPU-only guardrail calibration and P3.3 build staging.
 #   "paper2_phase3_p33" - One resumable registered P3.3 aimed-writeback seed.
 #   "paper2_phase3_p33_verification" - Read-only BF16 re-score and zero-collateral controls.
+#   "paper2_phase3_p33_i1" - One resumable aim-focused i1 continuation seed.
 #   "paper2_phase2_eval_de_freeze" - score-blind EVAL-D/E and own-base feature freeze.
 #   "paper2_phase2_e1_confirmation" - locked read-once EVAL-D confirmation; A100-80GB.
 #   "paper2_d0_prelock_publish_resume" - publish completed Drive-backed D0 lock receipts without inference.
@@ -4295,6 +4296,19 @@ TARGETS = {
         ],
         "env": {},
     },
+    "paper2_phase3_p33_i1": {
+        "path": "colab/STAGE5_PAPER2_PHASE3_P33_I1_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_PHASE3_P33_I1_VERSION",
+            "paper2_phase3_p33_i1_v1",
+            "exact 1000 updates and 20 looks one every 50 updates",
+            "gate and upstream selector frozen aim postclip share at least 70 percent",
+            "canonical BF16 pi_dir pi_dep gate recall precision chi and Tier-1 observatory",
+            "resumable one A100 session per seed and end-of-run A_state battery",
+            "colab/run_stage5_paper2_phase3_p33_i1.py",
+        ],
+        "env": {"PAPER2_P33_I1_SEED": "0"},
+    },
     "paper2_phase3_p34_ar": {
         "path": "colab/STAGE5_PAPER2_PHASE3_P34_AR_CELL.py",
         "markers": [
@@ -4316,6 +4330,54 @@ TARGETS = {
             "draft head inactive current-position-only write and no cross-token sidecar state",
             "score-blind DEV prompt preflight no correctness no gap_closed no optimizer no training",
             "colab/run_stage5_paper2_phase3_p34_task_preflight.py",
+        ],
+        "env": {},
+    },
+    "paper2_phase3_p34": {
+        "path": "colab/STAGE5_PAPER2_PHASE3_P34_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_PHASE3_P34_VERSION",
+            "paper2_phase3_p34_campaign_v1",
+            "approved three-session P3.4 campaign main seeds zero one slot seed zero",
+            "exactly twenty DEV looks no CONFIRM no EVAL-E contact",
+            "deterministic resumable windows and hash-bound executed lock",
+            "colab/run_stage5_paper2_phase3_p34.py",
+        ],
+        "env": {"P34_SEED": "0", "P34_ARM": "main"},
+    },
+    "paper2_phase3_p34_a2": {
+        "path": "colab/STAGE5_PAPER2_PHASE3_P34_A2_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_PHASE3_P34_A2_VERSION",
+            "paper2_phase3_p34_a2_campaign_v1",
+            "ratified dynamic objective share controller exact preflight before optimizer",
+            "both main checkpoint preflights pass before either continuation trains",
+            "score preserving gate write telemetry no CONFIRM no EVAL-E contact",
+            "colab/run_stage5_paper2_phase3_p34_a2.py",
+        ],
+        "env": {"P34_A2_MODE": "preflight", "P34_A2_SEED": "0"},
+    },
+    "paper2_phase3_p34_fixed_ceiling_probe": {
+        "path": "colab/STAGE5_PAPER2_PHASE3_P34_FIXED_CEILING_PROBE_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_PHASE3_P34_FIXED_CEILING_PROBE_VERSION",
+            "paper2_phase3_p34_fixed_ceiling_probe_v1",
+            "score-only two-seed two-ceiling DEV probe no optimizer no training",
+            "checkpoint-selection-barred full frozen DEV panel and sealed CONFIRM untouched",
+            "reconstruct seed-one target and floor while preserving exact registered endpoint reads",
+            "colab/run_stage5_paper2_phase3_p34_fixed_ceiling_probe.py",
+        ],
+        "env": {},
+    },
+    "paper2_phase3_p35_prerequisites": {
+        "path": "colab/STAGE5_PAPER2_PHASE3_P35_PREREQUISITES_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_PHASE3_P35_PREREQUISITES_VERSION",
+            "paper2_phase3_p35_prerequisites_v1",
+            "exact BF16 serving-reader cache repair all 4096 rows no drops",
+            "DEV-only fresh-versus-carried scratch probe no optimizer no training",
+            "CONFIRM and EVAL-E remain sealed and P3.5 training stays disabled",
+            "colab/run_stage5_paper2_phase3_p35_prerequisites.py",
         ],
         "env": {},
     },
@@ -4399,6 +4461,9 @@ if TARGET not in TARGETS:
 
 GH_TOKEN = secret("GH_TOKEN", "GITHUB_TOKEN")
 assert GH_TOKEN, "Missing GH_TOKEN or GITHUB_TOKEN in Colab secrets."
+# Nested launchers run in this same interpreter. Reuse the already-authorized
+# token instead of prompting Colab Secrets a second time from hidden code.
+os.environ.setdefault("GH_TOKEN", GH_TOKEN)
 
 
 def github_json(url):
