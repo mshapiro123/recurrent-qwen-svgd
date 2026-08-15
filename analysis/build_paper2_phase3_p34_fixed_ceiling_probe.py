@@ -170,18 +170,80 @@ def build(input_dir: Path) -> tuple[dict[str, Any], list[Path]]:
     }, paths
 
 
+def plot_summary(summary: dict[str, Any], output: Path) -> None:
+    import matplotlib.pyplot as plt
+    import numpy as np
+
+    output.parent.mkdir(parents=True, exist_ok=True)
+    figure, axes = plt.subplots(1, 2, figsize=(10.5, 4.6))
+    figure.subplots_adjust(bottom=0.24, top=0.84, wspace=0.34)
+    colors = {0.02: "#2878B5", 0.08: "#D95F02"}
+    x = np.arange(2)
+    width = 0.34
+    for offset, ceiling in enumerate((0.02, 0.08)):
+        reads = [summary["conditions"][CONDITIONS[(seed, ceiling)]] for seed in (0, 1)]
+        axes[0].bar(
+            x + (offset - 0.5) * width,
+            [read["net_rows"] for read in reads],
+            width,
+            label=f"ceiling {ceiling:.2f}",
+            color=colors[ceiling],
+        )
+    axes[0].axhline(0, color="#222222", linewidth=0.8)
+    axes[0].set_xticks(x, ["seed 0", "seed 1"])
+    axes[0].set_ylabel("net correct rows vs base")
+    axes[0].set_title("A. Fixed-ceiling task effect")
+    axes[0].legend(frameon=False)
+
+    labels = []
+    fixes = []
+    regressions = []
+    for seed in (0, 1):
+        for ceiling in (0.02, 0.08):
+            read = summary["conditions"][CONDITIONS[(seed, ceiling)]]
+            labels.append(f"s{seed}\n{ceiling:.2f}")
+            fixes.append(read["fixes"])
+            regressions.append(-read["regressions"])
+    x2 = np.arange(4)
+    axes[1].bar(x2, fixes, color="#3A923A", label="fixes")
+    axes[1].bar(x2, regressions, color="#C44E52", label="regressions")
+    axes[1].axhline(0, color="#222222", linewidth=0.8)
+    axes[1].set_xticks(x2, labels)
+    axes[1].set_ylabel("rows")
+    axes[1].set_title("B. Boundary-row balance")
+    axes[1].legend(
+        frameon=False,
+        loc="upper center",
+        bbox_to_anchor=(0.5, -0.18),
+        ncols=2,
+    )
+    figure.suptitle("P3.4 paired fixed-ceiling DEV probe", fontsize=13)
+    figure.savefig(output, dpi=180)
+    if output.suffix.lower() != ".svg":
+        figure.savefig(output.with_suffix(".svg"))
+    plt.close(figure)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--input_dir", type=Path, required=True)
     parser.add_argument("--output_summary", type=Path, required=True)
     parser.add_argument("--output_manifest", type=Path, required=True)
+    parser.add_argument("--output_figure", type=Path)
     args = parser.parse_args()
     summary, inputs = build(args.input_dir)
     write_json(args.output_summary, summary)
+    if args.output_figure is not None:
+        plot_summary(summary, args.output_figure)
     write_json(args.output_manifest, {
         "kind": "paper2_phase3_p34_fixed_ceiling_probe_manifest_v1",
         "summary_sha256": sha256_file(args.output_summary),
         "inputs": {str(path): sha256_file(path) for path in inputs},
+        "figure": (
+            {"path": str(args.output_figure), "sha256": sha256_file(args.output_figure)}
+            if args.output_figure is not None
+            else None
+        ),
     })
     print(json.dumps(summary, indent=2, sort_keys=True))
     return 0

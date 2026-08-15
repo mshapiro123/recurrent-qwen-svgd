@@ -975,6 +975,56 @@
       ]
     },
     {
+      "id": "phase3_p34_posthoc_stability",
+      "status": "supported_bounded_posthoc_dev_only",
+      "claim": "Post-hoc DEV diagnostics localize P3.4 score variability to low-margin row churn, show seed-specific sensitivity to the evaluation ceiling, and establish that persistent oracle directions must be re-anchored after deployed source-token changes.",
+      "scope": "Two completed P3.4 main-seed endpoints; reused 1,024-row DEV task panel; 4,096-row positive and 12,288-row negative causal-audit populations; CPU stability analysis plus one L4 no-update refresh; no CONFIRM or EVAL-E scoring",
+      "metrics": {
+        "seed_0_endpoint_fixes": 50,
+        "seed_0_endpoint_regressions": 45,
+        "seed_1_endpoint_fixes": 54,
+        "seed_1_endpoint_regressions": 44,
+        "changed_row_mean_option_margin": 0.0078125,
+        "stable_row_mean_option_margin": 1.81153,
+        "seed_0_net_ceiling_0p02": 3,
+        "seed_0_net_ceiling_0p08": 5,
+        "seed_1_net_ceiling_0p02": 10,
+        "seed_1_net_ceiling_0p08": 3,
+        "frozen_source_reader_match_rate": 0.962646484375,
+        "seed_0_deployed_source_changed_fraction": 0.08203125,
+        "seed_1_deployed_source_changed_fraction": 0.024169921875,
+        "seed_0_refreshed_pi_dir": 0.14749733759318423,
+        "seed_1_refreshed_pi_dir": 0.15495207667731628
+      },
+      "evidence": [
+        {
+          "path": "outputs/stage5/stage5_paper2_phase3_p34_directional_stability_20260815/summary.json",
+          "locator": "batch-hash replay, fix/regression arithmetic, row churn, margin localization, curriculum and controller diagnostics"
+        },
+        {
+          "path": "outputs/stage5/stage5_paper2_phase3_p34_fixed_ceiling_probe_20260815/summary.json",
+          "locator": "paired 2-seed by 2-ceiling DEV score matrix and exact registered-condition reproductions"
+        },
+        {
+          "path": "outputs/stage5/stage5_paper2_phase3_p34_oracle_refresh_20260815/summary.json",
+          "locator": "refreshed causal audit, frozen-source identity check, and deployed-token direction re-anchoring"
+        },
+        {
+          "path": "docs/PAPER2_PHASE3_P34_STABILITY_AND_REFRESH_HANDOFF_20260815.md",
+          "locator": "combined design, results, interpretation, P3.5 implications, limitations, and strategy questions"
+        }
+      ],
+      "do_not_claim": [
+        "the registered P3.4 verdict changed",
+        "an EMA checkpoint was evaluated or reconstructed",
+        "0.02 or 0.08 is selected for P3.5",
+        "the curriculum or controller has zero causal effect",
+        "persistent state improves task accuracy",
+        "the frozen oracle cache is valid under the serving BF16 reader on every row",
+        "CONFIRM or EVAL-E has been scored"
+      ]
+    },
+    {
       "id": "speculative_depth_d0",
       "status": "not_recoverable_at_pilot_scale",
       "claim": "Under one 4,000-step seed, binary teacher-disagreement targets did not produce deployment-useful adaptive depth; the target omitted accepted-position harm and labeled many causally unactionable rejections as continue.",

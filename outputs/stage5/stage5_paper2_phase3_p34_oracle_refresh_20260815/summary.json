@@ -1,0 +1,395 @@
+{
+  "confirm_scored": false,
+  "direction_cache": {
+    "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase3_oracle_forecast_20260810/private/oracle_cache/agreement_oracle_directions.pt",
+    "rows": 43204,
+    "sha256": "611be787dea0438761d279aa035d5bfe2aa37e74710d880be1066d7ae80a45a2"
+  },
+  "eval_e_scored": false,
+  "interpretation": {
+    "persistent_serving": "when a deployed write changes the source token, a later persistent step should re-anchor its oracle direction",
+    "registered_pi_dir": "the frozen-base source token remains the registered oracle anchor; any mismatch is a fault"
+  },
+  "kind": "paper2_phase3_p34_oracle_direction_refresh_v1",
+  "optimizer_constructed": false,
+  "optimizer_steps": 0,
+  "seeds": {
+    "0": {
+      "audit": {
+        "bf16_reader_sensitivity": {
+          "interpretation": "sensitivity only; locked primary retains all 4096 rows and uses the same BF16 hidden-state reader in numerator and oracle denominator",
+          "locked_primary_rows": 4096,
+          "pi_dep_reader_matched": {
+            "ci95_high": 0.13553121509246616,
+            "ci95_low": 0.09537565431451854,
+            "documents": 739,
+            "point": 0.11508704061895551
+          },
+          "pi_dir_reader_matched": {
+            "ci95_high": 0.14325557493459573,
+            "ci95_low": 0.1103929233999511,
+            "documents": 739,
+            "point": 0.12703766160764474
+          },
+          "reader_match_rate": 0.962646484375,
+          "reader_matched_rows": 3943,
+          "reader_mismatched_rows": 153
+        },
+        "by_teachability_decile": {
+          "0": {
+            "pi_dep": 0.0898876404494382,
+            "pi_dir": 0.08588957055214724,
+            "rows": 409
+          },
+          "1": {
+            "pi_dep": 0.07692307692307693,
+            "pi_dir": 0.10897435897435898,
+            "rows": 409
+          },
+          "2": {
+            "pi_dep": 0.1,
+            "pi_dir": 0.09523809523809523,
+            "rows": 409
+          },
+          "3": {
+            "pi_dep": 0.18867924528301888,
+            "pi_dir": 0.16091954022988506,
+            "rows": 411
+          },
+          "4": {
+            "pi_dep": 0.15,
+            "pi_dir": 0.15104166666666666,
+            "rows": 410
+          },
+          "5": {
+            "pi_dep": 0.1650485436893204,
+            "pi_dir": 0.1388888888888889,
+            "rows": 410
+          },
+          "6": {
+            "pi_dep": 0.13559322033898305,
+            "pi_dir": 0.125,
+            "rows": 410
+          },
+          "7": {
+            "pi_dep": 0.20588235294117646,
+            "pi_dir": 0.1958762886597938,
+            "rows": 410
+          },
+          "8": {
+            "pi_dep": 0.176056338028169,
+            "pi_dir": 0.16818181818181818,
+            "rows": 410
+          },
+          "9": {
+            "pi_dep": 0.23357664233576642,
+            "pi_dir": 0.2077922077922078,
+            "rows": 408
+          }
+        },
+        "collateral_chi": 0.0,
+        "gate": {
+          "false_negative": 423,
+          "false_positive": 1736,
+          "false_positive_rate": 0.14127604166666666,
+          "precision": 0.6790534294694028,
+          "recall": 0.896728515625,
+          "threshold_on_unclamped_probability": 0.5,
+          "true_negative": 10552,
+          "true_positive": 3673
+        },
+        "mean_direction_cosine": 0.06760473550053803,
+        "pi_dep": {
+          "ci95_high": 0.17888892687179062,
+          "ci95_low": 0.1350299050776529,
+          "documents": 746,
+          "point": 0.15703971119133575
+        },
+        "pi_dir": {
+          "ci95_high": 0.16375290886231425,
+          "ci95_low": 0.13088454295651505,
+          "documents": 746,
+          "point": 0.14749733759318423
+        },
+        "seed": 0,
+        "step": 4000
+      },
+      "checkpoint_chain": [
+        {
+          "label": "migrated",
+          "optimizer_state_absent": true,
+          "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase3_p31_p32_receipts_20260810/private/migrated_checkpoints/seed_0_full_a2_phase3_migrated.pt",
+          "sha256": "d0f2b735825d29ab9801a5200493ca9aa65294778aea2fb7f728eb8e85dfc519",
+          "source_seed": 0,
+          "trainable_state_sha256": "97b4bd426f6a5ea265aa27c30520151761d460abebbb7112e23193f5e6a8d059"
+        },
+        {
+          "label": "p33",
+          "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase3_p33_20260811/private/seed_0/checkpoint_step_1000.pt",
+          "sha256": "84dc0fb2d1f69114b20888acd95101d6b31c810974a536dc36358b69fe13c70e",
+          "state_keys": [
+            "bridge.gate_control.weight",
+            "bridge.gate_hidden.weight",
+            "bridge.gate_logits",
+            "bridge.gate_scratch.weight",
+            "bridge.hidden_norm.weight",
+            "bridge.key.weight",
+            "bridge.output_projection.weight",
+            "bridge.query.weight",
+            "bridge.rho_logits",
+            "bridge.scratch_norm.weight",
+            "bridge.value.weight",
+            "control.cell.bias_hh",
+            "control.cell.bias_ih",
+            "control.cell.weight_hh",
+            "control.cell.weight_ih",
+            "control.position_embedding.weight"
+          ],
+          "step": 1000
+        },
+        {
+          "label": "i1",
+          "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase3_p33_i1_20260812/private/seed_0/resume.pt",
+          "sha256": "01c804bc69d35a01730fff236cf5a8d974899d2e4de7e15b92a227b2a9ce5d88",
+          "state_keys": [
+            "bridge.output_projection.weight"
+          ],
+          "step": 1000
+        },
+        {
+          "controller_rung": 1,
+          "label": "p34",
+          "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase3_p34_a2_20260814/private/main_seed_0/checkpoint_step_4000.pt",
+          "sha256": "381955ec5b78d0a00883c29e9f940feac8cfc8665f7a3a4446c79734532f4ed7",
+          "state_keys": [
+            "bridge.gate_control.weight",
+            "bridge.gate_hidden.weight",
+            "bridge.gate_logits",
+            "bridge.gate_scratch.weight",
+            "bridge.hidden_norm.weight",
+            "bridge.key.weight",
+            "bridge.output_projection.weight",
+            "bridge.query.weight",
+            "bridge.rho_logits",
+            "bridge.scratch_norm.weight",
+            "bridge.value.weight",
+            "control.cell.bias_hh",
+            "control.cell.bias_ih",
+            "control.cell.weight_hh",
+            "control.cell.weight_ih",
+            "control.position_embedding.weight"
+          ],
+          "step": 4000
+        }
+      ],
+      "direction_refresh": {
+        "base_reader_match_rate": 0.962646484375,
+        "base_reader_matches_cached_source": 3943,
+        "deployed_source_changed_fraction": 0.08203125,
+        "deployed_source_changed_rows": 336,
+        "deployed_target_already_reached_fraction": 0.04248046875,
+        "deployed_target_already_reached_rows": 174,
+        "old_vs_deployed_anchored_direction_cosine": {
+          "fraction_below_0p99": 0.05507394298911095,
+          "mean": 0.9708422422409058,
+          "minimum": 0.0,
+          "rows": 3922
+        },
+        "persistent_serving_reanchor_needed": true,
+        "positive_rows": 4096,
+        "registered_estimator_direction_stale": true
+      },
+      "registered_endpoint_gate_ceiling": 0.08,
+      "rows_sha256": "4bb52474defa0ded87b16fd947547b185c69cfcce314dfe90a1e3a892da961a9"
+    },
+    "1": {
+      "audit": {
+        "bf16_reader_sensitivity": {
+          "interpretation": "sensitivity only; locked primary retains all 4096 rows and uses the same BF16 hidden-state reader in numerator and oracle denominator",
+          "locked_primary_rows": 4096,
+          "pi_dep_reader_matched": {
+            "ci95_high": 0.16379491451753114,
+            "ci95_low": 0.08420703306939915,
+            "documents": 739,
+            "point": 0.12307692307692308
+          },
+          "pi_dir_reader_matched": {
+            "ci95_high": 0.14878220839813375,
+            "ci95_low": 0.11634600697883193,
+            "documents": 739,
+            "point": 0.13322091062394603
+          },
+          "reader_match_rate": 0.962646484375,
+          "reader_matched_rows": 3943,
+          "reader_mismatched_rows": 153
+        },
+        "by_teachability_decile": {
+          "0": {
+            "pi_dep": 0.24,
+            "pi_dir": 0.09815950920245399,
+            "rows": 409
+          },
+          "1": {
+            "pi_dep": 0.19047619047619047,
+            "pi_dir": 0.14743589743589744,
+            "rows": 409
+          },
+          "2": {
+            "pi_dep": 0.11538461538461539,
+            "pi_dir": 0.1130952380952381,
+            "rows": 409
+          },
+          "3": {
+            "pi_dep": 0.3333333333333333,
+            "pi_dir": 0.16666666666666666,
+            "rows": 411
+          },
+          "4": {
+            "pi_dep": 0.2962962962962963,
+            "pi_dir": 0.15104166666666666,
+            "rows": 410
+          },
+          "5": {
+            "pi_dep": 0.21212121212121213,
+            "pi_dir": 0.1388888888888889,
+            "rows": 410
+          },
+          "6": {
+            "pi_dep": 0.28125,
+            "pi_dir": 0.12,
+            "rows": 410
+          },
+          "7": {
+            "pi_dep": 0.20689655172413793,
+            "pi_dir": 0.19072164948453607,
+            "rows": 410
+          },
+          "8": {
+            "pi_dep": 0.2608695652173913,
+            "pi_dir": 0.16818181818181818,
+            "rows": 410
+          },
+          "9": {
+            "pi_dep": 0.4772727272727273,
+            "pi_dir": 0.22510822510822512,
+            "rows": 408
+          }
+        },
+        "collateral_chi": 0.0,
+        "gate": {
+          "false_negative": 183,
+          "false_positive": 4546,
+          "false_positive_rate": 0.3699544270833333,
+          "precision": 0.46258422981439884,
+          "recall": 0.955322265625,
+          "threshold_on_unclamped_probability": 0.5,
+          "true_negative": 7742,
+          "true_positive": 3913
+        },
+        "mean_direction_cosine": 0.07302645438912236,
+        "pi_dep": {
+          "ci95_high": 0.3271118533631696,
+          "ci95_low": 0.22866252483671937,
+          "documents": 746,
+          "point": 0.27586206896551724
+        },
+        "pi_dir": {
+          "ci95_high": 0.171356783919598,
+          "ci95_low": 0.13854036681173307,
+          "documents": 746,
+          "point": 0.15495207667731628
+        },
+        "seed": 1,
+        "step": 4000
+      },
+      "checkpoint_chain": [
+        {
+          "label": "migrated",
+          "optimizer_state_absent": true,
+          "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase3_p31_p32_receipts_20260810/private/migrated_checkpoints/seed_1_full_a2_phase3_migrated.pt",
+          "sha256": "3ca1cdf8dd16bf4f435e81a675d7514778144c5c881af52a70171659f7734b4f",
+          "source_seed": 1,
+          "trainable_state_sha256": "baa46ebb8465f2c632023a58d4db1c283bf4a1e5e34971784b3a09343f00d8d7"
+        },
+        {
+          "label": "p33",
+          "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase3_p33_20260811/private/seed_1/checkpoint_step_1000.pt",
+          "sha256": "e80ad205eb3c4712fdee5303a4887260488f67ff858a2b4b005d724675e52067",
+          "state_keys": [
+            "bridge.gate_control.weight",
+            "bridge.gate_hidden.weight",
+            "bridge.gate_logits",
+            "bridge.gate_scratch.weight",
+            "bridge.hidden_norm.weight",
+            "bridge.key.weight",
+            "bridge.output_projection.weight",
+            "bridge.query.weight",
+            "bridge.rho_logits",
+            "bridge.scratch_norm.weight",
+            "bridge.value.weight",
+            "control.cell.bias_hh",
+            "control.cell.bias_ih",
+            "control.cell.weight_hh",
+            "control.cell.weight_ih",
+            "control.position_embedding.weight"
+          ],
+          "step": 1000
+        },
+        {
+          "label": "i1",
+          "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase3_p33_i1_20260812/private/seed_1/resume.pt",
+          "sha256": "2ed3296f510a6c3a66c451051ecbe2284de03b35dde4052827174a66a10c1d4a",
+          "state_keys": [
+            "bridge.output_projection.weight"
+          ],
+          "step": 1000
+        },
+        {
+          "controller_rung": 0,
+          "label": "p34",
+          "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase3_p34_a2_20260814/private/main_seed_1/checkpoint_step_4000.pt",
+          "sha256": "97ad532a5bffd72b2563799047b517e531e00115793bf4808f060148dfffc1ec",
+          "state_keys": [
+            "bridge.gate_control.weight",
+            "bridge.gate_hidden.weight",
+            "bridge.gate_logits",
+            "bridge.gate_scratch.weight",
+            "bridge.hidden_norm.weight",
+            "bridge.key.weight",
+            "bridge.output_projection.weight",
+            "bridge.query.weight",
+            "bridge.rho_logits",
+            "bridge.scratch_norm.weight",
+            "bridge.value.weight",
+            "control.cell.bias_hh",
+            "control.cell.bias_ih",
+            "control.cell.weight_hh",
+            "control.cell.weight_ih",
+            "control.position_embedding.weight"
+          ],
+          "step": 4000
+        }
+      ],
+      "direction_refresh": {
+        "base_reader_match_rate": 0.962646484375,
+        "base_reader_matches_cached_source": 3943,
+        "deployed_source_changed_fraction": 0.024169921875,
+        "deployed_source_changed_rows": 99,
+        "deployed_target_already_reached_fraction": 0.021484375,
+        "deployed_target_already_reached_rows": 88,
+        "old_vs_deployed_anchored_direction_cosine": {
+          "fraction_below_0p99": 0.016716565936803818,
+          "mean": 0.9910950660705566,
+          "minimum": 0.0,
+          "rows": 4008
+        },
+        "persistent_serving_reanchor_needed": true,
+        "positive_rows": 4096,
+        "registered_estimator_direction_stale": true
+      },
+      "registered_endpoint_gate_ceiling": 0.02,
+      "rows_sha256": "c124d85fec4334b9f4e43a9d67d9581ab3fa280ac0124611e6c4250216a30ebd"
+    }
+  },
+  "status": "complete_dev_audit_only"
+}

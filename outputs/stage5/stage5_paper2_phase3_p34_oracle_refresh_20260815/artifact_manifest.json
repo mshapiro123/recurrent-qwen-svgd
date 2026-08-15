@@ -1,0 +1,32 @@
+{
+  "kind": "paper2_phase3_p34_oracle_refresh_artifact_manifest_v1",
+  "execution": {
+    "hardware": "NVIDIA L4",
+    "mode": "DEV audit only",
+    "optimizer_constructed": false,
+    "optimizer_steps": 0,
+    "confirm_scored": false,
+    "eval_e_scored": false
+  },
+  "summary": {
+    "path": "outputs/stage5/stage5_paper2_phase3_p34_oracle_refresh_20260815/summary.json",
+    "sha256": "4b0d22dae72d621308ea06758db5c4035a0e000976d22f23271b9d513add8c0e",
+    "bytes": 14475
+  },
+  "private_row_receipts": {
+    "seed_0": {
+      "sha256": "4bb52474defa0ded87b16fd947547b185c69cfcce314dfe90a1e3a892da961a9",
+      "bytes": 8708764
+    },
+    "seed_1": {
+      "sha256": "c124d85fec4334b9f4e43a9d67d9581ab3fa280ac0124611e6c4250216a30ebd",
+      "bytes": 8717715
+    }
+  },
+  "source_archive": {
+    "path": "p34_oracle_refresh_receipts_20260815.tar.gz",
+    "sha256": "bab977d8936580dbfe6c92ec7b26494ab3cd521f0722d10f51bdc43e24d0f505",
+    "bytes": 3046594,
+    "git_committed": false
+  }
+}
