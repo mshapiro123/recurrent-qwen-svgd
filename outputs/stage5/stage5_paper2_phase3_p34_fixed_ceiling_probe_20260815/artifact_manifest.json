@@ -1,0 +1,18 @@
+{
+  "figure": {
+    "path": "docs\\figures\\p34_fixed_ceiling_probe_20260815.png",
+    "sha256": "46b640764133590a9e0cb4e21c4afb3be94059e53f3c884efa4b0d16788744a0"
+  },
+  "inputs": {
+    ".codex_p34_fixed_probe_results_v1\\drive\\private\\fixed_ceiling_probe\\seed_0_ceiling_0p02.jsonl": "f9d408c75b424bdb811ae8f3fedb3911db3bdaed17ff5522eb4769862ddb8ce9",
+    ".codex_p34_fixed_probe_results_v1\\drive\\private\\fixed_ceiling_probe\\seed_0_ceiling_0p02_summary.json": "de64cf29e575a81bbd2b75356119d04d9f30aa4d880dbde2ab337068bf58edaf",
+    ".codex_p34_fixed_probe_results_v1\\drive\\private\\fixed_ceiling_probe\\seed_0_ceiling_0p08.jsonl": "ab996893f7fe6c456f155cce84c4c9493240ee16e3fd570c67187df830c6c24b",
+    ".codex_p34_fixed_probe_results_v1\\drive\\private\\fixed_ceiling_probe\\seed_0_ceiling_0p08_summary.json": "99b6aff8aaa6da3e4d182ed60b002a8dd8baf6001a578ef45454c2659a55d36a",
+    ".codex_p34_fixed_probe_results_v1\\drive\\private\\fixed_ceiling_probe\\seed_1_ceiling_0p02.jsonl": "8011d2f0f9b97195496005a9caffc0c6b89dbae6f6b935e548a3838cf39aa6b5",
+    ".codex_p34_fixed_probe_results_v1\\drive\\private\\fixed_ceiling_probe\\seed_1_ceiling_0p02_summary.json": "e9f250e33af89e50b059f3409a1c3440455a155cced32f1bdcaf50691aaa813e",
+    ".codex_p34_fixed_probe_results_v1\\drive\\private\\fixed_ceiling_probe\\seed_1_ceiling_0p08.jsonl": "f21f2c4530e67137e60b40b44d9ff64fe2b14169021cf92ccd0058d148c3b8d1",
+    ".codex_p34_fixed_probe_results_v1\\drive\\private\\fixed_ceiling_probe\\seed_1_ceiling_0p08_summary.json": "90dc4ffe4bdc69555d0f05d44fd27313b7f9e5ed2e19cd3380e478db563ac558"
+  },
+  "kind": "paper2_phase3_p34_fixed_ceiling_probe_manifest_v1",
+  "summary_sha256": "d820f44d5886388b55b323bdf320cc82d9ee6a8992905b05055e0e3ec30de788"
+}

@@ -2003,3 +2003,18 @@ Colab/Drive backups for selected runs.
   one P3.5 lever. Handoff:
   `docs/PAPER2_PHASE3_P34_A2_RESULTS_HANDOFF_20260814.md`. Receipt:
   `outputs/stage5/stage5_paper2_phase3_p34_a2_20260814/analysis/p34_a2_results_summary.json`.
+- 2026-08-15 P3.4 post-hoc DEV diagnostics: the CPU stability audit replayed
+  all 8,000 registered batch hashes and localized the discrete score movement
+  to approximately 95 boundary rows per seed. Across the five adjacent pairs
+  with exact row identity, changed rows had mean option margin `0.00781`
+  versus `1.81153` for stable rows; GSM8K changed most often. Curriculum depth
+  and code mix explained little descriptive movement. A paired fixed-ceiling
+  probe exactly reproduced both registered endpoints but found seed-specific,
+  non-monotone ceiling effects: seed 0 scored `+3/+5` at ceilings `0.02/0.08`,
+  while seed 1 scored `+10/+3`. The L4 oracle refresh repeated all-row pi_dir
+  at `14.75%/15.50%`, but the pinned BF16 reader matched the frozen cached
+  source on only `3943/4096` rows. Deployed writes changed the source token on
+  `8.20%/2.42%` of rows, making persistent re-anchoring necessary. These are
+  post-hoc DEV diagnostics; the registered `REPLICATED_POSITIVE_BELOW_TRIGGER_B`
+  verdict is unchanged and CONFIRM/EVAL-E remain sealed. Handoff:
+  `docs/PAPER2_PHASE3_P34_STABILITY_AND_REFRESH_HANDOFF_20260815.md`.

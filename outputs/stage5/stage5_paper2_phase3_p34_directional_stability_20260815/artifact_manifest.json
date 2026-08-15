@@ -1,0 +1,15 @@
+{
+  "figure_png": {
+    "path": "C:\\Users\\mshap\\Documents\\Codex\\2026-06-15\\option-b-pilot-contract-fix\\docs\\figures\\p34_directional_stability_20260815.png",
+    "sha256": "3fb410da98bf1aa763017225d7917c34a470b5f06143661c58e1fe4433db839b"
+  },
+  "figure_svg": {
+    "path": "C:\\Users\\mshap\\Documents\\Codex\\2026-06-15\\option-b-pilot-contract-fix\\docs\\figures\\p34_directional_stability_20260815.svg",
+    "sha256": "d8605611b63365e01403fff45f5445a41f06fff0723240a19554ada7a2e6af10"
+  },
+  "kind": "paper2_phase3_p34_directional_stability_artifact_manifest_v1",
+  "summary": {
+    "path": "C:\\Users\\mshap\\Documents\\Codex\\2026-06-15\\option-b-pilot-contract-fix\\outputs\\stage5\\stage5_paper2_phase3_p34_directional_stability_20260815\\summary.json",
+    "sha256": "511348729e230a19f594fe98eeb2faf3282f8bec36a6f49b411fd2d4f1b071a1"
+  }
+}
