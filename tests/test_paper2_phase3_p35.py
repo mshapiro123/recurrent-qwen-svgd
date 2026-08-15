@@ -31,7 +31,9 @@ from training.paper2_phase2_matched_alpha import build_adamw_groups
 from training.run_paper2_phase3_p35 import (
     _audit_ema_state,
     _adamw_group_names,
+    _probe_attachment_identity,
     _restore_optimizer_by_name,
+    _validate_executed_lock,
     run,
 )
 
@@ -73,6 +75,15 @@ def test_probe_control_attach_matches_mean_control() -> None:
         "position_bucket": torch.tensor([1, 4]),
     }
     assert torch.allclose(mean.control(**common), probe.control(**common), atol=1e-6)
+
+
+def test_real_module_probe_attachment_is_identity() -> None:
+    torch.manual_seed(41)
+    embedding = nn.Embedding(31, 16)
+    module = Phase3StudentModules(
+        tied_embedding=embedding, hidden_size=16, latent_dim=8, control_dim=6
+    )
+    assert _probe_attachment_identity(module) <= 1e-6
 
 
 def test_landing_contract_lr_and_ema() -> None:
@@ -297,20 +308,24 @@ def test_runner_refuses_unratified_lock_before_reading_run_inputs(tmp_path) -> N
         run(Namespace(lock=lock))
 
 
-def test_lock_draft_matches_code_and_keeps_training_disabled() -> None:
+def test_executed_lock_matches_code_and_is_ratified() -> None:
     root = Path(__file__).resolve().parents[1]
     lock = json.loads(
         (root / "training" / "paper2_phase3_p35_preregistration.draft.json").read_text(
             encoding="utf-8"
         )
     )
-    assert lock["training_authorized"] is False
-    assert lock["locked_before_training"] is False
-    assert lock["mark_ratified"] is False
+    receipt = _validate_executed_lock(lock)
+    assert lock["training_authorized"] is True
+    assert lock["locked_before_training"] is True
+    assert lock["mark_ratified"] is True
+    assert lock["status"] == "approved_for_training"
     assert lock["landing"]["landing_steps"] == 400
     assert lock["landing"]["look_steps"] == [4100, 4200, 4300, 4400]
     assert lock["checkpoint_policy"]["ema_decay"] == 0.995
     assert lock["evaluation"]["primary_gate_ceiling"] == 0.02
     assert lock["estimator_repair"]["required_identity_rate"] == 1.0
     assert lock["arms"]["R"]["probe_count"] == 4
-    assert lock["unresolved_before_ratification"]
+    assert lock["unresolved_before_ratification"] == []
+    assert receipt["primary_evaluation_ceiling"] == 0.02
+    assert receipt["causal_instrument"] == "repaired v2 only"

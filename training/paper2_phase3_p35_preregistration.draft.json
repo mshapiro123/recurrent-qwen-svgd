@@ -1,14 +1,21 @@
 {
   "kind": "paper2_phase3_p35_executed_lock_v1",
-  "status": "assembled_awaiting_strategy_ratification",
-  "locked_before_training": false,
-  "training_authorized": false,
-  "mark_ratified": false,
+  "status": "approved_for_training",
+  "locked_before_training": true,
+  "training_authorized": true,
+  "mark_ratified": true,
   "authority": {
     "drive_id": "1ZzWO3MzkFW5Ph0wAuF5r-ZpdYCzAEi6F",
     "repo_receipt": "docs/STRATEGY_P35_CHARTER_RESPONSE_20260815.receipt.json",
     "sha256": "3bf476f1db8ebe451d798c941aeef3110129b8d946515125488b7871e0cf7c82",
     "bytes": 13242
+  },
+  "execution_authority": {
+    "drive_id": "15ylK6jk2vXDTX0TRk5XJ949D6xzIAA-X",
+    "repo_path": "docs/STRATEGY_P35_EXECUTION_HANDOFF_20260815.md",
+    "sha256": "314b51a34a0d451dd8045b69eb794ebff4ecd3efb3483dcebcdc78bae3628efe",
+    "bytes": 4876,
+    "status": "ratified_locked_go"
   },
   "inherited_verdict": "REPLICATED_POSITIVE_BELOW_TRIGGER_B",
   "sealed_partitions": {
@@ -175,7 +182,5 @@
     "confirm_scored": false,
     "eval_e_scored": false
   },
-  "unresolved_before_ratification": [
-    "mark_ratified"
-  ]
+  "unresolved_before_ratification": []
 }

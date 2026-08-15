@@ -4380,6 +4380,22 @@ TARGETS = {
         ],
         "env": {},
     },
+    "paper2_phase3_p35": {
+        "path": "colab/STAGE5_PAPER2_PHASE3_P35_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_PHASE3_P35_VERSION",
+            "paper2_phase3_p35_campaign_v1",
+            "all three exact preflights pass before any P3.5 optimizer exists",
+            "EMA primary pinned 0.02 ceiling repaired v2 causal cache only",
+            "no persistence no CONFIRM no EVAL-E contact",
+            "colab/run_stage5_paper2_phase3_p35.py",
+        ],
+        "env": {
+            "P35_MODE": "preflight",
+            "P35_ARM": "stabilized",
+            "P35_SEED": "0",
+        },
+    },
     "gradient_path_audit": {
         "path": "colab/STAGE5_GRADIENT_PATH_AUDIT_CELL.py",
         "markers": [
