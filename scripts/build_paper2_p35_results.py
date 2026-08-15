@@ -12,6 +12,12 @@ from typing import Any, Iterable, Mapping
 
 LABELS = ("arm_s_seed_0", "arm_s_seed_1", "arm_r_seed_0")
 PRIMARY_CONDITION = "step_4400_ema_ceiling_0.02"
+ENDPOINT_CONDITIONS = (
+    "step_4400_raw_ceiling_0.02",
+    "step_4400_ema_ceiling_0.02",
+    "step_4400_raw_ceiling_0.08",
+    "step_4400_ema_ceiling_0.08",
+)
 
 
 def read_json(path: Path) -> dict[str, Any]:
@@ -158,6 +164,10 @@ def analyze(root: Path) -> dict[str, Any]:
             "score_bundle": {"path": str(score_path), "sha256": sha256_file(score_path)},
             "history": [_history_row(entry) for entry in run["history"]],
             "endpoint": endpoint,
+            "endpoint_conditions": {
+                condition: score["conditions"][condition]["paired"]
+                for condition in ENDPOINT_CONDITIONS
+            },
             "adjacent_churn": score["ema_primary_adjacent_churn"],
             "raw_vs_ema": score["final_raw_vs_ema"],
             "confirm_scored": False,
@@ -274,6 +284,56 @@ def plot(summary: Mapping[str, Any], output_dir: Path) -> None:
     fig.suptitle("P3.5 stabilized landing and reader comparison", fontsize=13)
     for suffix in ("png", "svg"):
         fig.savefig(output_dir / f"paper2_p35_results_20260815.{suffix}", dpi=220)
+    plt.close(fig)
+
+    condition_names = {
+        "step_4400_raw_ceiling_0.02": "Raw / 0.02",
+        "step_4400_ema_ceiling_0.02": "EMA / 0.02\n(primary)",
+        "step_4400_raw_ceiling_0.08": "Raw / 0.08",
+        "step_4400_ema_ceiling_0.08": "EMA / 0.08",
+    }
+    fig, axes = plt.subplots(1, 2, figsize=(11.5, 4.4), constrained_layout=True)
+    width = 0.24
+    x = list(range(len(ENDPOINT_CONDITIONS)))
+    for index, label in enumerate(LABELS):
+        endpoint_conditions = summary["arms"][label]["endpoint_conditions"]
+        axes[0].bar(
+            [value + (index - 1) * width for value in x],
+            [endpoint_conditions[condition]["net_rows"] for condition in ENDPOINT_CONDITIONS],
+            width=width,
+            color=colors[label],
+            label=names[label],
+        )
+    axes[0].axhline(0, color="#777777", linewidth=0.8)
+    axes[0].set_xticks(x, [condition_names[condition] for condition in ENDPOINT_CONDITIONS])
+    axes[0].set(title="Endpoint sensitivity matrix", ylabel="Net correct rows (of 1,024)")
+    axes[0].legend(frameon=False, fontsize=8)
+
+    primary = [summary["arms"][label]["endpoint"] for label in LABELS]
+    y = list(range(len(LABELS)))
+    axes[1].barh(
+        [value + width / 2 for value in y],
+        [entry["fixes"] for entry in primary],
+        height=width,
+        color="#2F7D62",
+        label="Fixes",
+    )
+    axes[1].barh(
+        [value - width / 2 for value in y],
+        [entry["regressions"] for entry in primary],
+        height=width,
+        color="#B85248",
+        label="Regressions",
+    )
+    axes[1].set_yticks(y, [names[label] for label in LABELS])
+    axes[1].set(title="Registered primary paired changes", xlabel="Rows")
+    axes[1].legend(frameon=False, fontsize=8)
+    for axis in axes:
+        axis.grid(axis="y", alpha=0.2)
+        axis.tick_params(labelsize=8)
+    fig.suptitle("P3.5 endpoint diagnostics", fontsize=13)
+    for suffix in ("png", "svg"):
+        fig.savefig(output_dir / f"paper2_p35_endpoint_matrix_20260815.{suffix}", dpi=220)
     plt.close(fig)
 
 
