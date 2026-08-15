@@ -1025,6 +1025,46 @@
       ]
     },
     {
+      "id": "phase3_p35_prerequisites",
+      "status": "supported_bounded_no_training",
+      "claim": "The P3.5 causal estimator now has exact BF16 serving-reader identity on all 4,096 registered positive-audit rows; controlled cross-token carry changed outputs but produced no free pooled accuracy gain in the seed-0 DEV persistence probe.",
+      "scope": "Exact-reader repair on the fixed 4,096-row positive audit; persistence probe on 128 GSM8K and 67 MBPP DEV rows, seed 0, fresh scratch versus untrained controlled carry; no optimizer, CONFIRM, or EVAL-E contact",
+      "metrics": {
+        "source_cache_rows": 43204,
+        "selected_audit_rows": 4096,
+        "source_anchor_identity_rate": 1.0,
+        "persistence_rows": 195,
+        "fresh_correct": 76,
+        "carried_correct": 75,
+        "persistence_fixes": 2,
+        "persistence_regressions": 3,
+        "later_token_changed_rows": 35,
+        "pooled_carried_minus_fresh_points": -0.5128205128205128,
+        "pooled_exact_paired_sign_p": 1.0
+      },
+      "evidence": [
+        {
+          "path": "outputs/stage5/stage5_paper2_phase3_p35_prerequisites_20260815/summary.json",
+          "locator": "exact serving-reader identity and paired persistence aggregates"
+        },
+        {
+          "path": "docs/PAPER2_PHASE3_P35_PREREQUISITES_HANDOFF_20260815.md",
+          "locator": "design, implementation corrections, results, interpretation, limitations, receipt hashes, and strategy questions"
+        },
+        {
+          "path": "docs/figures/p35_prerequisite_probe_20260815.svg",
+          "locator": "fresh-versus-carried DEV accuracy and changed-continuation rates"
+        }
+      ],
+      "do_not_claim": [
+        "trained persistence was evaluated",
+        "persistence is generally harmful or useless",
+        "the battery-specific differences are resolved",
+        "P3.5 training is ratified or complete",
+        "CONFIRM or EVAL-E has been scored"
+      ]
+    },
+    {
       "id": "speculative_depth_d0",
       "status": "not_recoverable_at_pilot_scale",
       "claim": "Under one 4,000-step seed, binary teacher-disagreement targets did not produce deployment-useful adaptive depth; the target omitted accepted-position harm and labeled many causally unactionable rejections as continue.",

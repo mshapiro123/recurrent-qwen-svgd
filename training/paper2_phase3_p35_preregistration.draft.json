@@ -1,6 +1,6 @@
 {
   "kind": "paper2_phase3_p35_executed_lock_v1",
-  "status": "assembled_awaiting_estimator_receipt_and_ratification",
+  "status": "assembled_awaiting_strategy_ratification",
   "locked_before_training": false,
   "training_authorized": false,
   "mark_ratified": false,
@@ -39,10 +39,10 @@
     "required_identity_rate": 1.0,
     "prior_identity_rate": 0.962646484375,
     "cache_kind": "paper2_phase3_serving_oracle_direction_cache_v2",
-    "cache_path": null,
-    "cache_sha256": null,
-    "receipt_path": null,
-    "receipt_sha256": null,
+    "cache_path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase3_p35_prerequisites_20260815/private/serving_oracle/agreement_oracle_directions_v2.pt",
+    "cache_sha256": "294358a7dacc746b733e9f08296494c6f461443a92c093f8019a1dda56422294",
+    "receipt_path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase3_p35_prerequisites_20260815/private/serving_oracle/agreement_oracle_directions_v2.summary.json",
+    "receipt_sha256": "ab584b6ba008b0ade9247bee099f9bee4cce02ed1c58de94be68a8bb5c4197e6",
     "gates_training": true,
     "gates_registered_pi_dir": true
   },
@@ -155,14 +155,27 @@
     "seed_rationale": "seed 0 is the predeclared stress case with the larger measured deployed-source change rate",
     "directions": "re-anchored from current source token; no frozen-source reuse",
     "gates_p35_nonpersistent_training": false,
-    "gates_any_future_persistent_training": true
+    "gates_any_future_persistent_training": true,
+    "receipt_path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase3_p35_prerequisites_20260815/private/persistence_seed_0/summary.json",
+    "receipt_sha256": "ca917aaac213451cf4c38c18bd5e25c642e13177b3dc2f8ee584bd056fe90116",
+    "rows": 195,
+    "fresh_correct": 76,
+    "carried_correct": 75,
+    "fixes": 2,
+    "regressions": 3,
+    "later_token_changed_rows": 35,
+    "registered_reading": "no_free_persistence_gain_on_this_seed0_dev_probe"
+  },
+  "implementation_commit": "87bac2a4364284dccb08976aa9b048521cde1469",
+  "prerequisite_bindings": {
+    "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase3_p35_prerequisites_20260815/receipts/bindings.json",
+    "sha256": "d3235d09a85e2d2bb5a774acd7baa3ecbfa6da727e8373c792ad4f7d906566f6",
+    "optimizer_constructed": false,
+    "optimizer_steps": 0,
+    "confirm_scored": false,
+    "eval_e_scored": false
   },
   "unresolved_before_ratification": [
-    "estimator_repair.cache_path",
-    "estimator_repair.cache_sha256",
-    "estimator_repair.receipt_path",
-    "estimator_repair.receipt_sha256",
-    "implementation_commit",
     "mark_ratified"
   ]
 }
