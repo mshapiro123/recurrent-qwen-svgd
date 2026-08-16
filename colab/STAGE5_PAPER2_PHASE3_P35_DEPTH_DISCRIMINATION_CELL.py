@@ -11,6 +11,7 @@ from google.colab import drive
 
 
 STAGE5_PAPER2_PHASE3_P35_DEPTH_DISCRIMINATION_VERSION = "paper2_phase3_p35_depth_discrimination_v1"
+# Bootstrap marker: colab/run_stage5_paper2_phase3_p35_depth_discrimination.py
 # Safety marker: Arm-S EMA K1-K4 registered and K5-K6 disclosed last-step clamp
 # Safety marker: DEV score-only no optimizer no training CONFIRM and EVAL-E sealed
 REPO = "mshapiro123/recurrent-qwen-svgd"

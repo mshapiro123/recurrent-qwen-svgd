@@ -1,4 +1,4 @@
-"""Colab launcher for the authorized P3.5 amplitude and T1 preflight wave."""
+"""Colab launcher for the locked CPU-only KP-1R cached-state rung."""
 
 from __future__ import annotations
 
@@ -10,11 +10,11 @@ from pathlib import Path
 from google.colab import drive
 
 
-STAGE5_PAPER2_PHASE3_P35_AMPLITUDE_T1_VERSION = "paper2_phase3_p35_amplitude_t1_v1"
-# Bootstrap marker: colab/run_stage5_paper2_phase3_p35_amplitude_t1_preflight.py
-# Safety marker: four-ceiling two-seed Arm-S EMA DEV surface no optimizer no training
-# Safety marker: T1 checkpoint and row hashes locked before any state extraction model access
-# Safety marker: CONFIRM and EVAL-E remain sealed and checkpoint selection is barred
+STAGE5_PAPER2_PHASE3_KP1R_CACHED_VERSION = "paper2_phase3_kp1r_cached_v1"
+# Bootstrap marker: colab/run_stage5_paper2_phase3_kp1r_cached.py
+# Safety marker: 329-row repaired answer-bearing target entropy audit before scoring
+# Safety marker: CPU cached states only no optimizer no training
+# Safety marker: CONFIRM and EVAL-E remain sealed
 REPO = "mshapiro123/recurrent-qwen-svgd"
 ROOT = Path("/content/recurrent-qwen-svgd")
 REF = os.environ.get("STAGE5_BOOTSTRAP_REF", "main").strip() or "main"
@@ -30,7 +30,6 @@ def run(command: list[str], cwd: Path | None = None) -> None:
 
 if not Path("/content/drive/MyDrive").is_dir():
     drive.mount("/content/drive", force_remount=False, timeout_ms=240_000)
-run(["nvidia-smi"])
 url = f"https://x-access-token:{GH}@github.com/{REPO}.git" if GH else f"https://github.com/{REPO}.git"
 if ROOT.exists():
     run(["git", "remote", "set-url", "origin", url])
@@ -39,10 +38,14 @@ else:
 run(["git", "fetch", "origin", f"refs/heads/{SOURCE_BRANCH}:refs/remotes/origin/{SOURCE_BRANCH}"])
 run(["git", "reset", "--hard", REF])
 run([sys.executable, "-m", "pip", "install", "-q", "-r", "requirements.txt"])
-run([
-    sys.executable, "-m", "pytest", "-q",
-    "tests/test_paper2_phase3_p35_amplitude_surface.py",
-    "tests/test_paper2_phase3_p34_task_inference.py",
-    "tests/test_stage5_notebooks.py::test_p35_amplitude_t1_target_is_wired_and_guarded",
-])
-run([sys.executable, "-u", "-m", "colab.run_stage5_paper2_phase3_p35_amplitude_t1_preflight"])
+run(
+    [
+        sys.executable,
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_paper2_phase3_kp1r_t1_teacher.py",
+        "tests/test_stage5_notebooks.py::test_kp1r_cached_target_is_wired_and_guarded",
+    ]
+)
+run([sys.executable, "-u", "-m", "colab.run_stage5_paper2_phase3_kp1r_cached"])
