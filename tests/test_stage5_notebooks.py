@@ -3943,6 +3943,23 @@ def test_p35_depth_discrimination_target_is_wired_and_guarded() -> None:
     assert "stage_common" not in runner
 
 
+def test_p35_kp1_t1_target_is_wired_and_guarded() -> None:
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    cell = (ROOT / "colab/STAGE5_PAPER2_PHASE3_KP1_T1_CELL.py").read_text(encoding="utf-8")
+    runner = (ROOT / "colab/run_stage5_paper2_phase3_kp1_t1.py").read_text(encoding="utf-8")
+    evaluator = (ROOT / "eval/eval_paper2_phase3_kp1_t1.py").read_text(encoding="utf-8")
+    assert "paper2_phase3_kp1_t1" in bootstrap
+    assert "paper2_phase3_kp1_t1_v1" in cell
+    assert "329-row DEV knowledge-presence audit" in cell
+    assert "manifest locked before model access no optimizer no training" in cell
+    assert "CONFIRM and EVAL-E remain sealed" in cell
+    assert "pre_model_manifest.json" in runner
+    assert "model_loaded_during_staging" in runner
+    assert "eval.eval_paper2_phase3_kp1_t1" in runner
+    assert "deployment_cell_separate" in evaluator
+    assert "optimizer_constructed" in evaluator
+
+
 def test_gradient_path_audit_target_is_wired_and_guarded() -> None:
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
     bootstrap_md = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")

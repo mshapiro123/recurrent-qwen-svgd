@@ -4419,6 +4419,18 @@ TARGETS = {
         ],
         "env": {},
     },
+    "paper2_phase3_kp1_t1": {
+        "path": "colab/STAGE5_PAPER2_PHASE3_KP1_T1_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_PHASE3_KP1_T1_VERSION",
+            "paper2_phase3_kp1_t1_v1",
+            "329-row DEV knowledge-presence audit plus four-checkpoint T1 extraction",
+            "manifest locked before model access no optimizer no training",
+            "CONFIRM and EVAL-E remain sealed",
+            "colab/run_stage5_paper2_phase3_kp1_t1.py",
+        ],
+        "env": {},
+    },
     "gradient_path_audit": {
         "path": "colab/STAGE5_GRADIENT_PATH_AUDIT_CELL.py",
         "markers": [

@@ -4397,6 +4397,41 @@ TARGETS = {
             "P35_SEED": "0",
         },
     },
+    "paper2_phase3_p35_amplitude_t1": {
+        "path": "colab/STAGE5_PAPER2_PHASE3_P35_AMPLITUDE_T1_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_PHASE3_P35_AMPLITUDE_T1_VERSION",
+            "paper2_phase3_p35_amplitude_t1_v1",
+            "four-ceiling two-seed Arm-S EMA DEV surface no optimizer no training",
+            "T1 checkpoint and row hashes locked before any state extraction model access",
+            "CONFIRM and EVAL-E remain sealed and checkpoint selection is barred",
+            "colab/run_stage5_paper2_phase3_p35_amplitude_t1_preflight.py",
+        ],
+        "env": {},
+    },
+    "paper2_phase3_p35_depth_discrimination": {
+        "path": "colab/STAGE5_PAPER2_PHASE3_P35_DEPTH_DISCRIMINATION_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_PHASE3_P35_DEPTH_DISCRIMINATION_VERSION",
+            "paper2_phase3_p35_depth_discrimination_v1",
+            "Arm-S EMA K1-K4 registered and K5-K6 disclosed last-step clamp",
+            "DEV score-only no optimizer no training CONFIRM and EVAL-E sealed",
+            "colab/run_stage5_paper2_phase3_p35_depth_discrimination.py",
+        ],
+        "env": {},
+    },
+    "paper2_phase3_kp1_t1": {
+        "path": "colab/STAGE5_PAPER2_PHASE3_KP1_T1_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_PHASE3_KP1_T1_VERSION",
+            "paper2_phase3_kp1_t1_v1",
+            "329-row DEV knowledge-presence audit plus four-checkpoint T1 extraction",
+            "manifest locked before model access no optimizer no training",
+            "CONFIRM and EVAL-E remain sealed",
+            "colab/run_stage5_paper2_phase3_kp1_t1.py",
+        ],
+        "env": {},
+    },
     "gradient_path_audit": {
         "path": "colab/STAGE5_GRADIENT_PATH_AUDIT_CELL.py",
         "markers": [
