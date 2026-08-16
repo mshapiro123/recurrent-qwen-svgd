@@ -447,33 +447,45 @@ def main() -> int:
             for condition, values in deployments.items():
                 deploy_cache[label][condition].append(values.cpu().to(torch.float16))
             if local_gap:
-                for k in range(1, 5):
-                    recurrent_start = 8 + (k - 1) * 8
-                    recurrent_gap_features[label][k].append(
-                        core[selected, recurrent_start : recurrent_start + 8].mean(dim=1).cpu().to(torch.float16)
-                    )
-                    # Native draft head is a descriptive readout, not the registered task path.
-                    pooled = core[selected, recurrent_start : recurrent_start + 8].mean(dim=1).to(device)
-                    hidden_update = module.draft.up[k - 1](F.silu(module.draft.down[k - 1](pooled)))
-                    write_gate = torch.sigmoid(module.draft.write_gate(controls[k]))[:, k - 1]
-                    base_logits = output.logits[
-                        torch.arange(output.logits.shape[0], device=device),
-                        current_position_mask(encoded["attention_mask"])[1],
-                    ][selected].float()
-                    logits = base_logits + write_gate[selected, None].float() * (
-                        hidden_update.float() @ embedding.float().T
-                    )
-                    ids = torch.tensor(
-                        [target_ids[gap_lookup[panel_ids[start + local]]] for local in local_gap],
-                        device=device,
-                    )
-                    native_ranks[label][k].extend(token_ranks(logits, ids).cpu().tolist())
-                    native_logps[label][k].extend(
-                        torch.log_softmax(logits.float(), dim=-1)
-                        .gather(1, ids[:, None])[:, 0]
-                        .cpu()
-                        .tolist()
-                    )
+                with torch.inference_mode():
+                    for k in range(1, 5):
+                        recurrent_start = 8 + (k - 1) * 8
+                        pooled = core[
+                            selected, recurrent_start : recurrent_start + 8
+                        ].mean(dim=1)
+                        recurrent_gap_features[label][k].append(
+                            pooled.cpu().to(torch.float16)
+                        )
+                        # Native draft head is descriptive, not the registered task path.
+                        hidden_update = module.draft.up[k - 1](
+                            F.silu(module.draft.down[k - 1](pooled.to(device)))
+                        )
+                        write_gate = torch.sigmoid(module.draft.write_gate(controls[k]))[
+                            :, k - 1
+                        ]
+                        base_logits = output.logits[
+                            torch.arange(output.logits.shape[0], device=device),
+                            current_position_mask(encoded["attention_mask"])[1],
+                        ][selected].float()
+                        logits = base_logits + write_gate[selected, None].float() * (
+                            hidden_update.float() @ embedding.float().T
+                        )
+                        ids = torch.tensor(
+                            [
+                                target_ids[gap_lookup[panel_ids[start + local]]]
+                                for local in local_gap
+                            ],
+                            device=device,
+                        )
+                        native_ranks[label][k].extend(
+                            token_ranks(logits, ids).cpu().tolist()
+                        )
+                        native_logps[label][k].extend(
+                            torch.log_softmax(logits.float(), dim=-1)
+                            .gather(1, ids[:, None])[:, 0]
+                            .cpu()
+                            .tolist()
+                        )
         print(f"kp1_t1_extract_progress rows={stop}/{len(panel)}", flush=True)
 
     extracted_gap_ids = [item_id for item_id in panel_ids if item_id in gap_lookup]

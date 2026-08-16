@@ -307,7 +307,7 @@ def main() -> int:
                 "--references",
                 str(references),
                 "--model_cache",
-                str(scratch / "model_cache/student_0p5b"),
+                str(scratch / "hf_model_cache"),
                 "--chain_manifest",
                 str(chain_manifest),
                 "--output_dir",
