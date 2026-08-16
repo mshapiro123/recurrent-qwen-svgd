@@ -4408,6 +4408,17 @@ TARGETS = {
         ],
         "env": {},
     },
+    "paper2_phase3_p35_depth_discrimination": {
+        "path": "colab/STAGE5_PAPER2_PHASE3_P35_DEPTH_DISCRIMINATION_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_PHASE3_P35_DEPTH_DISCRIMINATION_VERSION",
+            "paper2_phase3_p35_depth_discrimination_v1",
+            "Arm-S EMA K1-K4 registered and K5-K6 disclosed last-step clamp",
+            "DEV score-only no optimizer no training CONFIRM and EVAL-E sealed",
+            "colab/run_stage5_paper2_phase3_p35_depth_discrimination.py",
+        ],
+        "env": {},
+    },
     "gradient_path_audit": {
         "path": "colab/STAGE5_GRADIENT_PATH_AUDIT_CELL.py",
         "markers": [

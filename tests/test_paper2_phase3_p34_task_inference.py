@@ -90,6 +90,48 @@ def test_exact_task_graph_disables_draft_and_is_repeatable() -> None:
     assert receipt["selected_write_cells"] == 2
 
 
+def test_k_parameter_preserves_registered_path_and_gates_clamped_extension() -> None:
+    torch.manual_seed(6)
+    base = TinyCausalLM()
+    sidecar = Phase3StudentModules(
+        tied_embedding=base.embedding,
+        hidden_size=16,
+        latent_dim=8,
+        n_slots=8,
+        control_dim=6,
+        draft_rank=4,
+        max_steps=4,
+    )
+    ids = torch.tensor([[2, 3, 4]])
+    attention = torch.ones_like(ids)
+    default = P34TaskInferenceGraph(base_model=base, sidecar=sidecar)
+    explicit = P34TaskInferenceGraph(base_model=base, sidecar=sidecar, flow_loops=4)
+    assert torch.equal(
+        default.next_token(input_ids=ids, attention_mask=attention).augmented_logits,
+        explicit.next_token(input_ids=ids, attention_mask=attention).augmented_logits,
+    )
+    for k in (1, 2, 3, 4):
+        graph = P34TaskInferenceGraph(base_model=base, sidecar=sidecar, flow_loops=k)
+        output = graph.next_token(input_ids=ids, attention_mask=attention)
+        assert output.augmented_logits.shape == (1, 31)
+    try:
+        P34TaskInferenceGraph(base_model=base, sidecar=sidecar, flow_loops=5)
+    except ValueError as error:
+        assert "clamped-extension" in str(error)
+    else:
+        raise AssertionError("off-contract K=5 was accepted without disclosure")
+    exploratory = P34TaskInferenceGraph(
+        base_model=base,
+        sidecar=sidecar,
+        flow_loops=6,
+        allow_clamped_extension=True,
+    )
+    receipt = task_graph_preflight(exploratory, input_ids=ids, attention_mask=attention)
+    assert receipt["flow_loops"] == 6
+    assert receipt["clamped_extension"] is True
+    assert all(receipt["assertions"].values())
+
+
 def test_score_preserving_telemetry_summary_keeps_gate_and_write_separate() -> None:
     read = _telemetry_summary([0.1, 0.3], [0.01, 0.02])
     assert read == {

@@ -454,6 +454,8 @@ def main() -> int:
     parser.add_argument("--control_reader", choices=("mean", "probe"), default="mean")
     parser.add_argument("--mcq_batch_size", type=int, default=32)
     parser.add_argument("--generation_batch_size", type=int, default=8)
+    parser.add_argument("--flow_loops", type=int, default=4)
+    parser.add_argument("--allow_clamped_extension", action="store_true")
     parser.add_argument("--gate_ceiling_override", type=float)
     parser.add_argument(
         "--authorized_gate_ceiling_override",
@@ -480,6 +482,9 @@ def main() -> int:
             or int(row.get("look", -1)) != args.look
             or int(row.get("seed", -1)) != args.seed
             or str(row.get("partition")) != "dev"
+            or int(row.get("flow_loops", -1)) != int(args.flow_loops)
+            or bool(row.get("clamped_extension", False))
+            != bool(args.allow_clamped_extension)
             or (
                 args.gate_ceiling_override is not None
                 and float(row.get("evaluation_gate_ceiling", -1.0))
@@ -521,7 +526,12 @@ def main() -> int:
         ),
     )
     sidecar.bridge.set_gate_ceiling(evaluation_gate_ceiling)
-    graph = P34TaskInferenceGraph(base_model=model, sidecar=sidecar)
+    graph = P34TaskInferenceGraph(
+        base_model=model,
+        sidecar=sidecar,
+        flow_loops=args.flow_loops,
+        allow_clamped_extension=args.allow_clamped_extension,
+    )
 
     # The cache changes transport only.  Require identical selected tokens on a
     # real panel prompt before using it for the expensive trajectory pass.
@@ -565,6 +575,8 @@ def main() -> int:
                 "item_id": item_id,
                 "base_correct": bool(base_rows[item_id]["correct"]),
                 "evaluation_gate_ceiling": evaluation_gate_ceiling,
+                "flow_loops": int(args.flow_loops),
+                "clamped_extension": bool(args.allow_clamped_extension),
                 **augmented,
             })
         append_jsonl(args.output_jsonl, enriched)
@@ -621,6 +633,13 @@ def main() -> int:
         "checkpoint_receipts": checkpoint_receipts,
         "evaluation_gate_ceiling": evaluation_gate_ceiling,
         "evaluation_gate_ceiling_source": evaluation_gate_ceiling_source,
+        "flow_loops": int(args.flow_loops),
+        "clamped_extension": bool(args.allow_clamped_extension),
+        "depth_scope": (
+            "registered_trained_support"
+            if int(args.flow_loops) <= 4
+            else "exploratory_last_step_clamped_off_contract"
+        ),
         "cache_transport": {
             "argmax_equal_on_real_prompt": cache_argmax_equal,
             "maximum_absolute_logit_difference": cache_max_abs,

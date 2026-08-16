@@ -3926,6 +3926,20 @@ def test_p35_amplitude_t1_target_is_wired_and_guarded() -> None:
     assert "eval.eval_paper2_phase3_p35_amplitude_audit" in runner
 
 
+def test_p35_depth_discrimination_target_is_wired_and_guarded() -> None:
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    cell = (ROOT / "colab/STAGE5_PAPER2_PHASE3_P35_DEPTH_DISCRIMINATION_CELL.py").read_text(encoding="utf-8")
+    runner = (ROOT / "colab/run_stage5_paper2_phase3_p35_depth_discrimination.py").read_text(encoding="utf-8")
+    assert "paper2_phase3_p35_depth_discrimination" in bootstrap
+    assert "paper2_phase3_p35_depth_discrimination_v1" in cell
+    assert "K1-K4 registered" in cell
+    assert "K5-K6 disclosed last-step clamp" in cell
+    assert "no optimizer no training" in cell
+    assert "CONFIRM and EVAL-E sealed" in cell
+    assert "--allow_clamped_extension" in runner
+    assert "transporting_canonical_k4" in runner
+
+
 def test_gradient_path_audit_target_is_wired_and_guarded() -> None:
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
     bootstrap_md = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")
