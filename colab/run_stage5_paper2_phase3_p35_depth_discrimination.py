@@ -144,7 +144,7 @@ def main() -> int:
                     "--p34", str(chain["p34"]), "--p34_sha256", P34_SHA[seed],
                     "--p35", str(endpoints[seed]), "--p35_sha256", P35_SHA[seed],
                     "--gate_ceiling_override", "0.02", "--flow_loops", str(k),
-                    "--mcq_batch_size", "32", "--generation_batch_size", "8",
+                    "--mcq_batch_size", "32", "--generation_batch_size", "32",
                 ]
                 if k in EXPLORATORY_K:
                     command.append("--allow_clamped_extension")
