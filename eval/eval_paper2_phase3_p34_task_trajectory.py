@@ -640,6 +640,10 @@ def main() -> int:
             if int(args.flow_loops) <= 4
             else "exploratory_last_step_clamped_off_contract"
         ),
+        "depth_parameter_indices": {
+            "flow_step_embedding": [min(index, 3) for index in range(int(args.flow_loops))],
+            "bridge_gate_and_rho": min(int(args.flow_loops) - 1, 3),
+        },
         "cache_transport": {
             "argmax_equal_on_real_prompt": cache_argmax_equal,
             "maximum_absolute_logit_difference": cache_max_abs,

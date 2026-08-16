@@ -35,6 +35,10 @@ def test_depth_builder_separates_registered_and_clamped_marginals(tmp_path: Path
                 "eval_e_scored": False,
                 "optimizer_constructed": False,
                 "optimizer_steps": 0,
+                "depth_parameter_indices": {
+                    "flow_step_embedding": [min(index, 3) for index in range(k)],
+                    "bridge_gate_and_rho": min(k - 1, 3),
+                },
             })
     result = build(tmp_path, {"authority": {"drive_id": "authority"}})
     assert result["registered_k4_marginal_positive_both_seeds"] is True
