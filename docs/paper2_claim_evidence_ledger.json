@@ -1,17 +1,17 @@
 {
   "schema_version": 1,
   "program": "paper2_causal_control_of_recurrent_computation",
-  "status": "phase1_banked_option_b_positive_dev_e1_locked_awaiting_read_once_execution",
-  "canonical_date": "2026-08-08",
+  "status": "phase3_p35_complete_branch_c_effect_size_returns_to_stage2a",
+  "canonical_date": "2026-08-15",
   "active_queue": {
     "program_goal": "causal_arbitration_at_append_and_dispatch_interfaces",
     "p0": "completed_uncitable_adapter_loss_calibration",
     "t1": "two_registered_negatives_raw_endpoints_replicate_exact_in_support_causal_control_with_small_preservation_cost",
     "d0": "banked_not_recoverable_at_pilot_scale_binary_disagreement_target",
     "dc1_stage_a": "registered_none_transient_append_retires_checkpoint_archival_eval_c_spent",
-    "phase2": "option_b_banked_small_replicated_writeback_effect_e1_confirmation_locked",
+    "phase2": "option_b_banked_small_replicated_writeback_effect_e1_complete_phase3_open",
     "dc2": "e1_score_blind_eval_d_cache_frozen_and_locked_read_once_unspent",
-    "d1": "window_closed_pending_e1_confirmation",
+    "d1": "window_closed_p35_branch_c_returns_effect_size_work_to_stage2a",
     "paper_two_packaging": "proceeds_on_banked_phase1_results"
   },
   "artifact_map": {
@@ -77,7 +77,22 @@
     "phase3_p33_retention_preflight_summary": "outputs/stage5/stage5_paper2_phase3_retention_preflight_20260811/summary.json",
     "phase3_p33_retention_preflight_handoff": "docs/PAPER2_PHASE3_P33_RETENTION_PREFLIGHT_HANDOFF_20260811.md",
     "phase3_p33_retention_preflight_handoff_drive_id": "1cgvtlAdPYqpGFc7M4Qabjzv-IeyX3LZA",
-    "phase3_p33_retention_preflight_handoff_sha256": "68ee194f6ea57f5ef3185b2a73fc595e04097f43ba9f7569f7f12bdf69163f7e"
+    "phase3_p33_retention_preflight_handoff_sha256": "68ee194f6ea57f5ef3185b2a73fc595e04097f43ba9f7569f7f12bdf69163f7e",
+    "phase3_p35_results_handoff": "docs/PAPER2_PHASE3_P35_RESULTS_HANDOFF_20260815.md",
+    "phase3_p35_analysis": "outputs/stage5/stage5_paper2_phase3_p35_20260815/analysis/analysis_summary.json",
+    "phase3_p35_trajectory_figure": "docs/figures/paper2_p35_results_20260815.svg",
+    "phase3_p35_endpoint_figure": "docs/figures/paper2_p35_endpoint_matrix_20260815.svg",
+    "phase3_p35_interruption_receipt": "docs/PAPER2_P35_ARM_R_INTERRUPTION_RECEIPT_20260815.json",
+    "phase3_p35_recovery_receipt": "docs/PAPER2_P35_ARM_R_RECOVERY_RECEIPT_20260816.json",
+    "phase3_p35_transport_manifest": "artifacts/p35_20260815/p35_final_receipts_manifest.json",
+    "phase3_p35_sidecar_v2_desk_receipt": "docs/PAPER2_SIDECAR_V2_DESK_BUILD_RECEIPT_20260815.json",
+    "phase3_p35_receipt_archive_drive_id": "1mEoo_UoQO-hUzY9IiEt3PRjaH06cKmm2",
+    "phase3_p35_manifest_drive_id": "1bLoIzUXmKKlBOxNBnJ_XEFjk4CZLHuTV",
+    "phase3_p35_analysis_drive_id": "1Dp6E9V_gIjnt0Vx76lf63qDkVgTi_Pih",
+    "phase3_p35_trajectory_png_drive_id": "1PPOOlHYBxD65cwcRUF5ZplsxjWV1BueT",
+    "phase3_p35_endpoint_png_drive_id": "1CWJamDP3T9_1iWctde2Ld3G8X5_0md5P",
+    "phase3_p35_results_handoff_drive_id": "1F4jqPll2hefdfobpXPXx9lk5iLosh6zA",
+    "phase3_p35_results_handoff_sha256": "10a5bbb4f6c86de42b04472defd5079e33192170302aab1c400015e6d6987114"
   },
   "claims": [
     {
@@ -1061,6 +1076,67 @@
         "persistence is generally harmful or useless",
         "the battery-specific differences are resolved",
         "P3.5 training is ratified or complete",
+        "CONFIRM or EVAL-E has been scored"
+      ]
+    },
+    {
+      "id": "phase3_p35_stabilized_landing",
+      "status": "supported_bounded_dev_only_branch_c",
+      "claim": "Terminal decay plus EMA reduced late row churn but did not preserve the prior P3.4 DEV effect: the two stabilized mean-reader seeds ended at plus 4 and plus 6 rows of 1,024, triggering the registered Branch-C return to Stage 2A; a one-seed probe reader did not improve the matched task result.",
+      "scope": "Reused 1,024-row DEV panel; mean-reader Arm S seeds 0 and 1; probe-reader Arm R seed 0; steps 4,001-4,400; EMA step 4,400 at pinned gate ceiling 0.02 primary; ceiling 0.08 selection-barred; CONFIRM and EVAL-E untouched",
+      "metrics": {
+        "panel_rows": 1024,
+        "frozen_base_correct": 502,
+        "arm_s_seed_0_primary_correct": 506,
+        "arm_s_seed_0_primary_net_rows": 4,
+        "arm_s_seed_1_primary_correct": 508,
+        "arm_s_seed_1_primary_net_rows": 6,
+        "arm_s_mean_primary_net_rows": 5.0,
+        "registered_branch_b_floor_rows": 8,
+        "registered_branch": "C_effect_size_to_stage2a",
+        "arm_s_seed_0_pi_dir": 0.15761448349307774,
+        "arm_s_seed_1_pi_dir": 0.1554845580404686,
+        "arm_s_seed_0_pi_dep": 0.2830188679245283,
+        "arm_s_seed_1_pi_dep": 0.27586206896551724,
+        "arm_s_seed_0_ema_ceiling_0p08_net_rows": 15,
+        "arm_s_seed_1_ema_ceiling_0p08_net_rows": 6,
+        "arm_r_seed_0_primary_net_rows": 2,
+        "arm_r_minus_arm_s_seed_0_rows": -2,
+        "arm_r_only_correct_rows": 0,
+        "arm_s_only_correct_rows": 2,
+        "arm_r_vs_s_exact_two_sided_p": 0.5,
+        "arm_r_precision_at_arm_s_matched_recall": 0.6145378015217743,
+        "arm_s_fixed_threshold_precision": 0.6132471728594507,
+        "matched_recall": 0.9267578125,
+        "arm_r_minus_s_pi_dep": 0.0,
+        "arm_r_minus_s_row_minimum_margin": -0.000030517104300908926,
+        "observed_collateral_chi_all_primary_endpoints": 0.0
+      },
+      "evidence": [
+        {
+          "path": "outputs/stage5/stage5_paper2_phase3_p35_20260815/analysis/analysis_summary.json",
+          "locator": "registered branch, per-look trajectories, endpoint sensitivity matrix, paired reader comparison, causal telemetry, margins, and sealed-partition assertions"
+        },
+        {
+          "path": "docs/PAPER2_PHASE3_P35_RESULTS_HANDOFF_20260815.md",
+          "locator": "design, results, recovery, interpretation, limitations, plain-language summary, and strategy questions"
+        },
+        {
+          "path": "docs/PAPER2_P35_ARM_R_RECOVERY_RECEIPT_20260816.json",
+          "locator": "deterministic 20-step replay, tensor-state identity, final score-bundle hashes, and remote integrity checks"
+        },
+        {
+          "path": "artifacts/p35_20260815/p35_final_receipts_manifest.json",
+          "locator": "156-file receipt package with per-file SHA-256"
+        }
+      ],
+      "do_not_claim": [
+        "P3.5 improved capability or passed confirmation",
+        "terminal decay or EMA improved the underlying model rather than endpoint stability",
+        "ceiling 0.08 is selected, generally superior, or seed-robust",
+        "the probe reader improves selection or task accuracy",
+        "zero observed collateral generalizes beyond the registered audit population and write magnitudes",
+        "the result generalizes beyond the reused DEV panel",
         "CONFIRM or EVAL-E has been scored"
       ]
     },

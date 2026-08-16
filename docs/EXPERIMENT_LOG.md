@@ -2030,3 +2030,25 @@ Colab/Drive backups for selected runs.
   steps were zero, and CONFIRM/EVAL-E remained sealed. Handoff:
   `docs/PAPER2_PHASE3_P35_PREREQUISITES_HANDOFF_20260815.md`. Receipt:
   `outputs/stage5/stage5_paper2_phase3_p35_prerequisites_20260815/summary.json`.
+- 2026-08-15 P3.5 stabilized landing and reader comparison: the registered
+  Arm S mean-reader continuations completed steps 4,001-4,400 in both seeds
+  with terminal learning-rate decay and EMA-primary scoring. At the pinned
+  `0.02` gate ceiling, endpoints were `506/1024` and `508/1024` against the
+  fixed `502/1024` base, net `+4` and `+6`; mean `+5` triggers the locked
+  Branch-C return to Stage 2A and leaves CONFIRM/EVAL-E sealed. Landing reduced
+  adjacent row churn but did not raise causal capture or continuous margins.
+  The selection-barred EMA `0.08` reads were `+15` and `+6`, establishing a
+  seed-dependent amplitude response rather than a selectable endpoint. Seed 0
+  breached the observe-only CE/KL share floors at every look; seed 1 passed all
+  share reads. The one-seed probe reader completed at `+2`, two paired rows
+  below its matched mean-reader control (`0` R-only versus `2` S-only; exact
+  two-sided `p=0.5`). At matched `92.676%` recall its precision was `61.454%`,
+  only `0.129` point above the mean reader's fixed-threshold precision;
+  `pi_dep` was identical and the margin difference was negligible. The probe
+  reader is not promoted. An interrupted Arm-R final read was recovered by an
+  exact 20-step replay: raw and EMA tensor states, schedule hashes, objective
+  weights, and generator state were identical despite checkpoint-container
+  reserialization. All three remote arms and all 16 score conditions passed
+  integrity checks. Handoff:
+  `docs/PAPER2_PHASE3_P35_RESULTS_HANDOFF_20260815.md`. Analysis:
+  `outputs/stage5/stage5_paper2_phase3_p35_20260815/analysis/analysis_summary.json`.
