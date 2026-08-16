@@ -1,0 +1,10 @@
+{
+  "confirm_scored": false,
+  "eval_e_scored": false,
+  "kind": "paper2_phase3_kp1_t1_status_v1",
+  "optimizer_steps": 0,
+  "state_cache_sha256": "e4f0dfc1334b76ca219daa5cae7bb63acae1515ee547577510b7ca0f39a9cb6b",
+  "status": "complete",
+  "summary_sha256": "63c7000456ee82193e08d34b78bc44c6eeb11b110b27928792816c39770adbd1",
+  "updated_at_unix": 1786909743.5202749
+}
