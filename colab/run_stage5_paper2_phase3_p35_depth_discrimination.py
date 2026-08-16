@@ -13,9 +13,7 @@ from pathlib import Path
 from colab.run_stage5_paper2_phase3_p34_a2 import (
     DRIVE_STAGE5, MIGRATED_SHA, P33_SHA, rsync, sha256_file, write_json,
 )
-from colab.run_stage5_paper2_phase3_p35 import (
-    I1_SHA, stage_chain, stage_common,
-)
+from colab.run_stage5_paper2_phase3_p35 import I1_SHA, stage_chain
 from colab.run_stage5_paper2_phase3_p35_amplitude_t1_preflight import (
     P34_SHA, P35_SHA,
 )
@@ -112,7 +110,6 @@ def main() -> int:
             raise RuntimeError("depth-discrimination lock is not active")
         status("staging_inputs")
         scratch = scratch_root()
-        stage_common(scratch)
         chains = {seed: stage_chain(scratch, seed=seed, expected_p34=P34_SHA[seed]) for seed in (0, 1)}
         endpoints = {}
         for seed in (0, 1):
