@@ -266,13 +266,31 @@ def plot(summary: Mapping[str, Any], output_dir: Path) -> None:
         "arm_s_seed_1": "Arm S seed 1",
         "arm_r_seed_0": "Arm R seed 0",
     }
+    markers = {
+        "arm_s_seed_0": "o",
+        "arm_s_seed_1": "s",
+        "arm_r_seed_0": "^",
+    }
+    line_styles = {
+        "arm_s_seed_0": "-",
+        "arm_s_seed_1": "-",
+        "arm_r_seed_0": "--",
+    }
     fig, axes = plt.subplots(1, 3, figsize=(13.5, 4.2), constrained_layout=True)
     for label in LABELS:
         history = summary["arms"][label]["history"]
         steps = [row["step"] for row in history]
-        axes[0].plot(steps, [row["net_rows"] for row in history], marker="o", color=colors[label], label=names[label])
-        axes[1].plot(steps, [100 * row["pi_dir"] for row in history], marker="o", color=colors[label], label=names[label])
-        axes[2].plot(steps, [row["mean_row_minimum_margin"] for row in history], marker="o", color=colors[label], label=names[label])
+        style = {
+            "marker": markers[label],
+            "linestyle": line_styles[label],
+            "color": colors[label],
+            "label": names[label],
+            "linewidth": 1.8,
+            "markersize": 5.5,
+        }
+        axes[0].plot(steps, [row["net_rows"] for row in history], **style)
+        axes[1].plot(steps, [100 * row["pi_dir"] for row in history], **style)
+        axes[2].plot(steps, [row["mean_row_minimum_margin"] for row in history], **style)
     axes[0].axhline(0, color="#777777", linewidth=0.8)
     axes[0].set(title="DEV task effect", ylabel="Net correct rows (of 1,024)", xlabel="Training step")
     axes[1].set(title="Causal direction capture", ylabel="pi_dir (%)", xlabel="Training step")
@@ -327,7 +345,12 @@ def plot(summary: Mapping[str, Any], output_dir: Path) -> None:
     )
     axes[1].set_yticks(y, [names[label] for label in LABELS])
     axes[1].set(title="Registered primary paired changes", xlabel="Rows")
-    axes[1].legend(frameon=False, fontsize=8)
+    axes[1].legend(
+        frameon=False,
+        fontsize=8,
+        loc="center left",
+        bbox_to_anchor=(1.01, 0.5),
+    )
     for axis in axes:
         axis.grid(axis="y", alpha=0.2)
         axis.tick_params(labelsize=8)

@@ -1,0 +1,67 @@
+{
+  "kind": "paper2_phase3_p35_arm_r_recovery_receipt_v1",
+  "status": "complete_and_remotely_verified",
+  "run_id": "stage5_paper2_phase3_p35_20260815",
+  "arm": "probe_reader",
+  "seed": 0,
+  "recovery_endpoint": "gpu-a100-s-kkb-usw4b1-1c1gtbjzppfkg",
+  "recovery_contract": {
+    "source_resume_step": 4380,
+    "optimizer_steps_replayed": 20,
+    "final_step": 4400,
+    "registered_looks": 4,
+    "registered_runner_changed": false,
+    "registered_data_thresholds_estimators_changed": false,
+    "accelerator_class": "A100"
+  },
+  "deterministic_recovery_check": {
+    "archive_file_hashes_match": false,
+    "archive_hash_difference_reason": "PyTorch checkpoint containers were reserialized during the deterministic replay.",
+    "raw_trainable_state_tensor_identity": true,
+    "ema_state_tensor_identity": true,
+    "schedule_hash_identity": true,
+    "objective_weight_identity": true,
+    "generator_state_identity": true,
+    "original_raw_step_4400_sha256": "2993884a2e7d9731c1cfa5fc1f00a4c8d8475a5420f2c73ddbbf0e3eac84cad8",
+    "recovered_raw_step_4400_sha256": "5373beab0cdac899acd9f542833a2ab179f0b5e7863691ca98f5b9377a531892",
+    "original_ema_step_4400_sha256": "33207f0d0fb35cc2d2d069301015708eb15e50f81445710fa8492086bec2b6f1",
+    "recovered_ema_step_4400_sha256": "fff01210466a1bafa25783043eec26677d25c525f49cd135c701a29931a9d237"
+  },
+  "receipt_reconstruction": {
+    "public_look_summaries_rebuilt": 4,
+    "source": "durable summary.json history task entries",
+    "private_row_file_sha_verified_for_each_look": true,
+    "scientific_values_changed": false
+  },
+  "final_primary": {
+    "condition": "ema_step_4400_gate_ceiling_0.02",
+    "base_correct": 502,
+    "augmented_correct": 504,
+    "net_rows": 2,
+    "fixes": 48,
+    "regressions": 46,
+    "pi_dir": 0.15761448349307774,
+    "pi_dep": 0.2830188679245283,
+    "collateral_chi": 0.0,
+    "gate_precision_fixed_threshold": 0.6137429264349232,
+    "gate_recall_fixed_threshold": 0.9267578125,
+    "mean_answer_token_margin": 7.150664818677572,
+    "mean_row_minimum_margin": 1.0892425553038407
+  },
+  "final_verification": {
+    "run_status": "complete",
+    "stop_reason": null,
+    "score_bundle_conditions": 16,
+    "registered_primary": "step_4400_ema_ceiling_0.02",
+    "run_summary_sha256": "e13bb499bab51f5e829f4b2a4539ef38a3303284e856527c7c87c6f0535ad8c5",
+    "score_bundle_sha256": "4562be24a03593e8548cfa9a14b1e3a35de5dcb6c26518e77a4d6c3acf6ca8ac",
+    "confirm_scored": false,
+    "eval_e_scored": false,
+    "remote_integrity_checks_passed": true
+  },
+  "transport": {
+    "files": 156,
+    "archive_sha256": "6b65846ddb64459539a9a239e2b33535120a62c930156943010187f5d0607b8b",
+    "manifest_sha256": "a6585bda3aec13502a30b5e860cbce9787ac139a0a3cba098d4f56ddc308a73c"
+  }
+}
