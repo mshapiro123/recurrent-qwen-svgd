@@ -71,6 +71,8 @@ def _telemetry_summary(gates: Sequence[float], ratios: Sequence[float]) -> dict[
 def resolve_evaluation_gate_ceiling(
     checkpoint_receipts: Sequence[Mapping[str, Any]],
     override: float | None,
+    *,
+    authorized_overrides: Sequence[float] = (0.02, 0.08),
 ) -> tuple[float, str]:
     """Resolve the score-only ruler independently of training controller state."""
 
@@ -82,8 +84,12 @@ def resolve_evaluation_gate_ceiling(
     if override is None:
         return float(registered), "checkpoint_controller_rung"
     value = float(override)
-    if value not in (0.02, 0.08):
-        raise ValueError("P3.4 fixed-ceiling probe authorizes only 0.02 or 0.08")
+    authorized = tuple(float(item) for item in authorized_overrides)
+    if value not in authorized:
+        raise ValueError(
+            "score-only fixed-ceiling override is not authorized: "
+            f"value={value} authorized={authorized}"
+        )
     return value, "score_only_fixed_ceiling_override"
 
 
@@ -449,6 +455,12 @@ def main() -> int:
     parser.add_argument("--mcq_batch_size", type=int, default=32)
     parser.add_argument("--generation_batch_size", type=int, default=8)
     parser.add_argument("--gate_ceiling_override", type=float)
+    parser.add_argument(
+        "--authorized_gate_ceiling_override",
+        type=float,
+        action="append",
+        help="Explicit score-only authorization; defaults to the legacy 0.02/0.08 pair.",
+    )
     args = parser.parse_args()
 
     panel = read_jsonl(args.panel)
@@ -500,7 +512,13 @@ def main() -> int:
         control_reader=args.control_reader,
     )
     evaluation_gate_ceiling, evaluation_gate_ceiling_source = resolve_evaluation_gate_ceiling(
-        checkpoint_receipts, args.gate_ceiling_override
+        checkpoint_receipts,
+        args.gate_ceiling_override,
+        authorized_overrides=(
+            args.authorized_gate_ceiling_override
+            if args.authorized_gate_ceiling_override is not None
+            else (0.02, 0.08)
+        ),
     )
     sidecar.bridge.set_gate_ceiling(evaluation_gate_ceiling)
     graph = P34TaskInferenceGraph(base_model=model, sidecar=sidecar)

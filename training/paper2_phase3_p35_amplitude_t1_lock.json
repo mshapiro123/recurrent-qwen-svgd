@@ -1,0 +1,43 @@
+{
+  "kind": "paper2_phase3_p35_amplitude_t1_lock_v1",
+  "status": "authorized_no_training",
+  "locked_before_evaluation": true,
+  "authority": {
+    "drive_id": "19xDF_IXiio3oEG3XOKBVcuPGe6oOfoRS",
+    "title": "STRATEGY_P35_CLOSURE_RESPONSE_20260816.md"
+  },
+  "sealed_partitions": {
+    "confirm_scored": false,
+    "eval_e_scored": false,
+    "remain_sealed": true
+  },
+  "amplitude_surface": {
+    "arm": "P3.5 Arm S EMA endpoint",
+    "seeds": [0, 1],
+    "ceilings": [0.02, 0.05, 0.08, 0.11],
+    "previously_seen": [0.02, 0.08],
+    "panel_rows": 1024,
+    "collateral_rows": 12288,
+    "selection_rule": "largest predeclared ceiling where both seeds have collateral_chi equal to zero and floor-half net degradation is no worse than minus two rows",
+    "checkpoint_selection_barred": true,
+    "endpoint_sha256": {
+      "seed_0": "a047e2e7b35320376a736492c79d913b8690937da785efa2af002c8f54d26ca6",
+      "seed_1": "e36cddb76407c8f853ccb43824c77cf01d15f144780726dd9aec23215467fccb"
+    }
+  },
+  "t1_extraction": {
+    "status": "manifest_preflight_authorized",
+    "population": "matched frozen P3.4 DEV rows",
+    "seeds": [0, 1],
+    "late_window_steps": [3400, 3600, 3800, 4000],
+    "cell_set": {
+      "prelude_slots": 8,
+      "recurrent_slots_per_loop": 8,
+      "loops": 4,
+      "layer_taps": [6, 12, 18, 24]
+    },
+    "checkpoint_hashes_must_be_locked_before_model_access": true
+  },
+  "optimizer_constructed": false,
+  "optimizer_steps": 0
+}
