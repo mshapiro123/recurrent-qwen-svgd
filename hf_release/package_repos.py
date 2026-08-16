@@ -10,10 +10,12 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 RELEASE = ROOT / "hf_release"
+ARCHITECTURE_FIGURE = ROOT / "docs/figures/figure1_architecture_comparison.svg"
 LFS_ATTRIBUTES = """*.safetensors filter=lfs diff=lfs merge=lfs -text
 *.json text eol=lf
 *.md text eol=lf
 *.py text eol=lf
+*.svg text eol=lf
 LICENSE text eol=lf
 """
 
@@ -64,6 +66,7 @@ def main() -> int:
         destination.mkdir(parents=True, exist_ok=True)
         shutil.copy2(ROOT / spec["card"], destination / "README.md")
         shutil.copy2(RELEASE / "LICENSE", destination / "LICENSE")
+        shutil.copy2(ARCHITECTURE_FIGURE, destination / ARCHITECTURE_FIGURE.name)
         shutil.copy2(RELEASE / "configuration_recurrent_qwen.py", destination / "configuration_recurrent_qwen.py")
         shutil.copy2(RELEASE / "modeling_recurrent_qwen.py", destination / "modeling_recurrent_qwen.py")
         (destination / ".gitattributes").write_text(LFS_ATTRIBUTES, encoding="utf-8", newline="\n")

@@ -11,7 +11,11 @@ tags:
 
 # recurrent-qwen2.5-0.5b-natural-keeper
 
-The frozen natural keeper of the full-block recurrent retrofit: the verbally trained step-2,000 checkpoint from *Retrofitting Recurrent Depth into a Pretrained Language Model* (arXiv:2608.11233), and the substrate designated for the registered companion study on guided stochastic width.
+The frozen natural keeper of the full-block recurrent retrofit: the verbally trained step-2,000 checkpoint from *Retrofitting Recurrent Depth into a Pretrained Language Model* ([arXiv:2608.11233](https://arxiv.org/abs/2608.11233); [PDF](https://arxiv.org/pdf/2608.11233)), and the substrate designated for the registered companion study on guided stochastic width.
+
+## Architecture
+
+![Architecture comparison from the paper](./figure1_architecture_comparison.svg)
 
 ## What this checkpoint is
 

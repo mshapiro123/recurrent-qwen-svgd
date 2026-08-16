@@ -12,9 +12,11 @@ tags:
 
 # recurrent-qwen2.5-0.5b-r16-adapter
 
-The parameter-efficient recurrent-depth retrofit from *Retrofitting Recurrent Depth into a Pretrained Language Model* (arXiv:2608.11233): rank-16 LoRA over all Recurrent Block projections plus the split re-entry bridge, 6,007,425 forward-active trained parameters (4,399,104 LoRA over 84 projections plus a 1,608,321-parameter bridge), with every pretrained base weight frozen. This repository contains the adapter and bridge weights only — a small download that attaches to Qwen2.5-0.5B-Instruct through the recurrent wrapper.
+The parameter-efficient recurrent-depth retrofit from *Retrofitting Recurrent Depth into a Pretrained Language Model* ([arXiv:2608.11233](https://arxiv.org/abs/2608.11233); [PDF](https://arxiv.org/pdf/2608.11233)): rank-16 LoRA over all Recurrent Block projections plus the split re-entry bridge, 6,007,425 forward-active trained parameters (4,399,104 LoRA over 84 projections plus a 1,608,321-parameter bridge), with every pretrained base weight frozen. This repository contains the adapter and bridge weights only — a small download that attaches to Qwen2.5-0.5B-Instruct through the recurrent wrapper.
 
 ## Architecture
+
+![Architecture comparison from the paper](./figure1_architecture_comparison.svg)
 
 The identical surgery as the full-block release: Prelude (layers 0-5), weight-tied Recurrent Block (layers 6-17) executed T times, Coda (layers 18-23). The LoRA deltas are weight-tied across loop iterations, so the low-rank correction applies at every depth and the adapter is part of the recurrent operator. The base weights never change, so the adapter is detachable and recovery of the base model is guaranteed by construction. Load with `trust_remote_code=True`, using the recurrent wrapper shipped in this repository.
 
