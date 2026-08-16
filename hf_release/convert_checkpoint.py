@@ -48,6 +48,34 @@ def validate_adapter_keys(state: dict[str, torch.Tensor]) -> None:
         raise RuntimeError(f"Adapter release contains non-adapter/base tensors: {invalid}")
 
 
+def split_release_state(
+    source_state: dict[str, torch.Tensor],
+    spec: dict[str, Any],
+) -> tuple[dict[str, torch.Tensor], dict[str, torch.Tensor]]:
+    """Separate explicitly receipted inactive compatibility tensors.
+
+    Historical full-block keepers persist the frozen ``bridge.proj`` concat
+    projection even though split-mode forward execution bypasses it.  The
+    manifest must name every excluded tensor and its exact aggregate count so
+    this conversion cannot silently drop an unexpected checkpoint value.
+    """
+
+    excluded_names = [str(key) for key in spec.get("excluded_checkpoint_keys", [])]
+    missing = sorted(key for key in excluded_names if key not in source_state)
+    if missing:
+        raise RuntimeError(f"Configured excluded checkpoint tensors are missing: {missing}")
+    excluded = {key: source_state[key] for key in excluded_names}
+    excluded_parameters = sum(int(tensor.numel()) for tensor in excluded.values())
+    expected_excluded = int(spec.get("expected_excluded_parameters", 0))
+    if excluded_parameters != expected_excluded:
+        raise RuntimeError(
+            "Excluded checkpoint parameter mismatch: "
+            f"expected={expected_excluded} actual={excluded_parameters}"
+        )
+    release = {key: value for key, value in source_state.items() if key not in excluded}
+    return release, excluded
+
+
 def convert(repo_name: str, checkpoint: Path, output_dir: Path) -> dict[str, Any]:
     manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
     spec = manifest["repos"][repo_name]
@@ -64,8 +92,9 @@ def convert(repo_name: str, checkpoint: Path, output_dir: Path) -> dict[str, Any
     source_state = {str(key): value.detach().contiguous().cpu() for key, value in raw_state.items()}
     if spec["checkpoint_kind"] == "lora_adapter":
         validate_adapter_keys(source_state)
-    state = {remap_key(key): value for key, value in source_state.items()}
-    if len(state) != len(source_state):
+    release_state, excluded_state = split_release_state(source_state, spec)
+    state = {remap_key(key): value for key, value in release_state.items()}
+    if len(state) != len(release_state):
         raise RuntimeError("Key remapping created a collision")
 
     tensor_count = len(state)
@@ -113,6 +142,20 @@ def convert(repo_name: str, checkpoint: Path, output_dir: Path) -> dict[str, Any
         "source_checkpoint_sha256": source_sha,
         "source_phase": payload.get("phase"),
         "source_step": payload.get("step"),
+        "source_tensor_count": len(source_state),
+        "source_total_parameters": sum(int(tensor.numel()) for tensor in source_state.values()),
+        "excluded_checkpoint_tensors": {
+            key: {"shape": list(tensor.shape), "parameters": int(tensor.numel())}
+            for key, tensor in sorted(excluded_state.items())
+        },
+        "excluded_checkpoint_parameters": sum(
+            int(tensor.numel()) for tensor in excluded_state.values()
+        ),
+        "exclusion_reason": (
+            "Receipt-bound legacy concat projection bypassed by split-mode forward execution"
+            if excluded_state
+            else None
+        ),
         "safetensors_file": safetensors_path.name,
         "safetensors_sha256": sha256_file(safetensors_path),
         "tensor_count": tensor_count,
@@ -120,7 +163,10 @@ def convert(repo_name: str, checkpoint: Path, output_dir: Path) -> dict[str, Any
         "lora_parameters": lora_parameters,
         "bridge_parameters": bridge_parameters,
         "dtype_tensor_counts": dict(sorted(dtype_counts.items())),
-        "key_transform": "base_model.* -> backbone.*; all other keys unchanged",
+        "key_transform": (
+            "exclude manifest-listed inactive compatibility tensors; "
+            "base_model.* -> backbone.*; all other release keys unchanged"
+        ),
     }
     receipt_path = output_dir / "conversion_receipt.json"
     receipt_path.write_text(json.dumps(receipt, indent=2) + "\n", encoding="utf-8")

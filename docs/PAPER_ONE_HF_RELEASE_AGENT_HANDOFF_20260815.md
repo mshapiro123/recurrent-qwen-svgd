@@ -118,6 +118,7 @@ copy with it.
 | `PREFLIGHT_RED` | A keeper is not visible in Drive | Reauthorize Drive or fix the backup path. Do not substitute a different checkpoint. |
 | `Source checkpoint hash mismatch` | The Drive file is not the receipt-bound keeper | **Stop.** Report the expected and actual SHA. Never edit the manifest to match the file. |
 | `Parameter mismatch` / `LoRA parameter mismatch` | The checkpoint is not the arm the paper describes | Stop and report. |
+| `Configured excluded checkpoint tensors are missing` / `Excluded checkpoint parameter mismatch` | The historical compatibility-tensor receipt no longer matches the keeper | Stop and report. Do not change the manifest to fit the file. |
 | `Adapter release contains non-adapter/base tensors` | The adapter checkpoint carries base weights | Stop. Shipping it would leak full base weights into a repo documented as adapter-only. |
 | `Checkpoint has no nonempty trainable_state_dict` | Wrong checkpoint format | Stop and report. |
 | `Refusing release: <id> is not private` | A repo already exists and is public | Stop and report. Do not force. |

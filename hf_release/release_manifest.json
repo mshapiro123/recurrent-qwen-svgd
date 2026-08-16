@@ -8,6 +8,11 @@
       "source_checkpoint": "outputs/stage5/stage5_n24_support12_rung_20260707_140139/train/chain_continuation/unfrozen_recurrent_step_6000.pt",
       "drive_checkpoint": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_n24_support12_rung_20260707_140139/anneal_to_outcome_final/unfrozen_recurrent_step_6000.pt",
       "source_checkpoint_sha256": "898a259db2ab344ece4545e2910b051840e8408dbe4927f799e7cdb3cdd8c7dc",
+      "excluded_checkpoint_keys": [
+        "bridge.proj.weight",
+        "bridge.proj.bias"
+      ],
+      "expected_excluded_parameters": 1606528,
       "expected_delta_parameters": 180556929,
       "card": "docs/hf_cards/README_full_block.md"
     },
@@ -16,6 +21,11 @@
       "source_checkpoint": "outputs/stage5/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812/train/verbal_rung_zero/unfrozen_recurrent_step_2000.pt",
       "drive_checkpoint": "/content/drive/MyDrive/recurrent-qwen-svgd-backups/natural_surface_backup_20260709_180835/checkpoints/stage5_natural_surface_transfer_rung0_fixed_prompt_20260709_133812/unfrozen_recurrent_step_2000.pt",
       "source_checkpoint_sha256": "0f657b653078ba403cbc666410e7598ca20c836d5bd6e19a0e85a186a82c5d2f",
+      "excluded_checkpoint_keys": [
+        "bridge.proj.weight",
+        "bridge.proj.bias"
+      ],
+      "expected_excluded_parameters": 1606528,
       "expected_delta_parameters": 180556929,
       "card": "docs/hf_cards/README_natural_keeper.md"
     },
@@ -24,6 +34,8 @@
       "source_checkpoint": "outputs/stage5/stage5_adapter_budget_arm_e_20260718/train/chain_depth_le8_dose/unfrozen_recurrent_step_2000.pt",
       "drive_checkpoint": "/content/drive/MyDrive/recurrent-qwen-svgd-checkpoints/stage5_adapter_budget_arm_e_20260718/chain_depth_le8_dose/unfrozen_recurrent_step_2000.pt",
       "source_checkpoint_sha256": "bffa8c4277ce82ae9f662db3243a21a50a08c4c041820c9d7506d8f250e82839",
+      "excluded_checkpoint_keys": [],
+      "expected_excluded_parameters": 0,
       "expected_delta_parameters": 6007425,
       "expected_lora_parameters": 4399104,
       "expected_bridge_parameters": 1608321,
