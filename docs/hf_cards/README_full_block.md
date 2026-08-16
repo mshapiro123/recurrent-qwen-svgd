@@ -15,7 +15,7 @@ The full-block recurrent-depth retrofit of Qwen2.5-0.5B-Instruct: the deep-chara
 
 ## Architecture
 
-![Architecture comparison from the paper](./figure1_architecture_comparison.svg)
+![Architecture comparison from the paper](./figure1_architecture_comparison.png)
 
 The 24-layer base model is split into a Prelude (layers 0-5), a weight-tied Recurrent Block (layers 6-17), and a Coda (layers 18-23). The block executes T times per pass, and a trained split re-entry bridge combines the carried state with the re-injected Prelude output under an identity-biased gate on loops 2 through T. At T = 1 the recurrent additions are bypassed and the model reproduces the base computation exactly. Trained parameters: the 12-layer block plus the bridge, 180,556,929 forward-active. The recurrent wrapper is custom architecture code: load with `trust_remote_code=True`, using the modeling code shipped in this repository.
 

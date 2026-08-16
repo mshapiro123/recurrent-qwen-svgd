@@ -15,7 +15,7 @@ The frozen natural keeper of the full-block recurrent retrofit: the verbally tra
 
 ## Architecture
 
-![Architecture comparison from the paper](./figure1_architecture_comparison.svg)
+![Architecture comparison from the paper](./figure1_architecture_comparison.png)
 
 ## What this checkpoint is
 

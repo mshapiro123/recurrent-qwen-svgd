@@ -16,7 +16,7 @@ The parameter-efficient recurrent-depth retrofit from *Retrofitting Recurrent De
 
 ## Architecture
 
-![Architecture comparison from the paper](./figure1_architecture_comparison.svg)
+![Architecture comparison from the paper](./figure1_architecture_comparison.png)
 
 The identical surgery as the full-block release: Prelude (layers 0-5), weight-tied Recurrent Block (layers 6-17) executed T times, Coda (layers 18-23). The LoRA deltas are weight-tied across loop iterations, so the low-rank correction applies at every depth and the adapter is part of the recurrent operator. The base weights never change, so the adapter is detachable and recovery of the base model is guaranteed by construction. Load with `trust_remote_code=True`, using the recurrent wrapper shipped in this repository.
 
