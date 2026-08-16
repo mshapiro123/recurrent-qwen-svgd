@@ -114,7 +114,7 @@ def test_fixed_ceiling_override_is_score_only_and_narrow() -> None:
     try:
         resolve_evaluation_gate_ceiling(receipts, 0.20)
     except ValueError as error:
-        assert "only 0.02 or 0.08" in str(error)
+        assert "not authorized" in str(error)
     else:
         raise AssertionError("unauthorized fixed ceiling was accepted")
 

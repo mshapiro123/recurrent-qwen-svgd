@@ -3914,6 +3914,18 @@ def test_phase3_p35_target_is_wired_and_ratified() -> None:
     assert lock["execution_authority"]["drive_id"] == "15ylK6jk2vXDTX0TRk5XJ949D6xzIAA-X"
 
 
+def test_p35_amplitude_t1_target_is_wired_and_guarded() -> None:
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    cell = (ROOT / "colab/STAGE5_PAPER2_PHASE3_P35_AMPLITUDE_T1_CELL.py").read_text(encoding="utf-8")
+    runner = (ROOT / "colab/run_stage5_paper2_phase3_p35_amplitude_t1_preflight.py").read_text(encoding="utf-8")
+    assert "paper2_phase3_p35_amplitude_t1" in bootstrap
+    assert "paper2_phase3_p35_amplitude_t1_v1" in cell
+    assert "no optimizer no training" in cell
+    assert "CONFIRM and EVAL-E remain sealed" in cell
+    assert "t1_extraction_manifest_preflight" in runner
+    assert "eval.eval_paper2_phase3_p35_amplitude_audit" in runner
+
+
 def test_gradient_path_audit_target_is_wired_and_guarded() -> None:
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
     bootstrap_md = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")

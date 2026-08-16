@@ -4396,6 +4396,18 @@ TARGETS = {
             "P35_SEED": "0",
         },
     },
+    "paper2_phase3_p35_amplitude_t1": {
+        "path": "colab/STAGE5_PAPER2_PHASE3_P35_AMPLITUDE_T1_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_PHASE3_P35_AMPLITUDE_T1_VERSION",
+            "paper2_phase3_p35_amplitude_t1_v1",
+            "four-ceiling two-seed Arm-S EMA DEV surface no optimizer no training",
+            "T1 checkpoint and row hashes locked before any state extraction model access",
+            "CONFIRM and EVAL-E remain sealed and checkpoint selection is barred",
+            "colab/run_stage5_paper2_phase3_p35_amplitude_t1_preflight.py",
+        ],
+        "env": {},
+    },
     "gradient_path_audit": {
         "path": "colab/STAGE5_GRADIENT_PATH_AUDIT_CELL.py",
         "markers": [
