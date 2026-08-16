@@ -82,11 +82,13 @@ def t1_manifest(receipts: Path, panel: Path) -> dict[str, object]:
     row_ids = [str(row["item_id"]) for row in rows]
     row_sha = hashlib.sha256(("\n".join(row_ids) + "\n").encode()).hexdigest()
     checkpoints = []
+    missing = []
     for seed in (0, 1):
         for step in (3400, 3600, 3800, 4000):
             path = DRIVE_STAGE5 / P34_ID / f"private/main_seed_{seed}/checkpoint_step_{step}.pt"
             if not path.is_file():
-                raise FileNotFoundError(path)
+                missing.append({"seed": seed, "step": step, "path": str(path)})
+                continue
             checkpoints.append({
                 "seed": seed,
                 "step": step,
@@ -96,12 +98,19 @@ def t1_manifest(receipts: Path, panel: Path) -> dict[str, object]:
             })
     payload = {
         "kind": "paper2_sidecar_v2_t1_extraction_manifest_preflight_v1",
-        "status": "complete_hashes_ready_for_lock",
+        "status": (
+            "complete_hashes_ready_for_lock"
+            if not missing
+            else "blocked_missing_registered_late_window_checkpoints"
+        ),
         "mode": "score_blind_no_model_no_optimizer",
         "rows": len(rows),
         "row_ids_sha256": row_sha,
         "panel_file_sha256": sha256_file(panel),
         "checkpoints": checkpoints,
+        "missing_checkpoints": missing,
+        "substitution_allowed": False,
+        "p35_late_window_is_different_lineage_and_not_substituted": True,
         "cell_schema": {
             "prelude_slots": 8,
             "recurrent_slots_per_loop": 8,
@@ -140,7 +149,11 @@ def main() -> int:
         lock = json.loads(LOCK_PATH.read_text(encoding="utf-8"))
         status("t1_hash_preflight")
         manifest = t1_manifest(receipts, panel)
-        status("staging_amplitude_inputs", t1_manifest_sha256=sha256_file(receipts / "t1_extraction_manifest_preflight.json"))
+        status(
+            "staging_amplitude_inputs",
+            t1_manifest_status=manifest["status"],
+            t1_manifest_sha256=sha256_file(receipts / "t1_extraction_manifest_preflight.json"),
+        )
         scratch = scratch_root()
         common = stage_common(scratch)
         chains = {seed: stage_chain(scratch, seed=seed, expected_p34=P34_SHA[seed]) for seed in (0, 1)}
