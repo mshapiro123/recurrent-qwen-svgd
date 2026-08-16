@@ -11,6 +11,7 @@ from google.colab import drive
 
 
 STAGE5_PAPER2_PHASE3_P35_PREREQUISITES_VERSION = "paper2_phase3_p35_prerequisites_v1"
+# Bootstrap marker: colab/run_stage5_paper2_phase3_p35_prerequisites.py
 # Safety marker: exact BF16 serving-reader cache repair all 4096 rows no drops
 # Safety marker: DEV-only fresh-versus-carried scratch probe no optimizer no training
 # Safety marker: CONFIRM and EVAL-E remain sealed and P3.5 training stays disabled

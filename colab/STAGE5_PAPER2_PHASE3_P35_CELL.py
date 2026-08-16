@@ -11,6 +11,7 @@ from google.colab import drive
 
 
 STAGE5_PAPER2_PHASE3_P35_VERSION = "paper2_phase3_p35_campaign_v1"
+# Bootstrap marker: colab/run_stage5_paper2_phase3_p35.py
 # Safety marker: all three exact preflights pass before any P3.5 optimizer exists
 # Safety marker: EMA primary pinned 0.02 ceiling repaired v2 causal cache only
 # Safety marker: no persistence no CONFIRM no EVAL-E contact

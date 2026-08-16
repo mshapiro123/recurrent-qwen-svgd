@@ -3960,6 +3960,42 @@ def test_p35_kp1_t1_target_is_wired_and_guarded() -> None:
     assert "optimizer_constructed" in evaluator
 
 
+def test_kp1r_cached_target_is_wired_and_guarded() -> None:
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    cell = (ROOT / "colab/STAGE5_PAPER2_PHASE3_KP1R_CACHED_CELL.py").read_text(encoding="utf-8")
+    runner = (ROOT / "colab/run_stage5_paper2_phase3_kp1r_cached.py").read_text(encoding="utf-8")
+    evaluator = (ROOT / "eval/eval_paper2_phase3_kp1r_cached.py").read_text(encoding="utf-8")
+    assert "paper2_phase3_kp1r_cached" in bootstrap
+    assert "paper2_phase3_kp1r_cached_v1" in cell
+    assert "target entropy audit before scoring" in cell
+    assert "CPU cached states only no optimizer no training" in cell
+    assert "CONFIRM and EVAL-E remain sealed" in cell
+    assert "t1_state_cache_sha256" in runner
+    assert "kp1_gap_rows_sha256" in runner
+    assert "target_entropy_audit" in evaluator
+    assert "label_permutation_control" in evaluator
+    assert "row_predictions" in evaluator
+
+
+def test_kp1r_t1_teacher_target_is_wired_and_guarded() -> None:
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    cell = (ROOT / "colab/STAGE5_PAPER2_PHASE3_KP1R_T1_TEACHER_CELL.py").read_text(encoding="utf-8")
+    runner = (ROOT / "colab/run_stage5_paper2_phase3_kp1r_t1_teacher.py").read_text(encoding="utf-8")
+    evaluator = (ROOT / "eval/eval_paper2_phase3_kp1r_t1_teacher.py").read_text(encoding="utf-8")
+    assert "paper2_phase3_kp1r_t1_teacher" in bootstrap
+    assert "paper2_phase3_kp1r_t1_teacher_v1" in cell
+    assert "target entropy audit completes before either model loads" in cell
+    assert "sequential 0.5B then pinned 14B score-only no optimizer no training" in cell
+    assert "CONFIRM and EVAL-E remain sealed" in cell
+    assert "memory_mib < 39_000" in cell
+    assert "stage_chain_with_verified_p34" in runner
+    assert "target_entropy_audited_before_model_load" in evaluator
+    assert "linear_cka_from_grams" in evaluator
+    assert "principal_angle_metrics_from_bases" in evaluator
+    assert "fit_orthogonal_procrustes" in evaluator
+    assert "raw_cross_instance_cosine_primary" in evaluator
+
+
 def test_gradient_path_audit_target_is_wired_and_guarded() -> None:
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
     bootstrap_md = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")

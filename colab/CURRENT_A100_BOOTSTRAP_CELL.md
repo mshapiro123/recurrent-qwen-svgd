@@ -4432,6 +4432,31 @@ TARGETS = {
         ],
         "env": {},
     },
+    "paper2_phase3_kp1r_cached": {
+        "path": "colab/STAGE5_PAPER2_PHASE3_KP1R_CACHED_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_PHASE3_KP1R_CACHED_VERSION",
+            "paper2_phase3_kp1r_cached_v1",
+            "329-row repaired answer-bearing target entropy audit before scoring",
+            "CPU cached states only no optimizer no training",
+            "CONFIRM and EVAL-E remain sealed",
+            "colab/run_stage5_paper2_phase3_kp1r_cached.py",
+        ],
+        "env": {},
+    },
+    "paper2_phase3_kp1r_t1_teacher": {
+        "path": "colab/STAGE5_PAPER2_PHASE3_KP1R_T1_TEACHER_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_PHASE3_KP1R_T1_TEACHER_VERSION",
+            "paper2_phase3_kp1r_t1_teacher_v1",
+            "target entropy audit completes before either model loads",
+            "sequential 0.5B then pinned 14B score-only no optimizer no training",
+            "CKA principal angles and split-fitted Procrustes no raw cosine primary",
+            "CONFIRM and EVAL-E remain sealed",
+            "colab/run_stage5_paper2_phase3_kp1r_t1_teacher.py",
+        ],
+        "env": {},
+    },
     "gradient_path_audit": {
         "path": "colab/STAGE5_GRADIENT_PATH_AUDIT_CELL.py",
         "markers": [

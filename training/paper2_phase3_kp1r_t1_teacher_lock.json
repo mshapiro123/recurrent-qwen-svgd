@@ -1,0 +1,74 @@
+{
+  "kind": "paper2_phase3_kp1r_t1_teacher_lock_v1",
+  "status": "locked_score_only",
+  "locked_before_scoring": true,
+  "authority": {
+    "drive_id": "1yh0Y6x_2IV6AXCYKgOh0AM5R5-GylHFF",
+    "title": "STRATEGY_KP1_T1_RESPONSE_20260816.md",
+    "bytes": 11039,
+    "sha256": "2d72b9c59be3f091bcbb9592c7292f9760d598870905bd3b43ae73f141ba6f4f"
+  },
+  "sealed_partitions": {
+    "allowed": ["dev"],
+    "confirm_scored": false,
+    "eval_e_scored": false,
+    "remain_sealed": true
+  },
+  "source_files": {
+    "panel_sha256": "c0e15a890b598544059ac337cc475123f97c05e3c1626febcdee1c6d8fe02615",
+    "kp1_gap_rows_sha256": "0bd9d64a44cc1192419efcb0428e40e0a7fffcc4e2cac9f21295caa2402e2ccd",
+    "t1_state_cache_sha256": "e4f0dfc1334b76ca219daa5cae7bb63acae1515ee547577510b7ca0f39a9cb6b"
+  },
+  "model": {
+    "id": "Qwen/Qwen2.5-0.5B-Instruct",
+    "revision": "7ae557604adf67be50417f59c2c2f167def9a775",
+    "dtype": "bfloat16"
+  },
+  "kp1r": {
+    "population_rows": 329,
+    "population_and_split_unchanged_from_kp1": true,
+    "primary_batteries": ["arc_challenge", "arc_easy", "gsm8k", "mmlu", "tier1"],
+    "mbpp_primary": false,
+    "mbpp_role": "exploratory_teacher_forced_sequence_log_likelihood_only",
+    "cheap_target": "first answer-bearing token from the stripped canonical answer",
+    "strong_target": "teacher-forced normalized final-answer token sequence",
+    "primary_surfaces": [
+      "substrate_layer_24",
+      "p35_seed_0_loop_4_recurrent_cell_set"
+    ],
+    "secondary_surfaces": "all other registered layer, checkpoint, and loop surfaces with Benjamini-Hochberg FDR",
+    "controls": [
+      "train-derived battery-frequency control",
+      "10000 within-battery evaluation-label permutations"
+    ],
+    "target_entropy_audit_before_scoring": true,
+    "target_degeneracy_stop": "non-MCQ primary battery with at least 10 rows has fewer than two targets or dominant share at least 0.90",
+    "bootstrap_draws": 10000,
+    "permutation_draws": 10000,
+    "decision_statistic": "probe minus battery-frequency accuracy margin",
+    "present_but_unread_gate": "pooled and battery-macro margins are positive and both 95% bootstrap intervals exclude zero",
+    "row_predictions_retained": true
+  },
+  "teacher_fingerprints": {
+    "population": "same 1024-row DEV panel and frozen 44-cell student schema",
+    "teacher": {
+      "id": "Qwen/Qwen2.5-14B-Instruct",
+      "revision": "cf98f3b3bbb457ad9e2bb7baf9a0125b6b88caa8",
+      "layer_taps": [12, 24, 36, 48]
+    },
+    "split_seed": 20260819,
+    "alignment_fit_fraction": 0.60,
+    "retrieval_target": "matching item_id among the disjoint alignment-eval rows",
+    "primary_metrics": ["linear CKA", "principal angles in sample space"],
+    "subspace_rank": 128,
+    "transport": "teacher PCA to 128 dimensions then frozen orthogonal Procrustes, both fit on alignment-fit rows only",
+    "transport_metrics": ["relative transfer error", "top1 retrieval", "top10 retrieval", "mean reciprocal rank"],
+    "raw_cross_instance_cosine_primary": false
+  },
+  "t3a": {
+    "status": "authorized_independent_desk_track",
+    "note": "implementation remains independent and is not a prerequisite for KP-1R or teacher fingerprints"
+  },
+  "optimizer_constructed": false,
+  "optimizer_steps": 0
+}
