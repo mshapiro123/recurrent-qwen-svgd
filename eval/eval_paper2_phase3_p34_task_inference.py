@@ -67,10 +67,20 @@ class P34TaskInferenceGraph:
         base_model: Any,
         sidecar: Phase3StudentModules,
         cross_token_persistence: bool = False,
+        flow_loops: int = P34_FLOW_LOOPS,
+        allow_clamped_extension: bool = False,
     ) -> None:
         self.base_model = base_model
         self.sidecar = sidecar
         self.cross_token_persistence = bool(cross_token_persistence)
+        self.flow_loops = int(flow_loops)
+        self.allow_clamped_extension = bool(allow_clamped_extension)
+        if self.flow_loops < 1:
+            raise ValueError("task inference requires at least one flow loop")
+        if self.flow_loops > P34_FLOW_LOOPS and not self.allow_clamped_extension:
+            raise ValueError("K above four requires the disclosed clamped-extension path")
+        if self.flow_loops > 6:
+            raise ValueError("the authorized exploratory extension is limited to K <= 6")
         self.contract = TaskInferenceContract(
             cross_token_state_persistence=self.cross_token_persistence
         )
@@ -103,16 +113,30 @@ class P34TaskInferenceGraph:
         )
         if scratch0.shape != expected_scratch:
             raise RuntimeError("persistent scratch shape changed")
-        flow = self.sidecar.flow(
-            scratch0,
-            hidden.float().mean(dim=1),
-            steps=P34_FLOW_LOOPS,
-        )
+        context = hidden.float().mean(dim=1)
+        if self.flow_loops <= self.sidecar.flow.max_steps:
+            flow = self.sidecar.flow(scratch0, context, steps=self.flow_loops)
+            flow_state = flow.state
+            flow_updates = flow.updates
+        else:
+            # Exploratory only: repeat the fourth learned step embedding for K=5-6.
+            # This does not expand or alter model parameters.
+            current = scratch0
+            updates = []
+            for index in range(self.flow_loops):
+                current, update, _magnitude, _ratio = self.sidecar.flow.step(
+                    current,
+                    context,
+                    min(index, self.sidecar.flow.max_steps - 1),
+                )
+                updates.append(update)
+            flow_state = current
+            flow_updates = tuple(updates)
         innovation_norm = (
-            flow.updates[-1].float().square().mean(dim=-1).sqrt().mean(dim=1)
+            flow_updates[-1].float().square().mean(dim=-1).sqrt().mean(dim=1)
         )
         control = self.sidecar.control(
-            scratch=flow.state,
+            scratch=flow_state,
             previous=None,
             innovation_norm=innovation_norm,
             student_entropy=hidden.new_zeros((hidden.shape[0],)),
@@ -128,9 +152,9 @@ class P34TaskInferenceGraph:
         bridge = self.sidecar.bridge(
             h0=compact_hidden,
             previous=compact_hidden,
-            scratch=flow.state,
+            scratch=flow_state,
             control_state=control,
-            loop_index=P34_FLOW_LOOPS - 1,
+            loop_index=min(self.flow_loops - 1, self.sidecar.bridge.max_steps - 1),
             active=True,
             write_position_mask=compact_write_mask,
         )
@@ -144,7 +168,7 @@ class P34TaskInferenceGraph:
             writeback_ratio=bridge.realized_writeback_ratio[:, 1],
             position_gate=bridge.position_gate[:, 1, 0],
             current_positions=positions,
-            scratch_state=flow.state,
+            scratch_state=flow_state,
             answer_token_margin=top2[:, 0] - top2[:, 1],
         )
 
@@ -154,10 +178,10 @@ class P34TaskInferenceGraph:
         *,
         input_ids: torch.Tensor,
         attention_mask: torch.Tensor,
-        flow_loops: int = P34_FLOW_LOOPS,
+        flow_loops: int | None = None,
     ) -> P34NextTokenOutput:
-        if flow_loops != P34_FLOW_LOOPS:
-            raise RuntimeError("P3.4 battery scoring requires K = 4")
+        if flow_loops is not None and int(flow_loops) != self.flow_loops:
+            raise RuntimeError("per-call K must match the configured task-inference graph")
         if input_ids.shape != attention_mask.shape:
             raise ValueError("input ids and attention mask must share [batch, sequence]")
         output = self.base_model(
@@ -316,7 +340,8 @@ def task_graph_preflight(
         "kind": "paper2_phase3_p34_task_inference_preflight_v1",
         "contract": graph.contract.__dict__,
         "rows": int(input_ids.shape[0]),
-        "flow_loops": P34_FLOW_LOOPS,
+        "flow_loops": graph.flow_loops,
+        "clamped_extension": graph.allow_clamped_extension,
         "draft_head_scoring": False,
         "current_positions": positions.detach().cpu().tolist(),
         "selected_write_cells": int(write_mask.sum()),
@@ -328,7 +353,10 @@ def task_graph_preflight(
             "one_write_cell_per_nonzero_prefix": int(write_mask.sum())
             == int((positions > 0).sum()),
             "position_zero_closed": not bool(write_mask[:, 0].any()),
-            "k_equals_four": P34_FLOW_LOOPS == 4,
+            "registered_or_disclosed_k": (
+                graph.flow_loops <= P34_FLOW_LOOPS
+                or graph.allow_clamped_extension
+            ),
             "draft_inactive": True,
             "cross_token_persistence_absent": True,
         },

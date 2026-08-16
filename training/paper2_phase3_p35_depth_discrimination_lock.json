@@ -1,0 +1,36 @@
+{
+  "kind": "paper2_phase3_p35_depth_discrimination_lock_v1",
+  "status": "locked_before_scoring",
+  "authority": {
+    "drive_id": "1JG6J9zj_zBY_v7v0rPRecYg5q_NgUqHq",
+    "sha256_prefix": "b907e3d5",
+    "sha256_suffix": "a799",
+    "bytes": 6014,
+    "ratified_by": "Mark",
+    "ratified_date": "2026-08-16"
+  },
+  "endpoint": {
+    "lineage": "P3.5 Arm S EMA step 4400",
+    "seed_0_sha256": "a047e2e7b35320376a736492c79d913b8690937da785efa2af002c8f54d26ca6",
+    "seed_1_sha256": "e36cddb76407c8f853ccb43824c77cf01d15f144780726dd9aec23215467fccb"
+  },
+  "evaluation": {
+    "partition": "DEV",
+    "rows": 1024,
+    "gate_ceiling": 0.02,
+    "primary_k": [1, 2, 3, 4],
+    "exploratory_k": [5, 6],
+    "exploratory_clamp": "reuse learned step-4 flow embedding and bridge gate/rho parameters",
+    "checkpoint_selection_barred": true,
+    "confirm_scored": false,
+    "eval_e_scored": false
+  },
+  "d1": {
+    "archive_first": true,
+    "fold_into_k_plus_if_missing": true,
+    "future_prediction_kl_where_available": true
+  },
+  "optimizer_constructed": false,
+  "optimizer_steps": 0,
+  "training_authorized": false
+}
