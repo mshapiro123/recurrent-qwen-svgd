@@ -3939,7 +3939,7 @@ def test_p35_depth_discrimination_target_is_wired_and_guarded() -> None:
     assert "--allow_clamped_extension" in runner
     assert "transporting_canonical_k4" in runner
     assert '"--mcq_batch_size", "32"' in runner
-    assert '"--generation_batch_size", "8"' in runner
+    assert '"--generation_batch_size", "32"' in runner
     assert "stage_common" not in runner
 
 
