@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 
 import torch
+
+import colab.run_stage5_paper2_phase3_kp1_t1 as runner
 
 from training.paper2_phase3_kp1_t1 import (
     T1_CELL_DIM,
@@ -91,3 +94,42 @@ def test_lock_preserves_authority_seals_and_four_endpoint_hashes() -> None:
     assert lock["t1"]["core_schema"]["cells"] == 44
     assert lock["optimizer_constructed"] is False
     assert lock["optimizer_steps"] == 0
+
+
+def test_stage_chain_can_reuse_an_independently_verified_p34(
+    tmp_path: Path, monkeypatch
+) -> None:
+    payloads = {
+        "migrated": b"migrated",
+        "p33": b"p33",
+        "i1": b"i1",
+        "p34": b"p34",
+    }
+    digest = {name: hashlib.sha256(value).hexdigest() for name, value in payloads.items()}
+    monkeypatch.setattr(runner, "MIGRATED_SHA", {1: digest["migrated"]})
+    monkeypatch.setattr(runner, "P33_SHA", {1: digest["p33"]})
+    monkeypatch.setattr(runner, "I1_SHA", {1: digest["i1"]})
+
+    copied_sources: list[str] = []
+
+    def fake_rsync(source: Path, destination: Path) -> None:
+        copied_sources.append(str(source))
+        if "migrated" in destination.name:
+            destination.write_bytes(payloads["migrated"])
+        elif "p33" in destination.name:
+            destination.write_bytes(payloads["p33"])
+        elif "i1" in destination.name:
+            destination.write_bytes(payloads["i1"])
+        else:
+            raise AssertionError(f"unexpected source: {source}")
+
+    monkeypatch.setattr(runner, "rsync", fake_rsync)
+    p34 = tmp_path / "seed_1_p34_step_4000.pt"
+    p34.write_bytes(payloads["p34"])
+    paths = runner.stage_chain_with_verified_p34(
+        tmp_path, seed=1, expected_p34=digest["p34"]
+    )
+
+    assert paths["p34"] == p34
+    assert len(copied_sources) == 3
+    assert all("p34" not in source for source in copied_sources)

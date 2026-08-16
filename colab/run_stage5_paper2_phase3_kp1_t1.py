@@ -13,8 +13,11 @@ from pathlib import Path
 
 from colab.run_stage5_paper2_phase3_p34_a2 import (
     DRIVE_STAGE5,
+    I1_ID,
     MIGRATED_SHA,
+    MIGRATION_ID,
     OLD_ID,
+    P33_ID,
     P33_SHA,
     rsync,
     sha256_file,
@@ -51,6 +54,54 @@ EXPECTED_GAP_BY_BATTERY = {
     "mmlu": 96,
     "tier1": 3,
 }
+
+
+def stage_chain_with_verified_p34(
+    scratch: Path, *, seed: int, expected_p34: str
+) -> dict[str, Path]:
+    """Reuse an independently staged P3.4 endpoint after exact SHA verification."""
+    p34 = scratch / f"seed_{seed}_p34_step_4000.pt"
+    if not p34.is_file():
+        return stage_chain(scratch, seed=seed, expected_p34=expected_p34)
+    observed_p34 = sha256_file(p34)
+    if observed_p34 != expected_p34:
+        raise RuntimeError(
+            "KP-1/T1 pre-staged P3.4 SHA mismatch: "
+            f"seed={seed} expected={expected_p34} observed={observed_p34}"
+        )
+
+    paths = {
+        "migrated": scratch / f"seed_{seed}_migrated.pt",
+        "p33": scratch / f"seed_{seed}_p33_step_1000.pt",
+        "i1": scratch / f"seed_{seed}_i1.pt",
+        "p34": p34,
+    }
+    rsync(
+        DRIVE_STAGE5
+        / MIGRATION_ID
+        / f"private/migrated_checkpoints/seed_{seed}_full_a2_phase3_migrated.pt",
+        paths["migrated"],
+    )
+    rsync(
+        DRIVE_STAGE5 / P33_ID / f"private/seed_{seed}/checkpoint_step_1000.pt",
+        paths["p33"],
+    )
+    rsync(DRIVE_STAGE5 / I1_ID / f"private/seed_{seed}/resume.pt", paths["i1"])
+    expected = {
+        "migrated": MIGRATED_SHA[seed],
+        "p33": P33_SHA[seed],
+        "i1": I1_SHA[seed],
+        "p34": expected_p34,
+    }
+    for name, path in paths.items():
+        observed = sha256_file(path)
+        if observed != expected[name]:
+            raise RuntimeError(
+                "KP-1/T1 staged chain SHA mismatch: "
+                f"seed={seed} name={name} expected={expected[name]} observed={observed}"
+            )
+    print(f"kp1_t1_reused_verified_p34 seed={seed} sha256={observed_p34}", flush=True)
+    return paths
 
 
 def run(command: list[str]) -> None:
@@ -168,7 +219,9 @@ def stage_inputs(*, scratch: Path, references: Path, private: Path) -> Path:
     )
     checkpoints: dict[str, object] = {}
     for seed in (0, 1):
-        chain = stage_chain(scratch / f"chain_seed_{seed}", seed=seed, expected_p34=P34_SHA[seed])
+        chain = stage_chain_with_verified_p34(
+            scratch / f"chain_seed_{seed}", seed=seed, expected_p34=P34_SHA[seed]
+        )
         p35 = scratch / f"seed_{seed}_p35_ema_step_4400.pt"
         rsync(DRIVE_STAGE5 / P35_ID / f"private/arm_s_seed_{seed}/ema_step_4400.pt", p35)
         if sha256_file(p35) != P35_SHA[seed]:
