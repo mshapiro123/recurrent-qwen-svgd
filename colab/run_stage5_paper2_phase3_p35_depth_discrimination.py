@@ -77,6 +77,10 @@ def stage_k4(*, seed: int, rows: Path, summary: Path) -> None:
         "flow_loops": 4,
         "clamped_extension": False,
         "depth_scope": "registered_trained_support",
+        "depth_parameter_indices": {
+            "flow_step_embedding": [0, 1, 2, 3],
+            "bridge_gate_and_rho": 3,
+        },
         "transported_from_canonical_p35_score_bundle": True,
         "source_rows_sha256": sha256_file(source_rows),
         "source_summary_sha256": sha256_file(source_summary),

@@ -42,6 +42,12 @@ def cell(input_dir: Path, seed: int, k: int) -> tuple[list[dict[str, Any]], dict
     expected_clamp = k in EXPLORATORY_K
     if bool(summary["clamped_extension"]) != expected_clamp:
         raise RuntimeError(f"{stem} clamp classification changed")
+    expected_indices = {
+        "flow_step_embedding": [min(index, 3) for index in range(k)],
+        "bridge_gate_and_rho": min(k - 1, 3),
+    }
+    if summary.get("depth_parameter_indices") != expected_indices:
+        raise RuntimeError(f"{stem} depth-parameter index contract changed")
     if float(summary["evaluation_gate_ceiling"]) != 0.02:
         raise RuntimeError(f"{stem} ceiling changed")
     if any(bool(summary[key]) for key in ("confirm_scored", "eval_e_scored", "optimizer_constructed")):
