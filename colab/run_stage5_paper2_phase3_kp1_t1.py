@@ -16,7 +16,6 @@ from colab.run_stage5_paper2_phase3_p34_a2 import (
     I1_ID,
     MIGRATED_SHA,
     MIGRATION_ID,
-    OLD_ID,
     P33_ID,
     P33_SHA,
     rsync,
@@ -212,11 +211,8 @@ def build_pre_model_manifest(*, references: Path, receipts: Path) -> dict[str, o
 
 
 def stage_inputs(*, scratch: Path, references: Path, private: Path) -> Path:
-    model_cache = scratch / "model_cache/student_0p5b"
-    rsync(
-        DRIVE_STAGE5 / OLD_ID / "private/stage0a/model_cache/student_0p5b",
-        model_cache,
-    )
+    model_cache = scratch / "hf_model_cache"
+    model_cache.mkdir(parents=True, exist_ok=True)
     checkpoints: dict[str, object] = {}
     for seed in (0, 1):
         chain = stage_chain_with_verified_p34(

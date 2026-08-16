@@ -92,6 +92,12 @@ def test_lock_preserves_authority_seals_and_four_endpoint_hashes() -> None:
     assert lock["sealed_partitions"]["eval_e_scored"] is False
     assert len(lock["t1"]["checkpoints"]) == 4
     assert lock["t1"]["core_schema"]["cells"] == 44
+    assert lock["model"] == {
+        "id": "Qwen/Qwen2.5-0.5B-Instruct",
+        "revision": "7ae557604adf67be50417f59c2c2f167def9a775",
+        "dtype": "bfloat16",
+        "layer_taps": [6, 12, 18, 24],
+    }
     assert lock["optimizer_constructed"] is False
     assert lock["optimizer_steps"] == 0
 
