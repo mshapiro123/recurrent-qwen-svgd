@@ -342,13 +342,19 @@ def main() -> int:
     assignments = manifest["probe_split"]
 
     device = torch.device("cuda")
-    tokenizer = AutoTokenizer.from_pretrained(args.model_cache, local_files_only=True)
+    model_spec = lock["model"]
+    tokenizer = AutoTokenizer.from_pretrained(
+        model_spec["id"],
+        revision=model_spec["revision"],
+        cache_dir=args.model_cache,
+    )
     tokenizer.padding_side = "left"
     if tokenizer.pad_token_id is None:
         tokenizer.pad_token_id = tokenizer.eos_token_id
     base = AutoModelForCausalLM.from_pretrained(
-        args.model_cache,
-        local_files_only=True,
+        model_spec["id"],
+        revision=model_spec["revision"],
+        cache_dir=args.model_cache,
         torch_dtype=torch.bfloat16,
         attn_implementation="sdpa",
     ).to(device).eval()
