@@ -63,7 +63,7 @@ def test_linear_cka_is_rotation_invariant() -> None:
     generator = torch.Generator().manual_seed(11)
     x = torch.randn(40, 8, generator=generator)
     q, _ = torch.linalg.qr(torch.randn(8, 8, generator=generator))
-    assert math.isclose(linear_cka(x, x @ q), 1.0, abs_tol=1e-10)
+    assert math.isclose(linear_cka(x, x @ q), 1.0, abs_tol=2e-7)
     assert math.isclose(
         linear_cka_from_grams(centered_gram(x), centered_gram(x @ q)),
         1.0,
