@@ -1,9 +1,9 @@
 # Paper Two Handoff: KP-1R Knowledge Readout and Teacher Fingerprints
 
-**Date:** 2026-08-16  
-**Status:** complete, score-only, DEV only  
-**Authority:** `STRATEGY_KP1_T1_RESPONSE_20260816.md`, Drive `1yh0Y6x_2IV6AXCYKgOh0AM5R5-GylHFF`, 11,039 bytes, SHA-256 `2d72b9c59be3f091bcbb9592c7292f9760d598870905bd3b43ae73f141ba6f4f`  
-**Registered lock:** `training/paper2_phase3_kp1r_t1_teacher_lock.json`  
+**Date:** 2026-08-16
+**Status:** complete, score-only, DEV only
+**Authority:** `STRATEGY_KP1_T1_RESPONSE_20260816.md`, Drive `1yh0Y6x_2IV6AXCYKgOh0AM5R5-GylHFF`, 11,039 bytes, SHA-256 `2d72b9c59be3f091bcbb9592c7292f9760d598870905bd3b43ae73f141ba6f4f`
+**Registered lock:** `training/paper2_phase3_kp1r_t1_teacher_lock.json`
 **Seal status:** CONFIRM untouched; EVAL-E untouched; zero optimizer steps
 
 ## 0. Executive verdict
