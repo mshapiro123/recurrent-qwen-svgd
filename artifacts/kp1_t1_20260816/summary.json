@@ -1,0 +1,5100 @@
+{
+  "assertions": {
+    "confirm_scored": false,
+    "dev_only": true,
+    "eval_e_scored": false,
+    "frozen_parameter_fingerprints_unchanged": true,
+    "main_model_training": false,
+    "manifest_locked_before_model_access": true,
+    "optimizer_constructed": false,
+    "optimizer_steps": 0
+  },
+  "authority": {
+    "bytes": 12906,
+    "drive_id": "1l8yDmL97eI3a4iTybM0m9yq989xvMBrz",
+    "sha256": "29464906d40dab5af4805d2d941370ede382e1da068b0939639fcf88adaa4b62",
+    "title": "STRATEGY_DIAGNOSTIC_WAVE_ANALYSIS_20260816.md"
+  },
+  "chain_manifest_sha256": "20bf44f55e5d4351bfc3d4efbcbc054d62105ffbecf624d273785c1d4f2a8403",
+  "fingerprints": {
+    "base": "49285bd04182cf97ae259ce611253d5438785c5c50060a2c0b4cecbedb9359cc",
+    "sidecars": {
+      "p34_seed_0_step_4000": "ff8053860b0177a17156f390c5d51f8e156221ac40a01fa6b988a2219530f671",
+      "p34_seed_1_step_4000": "f7756cc3644a400418db6778a15780f8f09b305531e7e7cc584691ce45e2ab04",
+      "p35_seed_0_ema_step_4400": "a3d3b6ea9b9c1c6857d2dd1a6ea96bce66b79b366501c7795348ab929e5a707f",
+      "p35_seed_1_ema_step_4400": "18ed12af654649f578949d5a15d077dda82abfa4ca91997c997e47c69c0b626d"
+    }
+  },
+  "kind": "paper2_phase3_kp1_t1_summary_v1",
+  "kp1": {
+    "context_stable_suffix_rows": 329,
+    "gap_rows": 329,
+    "gap_rows_by_battery": {
+      "arc_challenge": 31,
+      "arc_easy": 52,
+      "gsm8k": 122,
+      "mbpp": 25,
+      "mmlu": 96,
+      "tier1": 3
+    },
+    "generation_accuracy_on_gap_population": 0.0,
+    "linear_probes": {
+      "layer_12": {
+        "fit": {
+          "eval_rows": 100,
+          "kind": "affine_ridge_to_frozen_output_embedding",
+          "optimizer_constructed": false,
+          "ridge": 1.0,
+          "train_rows": 229
+        },
+        "intercept_only_control": {
+          "by_battery": {
+            "arc_challenge": {
+              "mean_log_probability": -10.948063850402832,
+              "median_rank": 3.0,
+              "rows": 9,
+              "top1": 0,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.0
+            },
+            "arc_easy": {
+              "mean_log_probability": -10.944355010986328,
+              "median_rank": 3.0,
+              "rows": 16,
+              "top1": 0,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.0
+            },
+            "gsm8k": {
+              "mean_log_probability": -10.81395149230957,
+              "median_rank": 1.0,
+              "rows": 37,
+              "top1": 37,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 1.0
+            },
+            "mbpp": {
+              "mean_log_probability": -11.472883224487305,
+              "median_rank": 237.0,
+              "rows": 8,
+              "top1": 0,
+              "top10_accuracy": 0.0,
+              "top1_accuracy": 0.0
+            },
+            "mmlu": {
+              "mean_log_probability": -10.954118728637695,
+              "median_rank": 4.0,
+              "rows": 29,
+              "top1": 0,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.0
+            },
+            "tier1": {
+              "mean_log_probability": -10.813950538635254,
+              "median_rank": 1.0,
+              "rows": 1,
+              "top1": 1,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 1.0
+            }
+          },
+          "pooled": {
+            "mean_log_probability": -10.940248489379883,
+            "median_rank": 2.0,
+            "rows": 100,
+            "top1": 38,
+            "top10_accuracy": 0.9199999570846558,
+            "top1_accuracy": 0.3799999952316284
+          }
+        },
+        "probe": {
+          "by_battery": {
+            "arc_challenge": {
+              "mean_log_probability": -11.233464241027832,
+              "median_rank": 4.0,
+              "rows": 9,
+              "top1": 1,
+              "top10_accuracy": 0.6666666865348816,
+              "top1_accuracy": 0.1111111119389534
+            },
+            "arc_easy": {
+              "mean_log_probability": -11.054043769836426,
+              "median_rank": 2.0,
+              "rows": 16,
+              "top1": 5,
+              "top10_accuracy": 0.8125,
+              "top1_accuracy": 0.3125
+            },
+            "gsm8k": {
+              "mean_log_probability": -10.662864685058594,
+              "median_rank": 1.0,
+              "rows": 37,
+              "top1": 37,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 1.0
+            },
+            "mbpp": {
+              "mean_log_probability": -10.995573043823242,
+              "median_rank": 1.0,
+              "rows": 8,
+              "top1": 7,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.875
+            },
+            "mmlu": {
+              "mean_log_probability": -11.089359283447266,
+              "median_rank": 3.0,
+              "rows": 29,
+              "top1": 6,
+              "top10_accuracy": 0.931034505367279,
+              "top1_accuracy": 0.20689654350280762
+            },
+            "tier1": {
+              "mean_log_probability": -10.652350425720215,
+              "median_rank": 1.0,
+              "rows": 1,
+              "top1": 1,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 1.0
+            }
+          },
+          "pooled": {
+            "mean_log_probability": -10.927001953125,
+            "median_rank": 1.0,
+            "rows": 100,
+            "top1": 57,
+            "top10_accuracy": 0.9199999570846558,
+            "top1_accuracy": 0.5699999928474426
+          }
+        }
+      },
+      "layer_18": {
+        "fit": {
+          "eval_rows": 100,
+          "kind": "affine_ridge_to_frozen_output_embedding",
+          "optimizer_constructed": false,
+          "ridge": 1.0,
+          "train_rows": 229
+        },
+        "intercept_only_control": {
+          "by_battery": {
+            "arc_challenge": {
+              "mean_log_probability": -10.948063850402832,
+              "median_rank": 3.0,
+              "rows": 9,
+              "top1": 0,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.0
+            },
+            "arc_easy": {
+              "mean_log_probability": -10.944355010986328,
+              "median_rank": 3.0,
+              "rows": 16,
+              "top1": 0,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.0
+            },
+            "gsm8k": {
+              "mean_log_probability": -10.81395149230957,
+              "median_rank": 1.0,
+              "rows": 37,
+              "top1": 37,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 1.0
+            },
+            "mbpp": {
+              "mean_log_probability": -11.472883224487305,
+              "median_rank": 237.0,
+              "rows": 8,
+              "top1": 0,
+              "top10_accuracy": 0.0,
+              "top1_accuracy": 0.0
+            },
+            "mmlu": {
+              "mean_log_probability": -10.954118728637695,
+              "median_rank": 4.0,
+              "rows": 29,
+              "top1": 0,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.0
+            },
+            "tier1": {
+              "mean_log_probability": -10.813950538635254,
+              "median_rank": 1.0,
+              "rows": 1,
+              "top1": 1,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 1.0
+            }
+          },
+          "pooled": {
+            "mean_log_probability": -10.940248489379883,
+            "median_rank": 2.0,
+            "rows": 100,
+            "top1": 38,
+            "top10_accuracy": 0.9199999570846558,
+            "top1_accuracy": 0.3799999952316284
+          }
+        },
+        "probe": {
+          "by_battery": {
+            "arc_challenge": {
+              "mean_log_probability": -11.219555854797363,
+              "median_rank": 3.0,
+              "rows": 9,
+              "top1": 2,
+              "top10_accuracy": 0.6666666865348816,
+              "top1_accuracy": 0.2222222238779068
+            },
+            "arc_easy": {
+              "mean_log_probability": -11.127954483032227,
+              "median_rank": 3.0,
+              "rows": 16,
+              "top1": 2,
+              "top10_accuracy": 0.875,
+              "top1_accuracy": 0.125
+            },
+            "gsm8k": {
+              "mean_log_probability": -10.670902252197266,
+              "median_rank": 1.0,
+              "rows": 37,
+              "top1": 37,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 1.0
+            },
+            "mbpp": {
+              "mean_log_probability": -10.989703178405762,
+              "median_rank": 1.0,
+              "rows": 8,
+              "top1": 7,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.875
+            },
+            "mmlu": {
+              "mean_log_probability": -11.083563804626465,
+              "median_rank": 3.0,
+              "rows": 29,
+              "top1": 9,
+              "top10_accuracy": 0.8965517282485962,
+              "top1_accuracy": 0.3103448152542114
+            },
+            "tier1": {
+              "mean_log_probability": -10.862085342407227,
+              "median_rank": 1.0,
+              "rows": 1,
+              "top1": 1,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 1.0
+            }
+          },
+          "pooled": {
+            "mean_log_probability": -10.940497398376465,
+            "median_rank": 1.0,
+            "rows": 100,
+            "top1": 58,
+            "top10_accuracy": 0.9199999570846558,
+            "top1_accuracy": 0.5799999833106995
+          }
+        }
+      },
+      "layer_24": {
+        "fit": {
+          "eval_rows": 100,
+          "kind": "affine_ridge_to_frozen_output_embedding",
+          "optimizer_constructed": false,
+          "ridge": 1.0,
+          "train_rows": 229
+        },
+        "intercept_only_control": {
+          "by_battery": {
+            "arc_challenge": {
+              "mean_log_probability": -10.948063850402832,
+              "median_rank": 3.0,
+              "rows": 9,
+              "top1": 0,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.0
+            },
+            "arc_easy": {
+              "mean_log_probability": -10.944355010986328,
+              "median_rank": 3.0,
+              "rows": 16,
+              "top1": 0,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.0
+            },
+            "gsm8k": {
+              "mean_log_probability": -10.81395149230957,
+              "median_rank": 1.0,
+              "rows": 37,
+              "top1": 37,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 1.0
+            },
+            "mbpp": {
+              "mean_log_probability": -11.472883224487305,
+              "median_rank": 237.0,
+              "rows": 8,
+              "top1": 0,
+              "top10_accuracy": 0.0,
+              "top1_accuracy": 0.0
+            },
+            "mmlu": {
+              "mean_log_probability": -10.954118728637695,
+              "median_rank": 4.0,
+              "rows": 29,
+              "top1": 0,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.0
+            },
+            "tier1": {
+              "mean_log_probability": -10.813950538635254,
+              "median_rank": 1.0,
+              "rows": 1,
+              "top1": 1,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 1.0
+            }
+          },
+          "pooled": {
+            "mean_log_probability": -10.940248489379883,
+            "median_rank": 2.0,
+            "rows": 100,
+            "top1": 38,
+            "top10_accuracy": 0.9199999570846558,
+            "top1_accuracy": 0.3799999952316284
+          }
+        },
+        "probe": {
+          "by_battery": {
+            "arc_challenge": {
+              "mean_log_probability": -11.163300514221191,
+              "median_rank": 3.0,
+              "rows": 9,
+              "top1": 3,
+              "top10_accuracy": 0.7777777910232544,
+              "top1_accuracy": 0.3333333432674408
+            },
+            "arc_easy": {
+              "mean_log_probability": -11.147928237915039,
+              "median_rank": 2.0,
+              "rows": 16,
+              "top1": 5,
+              "top10_accuracy": 0.75,
+              "top1_accuracy": 0.3125
+            },
+            "gsm8k": {
+              "mean_log_probability": -10.747117042541504,
+              "median_rank": 1.0,
+              "rows": 37,
+              "top1": 37,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 1.0
+            },
+            "mbpp": {
+              "mean_log_probability": -11.057781219482422,
+              "median_rank": 1.0,
+              "rows": 8,
+              "top1": 6,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.75
+            },
+            "mmlu": {
+              "mean_log_probability": -11.180890083312988,
+              "median_rank": 3.0,
+              "rows": 29,
+              "top1": 5,
+              "top10_accuracy": 0.7931034564971924,
+              "top1_accuracy": 0.17241379618644714
+            },
+            "tier1": {
+              "mean_log_probability": -10.883214950561523,
+              "median_rank": 1.0,
+              "rows": 1,
+              "top1": 1,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 1.0
+            }
+          },
+          "pooled": {
+            "mean_log_probability": -11.000710487365723,
+            "median_rank": 1.0,
+            "rows": 100,
+            "top1": 57,
+            "top10_accuracy": 0.8799999952316284,
+            "top1_accuracy": 0.5699999928474426
+          }
+        }
+      },
+      "layer_6": {
+        "fit": {
+          "eval_rows": 100,
+          "kind": "affine_ridge_to_frozen_output_embedding",
+          "optimizer_constructed": false,
+          "ridge": 1.0,
+          "train_rows": 229
+        },
+        "intercept_only_control": {
+          "by_battery": {
+            "arc_challenge": {
+              "mean_log_probability": -10.948063850402832,
+              "median_rank": 3.0,
+              "rows": 9,
+              "top1": 0,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.0
+            },
+            "arc_easy": {
+              "mean_log_probability": -10.944355010986328,
+              "median_rank": 3.0,
+              "rows": 16,
+              "top1": 0,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.0
+            },
+            "gsm8k": {
+              "mean_log_probability": -10.81395149230957,
+              "median_rank": 1.0,
+              "rows": 37,
+              "top1": 37,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 1.0
+            },
+            "mbpp": {
+              "mean_log_probability": -11.472883224487305,
+              "median_rank": 237.0,
+              "rows": 8,
+              "top1": 0,
+              "top10_accuracy": 0.0,
+              "top1_accuracy": 0.0
+            },
+            "mmlu": {
+              "mean_log_probability": -10.954118728637695,
+              "median_rank": 4.0,
+              "rows": 29,
+              "top1": 0,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.0
+            },
+            "tier1": {
+              "mean_log_probability": -10.813950538635254,
+              "median_rank": 1.0,
+              "rows": 1,
+              "top1": 1,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 1.0
+            }
+          },
+          "pooled": {
+            "mean_log_probability": -10.940248489379883,
+            "median_rank": 2.0,
+            "rows": 100,
+            "top1": 38,
+            "top10_accuracy": 0.9199999570846558,
+            "top1_accuracy": 0.3799999952316284
+          }
+        },
+        "probe": {
+          "by_battery": {
+            "arc_challenge": {
+              "mean_log_probability": -11.148472785949707,
+              "median_rank": 2.0,
+              "rows": 9,
+              "top1": 2,
+              "top10_accuracy": 0.7777777910232544,
+              "top1_accuracy": 0.2222222238779068
+            },
+            "arc_easy": {
+              "mean_log_probability": -11.035310745239258,
+              "median_rank": 2.0,
+              "rows": 16,
+              "top1": 4,
+              "top10_accuracy": 0.8125,
+              "top1_accuracy": 0.25
+            },
+            "gsm8k": {
+              "mean_log_probability": -10.662059783935547,
+              "median_rank": 1.0,
+              "rows": 37,
+              "top1": 37,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 1.0
+            },
+            "mbpp": {
+              "mean_log_probability": -10.960575103759766,
+              "median_rank": 1.0,
+              "rows": 8,
+              "top1": 8,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 1.0
+            },
+            "mmlu": {
+              "mean_log_probability": -11.060274124145508,
+              "median_rank": 2.0,
+              "rows": 29,
+              "top1": 9,
+              "top10_accuracy": 0.8965517282485962,
+              "top1_accuracy": 0.3103448152542114
+            },
+            "tier1": {
+              "mean_log_probability": -10.651060104370117,
+              "median_rank": 1.0,
+              "rows": 1,
+              "top1": 1,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 1.0
+            }
+          },
+          "pooled": {
+            "mean_log_probability": -10.90480899810791,
+            "median_rank": 1.0,
+            "rows": 100,
+            "top1": 61,
+            "top10_accuracy": 0.9199999570846558,
+            "top1_accuracy": 0.6100000143051147
+          }
+        }
+      },
+      "p34_seed_0_step_4000_loop_1": {
+        "fit": {
+          "eval_rows": 100,
+          "kind": "affine_ridge_to_frozen_output_embedding",
+          "optimizer_constructed": false,
+          "ridge": 1.0,
+          "train_rows": 229
+        },
+        "intercept_only_control": {
+          "by_battery": {
+            "arc_challenge": {
+              "mean_log_probability": -10.948063850402832,
+              "median_rank": 3.0,
+              "rows": 9,
+              "top1": 0,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.0
+            },
+            "arc_easy": {
+              "mean_log_probability": -10.944355010986328,
+              "median_rank": 3.0,
+              "rows": 16,
+              "top1": 0,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.0
+            },
+            "gsm8k": {
+              "mean_log_probability": -10.81395149230957,
+              "median_rank": 1.0,
+              "rows": 37,
+              "top1": 37,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 1.0
+            },
+            "mbpp": {
+              "mean_log_probability": -11.472883224487305,
+              "median_rank": 237.0,
+              "rows": 8,
+              "top1": 0,
+              "top10_accuracy": 0.0,
+              "top1_accuracy": 0.0
+            },
+            "mmlu": {
+              "mean_log_probability": -10.954118728637695,
+              "median_rank": 4.0,
+              "rows": 29,
+              "top1": 0,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.0
+            },
+            "tier1": {
+              "mean_log_probability": -10.813950538635254,
+              "median_rank": 1.0,
+              "rows": 1,
+              "top1": 1,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 1.0
+            }
+          },
+          "pooled": {
+            "mean_log_probability": -10.940248489379883,
+            "median_rank": 2.0,
+            "rows": 100,
+            "top1": 38,
+            "top10_accuracy": 0.9199999570846558,
+            "top1_accuracy": 0.3799999952316284
+          }
+        },
+        "probe": {
+          "by_battery": {
+            "arc_challenge": {
+              "mean_log_probability": -11.144219398498535,
+              "median_rank": 3.0,
+              "rows": 9,
+              "top1": 2,
+              "top10_accuracy": 0.6666666865348816,
+              "top1_accuracy": 0.2222222238779068
+            },
+            "arc_easy": {
+              "mean_log_probability": -11.105666160583496,
+              "median_rank": 3.0,
+              "rows": 16,
+              "top1": 3,
+              "top10_accuracy": 0.875,
+              "top1_accuracy": 0.1875
+            },
+            "gsm8k": {
+              "mean_log_probability": -10.696772575378418,
+              "median_rank": 1.0,
+              "rows": 37,
+              "top1": 37,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 1.0
+            },
+            "mbpp": {
+              "mean_log_probability": -11.057538986206055,
+              "median_rank": 1.0,
+              "rows": 8,
+              "top1": 7,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.875
+            },
+            "mmlu": {
+              "mean_log_probability": -11.020835876464844,
+              "median_rank": 2.0,
+              "rows": 29,
+              "top1": 10,
+              "top10_accuracy": 0.8965517282485962,
+              "top1_accuracy": 0.3448275923728943
+            },
+            "tier1": {
+              "mean_log_probability": -10.651863098144531,
+              "median_rank": 1.0,
+              "rows": 1,
+              "top1": 1,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 1.0
+            }
+          },
+          "pooled": {
+            "mean_log_probability": -10.924856185913086,
+            "median_rank": 1.0,
+            "rows": 100,
+            "top1": 60,
+            "top10_accuracy": 0.9199999570846558,
+            "top1_accuracy": 0.5999999642372131
+          }
+        }
+      },
+      "p34_seed_0_step_4000_loop_2": {
+        "fit": {
+          "eval_rows": 100,
+          "kind": "affine_ridge_to_frozen_output_embedding",
+          "optimizer_constructed": false,
+          "ridge": 1.0,
+          "train_rows": 229
+        },
+        "intercept_only_control": {
+          "by_battery": {
+            "arc_challenge": {
+              "mean_log_probability": -10.948063850402832,
+              "median_rank": 3.0,
+              "rows": 9,
+              "top1": 0,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.0
+            },
+            "arc_easy": {
+              "mean_log_probability": -10.944355010986328,
+              "median_rank": 3.0,
+              "rows": 16,
+              "top1": 0,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.0
+            },
+            "gsm8k": {
+              "mean_log_probability": -10.81395149230957,
+              "median_rank": 1.0,
+              "rows": 37,
+              "top1": 37,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 1.0
+            },
+            "mbpp": {
+              "mean_log_probability": -11.472883224487305,
+              "median_rank": 237.0,
+              "rows": 8,
+              "top1": 0,
+              "top10_accuracy": 0.0,
+              "top1_accuracy": 0.0
+            },
+            "mmlu": {
+              "mean_log_probability": -10.954118728637695,
+              "median_rank": 4.0,
+              "rows": 29,
+              "top1": 0,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.0
+            },
+            "tier1": {
+              "mean_log_probability": -10.813950538635254,
+              "median_rank": 1.0,
+              "rows": 1,
+              "top1": 1,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 1.0
+            }
+          },
+          "pooled": {
+            "mean_log_probability": -10.940248489379883,
+            "median_rank": 2.0,
+            "rows": 100,
+            "top1": 38,
+            "top10_accuracy": 0.9199999570846558,
+            "top1_accuracy": 0.3799999952316284
+          }
+        },
+        "probe": {
+          "by_battery": {
+            "arc_challenge": {
+              "mean_log_probability": -11.122414588928223,
+              "median_rank": 3.0,
+              "rows": 9,
+              "top1": 3,
+              "top10_accuracy": 0.7777777910232544,
+              "top1_accuracy": 0.3333333432674408
+            },
+            "arc_easy": {
+              "mean_log_probability": -11.138118743896484,
+              "median_rank": 3.0,
+              "rows": 16,
+              "top1": 4,
+              "top10_accuracy": 0.75,
+              "top1_accuracy": 0.25
+            },
+            "gsm8k": {
+              "mean_log_probability": -10.706205368041992,
+              "median_rank": 1.0,
+              "rows": 37,
+              "top1": 37,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 1.0
+            },
+            "mbpp": {
+              "mean_log_probability": -11.066697120666504,
+              "median_rank": 1.0,
+              "rows": 8,
+              "top1": 7,
+              "top10_accuracy": 0.875,
+              "top1_accuracy": 0.875
+            },
+            "mmlu": {
+              "mean_log_probability": -11.062295913696289,
+              "median_rank": 2.0,
+              "rows": 29,
+              "top1": 10,
+              "top10_accuracy": 0.8620689511299133,
+              "top1_accuracy": 0.3448275923728943
+            },
+            "tier1": {
+              "mean_log_probability": -10.650062561035156,
+              "median_rank": 1.0,
+              "rows": 1,
+              "top1": 1,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 1.0
+            }
+          },
+          "pooled": {
+            "mean_log_probability": -10.944314002990723,
+            "median_rank": 1.0,
+            "rows": 100,
+            "top1": 62,
+            "top10_accuracy": 0.8899999856948853,
+            "top1_accuracy": 0.6200000047683716
+          }
+        }
+      },
+      "p34_seed_0_step_4000_loop_3": {
+        "fit": {
+          "eval_rows": 100,
+          "kind": "affine_ridge_to_frozen_output_embedding",
+          "optimizer_constructed": false,
+          "ridge": 1.0,
+          "train_rows": 229
+        },
+        "intercept_only_control": {
+          "by_battery": {
+            "arc_challenge": {
+              "mean_log_probability": -10.948063850402832,
+              "median_rank": 3.0,
+              "rows": 9,
+              "top1": 0,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.0
+            },
+            "arc_easy": {
+              "mean_log_probability": -10.944355010986328,
+              "median_rank": 3.0,
+              "rows": 16,
+              "top1": 0,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.0
+            },
+            "gsm8k": {
+              "mean_log_probability": -10.81395149230957,
+              "median_rank": 1.0,
+              "rows": 37,
+              "top1": 37,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 1.0
+            },
+            "mbpp": {
+              "mean_log_probability": -11.472883224487305,
+              "median_rank": 237.0,
+              "rows": 8,
+              "top1": 0,
+              "top10_accuracy": 0.0,
+              "top1_accuracy": 0.0
+            },
+            "mmlu": {
+              "mean_log_probability": -10.954118728637695,
+              "median_rank": 4.0,
+              "rows": 29,
+              "top1": 0,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.0
+            },
+            "tier1": {
+              "mean_log_probability": -10.813950538635254,
+              "median_rank": 1.0,
+              "rows": 1,
+              "top1": 1,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 1.0
+            }
+          },
+          "pooled": {
+            "mean_log_probability": -10.940248489379883,
+            "median_rank": 2.0,
+            "rows": 100,
+            "top1": 38,
+            "top10_accuracy": 0.9199999570846558,
+            "top1_accuracy": 0.3799999952316284
+          }
+        },
+        "probe": {
+          "by_battery": {
+            "arc_challenge": {
+              "mean_log_probability": -11.10358715057373,
+              "median_rank": 3.0,
+              "rows": 9,
+              "top1": 3,
+              "top10_accuracy": 0.8888888955116272,
+              "top1_accuracy": 0.3333333432674408
+            },
+            "arc_easy": {
+              "mean_log_probability": -11.13557243347168,
+              "median_rank": 3.0,
+              "rows": 16,
+              "top1": 5,
+              "top10_accuracy": 0.75,
+              "top1_accuracy": 0.3125
+            },
+            "gsm8k": {
+              "mean_log_probability": -10.70496654510498,
+              "median_rank": 1.0,
+              "rows": 37,
+              "top1": 37,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 1.0
+            },
+            "mbpp": {
+              "mean_log_probability": -11.08035945892334,
+              "median_rank": 1.0,
+              "rows": 8,
+              "top1": 7,
+              "top10_accuracy": 0.875,
+              "top1_accuracy": 0.875
+            },
+            "mmlu": {
+              "mean_log_probability": -11.060654640197754,
+              "median_rank": 3.0,
+              "rows": 29,
+              "top1": 9,
+              "top10_accuracy": 0.8620689511299133,
+              "top1_accuracy": 0.3103448152542114
+            },
+            "tier1": {
+              "mean_log_probability": -10.652305603027344,
+              "median_rank": 1.0,
+              "rows": 1,
+              "top1": 1,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 1.0
+            }
+          },
+          "pooled": {
+            "mean_log_probability": -10.94239330291748,
+            "median_rank": 1.0,
+            "rows": 100,
+            "top1": 62,
+            "top10_accuracy": 0.8999999761581421,
+            "top1_accuracy": 0.6200000047683716
+          }
+        }
+      },
+      "p34_seed_0_step_4000_loop_4": {
+        "fit": {
+          "eval_rows": 100,
+          "kind": "affine_ridge_to_frozen_output_embedding",
+          "optimizer_constructed": false,
+          "ridge": 1.0,
+          "train_rows": 229
+        },
+        "intercept_only_control": {
+          "by_battery": {
+            "arc_challenge": {
+              "mean_log_probability": -10.948063850402832,
+              "median_rank": 3.0,
+              "rows": 9,
+              "top1": 0,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.0
+            },
+            "arc_easy": {
+              "mean_log_probability": -10.944355010986328,
+              "median_rank": 3.0,
+              "rows": 16,
+              "top1": 0,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.0
+            },
+            "gsm8k": {
+              "mean_log_probability": -10.81395149230957,
+              "median_rank": 1.0,
+              "rows": 37,
+              "top1": 37,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 1.0
+            },
+            "mbpp": {
+              "mean_log_probability": -11.472883224487305,
+              "median_rank": 237.0,
+              "rows": 8,
+              "top1": 0,
+              "top10_accuracy": 0.0,
+              "top1_accuracy": 0.0
+            },
+            "mmlu": {
+              "mean_log_probability": -10.954118728637695,
+              "median_rank": 4.0,
+              "rows": 29,
+              "top1": 0,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.0
+            },
+            "tier1": {
+              "mean_log_probability": -10.813950538635254,
+              "median_rank": 1.0,
+              "rows": 1,
+              "top1": 1,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 1.0
+            }
+          },
+          "pooled": {
+            "mean_log_probability": -10.940248489379883,
+            "median_rank": 2.0,
+            "rows": 100,
+            "top1": 38,
+            "top10_accuracy": 0.9199999570846558,
+            "top1_accuracy": 0.3799999952316284
+          }
+        },
+        "probe": {
+          "by_battery": {
+            "arc_challenge": {
+              "mean_log_probability": -11.085278511047363,
+              "median_rank": 2.0,
+              "rows": 9,
+              "top1": 2,
+              "top10_accuracy": 0.8888888955116272,
+              "top1_accuracy": 0.2222222238779068
+            },
+            "arc_easy": {
+              "mean_log_probability": -11.142300605773926,
+              "median_rank": 3.0,
+              "rows": 16,
+              "top1": 6,
+              "top10_accuracy": 0.6875,
+              "top1_accuracy": 0.375
+            },
+            "gsm8k": {
+              "mean_log_probability": -10.70100212097168,
+              "median_rank": 1.0,
+              "rows": 37,
+              "top1": 37,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 1.0
+            },
+            "mbpp": {
+              "mean_log_probability": -11.085704803466797,
+              "median_rank": 1.0,
+              "rows": 8,
+              "top1": 7,
+              "top10_accuracy": 0.875,
+              "top1_accuracy": 0.875
+            },
+            "mmlu": {
+              "mean_log_probability": -11.05085563659668,
+              "median_rank": 3.0,
+              "rows": 29,
+              "top1": 8,
+              "top10_accuracy": 0.8965517282485962,
+              "top1_accuracy": 0.27586206793785095
+            },
+            "tier1": {
+              "mean_log_probability": -10.655014038085938,
+              "median_rank": 1.0,
+              "rows": 1,
+              "top1": 1,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 1.0
+            }
+          },
+          "pooled": {
+            "mean_log_probability": -10.937968254089355,
+            "median_rank": 1.0,
+            "rows": 100,
+            "top1": 61,
+            "top10_accuracy": 0.8999999761581421,
+            "top1_accuracy": 0.6100000143051147
+          }
+        }
+      },
+      "p34_seed_1_step_4000_loop_1": {
+        "fit": {
+          "eval_rows": 100,
+          "kind": "affine_ridge_to_frozen_output_embedding",
+          "optimizer_constructed": false,
+          "ridge": 1.0,
+          "train_rows": 229
+        },
+        "intercept_only_control": {
+          "by_battery": {
+            "arc_challenge": {
+              "mean_log_probability": -10.948063850402832,
+              "median_rank": 3.0,
+              "rows": 9,
+              "top1": 0,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.0
+            },
+            "arc_easy": {
+              "mean_log_probability": -10.944355010986328,
+              "median_rank": 3.0,
+              "rows": 16,
+              "top1": 0,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.0
+            },
+            "gsm8k": {
+              "mean_log_probability": -10.81395149230957,
+              "median_rank": 1.0,
+              "rows": 37,
+              "top1": 37,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 1.0
+            },
+            "mbpp": {
+              "mean_log_probability": -11.472883224487305,
+              "median_rank": 237.0,
+              "rows": 8,
+              "top1": 0,
+              "top10_accuracy": 0.0,
+              "top1_accuracy": 0.0
+            },
+            "mmlu": {
+              "mean_log_probability": -10.954118728637695,
+              "median_rank": 4.0,
+              "rows": 29,
+              "top1": 0,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.0
+            },
+            "tier1": {
+              "mean_log_probability": -10.813950538635254,
+              "median_rank": 1.0,
+              "rows": 1,
+              "top1": 1,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 1.0
+            }
+          },
+          "pooled": {
+            "mean_log_probability": -10.940248489379883,
+            "median_rank": 2.0,
+            "rows": 100,
+            "top1": 38,
+            "top10_accuracy": 0.9199999570846558,
+            "top1_accuracy": 0.3799999952316284
+          }
+        },
+        "probe": {
+          "by_battery": {
+            "arc_challenge": {
+              "mean_log_probability": -11.15587329864502,
+              "median_rank": 4.0,
+              "rows": 9,
+              "top1": 1,
+              "top10_accuracy": 0.8888888955116272,
+              "top1_accuracy": 0.1111111119389534
+            },
+            "arc_easy": {
+              "mean_log_probability": -11.096083641052246,
+              "median_rank": 3.0,
+              "rows": 16,
+              "top1": 1,
+              "top10_accuracy": 0.8125,
+              "top1_accuracy": 0.0625
+            },
+            "gsm8k": {
+              "mean_log_probability": -10.703856468200684,
+              "median_rank": 1.0,
+              "rows": 37,
+              "top1": 37,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 1.0
+            },
+            "mbpp": {
+              "mean_log_probability": -11.043550491333008,
+              "median_rank": 1.0,
+              "rows": 8,
+              "top1": 7,
+              "top10_accuracy": 0.875,
+              "top1_accuracy": 0.875
+            },
+            "mmlu": {
+              "mean_log_probability": -11.071331024169922,
+              "median_rank": 3.0,
+              "rows": 29,
+              "top1": 7,
+              "top10_accuracy": 0.931034505367279,
+              "top1_accuracy": 0.24137930572032928
+            },
+            "tier1": {
+              "mean_log_probability": -10.655747413635254,
+              "median_rank": 1.0,
+              "rows": 1,
+              "top1": 1,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 1.0
+            }
+          },
+          "pooled": {
+            "mean_log_probability": -10.940556526184082,
+            "median_rank": 1.0,
+            "rows": 100,
+            "top1": 54,
+            "top10_accuracy": 0.9300000071525574,
+            "top1_accuracy": 0.5399999618530273
+          }
+        }
+      },
+      "p34_seed_1_step_4000_loop_2": {
+        "fit": {
+          "eval_rows": 100,
+          "kind": "affine_ridge_to_frozen_output_embedding",
+          "optimizer_constructed": false,
+          "ridge": 1.0,
+          "train_rows": 229
+        },
+        "intercept_only_control": {
+          "by_battery": {
+            "arc_challenge": {
+              "mean_log_probability": -10.948063850402832,
+              "median_rank": 3.0,
+              "rows": 9,
+              "top1": 0,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.0
+            },
+            "arc_easy": {
+              "mean_log_probability": -10.944355010986328,
+              "median_rank": 3.0,
+              "rows": 16,
+              "top1": 0,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.0
+            },
+            "gsm8k": {
+              "mean_log_probability": -10.81395149230957,
+              "median_rank": 1.0,
+              "rows": 37,
+              "top1": 37,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 1.0
+            },
+            "mbpp": {
+              "mean_log_probability": -11.472883224487305,
+              "median_rank": 237.0,
+              "rows": 8,
+              "top1": 0,
+              "top10_accuracy": 0.0,
+              "top1_accuracy": 0.0
+            },
+            "mmlu": {
+              "mean_log_probability": -10.954118728637695,
+              "median_rank": 4.0,
+              "rows": 29,
+              "top1": 0,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.0
+            },
+            "tier1": {
+              "mean_log_probability": -10.813950538635254,
+              "median_rank": 1.0,
+              "rows": 1,
+              "top1": 1,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 1.0
+            }
+          },
+          "pooled": {
+            "mean_log_probability": -10.940248489379883,
+            "median_rank": 2.0,
+            "rows": 100,
+            "top1": 38,
+            "top10_accuracy": 0.9199999570846558,
+            "top1_accuracy": 0.3799999952316284
+          }
+        },
+        "probe": {
+          "by_battery": {
+            "arc_challenge": {
+              "mean_log_probability": -11.09604263305664,
+              "median_rank": 2.0,
+              "rows": 9,
+              "top1": 1,
+              "top10_accuracy": 0.8888888955116272,
+              "top1_accuracy": 0.1111111119389534
+            },
+            "arc_easy": {
+              "mean_log_probability": -11.10312271118164,
+              "median_rank": 3.0,
+              "rows": 16,
+              "top1": 4,
+              "top10_accuracy": 0.75,
+              "top1_accuracy": 0.25
+            },
+            "gsm8k": {
+              "mean_log_probability": -10.704103469848633,
+              "median_rank": 1.0,
+              "rows": 37,
+              "top1": 37,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 1.0
+            },
+            "mbpp": {
+              "mean_log_probability": -11.041187286376953,
+              "median_rank": 1.0,
+              "rows": 8,
+              "top1": 7,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.875
+            },
+            "mmlu": {
+              "mean_log_probability": -11.06121826171875,
+              "median_rank": 3.0,
+              "rows": 29,
+              "top1": 9,
+              "top10_accuracy": 0.931034505367279,
+              "top1_accuracy": 0.3103448152542114
+            },
+            "tier1": {
+              "mean_log_probability": -10.655370712280273,
+              "median_rank": 1.0,
+              "rows": 1,
+              "top1": 1,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 1.0
+            }
+          },
+          "pooled": {
+            "mean_log_probability": -10.933263778686523,
+            "median_rank": 1.0,
+            "rows": 100,
+            "top1": 59,
+            "top10_accuracy": 0.9300000071525574,
+            "top1_accuracy": 0.5899999737739563
+          }
+        }
+      },
+      "p34_seed_1_step_4000_loop_3": {
+        "fit": {
+          "eval_rows": 100,
+          "kind": "affine_ridge_to_frozen_output_embedding",
+          "optimizer_constructed": false,
+          "ridge": 1.0,
+          "train_rows": 229
+        },
+        "intercept_only_control": {
+          "by_battery": {
+            "arc_challenge": {
+              "mean_log_probability": -10.948063850402832,
+              "median_rank": 3.0,
+              "rows": 9,
+              "top1": 0,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.0
+            },
+            "arc_easy": {
+              "mean_log_probability": -10.944355010986328,
+              "median_rank": 3.0,
+              "rows": 16,
+              "top1": 0,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.0
+            },
+            "gsm8k": {
+              "mean_log_probability": -10.81395149230957,
+              "median_rank": 1.0,
+              "rows": 37,
+              "top1": 37,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 1.0
+            },
+            "mbpp": {
+              "mean_log_probability": -11.472883224487305,
+              "median_rank": 237.0,
+              "rows": 8,
+              "top1": 0,
+              "top10_accuracy": 0.0,
+              "top1_accuracy": 0.0
+            },
+            "mmlu": {
+              "mean_log_probability": -10.954118728637695,
+              "median_rank": 4.0,
+              "rows": 29,
+              "top1": 0,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.0
+            },
+            "tier1": {
+              "mean_log_probability": -10.813950538635254,
+              "median_rank": 1.0,
+              "rows": 1,
+              "top1": 1,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 1.0
+            }
+          },
+          "pooled": {
+            "mean_log_probability": -10.940248489379883,
+            "median_rank": 2.0,
+            "rows": 100,
+            "top1": 38,
+            "top10_accuracy": 0.9199999570846558,
+            "top1_accuracy": 0.3799999952316284
+          }
+        },
+        "probe": {
+          "by_battery": {
+            "arc_challenge": {
+              "mean_log_probability": -11.058174133300781,
+              "median_rank": 3.0,
+              "rows": 9,
+              "top1": 2,
+              "top10_accuracy": 0.8888888955116272,
+              "top1_accuracy": 0.2222222238779068
+            },
+            "arc_easy": {
+              "mean_log_probability": -11.1253662109375,
+              "median_rank": 3.0,
+              "rows": 16,
+              "top1": 3,
+              "top10_accuracy": 0.6875,
+              "top1_accuracy": 0.1875
+            },
+            "gsm8k": {
+              "mean_log_probability": -10.705033302307129,
+              "median_rank": 1.0,
+              "rows": 37,
+              "top1": 37,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 1.0
+            },
+            "mbpp": {
+              "mean_log_probability": -11.047354698181152,
+              "median_rank": 1.0,
+              "rows": 8,
+              "top1": 7,
+              "top10_accuracy": 0.875,
+              "top1_accuracy": 0.875
+            },
+            "mmlu": {
+              "mean_log_probability": -11.052847862243652,
+              "median_rank": 3.0,
+              "rows": 29,
+              "top1": 8,
+              "top10_accuracy": 0.931034505367279,
+              "top1_accuracy": 0.27586206793785095
+            },
+            "tier1": {
+              "mean_log_probability": -10.656479835510254,
+              "median_rank": 1.0,
+              "rows": 1,
+              "top1": 1,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 1.0
+            }
+          },
+          "pooled": {
+            "mean_log_probability": -10.931836128234863,
+            "median_rank": 1.0,
+            "rows": 100,
+            "top1": 58,
+            "top10_accuracy": 0.9099999666213989,
+            "top1_accuracy": 0.5799999833106995
+          }
+        }
+      },
+      "p34_seed_1_step_4000_loop_4": {
+        "fit": {
+          "eval_rows": 100,
+          "kind": "affine_ridge_to_frozen_output_embedding",
+          "optimizer_constructed": false,
+          "ridge": 1.0,
+          "train_rows": 229
+        },
+        "intercept_only_control": {
+          "by_battery": {
+            "arc_challenge": {
+              "mean_log_probability": -10.948063850402832,
+              "median_rank": 3.0,
+              "rows": 9,
+              "top1": 0,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.0
+            },
+            "arc_easy": {
+              "mean_log_probability": -10.944355010986328,
+              "median_rank": 3.0,
+              "rows": 16,
+              "top1": 0,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.0
+            },
+            "gsm8k": {
+              "mean_log_probability": -10.81395149230957,
+              "median_rank": 1.0,
+              "rows": 37,
+              "top1": 37,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 1.0
+            },
+            "mbpp": {
+              "mean_log_probability": -11.472883224487305,
+              "median_rank": 237.0,
+              "rows": 8,
+              "top1": 0,
+              "top10_accuracy": 0.0,
+              "top1_accuracy": 0.0
+            },
+            "mmlu": {
+              "mean_log_probability": -10.954118728637695,
+              "median_rank": 4.0,
+              "rows": 29,
+              "top1": 0,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.0
+            },
+            "tier1": {
+              "mean_log_probability": -10.813950538635254,
+              "median_rank": 1.0,
+              "rows": 1,
+              "top1": 1,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 1.0
+            }
+          },
+          "pooled": {
+            "mean_log_probability": -10.940248489379883,
+            "median_rank": 2.0,
+            "rows": 100,
+            "top1": 38,
+            "top10_accuracy": 0.9199999570846558,
+            "top1_accuracy": 0.3799999952316284
+          }
+        },
+        "probe": {
+          "by_battery": {
+            "arc_challenge": {
+              "mean_log_probability": -11.037335395812988,
+              "median_rank": 3.0,
+              "rows": 9,
+              "top1": 2,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.2222222238779068
+            },
+            "arc_easy": {
+              "mean_log_probability": -11.14516830444336,
+              "median_rank": 4.0,
+              "rows": 16,
+              "top1": 2,
+              "top10_accuracy": 0.625,
+              "top1_accuracy": 0.125
+            },
+            "gsm8k": {
+              "mean_log_probability": -10.706748008728027,
+              "median_rank": 1.0,
+              "rows": 37,
+              "top1": 37,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 1.0
+            },
+            "mbpp": {
+              "mean_log_probability": -11.056609153747559,
+              "median_rank": 1.0,
+              "rows": 8,
+              "top1": 7,
+              "top10_accuracy": 0.875,
+              "top1_accuracy": 0.875
+            },
+            "mmlu": {
+              "mean_log_probability": -11.048295021057129,
+              "median_rank": 3.0,
+              "rows": 29,
+              "top1": 8,
+              "top10_accuracy": 0.8965517282485962,
+              "top1_accuracy": 0.27586206793785095
+            },
+            "tier1": {
+              "mean_log_probability": -10.65722370147705,
+              "median_rank": 1.0,
+              "rows": 1,
+              "top1": 1,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 1.0
+            }
+          },
+          "pooled": {
+            "mean_log_probability": -10.93319034576416,
+            "median_rank": 1.0,
+            "rows": 100,
+            "top1": 57,
+            "top10_accuracy": 0.8999999761581421,
+            "top1_accuracy": 0.5699999928474426
+          }
+        }
+      },
+      "p35_seed_0_ema_step_4400_loop_1": {
+        "fit": {
+          "eval_rows": 100,
+          "kind": "affine_ridge_to_frozen_output_embedding",
+          "optimizer_constructed": false,
+          "ridge": 1.0,
+          "train_rows": 229
+        },
+        "intercept_only_control": {
+          "by_battery": {
+            "arc_challenge": {
+              "mean_log_probability": -10.948063850402832,
+              "median_rank": 3.0,
+              "rows": 9,
+              "top1": 0,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.0
+            },
+            "arc_easy": {
+              "mean_log_probability": -10.944355010986328,
+              "median_rank": 3.0,
+              "rows": 16,
+              "top1": 0,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.0
+            },
+            "gsm8k": {
+              "mean_log_probability": -10.81395149230957,
+              "median_rank": 1.0,
+              "rows": 37,
+              "top1": 37,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 1.0
+            },
+            "mbpp": {
+              "mean_log_probability": -11.472883224487305,
+              "median_rank": 237.0,
+              "rows": 8,
+              "top1": 0,
+              "top10_accuracy": 0.0,
+              "top1_accuracy": 0.0
+            },
+            "mmlu": {
+              "mean_log_probability": -10.954118728637695,
+              "median_rank": 4.0,
+              "rows": 29,
+              "top1": 0,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.0
+            },
+            "tier1": {
+              "mean_log_probability": -10.813950538635254,
+              "median_rank": 1.0,
+              "rows": 1,
+              "top1": 1,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 1.0
+            }
+          },
+          "pooled": {
+            "mean_log_probability": -10.940248489379883,
+            "median_rank": 2.0,
+            "rows": 100,
+            "top1": 38,
+            "top10_accuracy": 0.9199999570846558,
+            "top1_accuracy": 0.3799999952316284
+          }
+        },
+        "probe": {
+          "by_battery": {
+            "arc_challenge": {
+              "mean_log_probability": -11.144219398498535,
+              "median_rank": 3.0,
+              "rows": 9,
+              "top1": 2,
+              "top10_accuracy": 0.6666666865348816,
+              "top1_accuracy": 0.2222222238779068
+            },
+            "arc_easy": {
+              "mean_log_probability": -11.105666160583496,
+              "median_rank": 3.0,
+              "rows": 16,
+              "top1": 3,
+              "top10_accuracy": 0.875,
+              "top1_accuracy": 0.1875
+            },
+            "gsm8k": {
+              "mean_log_probability": -10.696772575378418,
+              "median_rank": 1.0,
+              "rows": 37,
+              "top1": 37,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 1.0
+            },
+            "mbpp": {
+              "mean_log_probability": -11.057538986206055,
+              "median_rank": 1.0,
+              "rows": 8,
+              "top1": 7,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.875
+            },
+            "mmlu": {
+              "mean_log_probability": -11.020835876464844,
+              "median_rank": 2.0,
+              "rows": 29,
+              "top1": 10,
+              "top10_accuracy": 0.8965517282485962,
+              "top1_accuracy": 0.3448275923728943
+            },
+            "tier1": {
+              "mean_log_probability": -10.651863098144531,
+              "median_rank": 1.0,
+              "rows": 1,
+              "top1": 1,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 1.0
+            }
+          },
+          "pooled": {
+            "mean_log_probability": -10.924856185913086,
+            "median_rank": 1.0,
+            "rows": 100,
+            "top1": 60,
+            "top10_accuracy": 0.9199999570846558,
+            "top1_accuracy": 0.5999999642372131
+          }
+        }
+      },
+      "p35_seed_0_ema_step_4400_loop_2": {
+        "fit": {
+          "eval_rows": 100,
+          "kind": "affine_ridge_to_frozen_output_embedding",
+          "optimizer_constructed": false,
+          "ridge": 1.0,
+          "train_rows": 229
+        },
+        "intercept_only_control": {
+          "by_battery": {
+            "arc_challenge": {
+              "mean_log_probability": -10.948063850402832,
+              "median_rank": 3.0,
+              "rows": 9,
+              "top1": 0,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.0
+            },
+            "arc_easy": {
+              "mean_log_probability": -10.944355010986328,
+              "median_rank": 3.0,
+              "rows": 16,
+              "top1": 0,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.0
+            },
+            "gsm8k": {
+              "mean_log_probability": -10.81395149230957,
+              "median_rank": 1.0,
+              "rows": 37,
+              "top1": 37,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 1.0
+            },
+            "mbpp": {
+              "mean_log_probability": -11.472883224487305,
+              "median_rank": 237.0,
+              "rows": 8,
+              "top1": 0,
+              "top10_accuracy": 0.0,
+              "top1_accuracy": 0.0
+            },
+            "mmlu": {
+              "mean_log_probability": -10.954118728637695,
+              "median_rank": 4.0,
+              "rows": 29,
+              "top1": 0,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.0
+            },
+            "tier1": {
+              "mean_log_probability": -10.813950538635254,
+              "median_rank": 1.0,
+              "rows": 1,
+              "top1": 1,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 1.0
+            }
+          },
+          "pooled": {
+            "mean_log_probability": -10.940248489379883,
+            "median_rank": 2.0,
+            "rows": 100,
+            "top1": 38,
+            "top10_accuracy": 0.9199999570846558,
+            "top1_accuracy": 0.3799999952316284
+          }
+        },
+        "probe": {
+          "by_battery": {
+            "arc_challenge": {
+              "mean_log_probability": -11.122414588928223,
+              "median_rank": 3.0,
+              "rows": 9,
+              "top1": 3,
+              "top10_accuracy": 0.7777777910232544,
+              "top1_accuracy": 0.3333333432674408
+            },
+            "arc_easy": {
+              "mean_log_probability": -11.138118743896484,
+              "median_rank": 3.0,
+              "rows": 16,
+              "top1": 4,
+              "top10_accuracy": 0.75,
+              "top1_accuracy": 0.25
+            },
+            "gsm8k": {
+              "mean_log_probability": -10.706205368041992,
+              "median_rank": 1.0,
+              "rows": 37,
+              "top1": 37,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 1.0
+            },
+            "mbpp": {
+              "mean_log_probability": -11.066697120666504,
+              "median_rank": 1.0,
+              "rows": 8,
+              "top1": 7,
+              "top10_accuracy": 0.875,
+              "top1_accuracy": 0.875
+            },
+            "mmlu": {
+              "mean_log_probability": -11.062295913696289,
+              "median_rank": 2.0,
+              "rows": 29,
+              "top1": 10,
+              "top10_accuracy": 0.8620689511299133,
+              "top1_accuracy": 0.3448275923728943
+            },
+            "tier1": {
+              "mean_log_probability": -10.650062561035156,
+              "median_rank": 1.0,
+              "rows": 1,
+              "top1": 1,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 1.0
+            }
+          },
+          "pooled": {
+            "mean_log_probability": -10.944314002990723,
+            "median_rank": 1.0,
+            "rows": 100,
+            "top1": 62,
+            "top10_accuracy": 0.8899999856948853,
+            "top1_accuracy": 0.6200000047683716
+          }
+        }
+      },
+      "p35_seed_0_ema_step_4400_loop_3": {
+        "fit": {
+          "eval_rows": 100,
+          "kind": "affine_ridge_to_frozen_output_embedding",
+          "optimizer_constructed": false,
+          "ridge": 1.0,
+          "train_rows": 229
+        },
+        "intercept_only_control": {
+          "by_battery": {
+            "arc_challenge": {
+              "mean_log_probability": -10.948063850402832,
+              "median_rank": 3.0,
+              "rows": 9,
+              "top1": 0,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.0
+            },
+            "arc_easy": {
+              "mean_log_probability": -10.944355010986328,
+              "median_rank": 3.0,
+              "rows": 16,
+              "top1": 0,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.0
+            },
+            "gsm8k": {
+              "mean_log_probability": -10.81395149230957,
+              "median_rank": 1.0,
+              "rows": 37,
+              "top1": 37,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 1.0
+            },
+            "mbpp": {
+              "mean_log_probability": -11.472883224487305,
+              "median_rank": 237.0,
+              "rows": 8,
+              "top1": 0,
+              "top10_accuracy": 0.0,
+              "top1_accuracy": 0.0
+            },
+            "mmlu": {
+              "mean_log_probability": -10.954118728637695,
+              "median_rank": 4.0,
+              "rows": 29,
+              "top1": 0,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.0
+            },
+            "tier1": {
+              "mean_log_probability": -10.813950538635254,
+              "median_rank": 1.0,
+              "rows": 1,
+              "top1": 1,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 1.0
+            }
+          },
+          "pooled": {
+            "mean_log_probability": -10.940248489379883,
+            "median_rank": 2.0,
+            "rows": 100,
+            "top1": 38,
+            "top10_accuracy": 0.9199999570846558,
+            "top1_accuracy": 0.3799999952316284
+          }
+        },
+        "probe": {
+          "by_battery": {
+            "arc_challenge": {
+              "mean_log_probability": -11.10358715057373,
+              "median_rank": 3.0,
+              "rows": 9,
+              "top1": 3,
+              "top10_accuracy": 0.8888888955116272,
+              "top1_accuracy": 0.3333333432674408
+            },
+            "arc_easy": {
+              "mean_log_probability": -11.13557243347168,
+              "median_rank": 3.0,
+              "rows": 16,
+              "top1": 5,
+              "top10_accuracy": 0.75,
+              "top1_accuracy": 0.3125
+            },
+            "gsm8k": {
+              "mean_log_probability": -10.70496654510498,
+              "median_rank": 1.0,
+              "rows": 37,
+              "top1": 37,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 1.0
+            },
+            "mbpp": {
+              "mean_log_probability": -11.08035945892334,
+              "median_rank": 1.0,
+              "rows": 8,
+              "top1": 7,
+              "top10_accuracy": 0.875,
+              "top1_accuracy": 0.875
+            },
+            "mmlu": {
+              "mean_log_probability": -11.060654640197754,
+              "median_rank": 3.0,
+              "rows": 29,
+              "top1": 9,
+              "top10_accuracy": 0.8620689511299133,
+              "top1_accuracy": 0.3103448152542114
+            },
+            "tier1": {
+              "mean_log_probability": -10.652305603027344,
+              "median_rank": 1.0,
+              "rows": 1,
+              "top1": 1,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 1.0
+            }
+          },
+          "pooled": {
+            "mean_log_probability": -10.94239330291748,
+            "median_rank": 1.0,
+            "rows": 100,
+            "top1": 62,
+            "top10_accuracy": 0.8999999761581421,
+            "top1_accuracy": 0.6200000047683716
+          }
+        }
+      },
+      "p35_seed_0_ema_step_4400_loop_4": {
+        "fit": {
+          "eval_rows": 100,
+          "kind": "affine_ridge_to_frozen_output_embedding",
+          "optimizer_constructed": false,
+          "ridge": 1.0,
+          "train_rows": 229
+        },
+        "intercept_only_control": {
+          "by_battery": {
+            "arc_challenge": {
+              "mean_log_probability": -10.948063850402832,
+              "median_rank": 3.0,
+              "rows": 9,
+              "top1": 0,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.0
+            },
+            "arc_easy": {
+              "mean_log_probability": -10.944355010986328,
+              "median_rank": 3.0,
+              "rows": 16,
+              "top1": 0,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.0
+            },
+            "gsm8k": {
+              "mean_log_probability": -10.81395149230957,
+              "median_rank": 1.0,
+              "rows": 37,
+              "top1": 37,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 1.0
+            },
+            "mbpp": {
+              "mean_log_probability": -11.472883224487305,
+              "median_rank": 237.0,
+              "rows": 8,
+              "top1": 0,
+              "top10_accuracy": 0.0,
+              "top1_accuracy": 0.0
+            },
+            "mmlu": {
+              "mean_log_probability": -10.954118728637695,
+              "median_rank": 4.0,
+              "rows": 29,
+              "top1": 0,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.0
+            },
+            "tier1": {
+              "mean_log_probability": -10.813950538635254,
+              "median_rank": 1.0,
+              "rows": 1,
+              "top1": 1,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 1.0
+            }
+          },
+          "pooled": {
+            "mean_log_probability": -10.940248489379883,
+            "median_rank": 2.0,
+            "rows": 100,
+            "top1": 38,
+            "top10_accuracy": 0.9199999570846558,
+            "top1_accuracy": 0.3799999952316284
+          }
+        },
+        "probe": {
+          "by_battery": {
+            "arc_challenge": {
+              "mean_log_probability": -11.085278511047363,
+              "median_rank": 2.0,
+              "rows": 9,
+              "top1": 2,
+              "top10_accuracy": 0.8888888955116272,
+              "top1_accuracy": 0.2222222238779068
+            },
+            "arc_easy": {
+              "mean_log_probability": -11.142300605773926,
+              "median_rank": 3.0,
+              "rows": 16,
+              "top1": 6,
+              "top10_accuracy": 0.6875,
+              "top1_accuracy": 0.375
+            },
+            "gsm8k": {
+              "mean_log_probability": -10.70100212097168,
+              "median_rank": 1.0,
+              "rows": 37,
+              "top1": 37,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 1.0
+            },
+            "mbpp": {
+              "mean_log_probability": -11.085704803466797,
+              "median_rank": 1.0,
+              "rows": 8,
+              "top1": 7,
+              "top10_accuracy": 0.875,
+              "top1_accuracy": 0.875
+            },
+            "mmlu": {
+              "mean_log_probability": -11.05085563659668,
+              "median_rank": 3.0,
+              "rows": 29,
+              "top1": 8,
+              "top10_accuracy": 0.8965517282485962,
+              "top1_accuracy": 0.27586206793785095
+            },
+            "tier1": {
+              "mean_log_probability": -10.655014038085938,
+              "median_rank": 1.0,
+              "rows": 1,
+              "top1": 1,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 1.0
+            }
+          },
+          "pooled": {
+            "mean_log_probability": -10.937968254089355,
+            "median_rank": 1.0,
+            "rows": 100,
+            "top1": 61,
+            "top10_accuracy": 0.8999999761581421,
+            "top1_accuracy": 0.6100000143051147
+          }
+        }
+      },
+      "p35_seed_1_ema_step_4400_loop_1": {
+        "fit": {
+          "eval_rows": 100,
+          "kind": "affine_ridge_to_frozen_output_embedding",
+          "optimizer_constructed": false,
+          "ridge": 1.0,
+          "train_rows": 229
+        },
+        "intercept_only_control": {
+          "by_battery": {
+            "arc_challenge": {
+              "mean_log_probability": -10.948063850402832,
+              "median_rank": 3.0,
+              "rows": 9,
+              "top1": 0,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.0
+            },
+            "arc_easy": {
+              "mean_log_probability": -10.944355010986328,
+              "median_rank": 3.0,
+              "rows": 16,
+              "top1": 0,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.0
+            },
+            "gsm8k": {
+              "mean_log_probability": -10.81395149230957,
+              "median_rank": 1.0,
+              "rows": 37,
+              "top1": 37,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 1.0
+            },
+            "mbpp": {
+              "mean_log_probability": -11.472883224487305,
+              "median_rank": 237.0,
+              "rows": 8,
+              "top1": 0,
+              "top10_accuracy": 0.0,
+              "top1_accuracy": 0.0
+            },
+            "mmlu": {
+              "mean_log_probability": -10.954118728637695,
+              "median_rank": 4.0,
+              "rows": 29,
+              "top1": 0,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.0
+            },
+            "tier1": {
+              "mean_log_probability": -10.813950538635254,
+              "median_rank": 1.0,
+              "rows": 1,
+              "top1": 1,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 1.0
+            }
+          },
+          "pooled": {
+            "mean_log_probability": -10.940248489379883,
+            "median_rank": 2.0,
+            "rows": 100,
+            "top1": 38,
+            "top10_accuracy": 0.9199999570846558,
+            "top1_accuracy": 0.3799999952316284
+          }
+        },
+        "probe": {
+          "by_battery": {
+            "arc_challenge": {
+              "mean_log_probability": -11.15587329864502,
+              "median_rank": 4.0,
+              "rows": 9,
+              "top1": 1,
+              "top10_accuracy": 0.8888888955116272,
+              "top1_accuracy": 0.1111111119389534
+            },
+            "arc_easy": {
+              "mean_log_probability": -11.096083641052246,
+              "median_rank": 3.0,
+              "rows": 16,
+              "top1": 1,
+              "top10_accuracy": 0.8125,
+              "top1_accuracy": 0.0625
+            },
+            "gsm8k": {
+              "mean_log_probability": -10.703856468200684,
+              "median_rank": 1.0,
+              "rows": 37,
+              "top1": 37,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 1.0
+            },
+            "mbpp": {
+              "mean_log_probability": -11.043550491333008,
+              "median_rank": 1.0,
+              "rows": 8,
+              "top1": 7,
+              "top10_accuracy": 0.875,
+              "top1_accuracy": 0.875
+            },
+            "mmlu": {
+              "mean_log_probability": -11.071331024169922,
+              "median_rank": 3.0,
+              "rows": 29,
+              "top1": 7,
+              "top10_accuracy": 0.931034505367279,
+              "top1_accuracy": 0.24137930572032928
+            },
+            "tier1": {
+              "mean_log_probability": -10.655747413635254,
+              "median_rank": 1.0,
+              "rows": 1,
+              "top1": 1,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 1.0
+            }
+          },
+          "pooled": {
+            "mean_log_probability": -10.940556526184082,
+            "median_rank": 1.0,
+            "rows": 100,
+            "top1": 54,
+            "top10_accuracy": 0.9300000071525574,
+            "top1_accuracy": 0.5399999618530273
+          }
+        }
+      },
+      "p35_seed_1_ema_step_4400_loop_2": {
+        "fit": {
+          "eval_rows": 100,
+          "kind": "affine_ridge_to_frozen_output_embedding",
+          "optimizer_constructed": false,
+          "ridge": 1.0,
+          "train_rows": 229
+        },
+        "intercept_only_control": {
+          "by_battery": {
+            "arc_challenge": {
+              "mean_log_probability": -10.948063850402832,
+              "median_rank": 3.0,
+              "rows": 9,
+              "top1": 0,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.0
+            },
+            "arc_easy": {
+              "mean_log_probability": -10.944355010986328,
+              "median_rank": 3.0,
+              "rows": 16,
+              "top1": 0,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.0
+            },
+            "gsm8k": {
+              "mean_log_probability": -10.81395149230957,
+              "median_rank": 1.0,
+              "rows": 37,
+              "top1": 37,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 1.0
+            },
+            "mbpp": {
+              "mean_log_probability": -11.472883224487305,
+              "median_rank": 237.0,
+              "rows": 8,
+              "top1": 0,
+              "top10_accuracy": 0.0,
+              "top1_accuracy": 0.0
+            },
+            "mmlu": {
+              "mean_log_probability": -10.954118728637695,
+              "median_rank": 4.0,
+              "rows": 29,
+              "top1": 0,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.0
+            },
+            "tier1": {
+              "mean_log_probability": -10.813950538635254,
+              "median_rank": 1.0,
+              "rows": 1,
+              "top1": 1,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 1.0
+            }
+          },
+          "pooled": {
+            "mean_log_probability": -10.940248489379883,
+            "median_rank": 2.0,
+            "rows": 100,
+            "top1": 38,
+            "top10_accuracy": 0.9199999570846558,
+            "top1_accuracy": 0.3799999952316284
+          }
+        },
+        "probe": {
+          "by_battery": {
+            "arc_challenge": {
+              "mean_log_probability": -11.09604263305664,
+              "median_rank": 2.0,
+              "rows": 9,
+              "top1": 1,
+              "top10_accuracy": 0.8888888955116272,
+              "top1_accuracy": 0.1111111119389534
+            },
+            "arc_easy": {
+              "mean_log_probability": -11.10312271118164,
+              "median_rank": 3.0,
+              "rows": 16,
+              "top1": 4,
+              "top10_accuracy": 0.75,
+              "top1_accuracy": 0.25
+            },
+            "gsm8k": {
+              "mean_log_probability": -10.704103469848633,
+              "median_rank": 1.0,
+              "rows": 37,
+              "top1": 37,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 1.0
+            },
+            "mbpp": {
+              "mean_log_probability": -11.041187286376953,
+              "median_rank": 1.0,
+              "rows": 8,
+              "top1": 7,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.875
+            },
+            "mmlu": {
+              "mean_log_probability": -11.06121826171875,
+              "median_rank": 3.0,
+              "rows": 29,
+              "top1": 9,
+              "top10_accuracy": 0.931034505367279,
+              "top1_accuracy": 0.3103448152542114
+            },
+            "tier1": {
+              "mean_log_probability": -10.655370712280273,
+              "median_rank": 1.0,
+              "rows": 1,
+              "top1": 1,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 1.0
+            }
+          },
+          "pooled": {
+            "mean_log_probability": -10.933263778686523,
+            "median_rank": 1.0,
+            "rows": 100,
+            "top1": 59,
+            "top10_accuracy": 0.9300000071525574,
+            "top1_accuracy": 0.5899999737739563
+          }
+        }
+      },
+      "p35_seed_1_ema_step_4400_loop_3": {
+        "fit": {
+          "eval_rows": 100,
+          "kind": "affine_ridge_to_frozen_output_embedding",
+          "optimizer_constructed": false,
+          "ridge": 1.0,
+          "train_rows": 229
+        },
+        "intercept_only_control": {
+          "by_battery": {
+            "arc_challenge": {
+              "mean_log_probability": -10.948063850402832,
+              "median_rank": 3.0,
+              "rows": 9,
+              "top1": 0,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.0
+            },
+            "arc_easy": {
+              "mean_log_probability": -10.944355010986328,
+              "median_rank": 3.0,
+              "rows": 16,
+              "top1": 0,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.0
+            },
+            "gsm8k": {
+              "mean_log_probability": -10.81395149230957,
+              "median_rank": 1.0,
+              "rows": 37,
+              "top1": 37,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 1.0
+            },
+            "mbpp": {
+              "mean_log_probability": -11.472883224487305,
+              "median_rank": 237.0,
+              "rows": 8,
+              "top1": 0,
+              "top10_accuracy": 0.0,
+              "top1_accuracy": 0.0
+            },
+            "mmlu": {
+              "mean_log_probability": -10.954118728637695,
+              "median_rank": 4.0,
+              "rows": 29,
+              "top1": 0,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.0
+            },
+            "tier1": {
+              "mean_log_probability": -10.813950538635254,
+              "median_rank": 1.0,
+              "rows": 1,
+              "top1": 1,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 1.0
+            }
+          },
+          "pooled": {
+            "mean_log_probability": -10.940248489379883,
+            "median_rank": 2.0,
+            "rows": 100,
+            "top1": 38,
+            "top10_accuracy": 0.9199999570846558,
+            "top1_accuracy": 0.3799999952316284
+          }
+        },
+        "probe": {
+          "by_battery": {
+            "arc_challenge": {
+              "mean_log_probability": -11.058174133300781,
+              "median_rank": 3.0,
+              "rows": 9,
+              "top1": 2,
+              "top10_accuracy": 0.8888888955116272,
+              "top1_accuracy": 0.2222222238779068
+            },
+            "arc_easy": {
+              "mean_log_probability": -11.1253662109375,
+              "median_rank": 3.0,
+              "rows": 16,
+              "top1": 3,
+              "top10_accuracy": 0.6875,
+              "top1_accuracy": 0.1875
+            },
+            "gsm8k": {
+              "mean_log_probability": -10.705033302307129,
+              "median_rank": 1.0,
+              "rows": 37,
+              "top1": 37,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 1.0
+            },
+            "mbpp": {
+              "mean_log_probability": -11.047354698181152,
+              "median_rank": 1.0,
+              "rows": 8,
+              "top1": 7,
+              "top10_accuracy": 0.875,
+              "top1_accuracy": 0.875
+            },
+            "mmlu": {
+              "mean_log_probability": -11.052847862243652,
+              "median_rank": 3.0,
+              "rows": 29,
+              "top1": 8,
+              "top10_accuracy": 0.931034505367279,
+              "top1_accuracy": 0.27586206793785095
+            },
+            "tier1": {
+              "mean_log_probability": -10.656479835510254,
+              "median_rank": 1.0,
+              "rows": 1,
+              "top1": 1,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 1.0
+            }
+          },
+          "pooled": {
+            "mean_log_probability": -10.931836128234863,
+            "median_rank": 1.0,
+            "rows": 100,
+            "top1": 58,
+            "top10_accuracy": 0.9099999666213989,
+            "top1_accuracy": 0.5799999833106995
+          }
+        }
+      },
+      "p35_seed_1_ema_step_4400_loop_4": {
+        "fit": {
+          "eval_rows": 100,
+          "kind": "affine_ridge_to_frozen_output_embedding",
+          "optimizer_constructed": false,
+          "ridge": 1.0,
+          "train_rows": 229
+        },
+        "intercept_only_control": {
+          "by_battery": {
+            "arc_challenge": {
+              "mean_log_probability": -10.948063850402832,
+              "median_rank": 3.0,
+              "rows": 9,
+              "top1": 0,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.0
+            },
+            "arc_easy": {
+              "mean_log_probability": -10.944355010986328,
+              "median_rank": 3.0,
+              "rows": 16,
+              "top1": 0,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.0
+            },
+            "gsm8k": {
+              "mean_log_probability": -10.81395149230957,
+              "median_rank": 1.0,
+              "rows": 37,
+              "top1": 37,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 1.0
+            },
+            "mbpp": {
+              "mean_log_probability": -11.472883224487305,
+              "median_rank": 237.0,
+              "rows": 8,
+              "top1": 0,
+              "top10_accuracy": 0.0,
+              "top1_accuracy": 0.0
+            },
+            "mmlu": {
+              "mean_log_probability": -10.954118728637695,
+              "median_rank": 4.0,
+              "rows": 29,
+              "top1": 0,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.0
+            },
+            "tier1": {
+              "mean_log_probability": -10.813950538635254,
+              "median_rank": 1.0,
+              "rows": 1,
+              "top1": 1,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 1.0
+            }
+          },
+          "pooled": {
+            "mean_log_probability": -10.940248489379883,
+            "median_rank": 2.0,
+            "rows": 100,
+            "top1": 38,
+            "top10_accuracy": 0.9199999570846558,
+            "top1_accuracy": 0.3799999952316284
+          }
+        },
+        "probe": {
+          "by_battery": {
+            "arc_challenge": {
+              "mean_log_probability": -11.037335395812988,
+              "median_rank": 3.0,
+              "rows": 9,
+              "top1": 2,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.2222222238779068
+            },
+            "arc_easy": {
+              "mean_log_probability": -11.14516830444336,
+              "median_rank": 4.0,
+              "rows": 16,
+              "top1": 2,
+              "top10_accuracy": 0.625,
+              "top1_accuracy": 0.125
+            },
+            "gsm8k": {
+              "mean_log_probability": -10.706748008728027,
+              "median_rank": 1.0,
+              "rows": 37,
+              "top1": 37,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 1.0
+            },
+            "mbpp": {
+              "mean_log_probability": -11.056609153747559,
+              "median_rank": 1.0,
+              "rows": 8,
+              "top1": 7,
+              "top10_accuracy": 0.875,
+              "top1_accuracy": 0.875
+            },
+            "mmlu": {
+              "mean_log_probability": -11.048295021057129,
+              "median_rank": 3.0,
+              "rows": 29,
+              "top1": 8,
+              "top10_accuracy": 0.8965517282485962,
+              "top1_accuracy": 0.27586206793785095
+            },
+            "tier1": {
+              "mean_log_probability": -10.65722370147705,
+              "median_rank": 1.0,
+              "rows": 1,
+              "top1": 1,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 1.0
+            }
+          },
+          "pooled": {
+            "mean_log_probability": -10.93319034576416,
+            "median_rank": 1.0,
+            "rows": 100,
+            "top1": 57,
+            "top10_accuracy": 0.8999999761581421,
+            "top1_accuracy": 0.5699999928474426
+          }
+        }
+      }
+    },
+    "logit_lens": {
+      "layer_12": {
+        "by_battery": {
+          "arc_challenge": {
+            "mean_log_probability": -9.273088455200195,
+            "median_rank": 747.0,
+            "rows": 31,
+            "top1": 0,
+            "top10_accuracy": 0.0,
+            "top1_accuracy": 0.0
+          },
+          "arc_easy": {
+            "mean_log_probability": -8.973249435424805,
+            "median_rank": 495.0,
+            "rows": 52,
+            "top1": 0,
+            "top10_accuracy": 0.0,
+            "top1_accuracy": 0.0
+          },
+          "gsm8k": {
+            "mean_log_probability": -13.212143898010254,
+            "median_rank": 24550.0,
+            "rows": 122,
+            "top1": 0,
+            "top10_accuracy": 0.0,
+            "top1_accuracy": 0.0
+          },
+          "mbpp": {
+            "mean_log_probability": -17.136024475097656,
+            "median_rank": 121647.0,
+            "rows": 25,
+            "top1": 0,
+            "top10_accuracy": 0.0,
+            "top1_accuracy": 0.0
+          },
+          "mmlu": {
+            "mean_log_probability": -8.887838363647461,
+            "median_rank": 311.0,
+            "rows": 96,
+            "top1": 0,
+            "top10_accuracy": 0.0,
+            "top1_accuracy": 0.0
+          },
+          "tier1": {
+            "mean_log_probability": -15.73221206665039,
+            "median_rank": 80896.0,
+            "rows": 3,
+            "top1": 0,
+            "top10_accuracy": 0.0,
+            "top1_accuracy": 0.0
+          }
+        },
+        "pooled": {
+          "mean_log_probability": -11.230353355407715,
+          "median_rank": 5758.0,
+          "rows": 329,
+          "top1": 0,
+          "top10_accuracy": 0.0,
+          "top1_accuracy": 0.0
+        }
+      },
+      "layer_18": {
+        "by_battery": {
+          "arc_challenge": {
+            "mean_log_probability": -9.448769569396973,
+            "median_rank": 843.0,
+            "rows": 31,
+            "top1": 0,
+            "top10_accuracy": 0.0,
+            "top1_accuracy": 0.0
+          },
+          "arc_easy": {
+            "mean_log_probability": -9.276405334472656,
+            "median_rank": 800.0,
+            "rows": 52,
+            "top1": 0,
+            "top10_accuracy": 0.03846153989434242,
+            "top1_accuracy": 0.0
+          },
+          "gsm8k": {
+            "mean_log_probability": -16.945953369140625,
+            "median_rank": 120451.0,
+            "rows": 122,
+            "top1": 0,
+            "top10_accuracy": 0.0,
+            "top1_accuracy": 0.0
+          },
+          "mbpp": {
+            "mean_log_probability": -16.29536247253418,
+            "median_rank": 56858.0,
+            "rows": 25,
+            "top1": 0,
+            "top10_accuracy": 0.0,
+            "top1_accuracy": 0.0
+          },
+          "mmlu": {
+            "mean_log_probability": -10.160734176635742,
+            "median_rank": 1519.0,
+            "rows": 96,
+            "top1": 0,
+            "top10_accuracy": 0.0,
+            "top1_accuracy": 0.0
+          },
+          "tier1": {
+            "mean_log_probability": -13.647346496582031,
+            "median_rank": 22945.0,
+            "rows": 3,
+            "top1": 0,
+            "top10_accuracy": 0.0,
+            "top1_accuracy": 0.0
+          }
+        },
+        "pooled": {
+          "mean_log_probability": -12.967927932739258,
+          "median_rank": 12182.0,
+          "rows": 329,
+          "top1": 0,
+          "top10_accuracy": 0.006079027429223061,
+          "top1_accuracy": 0.0
+        }
+      },
+      "layer_24": {
+        "by_battery": {
+          "arc_challenge": {
+            "mean_log_probability": -1.77519690990448,
+            "median_rank": 2.0,
+            "rows": 31,
+            "top1": 6,
+            "top10_accuracy": 1.0,
+            "top1_accuracy": 0.19354838132858276
+          },
+          "arc_easy": {
+            "mean_log_probability": -1.8898398876190186,
+            "median_rank": 2.0,
+            "rows": 52,
+            "top1": 11,
+            "top10_accuracy": 1.0,
+            "top1_accuracy": 0.21153846383094788
+          },
+          "gsm8k": {
+            "mean_log_probability": -8.438970565795898,
+            "median_rank": 89.0,
+            "rows": 122,
+            "top1": 0,
+            "top10_accuracy": 0.0,
+            "top1_accuracy": 0.0
+          },
+          "mbpp": {
+            "mean_log_probability": -13.020233154296875,
+            "median_rank": 373.0,
+            "rows": 25,
+            "top1": 0,
+            "top10_accuracy": 0.0,
+            "top1_accuracy": 0.0
+          },
+          "mmlu": {
+            "mean_log_probability": -1.7519134283065796,
+            "median_rank": 2.0,
+            "rows": 96,
+            "top1": 19,
+            "top10_accuracy": 1.0,
+            "top1_accuracy": 0.1979166716337204
+          },
+          "tier1": {
+            "mean_log_probability": -12.582086563110352,
+            "median_rank": 128.0,
+            "rows": 3,
+            "top1": 0,
+            "top10_accuracy": 0.0,
+            "top1_accuracy": 0.0
+          }
+        },
+        "pooled": {
+          "mean_log_probability": -5.210617542266846,
+          "median_rank": 4.0,
+          "rows": 329,
+          "top1": 36,
+          "top10_accuracy": 0.5440729260444641,
+          "top1_accuracy": 0.10942249000072479
+        }
+      },
+      "layer_6": {
+        "by_battery": {
+          "arc_challenge": {
+            "mean_log_probability": -14.097640991210938,
+            "median_rank": 32957.0,
+            "rows": 31,
+            "top1": 0,
+            "top10_accuracy": 0.0,
+            "top1_accuracy": 0.0
+          },
+          "arc_easy": {
+            "mean_log_probability": -14.060198783874512,
+            "median_rank": 30427.0,
+            "rows": 52,
+            "top1": 0,
+            "top10_accuracy": 0.0,
+            "top1_accuracy": 0.0
+          },
+          "gsm8k": {
+            "mean_log_probability": -21.14313316345215,
+            "median_rank": 136042.0,
+            "rows": 122,
+            "top1": 0,
+            "top10_accuracy": 0.0,
+            "top1_accuracy": 0.0
+          },
+          "mbpp": {
+            "mean_log_probability": -19.226703643798828,
+            "median_rank": 113677.0,
+            "rows": 25,
+            "top1": 0,
+            "top10_accuracy": 0.0,
+            "top1_accuracy": 0.0
+          },
+          "mmlu": {
+            "mean_log_probability": -14.346210479736328,
+            "median_rank": 30526.0,
+            "rows": 96,
+            "top1": 0,
+            "top10_accuracy": 0.0,
+            "top1_accuracy": 0.0
+          },
+          "tier1": {
+            "mean_log_probability": -21.40114974975586,
+            "median_rank": 135945.0,
+            "rows": 3,
+            "top1": 0,
+            "top10_accuracy": 0.0,
+            "top1_accuracy": 0.0
+          }
+        },
+        "pooled": {
+          "mean_log_probability": -17.233211517333984,
+          "median_rank": 69176.0,
+          "rows": 329,
+          "top1": 0,
+          "top10_accuracy": 0.0,
+          "top1_accuracy": 0.0
+        }
+      }
+    },
+    "native_recurrent_gold_token_ranks": {
+      "p34_seed_0_step_4000": {
+        "loop_1": {
+          "by_battery": {
+            "arc_challenge": {
+              "mean_log_probability": -1.883231282234192,
+              "median_rank": 2.0,
+              "rows": 31,
+              "top1": 6,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.19354838132858276
+            },
+            "arc_easy": {
+              "mean_log_probability": -2.18385648727417,
+              "median_rank": 2.0,
+              "rows": 52,
+              "top1": 7,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.13461539149284363
+            },
+            "gsm8k": {
+              "mean_log_probability": -11.174212455749512,
+              "median_rank": 155.0,
+              "rows": 122,
+              "top1": 0,
+              "top10_accuracy": 0.0,
+              "top1_accuracy": 0.0
+            },
+            "mbpp": {
+              "mean_log_probability": -11.320230484008789,
+              "median_rank": 63.0,
+              "rows": 25,
+              "top1": 0,
+              "top10_accuracy": 0.0,
+              "top1_accuracy": 0.0
+            },
+            "mmlu": {
+              "mean_log_probability": -1.9632338285446167,
+              "median_rank": 3.0,
+              "rows": 96,
+              "top1": 15,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.15625
+            },
+            "tier1": {
+              "mean_log_probability": -15.975640296936035,
+              "median_rank": 348.0,
+              "rows": 3,
+              "top1": 0,
+              "top10_accuracy": 0.0,
+              "top1_accuracy": 0.0
+            }
+          },
+          "pooled": {
+            "mean_log_probability": -6.2449774742126465,
+            "median_rank": 4.0,
+            "rows": 329,
+            "top1": 28,
+            "top10_accuracy": 0.5440729260444641,
+            "top1_accuracy": 0.08510638028383255
+          }
+        },
+        "loop_2": {
+          "by_battery": {
+            "arc_challenge": {
+              "mean_log_probability": -1.882085919380188,
+              "median_rank": 2.0,
+              "rows": 31,
+              "top1": 5,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.16129031777381897
+            },
+            "arc_easy": {
+              "mean_log_probability": -2.176596164703369,
+              "median_rank": 2.0,
+              "rows": 52,
+              "top1": 7,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.13461539149284363
+            },
+            "gsm8k": {
+              "mean_log_probability": -10.786966323852539,
+              "median_rank": 136.0,
+              "rows": 122,
+              "top1": 0,
+              "top10_accuracy": 0.0,
+              "top1_accuracy": 0.0
+            },
+            "mbpp": {
+              "mean_log_probability": -11.880077362060547,
+              "median_rank": 80.0,
+              "rows": 25,
+              "top1": 0,
+              "top10_accuracy": 0.0,
+              "top1_accuracy": 0.0
+            },
+            "mmlu": {
+              "mean_log_probability": -1.932193636894226,
+              "median_rank": 3.0,
+              "rows": 96,
+              "top1": 12,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.125
+            },
+            "tier1": {
+              "mean_log_probability": -16.092741012573242,
+              "median_rank": 328.0,
+              "rows": 3,
+              "top1": 0,
+              "top10_accuracy": 0.0,
+              "top1_accuracy": 0.0
+            }
+          },
+          "pooled": {
+            "mean_log_probability": -6.134675979614258,
+            "median_rank": 4.0,
+            "rows": 329,
+            "top1": 24,
+            "top10_accuracy": 0.5440729260444641,
+            "top1_accuracy": 0.07294832915067673
+          }
+        },
+        "loop_3": {
+          "by_battery": {
+            "arc_challenge": {
+              "mean_log_probability": -1.8978331089019775,
+              "median_rank": 2.0,
+              "rows": 31,
+              "top1": 7,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.22580644488334656
+            },
+            "arc_easy": {
+              "mean_log_probability": -2.2158496379852295,
+              "median_rank": 2.0,
+              "rows": 52,
+              "top1": 6,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.11538461595773697
+            },
+            "gsm8k": {
+              "mean_log_probability": -10.835470199584961,
+              "median_rank": 129.0,
+              "rows": 122,
+              "top1": 0,
+              "top10_accuracy": 0.0,
+              "top1_accuracy": 0.0
+            },
+            "mbpp": {
+              "mean_log_probability": -11.93005084991455,
+              "median_rank": 71.0,
+              "rows": 25,
+              "top1": 0,
+              "top10_accuracy": 0.0,
+              "top1_accuracy": 0.0
+            },
+            "mmlu": {
+              "mean_log_probability": -1.9436546564102173,
+              "median_rank": 2.0,
+              "rows": 96,
+              "top1": 17,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.1770833283662796
+            },
+            "tier1": {
+              "mean_log_probability": -16.0632381439209,
+              "median_rank": 349.0,
+              "rows": 3,
+              "top1": 0,
+              "top10_accuracy": 0.0,
+              "top1_accuracy": 0.0
+            }
+          },
+          "pooled": {
+            "mean_log_probability": -6.16722297668457,
+            "median_rank": 4.0,
+            "rows": 329,
+            "top1": 30,
+            "top10_accuracy": 0.5440729260444641,
+            "top1_accuracy": 0.09118541330099106
+          }
+        },
+        "loop_4": {
+          "by_battery": {
+            "arc_challenge": {
+              "mean_log_probability": -1.8900400400161743,
+              "median_rank": 2.0,
+              "rows": 31,
+              "top1": 7,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.22580644488334656
+            },
+            "arc_easy": {
+              "mean_log_probability": -2.1987617015838623,
+              "median_rank": 2.0,
+              "rows": 52,
+              "top1": 6,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.11538461595773697
+            },
+            "gsm8k": {
+              "mean_log_probability": -10.977783203125,
+              "median_rank": 137.0,
+              "rows": 122,
+              "top1": 0,
+              "top10_accuracy": 0.0,
+              "top1_accuracy": 0.0
+            },
+            "mbpp": {
+              "mean_log_probability": -11.788017272949219,
+              "median_rank": 74.0,
+              "rows": 25,
+              "top1": 0,
+              "top10_accuracy": 0.0,
+              "top1_accuracy": 0.0
+            },
+            "mmlu": {
+              "mean_log_probability": -1.965692400932312,
+              "median_rank": 2.0,
+              "rows": 96,
+              "top1": 18,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.1875
+            },
+            "tier1": {
+              "mean_log_probability": -15.827862739562988,
+              "median_rank": 286.0,
+              "rows": 3,
+              "top1": 0,
+              "top10_accuracy": 0.0,
+              "top1_accuracy": 0.0
+            }
+          },
+          "pooled": {
+            "mean_log_probability": -6.2100510597229,
+            "median_rank": 4.0,
+            "rows": 329,
+            "top1": 31,
+            "top10_accuracy": 0.5440729260444641,
+            "top1_accuracy": 0.09422492235898972
+          }
+        }
+      },
+      "p34_seed_1_step_4000": {
+        "loop_1": {
+          "by_battery": {
+            "arc_challenge": {
+              "mean_log_probability": -1.8723710775375366,
+              "median_rank": 2.0,
+              "rows": 31,
+              "top1": 6,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.19354838132858276
+            },
+            "arc_easy": {
+              "mean_log_probability": -2.1913022994995117,
+              "median_rank": 2.0,
+              "rows": 52,
+              "top1": 9,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.17307692766189575
+            },
+            "gsm8k": {
+              "mean_log_probability": -11.183638572692871,
+              "median_rank": 164.0,
+              "rows": 122,
+              "top1": 0,
+              "top10_accuracy": 0.0,
+              "top1_accuracy": 0.0
+            },
+            "mbpp": {
+              "mean_log_probability": -11.593279838562012,
+              "median_rank": 75.0,
+              "rows": 25,
+              "top1": 0,
+              "top10_accuracy": 0.0,
+              "top1_accuracy": 0.0
+            },
+            "mmlu": {
+              "mean_log_probability": -1.9867299795150757,
+              "median_rank": 3.0,
+              "rows": 96,
+              "top1": 17,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.1770833283662796
+            },
+            "tier1": {
+              "mean_log_probability": -16.37350082397461,
+              "median_rank": 475.0,
+              "rows": 3,
+              "top1": 0,
+              "top10_accuracy": 0.0,
+              "top1_accuracy": 0.0
+            }
+          },
+          "pooled": {
+            "mean_log_probability": -6.27985954284668,
+            "median_rank": 4.0,
+            "rows": 329,
+            "top1": 32,
+            "top10_accuracy": 0.5440729260444641,
+            "top1_accuracy": 0.09726443886756897
+          }
+        },
+        "loop_2": {
+          "by_battery": {
+            "arc_challenge": {
+              "mean_log_probability": -1.8993616104125977,
+              "median_rank": 2.0,
+              "rows": 31,
+              "top1": 5,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.16129031777381897
+            },
+            "arc_easy": {
+              "mean_log_probability": -2.190690755844116,
+              "median_rank": 2.0,
+              "rows": 52,
+              "top1": 9,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.17307692766189575
+            },
+            "gsm8k": {
+              "mean_log_probability": -10.63155460357666,
+              "median_rank": 136.0,
+              "rows": 122,
+              "top1": 0,
+              "top10_accuracy": 0.0,
+              "top1_accuracy": 0.0
+            },
+            "mbpp": {
+              "mean_log_probability": -11.409323692321777,
+              "median_rank": 77.0,
+              "rows": 25,
+              "top1": 0,
+              "top10_accuracy": 0.0,
+              "top1_accuracy": 0.0
+            },
+            "mmlu": {
+              "mean_log_probability": -1.9786690473556519,
+              "median_rank": 3.0,
+              "rows": 96,
+              "top1": 16,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.1666666716337204
+            },
+            "tier1": {
+              "mean_log_probability": -16.31871223449707,
+              "median_rank": 358.0,
+              "rows": 3,
+              "top1": 0,
+              "top10_accuracy": 0.0,
+              "top1_accuracy": 0.0
+            }
+          },
+          "pooled": {
+            "mean_log_probability": -6.060751914978027,
+            "median_rank": 4.0,
+            "rows": 329,
+            "top1": 30,
+            "top10_accuracy": 0.5440729260444641,
+            "top1_accuracy": 0.09118541330099106
+          }
+        },
+        "loop_3": {
+          "by_battery": {
+            "arc_challenge": {
+              "mean_log_probability": -1.907245397567749,
+              "median_rank": 2.0,
+              "rows": 31,
+              "top1": 7,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.22580644488334656
+            },
+            "arc_easy": {
+              "mean_log_probability": -2.2425343990325928,
+              "median_rank": 2.0,
+              "rows": 52,
+              "top1": 6,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.11538461595773697
+            },
+            "gsm8k": {
+              "mean_log_probability": -10.746020317077637,
+              "median_rank": 144.0,
+              "rows": 122,
+              "top1": 0,
+              "top10_accuracy": 0.0,
+              "top1_accuracy": 0.0
+            },
+            "mbpp": {
+              "mean_log_probability": -11.610734939575195,
+              "median_rank": 65.0,
+              "rows": 25,
+              "top1": 0,
+              "top10_accuracy": 0.0,
+              "top1_accuracy": 0.0
+            },
+            "mmlu": {
+              "mean_log_probability": -1.982387900352478,
+              "median_rank": 3.0,
+              "rows": 96,
+              "top1": 18,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.1875
+            },
+            "tier1": {
+              "mean_log_probability": -16.12063980102539,
+              "median_rank": 371.0,
+              "rows": 3,
+              "top1": 0,
+              "top10_accuracy": 0.0,
+              "top1_accuracy": 0.0
+            }
+          },
+          "pooled": {
+            "mean_log_probability": -6.1267194747924805,
+            "median_rank": 4.0,
+            "rows": 329,
+            "top1": 31,
+            "top10_accuracy": 0.5440729260444641,
+            "top1_accuracy": 0.09422492235898972
+          }
+        },
+        "loop_4": {
+          "by_battery": {
+            "arc_challenge": {
+              "mean_log_probability": -2.0011167526245117,
+              "median_rank": 2.0,
+              "rows": 31,
+              "top1": 7,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.22580644488334656
+            },
+            "arc_easy": {
+              "mean_log_probability": -2.318784475326538,
+              "median_rank": 3.0,
+              "rows": 52,
+              "top1": 9,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.17307692766189575
+            },
+            "gsm8k": {
+              "mean_log_probability": -9.984365463256836,
+              "median_rank": 98.0,
+              "rows": 122,
+              "top1": 0,
+              "top10_accuracy": 0.0,
+              "top1_accuracy": 0.0
+            },
+            "mbpp": {
+              "mean_log_probability": -10.977478981018066,
+              "median_rank": 62.0,
+              "rows": 25,
+              "top1": 0,
+              "top10_accuracy": 0.0,
+              "top1_accuracy": 0.0
+            },
+            "mmlu": {
+              "mean_log_probability": -2.120617628097534,
+              "median_rank": 2.0,
+              "rows": 96,
+              "top1": 19,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.1979166716337204
+            },
+            "tier1": {
+              "mean_log_probability": -15.695460319519043,
+              "median_rank": 392.0,
+              "rows": 3,
+              "top1": 0,
+              "top10_accuracy": 0.0,
+              "top1_accuracy": 0.0
+            }
+          },
+          "pooled": {
+            "mean_log_probability": -5.853515148162842,
+            "median_rank": 4.0,
+            "rows": 329,
+            "top1": 35,
+            "top10_accuracy": 0.5440729260444641,
+            "top1_accuracy": 0.10638298094272614
+          }
+        }
+      },
+      "p35_seed_0_ema_step_4400": {
+        "loop_1": {
+          "by_battery": {
+            "arc_challenge": {
+              "mean_log_probability": -1.883231282234192,
+              "median_rank": 2.0,
+              "rows": 31,
+              "top1": 6,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.19354838132858276
+            },
+            "arc_easy": {
+              "mean_log_probability": -2.18385648727417,
+              "median_rank": 2.0,
+              "rows": 52,
+              "top1": 7,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.13461539149284363
+            },
+            "gsm8k": {
+              "mean_log_probability": -11.174212455749512,
+              "median_rank": 155.0,
+              "rows": 122,
+              "top1": 0,
+              "top10_accuracy": 0.0,
+              "top1_accuracy": 0.0
+            },
+            "mbpp": {
+              "mean_log_probability": -11.320230484008789,
+              "median_rank": 63.0,
+              "rows": 25,
+              "top1": 0,
+              "top10_accuracy": 0.0,
+              "top1_accuracy": 0.0
+            },
+            "mmlu": {
+              "mean_log_probability": -1.9632338285446167,
+              "median_rank": 3.0,
+              "rows": 96,
+              "top1": 15,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.15625
+            },
+            "tier1": {
+              "mean_log_probability": -15.975640296936035,
+              "median_rank": 348.0,
+              "rows": 3,
+              "top1": 0,
+              "top10_accuracy": 0.0,
+              "top1_accuracy": 0.0
+            }
+          },
+          "pooled": {
+            "mean_log_probability": -6.2449774742126465,
+            "median_rank": 4.0,
+            "rows": 329,
+            "top1": 28,
+            "top10_accuracy": 0.5440729260444641,
+            "top1_accuracy": 0.08510638028383255
+          }
+        },
+        "loop_2": {
+          "by_battery": {
+            "arc_challenge": {
+              "mean_log_probability": -1.882085919380188,
+              "median_rank": 2.0,
+              "rows": 31,
+              "top1": 5,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.16129031777381897
+            },
+            "arc_easy": {
+              "mean_log_probability": -2.176596164703369,
+              "median_rank": 2.0,
+              "rows": 52,
+              "top1": 7,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.13461539149284363
+            },
+            "gsm8k": {
+              "mean_log_probability": -10.786966323852539,
+              "median_rank": 136.0,
+              "rows": 122,
+              "top1": 0,
+              "top10_accuracy": 0.0,
+              "top1_accuracy": 0.0
+            },
+            "mbpp": {
+              "mean_log_probability": -11.880077362060547,
+              "median_rank": 80.0,
+              "rows": 25,
+              "top1": 0,
+              "top10_accuracy": 0.0,
+              "top1_accuracy": 0.0
+            },
+            "mmlu": {
+              "mean_log_probability": -1.932193398475647,
+              "median_rank": 3.0,
+              "rows": 96,
+              "top1": 12,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.125
+            },
+            "tier1": {
+              "mean_log_probability": -16.092741012573242,
+              "median_rank": 328.0,
+              "rows": 3,
+              "top1": 0,
+              "top10_accuracy": 0.0,
+              "top1_accuracy": 0.0
+            }
+          },
+          "pooled": {
+            "mean_log_probability": -6.134675025939941,
+            "median_rank": 4.0,
+            "rows": 329,
+            "top1": 24,
+            "top10_accuracy": 0.5440729260444641,
+            "top1_accuracy": 0.07294832915067673
+          }
+        },
+        "loop_3": {
+          "by_battery": {
+            "arc_challenge": {
+              "mean_log_probability": -1.8978327512741089,
+              "median_rank": 2.0,
+              "rows": 31,
+              "top1": 7,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.22580644488334656
+            },
+            "arc_easy": {
+              "mean_log_probability": -2.2158496379852295,
+              "median_rank": 2.0,
+              "rows": 52,
+              "top1": 6,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.11538461595773697
+            },
+            "gsm8k": {
+              "mean_log_probability": -10.835470199584961,
+              "median_rank": 129.0,
+              "rows": 122,
+              "top1": 0,
+              "top10_accuracy": 0.0,
+              "top1_accuracy": 0.0
+            },
+            "mbpp": {
+              "mean_log_probability": -11.93005084991455,
+              "median_rank": 71.0,
+              "rows": 25,
+              "top1": 0,
+              "top10_accuracy": 0.0,
+              "top1_accuracy": 0.0
+            },
+            "mmlu": {
+              "mean_log_probability": -1.9436546564102173,
+              "median_rank": 2.0,
+              "rows": 96,
+              "top1": 17,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.1770833283662796
+            },
+            "tier1": {
+              "mean_log_probability": -16.0632381439209,
+              "median_rank": 349.0,
+              "rows": 3,
+              "top1": 0,
+              "top10_accuracy": 0.0,
+              "top1_accuracy": 0.0
+            }
+          },
+          "pooled": {
+            "mean_log_probability": -6.167222023010254,
+            "median_rank": 4.0,
+            "rows": 329,
+            "top1": 30,
+            "top10_accuracy": 0.5440729260444641,
+            "top1_accuracy": 0.09118541330099106
+          }
+        },
+        "loop_4": {
+          "by_battery": {
+            "arc_challenge": {
+              "mean_log_probability": -1.8900402784347534,
+              "median_rank": 2.0,
+              "rows": 31,
+              "top1": 7,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.22580644488334656
+            },
+            "arc_easy": {
+              "mean_log_probability": -2.1987617015838623,
+              "median_rank": 2.0,
+              "rows": 52,
+              "top1": 6,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.11538461595773697
+            },
+            "gsm8k": {
+              "mean_log_probability": -10.977783203125,
+              "median_rank": 137.0,
+              "rows": 122,
+              "top1": 0,
+              "top10_accuracy": 0.0,
+              "top1_accuracy": 0.0
+            },
+            "mbpp": {
+              "mean_log_probability": -11.788017272949219,
+              "median_rank": 74.0,
+              "rows": 25,
+              "top1": 0,
+              "top10_accuracy": 0.0,
+              "top1_accuracy": 0.0
+            },
+            "mmlu": {
+              "mean_log_probability": -1.9656925201416016,
+              "median_rank": 2.0,
+              "rows": 96,
+              "top1": 18,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.1875
+            },
+            "tier1": {
+              "mean_log_probability": -15.827862739562988,
+              "median_rank": 286.0,
+              "rows": 3,
+              "top1": 0,
+              "top10_accuracy": 0.0,
+              "top1_accuracy": 0.0
+            }
+          },
+          "pooled": {
+            "mean_log_probability": -6.210051536560059,
+            "median_rank": 4.0,
+            "rows": 329,
+            "top1": 31,
+            "top10_accuracy": 0.5440729260444641,
+            "top1_accuracy": 0.09422492235898972
+          }
+        }
+      },
+      "p35_seed_1_ema_step_4400": {
+        "loop_1": {
+          "by_battery": {
+            "arc_challenge": {
+              "mean_log_probability": -1.8723711967468262,
+              "median_rank": 2.0,
+              "rows": 31,
+              "top1": 6,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.19354838132858276
+            },
+            "arc_easy": {
+              "mean_log_probability": -2.1913022994995117,
+              "median_rank": 2.0,
+              "rows": 52,
+              "top1": 9,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.17307692766189575
+            },
+            "gsm8k": {
+              "mean_log_probability": -11.183638572692871,
+              "median_rank": 164.0,
+              "rows": 122,
+              "top1": 0,
+              "top10_accuracy": 0.0,
+              "top1_accuracy": 0.0
+            },
+            "mbpp": {
+              "mean_log_probability": -11.593279838562012,
+              "median_rank": 75.0,
+              "rows": 25,
+              "top1": 0,
+              "top10_accuracy": 0.0,
+              "top1_accuracy": 0.0
+            },
+            "mmlu": {
+              "mean_log_probability": -1.9867299795150757,
+              "median_rank": 3.0,
+              "rows": 96,
+              "top1": 17,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.1770833283662796
+            },
+            "tier1": {
+              "mean_log_probability": -16.37350082397461,
+              "median_rank": 475.0,
+              "rows": 3,
+              "top1": 0,
+              "top10_accuracy": 0.0,
+              "top1_accuracy": 0.0
+            }
+          },
+          "pooled": {
+            "mean_log_probability": -6.27985954284668,
+            "median_rank": 4.0,
+            "rows": 329,
+            "top1": 32,
+            "top10_accuracy": 0.5440729260444641,
+            "top1_accuracy": 0.09726443886756897
+          }
+        },
+        "loop_2": {
+          "by_battery": {
+            "arc_challenge": {
+              "mean_log_probability": -1.8993616104125977,
+              "median_rank": 2.0,
+              "rows": 31,
+              "top1": 5,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.16129031777381897
+            },
+            "arc_easy": {
+              "mean_log_probability": -2.1906912326812744,
+              "median_rank": 2.0,
+              "rows": 52,
+              "top1": 9,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.17307692766189575
+            },
+            "gsm8k": {
+              "mean_log_probability": -10.63155460357666,
+              "median_rank": 136.0,
+              "rows": 122,
+              "top1": 0,
+              "top10_accuracy": 0.0,
+              "top1_accuracy": 0.0
+            },
+            "mbpp": {
+              "mean_log_probability": -11.409323692321777,
+              "median_rank": 77.0,
+              "rows": 25,
+              "top1": 0,
+              "top10_accuracy": 0.0,
+              "top1_accuracy": 0.0
+            },
+            "mmlu": {
+              "mean_log_probability": -1.9786690473556519,
+              "median_rank": 3.0,
+              "rows": 96,
+              "top1": 16,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.1666666716337204
+            },
+            "tier1": {
+              "mean_log_probability": -16.31871223449707,
+              "median_rank": 358.0,
+              "rows": 3,
+              "top1": 0,
+              "top10_accuracy": 0.0,
+              "top1_accuracy": 0.0
+            }
+          },
+          "pooled": {
+            "mean_log_probability": -6.060751914978027,
+            "median_rank": 4.0,
+            "rows": 329,
+            "top1": 30,
+            "top10_accuracy": 0.5440729260444641,
+            "top1_accuracy": 0.09118541330099106
+          }
+        },
+        "loop_3": {
+          "by_battery": {
+            "arc_challenge": {
+              "mean_log_probability": -1.9072455167770386,
+              "median_rank": 2.0,
+              "rows": 31,
+              "top1": 7,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.22580644488334656
+            },
+            "arc_easy": {
+              "mean_log_probability": -2.2425341606140137,
+              "median_rank": 2.0,
+              "rows": 52,
+              "top1": 6,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.11538461595773697
+            },
+            "gsm8k": {
+              "mean_log_probability": -10.746020317077637,
+              "median_rank": 144.0,
+              "rows": 122,
+              "top1": 0,
+              "top10_accuracy": 0.0,
+              "top1_accuracy": 0.0
+            },
+            "mbpp": {
+              "mean_log_probability": -11.610734939575195,
+              "median_rank": 65.0,
+              "rows": 25,
+              "top1": 0,
+              "top10_accuracy": 0.0,
+              "top1_accuracy": 0.0
+            },
+            "mmlu": {
+              "mean_log_probability": -1.982387900352478,
+              "median_rank": 3.0,
+              "rows": 96,
+              "top1": 18,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.1875
+            },
+            "tier1": {
+              "mean_log_probability": -16.12063980102539,
+              "median_rank": 371.0,
+              "rows": 3,
+              "top1": 0,
+              "top10_accuracy": 0.0,
+              "top1_accuracy": 0.0
+            }
+          },
+          "pooled": {
+            "mean_log_probability": -6.126718521118164,
+            "median_rank": 4.0,
+            "rows": 329,
+            "top1": 31,
+            "top10_accuracy": 0.5440729260444641,
+            "top1_accuracy": 0.09422492235898972
+          }
+        },
+        "loop_4": {
+          "by_battery": {
+            "arc_challenge": {
+              "mean_log_probability": -2.0011167526245117,
+              "median_rank": 2.0,
+              "rows": 31,
+              "top1": 7,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.22580644488334656
+            },
+            "arc_easy": {
+              "mean_log_probability": -2.318784475326538,
+              "median_rank": 3.0,
+              "rows": 52,
+              "top1": 9,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.17307692766189575
+            },
+            "gsm8k": {
+              "mean_log_probability": -9.984365463256836,
+              "median_rank": 98.0,
+              "rows": 122,
+              "top1": 0,
+              "top10_accuracy": 0.0,
+              "top1_accuracy": 0.0
+            },
+            "mbpp": {
+              "mean_log_probability": -10.977478981018066,
+              "median_rank": 62.0,
+              "rows": 25,
+              "top1": 0,
+              "top10_accuracy": 0.0,
+              "top1_accuracy": 0.0
+            },
+            "mmlu": {
+              "mean_log_probability": -2.120617628097534,
+              "median_rank": 2.0,
+              "rows": 96,
+              "top1": 19,
+              "top10_accuracy": 1.0,
+              "top1_accuracy": 0.1979166716337204
+            },
+            "tier1": {
+              "mean_log_probability": -15.695460319519043,
+              "median_rank": 392.0,
+              "rows": 3,
+              "top1": 0,
+              "top10_accuracy": 0.0,
+              "top1_accuracy": 0.0
+            }
+          },
+          "pooled": {
+            "mean_log_probability": -5.853515625,
+            "median_rank": 4.0,
+            "rows": 329,
+            "top1": 35,
+            "top10_accuracy": 0.5440729260444641,
+            "top1_accuracy": 0.10638298094272614
+          }
+        }
+      }
+    },
+    "scope_warning": "positive recoverability supports present-but-unread; non-recoverability cannot prove absence because the probe is linear and generative answers are reduced to a canonical first token",
+    "target": "first token of the canonical gold answer suffix"
+  },
+  "manifest_sha256": "d2ea4dda8527807c75cc0ab8a889c57c4fd25dec7805de87c4bccbb52e63cbe4",
+  "status": "complete_dev_score_only",
+  "t1": {
+    "checkpoint_count": 4,
+    "core_cells": 44,
+    "cross_checkpoint_fingerprints": {
+      "p34_seed_0_step_4000__vs__p34_seed_1_step_4000": {
+        "core_44_cell_fingerprint": {
+          "mean": 0.07150141894817352,
+          "median": 0.07226871699094772,
+          "minimum": 0.021973777562379837,
+          "p05": 0.044871337711811066
+        },
+        "deployment_fingerprints": {
+          "k1_ceiling_0.02": {
+            "mean": -0.030446941033005714,
+            "median": -0.031010376289486885,
+            "minimum": -0.16629281640052795,
+            "p05": -0.08781052380800247
+          },
+          "k1_ceiling_0.05": {
+            "mean": -0.030521756038069725,
+            "median": -0.030824095010757446,
+            "minimum": -0.1660175919532776,
+            "p05": -0.08769378811120987
+          },
+          "k1_ceiling_0.08": {
+            "mean": -0.03059859573841095,
+            "median": -0.030745811760425568,
+            "minimum": -0.16587799787521362,
+            "p05": -0.0875195637345314
+          },
+          "k1_ceiling_0.11": {
+            "mean": -0.030676279217004776,
+            "median": -0.031101448461413383,
+            "minimum": -0.16565242409706116,
+            "p05": -0.08770878612995148
+          },
+          "k2_ceiling_0.02": {
+            "mean": -0.030506137758493423,
+            "median": -0.031065326184034348,
+            "minimum": -0.16643887758255005,
+            "p05": -0.08780726045370102
+          },
+          "k2_ceiling_0.05": {
+            "mean": -0.030671369284391403,
+            "median": -0.030989430844783783,
+            "minimum": -0.1664367914199829,
+            "p05": -0.08794748038053513
+          },
+          "k2_ceiling_0.08": {
+            "mean": -0.03083929605782032,
+            "median": -0.03124517947435379,
+            "minimum": -0.16650071740150452,
+            "p05": -0.08793284744024277
+          },
+          "k2_ceiling_0.11": {
+            "mean": -0.031011072918772697,
+            "median": -0.031157637014985085,
+            "minimum": -0.16652581095695496,
+            "p05": -0.08823045343160629
+          },
+          "k3_ceiling_0.02": {
+            "mean": -0.030521761626005173,
+            "median": -0.03105759061872959,
+            "minimum": -0.16644777357578278,
+            "p05": -0.08781005442142487
+          },
+          "k3_ceiling_0.05": {
+            "mean": -0.03070833906531334,
+            "median": -0.031243080273270607,
+            "minimum": -0.16655725240707397,
+            "p05": -0.08790949732065201
+          },
+          "k3_ceiling_0.08": {
+            "mean": -0.030897244811058044,
+            "median": -0.031311891973018646,
+            "minimum": -0.16669312119483948,
+            "p05": -0.08794596791267395
+          },
+          "k3_ceiling_0.11": {
+            "mean": -0.031086809933185577,
+            "median": -0.03139830008149147,
+            "minimum": -0.16681261360645294,
+            "p05": -0.08814115822315216
+          },
+          "k4_ceiling_0.02": {
+            "mean": -0.03053596243262291,
+            "median": -0.03103283792734146,
+            "minimum": -0.16643373668193817,
+            "p05": -0.08780942112207413
+          },
+          "k4_ceiling_0.05": {
+            "mean": -0.030746320262551308,
+            "median": -0.031337421387434006,
+            "minimum": -0.1666220724582672,
+            "p05": -0.08793149888515472
+          },
+          "k4_ceiling_0.08": {
+            "mean": -0.03095613420009613,
+            "median": -0.03133115917444229,
+            "minimum": -0.16675803065299988,
+            "p05": -0.08795074373483658
+          },
+          "k4_ceiling_0.11": {
+            "mean": -0.031167130917310715,
+            "median": -0.03154710680246353,
+            "minimum": -0.16688568890094757,
+            "p05": -0.08820940554141998
+          }
+        }
+      },
+      "p34_seed_0_step_4000__vs__p35_seed_0_ema_step_4400": {
+        "core_44_cell_fingerprint": {
+          "mean": 1.0,
+          "median": 1.0000001192092896,
+          "minimum": 0.9999997615814209,
+          "p05": 0.9999999403953552
+        },
+        "deployment_fingerprints": {
+          "k1_ceiling_0.02": {
+            "mean": 1.0,
+            "median": 0.9999999403953552,
+            "minimum": 0.9999990463256836,
+            "p05": 0.9999996423721313
+          },
+          "k1_ceiling_0.05": {
+            "mean": 0.999999463558197,
+            "median": 0.9999996423721313,
+            "minimum": 0.9999948143959045,
+            "p05": 0.9999978542327881
+          },
+          "k1_ceiling_0.08": {
+            "mean": 0.9999985098838806,
+            "median": 0.9999990463256836,
+            "minimum": 0.9999860525131226,
+            "p05": 0.9999943375587463
+          },
+          "k1_ceiling_0.11": {
+            "mean": 0.9999971985816956,
+            "median": 0.9999982118606567,
+            "minimum": 0.9999738931655884,
+            "p05": 0.99998939037323
+          },
+          "k2_ceiling_0.02": {
+            "mean": 1.0,
+            "median": 0.9999999403953552,
+            "minimum": 0.9999995231628418,
+            "p05": 0.9999997615814209
+          },
+          "k2_ceiling_0.05": {
+            "mean": 0.9999996423721313,
+            "median": 0.9999997019767761,
+            "minimum": 0.9999967217445374,
+            "p05": 0.9999988079071045
+          },
+          "k2_ceiling_0.08": {
+            "mean": 0.9999990463256836,
+            "median": 0.9999992847442627,
+            "minimum": 0.9999916553497314,
+            "p05": 0.9999969005584717
+          },
+          "k2_ceiling_0.11": {
+            "mean": 0.9999980926513672,
+            "median": 0.9999986886978149,
+            "minimum": 0.9999841451644897,
+            "p05": 0.999994158744812
+          },
+          "k3_ceiling_0.02": {
+            "mean": 1.0,
+            "median": 0.9999999403953552,
+            "minimum": 0.9999996423721313,
+            "p05": 0.9999998211860657
+          },
+          "k3_ceiling_0.05": {
+            "mean": 0.9999998807907104,
+            "median": 0.9999997615814209,
+            "minimum": 0.9999977350234985,
+            "p05": 0.9999991655349731
+          },
+          "k3_ceiling_0.08": {
+            "mean": 0.9999992847442627,
+            "median": 0.999999463558197,
+            "minimum": 0.999994158744812,
+            "p05": 0.9999979734420776
+          },
+          "k3_ceiling_0.11": {
+            "mean": 0.9999985694885254,
+            "median": 0.9999990463256836,
+            "minimum": 0.9999889135360718,
+            "p05": 0.9999962449073792
+          },
+          "k4_ceiling_0.02": {
+            "mean": 1.0,
+            "median": 1.0,
+            "minimum": 0.9999996423721313,
+            "p05": 0.9999998807907104
+          },
+          "k4_ceiling_0.05": {
+            "mean": 0.9999999403953552,
+            "median": 0.9999998211860657,
+            "minimum": 0.9999979734420776,
+            "p05": 0.9999994039535522
+          },
+          "k4_ceiling_0.08": {
+            "mean": 0.999999463558197,
+            "median": 0.9999995231628418,
+            "minimum": 0.9999951124191284,
+            "p05": 0.9999985098838806
+          },
+          "k4_ceiling_0.11": {
+            "mean": 0.999998927116394,
+            "median": 0.9999991655349731,
+            "minimum": 0.9999907612800598,
+            "p05": 0.9999971389770508
+          }
+        }
+      },
+      "p34_seed_0_step_4000__vs__p35_seed_1_ema_step_4400": {
+        "core_44_cell_fingerprint": {
+          "mean": 0.07150141894817352,
+          "median": 0.07226871699094772,
+          "minimum": 0.021973777562379837,
+          "p05": 0.044871337711811066
+        },
+        "deployment_fingerprints": {
+          "k1_ceiling_0.02": {
+            "mean": -0.030453089624643326,
+            "median": -0.031010504812002182,
+            "minimum": -0.16623272001743317,
+            "p05": -0.08780217915773392
+          },
+          "k1_ceiling_0.05": {
+            "mean": -0.030534803867340088,
+            "median": -0.03085223212838173,
+            "minimum": -0.16608363389968872,
+            "p05": -0.08769073337316513
+          },
+          "k1_ceiling_0.08": {
+            "mean": -0.03061983920633793,
+            "median": -0.030858362093567848,
+            "minimum": -0.1659223884344101,
+            "p05": -0.08754846453666687
+          },
+          "k1_ceiling_0.11": {
+            "mean": -0.03070380911231041,
+            "median": -0.03106357716023922,
+            "minimum": -0.16573283076286316,
+            "p05": -0.0878039002418518
+          },
+          "k2_ceiling_0.02": {
+            "mean": -0.030502596870064735,
+            "median": -0.031066222116351128,
+            "minimum": -0.1664505898952484,
+            "p05": -0.08780977874994278
+          },
+          "k2_ceiling_0.05": {
+            "mean": -0.03066398575901985,
+            "median": -0.030956711620092392,
+            "minimum": -0.16646181046962738,
+            "p05": -0.08793691545724869
+          },
+          "k2_ceiling_0.08": {
+            "mean": -0.030825620517134666,
+            "median": -0.031249094754457474,
+            "minimum": -0.16655464470386505,
+            "p05": -0.08785101026296616
+          },
+          "k2_ceiling_0.11": {
+            "mean": -0.030991001054644585,
+            "median": -0.031171556562185287,
+            "minimum": -0.16655941307544708,
+            "p05": -0.0882214680314064
+          },
+          "k3_ceiling_0.02": {
+            "mean": -0.030518747866153717,
+            "median": -0.031044628471136093,
+            "minimum": -0.16648025810718536,
+            "p05": -0.08782069385051727
+          },
+          "k3_ceiling_0.05": {
+            "mean": -0.03070000931620598,
+            "median": -0.031196877360343933,
+            "minimum": -0.16662496328353882,
+            "p05": -0.08792167156934738
+          },
+          "k3_ceiling_0.08": {
+            "mean": -0.030884774401783943,
+            "median": -0.03126245737075806,
+            "minimum": -0.16676035523414612,
+            "p05": -0.08791215717792511
+          },
+          "k3_ceiling_0.11": {
+            "mean": -0.0310677420347929,
+            "median": -0.03144064173102379,
+            "minimum": -0.16691724956035614,
+            "p05": -0.08813618123531342
+          },
+          "k4_ceiling_0.02": {
+            "mean": -0.03053308092057705,
+            "median": -0.031023163348436356,
+            "minimum": -0.1664675772190094,
+            "p05": -0.08780179917812347
+          },
+          "k4_ceiling_0.05": {
+            "mean": -0.030738484114408493,
+            "median": -0.031298644840717316,
+            "minimum": -0.1667003333568573,
+            "p05": -0.08794994652271271
+          },
+          "k4_ceiling_0.08": {
+            "mean": -0.030945073813199997,
+            "median": -0.03133073076605797,
+            "minimum": -0.16678890585899353,
+            "p05": -0.08791623264551163
+          },
+          "k4_ceiling_0.11": {
+            "mean": -0.031150255352258682,
+            "median": -0.031548742204904556,
+            "minimum": -0.16703225672245026,
+            "p05": -0.08822570741176605
+          }
+        }
+      },
+      "p34_seed_1_step_4000__vs__p35_seed_0_ema_step_4400": {
+        "core_44_cell_fingerprint": {
+          "mean": 0.07150141894817352,
+          "median": 0.07226871699094772,
+          "minimum": 0.021973777562379837,
+          "p05": 0.044871337711811066
+        },
+        "deployment_fingerprints": {
+          "k1_ceiling_0.02": {
+            "mean": -0.030451050028204918,
+            "median": -0.030988600105047226,
+            "minimum": -0.166380375623703,
+            "p05": -0.0878477394580841
+          },
+          "k1_ceiling_0.05": {
+            "mean": -0.030532659962773323,
+            "median": -0.03096972592175007,
+            "minimum": -0.1662559062242508,
+            "p05": -0.08778795599937439
+          },
+          "k1_ceiling_0.08": {
+            "mean": -0.030615653842687607,
+            "median": -0.03099595382809639,
+            "minimum": -0.1662246733903885,
+            "p05": -0.08797840029001236
+          },
+          "k1_ceiling_0.11": {
+            "mean": -0.030695516616106033,
+            "median": -0.031026490032672882,
+            "minimum": -0.1661807894706726,
+            "p05": -0.08797798305749893
+          },
+          "k2_ceiling_0.02": {
+            "mean": -0.030506255105137825,
+            "median": -0.03104526922106743,
+            "minimum": -0.16650445759296417,
+            "p05": -0.08781726658344269
+          },
+          "k2_ceiling_0.05": {
+            "mean": -0.030671924352645874,
+            "median": -0.031203415244817734,
+            "minimum": -0.1666388213634491,
+            "p05": -0.08785456418991089
+          },
+          "k2_ceiling_0.08": {
+            "mean": -0.030839327722787857,
+            "median": -0.031243763864040375,
+            "minimum": -0.16681474447250366,
+            "p05": -0.08798330277204514
+          },
+          "k2_ceiling_0.11": {
+            "mean": -0.03100641444325447,
+            "median": -0.03135000169277191,
+            "minimum": -0.1669217199087143,
+            "p05": -0.08814774453639984
+          },
+          "k3_ceiling_0.02": {
+            "mean": -0.03051893040537834,
+            "median": -0.031061453744769096,
+            "minimum": -0.16652360558509827,
+            "p05": -0.08783330768346786
+          },
+          "k3_ceiling_0.05": {
+            "mean": -0.030703796073794365,
+            "median": -0.03132067620754242,
+            "minimum": -0.16665440797805786,
+            "p05": -0.08786415308713913
+          },
+          "k3_ceiling_0.08": {
+            "mean": -0.03088802844285965,
+            "median": -0.03128914162516594,
+            "minimum": -0.16683177649974823,
+            "p05": -0.08792457729578018
+          },
+          "k3_ceiling_0.11": {
+            "mean": -0.031073566526174545,
+            "median": -0.03142983093857765,
+            "minimum": -0.16700226068496704,
+            "p05": -0.08810153603553772
+          },
+          "k4_ceiling_0.02": {
+            "mean": -0.030532941222190857,
+            "median": -0.031011395156383514,
+            "minimum": -0.16646826267242432,
+            "p05": -0.0878075659275055
+          },
+          "k4_ceiling_0.05": {
+            "mean": -0.030738230794668198,
+            "median": -0.031332120299339294,
+            "minimum": -0.16663068532943726,
+            "p05": -0.08789411932229996
+          },
+          "k4_ceiling_0.08": {
+            "mean": -0.030943600460886955,
+            "median": -0.0312955342233181,
+            "minimum": -0.16683924198150635,
+            "p05": -0.08793264627456665
+          },
+          "k4_ceiling_0.11": {
+            "mean": -0.031145770102739334,
+            "median": -0.03157617524266243,
+            "minimum": -0.16695255041122437,
+            "p05": -0.08813406527042389
+          }
+        }
+      },
+      "p34_seed_1_step_4000__vs__p35_seed_1_ema_step_4400": {
+        "core_44_cell_fingerprint": {
+          "mean": 1.0,
+          "median": 1.0,
+          "minimum": 0.9999997019767761,
+          "p05": 0.9999998807907104
+        },
+        "deployment_fingerprints": {
+          "k1_ceiling_0.02": {
+            "mean": 1.0,
+            "median": 1.0,
+            "minimum": 0.9999989867210388,
+            "p05": 0.9999998211860657
+          },
+          "k1_ceiling_0.05": {
+            "mean": 0.9999998807907104,
+            "median": 0.9999998807907104,
+            "minimum": 0.9999935626983643,
+            "p05": 0.999998927116394
+          },
+          "k1_ceiling_0.08": {
+            "mean": 0.999999463558197,
+            "median": 0.9999997615814209,
+            "minimum": 0.9999831914901733,
+            "p05": 0.9999971985816956
+          },
+          "k1_ceiling_0.11": {
+            "mean": 0.999998927116394,
+            "median": 0.9999996423721313,
+            "minimum": 0.999968409538269,
+            "p05": 0.9999948740005493
+          },
+          "k2_ceiling_0.02": {
+            "mean": 1.0,
+            "median": 1.0,
+            "minimum": 0.9999994039535522,
+            "p05": 0.9999998807907104
+          },
+          "k2_ceiling_0.05": {
+            "mean": 1.0,
+            "median": 0.9999999403953552,
+            "minimum": 0.9999961853027344,
+            "p05": 0.9999996423721313
+          },
+          "k2_ceiling_0.08": {
+            "mean": 0.9999998807907104,
+            "median": 0.9999998807907104,
+            "minimum": 0.9999898672103882,
+            "p05": 0.9999992251396179
+          },
+          "k2_ceiling_0.11": {
+            "mean": 0.9999995827674866,
+            "median": 0.9999997615814209,
+            "minimum": 0.9999810457229614,
+            "p05": 0.9999984502792358
+          },
+          "k3_ceiling_0.02": {
+            "mean": 1.0,
+            "median": 1.0,
+            "minimum": 0.9999997019767761,
+            "p05": 0.9999998807907104
+          },
+          "k3_ceiling_0.05": {
+            "mean": 1.0,
+            "median": 0.9999999403953552,
+            "minimum": 0.9999980926513672,
+            "p05": 0.9999997615814209
+          },
+          "k3_ceiling_0.08": {
+            "mean": 0.9999999403953552,
+            "median": 0.9999998807907104,
+            "minimum": 0.9999953508377075,
+            "p05": 0.9999994039535522
+          },
+          "k3_ceiling_0.11": {
+            "mean": 0.9999997615814209,
+            "median": 0.9999998211860657,
+            "minimum": 0.9999909400939941,
+            "p05": 0.9999990463256836
+          },
+          "k4_ceiling_0.02": {
+            "mean": 1.0,
+            "median": 1.0,
+            "minimum": 0.9999997615814209,
+            "p05": 0.9999998807907104
+          },
+          "k4_ceiling_0.05": {
+            "mean": 1.0,
+            "median": 0.9999999403953552,
+            "minimum": 0.9999988079071045,
+            "p05": 0.9999997615814209
+          },
+          "k4_ceiling_0.08": {
+            "mean": 0.9999999403953552,
+            "median": 0.9999998807907104,
+            "minimum": 0.9999969005584717,
+            "p05": 0.9999995231628418
+          },
+          "k4_ceiling_0.11": {
+            "mean": 0.9999998807907104,
+            "median": 0.9999998211860657,
+            "minimum": 0.9999943971633911,
+            "p05": 0.9999991655349731
+          }
+        }
+      },
+      "p35_seed_0_ema_step_4400__vs__p35_seed_1_ema_step_4400": {
+        "core_44_cell_fingerprint": {
+          "mean": 0.07150141894817352,
+          "median": 0.07226871699094772,
+          "minimum": 0.021973777562379837,
+          "p05": 0.044871337711811066
+        },
+        "deployment_fingerprints": {
+          "k1_ceiling_0.02": {
+            "mean": -0.030457189306616783,
+            "median": -0.030988730490207672,
+            "minimum": -0.1663202941417694,
+            "p05": -0.08783939480781555
+          },
+          "k1_ceiling_0.05": {
+            "mean": -0.030545663088560104,
+            "median": -0.030897382646799088,
+            "minimum": -0.16632208228111267,
+            "p05": -0.08784296363592148
+          },
+          "k1_ceiling_0.08": {
+            "mean": -0.030636785551905632,
+            "median": -0.03108643740415573,
+            "minimum": -0.16626933217048645,
+            "p05": -0.08793775737285614
+          },
+          "k1_ceiling_0.11": {
+            "mean": -0.030722830444574356,
+            "median": -0.031038083136081696,
+            "minimum": -0.16626207530498505,
+            "p05": -0.08791134506464005
+          },
+          "k2_ceiling_0.02": {
+            "mean": -0.03050271049141884,
+            "median": -0.031046181917190552,
+            "minimum": -0.16651621460914612,
+            "p05": -0.08781974762678146
+          },
+          "k2_ceiling_0.05": {
+            "mean": -0.030664512887597084,
+            "median": -0.031170569360256195,
+            "minimum": -0.1666640341281891,
+            "p05": -0.08786235004663467
+          },
+          "k2_ceiling_0.08": {
+            "mean": -0.030825575813651085,
+            "median": -0.031233396381139755,
+            "minimum": -0.1668691337108612,
+            "p05": -0.08790146559476852
+          },
+          "k2_ceiling_0.11": {
+            "mean": -0.03098618984222412,
+            "median": -0.031215570867061615,
+            "minimum": -0.16695618629455566,
+            "p05": -0.08813867717981339
+          },
+          "k3_ceiling_0.02": {
+            "mean": -0.030515916645526886,
+            "median": -0.0310489684343338,
+            "minimum": -0.16655610501766205,
+            "p05": -0.08784396201372147
+          },
+          "k3_ceiling_0.05": {
+            "mean": -0.030695440247654915,
+            "median": -0.031322136521339417,
+            "minimum": -0.1667221188545227,
+            "p05": -0.08787629753351212
+          },
+          "k3_ceiling_0.08": {
+            "mean": -0.030875496566295624,
+            "median": -0.031239569187164307,
+            "minimum": -0.16689908504486084,
+            "p05": -0.08789075165987015
+          },
+          "k3_ceiling_0.11": {
+            "mean": -0.031054388731718063,
+            "median": -0.03147207573056221,
+            "minimum": -0.16710710525512695,
+            "p05": -0.08809654414653778
+          },
+          "k4_ceiling_0.02": {
+            "mean": -0.030530055984854698,
+            "median": -0.031001724302768707,
+            "minimum": -0.16650208830833435,
+            "p05": -0.08779997378587723
+          },
+          "k4_ceiling_0.05": {
+            "mean": -0.03073037415742874,
+            "median": -0.03132612258195877,
+            "minimum": -0.16670896112918854,
+            "p05": -0.08791254460811615
+          },
+          "k4_ceiling_0.08": {
+            "mean": -0.030932489782571793,
+            "median": -0.03130044788122177,
+            "minimum": -0.16687019169330597,
+            "p05": -0.08789808303117752
+          },
+          "k4_ceiling_0.11": {
+            "mean": -0.03112880140542984,
+            "median": -0.031551893800497055,
+            "minimum": -0.16709911823272705,
+            "p05": -0.08815032988786697
+          }
+        }
+      }
+    },
+    "deployment_cell_separate": true,
+    "rows": 1024,
+    "stability": {
+      "p34_seed_0_step_4000": {
+        "core_depth_to_k4": {
+          "k1": {
+            "mean": 0.8913857340812683,
+            "median": 0.906251072883606,
+            "minimum": 0.7182144522666931,
+            "p05": 0.791329026222229
+          },
+          "k2": {
+            "mean": 0.9418065547943115,
+            "median": 0.9485779404640198,
+            "minimum": 0.8655600547790527,
+            "p05": 0.8955981731414795
+          },
+          "k3": {
+            "mean": 0.9837930798530579,
+            "median": 0.985248327255249,
+            "minimum": 0.9676504135131836,
+            "p05": 0.9738226532936096
+          },
+          "k4": {
+            "mean": 1.0,
+            "median": 1.0,
+            "minimum": 0.9999997615814209,
+            "p05": 0.9999998211860657
+          }
+        },
+        "deployment_ceiling_to_0p05_at_matched_k": {
+          "k1_ceiling_0.02": {
+            "mean": 0.9999984502792358,
+            "median": 0.9999984502792358,
+            "minimum": 0.9999972581863403,
+            "p05": 0.9999980330467224
+          },
+          "k1_ceiling_0.05": {
+            "mean": 1.0,
+            "median": 1.0,
+            "minimum": 0.9999997615814209,
+            "p05": 0.9999998807907104
+          },
+          "k1_ceiling_0.08": {
+            "mean": 0.9999985098838806,
+            "median": 0.9999984502792358,
+            "minimum": 0.9999971985816956,
+            "p05": 0.9999980330467224
+          },
+          "k1_ceiling_0.11": {
+            "mean": 0.9999938607215881,
+            "median": 0.9999938607215881,
+            "minimum": 0.9999887943267822,
+            "p05": 0.9999922513961792
+          },
+          "k2_ceiling_0.02": {
+            "mean": 0.9999983906745911,
+            "median": 0.9999983906745911,
+            "minimum": 0.9999973177909851,
+            "p05": 0.9999979734420776
+          },
+          "k2_ceiling_0.05": {
+            "mean": 1.0,
+            "median": 1.0,
+            "minimum": 0.9999997019767761,
+            "p05": 0.9999998807907104
+          },
+          "k2_ceiling_0.08": {
+            "mean": 0.9999985098838806,
+            "median": 0.9999983906745911,
+            "minimum": 0.9999971985816956,
+            "p05": 0.9999979734420776
+          },
+          "k2_ceiling_0.11": {
+            "mean": 0.9999938011169434,
+            "median": 0.9999936819076538,
+            "minimum": 0.9999891519546509,
+            "p05": 0.9999918341636658
+          },
+          "k3_ceiling_0.02": {
+            "mean": 0.9999983310699463,
+            "median": 0.9999983906745911,
+            "minimum": 0.9999973773956299,
+            "p05": 0.9999979734420776
+          },
+          "k3_ceiling_0.05": {
+            "mean": 1.0,
+            "median": 1.0,
+            "minimum": 0.9999998211860657,
+            "p05": 0.9999998807907104
+          },
+          "k3_ceiling_0.08": {
+            "mean": 0.9999983310699463,
+            "median": 0.9999983906745911,
+            "minimum": 0.9999972581863403,
+            "p05": 0.9999979138374329
+          },
+          "k3_ceiling_0.11": {
+            "mean": 0.9999935626983643,
+            "median": 0.9999936819076538,
+            "minimum": 0.99998939037323,
+            "p05": 0.999991774559021
+          },
+          "k4_ceiling_0.02": {
+            "mean": 0.9999984502792358,
+            "median": 0.9999983906745911,
+            "minimum": 0.9999974370002747,
+            "p05": 0.9999979734420776
+          },
+          "k4_ceiling_0.05": {
+            "mean": 1.0,
+            "median": 1.0,
+            "minimum": 0.9999998211860657,
+            "p05": 0.9999998807907104
+          },
+          "k4_ceiling_0.08": {
+            "mean": 0.9999983906745911,
+            "median": 0.9999984502792358,
+            "minimum": 0.9999973773956299,
+            "p05": 0.9999979734420776
+          },
+          "k4_ceiling_0.11": {
+            "mean": 0.9999936819076538,
+            "median": 0.9999936819076538,
+            "minimum": 0.9999898672103882,
+            "p05": 0.9999918937683105
+          }
+        },
+        "deployment_depth_to_k4_at_ceiling_0p05": {
+          "k1_ceiling_0.05": {
+            "mean": 0.999997079372406,
+            "median": 0.9999973773956299,
+            "minimum": 0.9999867677688599,
+            "p05": 0.9999939203262329
+          },
+          "k2_ceiling_0.05": {
+            "mean": 0.9999992847442627,
+            "median": 0.9999994039535522,
+            "minimum": 0.9999962449073792,
+            "p05": 0.9999983310699463
+          },
+          "k3_ceiling_0.05": {
+            "mean": 1.0,
+            "median": 0.9999998807907104,
+            "minimum": 0.9999995231628418,
+            "p05": 0.9999997019767761
+          },
+          "k4_ceiling_0.05": {
+            "mean": 1.0,
+            "median": 1.0,
+            "minimum": 0.9999998211860657,
+            "p05": 0.9999998807907104
+          }
+        }
+      },
+      "p34_seed_1_step_4000": {
+        "core_depth_to_k4": {
+          "k1": {
+            "mean": 0.7275402545928955,
+            "median": 0.7294591665267944,
+            "minimum": 0.5832808017730713,
+            "p05": 0.6334574818611145
+          },
+          "k2": {
+            "mean": 0.8777398467063904,
+            "median": 0.8772221207618713,
+            "minimum": 0.8015997409820557,
+            "p05": 0.8502359390258789
+          },
+          "k3": {
+            "mean": 0.9739702343940735,
+            "median": 0.9736166000366211,
+            "minimum": 0.9582902193069458,
+            "p05": 0.9668590426445007
+          },
+          "k4": {
+            "mean": 1.0,
+            "median": 1.0,
+            "minimum": 0.9999997615814209,
+            "p05": 0.9999998807907104
+          }
+        },
+        "deployment_ceiling_to_0p05_at_matched_k": {
+          "k1_ceiling_0.02": {
+            "mean": 0.9999985098838806,
+            "median": 0.9999985694885254,
+            "minimum": 0.9999976754188538,
+            "p05": 0.9999980330467224
+          },
+          "k1_ceiling_0.05": {
+            "mean": 1.0,
+            "median": 1.0,
+            "minimum": 0.9999997615814209,
+            "p05": 0.9999998807907104
+          },
+          "k1_ceiling_0.08": {
+            "mean": 0.9999985098838806,
+            "median": 0.9999985694885254,
+            "minimum": 0.999997615814209,
+            "p05": 0.9999980330467224
+          },
+          "k1_ceiling_0.11": {
+            "mean": 0.999994158744812,
+            "median": 0.999994158744812,
+            "minimum": 0.9999908804893494,
+            "p05": 0.9999921321868896
+          },
+          "k2_ceiling_0.02": {
+            "mean": 0.9999985098838806,
+            "median": 0.9999984502792358,
+            "minimum": 0.999997615814209,
+            "p05": 0.9999980926513672
+          },
+          "k2_ceiling_0.05": {
+            "mean": 1.0,
+            "median": 1.0,
+            "minimum": 0.9999998211860657,
+            "p05": 0.9999998807907104
+          },
+          "k2_ceiling_0.08": {
+            "mean": 0.9999985098838806,
+            "median": 0.9999984502792358,
+            "minimum": 0.999997615814209,
+            "p05": 0.9999980926513672
+          },
+          "k2_ceiling_0.11": {
+            "mean": 0.9999939203262329,
+            "median": 0.9999939203262329,
+            "minimum": 0.9999904632568359,
+            "p05": 0.9999926090240479
+          },
+          "k3_ceiling_0.02": {
+            "mean": 0.9999984502792358,
+            "median": 0.9999984502792358,
+            "minimum": 0.9999974370002747,
+            "p05": 0.9999980926513672
+          },
+          "k3_ceiling_0.05": {
+            "mean": 1.0,
+            "median": 1.0,
+            "minimum": 0.9999997615814209,
+            "p05": 0.9999998807907104
+          },
+          "k3_ceiling_0.08": {
+            "mean": 0.9999984502792358,
+            "median": 0.9999984502792358,
+            "minimum": 0.9999974966049194,
+            "p05": 0.9999980926513672
+          },
+          "k3_ceiling_0.11": {
+            "mean": 0.9999937415122986,
+            "median": 0.9999938011169434,
+            "minimum": 0.9999899864196777,
+            "p05": 0.9999924898147583
+          },
+          "k4_ceiling_0.02": {
+            "mean": 0.9999984502792358,
+            "median": 0.9999984502792358,
+            "minimum": 0.9999973773956299,
+            "p05": 0.9999980926513672
+          },
+          "k4_ceiling_0.05": {
+            "mean": 1.0,
+            "median": 1.0,
+            "minimum": 0.9999997615814209,
+            "p05": 0.9999998807907104
+          },
+          "k4_ceiling_0.08": {
+            "mean": 0.9999983906745911,
+            "median": 0.9999984502792358,
+            "minimum": 0.9999973773956299,
+            "p05": 0.9999980926513672
+          },
+          "k4_ceiling_0.11": {
+            "mean": 0.9999937415122986,
+            "median": 0.9999937415122986,
+            "minimum": 0.9999897480010986,
+            "p05": 0.9999925494194031
+          }
+        },
+        "deployment_depth_to_k4_at_ceiling_0p05": {
+          "k1_ceiling_0.05": {
+            "mean": 0.9999985098838806,
+            "median": 0.999999463558197,
+            "minimum": 0.9999886155128479,
+            "p05": 0.999993622303009
+          },
+          "k2_ceiling_0.05": {
+            "mean": 0.9999998807907104,
+            "median": 0.9999998211860657,
+            "minimum": 0.9999977350234985,
+            "p05": 0.9999994039535522
+          },
+          "k3_ceiling_0.05": {
+            "mean": 1.0,
+            "median": 1.0,
+            "minimum": 0.9999994039535522,
+            "p05": 0.9999998807907104
+          },
+          "k4_ceiling_0.05": {
+            "mean": 1.0,
+            "median": 1.0,
+            "minimum": 0.9999997615814209,
+            "p05": 0.9999998807907104
+          }
+        }
+      },
+      "p35_seed_0_ema_step_4400": {
+        "core_depth_to_k4": {
+          "k1": {
+            "mean": 0.8913857340812683,
+            "median": 0.906251072883606,
+            "minimum": 0.7182144522666931,
+            "p05": 0.791329026222229
+          },
+          "k2": {
+            "mean": 0.9418065547943115,
+            "median": 0.9485779404640198,
+            "minimum": 0.8655600547790527,
+            "p05": 0.8955981731414795
+          },
+          "k3": {
+            "mean": 0.9837930798530579,
+            "median": 0.985248327255249,
+            "minimum": 0.9676504135131836,
+            "p05": 0.9738226532936096
+          },
+          "k4": {
+            "mean": 1.0,
+            "median": 1.0,
+            "minimum": 0.9999997615814209,
+            "p05": 0.9999998211860657
+          }
+        },
+        "deployment_ceiling_to_0p05_at_matched_k": {
+          "k1_ceiling_0.02": {
+            "mean": 0.9999985098838806,
+            "median": 0.9999984502792358,
+            "minimum": 0.9999971985816956,
+            "p05": 0.9999980926513672
+          },
+          "k1_ceiling_0.05": {
+            "mean": 1.0,
+            "median": 1.0,
+            "minimum": 0.9999997615814209,
+            "p05": 0.9999998807907104
+          },
+          "k1_ceiling_0.08": {
+            "mean": 0.9999985098838806,
+            "median": 0.9999985098838806,
+            "minimum": 0.9999971985816956,
+            "p05": 0.9999980926513672
+          },
+          "k1_ceiling_0.11": {
+            "mean": 0.9999938607215881,
+            "median": 0.9999939799308777,
+            "minimum": 0.9999889135360718,
+            "p05": 0.9999924898147583
+          },
+          "k2_ceiling_0.02": {
+            "mean": 0.9999984502792358,
+            "median": 0.9999984502792358,
+            "minimum": 0.9999972581863403,
+            "p05": 0.9999979734420776
+          },
+          "k2_ceiling_0.05": {
+            "mean": 1.0,
+            "median": 1.0,
+            "minimum": 0.9999998211860657,
+            "p05": 0.9999998807907104
+          },
+          "k2_ceiling_0.08": {
+            "mean": 0.9999984502792358,
+            "median": 0.9999984502792358,
+            "minimum": 0.9999973177909851,
+            "p05": 0.9999979734420776
+          },
+          "k2_ceiling_0.11": {
+            "mean": 0.9999938011169434,
+            "median": 0.9999938011169434,
+            "minimum": 0.9999895095825195,
+            "p05": 0.9999921321868896
+          },
+          "k3_ceiling_0.02": {
+            "mean": 0.9999984502792358,
+            "median": 0.9999984502792358,
+            "minimum": 0.9999974370002747,
+            "p05": 0.9999979734420776
+          },
+          "k3_ceiling_0.05": {
+            "mean": 1.0,
+            "median": 1.0,
+            "minimum": 0.9999997615814209,
+            "p05": 0.9999998807907104
+          },
+          "k3_ceiling_0.08": {
+            "mean": 0.9999984502792358,
+            "median": 0.9999984502792358,
+            "minimum": 0.9999974966049194,
+            "p05": 0.9999979734420776
+          },
+          "k3_ceiling_0.11": {
+            "mean": 0.9999937415122986,
+            "median": 0.9999938011169434,
+            "minimum": 0.9999896287918091,
+            "p05": 0.9999920129776001
+          },
+          "k4_ceiling_0.02": {
+            "mean": 0.9999984502792358,
+            "median": 0.9999984502792358,
+            "minimum": 0.9999975562095642,
+            "p05": 0.9999979734420776
+          },
+          "k4_ceiling_0.05": {
+            "mean": 1.0,
+            "median": 1.0,
+            "minimum": 0.9999998211860657,
+            "p05": 0.9999998807907104
+          },
+          "k4_ceiling_0.08": {
+            "mean": 0.9999983906745911,
+            "median": 0.9999984502792358,
+            "minimum": 0.9999973773956299,
+            "p05": 0.9999979734420776
+          },
+          "k4_ceiling_0.11": {
+            "mean": 0.9999937415122986,
+            "median": 0.9999938011169434,
+            "minimum": 0.999989926815033,
+            "p05": 0.9999919533729553
+          }
+        },
+        "deployment_depth_to_k4_at_ceiling_0p05": {
+          "k1_ceiling_0.05": {
+            "mean": 0.9999975562095642,
+            "median": 0.9999978542327881,
+            "minimum": 0.9999862909317017,
+            "p05": 0.9999940395355225
+          },
+          "k2_ceiling_0.05": {
+            "mean": 0.999999463558197,
+            "median": 0.9999995231628418,
+            "minimum": 0.9999972581863403,
+            "p05": 0.9999985098838806
+          },
+          "k3_ceiling_0.05": {
+            "mean": 1.0,
+            "median": 0.9999998807907104,
+            "minimum": 0.9999994039535522,
+            "p05": 0.9999997019767761
+          },
+          "k4_ceiling_0.05": {
+            "mean": 1.0,
+            "median": 1.0,
+            "minimum": 0.9999998211860657,
+            "p05": 0.9999998807907104
+          }
+        }
+      },
+      "p35_seed_1_ema_step_4400": {
+        "core_depth_to_k4": {
+          "k1": {
+            "mean": 0.7275402545928955,
+            "median": 0.7294591665267944,
+            "minimum": 0.5832808017730713,
+            "p05": 0.6334574818611145
+          },
+          "k2": {
+            "mean": 0.8777398467063904,
+            "median": 0.8772221207618713,
+            "minimum": 0.8015997409820557,
+            "p05": 0.8502359390258789
+          },
+          "k3": {
+            "mean": 0.9739702343940735,
+            "median": 0.9736166000366211,
+            "minimum": 0.9582902193069458,
+            "p05": 0.9668590426445007
+          },
+          "k4": {
+            "mean": 1.0,
+            "median": 1.0,
+            "minimum": 0.9999997615814209,
+            "p05": 0.9999998807907104
+          }
+        },
+        "deployment_ceiling_to_0p05_at_matched_k": {
+          "k1_ceiling_0.02": {
+            "mean": 0.9999985098838806,
+            "median": 0.9999985694885254,
+            "minimum": 0.9999977350234985,
+            "p05": 0.9999980330467224
+          },
+          "k1_ceiling_0.05": {
+            "mean": 1.0,
+            "median": 1.0,
+            "minimum": 0.9999997615814209,
+            "p05": 0.9999998807907104
+          },
+          "k1_ceiling_0.08": {
+            "mean": 0.9999985098838806,
+            "median": 0.9999985098838806,
+            "minimum": 0.9999977350234985,
+            "p05": 0.9999980926513672
+          },
+          "k1_ceiling_0.11": {
+            "mean": 0.9999940395355225,
+            "median": 0.999994158744812,
+            "minimum": 0.9999908804893494,
+            "p05": 0.9999923706054688
+          },
+          "k2_ceiling_0.02": {
+            "mean": 0.9999985098838806,
+            "median": 0.9999984502792358,
+            "minimum": 0.9999976754188538,
+            "p05": 0.999998152256012
+          },
+          "k2_ceiling_0.05": {
+            "mean": 1.0,
+            "median": 1.0,
+            "minimum": 0.9999998211860657,
+            "p05": 0.9999998807907104
+          },
+          "k2_ceiling_0.08": {
+            "mean": 0.9999985098838806,
+            "median": 0.9999984502792358,
+            "minimum": 0.9999977946281433,
+            "p05": 0.999998152256012
+          },
+          "k2_ceiling_0.11": {
+            "mean": 0.9999938607215881,
+            "median": 0.9999939203262329,
+            "minimum": 0.9999914169311523,
+            "p05": 0.9999927282333374
+          },
+          "k3_ceiling_0.02": {
+            "mean": 0.9999984502792358,
+            "median": 0.9999984502792358,
+            "minimum": 0.9999976754188538,
+            "p05": 0.9999980926513672
+          },
+          "k3_ceiling_0.05": {
+            "mean": 1.0,
+            "median": 1.0,
+            "minimum": 0.9999997615814209,
+            "p05": 0.9999998807907104
+          },
+          "k3_ceiling_0.08": {
+            "mean": 0.9999984502792358,
+            "median": 0.9999984502792358,
+            "minimum": 0.999997615814209,
+            "p05": 0.9999980926513672
+          },
+          "k3_ceiling_0.11": {
+            "mean": 0.9999937415122986,
+            "median": 0.9999938011169434,
+            "minimum": 0.999990701675415,
+            "p05": 0.9999925494194031
+          },
+          "k4_ceiling_0.02": {
+            "mean": 0.9999984502792358,
+            "median": 0.9999984502792358,
+            "minimum": 0.9999973773956299,
+            "p05": 0.9999980926513672
+          },
+          "k4_ceiling_0.05": {
+            "mean": 1.0,
+            "median": 1.0,
+            "minimum": 0.9999997615814209,
+            "p05": 0.9999998807907104
+          },
+          "k4_ceiling_0.08": {
+            "mean": 0.9999984502792358,
+            "median": 0.9999984502792358,
+            "minimum": 0.9999974966049194,
+            "p05": 0.9999980926513672
+          },
+          "k4_ceiling_0.11": {
+            "mean": 0.9999937415122986,
+            "median": 0.9999937415122986,
+            "minimum": 0.9999901652336121,
+            "p05": 0.9999926090240479
+          }
+        },
+        "deployment_depth_to_k4_at_ceiling_0p05": {
+          "k1_ceiling_0.05": {
+            "mean": 0.9999986290931702,
+            "median": 0.9999994039535522,
+            "minimum": 0.9999889135360718,
+            "p05": 0.9999942779541016
+          },
+          "k2_ceiling_0.05": {
+            "mean": 0.9999999403953552,
+            "median": 0.9999998211860657,
+            "minimum": 0.9999976754188538,
+            "p05": 0.9999994039535522
+          },
+          "k3_ceiling_0.05": {
+            "mean": 1.0,
+            "median": 1.0,
+            "minimum": 0.9999994039535522,
+            "p05": 0.9999998211860657
+          },
+          "k4_ceiling_0.05": {
+            "mean": 1.0,
+            "median": 1.0,
+            "minimum": 0.9999997615814209,
+            "p05": 0.9999998807907104
+          }
+        }
+      }
+    },
+    "state_cache": {
+      "bytes": 62971677,
+      "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_phase3_kp1_t1_20260816/private/t1_state_cache.pt",
+      "sha256": "e4f0dfc1334b76ca219daa5cae7bb63acae1515ee547577510b7ca0f39a9cb6b"
+    },
+    "status": "state_extraction_complete_retrieval_pending_teacher_fingerprints"
+  }
+}

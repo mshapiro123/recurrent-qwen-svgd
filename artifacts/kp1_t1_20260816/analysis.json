@@ -1,0 +1,80 @@
+{
+  "kind": "paper2_phase3_kp1_t1_analysis_v1",
+  "status": "complete_with_kp1_target_degeneracy",
+  "authority_drive_id": "1l8yDmL97eI3a4iTybM0m9yq989xvMBrz",
+  "execution": {
+    "dev_only": true,
+    "confirm_scored": false,
+    "eval_e_scored": false,
+    "optimizer_constructed": false,
+    "optimizer_steps": 0,
+    "source_commit": "27638fab",
+    "summary_sha256": "63c7000456ee82193e08d34b78bc44c6eeb11b110b27928792816c39770adbd1",
+    "state_cache_sha256": "e4f0dfc1334b76ca219daa5cae7bb63acae1515ee547577510b7ca0f39a9cb6b"
+  },
+  "kp1": {
+    "gap_rows": 329,
+    "probe_train_rows": 229,
+    "probe_eval_rows": 100,
+    "locked_target": "first token of the canonical gold answer suffix",
+    "target_audit": {
+      "arc_challenge": {"rows": 31, "unique_tokens": 4, "dominant_share": 0.3548387097},
+      "arc_easy": {"rows": 52, "unique_tokens": 4, "dominant_share": 0.2884615385},
+      "mmlu": {"rows": 96, "unique_tokens": 4, "dominant_share": 0.2916666667},
+      "gsm8k": {"rows": 122, "unique_tokens": 1, "dominant_share": 1.0},
+      "mbpp": {"rows": 25, "unique_tokens": 2, "dominant_share": 0.88},
+      "tier1": {"rows": 3, "unique_tokens": 1, "dominant_share": 1.0}
+    },
+    "pooled_probe_read": {
+      "best_top1_correct": 62,
+      "eval_rows": 100,
+      "best_top1_accuracy": 0.62,
+      "registered_intercept_control_correct": 38,
+      "registered_intercept_control_accuracy": 0.38,
+      "posthoc_train_derived_battery_majority_correct": 56,
+      "posthoc_train_derived_battery_majority_accuracy": 0.56,
+      "interpretation": "not decision-grade because the generative targets collapse to formatting tokens and the pooled probe can identify battery rather than answer knowledge"
+    },
+    "mcq_only_descriptive": {
+      "eval_rows": 54,
+      "best_recurrent_probe_correct": 17,
+      "best_recurrent_probe_accuracy": 0.3148148148,
+      "train_derived_battery_majority_correct": 11,
+      "train_derived_battery_majority_accuracy": 0.2037037037,
+      "selection_warning": "best selected from 20 probe surfaces; row-level predictions were not retained, so paired support and multiplicity-corrected inference are unavailable"
+    },
+    "verdict": "indeterminate_target_degenerate",
+    "decision_use": "do not use this pooled probe to choose the Stage 2A memory lead"
+  },
+  "t1": {
+    "rows": 1024,
+    "core_cells": 44,
+    "within_checkpoint_core_cosine_to_k4": {
+      "seed_0": {"k1": 0.8913857341, "k2": 0.9418065548, "k3": 0.9837930799, "k4": 1.0},
+      "seed_1": {"k1": 0.7275402546, "k2": 0.8777398467, "k3": 0.9739702344, "k4": 1.0}
+    },
+    "same_seed_p34_to_p35": {
+      "core_mean_cosine": 1.0,
+      "deployment_mean_cosine_range": [0.9999971986, 1.0]
+    },
+    "cross_seed": {
+      "core_mean_cosine": 0.07150141895,
+      "core_p05_cosine": 0.04487133771,
+      "core_minimum_cosine": 0.02197377756,
+      "deployment_mean_cosine_range": [-0.03116713092, -0.03044694103],
+      "deployment_minimum_cosine": -0.1671071053
+    },
+    "ceiling_stability": {
+      "reference_ceiling": 0.05,
+      "tested_ceilings": [0.02, 0.05, 0.08, 0.11],
+      "lowest_reported_matched_depth_mean_cosine": 0.9999935627
+    },
+    "verdict": "depth_progression_seed_specific_coordinates",
+    "retrieval_status": "pending_teacher_fingerprints"
+  },
+  "next_decisions": [
+    "Authorize KP-1R with non-formatting answer-bearing targets, a train-derived battery-aware control, row-level predictions, and predeclared multiplicity handling.",
+    "Treat T1 depth progression as real within a checkpoint but do not compare raw state coordinates across seeds without alignment.",
+    "Complete teacher-fingerprint retrieval before the fingerprint spine is used as a Paper Two result or Stage 2A selector."
+  ]
+}
