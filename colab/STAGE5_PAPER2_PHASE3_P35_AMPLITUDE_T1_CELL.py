@@ -44,4 +44,4 @@ run([
     "tests/test_paper2_phase3_p34_task_inference.py",
     "tests/test_stage5_notebooks.py::test_p35_amplitude_t1_target_is_wired_and_guarded",
 ])
-run([sys.executable, "-u", "colab/run_stage5_paper2_phase3_p35_amplitude_t1_preflight.py"])
+run([sys.executable, "-u", "-m", "colab.run_stage5_paper2_phase3_p35_amplitude_t1_preflight"])
