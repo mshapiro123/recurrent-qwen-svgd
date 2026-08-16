@@ -1,0 +1,70 @@
+{
+  "kind": "paper2_phase3_kp1_t1_lock_v1",
+  "status": "authorized_score_only",
+  "locked_before_model_access": true,
+  "authority": {
+    "drive_id": "1l8yDmL97eI3a4iTybM0m9yq989xvMBrz",
+    "title": "STRATEGY_DIAGNOSTIC_WAVE_ANALYSIS_20260816.md",
+    "bytes": 12906,
+    "sha256": "29464906d40dab5af4805d2d941370ede382e1da068b0939639fcf88adaa4b62"
+  },
+  "sealed_partitions": {
+    "allowed": ["dev"],
+    "confirm_scored": false,
+    "eval_e_scored": false,
+    "remain_sealed": true
+  },
+  "source_files": {
+    "panel_sha256": "c0e15a890b598544059ac337cc475123f97c05e3c1626febcdee1c6d8fe02615",
+    "base_scores_sha256": "1c6d4fc353b0b736a3e72214e45c4c6c9dbdf0db6dd89f88a7570ee6aaef74a1",
+    "reference_scores_sha256": "1aa4391deefaee6e1a70f4e99ac20e0728dae1a4e45fec482f38e76edf5fa54b"
+  },
+  "model": {
+    "id": "Qwen/Qwen2.5-0.5B-Instruct",
+    "revision": "7ae557604adf67be50417f59c2c2f167def9a775",
+    "dtype": "bfloat16",
+    "layer_taps": [6, 12, 18, 24]
+  },
+  "kp1": {
+    "population": "DEV rows where the pinned 14B is correct and the base student is wrong",
+    "split_seed": 20260816,
+    "probe_eval_fraction": 0.3,
+    "ridge": 1.0,
+    "primary_target": "first token of the canonical gold answer suffix",
+    "probe": "affine ridge map from frozen state to frozen output-embedding target, evaluated by full-vocabulary token rank",
+    "controls": [
+      "intercept-only output-embedding baseline",
+      "row-disjoint battery-stratified split",
+      "native frozen logit lens at substrate layers",
+      "native recurrent draft readout reported separately"
+    ],
+    "scope_warning": "positive recoverability supports present-but-unread; non-recoverability cannot prove absence because the probe is linear and generative answers are reduced to a canonical first token",
+    "main_model_training": false
+  },
+  "t1": {
+    "checkpoints": {
+      "p34_seed_0_step_4000": "381955ec5b78d0a00883c29e9f940feac8cfc8665f7a3a4446c79734532f4ed7",
+      "p34_seed_1_step_4000": "97ad532a5bffd72b2563799047b517e531e00115793bf4808f060148dfffc1ec",
+      "p35_seed_0_ema_step_4400": "a047e2e7b35320376a736492c79d913b8690937da785efa2af002c8f54d26ca6",
+      "p35_seed_1_ema_step_4400": "e36cddb76407c8f853ccb43824c77cf01d15f144780726dd9aec23215467fccb"
+    },
+    "core_schema": {
+      "prelude_cells": 8,
+      "recurrent_cells_per_loop": 8,
+      "loops": 4,
+      "layer_cells": 4,
+      "cells": 44,
+      "cell_dim": 128
+    },
+    "deployment_cell": {
+      "separate_from_core": true,
+      "reason": "the 44-cell core is ceiling-invariant by construction; a post-write cell is required for a non-degenerate cross-ceiling stability read"
+    },
+    "ceilings": [0.02, 0.05, 0.08, 0.11],
+    "depths": [1, 2, 3, 4],
+    "substitution": "two P3.4 step-4000 and two P3.5 EMA endpoints replace the unavailable P3.4 temporal window",
+    "retraining_to_recreate_history": false
+  },
+  "optimizer_constructed": false,
+  "optimizer_steps": 0
+}
