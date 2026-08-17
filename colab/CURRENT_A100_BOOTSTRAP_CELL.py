@@ -4456,6 +4456,19 @@ TARGETS = {
         ],
         "env": {},
     },
+    "paper2_stage2a_content_geometry": {
+        "path": "colab/STAGE5_PAPER2_STAGE2A_CONTENT_GEOMETRY_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_STAGE2A_CONTENT_GEOMETRY_VERSION",
+            "paper2_stage2a_content_geometry_v1",
+            "32B concurrence plus frozen prompt states no optimizer no training",
+            "dynamic power-of-two slots validation excluded before concurrence",
+            "verified-train only CONFIRM and EVAL-E remain sealed",
+            "resumable verifier and state caches publish exact hashes",
+            "colab/run_stage5_paper2_stage2a_content_geometry.py",
+        ],
+        "env": {},
+    },
     "gradient_path_audit": {
         "path": "colab/STAGE5_GRADIENT_PATH_AUDIT_CELL.py",
         "markers": [

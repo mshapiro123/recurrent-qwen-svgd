@@ -16,13 +16,22 @@
     "bytes": 4821,
     "sha256": "78cbf2fb397cf2c6319636523a7feea44b1e21e8941ee32e898323e697f18a22"
   },
+  "sizing_ruling": {
+    "drive_id": "1Z_YCjD2iucEeVwXyLB2M2OkW2XBRZLrm",
+    "bytes": 1949,
+    "sha256": "bfce1e422002e776cd7e40ccbe1911f9a212881feb7352325188a447d3cc7bb0"
+  },
   "artifacts": [
     "docs/PAPER2_STAGE2A_CHARTER_DRAFT_20260816.md",
     "training/paper2_stage2a_preregistration.draft.json",
     "training/paper2_stage2a_lock.py",
+    "training/materialize_paper2_stage2a_lock.py",
     "models/sidecar_v2.py",
     "training/sidecar_v2_data_spine.py",
-    "training/paper2_stage2a_objective.py"
+    "training/paper2_stage2a_objective.py",
+    "eval/eval_paper2_stage2a_content_geometry.py",
+    "colab/run_stage5_paper2_stage2a_content_geometry.py",
+    "colab/STAGE5_PAPER2_STAGE2A_CONTENT_GEOMETRY_CELL.py"
   ],
   "implemented_contracts": [
     "fixed fingerprint keys",
@@ -39,7 +48,13 @@
     "explicit prohibition on reuse of DEV-fitted diagnostic geometry",
     "exact registered 0.5 CE plus 0.5 forward-KL answer-region objective",
     "leave-one-out exclusion for row-owned fingerprint slots",
-    "hard exclusion of the 512-row non-DEV validation split from memory"
+    "hard exclusion of the 512-row non-DEV validation split from memory",
+    "automatic supply-bound power-of-two memory sizing capped at 4096",
+    "battery-proportional Hamilton validation and memory subselection with published exclusions",
+    "dynamic T3b parameter matching to the realized memory count",
+    "resumable 32B concurrence plus frozen layer-6/layer-12 prompt-state extraction",
+    "MBPP functional concurrence under identical required tests",
+    "score-blind receipt materialization that cannot authorize training"
   ],
   "training_authorized": false,
   "optimizer_constructed": false,
@@ -47,14 +62,17 @@
   "dev_scores_computed": false,
   "confirm_scored": false,
   "eval_e_scored": false,
-  "new_blockers_found": [
-    "After reserving 512 admitted non-DEV validation rows, at most 5,332 rows remain before 32B concurrence, so 8,192 one-row-per-slot entries are impossible.",
-    "The objective binding requires a 512-row validation split but does not bind its deterministic selection seed/rule."
+  "new_blockers_found": [],
+  "pending_pre_signature_materialization": [
+    "Pre-concurrence validation manifest and hash",
+    "32B concurrence receipt, attrition by battery, dynamic slot count, selected and excluded identity manifests",
+    "Non-DEV PCA geometry and held-out retrieval receipt",
+    "Mark signature on the materialized executed lock"
   ],
   "tests": {
     "status": "stage2a_and_adjacent_phase3_clean; full_suite_has_four unchanged unrelated locked-byte failures on Windows",
-    "stage2a_targeted": "69 passed after objective, leave-one-out, and validation-isolation build",
-    "stage2a_and_adjacent_phase3": "69 passed in the current focused suite",
+    "stage2a_targeted": "30 passed after sizing, content/geometry, materialization, objective, and lock build",
+    "stage2a_and_adjacent_phase3": "30 passed in the latest focused suite; prior adjacent Phase 3 suite remained green",
     "full_suite": "2807 passed, 4 failed, 1 warning",
     "full_suite_failures": [
       "tests/test_composite_training_design.py locked markdown byte hash",

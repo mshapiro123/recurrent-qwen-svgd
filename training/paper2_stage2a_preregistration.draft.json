@@ -25,6 +25,13 @@
     "sha256": "78cbf2fb397cf2c6319636523a7feea44b1e21e8941ee32e898323e697f18a22",
     "repo_receipt": "docs/STRATEGY_T3A_OBJECTIVE_BINDING_20260817.receipt.json"
   },
+  "sizing_ruling": {
+    "drive_id": "1Z_YCjD2iucEeVwXyLB2M2OkW2XBRZLrm",
+    "title": "STRATEGY_T3A_SIZING_RULING_20260817.md",
+    "bytes": 1949,
+    "sha256": "bfce1e422002e776cd7e40ccbe1911f9a212881feb7352325188a447d3cc7bb0",
+    "repo_receipt": "docs/STRATEGY_T3A_SIZING_RULING_20260817.receipt.json"
+  },
   "scientific_frame": {
     "anchor": "student early states are an excellent address for teacher content; student answer content is not established",
     "knowledge_presence_verdict": "NO_POSITIVE_KNOWLEDGE_PRESENCE_GATE",
@@ -46,14 +53,20 @@
     "nondev_14b_correct_rows": 5844,
     "heldout_nondev_validation_rows": 512,
     "validation_rows_allowed_in_memory": 0,
-    "validation_split_seed": null,
+    "validation_split_seed": 20260817,
+    "validation_split_population": "14b_correct_nondev_before_family_concurrence",
+    "validation_selection_rule": "battery-proportional Hamilton quotas; within-battery SHA256(seed:battery:item_id:content_sha256)",
     "validation_manifest_sha256": null,
-    "memory_slots": 8192,
+    "memory_slots": null,
+    "memory_slots_cap": 4096,
+    "memory_sizing_rule": "largest power of two not exceeding post-concurrence admitted count after validation exclusion, capped at 4096",
+    "post_concurrence_admitted_rows": null,
     "memory_source": "KP-1R reference-table rows outside DEV",
     "dev_rows_allowed_in_memory": 0,
     "source_manifest_sha256": "1aa4391deefaee6e1a70f4e99ac20e0728dae1a4e45fec482f38e76edf5fa54b",
-    "slot_feasibility": "blocked: after reserving 512 validation rows, V(x) admits at most 5332 memory rows before the required 32B concurrence filter",
+    "slot_feasibility": "resolved prospectively by the automatic power-of-two supply rule",
     "memory_slots_resolution": null,
+    "firm_knowledge_manifest_sha256": null,
     "firm_knowledge_rule": {
       "teacher_correct": {
         "model": "Qwen/Qwen2.5-14B-Instruct",
@@ -64,20 +77,21 @@
       "family_concurrence": {
         "model": "Qwen/Qwen2.5-32B-Instruct",
         "revision": "5ede1c97bbab6ce5cda5812749b4c0bdf79b18dd",
-        "condition": "same normalized final answer as the 14B teacher"
+        "condition": "same normalized final answer as the 14B teacher; for MBPP, both generated programs pass the identical required tests"
       },
       "admission": "teacher_correct AND family_concurrence",
       "probability_thresholds": null,
       "per_row_output_hashes_required": true
     },
     "firm_knowledge_rule_sha256": "f4197911f4983bcd7952b0346d3c61812b7900fd8ee9e9b18bdcdc939bc931da",
-    "selection_seed": 20260816,
-    "selection_rule": "SHA256(seed:battery:item_id:content_sha256), ascending after external V(x) admission",
+    "selection_seed": 20260817,
+    "selection_rule": "battery-proportional Hamilton quotas after V(x); within-battery SHA256(seed:battery:item_id:content_sha256); excluded list published",
     "panel_overlap_required": 0
   },
   "geometry_fit": {
     "key_layer": 6,
     "teacher_value_layer": 12,
+    "state_position": "last_active_prompt_token",
     "rank": 128,
     "fit_population": "non_dev_reference_rows_only",
     "dev_rows_used": 0,
@@ -109,7 +123,7 @@
       "role": "primary_teacher_fingerprint_memory",
       "seeds": [0, 1],
       "key_source": "student_layer_6_pca128",
-      "value_source": "teacher_layer_12_registered_transport",
+      "value_source": "teacher_layer_12_teacher_pca128",
       "keys_trainable": false,
       "query_transform_trainable": false,
       "values_trainable": true,
@@ -124,6 +138,7 @@
       "ngrams": [2, 3],
       "hashes_per_ngram": 2,
       "matched_parameter_budget": true,
+      "matched_slot_count_source": "data_separation.memory_slots",
       "training_leave_one_out": "vacuous: the hash tables contain no row-owned entry; no self slot exists"
     },
     "shuffled_values": {
@@ -249,16 +264,15 @@
     "power_arithmetic_required_in_successor_lock": true
   },
   "required_bound_paths": [
+    "data_separation.memory_slots",
     "data_separation.memory_slots_resolution",
-    "data_separation.validation_split_seed",
     "data_separation.validation_manifest_sha256",
+    "data_separation.firm_knowledge_manifest_sha256",
     "geometry_fit.fit_manifest_sha256",
     "geometry_fit.artifact_sha256"
   ],
   "unresolved_before_ratification": [
-    "Resolve the impossible 8,192 one-row-per-slot target: after reserving 512 held-out validation rows, at most 5,332 non-DEV rows remain before 32B concurrence.",
-    "Bind the deterministic 512-row admitted non-DEV validation split seed/rule and prove zero overlap with memory.",
-    "Materialize and hash the non-DEV V(x) verdicts and the slot manifest at the amended matched slot count.",
+    "Materialize and hash the pre-concurrence validation split, non-DEV V(x) verdicts, excluded-row list, and dynamically sized slot manifest.",
     "Fit the non-DEV-only geometry, score its non-DEV holdout retrieval, and bind manifest/artifact hashes.",
     "Mark signs the fully materialized executed lock."
   ]

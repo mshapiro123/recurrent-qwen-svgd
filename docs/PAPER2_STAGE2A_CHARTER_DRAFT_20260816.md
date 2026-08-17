@@ -62,11 +62,13 @@ The positive teacher-fingerprint diagnostic used a 614/410 split inside DEV. Tha
 
 For Stage 2A, every learned or fitted coordinate transform must be rebuilt only from non-DEV reference rows, frozen, hashed, and receipted before DEV scoring. DEV contributes neither memory content nor transform fitting. Reusing the diagnostic DEV transform is a stop-class fault.
 
+The row-level state convention is the last active token of the registered prompt, matching the fingerprint diagnostic. Student keys tap frozen Qwen layer 6; teacher values tap frozen 14B layer 12 and remain in the teacher PCA basis. For MBPP, family concurrence is functional: both independently generated programs must pass the identical required tests. Textual identity between two correct programs is neither required nor treated as evidence.
+
 ## 4. Arms
 
 ### 4.1 T3a-C: fingerprint-keyed teacher content
 
-- Slots: 8,192.
+- Slots: largest power of two not exceeding the post-concurrence admitted count after validation exclusion, capped at 4,096. If admission exceeds the realized size, apply battery-proportional Hamilton quotas and seed-`20260817` within-battery hashing; publish every admitted-but-excluded identity. T3b matches the realized count.
 - Fixed keys: student layer-6 fingerprints, PCA-128 from the non-DEV fit.
 - Initial values: teacher layer-12 PCA-128 representations kept in teacher coordinates. The Procrustes map is diagnostic only and is absent from the live path.
 - Retrieval: top-8 maximum inner-product search over normalized fixed keys at temperature 0.07.
@@ -123,7 +125,7 @@ The registered run is 1,200 steps at batch 128 with AdamW, learning rate `5e-4`,
 
 The objective is bound by `STRATEGY_T3A_OBJECTIVE_BINDING_20260817.md` (Drive `1-2iiv8aaTrBvUR2Zxs4V6BW1P8OLotb_`, 4,821 bytes, SHA-256 `78cbf2fb397cf2c6319636523a7feea44b1e21e8941ee32e898323e697f18a22`). It is `L = 0.5 * L_CE + 0.5 * L_KL`. `L_KL` is forward teacher-to-student KL at temperature 1.0 over the cached top-128 14B teacher lattice, renormalized on that lattice. `L_CE` targets the teacher token. Both losses apply only at KP-1R-repaired answer-bearing positions; prompt positions, formatting-only tokens, and position zero are excluded. Reduction is the mean over unmasked positions within each example, then the mean over the batch.
 
-Every teacher-forced loss position runs the deployment graph at K=4, with top-k 8 fingerprint retrieval at temperature 0.07. A fingerprint training row's own memory slot is excluded before top-k. The literal n-gram arm has no row-owned slot, so this exclusion is vacuous for that control rather than silently omitted. A 512-row admitted non-DEV validation split monitors training. DEV is used only for the registered 200-step looks and EMA endpoint.
+Every teacher-forced loss position runs the deployment graph at K=4, with top-k 8 fingerprint retrieval at temperature 0.07. A fingerprint training row's own memory slot is excluded before top-k. The literal n-gram arm has no row-owned slot, so this exclusion is vacuous for that control rather than silently omitted. A 512-row 14B-correct non-DEV validation split is selected before concurrence at seed `20260817`, excluded from memory, and used to monitor training. DEV is used only for the registered 200-step looks and EMA endpoint.
 
 No alpha, rank, slot-count, or amplitude sweep is authorized by this charter.
 
@@ -182,15 +184,14 @@ Identity, lineage, quality, chi, or seal contracts fail. Stop with receipts. Do 
 - Do not spend CONFIRM or EVAL-E in Stage 2A.
 - Do not construct an optimizer from this draft.
 
-## 11. Signature blockers
+## 11. Pre-signature materialization
 
-The machine companion carries the authoritative blocker list. The substantive open decisions are:
+The sizing ruling (Drive `1Z_YCjD2iucEeVwXyLB2M2OkW2XBRZLrm`, 1,949 bytes, SHA-256 `bfce1e422002e776cd7e40ccbe1911f9a212881feb7352325188a447d3cc7bb0`) closes the final design decision. The remaining work is deterministic materialization:
 
-1. resolve the slot-count contradiction: after reserving the required 512 admitted non-DEV validation rows, at most 5,332 rows remain before the required 32B concurrence filter, so 8,192 one-row-per-slot entries are impossible;
-2. bind and hash a deterministic, battery-stratified 512-row admitted non-DEV validation split that has zero overlap with memory;
-3. materialize and hash the non-DEV `V(x)` source and amended matched-slot manifests;
-4. fit the non-DEV-only geometry, score held-out non-DEV retrieval, and bind its manifest and artifact hashes;
-5. Mark signs the fully materialized executed lock.
+1. materialize and hash the battery-stratified 512-row pre-concurrence validation split, with zero memory overlap;
+2. materialize and hash the non-DEV `V(x)` source, concurrence attrition, dynamic slot count, battery quotas, selected identities, and excluded identities;
+3. fit the non-DEV-only geometry, score held-out non-DEV retrieval, and bind its manifest and artifact hashes;
+4. Mark signs the fully materialized executed lock.
 
 The eventual Stage 2A main campaign selected from this screen, not T3a itself, must be designed to a CONFIRM-resolvable target of at least 2 absolute points (approximately 21 of 1,024 DEV rows) with power arithmetic in its own lock.
 
