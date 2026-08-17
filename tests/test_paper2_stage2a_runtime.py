@@ -128,6 +128,12 @@ def test_canonical_query_and_schedule_contract() -> None:
         canonical_fingerprint_query(hidden, student_mean=mean, student_basis=basis),
         (hidden.float() - mean.float()) @ basis.float(),
     )
+    torch.testing.assert_close(
+        canonical_fingerprint_query(
+            hidden, student_mean=mean[None, :], student_basis=basis
+        ),
+        (hidden.float() - mean.float()) @ basis.float(),
+    )
     assert stage2a_learning_rate(1) < stage2a_learning_rate(50)
     assert stage2a_learning_rate(50) == pytest.approx(5e-4)
     assert stage2a_learning_rate(1080) == pytest.approx(5e-4)

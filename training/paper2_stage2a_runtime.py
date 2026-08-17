@@ -168,6 +168,8 @@ class Stage2AMemorySystem(nn.Module):
 def canonical_fingerprint_query(
     layer6: torch.Tensor, *, student_mean: torch.Tensor, student_basis: torch.Tensor
 ) -> torch.Tensor:
+    if student_mean.ndim == 2 and student_mean.shape[0] == 1:
+        student_mean = student_mean.squeeze(0)
     if layer6.ndim != 2 or student_mean.ndim != 1 or student_basis.ndim != 2:
         raise ValueError("fingerprint canonicalization received invalid ranks")
     if layer6.shape[1] != student_mean.shape[0] or student_basis.shape[0] != layer6.shape[1]:
