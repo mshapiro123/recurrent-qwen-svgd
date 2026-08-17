@@ -129,14 +129,28 @@ def stage_inputs(scratch: Path) -> dict[str, Any]:
         if sha256_file(p35) != P35_SHA[seed]:
             raise RuntimeError(f"Stage 2A P3.5 endpoint SHA mismatch seed={seed}")
         chains[seed] = chain | {"p35": p35}
-    model_cache = (
+    model_cache_candidates = (
         Path("/mnt/local-scratch/recurrent-qwen-svgd-stage")
         / CONTENT_ID
         / "hf_model_cache"
-        / "student_0p5b"
+        / "student_0p5b",
+        Path("/mnt/local-scratch/recurrent-qwen-svgd-stage")
+        / CACHE_ID
+        / "hf_model_cache"
+        / "student_0p5b",
+        Path("/content/recurrent-qwen-svgd-stage")
+        / CACHE_ID
+        / "hf_model_cache"
+        / "student_0p5b",
     )
-    if not model_cache.is_dir():
-        raise FileNotFoundError("Stage 2A verified 0.5B model cache is absent")
+    model_cache = next(
+        (path for path in model_cache_candidates if path.is_dir()), None
+    )
+    if model_cache is None:
+        raise FileNotFoundError(
+            "Stage 2A verified 0.5B model cache is absent; checked "
+            + ", ".join(str(path) for path in model_cache_candidates)
+        )
     return {"paths": paths, "chains": chains, "model_cache": model_cache}
 
 
