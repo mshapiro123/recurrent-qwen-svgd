@@ -4030,6 +4030,21 @@ def test_stage2a_training_cache_target_is_wired_and_guarded() -> None:
     assert "optimizer_steps" in evaluator
 
 
+def test_stage2a_t3_screen_target_is_wired_and_guarded() -> None:
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    cell = (ROOT / "colab/STAGE5_PAPER2_STAGE2A_CELL.py").read_text(encoding="utf-8")
+    runner = (ROOT / "colab/run_stage5_paper2_stage2a.py").read_text(encoding="utf-8")
+    assert "paper2_stage2a_t3_screen" in bootstrap
+    assert "paper2_stage2a_t3_screen_v1" in cell
+    assert "ratified lock asserted before optimizer construction" in cell
+    assert "T3a and T3b both seeds controls seed zero with escalation" in cell
+    assert "CONFIRM and EVAL-E remain sealed" in cell
+    assert "memory_mib >= 39_000" in cell
+    assert "assert_stage2a_training_authorized" in runner
+    assert "complete_dev_only" in runner
+    assert "running_registered_control_escalation" in runner
+
+
 def test_gradient_path_audit_target_is_wired_and_guarded() -> None:
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
     bootstrap_md = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")

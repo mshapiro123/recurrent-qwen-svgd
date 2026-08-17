@@ -6,6 +6,7 @@ import argparse
 import gc
 import hashlib
 import json
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Iterable, Mapping, Sequence
@@ -20,6 +21,7 @@ from eval.eval_paper2_phase3_p31_references import (
     _generation_prompt,
     _mcq,
     _mcq_prompt,
+    _normalize_number,
 )
 
 
@@ -78,6 +80,22 @@ def _last_span(text: str, value: str) -> tuple[int, int]:
     return start, start + len(value)
 
 
+def _gsm8k_registered_span(text: str, prediction: str) -> tuple[int, int]:
+    """Return the numeric span selected by the registered GSM8K reader."""
+
+    matches = list(re.finditer(r"[-+]?\d[\d,]*(?:\.\d+)?", text))
+    if not matches:
+        raise ValueError("GSM8K teacher response has no numeric reader target")
+    match = matches[-1]
+    selected = _normalize_number(match.group(0))
+    if selected != _normalize_number(prediction):
+        raise ValueError(
+            "GSM8K registered reader span does not match the cached prediction: "
+            f"selected={selected!r} prediction={prediction!r}"
+        )
+    return match.start(), match.end()
+
+
 def build_teacher_forced_example(
     source: Mapping[str, Any],
     teacher: Mapping[str, Any],
@@ -107,7 +125,7 @@ def build_teacher_forced_example(
         generated = str(teacher["generated_text"])
         target = str(teacher["prediction"])
         text = prompt + generated
-        local_start, local_end = _last_span(generated, target)
+        local_start, local_end = _gsm8k_registered_span(generated, target)
         start, end = len(prompt) + local_start, len(prompt) + local_end
         strict = False
     elif battery == "mbpp":
@@ -541,8 +559,10 @@ def main() -> int:
     args.output_dir.mkdir(parents=True, exist_ok=True)
     args.private_dir.mkdir(parents=True, exist_ok=True)
     spec = MODEL_SPECS[TEACHER_KEY]
+    teacher_cache = args.model_cache / "teacher_14b"
+    student_cache = args.model_cache / "student_0p5b"
     tokenizer = AutoTokenizer.from_pretrained(
-        spec["model"], revision=spec["revision"], cache_dir=args.model_cache
+        spec["model"], revision=spec["revision"], cache_dir=teacher_cache
     )
     examples, owner_rows, population_receipt = build_population(
         firm_rows=read_jsonl(args.firm_manifest),
@@ -554,7 +574,7 @@ def main() -> int:
     model = AutoModelForCausalLM.from_pretrained(
         spec["model"],
         revision=spec["revision"],
-        cache_dir=args.model_cache,
+        cache_dir=teacher_cache,
         dtype=torch.bfloat16,
         attn_implementation="sdpa",
         low_cpu_mem_usage=True,
@@ -622,12 +642,12 @@ def main() -> int:
     student_tokenizer = AutoTokenizer.from_pretrained(
         student_spec["model"],
         revision=student_spec["revision"],
-        cache_dir=args.model_cache,
+        cache_dir=student_cache,
     )
     student = AutoModelForCausalLM.from_pretrained(
         student_spec["model"],
         revision=student_spec["revision"],
-        cache_dir=args.model_cache,
+        cache_dir=student_cache,
         dtype=torch.bfloat16,
         attn_implementation="sdpa",
         low_cpu_mem_usage=True,

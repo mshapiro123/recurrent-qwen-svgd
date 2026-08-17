@@ -18,6 +18,69 @@ class Stage2AObjectiveReadout:
     answer_positions_per_example: torch.Tensor
 
 
+def stage2a_flat_answer_objective(
+    *,
+    student_logits: torch.Tensor,
+    teacher_topk_token_ids: torch.Tensor,
+    teacher_topk_logits: torch.Tensor,
+    teacher_token_ids: torch.Tensor,
+    example_index: torch.Tensor,
+    example_count: int,
+    temperature: float = 1.0,
+) -> Stage2AObjectiveReadout:
+    """Registered objective over a compact, already-masked position table."""
+
+    if student_logits.ndim != 2:
+        raise ValueError("flat student logits must have shape [positions, vocab]")
+    positions, vocab = student_logits.shape
+    if teacher_topk_token_ids.shape != (positions, 128):
+        raise ValueError("flat teacher token lattice must be [positions, 128]")
+    if teacher_topk_logits.shape != teacher_topk_token_ids.shape:
+        raise ValueError("flat teacher logits must match the token lattice")
+    if teacher_token_ids.shape != (positions,):
+        raise ValueError("flat teacher targets must have one token per position")
+    if example_index.shape != (positions,) or example_index.dtype == torch.bool:
+        raise ValueError("flat objective requires one integer example index per position")
+    if int(example_count) < 1 or positions < 1:
+        raise ValueError("flat objective requires positions and examples")
+    if bool(((example_index < 0) | (example_index >= int(example_count))).any()):
+        raise ValueError("flat example index is outside the batch")
+    if bool(((teacher_topk_token_ids < 0) | (teacher_topk_token_ids >= vocab)).any()):
+        raise ValueError("teacher lattice token is outside the student vocabulary")
+    if bool(((teacher_token_ids < 0) | (teacher_token_ids >= vocab)).any()):
+        raise ValueError("teacher target token is outside the student vocabulary")
+    if float(temperature) != 1.0:
+        raise ValueError("Stage 2A binds the distillation temperature to 1.0")
+
+    selected = student_logits.gather(-1, teacher_topk_token_ids.long()).float()
+    teacher_log_probs = F.log_softmax(teacher_topk_logits.float(), dim=-1)
+    student_log_probs = F.log_softmax(selected, dim=-1)
+    teacher_probs = teacher_log_probs.exp()
+    per_position_kl = (
+        teacher_probs * (teacher_log_probs - student_log_probs)
+    ).sum(dim=-1)
+    per_position_ce = F.cross_entropy(
+        student_logits.float(), teacher_token_ids.long(), reduction="none"
+    )
+    counts = torch.bincount(example_index.long(), minlength=int(example_count))
+    if bool((counts == 0).any()):
+        raise ValueError("every flat-objective example requires an answer position")
+    ce_by_example = per_position_ce.new_zeros(int(example_count)).index_add(
+        0, example_index.long(), per_position_ce
+    ) / counts.to(per_position_ce.dtype)
+    kl_by_example = per_position_kl.new_zeros(int(example_count)).index_add(
+        0, example_index.long(), per_position_kl
+    ) / counts.to(per_position_kl.dtype)
+    cross_entropy = ce_by_example.mean()
+    forward_kl = kl_by_example.mean()
+    return Stage2AObjectiveReadout(
+        loss=0.5 * cross_entropy + 0.5 * forward_kl,
+        cross_entropy=cross_entropy,
+        forward_kl=forward_kl,
+        answer_positions_per_example=counts,
+    )
+
+
 def stage2a_answer_region_objective(
     *,
     student_logits: torch.Tensor,

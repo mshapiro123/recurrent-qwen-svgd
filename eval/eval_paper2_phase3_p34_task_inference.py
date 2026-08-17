@@ -13,6 +13,10 @@ from typing import Any
 import torch
 
 from models.paper2_dc2_student import Phase3StudentModules
+from training.paper2_stage2a_runtime import (
+    Stage2AMemorySystem,
+    canonical_fingerprint_query,
+)
 from training.paper2_phase3_p34 import P34_FLOW_LOOPS, TaskInferenceContract
 
 
@@ -39,6 +43,12 @@ def current_position_mask(attention_mask: torch.Tensor) -> tuple[torch.Tensor, t
     return mask, positions
 
 
+def _layer6_or_test_fallback(hidden_states: tuple[torch.Tensor, ...]) -> torch.Tensor:
+    """Use the registered layer 6; tiny unit-test models may expose fewer layers."""
+
+    return hidden_states[6] if len(hidden_states) > 6 else hidden_states[-1]
+
+
 @dataclass(frozen=True)
 class P34NextTokenOutput:
     augmented_logits: torch.Tensor
@@ -48,11 +58,17 @@ class P34NextTokenOutput:
     current_positions: torch.Tensor
     scratch_state: torch.Tensor
     answer_token_margin: torch.Tensor
+    memory_compatibility_gate: torch.Tensor | None = None
+    memory_slot_indices: torch.Tensor | None = None
+    memory_slot_scores: torch.Tensor | None = None
+    memory_slot_weights: torch.Tensor | None = None
 
 
 @dataclass
 class P34CachedPrefix:
+    input_ids: torch.Tensor
     hidden: torch.Tensor
+    layer6_hidden: torch.Tensor
     attention_mask: torch.Tensor
     past_key_values: Any
     sidecar_scratch: torch.Tensor | None = None
@@ -69,18 +85,29 @@ class P34TaskInferenceGraph:
         cross_token_persistence: bool = False,
         flow_loops: int = P34_FLOW_LOOPS,
         allow_clamped_extension: bool = False,
+        stage2a_memory_system: Stage2AMemorySystem | None = None,
+        stage2a_geometry: dict[str, Any] | None = None,
+        stage2a_amplitude: float = 0.05,
     ) -> None:
         self.base_model = base_model
         self.sidecar = sidecar
         self.cross_token_persistence = bool(cross_token_persistence)
         self.flow_loops = int(flow_loops)
         self.allow_clamped_extension = bool(allow_clamped_extension)
+        self.stage2a_memory_system = stage2a_memory_system
+        self.stage2a_geometry = stage2a_geometry
+        self.stage2a_amplitude = float(stage2a_amplitude)
         if self.flow_loops < 1:
             raise ValueError("task inference requires at least one flow loop")
         if self.flow_loops > P34_FLOW_LOOPS and not self.allow_clamped_extension:
             raise ValueError("K above four requires the disclosed clamped-extension path")
         if self.flow_loops > 6:
             raise ValueError("the authorized exploratory extension is limited to K <= 6")
+        if self.stage2a_memory_system is not None:
+            if self.stage2a_geometry is None:
+                raise ValueError("Stage 2A memory requires frozen geometry")
+            if abs(self.stage2a_amplitude - 0.05) > 1e-12:
+                raise ValueError("Stage 2A registered DEV read amplitude is 0.05")
         self.contract = TaskInferenceContract(
             cross_token_state_persistence=self.cross_token_persistence
         )
@@ -98,6 +125,8 @@ class P34TaskInferenceGraph:
         attention_mask: torch.Tensor,
         base_logits: torch.Tensor,
         initial_scratch: torch.Tensor | None = None,
+        input_ids: torch.Tensor | None = None,
+        layer6_hidden: torch.Tensor | None = None,
     ) -> P34NextTokenOutput:
         _write_mask, positions = current_position_mask(attention_mask)
         batch_index = torch.arange(hidden.shape[0], device=hidden.device)
@@ -106,6 +135,36 @@ class P34TaskInferenceGraph:
             if initial_scratch is None
             else initial_scratch
         )
+        memory_readout = None
+        if self.stage2a_memory_system is not None:
+            if input_ids is None or layer6_hidden is None:
+                raise RuntimeError("Stage 2A inference requires tokens and layer-6 states")
+            if self.stage2a_memory_system.arm == "t3b":
+                values = []
+                for row in range(input_ids.shape[0]):
+                    active = attention_mask[row].bool()
+                    tokens = input_ids[row, active]
+                    read = self.stage2a_memory_system.read_literal(
+                        tokens[None, :],
+                        torch.tensor([tokens.shape[0] - 1], device=tokens.device),
+                    )
+                    values.append(read.value)
+                memory_readout = read
+                memory_value = torch.cat(values, dim=0)
+            else:
+                layer6_current = layer6_hidden[batch_index, positions]
+                query = canonical_fingerprint_query(
+                    layer6_current,
+                    student_mean=self.stage2a_geometry["student_mean"].to(hidden.device),
+                    student_basis=self.stage2a_geometry["student_basis"].to(hidden.device),
+                )
+                memory_readout = self.stage2a_memory_system.read_fingerprint(query)
+                memory_value = memory_readout.value
+            scratch0 = self.stage2a_memory_system.injection(
+                scratch0,
+                memory_value,
+                amplitude_ceiling=self.stage2a_amplitude,
+            )
         expected_scratch = (
             hidden.shape[0],
             self.sidecar.initializer.n_slots,
@@ -170,6 +229,20 @@ class P34TaskInferenceGraph:
             current_positions=positions,
             scratch_state=flow_state,
             answer_token_margin=top2[:, 0] - top2[:, 1],
+            memory_compatibility_gate=(
+                None
+                if memory_readout is None
+                else memory_readout.compatibility_gate
+            ),
+            memory_slot_indices=(
+                None if memory_readout is None else memory_readout.slot_indices
+            ),
+            memory_slot_scores=(
+                None if memory_readout is None else memory_readout.slot_scores
+            ),
+            memory_slot_weights=(
+                None if memory_readout is None else memory_readout.slot_weights
+            ),
         )
 
     @torch.inference_mode()
@@ -198,6 +271,8 @@ class P34TaskInferenceGraph:
             hidden=hidden,
             attention_mask=attention_mask,
             base_logits=output.logits[batch_index, positions],
+            input_ids=input_ids,
+            layer6_hidden=_layer6_or_test_fallback(output.hidden_states),
         )
 
     @torch.inference_mode()
@@ -216,7 +291,9 @@ class P34TaskInferenceGraph:
         positions = current_position_mask(attention_mask)[1]
         batch_index = torch.arange(input_ids.shape[0], device=input_ids.device)
         state = P34CachedPrefix(
+            input_ids=input_ids,
             hidden=output.hidden_states[-1],
+            layer6_hidden=_layer6_or_test_fallback(output.hidden_states),
             attention_mask=attention_mask,
             past_key_values=output.past_key_values,
             sidecar_scratch=None,
@@ -225,6 +302,8 @@ class P34TaskInferenceGraph:
             hidden=state.hidden,
             attention_mask=state.attention_mask,
             base_logits=output.logits[batch_index, positions],
+            input_ids=state.input_ids,
+            layer6_hidden=state.layer6_hidden,
         )
         if self.cross_token_persistence:
             state.sidecar_scratch = augmented.scratch_state.detach()
@@ -258,8 +337,14 @@ class P34TaskInferenceGraph:
             return_dict=True,
         )
         hidden = torch.cat([state.hidden, output.hidden_states[-1]], dim=1)
+        layer6_hidden = torch.cat(
+            [state.layer6_hidden, _layer6_or_test_fallback(output.hidden_states)], dim=1
+        )
+        input_ids = torch.cat([state.input_ids, selected_tokens], dim=1)
         updated = P34CachedPrefix(
+            input_ids=input_ids,
             hidden=hidden,
+            layer6_hidden=layer6_hidden,
             attention_mask=attention,
             past_key_values=output.past_key_values,
             sidecar_scratch=None,
@@ -271,6 +356,8 @@ class P34TaskInferenceGraph:
             initial_scratch=(
                 state.sidecar_scratch if self.cross_token_persistence else None
             ),
+            input_ids=input_ids,
+            layer6_hidden=layer6_hidden,
         )
         updated.sidecar_scratch = (
             augmented.scratch_state.detach()
