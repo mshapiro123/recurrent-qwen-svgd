@@ -310,6 +310,7 @@ def main() -> int:
         mcq_candidate_batch_size=args.verifier_mcq_batch_size,
         generation_batch_size=args.verifier_generation_batch_size,
         confirm_seal_sha256=CONFIRM_SEAL_SHA256,
+        offload_dir=args.model_cache / "verifier_32b_offload",
     )
     verifier_scores = read_jsonl(verifier_scores_path)
     firm_rows, firm_receipt = apply_stage2a_firm_knowledge_rule(

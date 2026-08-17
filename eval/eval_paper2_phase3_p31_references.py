@@ -10,6 +10,7 @@ import argparse
 import gc
 import json
 import math
+import os
 import re
 import subprocess
 import sys
@@ -303,6 +304,7 @@ def score_model(
     mcq_candidate_batch_size: int,
     generation_batch_size: int,
     confirm_seal_sha256: str,
+    offload_dir: Path | None = None,
 ) -> dict[str, Any]:
     if model_key not in MODEL_SPECS:
         raise ValueError(f"unknown P3.1 model key {model_key}")
@@ -332,15 +334,49 @@ def score_model(
             )
     existing = {str(row["item_id"]): row for row in existing_rows}
     pending = [row for row in rows if str(row["item_id"]) not in existing]
+    execution_mode = "cached_complete_no_model_load"
+    hf_device_map: dict[str, str] = {}
     if pending:
         tokenizer = AutoTokenizer.from_pretrained(spec["model"], revision=spec["revision"])
         tokenizer.padding_side = "right"
-        model = AutoModelForCausalLM.from_pretrained(
-            spec["model"],
-            revision=spec["revision"],
-            torch_dtype=dtype,
-            attn_implementation="sdpa",
-        ).to(device).eval()
+        load_kwargs: dict[str, Any] = {
+            "revision": spec["revision"],
+            "torch_dtype": dtype,
+            "attn_implementation": "sdpa",
+            "low_cpu_mem_usage": True,
+        }
+        gpu_total_gib = int(torch.cuda.get_device_properties(0).total_memory // 1024**3)
+        use_offload = model_key == "verifier_32b" and gpu_total_gib < 70
+        if use_offload:
+            if offload_dir is None:
+                raise RuntimeError("40GB 32B scoring requires a local offload directory")
+            offload_dir.mkdir(parents=True, exist_ok=True)
+            cpu_total_gib = int(
+                os.sysconf("SC_PHYS_PAGES") * os.sysconf("SC_PAGE_SIZE") // 1024**3
+            )
+            load_kwargs.update(
+                {
+                    "device_map": "auto",
+                    "max_memory": {
+                        0: f"{max(8, gpu_total_gib - 4)}GiB",
+                        "cpu": f"{max(8, cpu_total_gib - 16)}GiB",
+                    },
+                    "offload_folder": str(offload_dir),
+                    "offload_state_dict": True,
+                    "offload_buffers": True,
+                }
+            )
+            execution_mode = "bfloat16_accelerate_cpu_disk_offload_cuda_execution"
+        else:
+            execution_mode = "fully_resident_cuda"
+        model = AutoModelForCausalLM.from_pretrained(spec["model"], **load_kwargs)
+        if not use_offload:
+            model = model.to(device)
+        model.eval()
+        hf_device_map = {
+            str(key): str(value)
+            for key, value in (getattr(model, "hf_device_map", None) or {}).items()
+        }
 
         mcq = [row for row in pending if row["battery"] in {"arc_easy", "arc_challenge", "mmlu"}]
         generated = [row for row in pending if row["battery"] in {"gsm8k", "mbpp", "tier1"}]
@@ -428,6 +464,8 @@ def score_model(
         "confirm_seal_sha256": confirm_seal_sha256,
         "mcq_candidate_batch_size": mcq_candidate_batch_size,
         "generation_batch_size": generation_batch_size,
+        "execution_mode": execution_mode,
+        "hf_device_map": hf_device_map,
         "confirm_rows": sum(row["partition"] == "confirm" for row in final),
     }
 
