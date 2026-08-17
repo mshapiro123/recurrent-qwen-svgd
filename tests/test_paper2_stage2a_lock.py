@@ -10,6 +10,7 @@ from models.paper2_dc2_student import Phase3StudentModules
 from training.paper2_stage2a_lock import (
     assert_stage2a_training_authorized,
     load_stage2a_lock,
+    materialize_stage2a_lock,
     validate_stage2a_lock,
 )
 
@@ -49,6 +50,28 @@ def test_stage2a_rejects_objective_or_leave_one_out_drift() -> None:
     errors = validate_stage2a_lock(lock)
     assert any("objective field changed: kl_direction" in error for error in errors)
     assert any("leave-one-out" in error for error in errors)
+
+
+def test_stage2a_rejects_sizing_rule_or_realized_count_drift() -> None:
+    lock = load_stage2a_lock()
+    lock["data_separation"]["post_concurrence_admitted_rows"] = 4_095
+    lock["data_separation"]["memory_slots"] = 4_096
+    errors = validate_stage2a_lock(lock)
+    assert any("exceed" in error for error in errors)
+
+    lock = load_stage2a_lock()
+    lock["data_separation"]["post_concurrence_admitted_rows"] = 4_095
+    lock["data_separation"]["memory_slots"] = 2_048
+    assert validate_stage2a_lock(lock) == []
+
+
+def test_stage2a_rejects_validation_or_subselection_seed_drift() -> None:
+    lock = load_stage2a_lock()
+    lock["data_separation"]["validation_split_seed"] = 7
+    lock["data_separation"]["selection_seed"] = 8
+    errors = validate_stage2a_lock(lock)
+    assert any("validation split seed" in error for error in errors)
+    assert any("subselection seed" in error for error in errors)
 
 
 def test_ratification_flags_cannot_flip_with_open_fields() -> None:
@@ -93,3 +116,29 @@ def test_stage2a_writer_is_post_initializer_and_zero_gate_exact() -> None:
         stage2a_amplitude_ceiling=0.05,
     )
     assert not torch.equal(opened.scratch, baseline.scratch)
+
+
+def test_score_blind_receipts_materialize_but_do_not_authorize() -> None:
+    lock = load_stage2a_lock()
+    summary = {
+        "kind": "paper2_stage2a_content_geometry_summary_v1",
+        "status": "complete_score_blind_pre_signature",
+        "validation": {"sha256": "1" * 64},
+        "firm_knowledge": {"sha256": "2" * 64},
+        "memory": {"slots": 2_048, "admitted_nonpanel_rows": 4_095},
+        "geometry": {"fit_manifest_sha256": "3" * 64, "artifact_sha256": "4" * 64},
+        "training_authorized": False,
+        "optimizer_constructed": False,
+        "optimizer_steps": 0,
+        "confirm_scored": False,
+        "eval_e_scored": False,
+    }
+    materialized = materialize_stage2a_lock(lock, summary, summary_sha256="5" * 64)
+    assert validate_stage2a_lock(materialized) == []
+    assert materialized["data_separation"]["memory_slots"] == 2_048
+    assert materialized["geometry_fit"]["artifact_sha256"] == "4" * 64
+    assert materialized["unresolved_before_ratification"] == [
+        "Mark signs the fully materialized executed lock."
+    ]
+    with pytest.raises(RuntimeError, match="structurally disabled"):
+        assert_stage2a_training_authorized(materialized)

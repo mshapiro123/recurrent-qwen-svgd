@@ -32,6 +32,10 @@ MODEL_SPECS = {
         "model": "Qwen/Qwen2.5-14B-Instruct",
         "revision": "cf98f3b3bbb457ad9e2bb7baf9a0125b6b88caa8",
     },
+    "verifier_32b": {
+        "model": "Qwen/Qwen2.5-32B-Instruct",
+        "revision": "5ede1c97bbab6ce5cda5812749b4c0bdf79b18dd",
+    },
 }
 
 

@@ -3996,6 +3996,23 @@ def test_kp1r_t1_teacher_target_is_wired_and_guarded() -> None:
     assert "raw_cross_instance_cosine_primary" in evaluator
 
 
+def test_stage2a_content_geometry_target_is_wired_and_guarded() -> None:
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    cell = (ROOT / "colab/STAGE5_PAPER2_STAGE2A_CONTENT_GEOMETRY_CELL.py").read_text(encoding="utf-8")
+    runner = (ROOT / "colab/run_stage5_paper2_stage2a_content_geometry.py").read_text(encoding="utf-8")
+    evaluator = (ROOT / "eval/eval_paper2_stage2a_content_geometry.py").read_text(encoding="utf-8")
+    assert "paper2_stage2a_content_geometry" in bootstrap
+    assert "paper2_stage2a_content_geometry_v1" in cell
+    assert "32B concurrence plus frozen prompt states no optimizer no training" in cell
+    assert "CONFIRM and EVAL-E remain sealed" in cell
+    assert "memory_mib >= 79_000" in cell
+    assert "verifier_32b_scores.jsonl" in runner
+    assert "complete_score_blind_pre_signature" in runner
+    assert "select_stage2a_validation_split" in evaluator
+    assert "fit_nondev_fingerprint_geometry" in evaluator
+    assert "optimizer_constructed" in evaluator
+
+
 def test_gradient_path_audit_target_is_wired_and_guarded() -> None:
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
     bootstrap_md = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")

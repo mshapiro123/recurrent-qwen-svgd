@@ -1,0 +1,16 @@
+{
+  "kind": "strategy_t3a_sizing_ruling_receipt_v1",
+  "status": "verified_exact_drive_bytes",
+  "drive_id": "1Z_YCjD2iucEeVwXyLB2M2OkW2XBRZLrm",
+  "title": "STRATEGY_T3A_SIZING_RULING_20260817.md",
+  "bytes": 1949,
+  "sha256": "bfce1e422002e776cd7e40ccbe1911f9a212881feb7352325188a447d3cc7bb0",
+  "bindings": [
+    "512-row battery-stratified pre-concurrence validation split at seed 20260817",
+    "largest post-concurrence power-of-two memory size capped at 4096",
+    "battery-stratified Hamilton subselection at seed 20260817 with excluded identities published",
+    "T3b parameter-matched to the realized memory count"
+  ],
+  "optimizer_constructed": false,
+  "optimizer_steps": 0
+}

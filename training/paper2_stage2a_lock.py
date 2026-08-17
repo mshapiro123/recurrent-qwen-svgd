@@ -8,6 +8,7 @@ lock is explicitly ratified.
 
 from __future__ import annotations
 
+import copy
 import json
 import re
 from pathlib import Path
@@ -70,6 +71,15 @@ def validate_stage2a_lock(lock: Mapping[str, Any]) -> list[str]:
         "78cbf2fb397cf2c6319636523a7feea44b1e21e8941ee32e898323e697f18a22"
     ):
         errors.append("T3a objective-binding SHA-256 changed")
+    sizing = lock.get("sizing_ruling", {})
+    if sizing.get("drive_id") != "1Z_YCjD2iucEeVwXyLB2M2OkW2XBRZLrm":
+        errors.append("T3a sizing-ruling Drive ID changed")
+    if sizing.get("bytes") != 1_949:
+        errors.append("T3a sizing-ruling byte count changed")
+    if sizing.get("sha256") != (
+        "bfce1e422002e776cd7e40ccbe1911f9a212881feb7352325188a447d3cc7bb0"
+    ):
+        errors.append("T3a sizing-ruling SHA-256 changed")
 
     sealed = lock.get("sealed_partitions", {})
     if sealed.get("confirm_scored") is not False:
@@ -82,12 +92,39 @@ def validate_stage2a_lock(lock: Mapping[str, Any]) -> list[str]:
     data = lock.get("data_separation", {})
     if data.get("dev_panel_rows") != 1_024:
         errors.append("Stage 2A requires the frozen 1,024-row DEV panel")
-    if data.get("memory_slots") != 8_192:
-        errors.append("Stage 2A memory slot count changed")
+    slots = data.get("memory_slots")
+    admitted = data.get("post_concurrence_admitted_rows")
+    if slots is not None:
+        slots = int(slots)
+        if slots < 1 or slots > 4_096 or slots & (slots - 1):
+            errors.append("realized memory slots must be a power of two no greater than 4096")
+        if admitted is None or int(admitted) < slots:
+            errors.append("realized memory slots exceed the post-concurrence supply")
+        elif slots != 1 << (min(int(admitted), 4_096).bit_length() - 1):
+            errors.append("realized memory slots do not follow the automatic sizing rule")
+    if data.get("memory_slots_cap") != 4_096:
+        errors.append("Stage 2A memory slot cap changed")
+    if data.get("memory_sizing_rule") != (
+        "largest power of two not exceeding post-concurrence admitted count after "
+        "validation exclusion, capped at 4096"
+    ):
+        errors.append("Stage 2A automatic memory sizing rule changed")
     if data.get("heldout_nondev_validation_rows") != 512:
         errors.append("Stage 2A non-DEV validation split changed")
     if data.get("validation_rows_allowed_in_memory") != 0:
         errors.append("held-out non-DEV validation rows may not enter memory")
+    if data.get("validation_split_seed") != 20_260_817:
+        errors.append("Stage 2A validation split seed changed")
+    if data.get("validation_split_population") != (
+        "14b_correct_nondev_before_family_concurrence"
+    ):
+        errors.append("Stage 2A validation split ordering changed")
+    if "Hamilton quotas" not in str(data.get("validation_selection_rule")):
+        errors.append("Stage 2A validation stratification rule changed")
+    if data.get("selection_seed") != 20_260_817:
+        errors.append("Stage 2A memory subselection seed changed")
+    if "Hamilton quotas" not in str(data.get("selection_rule")):
+        errors.append("Stage 2A memory stratification rule changed")
     if data.get("dev_rows_allowed_in_memory") != 0:
         errors.append("DEV rows may not contribute memory content")
     firm = data.get("firm_knowledge_rule", {})
@@ -103,6 +140,10 @@ def validate_stage2a_lock(lock: Mapping[str, Any]) -> list[str]:
         "5ede1c97bbab6ce5cda5812749b4c0bdf79b18dd"
     ):
         errors.append("V(x) 32B revision changed")
+    if "both generated programs pass" not in str(
+        _get(firm, "family_concurrence.condition")
+    ):
+        errors.append("V(x) MBPP functional-concurrence reader changed")
 
     geometry = lock.get("geometry_fit", {})
     if geometry.get("fit_population") != "non_dev_reference_rows_only":
@@ -113,6 +154,8 @@ def validate_stage2a_lock(lock: Mapping[str, Any]) -> list[str]:
         errors.append("diagnostic DEV transform may not be reused")
     if geometry.get("rank") != 128:
         errors.append("Stage 2A geometry rank changed")
+    if geometry.get("state_position") != "last_active_prompt_token":
+        errors.append("Stage 2A prompt-state position changed")
     if geometry.get("fit_fraction") != 0.8 or geometry.get("fit_seed") != 20_260_817:
         errors.append("non-DEV fit split changed")
     if "teacher PCA coordinates" not in str(geometry.get("teacher_pca_contract")):
@@ -127,6 +170,8 @@ def validate_stage2a_lock(lock: Mapping[str, Any]) -> list[str]:
     fingerprint = arms.get("t3a_fingerprint", {})
     if fingerprint.get("key_source") != "student_layer_6_pca128":
         errors.append("fingerprint key source changed")
+    if fingerprint.get("value_source") != "teacher_layer_12_teacher_pca128":
+        errors.append("fingerprint value coordinate source changed")
     if fingerprint.get("keys_trainable") is not False:
         errors.append("fingerprint keys must be frozen")
     if fingerprint.get("query_transform_trainable") is not False:
@@ -141,6 +186,10 @@ def validate_stage2a_lock(lock: Mapping[str, Any]) -> list[str]:
         "vacuous: the hash tables contain no row-owned entry; no self slot exists"
     ):
         errors.append("n-gram no-self-entry contract changed")
+    if arms.get("t3b_ngram", {}).get("matched_slot_count_source") != (
+        "data_separation.memory_slots"
+    ):
+        errors.append("T3b is not matched to the realized memory count")
     shuffled = arms.get("shuffled_values", {})
     random_values = arms.get("random_values", {})
     if shuffled.get("values_trainable_after_permutation") is not False:
@@ -246,6 +295,7 @@ def validate_stage2a_lock(lock: Mapping[str, Any]) -> list[str]:
         "data_separation.panel_manifest_sha256",
         "data_separation.firm_knowledge_rule_sha256",
         "data_separation.validation_manifest_sha256",
+        "data_separation.firm_knowledge_manifest_sha256",
         "geometry_fit.fit_manifest_sha256",
         "geometry_fit.artifact_sha256",
         "initialization.seed_0.sha256",
@@ -287,3 +337,60 @@ def assert_stage2a_training_authorized(lock: Mapping[str, Any]) -> None:
 
 def load_stage2a_lock(path: Path = LOCK_PATH) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def materialize_stage2a_lock(
+    lock: Mapping[str, Any],
+    summary: Mapping[str, Any],
+    *,
+    summary_sha256: str,
+) -> dict[str, Any]:
+    """Bind score-blind receipts while preserving the Mark-signature boundary."""
+
+    if summary.get("status") != "complete_score_blind_pre_signature":
+        raise ValueError("Stage 2A materialization requires the completed score-blind receipt")
+    for field in (
+        "training_authorized",
+        "optimizer_constructed",
+        "confirm_scored",
+        "eval_e_scored",
+    ):
+        if summary.get(field) is not False:
+            raise ValueError(f"Stage 2A score-blind summary has unsafe {field}")
+    if summary.get("optimizer_steps") != 0:
+        raise ValueError("Stage 2A score-blind summary reports optimizer steps")
+    if not _is_sha256(summary_sha256):
+        raise ValueError("Stage 2A score-blind summary SHA is invalid")
+
+    result = copy.deepcopy(dict(lock))
+    data = result["data_separation"]
+    memory = summary["memory"]
+    data["memory_slots"] = int(memory["slots"])
+    data["post_concurrence_admitted_rows"] = int(memory["admitted_nonpanel_rows"])
+    data["memory_slots_resolution"] = (
+        f"{memory['slots']} slots from {memory['admitted_nonpanel_rows']} admitted "
+        "verified-train rows after validation exclusion"
+    )
+    data["validation_manifest_sha256"] = str(summary["validation"]["sha256"])
+    data["firm_knowledge_manifest_sha256"] = str(summary["firm_knowledge"]["sha256"])
+    geometry = result["geometry_fit"]
+    geometry["fit_manifest_sha256"] = str(summary["geometry"]["fit_manifest_sha256"])
+    geometry["artifact_sha256"] = str(summary["geometry"]["artifact_sha256"])
+    result["score_blind_materialization"] = {
+        "kind": str(summary["kind"]),
+        "summary_sha256": summary_sha256,
+        "optimizer_steps": 0,
+        "confirm_scored": False,
+        "eval_e_scored": False,
+    }
+    result["unresolved_before_ratification"] = [
+        "Mark signs the fully materialized executed lock."
+    ]
+    result["status"] = "draft_awaiting_mark_signature"
+    result["locked_before_training"] = False
+    result["training_authorized"] = False
+    result["mark_ratified"] = False
+    errors = validate_stage2a_lock(result)
+    if errors:
+        raise RuntimeError("materialized Stage 2A lock is invalid: " + "; ".join(errors))
+    return result

@@ -7,8 +7,11 @@ from training.sidecar_v2_data_spine import (
     canonicalize_expert_outputs,
     deterministic_k_medoids,
     fit_nondev_fingerprint_geometry,
+    largest_power_of_two_memory_size,
     relevance_weighted_distance_matrix,
     ridge_low_rank_initialization,
+    select_stage2a_geometry_population,
+    select_stage2a_validation_split,
     tensor_sha256,
 )
 
@@ -90,7 +93,7 @@ def test_fingerprint_manifest_is_deterministic_and_excludes_panel() -> None:
         panel_item_ids=panel,
         reserved_item_ids=reserved,
         admitted_field="firm",
-        slots=6,
+        slots=4,
         seed=13,
     )
     second, repeated = build_fingerprint_memory_manifest(
@@ -98,7 +101,7 @@ def test_fingerprint_manifest_is_deterministic_and_excludes_panel() -> None:
         panel_item_ids=panel,
         reserved_item_ids=reserved,
         admitted_field="firm",
-        slots=6,
+        slots=4,
         seed=13,
     )
     assert first == second
@@ -124,12 +127,83 @@ def test_fingerprint_manifest_refuses_thin_admitted_population() -> None:
     ]
     try:
         build_fingerprint_memory_manifest(
-            rows, panel_item_ids=set(), admitted_field="firm", slots=3
+            rows, panel_item_ids=set(), admitted_field="firm", slots=4
         )
     except RuntimeError as error:
         assert "firm-knowledge non-panel population" in str(error)
     else:
         raise AssertionError("thin admitted memory population was accepted")
+
+
+def test_stage2a_dynamic_memory_size_follows_power_of_two_ladder() -> None:
+    assert largest_power_of_two_memory_size(5_000) == 4_096
+    assert largest_power_of_two_memory_size(4_096) == 4_096
+    assert largest_power_of_two_memory_size(4_095) == 2_048
+    assert largest_power_of_two_memory_size(2_047) == 1_024
+
+
+def test_stage2a_validation_split_is_stratified_and_pre_concurrence() -> None:
+    rows = []
+    for battery, count in (("gsm8k", 12), ("mbpp", 4)):
+        for index in range(count):
+            rows.append(
+                {
+                    "battery": battery,
+                    "item_id": f"{battery}-{index}",
+                    "content_sha256": f"{index:064x}",
+                    "teacher_14b_correct": True,
+                    "partition": "verified_train",
+                }
+            )
+    first, receipt = select_stage2a_validation_split(
+        rows, panel_item_ids=set(), count=8, seed=17
+    )
+    second, repeated = select_stage2a_validation_split(
+        reversed(rows), panel_item_ids=set(), count=8, seed=17
+    )
+    assert first == second
+    assert receipt == repeated
+    assert receipt["battery_quotas"] == {"gsm8k": 6, "mbpp": 2}
+    assert receipt["status"] == "selected_before_family_concurrence"
+
+
+def test_stage2a_memory_subselection_publishes_excluded_rows() -> None:
+    rows = [
+        {
+            "battery": "gsm8k" if index < 6 else "mbpp",
+            "item_id": f"item-{index}",
+            "document_id": f"doc-{index}",
+            "content_sha256": f"{index:064x}",
+            "firm": True,
+            "partition": "verified_train",
+        }
+        for index in range(10)
+    ]
+    selected, receipt = build_fingerprint_memory_manifest(
+        rows, panel_item_ids=set(), admitted_field="firm", slots=None, seed=20260817
+    )
+    assert len(selected) == 8
+    assert receipt["slots"] == 8
+    assert receipt["battery_quotas"] == {"gsm8k": 5, "mbpp": 3}
+    assert len(receipt["subselection_excluded_identities"]) == 2
+
+
+def test_stage2a_geometry_population_is_bounded_and_stratified() -> None:
+    rows = [
+        {
+            "battery": "gsm8k" if index < 12 else "mbpp",
+            "item_id": f"item-{index}",
+            "content_sha256": f"{index:064x}",
+            "partition": "verified_train",
+        }
+        for index in range(16)
+    ]
+    selected, receipt = select_stage2a_geometry_population(rows, count=8, seed=17)
+    repeated, second = select_stage2a_geometry_population(reversed(rows), count=8, seed=17)
+    assert selected == repeated
+    assert receipt == second
+    assert receipt["battery_quotas"] == {"gsm8k": 6, "mbpp": 2}
+    assert receipt["dev_rows_used"] == 0
 
 
 def test_stage2a_firm_knowledge_requires_correctness_and_concurrence() -> None:

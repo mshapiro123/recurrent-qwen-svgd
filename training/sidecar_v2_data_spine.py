@@ -26,6 +26,142 @@ def _canonical_sha256(value: object) -> str:
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
+def _row_identity(row: Mapping[str, Any]) -> tuple[str, str]:
+    return str(row["battery"]), str(row["item_id"])
+
+
+def _seeded_row_rank(row: Mapping[str, Any], *, seed: int) -> tuple[bytes, str, str]:
+    identity = f"{seed}:{row['battery']}:{row['item_id']}:{row['content_sha256']}"
+    return (
+        hashlib.sha256(identity.encode("utf-8")).digest(),
+        str(row["battery"]),
+        str(row["item_id"]),
+    )
+
+
+def _battery_stratified_select(
+    rows: Iterable[Mapping[str, Any]], *, count: int, seed: int
+) -> tuple[list[dict[str, Any]], dict[str, int]]:
+    """Select an exact count with deterministic largest-remainder quotas."""
+
+    records = [dict(row) for row in rows]
+    if not 1 <= int(count) <= len(records):
+        raise ValueError("stratified selection count must be in [1, population]")
+    groups: dict[str, list[dict[str, Any]]] = {}
+    for row in records:
+        groups.setdefault(str(row["battery"]), []).append(row)
+    total = len(records)
+    exact = {battery: count * len(group) / total for battery, group in groups.items()}
+    quotas = {battery: int(value) for battery, value in exact.items()}
+    remaining = int(count) - sum(quotas.values())
+    priority = sorted(groups, key=lambda battery: (-(exact[battery] - quotas[battery]), battery))
+    for battery in priority[:remaining]:
+        quotas[battery] += 1
+    selected: list[dict[str, Any]] = []
+    for battery in sorted(groups):
+        ranked = sorted(groups[battery], key=lambda row: _seeded_row_rank(row, seed=seed))
+        selected.extend(ranked[: quotas[battery]])
+    selected.sort(key=lambda row: _seeded_row_rank(row, seed=seed))
+    if len(selected) != int(count):
+        raise RuntimeError("battery-stratified selection did not produce the requested count")
+    return selected, quotas
+
+
+def largest_power_of_two_memory_size(admitted_count: int, *, cap: int = 4_096) -> int:
+    """Apply the registered automatic Stage 2A memory-size fallback ladder."""
+
+    available = min(int(admitted_count), int(cap))
+    if available < 1:
+        raise RuntimeError("no post-concurrence rows are available for Stage 2A memory")
+    return 1 << (available.bit_length() - 1)
+
+
+def select_stage2a_validation_split(
+    rows: Iterable[Mapping[str, Any]],
+    *,
+    panel_item_ids: set[tuple[str, str]],
+    correct_field: str = "teacher_14b_correct",
+    count: int = 512,
+    seed: int = 20_260_817,
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """Select the ratified battery-stratified pre-concurrence validation set."""
+
+    records = [dict(row) for row in rows]
+    candidates = [
+        row
+        for row in records
+        if bool(row.get(correct_field))
+        and _row_identity(row) not in panel_item_ids
+        and str(row.get("partition")) == "verified_train"
+    ]
+    selected, quotas = _battery_stratified_select(candidates, count=count, seed=seed)
+    identities = [
+        {
+            "battery": str(row["battery"]),
+            "item_id": str(row["item_id"]),
+            "content_sha256": str(row["content_sha256"]),
+        }
+        for row in selected
+    ]
+    receipt = {
+        "kind": "paper2_stage2a_nondev_validation_manifest_v1",
+        "status": "selected_before_family_concurrence",
+        "seed": int(seed),
+        "rows": int(count),
+        "eligible_14b_correct_nondev_rows": len(candidates),
+        "battery_quotas": dict(sorted(quotas.items())),
+        "selection_rule": (
+            "battery-proportional Hamilton quotas; within-battery "
+            "SHA256(seed:battery:item_id:content_sha256)"
+        ),
+        "selected_identities_sha256": _canonical_sha256(identities),
+        "memory_overlap": 0,
+        "dev_overlap": 0,
+        "optimizer_constructed": False,
+        "optimizer_steps": 0,
+    }
+    return selected, receipt
+
+
+def select_stage2a_geometry_population(
+    rows: Iterable[Mapping[str, Any]],
+    *,
+    count: int = 1_024,
+    seed: int = 20_260_817,
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """Select the bounded non-DEV population used to fit and audit PCA geometry."""
+
+    records = [dict(row) for row in rows]
+    if any(str(row.get("partition")) != "verified_train" for row in records):
+        raise RuntimeError("Stage 2A geometry population must be verified-train only")
+    selected, quotas = _battery_stratified_select(records, count=count, seed=seed)
+    identities = [
+        {
+            "battery": str(row["battery"]),
+            "item_id": str(row["item_id"]),
+            "content_sha256": str(row["content_sha256"]),
+        }
+        for row in selected
+    ]
+    receipt = {
+        "kind": "paper2_stage2a_geometry_population_v1",
+        "status": "selected_nondev_before_state_extraction",
+        "seed": int(seed),
+        "rows": int(count),
+        "source_rows": len(records),
+        "battery_quotas": dict(sorted(quotas.items())),
+        "selection_rule": (
+            "battery-proportional Hamilton quotas; within-battery "
+            "SHA256(seed:battery:item_id:content_sha256)"
+        ),
+        "selected_identities_sha256": _canonical_sha256(identities),
+        "dev_rows_used": 0,
+        "optimizer_constructed": False,
+        "optimizer_steps": 0,
+    }
+    return selected, receipt
+
+
 def apply_stage2a_firm_knowledge_rule(
     rows: Iterable[Mapping[str, Any]],
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
@@ -212,8 +348,8 @@ def build_fingerprint_memory_manifest(
     panel_item_ids: set[tuple[str, str]],
     reserved_item_ids: set[tuple[str, str]] | None = None,
     admitted_field: str,
-    slots: int = 8_192,
-    seed: int = 20_260_816,
+    slots: int | None = None,
+    seed: int = 20_260_817,
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     """Select a deterministic non-panel memory population after external V(x).
 
@@ -223,8 +359,6 @@ def build_fingerprint_memory_manifest(
     upstream definition and hash separately.
     """
 
-    if int(slots) < 1:
-        raise ValueError("slots must be positive")
     records = [dict(row) for row in rows]
     if not records:
         raise ValueError("memory manifest requires source rows")
@@ -245,22 +379,32 @@ def build_fingerprint_memory_manifest(
         if bool(row[admitted_field])
         and identity not in panel_item_ids
         and identity not in reserved
+        and str(row.get("partition", "verified_train")) != "dev"
     ]
-    if len(candidates) < int(slots):
+    realized_slots = largest_power_of_two_memory_size(len(candidates)) if slots is None else int(slots)
+    if realized_slots < 1 or realized_slots & (realized_slots - 1) or realized_slots > 4_096:
+        raise ValueError("slots must be a positive power of two no greater than 4096")
+    if len(candidates) < realized_slots:
         raise RuntimeError(
             f"firm-knowledge non-panel population has {len(candidates)} rows; "
-            f"{int(slots)} required"
+            f"{realized_slots} required"
         )
-
-    def rank(row: Mapping[str, Any]) -> tuple[bytes, str, str]:
-        identity = f"{seed}:{row['battery']}:{row['item_id']}:{row['content_sha256']}"
-        return (
-            hashlib.sha256(identity.encode("utf-8")).digest(),
-            str(row["battery"]),
-            str(row["item_id"]),
-        )
-
-    selected = sorted(candidates, key=rank)[: int(slots)]
+    selected, quotas = _battery_stratified_select(
+        candidates, count=realized_slots, seed=seed
+    )
+    selected_keys = {_row_identity(row) for row in selected}
+    excluded = sorted(
+        (
+            {
+                "battery": str(row["battery"]),
+                "item_id": str(row["item_id"]),
+                "content_sha256": str(row["content_sha256"]),
+            }
+            for row in candidates
+            if _row_identity(row) not in selected_keys
+        ),
+        key=lambda row: (row["battery"], row["item_id"]),
+    )
     selected_identities = [
         {
             "battery": str(row["battery"]),
@@ -274,7 +418,7 @@ def build_fingerprint_memory_manifest(
         "kind": "paper2_stage2a_fingerprint_memory_manifest_v1",
         "status": "selected_score_blind_after_external_firm_knowledge_admission",
         "seed": int(seed),
-        "slots": int(slots),
+        "slots": realized_slots,
         "source_rows": len(records),
         "admitted_nonpanel_rows": len(candidates),
         "admitted_field": str(admitted_field),
@@ -282,8 +426,14 @@ def build_fingerprint_memory_manifest(
         "reserved_rows_excluded": sum(identity in reserved for identity in identities),
         "panel_overlap": 0,
         "reserved_overlap": 0,
-        "selection_rule": "SHA256(seed:battery:item_id:content_sha256), ascending",
+        "battery_quotas": dict(sorted(quotas.items())),
+        "selection_rule": (
+            "battery-proportional Hamilton quotas; within-battery "
+            "SHA256(seed:battery:item_id:content_sha256)"
+        ),
         "selected_identities_sha256": _canonical_sha256(selected_identities),
+        "subselection_excluded_identities": excluded,
+        "subselection_excluded_identities_sha256": _canonical_sha256(excluded),
         "optimizer_constructed": False,
         "optimizer_steps": 0,
         "dev_scores_computed": False,
