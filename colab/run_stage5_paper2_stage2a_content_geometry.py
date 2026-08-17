@@ -12,10 +12,13 @@ import traceback
 from collections import deque
 from pathlib import Path
 
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
 from training.paper2_phase3_p31_completion import sha256_file
 
 
-ROOT = Path(__file__).resolve().parents[1]
 RUN_ID = "stage5_paper2_stage2a_content_geometry_20260817"
 P31_ID = "stage5_paper2_phase3_p31_completion_20260810"
 DRIVE_STAGE5 = Path("/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5")

@@ -1,11 +1,24 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 from eval.eval_paper2_phase3_p31_references import MODEL_SPECS
 from eval.eval_paper2_stage2a_content_geometry import (
     concurrence_value,
     join_sources,
     make_firm_rows,
 )
+
+
+def test_stage2a_runner_bootstraps_repo_root_before_project_import() -> None:
+    runner = (
+        Path(__file__).resolve().parents[1]
+        / "colab"
+        / "run_stage5_paper2_stage2a_content_geometry.py"
+    ).read_text(encoding="utf-8")
+    root_insert = runner.index("sys.path.insert(0, str(ROOT))")
+    project_import = runner.index("from training.paper2_phase3_p31_completion")
+    assert root_insert < project_import
 
 
 def source(item_id: str, *, battery: str = "gsm8k") -> dict[str, object]:
