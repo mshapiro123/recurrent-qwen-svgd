@@ -1,8 +1,10 @@
 # Coding Handoff to Strategy — Stage 2A Objective Bound, Population Amendment Required
 
-**Date:** 2026-08-17  
-**Repo commit:** `f558eb136a50f138dcd89efdbe78c53f58eab7ed`  
-**Branch:** `codex/phase3-opening-build`  
+**Date:** 2026-08-17
+
+**Repo commit:** `f558eb136a50f138dcd89efdbe78c53f58eab7ed`
+
+**Branch:** `codex/phase3-opening-build`
 **State:** loss-free build complete; training structurally disabled; no optimizer constructed
 
 ## 1. Bottom line
@@ -71,4 +73,3 @@ CONFIRM and EVAL-E remain sealed. DEV scores were not computed. Optimizer steps 
 ## 6. Decision requested
 
 Please ratify or amend the deterministic validation and dynamic slot-count rule in section 4. Once bound, coding can run the score-blind 14B/32B admission and content-build pass, freeze both manifests, fit the non-DEV geometry, and assemble the final executed lock for Mark's signature.
-
