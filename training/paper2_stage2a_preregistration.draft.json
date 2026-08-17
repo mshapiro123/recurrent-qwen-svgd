@@ -1,0 +1,219 @@
+{
+  "kind": "paper2_stage2a_executed_lock_v1",
+  "status": "draft_awaiting_mark_signature",
+  "locked_before_training": false,
+  "training_authorized": false,
+  "mark_ratified": false,
+  "authority": {
+    "drive_id": "1GhTafphPuxmfq8hDn0Y-BrjWJCmafZKu",
+    "title": "STRATEGY_KP1R_TEACHER_RESPONSE_20260816.md",
+    "bytes": 11079,
+    "sha256": "57c41caa6d9bfe0174f295f6b7a56634ad26718dbb868f3cac9a3d857405ba2c",
+    "repo_receipt": "docs/STRATEGY_KP1R_TEACHER_RESPONSE_20260816.receipt.json"
+  },
+  "scientific_frame": {
+    "anchor": "student early states are an excellent address for teacher content; student answer content is not established",
+    "knowledge_presence_verdict": "NO_POSITIVE_KNOWLEDGE_PRESENCE_GATE",
+    "prohibited_translation": "knowledge absent",
+    "fingerprint_verdict": "positive_replicated",
+    "lead_order": ["lookup_content_augmentation", "expert_access_secondary"]
+  },
+  "sealed_partitions": {
+    "dev_allowed": true,
+    "confirm_scored": false,
+    "eval_e_scored": false,
+    "remain_sealed": true
+  },
+  "data_separation": {
+    "dev_panel_rows": 1024,
+    "panel_manifest_sha256": "c0e15a890b598544059ac337cc475123f97c05e3c1626febcdee1c6d8fe02615",
+    "reference_rows_approximate": 9200,
+    "memory_slots": 8192,
+    "memory_source": "KP-1R reference-table rows outside DEV",
+    "dev_rows_allowed_in_memory": 0,
+    "source_manifest_sha256": null,
+    "firm_knowledge_rule": null,
+    "firm_knowledge_rule_sha256": null,
+    "selection_seed": 20260816,
+    "selection_rule": "SHA256(seed:battery:item_id:content_sha256), ascending after external V(x) admission",
+    "panel_overlap_required": 0
+  },
+  "geometry_fit": {
+    "key_layer": 6,
+    "teacher_value_layer": 12,
+    "rank": 128,
+    "fit_population": "non_dev_reference_rows_only",
+    "dev_rows_used": 0,
+    "diagnostic_dev_transform_reused": false,
+    "diagnostic_transform_note": "The positive 614/410 split-fit diagnostic used DEV and is evidence only, never a live Stage 2A artifact.",
+    "fit_manifest_sha256": null,
+    "fit_seed": null,
+    "student_pca_contract": null,
+    "teacher_pca_contract": null,
+    "transport_direction": null,
+    "artifact_sha256": null,
+    "freeze_before_dev_scoring": true
+  },
+  "initialization": {
+    "status": "proposed_pending_signature",
+    "seed_0": {
+      "source": "P3.5 Arm S EMA step 4400",
+      "sha256": "a047e2e7b35320376a736492c79d913b8690937da785efa2af002c8f54d26ca6"
+    },
+    "seed_1": {
+      "source": "P3.5 Arm S EMA step 4400",
+      "sha256": "e36cddb76407c8f853ccb43824c77cf01d15f144780726dd9aec23215467fccb"
+    }
+  },
+  "arms": {
+    "t3a_fingerprint": {
+      "role": "primary_teacher_fingerprint_memory",
+      "seeds": [0, 1],
+      "key_source": "student_layer_6_pca128",
+      "value_source": "teacher_layer_12_registered_transport",
+      "keys_trainable": false,
+      "query_transform_trainable": false,
+      "values_trainable": true,
+      "retrieval": "top_k_mips",
+      "top_k": null,
+      "temperature": null
+    },
+    "t3b_ngram": {
+      "role": "literal_surface_form_control",
+      "seeds": [0, 1],
+      "ngrams": [2, 3],
+      "hashes_per_ngram": null,
+      "matched_parameter_budget": true
+    },
+    "shuffled_values": {
+      "role": "retrieval_specificity_control",
+      "seeds": null,
+      "permutation_seed": null,
+      "values_trainable_after_permutation": null
+    },
+    "random_values": {
+      "role": "capacity_and_perturbation_control",
+      "seeds": null,
+      "values_trainable": false,
+      "initialization_seed": null
+    }
+  },
+  "trainable_surface": [
+    "memory.values",
+    "memory.compatibility_projection.*",
+    "injection.projection",
+    "injection.gate"
+  ],
+  "frozen_surface": [
+    "substrate.*",
+    "sidecar.*",
+    "memory.keys",
+    "memory.query_projection"
+  ],
+  "injection": {
+    "module": "GatedSidecarInjection",
+    "registered_path_name": "SidecarV2Bridge.g_L",
+    "exact_tensor_and_timing": null,
+    "address_early_deliver_late": true,
+    "amplitude_lottery": [0.02, 0.11],
+    "registered_read_amplitude": 0.05,
+    "gamma_max": 0.11
+  },
+  "identity_gate": {
+    "zero_injection_gate_required": true,
+    "bit_exact_required": true,
+    "all_arms_checked": true,
+    "optimizer_steps_before_pass": 0
+  },
+  "training": {
+    "steps": null,
+    "bounded_steps_target": 1000,
+    "batch_size": null,
+    "optimizer": null,
+    "learning_rate": null,
+    "weight_decay": null,
+    "ema_primary": true,
+    "ema_decay": null,
+    "checkpoint_steps": null,
+    "seed_policy": "both primary endpoint checkpoints",
+    "resume_contract": null
+  },
+  "evaluation": {
+    "panel": "frozen 1024-row DEV panel",
+    "paired_no_memory_baseline": true,
+    "registered_read_amplitude": 0.05,
+    "paired_sign_test_alpha": null,
+    "minimum_net_row_gain": null,
+    "shuffled_flat_equivalence_band": null,
+    "both_primary_seeds_required_positive": true,
+    "margin_telemetry": ["pooled", "battery", "row_minimum_answer_token_margin"],
+    "chi_definition": null,
+    "chi_threshold": null,
+    "retrieval_telemetry": [
+      "top_k_slot_ids",
+      "top_k_scores",
+      "top_k_weights",
+      "compatibility_gate",
+      "hit_rate_if_identity_available",
+      "battery_decomposition"
+    ],
+    "retrieval_is_not_answer_recovery": true
+  },
+  "safety": {
+    "hard_stops": [
+      "non_finite_loss",
+      "non_finite_gradient",
+      "frozen_lineage_digest_change",
+      "identity_gate_failure",
+      "memory_dev_overlap",
+      "sealed_partition_contact"
+    ],
+    "blocked_outcome_writes_receipts": true,
+    "no_posthoc_arm_selection": true
+  },
+  "required_bound_paths": [
+    "data_separation.source_manifest_sha256",
+    "data_separation.firm_knowledge_rule",
+    "data_separation.firm_knowledge_rule_sha256",
+    "geometry_fit.fit_manifest_sha256",
+    "geometry_fit.fit_seed",
+    "geometry_fit.student_pca_contract",
+    "geometry_fit.teacher_pca_contract",
+    "geometry_fit.transport_direction",
+    "geometry_fit.artifact_sha256",
+    "arms.t3a_fingerprint.top_k",
+    "arms.t3a_fingerprint.temperature",
+    "arms.t3b_ngram.hashes_per_ngram",
+    "arms.shuffled_values.seeds",
+    "arms.shuffled_values.permutation_seed",
+    "arms.shuffled_values.values_trainable_after_permutation",
+    "arms.random_values.seeds",
+    "arms.random_values.initialization_seed",
+    "injection.exact_tensor_and_timing",
+    "training.steps",
+    "training.batch_size",
+    "training.optimizer",
+    "training.learning_rate",
+    "training.weight_decay",
+    "training.ema_decay",
+    "training.checkpoint_steps",
+    "training.resume_contract",
+    "evaluation.paired_sign_test_alpha",
+    "evaluation.minimum_net_row_gain",
+    "evaluation.shuffled_flat_equivalence_band",
+    "evaluation.chi_definition",
+    "evaluation.chi_threshold"
+  ],
+  "unresolved_before_ratification": [
+    "Bind the exact V(x) firm-knowledge admission rule and its receipt hash.",
+    "Refit PCA and transport on non-DEV reference rows; bind fit manifest, direction, seed, and artifact hash.",
+    "Resolve whether transported teacher values live in teacher PCA coordinates or student-key coordinates.",
+    "Bind top-k, temperature, n-gram hash count, and all control seeds.",
+    "State whether shuffled values remain trainable; freezing is recommended to preserve the specificity estimand.",
+    "Bind the exact downstream injection tensor and timing in the recurrent path.",
+    "Ratify P3.5 EMA step-4400 initialization for both seeds.",
+    "Replace the approximate 1,000-step recipe with exact optimizer, batch, EMA, checkpoint, and resume settings.",
+    "Bind the positive, flat-control, sign-test, margin, and chi decision thresholds.",
+    "Bind the seed allocation for both honesty controls after costing the full matrix."
+  ]
+}

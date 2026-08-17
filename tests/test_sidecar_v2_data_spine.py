@@ -2,6 +2,7 @@ import torch
 
 from training.sidecar_v2_data_spine import (
     aggregate_cluster_routing,
+    build_fingerprint_memory_manifest,
     canonicalize_expert_outputs,
     deterministic_k_medoids,
     relevance_weighted_distance_matrix,
@@ -67,3 +68,49 @@ def test_ridge_low_rank_factorization_reconstructs_fitted_map() -> None:
     )
     torch.testing.assert_close(b @ a, fitted, rtol=1e-9, atol=1e-9)
     torch.testing.assert_close(fitted, true_map, rtol=1e-8, atol=1e-8)
+
+
+def test_fingerprint_manifest_is_deterministic_and_excludes_panel() -> None:
+    rows = [
+        {
+            "battery": "gsm8k",
+            "item_id": f"item-{index}",
+            "document_id": f"doc-{index}",
+            "content_sha256": f"sha-{index}",
+            "firm": index != 5,
+        }
+        for index in range(12)
+    ]
+    panel = {("gsm8k", "item-1"), ("gsm8k", "item-2")}
+    first, receipt = build_fingerprint_memory_manifest(
+        rows, panel_item_ids=panel, admitted_field="firm", slots=6, seed=13
+    )
+    second, repeated = build_fingerprint_memory_manifest(
+        reversed(rows), panel_item_ids=panel, admitted_field="firm", slots=6, seed=13
+    )
+    assert first == second
+    assert receipt == repeated
+    assert receipt["panel_overlap"] == 0
+    assert receipt["optimizer_steps"] == 0
+    assert all((row["battery"], row["item_id"]) not in panel for row in first)
+
+
+def test_fingerprint_manifest_refuses_thin_admitted_population() -> None:
+    rows = [
+        {
+            "battery": "mmlu",
+            "item_id": f"item-{index}",
+            "document_id": f"doc-{index}",
+            "content_sha256": f"sha-{index}",
+            "firm": index < 2,
+        }
+        for index in range(5)
+    ]
+    try:
+        build_fingerprint_memory_manifest(
+            rows, panel_item_ids=set(), admitted_field="firm", slots=3
+        )
+    except RuntimeError as error:
+        assert "firm-knowledge non-panel population" in str(error)
+    else:
+        raise AssertionError("thin admitted memory population was accepted")

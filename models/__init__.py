@@ -20,10 +20,20 @@ from .paper2_dc2_student import (
     SharedResidualFlow,
 )
 from .recurrent_wrapper import LayerSplit, RecurrentQwenForCausalLM, RecurrentQwenOutput
-from .sidecar_v2 import GatedSidecarInjection, LiteralNGramMemory, ProbePool, fast_wht
+from .sidecar_v2 import (
+    FingerprintContentMemory,
+    FingerprintMemoryReadout,
+    GatedSidecarInjection,
+    LiteralNGramMemory,
+    ProbePool,
+    deterministic_value_permutation,
+    fast_wht,
+)
 
 __all__ = [
     "IdentityGatedBridge",
+    "FingerprintContentMemory",
+    "FingerprintMemoryReadout",
     "GatedSidecarInjection",
     "AnchoredBridge",
     "CoconutRecurrentQwen",
@@ -48,5 +58,6 @@ __all__ = [
     "apply_lora_to_recurrent_block",
     "masked_mean",
     "pondernet_halting_probabilities",
+    "deterministic_value_permutation",
     "fast_wht",
 ]

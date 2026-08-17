@@ -3,9 +3,95 @@
 from __future__ import annotations
 
 import hashlib
+import json
 from dataclasses import dataclass
+from typing import Any, Iterable, Mapping
 
 import torch
+
+
+def _canonical_sha256(value: object) -> str:
+    payload = json.dumps(value, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def build_fingerprint_memory_manifest(
+    rows: Iterable[Mapping[str, Any]],
+    *,
+    panel_item_ids: set[tuple[str, str]],
+    admitted_field: str,
+    slots: int = 8_192,
+    seed: int = 20_260_816,
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """Select a deterministic non-panel memory population after external V(x).
+
+    This function does not define the firm-knowledge rule. It requires the
+    registered data preparation pass to materialize that decision in
+    ``admitted_field`` and records the field name so the lock can bind its
+    upstream definition and hash separately.
+    """
+
+    if int(slots) < 1:
+        raise ValueError("slots must be positive")
+    records = [dict(row) for row in rows]
+    if not records:
+        raise ValueError("memory manifest requires source rows")
+    required = {"battery", "item_id", "document_id", "content_sha256", admitted_field}
+    for row in records:
+        missing = required.difference(row)
+        if missing:
+            raise ValueError(f"memory row missing required fields: {sorted(missing)}")
+    identities = [(str(row["battery"]), str(row["item_id"])) for row in records]
+    if len(set(identities)) != len(identities):
+        raise RuntimeError("memory source contains duplicate battery/item identities")
+    candidates = [
+        row
+        for row, identity in zip(records, identities, strict=True)
+        if bool(row[admitted_field]) and identity not in panel_item_ids
+    ]
+    if len(candidates) < int(slots):
+        raise RuntimeError(
+            f"firm-knowledge non-panel population has {len(candidates)} rows; "
+            f"{int(slots)} required"
+        )
+
+    def rank(row: Mapping[str, Any]) -> tuple[bytes, str, str]:
+        identity = f"{seed}:{row['battery']}:{row['item_id']}:{row['content_sha256']}"
+        return (
+            hashlib.sha256(identity.encode("utf-8")).digest(),
+            str(row["battery"]),
+            str(row["item_id"]),
+        )
+
+    selected = sorted(candidates, key=rank)[: int(slots)]
+    selected_identities = [
+        {
+            "battery": str(row["battery"]),
+            "item_id": str(row["item_id"]),
+            "document_id": str(row["document_id"]),
+            "content_sha256": str(row["content_sha256"]),
+        }
+        for row in selected
+    ]
+    receipt = {
+        "kind": "paper2_stage2a_fingerprint_memory_manifest_v1",
+        "status": "selected_score_blind_after_external_firm_knowledge_admission",
+        "seed": int(seed),
+        "slots": int(slots),
+        "source_rows": len(records),
+        "admitted_nonpanel_rows": len(candidates),
+        "admitted_field": str(admitted_field),
+        "panel_rows_excluded": sum(identity in panel_item_ids for identity in identities),
+        "panel_overlap": 0,
+        "selection_rule": "SHA256(seed:battery:item_id:content_sha256), ascending",
+        "selected_identities_sha256": _canonical_sha256(selected_identities),
+        "optimizer_constructed": False,
+        "optimizer_steps": 0,
+        "dev_scores_computed": False,
+        "confirm_scored": False,
+        "eval_e_scored": False,
+    }
+    return selected, receipt
 
 
 @dataclass(frozen=True)

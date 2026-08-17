@@ -4,9 +4,11 @@ import pytest
 import torch
 
 from models.sidecar_v2 import (
+    FingerprintContentMemory,
     GatedSidecarInjection,
     LiteralNGramMemory,
     ProbePool,
+    deterministic_value_permutation,
     fast_wht,
 )
 
@@ -133,3 +135,48 @@ def test_sidecar_injection_opens_without_mutating_inputs() -> None:
     assert not torch.equal(output, base)
     torch.testing.assert_close(base, base_before)
     torch.testing.assert_close(memory, memory_before)
+
+
+def test_fingerprint_memory_uses_fixed_keys_and_exact_top_k_mips() -> None:
+    keys = torch.eye(4)
+    values = torch.tensor(
+        [[1.0, 0.0], [0.0, 2.0], [3.0, 0.0], [0.0, 4.0]]
+    )
+    memory = FingerprintContentMemory(keys=keys, values=values, top_k=2)
+    with torch.no_grad():
+        memory.compatibility_projection.bias.fill_(20.0)
+    read = memory(torch.tensor([[0.9, 0.8, 0.0, 0.0]]))
+    assert read.slot_indices.tolist() == [[0, 1]]
+    assert read.compatibility_gate.item() > 0.999
+    torch.testing.assert_close(read.slot_weights.sum(dim=-1), torch.ones(1))
+    assert "keys" not in dict(memory.named_parameters())
+    assert "query_projection" not in dict(memory.named_parameters())
+    assert memory.values.requires_grad
+    read.value.sum().backward()
+    assert memory.values.grad is not None
+    assert memory.compatibility_projection.weight.grad is not None
+
+
+def test_fingerprint_memory_frozen_value_control_has_identical_graph() -> None:
+    keys = torch.eye(3)
+    values = torch.arange(6, dtype=torch.float32).reshape(3, 2)
+    trainable = FingerprintContentMemory(
+        keys=keys, values=values, top_k=1, trainable_values=True
+    )
+    frozen = FingerprintContentMemory(
+        keys=keys, values=values, top_k=1, trainable_values=False
+    )
+    frozen.load_state_dict(trainable.state_dict())
+    query = torch.tensor([[0.0, 1.0, 0.0]])
+    torch.testing.assert_close(trainable(query).value, frozen(query).value)
+    assert trainable.values.requires_grad
+    assert not frozen.values.requires_grad
+
+
+def test_fingerprint_value_permutation_is_seeded_and_preserves_rows() -> None:
+    values = torch.arange(24, dtype=torch.float32).reshape(8, 3)
+    first = deterministic_value_permutation(values, seed=47)
+    second = deterministic_value_permutation(values, seed=47)
+    torch.testing.assert_close(first, second)
+    assert sorted(map(tuple, first.tolist())) == sorted(map(tuple, values.tolist()))
+    assert not torch.equal(first, values)

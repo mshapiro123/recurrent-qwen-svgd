@@ -1,0 +1,46 @@
+{
+  "kind": "paper2_stage2a_draft_build_receipt_v1",
+  "status": "loss_free_build_complete_training_disabled",
+  "strategy_authority": {
+    "drive_id": "1GhTafphPuxmfq8hDn0Y-BrjWJCmafZKu",
+    "bytes": 11079,
+    "sha256": "57c41caa6d9bfe0174f295f6b7a56634ad26718dbb868f3cac9a3d857405ba2c"
+  },
+  "artifacts": [
+    "docs/PAPER2_STAGE2A_CHARTER_DRAFT_20260816.md",
+    "training/paper2_stage2a_preregistration.draft.json",
+    "training/paper2_stage2a_lock.py",
+    "models/sidecar_v2.py",
+    "training/sidecar_v2_data_spine.py"
+  ],
+  "implemented_contracts": [
+    "fixed fingerprint keys",
+    "frozen query coordinate transform",
+    "top-k MIPS with auditable slot telemetry",
+    "trainable or frozen values under one graph",
+    "seeded complete-value permutation control",
+    "external-V(x) deterministic non-panel manifest selection",
+    "zero-gated injection primitive",
+    "lock validator preventing optimizer authorization with open fields",
+    "explicit prohibition on reuse of DEV-fitted diagnostic geometry"
+  ],
+  "training_authorized": false,
+  "optimizer_constructed": false,
+  "optimizer_steps": 0,
+  "dev_scores_computed": false,
+  "confirm_scored": false,
+  "eval_e_scored": false,
+  "tests": {
+    "status": "stage2a_and_adjacent_phase3_clean; full_suite_has_four_unrelated_locked-byte_failures_on_windows",
+    "stage2a_targeted": "32 passed",
+    "stage2a_and_adjacent_phase3": "66 passed",
+    "full_suite": "2796 passed, 4 failed, 1 warning",
+    "full_suite_failures": [
+      "tests/test_composite_training_design.py locked markdown byte hash",
+      "tests/test_paper2_dc1_stage_a_lock.py locked markdown byte count",
+      "tests/test_paper2_phase2_a2_guardrail_sweep.py locked markdown byte count",
+      "tests/test_speculative_depth_d0_launch_amendment.py locked markdown byte count"
+    ],
+    "failure_attribution": "The four failed paths are unchanged by this build and reflect Windows worktree line-ending bytes in historical Drive-locked markdown files."
+  }
+}

@@ -4,10 +4,113 @@ from __future__ import annotations
 
 import math
 from collections.abc import Sequence
+from dataclasses import dataclass
 
 import torch
 from torch import nn
 from torch.nn import functional as F
+
+
+@dataclass(frozen=True)
+class FingerprintMemoryReadout:
+    """Auditable output of one fingerprint-keyed memory read."""
+
+    value: torch.Tensor
+    ungated_value: torch.Tensor
+    compatibility_gate: torch.Tensor
+    slot_indices: torch.Tensor
+    slot_scores: torch.Tensor
+    slot_weights: torch.Tensor
+
+
+def deterministic_value_permutation(values: torch.Tensor, *, seed: int) -> torch.Tensor:
+    """Permute complete memory values without changing their marginal tensor."""
+
+    if values.ndim != 2 or values.shape[0] < 1:
+        raise ValueError("memory values must have shape [slots, value_dim]")
+    generator = torch.Generator(device="cpu").manual_seed(int(seed))
+    order = torch.randperm(values.shape[0], generator=generator)
+    return values.index_select(0, order.to(values.device))
+
+
+class FingerprintContentMemory(nn.Module):
+    """Fixed fingerprint keys with trainable values and top-k MIPS retrieval.
+
+    Keys and the query coordinate transform are immutable buffers. The
+    compatibility gate is trainable, while ``trainable_values=False`` creates
+    the frozen-value honesty control with the same forward graph. Injection
+    remains a separate zero-gated operation so attaching this reader cannot
+    change the substrate by itself.
+    """
+
+    def __init__(
+        self,
+        *,
+        keys: torch.Tensor,
+        values: torch.Tensor,
+        top_k: int,
+        temperature: float = 1.0,
+        trainable_values: bool = True,
+    ) -> None:
+        super().__init__()
+        if keys.ndim != 2 or values.ndim != 2:
+            raise ValueError("keys and values must be rank-two tensors")
+        if keys.shape[0] != values.shape[0] or keys.shape[0] < 1:
+            raise ValueError("keys and values require the same nonzero slot count")
+        if not keys.is_floating_point() or not values.is_floating_point():
+            raise TypeError("keys and values must be floating point")
+        if not bool(torch.isfinite(keys).all()) or not bool(torch.isfinite(values).all()):
+            raise ValueError("keys and values must be finite")
+        if not 1 <= int(top_k) <= int(keys.shape[0]):
+            raise ValueError("top_k must be in [1, slots]")
+        if not float(temperature) > 0.0:
+            raise ValueError("temperature must be positive")
+        normalized_keys = F.normalize(keys.detach().float(), dim=-1)
+        self.register_buffer("keys", normalized_keys.to(dtype=keys.dtype))
+        self.values = nn.Parameter(values.detach().clone(), requires_grad=trainable_values)
+        self.register_buffer(
+            "query_projection",
+            torch.eye(keys.shape[1], dtype=keys.dtype, device=keys.device),
+        )
+        self.compatibility_projection = nn.Linear(3, 1, bias=True)
+        nn.init.zeros_(self.compatibility_projection.weight)
+        nn.init.zeros_(self.compatibility_projection.bias)
+        self.top_k = int(top_k)
+        self.temperature = float(temperature)
+
+    @property
+    def slot_count(self) -> int:
+        return int(self.keys.shape[0])
+
+    def forward(self, query: torch.Tensor) -> FingerprintMemoryReadout:
+        if query.ndim != 2 or query.shape[1] != self.keys.shape[1]:
+            raise ValueError("query must have shape [batch, key_dim]")
+        projected = query.float() @ self.query_projection.float()
+        projected = F.normalize(projected, dim=-1)
+        scores = projected @ self.keys.float().T
+        top_scores, top_indices = torch.topk(scores, k=self.top_k, dim=-1)
+        weights = torch.softmax(top_scores / self.temperature, dim=-1)
+        selected = self.values[top_indices]
+        raw = torch.einsum("bk,bkd->bd", weights.to(selected.dtype), selected)
+        maximum = top_scores[:, :1]
+        if self.top_k == 1:
+            gap = maximum
+            normalized_entropy = torch.zeros_like(maximum)
+        else:
+            gap = maximum - top_scores[:, 1:2]
+            entropy = -(weights * weights.clamp_min(1e-12).log()).sum(dim=-1, keepdim=True)
+            normalized_entropy = entropy / math.log(self.top_k)
+        features = torch.cat((maximum, gap, 1.0 - normalized_entropy), dim=-1)
+        gate = torch.sigmoid(self.compatibility_projection(features.float()))
+        gated = gate.to(raw.dtype) * raw
+        return FingerprintMemoryReadout(
+            value=gated,
+            ungated_value=raw,
+            compatibility_gate=gate,
+            slot_indices=top_indices,
+            slot_scores=top_scores,
+            slot_weights=weights,
+        )
 
 
 class ProbePool(nn.Module):
