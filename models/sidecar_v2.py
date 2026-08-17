@@ -82,12 +82,35 @@ class FingerprintContentMemory(nn.Module):
     def slot_count(self) -> int:
         return int(self.keys.shape[0])
 
-    def forward(self, query: torch.Tensor) -> FingerprintMemoryReadout:
+    def forward(
+        self,
+        query: torch.Tensor,
+        *,
+        excluded_slot_indices: torch.Tensor | None = None,
+    ) -> FingerprintMemoryReadout:
         if query.ndim != 2 or query.shape[1] != self.keys.shape[1]:
             raise ValueError("query must have shape [batch, key_dim]")
         projected = query.float() @ self.query_projection.float()
         projected = F.normalize(projected, dim=-1)
         scores = projected @ self.keys.float().T
+        if excluded_slot_indices is not None:
+            excluded = excluded_slot_indices.to(device=scores.device)
+            if excluded.ndim == 1:
+                excluded = excluded[:, None]
+            if excluded.ndim != 2 or excluded.shape[0] != query.shape[0]:
+                raise ValueError(
+                    "excluded_slot_indices must have shape [batch] or [batch, n]"
+                )
+            if excluded.dtype == torch.bool or excluded.is_floating_point():
+                raise TypeError("excluded_slot_indices must contain integer slot IDs")
+            if bool(((excluded < 0) | (excluded >= self.slot_count)).any()):
+                raise ValueError("excluded slot index is outside the memory table")
+            available = self.slot_count - torch.tensor(
+                [torch.unique(row).numel() for row in excluded], device=scores.device
+            )
+            if bool((available < self.top_k).any()):
+                raise ValueError("leave-one-out exclusion leaves fewer than top_k slots")
+            scores = scores.scatter(1, excluded.long(), float("-inf"))
         top_scores, top_indices = torch.topk(scores, k=self.top_k, dim=-1)
         weights = torch.softmax(top_scores / self.temperature, dim=-1)
         selected = self.values[top_indices]
@@ -189,6 +212,72 @@ class GatedSidecarInjection(nn.Module):
         return base + torch.tanh(self.gate).to(dtype=base.dtype) * projected.to(
             dtype=base.dtype
         )
+
+
+class ScratchpadMemoryInjection(nn.Module):
+    """Write one retrieved value into post-initializer scratch slots.
+
+    This is the registered Stage 2A write
+    ``S0 <- S0 + g_L * w_L outer (W_L m)``. The scalar gate is exactly zero at
+    initialization. Slot weights use the house-style ``2 * sigmoid``
+    parameterization and therefore remain nonnegative.
+    """
+
+    def __init__(
+        self,
+        *,
+        memory_dim: int = 128,
+        scratch_dim: int = 128,
+        n_slots: int = 8,
+        seed: int = 20_260_817,
+    ) -> None:
+        super().__init__()
+        if min(int(memory_dim), int(scratch_dim), int(n_slots)) < 1:
+            raise ValueError("memory_dim, scratch_dim, and n_slots must be positive")
+        generator = torch.Generator().manual_seed(int(seed))
+        self.projection = nn.Parameter(
+            torch.randn(
+                (int(scratch_dim), int(memory_dim)), generator=generator
+            )
+            * 1e-3
+        )
+        self.slot_logits = nn.Parameter(torch.zeros(int(n_slots)))
+        self.gate = nn.Parameter(torch.zeros(()))
+
+    @property
+    def n_slots(self) -> int:
+        return int(self.slot_logits.numel())
+
+    def slot_weights(self) -> torch.Tensor:
+        return 2.0 * torch.sigmoid(self.slot_logits)
+
+    def forward(
+        self,
+        scratch0: torch.Tensor,
+        memory: torch.Tensor,
+        *,
+        amplitude_ceiling: float | torch.Tensor = 1.0,
+    ) -> torch.Tensor:
+        if scratch0.ndim != 3:
+            raise ValueError("scratch0 must have shape [batch, slots, scratch_dim]")
+        if memory.ndim != 2 or memory.shape[0] != scratch0.shape[0]:
+            raise ValueError("memory must have shape [batch, memory_dim]")
+        if scratch0.shape[1] != self.n_slots:
+            raise ValueError("scratch slot count differs from registered slot weights")
+        if scratch0.shape[2] != self.projection.shape[0]:
+            raise ValueError("scratch width differs from injection output width")
+        if memory.shape[1] != self.projection.shape[1]:
+            raise ValueError("memory width differs from injection input width")
+        ceiling = torch.as_tensor(
+            amplitude_ceiling, dtype=torch.float32, device=scratch0.device
+        )
+        if ceiling.numel() != 1 or not bool(torch.isfinite(ceiling)) or ceiling <= 0:
+            raise ValueError("amplitude_ceiling must be one finite positive scalar")
+        projected = memory @ self.projection.to(dtype=memory.dtype).T
+        slot_write = self.slot_weights().to(projected.dtype)[None, :, None]
+        delta = slot_write * projected[:, None, :]
+        scale = (ceiling * torch.tanh(self.gate.float())).to(dtype=scratch0.dtype)
+        return scratch0 + scale * delta.to(dtype=scratch0.dtype)
 
 
 def fast_wht(x: torch.Tensor) -> torch.Tensor:

@@ -8,6 +8,17 @@ from dataclasses import dataclass
 from typing import Any, Iterable, Mapping
 
 import torch
+from torch.nn import functional as F
+
+
+STAGE2A_TEACHER_14B = {
+    "model": "Qwen/Qwen2.5-14B-Instruct",
+    "revision": "cf98f3b3bbb457ad9e2bb7baf9a0125b6b88caa8",
+}
+STAGE2A_VERIFIER_32B = {
+    "model": "Qwen/Qwen2.5-32B-Instruct",
+    "revision": "5ede1c97bbab6ce5cda5812749b4c0bdf79b18dd",
+}
 
 
 def _canonical_sha256(value: object) -> str:
@@ -15,10 +26,191 @@ def _canonical_sha256(value: object) -> str:
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
+def apply_stage2a_firm_knowledge_rule(
+    rows: Iterable[Mapping[str, Any]],
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """Materialize V(x): correct 14B output plus 14B/32B concurrence.
+
+    Model inference and answer normalization remain upstream registered reader
+    operations. This boundary requires their row-level outputs and hashes, then
+    applies the binary admission rule without confidence thresholds.
+    """
+
+    required = {
+        "battery",
+        "item_id",
+        "teacher_14b_correct",
+        "teacher_14b_normalized_answer",
+        "teacher_32b_normalized_answer",
+        "teacher_14b_output_sha256",
+        "teacher_32b_output_sha256",
+        "correctness_reader",
+    }
+    materialized: list[dict[str, Any]] = []
+    excluded_by_battery: dict[str, dict[str, int]] = {}
+    for source in rows:
+        row = dict(source)
+        missing = required.difference(row)
+        if missing:
+            raise ValueError(f"V(x) row missing required fields: {sorted(missing)}")
+        for field in ("teacher_14b_output_sha256", "teacher_32b_output_sha256"):
+            value = str(row[field])
+            if len(value) != 64 or any(char not in "0123456789abcdef" for char in value):
+                raise ValueError(f"V(x) row has invalid {field}")
+        teacher_correct = bool(row["teacher_14b_correct"])
+        concurrence = (
+            str(row["teacher_14b_normalized_answer"])
+            == str(row["teacher_32b_normalized_answer"])
+        )
+        admitted = teacher_correct and concurrence
+        row["stage2a_firm_knowledge_admitted"] = admitted
+        row["stage2a_teacher_correct"] = teacher_correct
+        row["stage2a_family_concurrent"] = concurrence
+        materialized.append(row)
+        battery = str(row["battery"])
+        counts = excluded_by_battery.setdefault(
+            battery,
+            {
+                "rows": 0,
+                "admitted": 0,
+                "teacher_incorrect": 0,
+                "family_disagreement": 0,
+            },
+        )
+        counts["rows"] += 1
+        counts["admitted"] += int(admitted)
+        counts["teacher_incorrect"] += int(not teacher_correct)
+        counts["family_disagreement"] += int(not concurrence)
+    if not materialized:
+        raise ValueError("V(x) requires at least one row")
+    verdicts = [
+        {
+            "battery": str(row["battery"]),
+            "item_id": str(row["item_id"]),
+            "admitted": bool(row["stage2a_firm_knowledge_admitted"]),
+            "teacher_correct": bool(row["stage2a_teacher_correct"]),
+            "family_concurrent": bool(row["stage2a_family_concurrent"]),
+            "teacher_14b_output_sha256": str(row["teacher_14b_output_sha256"]),
+            "teacher_32b_output_sha256": str(row["teacher_32b_output_sha256"]),
+            "correctness_reader": str(row["correctness_reader"]),
+        }
+        for row in materialized
+    ]
+    receipt = {
+        "kind": "paper2_stage2a_firm_knowledge_v1",
+        "status": "materialized_binary_correctness_and_family_concurrence",
+        "teacher_14b": STAGE2A_TEACHER_14B,
+        "verifier_32b": STAGE2A_VERIFIER_32B,
+        "probability_thresholds": None,
+        "rows": len(materialized),
+        "admitted": sum(bool(row["stage2a_firm_knowledge_admitted"]) for row in materialized),
+        "counts_by_battery": excluded_by_battery,
+        "verdicts_sha256": _canonical_sha256(verdicts),
+        "optimizer_constructed": False,
+        "optimizer_steps": 0,
+        "dev_scores_computed": False,
+        "confirm_scored": False,
+        "eval_e_scored": False,
+    }
+    return materialized, receipt
+
+
+@dataclass(frozen=True)
+class NonDevFingerprintGeometry:
+    student_mean: torch.Tensor
+    student_basis: torch.Tensor
+    teacher_mean: torch.Tensor
+    teacher_basis: torch.Tensor
+    diagnostic_rotation: torch.Tensor
+
+    def student_keys(self, states: torch.Tensor) -> torch.Tensor:
+        return (states.float() - self.student_mean) @ self.student_basis
+
+    def teacher_values(self, states: torch.Tensor) -> torch.Tensor:
+        return (states.float() - self.teacher_mean) @ self.teacher_basis
+
+
+def fit_nondev_fingerprint_geometry(
+    *,
+    student_fit: torch.Tensor,
+    teacher_fit: torch.Tensor,
+    student_holdout: torch.Tensor,
+    teacher_holdout: torch.Tensor,
+    rank: int = 128,
+) -> tuple[NonDevFingerprintGeometry, dict[str, Any]]:
+    """Fit live PCA bases on non-DEV rows and score diagnostic transport.
+
+    Teacher values remain in teacher PCA coordinates. The orthogonal map is
+    retained only for the required held-out addressing receipt and is not used
+    by the memory forward path.
+    """
+
+    matrices = (student_fit, teacher_fit, student_holdout, teacher_holdout)
+    if any(matrix.ndim != 2 for matrix in matrices):
+        raise ValueError("fingerprint geometry inputs must be rank-two matrices")
+    if student_fit.shape[0] != teacher_fit.shape[0]:
+        raise ValueError("fit student and teacher rows must align")
+    if student_holdout.shape[0] != teacher_holdout.shape[0]:
+        raise ValueError("holdout student and teacher rows must align")
+    if student_fit.shape[0] <= int(rank) or teacher_fit.shape[0] <= int(rank):
+        raise ValueError("PCA fit requires more fit rows than the registered rank")
+    if student_holdout.shape[0] < 2:
+        raise ValueError("held-out retrieval requires at least two rows")
+
+    def pca(matrix: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        mean = matrix.float().mean(dim=0, keepdim=True)
+        _u, _s, vh = torch.linalg.svd(matrix.float() - mean, full_matrices=False)
+        if vh.shape[0] < int(rank):
+            raise ValueError("state width is smaller than the registered PCA rank")
+        return mean, vh[: int(rank)].T.contiguous()
+
+    student_mean, student_basis = pca(student_fit)
+    teacher_mean, teacher_basis = pca(teacher_fit)
+    student_fit_key = (student_fit.float() - student_mean) @ student_basis
+    teacher_fit_value = (teacher_fit.float() - teacher_mean) @ teacher_basis
+    cross = student_fit_key.double().T @ teacher_fit_value.double()
+    left, _singular, right_h = torch.linalg.svd(cross, full_matrices=False)
+    rotation = (left @ right_h).float()
+
+    student_holdout_key = (student_holdout.float() - student_mean) @ student_basis
+    teacher_holdout_value = (teacher_holdout.float() - teacher_mean) @ teacher_basis
+    transported = student_holdout_key @ rotation
+    similarity = F.normalize(transported, dim=-1) @ F.normalize(
+        teacher_holdout_value, dim=-1
+    ).T
+    order = similarity.argsort(dim=-1, descending=True)
+    target = torch.arange(similarity.shape[0], device=similarity.device)[:, None]
+    ranks = (order == target).nonzero(as_tuple=False)[:, 1] + 1
+    geometry = NonDevFingerprintGeometry(
+        student_mean=student_mean,
+        student_basis=student_basis,
+        teacher_mean=teacher_mean,
+        teacher_basis=teacher_basis,
+        diagnostic_rotation=rotation,
+    )
+    receipt = {
+        "kind": "paper2_stage2a_nondev_fingerprint_geometry_v1",
+        "status": "fit_nondev_heldout_retrieval_scored_nondev",
+        "rank": int(rank),
+        "fit_rows": int(student_fit.shape[0]),
+        "holdout_rows": int(student_holdout.shape[0]),
+        "top1_retrieval": float(ranks.eq(1).float().mean()),
+        "top10_retrieval": float(ranks.le(10).float().mean()),
+        "median_rank": float(ranks.float().median()),
+        "teacher_values_coordinate_system": "teacher_pca",
+        "diagnostic_rotation_live_path": False,
+        "dev_rows_used": 0,
+        "optimizer_constructed": False,
+        "optimizer_steps": 0,
+    }
+    return geometry, receipt
+
+
 def build_fingerprint_memory_manifest(
     rows: Iterable[Mapping[str, Any]],
     *,
     panel_item_ids: set[tuple[str, str]],
+    reserved_item_ids: set[tuple[str, str]] | None = None,
     admitted_field: str,
     slots: int = 8_192,
     seed: int = 20_260_816,
@@ -44,10 +236,15 @@ def build_fingerprint_memory_manifest(
     identities = [(str(row["battery"]), str(row["item_id"])) for row in records]
     if len(set(identities)) != len(identities):
         raise RuntimeError("memory source contains duplicate battery/item identities")
+    reserved = set() if reserved_item_ids is None else set(reserved_item_ids)
+    if panel_item_ids.intersection(reserved):
+        raise RuntimeError("panel and reserved validation identities overlap")
     candidates = [
         row
         for row, identity in zip(records, identities, strict=True)
-        if bool(row[admitted_field]) and identity not in panel_item_ids
+        if bool(row[admitted_field])
+        and identity not in panel_item_ids
+        and identity not in reserved
     ]
     if len(candidates) < int(slots):
         raise RuntimeError(
@@ -82,7 +279,9 @@ def build_fingerprint_memory_manifest(
         "admitted_nonpanel_rows": len(candidates),
         "admitted_field": str(admitted_field),
         "panel_rows_excluded": sum(identity in panel_item_ids for identity in identities),
+        "reserved_rows_excluded": sum(identity in reserved for identity in identities),
         "panel_overlap": 0,
+        "reserved_overlap": 0,
         "selection_rule": "SHA256(seed:battery:item_id:content_sha256), ascending",
         "selected_identities_sha256": _canonical_sha256(selected_identities),
         "optimizer_constructed": False,

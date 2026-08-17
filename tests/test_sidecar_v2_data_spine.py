@@ -2,9 +2,11 @@ import torch
 
 from training.sidecar_v2_data_spine import (
     aggregate_cluster_routing,
+    apply_stage2a_firm_knowledge_rule,
     build_fingerprint_memory_manifest,
     canonicalize_expert_outputs,
     deterministic_k_medoids,
+    fit_nondev_fingerprint_geometry,
     relevance_weighted_distance_matrix,
     ridge_low_rank_initialization,
     tensor_sha256,
@@ -82,17 +84,31 @@ def test_fingerprint_manifest_is_deterministic_and_excludes_panel() -> None:
         for index in range(12)
     ]
     panel = {("gsm8k", "item-1"), ("gsm8k", "item-2")}
+    reserved = {("gsm8k", "item-3")}
     first, receipt = build_fingerprint_memory_manifest(
-        rows, panel_item_ids=panel, admitted_field="firm", slots=6, seed=13
+        rows,
+        panel_item_ids=panel,
+        reserved_item_ids=reserved,
+        admitted_field="firm",
+        slots=6,
+        seed=13,
     )
     second, repeated = build_fingerprint_memory_manifest(
-        reversed(rows), panel_item_ids=panel, admitted_field="firm", slots=6, seed=13
+        reversed(rows),
+        panel_item_ids=panel,
+        reserved_item_ids=reserved,
+        admitted_field="firm",
+        slots=6,
+        seed=13,
     )
     assert first == second
     assert receipt == repeated
     assert receipt["panel_overlap"] == 0
+    assert receipt["reserved_overlap"] == 0
+    assert receipt["reserved_rows_excluded"] == 1
     assert receipt["optimizer_steps"] == 0
     assert all((row["battery"], row["item_id"]) not in panel for row in first)
+    assert all((row["battery"], row["item_id"]) not in reserved for row in first)
 
 
 def test_fingerprint_manifest_refuses_thin_admitted_population() -> None:
@@ -114,3 +130,71 @@ def test_fingerprint_manifest_refuses_thin_admitted_population() -> None:
         assert "firm-knowledge non-panel population" in str(error)
     else:
         raise AssertionError("thin admitted memory population was accepted")
+
+
+def test_stage2a_firm_knowledge_requires_correctness_and_concurrence() -> None:
+    digest_a = "a" * 64
+    digest_b = "b" * 64
+    rows = [
+        {
+            "battery": "gsm8k",
+            "item_id": "admit",
+            "teacher_14b_correct": True,
+            "teacher_14b_normalized_answer": "42",
+            "teacher_32b_normalized_answer": "42",
+            "teacher_14b_output_sha256": digest_a,
+            "teacher_32b_output_sha256": digest_b,
+            "correctness_reader": "gsm8k_numeric_equality_v1",
+        },
+        {
+            "battery": "gsm8k",
+            "item_id": "disagree",
+            "teacher_14b_correct": True,
+            "teacher_14b_normalized_answer": "42",
+            "teacher_32b_normalized_answer": "41",
+            "teacher_14b_output_sha256": digest_a,
+            "teacher_32b_output_sha256": digest_b,
+            "correctness_reader": "gsm8k_numeric_equality_v1",
+        },
+        {
+            "battery": "gsm8k",
+            "item_id": "incorrect",
+            "teacher_14b_correct": False,
+            "teacher_14b_normalized_answer": "41",
+            "teacher_32b_normalized_answer": "41",
+            "teacher_14b_output_sha256": digest_a,
+            "teacher_32b_output_sha256": digest_b,
+            "correctness_reader": "gsm8k_numeric_equality_v1",
+        },
+    ]
+    materialized, receipt = apply_stage2a_firm_knowledge_rule(rows)
+    assert [row["stage2a_firm_knowledge_admitted"] for row in materialized] == [
+        True,
+        False,
+        False,
+    ]
+    assert receipt["admitted"] == 1
+    assert receipt["probability_thresholds"] is None
+    assert receipt["counts_by_battery"]["gsm8k"]["family_disagreement"] == 1
+
+
+def test_nondev_geometry_keeps_teacher_values_native_and_scores_holdout() -> None:
+    generator = torch.Generator().manual_seed(9)
+    student_fit = torch.randn(180, 128, generator=generator)
+    rotation, _ = torch.linalg.qr(torch.randn(128, 128, generator=generator))
+    teacher_fit = student_fit @ rotation
+    student_holdout = torch.randn(40, 128, generator=generator)
+    teacher_holdout = student_holdout @ rotation
+    geometry, receipt = fit_nondev_fingerprint_geometry(
+        student_fit=student_fit,
+        teacher_fit=teacher_fit,
+        student_holdout=student_holdout,
+        teacher_holdout=teacher_holdout,
+        rank=128,
+    )
+    assert geometry.teacher_values(teacher_holdout).shape == (40, 128)
+    assert geometry.student_keys(student_holdout).shape == (40, 128)
+    assert receipt["top1_retrieval"] == 1.0
+    assert receipt["teacher_values_coordinate_system"] == "teacher_pca"
+    assert receipt["diagnostic_rotation_live_path"] is False
+    assert receipt["dev_rows_used"] == 0

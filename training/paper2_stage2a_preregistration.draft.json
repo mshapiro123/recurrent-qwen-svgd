@@ -11,6 +11,20 @@
     "sha256": "57c41caa6d9bfe0174f295f6b7a56634ad26718dbb868f3cac9a3d857405ba2c",
     "repo_receipt": "docs/STRATEGY_KP1R_TEACHER_RESPONSE_20260816.receipt.json"
   },
+  "lock_rulings": {
+    "drive_id": "1UOfWqVpV4ByPRVeTbsabgaID-6LohmkF",
+    "title": "STRATEGY_STAGE2A_LOCK_RULINGS_20260817.md",
+    "bytes": 8972,
+    "sha256": "445e77a089148d58910acabf1e277600e966068068300df26e11e02b12c98c73",
+    "repo_receipt": "docs/STRATEGY_STAGE2A_LOCK_RULINGS_20260817.receipt.json"
+  },
+  "objective_binding": {
+    "drive_id": "1-2iiv8aaTrBvUR2Zxs4V6BW1P8OLotb_",
+    "title": "STRATEGY_T3A_OBJECTIVE_BINDING_20260817.md",
+    "bytes": 4821,
+    "sha256": "78cbf2fb397cf2c6319636523a7feea44b1e21e8941ee32e898323e697f18a22",
+    "repo_receipt": "docs/STRATEGY_T3A_OBJECTIVE_BINDING_20260817.receipt.json"
+  },
   "scientific_frame": {
     "anchor": "student early states are an excellent address for teacher content; student answer content is not established",
     "knowledge_presence_verdict": "NO_POSITIVE_KNOWLEDGE_PRESENCE_GATE",
@@ -27,13 +41,36 @@
   "data_separation": {
     "dev_panel_rows": 1024,
     "panel_manifest_sha256": "c0e15a890b598544059ac337cc475123f97c05e3c1626febcdee1c6d8fe02615",
-    "reference_rows_approximate": 9200,
+    "reference_rows_total": 10231,
+    "nondev_reference_rows": 8712,
+    "nondev_14b_correct_rows": 5844,
+    "heldout_nondev_validation_rows": 512,
+    "validation_rows_allowed_in_memory": 0,
+    "validation_split_seed": null,
+    "validation_manifest_sha256": null,
     "memory_slots": 8192,
     "memory_source": "KP-1R reference-table rows outside DEV",
     "dev_rows_allowed_in_memory": 0,
-    "source_manifest_sha256": null,
-    "firm_knowledge_rule": null,
-    "firm_knowledge_rule_sha256": null,
+    "source_manifest_sha256": "1aa4391deefaee6e1a70f4e99ac20e0728dae1a4e45fec482f38e76edf5fa54b",
+    "slot_feasibility": "blocked: after reserving 512 validation rows, V(x) admits at most 5332 memory rows before the required 32B concurrence filter",
+    "memory_slots_resolution": null,
+    "firm_knowledge_rule": {
+      "teacher_correct": {
+        "model": "Qwen/Qwen2.5-14B-Instruct",
+        "revision": "cf98f3b3bbb457ad9e2bb7baf9a0125b6b88caa8",
+        "decoding": "greedy_registered_reader",
+        "correctness": "programmatic for GSM8K and MBPP; gold-label match for MCQ"
+      },
+      "family_concurrence": {
+        "model": "Qwen/Qwen2.5-32B-Instruct",
+        "revision": "5ede1c97bbab6ce5cda5812749b4c0bdf79b18dd",
+        "condition": "same normalized final answer as the 14B teacher"
+      },
+      "admission": "teacher_correct AND family_concurrence",
+      "probability_thresholds": null,
+      "per_row_output_hashes_required": true
+    },
+    "firm_knowledge_rule_sha256": "f4197911f4983bcd7952b0346d3c61812b7900fd8ee9e9b18bdcdc939bc931da",
     "selection_seed": 20260816,
     "selection_rule": "SHA256(seed:battery:item_id:content_sha256), ascending after external V(x) admission",
     "panel_overlap_required": 0
@@ -47,15 +84,17 @@
     "diagnostic_dev_transform_reused": false,
     "diagnostic_transform_note": "The positive 614/410 split-fit diagnostic used DEV and is evidence only, never a live Stage 2A artifact.",
     "fit_manifest_sha256": null,
-    "fit_seed": null,
-    "student_pca_contract": null,
-    "teacher_pca_contract": null,
-    "transport_direction": null,
+    "fit_seed": 20260817,
+    "fit_fraction": 0.8,
+    "split": "battery-stratified SHA256(seed:battery:item_id), fit versus non-DEV holdout",
+    "student_pca_contract": "PCA-128 fit on non-DEV fit rows; fixed keys and query basis",
+    "teacher_pca_contract": "PCA-128 fit on non-DEV fit rows; stored values remain in teacher PCA coordinates",
+    "transport_direction": "student PCA to teacher PCA Procrustes for held-out addressing receipt only; rotation is absent from live memory path",
     "artifact_sha256": null,
     "freeze_before_dev_scoring": true
   },
   "initialization": {
-    "status": "proposed_pending_signature",
+    "status": "ratified_by_strategy_pending_mark_signature",
     "seed_0": {
       "source": "P3.5 Arm S EMA step 4400",
       "sha256": "a047e2e7b35320376a736492c79d913b8690937da785efa2af002c8f54d26ca6"
@@ -75,33 +114,40 @@
       "query_transform_trainable": false,
       "values_trainable": true,
       "retrieval": "top_k_mips",
-      "top_k": null,
-      "temperature": null
+      "top_k": 8,
+      "temperature": 0.07,
+      "training_leave_one_out": "exclude the current row-owned slot before top-k"
     },
     "t3b_ngram": {
       "role": "literal_surface_form_control",
       "seeds": [0, 1],
       "ngrams": [2, 3],
-      "hashes_per_ngram": null,
-      "matched_parameter_budget": true
+      "hashes_per_ngram": 2,
+      "matched_parameter_budget": true,
+      "training_leave_one_out": "vacuous: the hash tables contain no row-owned entry; no self slot exists"
     },
     "shuffled_values": {
       "role": "retrieval_specificity_control",
-      "seeds": null,
-      "permutation_seed": null,
-      "values_trainable_after_permutation": null
+      "seeds": [0],
+      "permutation_seed": 20260817,
+      "values_trainable_after_permutation": false,
+      "gate_and_injection_trainable": true,
+      "seed_1_trigger": "paired delta greater than +3 rows"
     },
     "random_values": {
       "role": "capacity_and_perturbation_control",
-      "seeds": null,
+      "seeds": [0],
       "values_trainable": false,
-      "initialization_seed": null
+      "gate_and_injection_trainable": true,
+      "initialization_seed": 20260817,
+      "seed_1_trigger": "paired delta greater than +3 rows"
     }
   },
   "trainable_surface": [
     "memory.values",
     "memory.compatibility_projection.*",
     "injection.projection",
+    "injection.slot_logits",
     "injection.gate"
   ],
   "frozen_surface": [
@@ -111,9 +157,14 @@
     "memory.query_projection"
   ],
   "injection": {
-    "module": "GatedSidecarInjection",
-    "registered_path_name": "SidecarV2Bridge.g_L",
-    "exact_tensor_and_timing": null,
+    "module": "ScratchpadMemoryInjection",
+    "registered_path_name": "post-initializer scratch write g_L",
+    "exact_tensor_and_timing": "once per emitted token, immediately after ScratchpadInitializer returns S0 and before flow step 1: S0 <- S0 + g_L * w_L outer (W_L m)",
+    "memory_dim": 128,
+    "scratch_dim": 128,
+    "scratch_slots": 8,
+    "slot_weight_parameterization": "2 * sigmoid(slot_logits), nonnegative",
+    "substrate_contact": "scratchpad -> flow -> AnchoredBridge -> hidden only",
     "address_early_deliver_late": true,
     "amplitude_lottery": [0.02, 0.11],
     "registered_read_amplitude": 0.05,
@@ -126,29 +177,49 @@
     "optimizer_steps_before_pass": 0
   },
   "training": {
-    "steps": null,
-    "bounded_steps_target": 1000,
-    "batch_size": null,
-    "optimizer": null,
-    "learning_rate": null,
-    "weight_decay": null,
+    "steps": 1200,
+    "batch_size": 128,
+    "optimizer": "AdamW",
+    "learning_rate": 0.0005,
+    "weight_decay": 0.01,
+    "betas": [0.9, 0.999],
+    "warmup_steps": 50,
+    "landing": "cosine decay over steps 1081-1200",
+    "objective": {
+      "formula": "0.5 * L_CE + 0.5 * L_KL",
+      "ce_weight": 0.5,
+      "kl_weight": 0.5,
+      "kl_direction": "teacher_to_student",
+      "temperature": 1.0,
+      "teacher_lattice_top_k": 128,
+      "renormalize_over_teacher_lattice": true,
+      "teacher_revision": "cf98f3b3bbb457ad9e2bb7baf9a0125b6b88caa8",
+      "teacher_forced_response": true,
+      "answer_region_mask": "KP-1R-repaired battery-specific answer-bearing positions only; formatting, prompt, and position zero excluded",
+      "reduction": "mean over unmasked positions within example, then mean over batch",
+      "verifier_mask": false,
+      "full_inference_graph": "fresh scratch; student layer-6 prefix key; top-k 8 at temperature 0.07; compatibility gate; post-initializer scratch write; K=4; frozen bridge",
+      "leave_one_out": true,
+      "identical_across_arms": true
+    },
+    "objective_formula_source": "docs/STRATEGY_T3A_OBJECTIVE_BINDING_20260817.receipt.json",
     "ema_primary": true,
-    "ema_decay": null,
-    "checkpoint_steps": null,
+    "ema_decay": 0.999,
+    "checkpoint_steps": [200, 400, 600, 800, 1000, 1200],
     "seed_policy": "both primary endpoint checkpoints",
-    "resume_contract": null
+    "resume_contract": "every checkpoint stores raw and EMA weights, optimizer state keyed by parameter name, batch-generator state, global CPU/CUDA RNG states, step, and exact data cursor; resume asserts all digests"
   },
   "evaluation": {
     "panel": "frozen 1024-row DEV panel",
     "paired_no_memory_baseline": true,
     "registered_read_amplitude": 0.05,
-    "paired_sign_test_alpha": null,
-    "minimum_net_row_gain": null,
-    "shuffled_flat_equivalence_band": null,
+    "paired_sign_test_alpha": 0.05,
+    "minimum_net_row_gain": "mean two-seed paired delta at least +8 rows and each seed strictly positive",
+    "shuffled_flat_equivalence_band": [-3, 3],
     "both_primary_seeds_required_positive": true,
     "margin_telemetry": ["pooled", "battery", "row_minimum_answer_token_margin"],
-    "chi_definition": null,
-    "chi_threshold": null,
+    "chi_definition": "flip fraction on standing confident-agreement audit populations under deployed writes at registered amplitude 0.05",
+    "chi_threshold": 0.0005,
     "retrieval_telemetry": [
       "top_k_slot_ids",
       "top_k_scores",
@@ -171,49 +242,24 @@
     "blocked_outcome_writes_receipts": true,
     "no_posthoc_arm_selection": true
   },
+  "confirm_pricing": {
+    "applies_to_this_screen": false,
+    "selected_main_campaign_minimum_absolute_points": 0.02,
+    "selected_main_campaign_approximate_dev_rows": 21,
+    "power_arithmetic_required_in_successor_lock": true
+  },
   "required_bound_paths": [
-    "data_separation.source_manifest_sha256",
-    "data_separation.firm_knowledge_rule",
-    "data_separation.firm_knowledge_rule_sha256",
+    "data_separation.memory_slots_resolution",
+    "data_separation.validation_split_seed",
+    "data_separation.validation_manifest_sha256",
     "geometry_fit.fit_manifest_sha256",
-    "geometry_fit.fit_seed",
-    "geometry_fit.student_pca_contract",
-    "geometry_fit.teacher_pca_contract",
-    "geometry_fit.transport_direction",
-    "geometry_fit.artifact_sha256",
-    "arms.t3a_fingerprint.top_k",
-    "arms.t3a_fingerprint.temperature",
-    "arms.t3b_ngram.hashes_per_ngram",
-    "arms.shuffled_values.seeds",
-    "arms.shuffled_values.permutation_seed",
-    "arms.shuffled_values.values_trainable_after_permutation",
-    "arms.random_values.seeds",
-    "arms.random_values.initialization_seed",
-    "injection.exact_tensor_and_timing",
-    "training.steps",
-    "training.batch_size",
-    "training.optimizer",
-    "training.learning_rate",
-    "training.weight_decay",
-    "training.ema_decay",
-    "training.checkpoint_steps",
-    "training.resume_contract",
-    "evaluation.paired_sign_test_alpha",
-    "evaluation.minimum_net_row_gain",
-    "evaluation.shuffled_flat_equivalence_band",
-    "evaluation.chi_definition",
-    "evaluation.chi_threshold"
+    "geometry_fit.artifact_sha256"
   ],
   "unresolved_before_ratification": [
-    "Bind the exact V(x) firm-knowledge admission rule and its receipt hash.",
-    "Refit PCA and transport on non-DEV reference rows; bind fit manifest, direction, seed, and artifact hash.",
-    "Resolve whether transported teacher values live in teacher PCA coordinates or student-key coordinates.",
-    "Bind top-k, temperature, n-gram hash count, and all control seeds.",
-    "State whether shuffled values remain trainable; freezing is recommended to preserve the specificity estimand.",
-    "Bind the exact downstream injection tensor and timing in the recurrent path.",
-    "Ratify P3.5 EMA step-4400 initialization for both seeds.",
-    "Replace the approximate 1,000-step recipe with exact optimizer, batch, EMA, checkpoint, and resume settings.",
-    "Bind the positive, flat-control, sign-test, margin, and chi decision thresholds.",
-    "Bind the seed allocation for both honesty controls after costing the full matrix."
+    "Resolve the impossible 8,192 one-row-per-slot target: after reserving 512 held-out validation rows, at most 5,332 non-DEV rows remain before 32B concurrence.",
+    "Bind the deterministic 512-row admitted non-DEV validation split seed/rule and prove zero overlap with memory.",
+    "Materialize and hash the non-DEV V(x) verdicts and the slot manifest at the amended matched slot count.",
+    "Fit the non-DEV-only geometry, score its non-DEV holdout retrieval, and bind manifest/artifact hashes.",
+    "Mark signs the fully materialized executed lock."
   ]
 }

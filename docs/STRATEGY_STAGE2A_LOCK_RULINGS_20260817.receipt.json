@@ -1,0 +1,9 @@
+{
+  "kind": "strategy_authority_receipt_v1",
+  "title": "STRATEGY_STAGE2A_LOCK_RULINGS_20260817.md",
+  "drive_id": "1UOfWqVpV4ByPRVeTbsabgaID-6LohmkF",
+  "bytes": 8972,
+  "sha256": "445e77a089148d58910acabf1e277600e966068068300df26e11e02b12c98c73",
+  "verified_at_utc": "2026-08-17T00:09:04.369Z",
+  "status": "authority_verified_all_ten_stage2a_lock_rulings_bound"
+}

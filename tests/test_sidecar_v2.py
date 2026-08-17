@@ -8,6 +8,7 @@ from models.sidecar_v2 import (
     GatedSidecarInjection,
     LiteralNGramMemory,
     ProbePool,
+    ScratchpadMemoryInjection,
     deterministic_value_permutation,
     fast_wht,
 )
@@ -173,6 +174,28 @@ def test_fingerprint_memory_frozen_value_control_has_identical_graph() -> None:
     assert not frozen.values.requires_grad
 
 
+def test_fingerprint_memory_leave_one_out_excludes_owned_slot() -> None:
+    keys = torch.eye(4)
+    values = torch.arange(8, dtype=torch.float32).reshape(4, 2)
+    memory = FingerprintContentMemory(keys=keys, values=values, top_k=2)
+    query = torch.tensor([[1.0, 0.9, 0.0, 0.0], [0.0, 0.1, 1.0, 0.9]])
+    read = memory(query, excluded_slot_indices=torch.tensor([0, 2]))
+    assert 0 not in read.slot_indices[0].tolist()
+    assert 2 not in read.slot_indices[1].tolist()
+    assert read.slot_indices[:, 0].tolist() == [1, 3]
+
+
+def test_fingerprint_memory_leave_one_out_rejects_invalid_contracts() -> None:
+    memory = FingerprintContentMemory(
+        keys=torch.eye(3), values=torch.eye(3), top_k=2
+    )
+    query = torch.eye(3)[:1]
+    with pytest.raises(ValueError, match="outside"):
+        memory(query, excluded_slot_indices=torch.tensor([3]))
+    with pytest.raises(ValueError, match="fewer than top_k"):
+        memory(query, excluded_slot_indices=torch.tensor([[0, 1]]))
+
+
 def test_fingerprint_value_permutation_is_seeded_and_preserves_rows() -> None:
     values = torch.arange(24, dtype=torch.float32).reshape(8, 3)
     first = deterministic_value_permutation(values, seed=47)
@@ -180,3 +203,27 @@ def test_fingerprint_value_permutation_is_seeded_and_preserves_rows() -> None:
     torch.testing.assert_close(first, second)
     assert sorted(map(tuple, first.tolist())) == sorted(map(tuple, values.tolist()))
     assert not torch.equal(first, values)
+
+
+def test_scratchpad_memory_injection_is_exactly_inert_at_attachment() -> None:
+    injection = ScratchpadMemoryInjection(memory_dim=4, scratch_dim=4, n_slots=3)
+    scratch = torch.randn(2, 3, 4)
+    memory = torch.randn(2, 4)
+    torch.testing.assert_close(injection(scratch, memory), scratch, rtol=0.0, atol=0.0)
+    torch.testing.assert_close(injection.slot_weights(), torch.ones(3))
+
+
+def test_scratchpad_memory_injection_matches_registered_outer_product() -> None:
+    injection = ScratchpadMemoryInjection(memory_dim=2, scratch_dim=2, n_slots=2)
+    with torch.no_grad():
+        injection.projection.copy_(torch.eye(2))
+        injection.slot_logits.copy_(torch.tensor([0.0, 2.0]))
+        injection.gate.fill_(0.25)
+    scratch = torch.zeros(1, 2, 2)
+    memory = torch.tensor([[2.0, -1.0]])
+    expected = (
+        torch.tanh(torch.tensor(0.25))
+        * injection.slot_weights()[None, :, None]
+        * memory[:, None, :]
+    )
+    torch.testing.assert_close(injection(scratch, memory), expected)

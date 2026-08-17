@@ -26,6 +26,7 @@ from .sidecar_v2 import (
     GatedSidecarInjection,
     LiteralNGramMemory,
     ProbePool,
+    ScratchpadMemoryInjection,
     deterministic_value_permutation,
     fast_wht,
 )
@@ -35,6 +36,7 @@ __all__ = [
     "FingerprintContentMemory",
     "FingerprintMemoryReadout",
     "GatedSidecarInjection",
+    "ScratchpadMemoryInjection",
     "AnchoredBridge",
     "CoconutRecurrentQwen",
     "CompositeCoconutOutput",
