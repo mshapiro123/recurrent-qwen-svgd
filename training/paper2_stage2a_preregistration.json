@@ -1,0 +1,363 @@
+{
+  "arms": {
+    "random_values": {
+      "gate_and_injection_trainable": true,
+      "initialization_seed": 20260817,
+      "role": "capacity_and_perturbation_control",
+      "seed_1_trigger": "paired delta greater than +3 rows",
+      "seeds": [
+        0
+      ],
+      "values_trainable": false
+    },
+    "shuffled_values": {
+      "gate_and_injection_trainable": true,
+      "permutation_seed": 20260817,
+      "role": "retrieval_specificity_control",
+      "seed_1_trigger": "paired delta greater than +3 rows",
+      "seeds": [
+        0
+      ],
+      "values_trainable_after_permutation": false
+    },
+    "t3a_fingerprint": {
+      "key_source": "student_layer_6_pca128",
+      "keys_trainable": false,
+      "query_transform_trainable": false,
+      "retrieval": "top_k_mips",
+      "role": "primary_teacher_fingerprint_memory",
+      "seeds": [
+        0,
+        1
+      ],
+      "temperature": 0.07,
+      "top_k": 8,
+      "training_leave_one_out": "exclude the current row-owned slot before top-k",
+      "value_source": "teacher_layer_12_teacher_pca128",
+      "values_trainable": true
+    },
+    "t3b_ngram": {
+      "hashes_per_ngram": 2,
+      "matched_parameter_budget": true,
+      "matched_slot_count_source": "data_separation.memory_slots",
+      "ngrams": [
+        2,
+        3
+      ],
+      "role": "literal_surface_form_control",
+      "seeds": [
+        0,
+        1
+      ],
+      "training_leave_one_out": "vacuous: the hash tables contain no row-owned entry; no self slot exists"
+    }
+  },
+  "authority": {
+    "bytes": 11079,
+    "drive_id": "1GhTafphPuxmfq8hDn0Y-BrjWJCmafZKu",
+    "repo_receipt": "docs/STRATEGY_KP1R_TEACHER_RESPONSE_20260816.receipt.json",
+    "sha256": "57c41caa6d9bfe0174f295f6b7a56634ad26718dbb868f3cac9a3d857405ba2c",
+    "title": "STRATEGY_KP1R_TEACHER_RESPONSE_20260816.md"
+  },
+  "confirm_pricing": {
+    "applies_to_this_screen": false,
+    "power_arithmetic_required_in_successor_lock": true,
+    "selected_main_campaign_approximate_dev_rows": 21,
+    "selected_main_campaign_minimum_absolute_points": 0.02
+  },
+  "data_separation": {
+    "dev_panel_rows": 1024,
+    "dev_rows_allowed_in_memory": 0,
+    "firm_knowledge_manifest_sha256": "a0e087ddff7ed7bf8fb3d16416ae7dcbc221b243252a0d5e12d4b1edb39a6313",
+    "firm_knowledge_rule": {
+      "admission": "teacher_correct AND family_concurrence",
+      "family_concurrence": {
+        "condition": "same normalized final answer as the 14B teacher; for MBPP, both generated programs pass the identical required tests",
+        "model": "Qwen/Qwen2.5-32B-Instruct",
+        "revision": "5ede1c97bbab6ce5cda5812749b4c0bdf79b18dd"
+      },
+      "per_row_output_hashes_required": true,
+      "probability_thresholds": null,
+      "teacher_correct": {
+        "correctness": "programmatic for GSM8K and MBPP; gold-label match for MCQ",
+        "decoding": "greedy_registered_reader",
+        "model": "Qwen/Qwen2.5-14B-Instruct",
+        "revision": "cf98f3b3bbb457ad9e2bb7baf9a0125b6b88caa8"
+      }
+    },
+    "firm_knowledge_rule_sha256": "f4197911f4983bcd7952b0346d3c61812b7900fd8ee9e9b18bdcdc939bc931da",
+    "heldout_nondev_validation_rows": 512,
+    "memory_sizing_rule": "largest power of two not exceeding post-concurrence admitted count after validation exclusion, capped at 4096",
+    "memory_slots": 4096,
+    "memory_slots_cap": 4096,
+    "memory_slots_resolution": "4096 slots from 5039 admitted verified-train rows after validation exclusion",
+    "memory_source": "KP-1R reference-table rows outside DEV",
+    "nondev_14b_correct_rows": 5844,
+    "nondev_reference_rows": 8712,
+    "panel_manifest_sha256": "c0e15a890b598544059ac337cc475123f97c05e3c1626febcdee1c6d8fe02615",
+    "panel_overlap_required": 0,
+    "post_concurrence_admitted_rows": 5039,
+    "reference_rows_total": 10231,
+    "selection_rule": "battery-proportional Hamilton quotas after V(x); within-battery SHA256(seed:battery:item_id:content_sha256); excluded list published",
+    "selection_seed": 20260817,
+    "slot_feasibility": "resolved prospectively by the automatic power-of-two supply rule",
+    "source_manifest_sha256": "1aa4391deefaee6e1a70f4e99ac20e0728dae1a4e45fec482f38e76edf5fa54b",
+    "validation_manifest_sha256": "439e44bee0bb300e5fdd45411344da5dcbac34fd13253ba0f6c992ff93965bc8",
+    "validation_rows_allowed_in_memory": 0,
+    "validation_selection_rule": "battery-proportional Hamilton quotas; within-battery SHA256(seed:battery:item_id:content_sha256)",
+    "validation_split_population": "14b_correct_nondev_before_family_concurrence",
+    "validation_split_seed": 20260817
+  },
+  "evaluation": {
+    "both_primary_seeds_required_positive": true,
+    "chi_definition": "flip fraction on standing confident-agreement audit populations under deployed writes at registered amplitude 0.05",
+    "chi_threshold": 0.0005,
+    "margin_telemetry": [
+      "pooled",
+      "battery",
+      "row_minimum_answer_token_margin"
+    ],
+    "minimum_net_row_gain": "mean two-seed paired delta at least +8 rows and each seed strictly positive",
+    "paired_no_memory_baseline": true,
+    "paired_sign_test_alpha": 0.05,
+    "panel": "frozen 1024-row DEV panel",
+    "registered_read_amplitude": 0.05,
+    "retrieval_is_not_answer_recovery": true,
+    "retrieval_telemetry": [
+      "top_k_slot_ids",
+      "top_k_scores",
+      "top_k_weights",
+      "compatibility_gate",
+      "hit_rate_if_identity_available",
+      "battery_decomposition"
+    ],
+    "shuffled_flat_equivalence_band": [
+      -3,
+      3
+    ]
+  },
+  "final_ratification": {
+    "bytes": 4917,
+    "drive_id": "1Pmx3cnuwQDlMskZ8u2zcAnS5On-EqpWi",
+    "repo_receipt": "docs/STRATEGY_TEACHER_IGNORANCE_AND_RATIFICATION_20260817.receipt.json",
+    "sha256": "8588dc9a496fa1ff0693eb0d17ed0c9d56d4a91af46d2c0a111c9af73e58b75b",
+    "title": "STRATEGY_TEACHER_IGNORANCE_AND_RATIFICATION_20260817.md"
+  },
+  "frozen_surface": [
+    "substrate.*",
+    "sidecar.*",
+    "memory.keys",
+    "memory.query_projection"
+  ],
+  "geometry_fit": {
+    "artifact_sha256": "c8c93f89d59c131a15e64f74e0c121024084944cbfdd53f6d9068f545e3d9fc6",
+    "dev_rows_used": 0,
+    "diagnostic_dev_transform_reused": false,
+    "diagnostic_transform_note": "The positive 614/410 split-fit diagnostic used DEV and is evidence only, never a live Stage 2A artifact.",
+    "fit_fraction": 0.8,
+    "fit_manifest_sha256": "9ed8e2c19d9b1e7e158465667fa3c980e727f1bcbdc1c0ddad83b4a6fd49b38a",
+    "fit_population": "non_dev_reference_rows_only",
+    "fit_seed": 20260817,
+    "freeze_before_dev_scoring": true,
+    "key_layer": 6,
+    "rank": 128,
+    "split": "battery-stratified SHA256(seed:battery:item_id), fit versus non-DEV holdout",
+    "state_position": "last_active_prompt_token",
+    "student_pca_contract": "PCA-128 fit on non-DEV fit rows; fixed keys and query basis",
+    "teacher_pca_contract": "PCA-128 fit on non-DEV fit rows; stored values remain in teacher PCA coordinates",
+    "teacher_value_layer": 12,
+    "transport_direction": "student PCA to teacher PCA Procrustes for held-out addressing receipt only; rotation is absent from live memory path"
+  },
+  "identity_gate": {
+    "all_arms_checked": true,
+    "bit_exact_required": true,
+    "optimizer_steps_before_pass": 0,
+    "zero_injection_gate_required": true
+  },
+  "initialization": {
+    "seed_0": {
+      "sha256": "a047e2e7b35320376a736492c79d913b8690937da785efa2af002c8f54d26ca6",
+      "source": "P3.5 Arm S EMA step 4400"
+    },
+    "seed_1": {
+      "sha256": "e36cddb76407c8f853ccb43824c77cf01d15f144780726dd9aec23215467fccb",
+      "source": "P3.5 Arm S EMA step 4400"
+    },
+    "status": "ratified_by_strategy_pending_mark_signature"
+  },
+  "injection": {
+    "address_early_deliver_late": true,
+    "amplitude_lottery": [
+      0.02,
+      0.11
+    ],
+    "exact_tensor_and_timing": "once per emitted token, immediately after ScratchpadInitializer returns S0 and before flow step 1: S0 <- S0 + g_L * w_L outer (W_L m)",
+    "gamma_max": 0.11,
+    "memory_dim": 128,
+    "module": "ScratchpadMemoryInjection",
+    "registered_path_name": "post-initializer scratch write g_L",
+    "registered_read_amplitude": 0.05,
+    "scratch_dim": 128,
+    "scratch_slots": 8,
+    "slot_weight_parameterization": "2 * sigmoid(slot_logits), nonnegative",
+    "substrate_contact": "scratchpad -> flow -> AnchoredBridge -> hidden only"
+  },
+  "kind": "paper2_stage2a_executed_lock_v1",
+  "lock_rulings": {
+    "bytes": 8972,
+    "drive_id": "1UOfWqVpV4ByPRVeTbsabgaID-6LohmkF",
+    "repo_receipt": "docs/STRATEGY_STAGE2A_LOCK_RULINGS_20260817.receipt.json",
+    "sha256": "445e77a089148d58910acabf1e277600e966068068300df26e11e02b12c98c73",
+    "title": "STRATEGY_STAGE2A_LOCK_RULINGS_20260817.md"
+  },
+  "locked_before_training": true,
+  "mark_ratified": true,
+  "mbpp_population_binding": {
+    "bytes": 4316,
+    "drive_id": "1UgrFwVFtle97lYnBUnacQdnvb2pebhzl",
+    "repo_receipt": "docs/STRATEGY_T3A_MBPP_POPULATION_BINDING_20260817.receipt.json",
+    "sha256": "27bf4fc0227789669880898bffbfd050bf1f890ba3167b6ce0f6948612750025",
+    "title": "STRATEGY_T3A_MBPP_POPULATION_BINDING_20260817.md"
+  },
+  "objective_binding": {
+    "bytes": 4821,
+    "drive_id": "1-2iiv8aaTrBvUR2Zxs4V6BW1P8OLotb_",
+    "repo_receipt": "docs/STRATEGY_T3A_OBJECTIVE_BINDING_20260817.receipt.json",
+    "sha256": "78cbf2fb397cf2c6319636523a7feea44b1e21e8941ee32e898323e697f18a22",
+    "title": "STRATEGY_T3A_OBJECTIVE_BINDING_20260817.md"
+  },
+  "required_bound_paths": [
+    "data_separation.memory_slots",
+    "data_separation.memory_slots_resolution",
+    "data_separation.validation_manifest_sha256",
+    "data_separation.firm_knowledge_manifest_sha256",
+    "geometry_fit.fit_manifest_sha256",
+    "geometry_fit.artifact_sha256",
+    "training_data.population_manifest_sha256",
+    "training_data.memory_owner_manifest_sha256",
+    "training_data.teacher_lattice_manifest_sha256",
+    "training_data.teacher_lattice_artifact_sha256",
+    "training_data.student_feature_cache_sha256",
+    "training_data.mbpp_span_audit_sha256"
+  ],
+  "safety": {
+    "blocked_outcome_writes_receipts": true,
+    "hard_stops": [
+      "non_finite_loss",
+      "non_finite_gradient",
+      "frozen_lineage_digest_change",
+      "identity_gate_failure",
+      "memory_dev_overlap",
+      "sealed_partition_contact"
+    ],
+    "no_posthoc_arm_selection": true
+  },
+  "scientific_frame": {
+    "anchor": "student early states are an excellent address for teacher content; student answer content is not established",
+    "fingerprint_verdict": "positive_replicated",
+    "knowledge_presence_verdict": "NO_POSITIVE_KNOWLEDGE_PRESENCE_GATE",
+    "lead_order": [
+      "lookup_content_augmentation",
+      "expert_access_secondary"
+    ],
+    "prohibited_translation": "knowledge absent"
+  },
+  "score_blind_materialization": {
+    "confirm_scored": false,
+    "eval_e_scored": false,
+    "kind": "paper2_stage2a_content_geometry_summary_v1",
+    "optimizer_steps": 0,
+    "summary_sha256": "4bac9915c85b6922cf31cb4a64d66777341858ffd3e503c89b66e98fad6f0ec4"
+  },
+  "sealed_partitions": {
+    "confirm_scored": false,
+    "dev_allowed": true,
+    "eval_e_scored": false,
+    "remain_sealed": true
+  },
+  "sizing_ruling": {
+    "bytes": 1949,
+    "drive_id": "1Z_YCjD2iucEeVwXyLB2M2OkW2XBRZLrm",
+    "repo_receipt": "docs/STRATEGY_T3A_SIZING_RULING_20260817.receipt.json",
+    "sha256": "bfce1e422002e776cd7e40ccbe1911f9a212881feb7352325188a447d3cc7bb0",
+    "title": "STRATEGY_T3A_SIZING_RULING_20260817.md"
+  },
+  "status": "approved_for_training",
+  "trainable_surface": [
+    "memory.values",
+    "memory.compatibility_projection.*",
+    "injection.projection",
+    "injection.slot_logits",
+    "injection.gate"
+  ],
+  "training": {
+    "batch_size": 128,
+    "betas": [
+      0.9,
+      0.999
+    ],
+    "checkpoint_steps": [
+      200,
+      400,
+      600,
+      800,
+      1000,
+      1200
+    ],
+    "ema_decay": 0.999,
+    "ema_primary": true,
+    "landing": "cosine decay over steps 1081-1200",
+    "learning_rate": 0.0005,
+    "objective": {
+      "answer_region_mask": "KP-1R-repaired battery-specific answer-bearing positions only; formatting, prompt, and position zero excluded",
+      "ce_weight": 0.5,
+      "formula": "0.5 * L_CE + 0.5 * L_KL",
+      "full_inference_graph": "fresh scratch; student layer-6 prefix key; top-k 8 at temperature 0.07; compatibility gate; post-initializer scratch write; K=4; frozen bridge",
+      "identical_across_arms": true,
+      "kl_direction": "teacher_to_student",
+      "kl_weight": 0.5,
+      "leave_one_out": true,
+      "mbpp_answer_region_mask": "whole tokens in the V(x)-executed code span only; boundary failures dropped and truncations disclosed",
+      "reduction": "mean over unmasked positions within example, then mean over batch",
+      "renormalize_over_teacher_lattice": true,
+      "teacher_forced_response": true,
+      "teacher_lattice_top_k": 128,
+      "teacher_revision": "cf98f3b3bbb457ad9e2bb7baf9a0125b6b88caa8",
+      "temperature": 1.0,
+      "training_population": "all admitted non-DEV rows outside validation; leave-one-out only for slot owners",
+      "verifier_mask": false
+    },
+    "objective_formula_source": "docs/STRATEGY_T3A_OBJECTIVE_BINDING_20260817.receipt.json",
+    "optimizer": "AdamW",
+    "resume_contract": "every checkpoint stores raw and EMA weights, optimizer state keyed by parameter name, batch-generator state, global CPU/CUDA RNG states, step, and exact data cursor; resume asserts all digests",
+    "seed_policy": "both primary endpoint checkpoints",
+    "steps": 1200,
+    "warmup_steps": 50,
+    "weight_decay": 0.01
+  },
+  "training_authorized": true,
+  "training_cache_materialization": {
+    "confirm_scored": false,
+    "eval_e_scored": false,
+    "optimizer_steps": 0,
+    "receipt_sha256": "e3ed37b6cb410204e6ef993f886cf8ba18d250c79637e3900c1f37c2d61522c0"
+  },
+  "training_data": {
+    "max_target_tokens": 128,
+    "mbpp_boundary_failure": "drop row and disclose count",
+    "mbpp_mask": "whole tokens contained in the exact executed code character span; fences, language tags, prose, prompt, and position zero excluded",
+    "mbpp_span_audit_sha256": "8370e10ab45e1af90bbcd0bdea78d651284725f40d826b01c9efd2a6f6052acd",
+    "mbpp_target": "exact execution-verified 14B generated program",
+    "memory_owner_manifest_sha256": "1e9b0e9694ba82daf2288e9d2ce03496df13205587335492660333bbe6cdd3b4",
+    "non_owner_retrieval": "unrestricted because no self slot exists",
+    "owner_telemetry_required": true,
+    "population": "all V(x)-admitted non-DEV rows after the 512-row validation exclusion",
+    "population_manifest_sha256": "e96ca2855e28a4a4770e6f2da92287e8ce90097fcdcad24b16778acb9bc5d59c",
+    "slot_owner_retrieval": "exclude the row-owned slot before top-k",
+    "student_feature_cache_sha256": "bc01f6f9a8fd03a79832c915649a427db9fc195c9148bae0d9a0bec9b034e0b0",
+    "teacher_lattice_artifact_sha256": "8b8ec9998259e94328a6f7a4f44c0850d24291ddb13c304d026dcf1e56fb0f36",
+    "teacher_lattice_manifest_sha256": "93f52642ed8bb2c7b8a539fa587048c7a7926a8ca9689331a3f84f8b53e749f3",
+    "truncated_rows_disclosed": true
+  },
+  "unresolved_before_ratification": []
+}
