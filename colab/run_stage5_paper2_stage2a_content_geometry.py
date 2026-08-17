@@ -26,7 +26,7 @@ DRIVE_RUN = DRIVE_STAGE5 / RUN_ID
 PRIVATE_DIR = DRIVE_RUN / "private"
 RECEIPT_DIR = DRIVE_RUN / "receipts"
 LOCAL_DIR = ROOT / "outputs/stage5" / RUN_ID
-PANEL = ROOT / "outputs/stage5/stage5_paper2_phase3_p34_lock_20260812/panel/p34_task_panel.jsonl"
+PANEL = ROOT / "training/paper2_stage2a_p34_task_panel.jsonl"
 
 
 def write_json(path: Path, payload: object) -> None:
