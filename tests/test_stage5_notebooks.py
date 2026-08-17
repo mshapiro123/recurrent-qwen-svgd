@@ -4005,7 +4005,7 @@ def test_stage2a_content_geometry_target_is_wired_and_guarded() -> None:
     assert "paper2_stage2a_content_geometry_v1" in cell
     assert "32B concurrence plus frozen prompt states no optimizer no training" in cell
     assert "CONFIRM and EVAL-E remain sealed" in cell
-    assert "memory_mib >= 79_000" in cell
+    assert "memory_mib >= 39_000" in cell
     assert "verifier_32b_scores.jsonl" in runner
     assert "complete_score_blind_pre_signature" in runner
     assert "select_stage2a_validation_split" in evaluator

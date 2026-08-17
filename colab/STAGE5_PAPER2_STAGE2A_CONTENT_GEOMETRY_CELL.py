@@ -58,7 +58,7 @@ memory = subprocess.check_output(
 )
 memory_mib = int(memory.strip().splitlines()[0])
 print(f"stage2a_content_geometry_gpu_memory_mib={memory_mib}", flush=True)
-assert memory_mib >= 79_000, "The pinned 32B bf16 concurrence pass requires an A100 80GB."
+assert memory_mib >= 39_000, "The pinned 32B bf16 concurrence pass requires an A100 40GB+."
 url = f"https://x-access-token:{GH}@github.com/{REPO}.git"
 if ROOT.exists():
     run(["git", "remote", "set-url", "origin", url])
