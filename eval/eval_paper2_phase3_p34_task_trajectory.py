@@ -56,16 +56,55 @@ def write_json(path: Path, payload: Mapping[str, Any]) -> None:
     temporary.replace(path)
 
 
-def _telemetry_summary(gates: Sequence[float], ratios: Sequence[float]) -> dict[str, Any]:
+def _telemetry_summary(
+    gates: Sequence[float],
+    ratios: Sequence[float],
+    *,
+    memory_gates: Sequence[float] = (),
+    memory_scores: Sequence[float] = (),
+    memory_entropies: Sequence[float] = (),
+    memory_slot_ids: Sequence[Sequence[int]] = (),
+) -> dict[str, Any]:
     if len(gates) != len(ratios) or not gates:
         raise ValueError("P3.4 DEV telemetry requires paired nonempty gate/write reads")
-    return {
+    result = {
         "telemetry_positions": len(gates),
         "position_gate_mean": sum(gates) / len(gates),
         "position_gate_max": max(gates),
         "realized_writeback_ratio_mean": sum(ratios) / len(ratios),
         "realized_writeback_ratio_max": max(ratios),
     }
+    if memory_gates:
+        result.update(
+            {
+                "memory_compatibility_gate_mean": sum(memory_gates) / len(memory_gates),
+                "memory_retrieval_score_mean": sum(memory_scores) / len(memory_scores),
+                "memory_retrieval_entropy_mean": sum(memory_entropies)
+                / len(memory_entropies),
+                "memory_top_k_slot_ids": list(memory_slot_ids),
+            }
+        )
+    return result
+
+
+def _append_memory_telemetry(
+    destination: dict[str, list[Any]], output: Any, index: int
+) -> None:
+    if output.memory_compatibility_gate is None:
+        return
+    destination.setdefault("memory_gates", []).append(
+        float(output.memory_compatibility_gate[index].cpu())
+    )
+    destination.setdefault("memory_scores", []).append(
+        float(output.memory_slot_scores[index, 0].cpu())
+    )
+    weights = output.memory_slot_weights[index].float()
+    destination.setdefault("memory_entropies", []).append(
+        float((-(weights * weights.clamp_min(1e-12).log()).sum()).cpu())
+    )
+    destination.setdefault("memory_slot_ids", []).append(
+        [int(value) for value in output.memory_slot_indices[index].cpu().tolist()]
+    )
 
 
 def resolve_evaluation_gate_ceiling(
@@ -263,6 +302,7 @@ def score_mcq(
         for local, item_id in enumerate(prompt_item_ids[start:stop]):
             telemetry[item_id]["gates"].append(float(output.position_gate[local].cpu()))
             telemetry[item_id]["ratios"].append(float(output.writeback_ratio[local].cpu()))
+            _append_memory_telemetry(telemetry[item_id], output, local)
         for local, candidate_indexes in enumerate(prompt_candidates[start:stop]):
             for candidate_index in candidate_indexes:
                 token = candidate_tokens[candidate_index][0]
@@ -312,6 +352,7 @@ def score_mcq(
             item_id = prompt_item_ids[prompt_index]
             telemetry[item_id]["gates"].append(float(output.position_gate[local].cpu()))
             telemetry[item_id]["ratios"].append(float(output.writeback_ratio[local].cpu()))
+            _append_memory_telemetry(telemetry[item_id], output, local)
             for candidate_index, target in targets:
                 candidate_scores[candidate_index].append(
                     float(log_probabilities[local, target].cpu())
@@ -346,7 +387,12 @@ def score_mcq(
                 "answer_token_margins": [decision_margin],
                 "answer_token_margin_minimum": decision_margin,
                 **_telemetry_summary(
-                    telemetry[item_id]["gates"], telemetry[item_id]["ratios"]
+                    telemetry[item_id]["gates"],
+                    telemetry[item_id]["ratios"],
+                    memory_gates=telemetry[item_id].get("memory_gates", ()),
+                    memory_scores=telemetry[item_id].get("memory_scores", ()),
+                    memory_entropies=telemetry[item_id].get("memory_entropies", ()),
+                    memory_slot_ids=telemetry[item_id].get("memory_slot_ids", ()),
                 ),
             }
         )
@@ -385,6 +431,7 @@ def score_generation(
             gates: list[list[float]] = [[] for _row in batch]
             ratios: list[list[float]] = [[] for _row in batch]
             margins: list[list[float]] = [[] for _row in batch]
+            memory: list[dict[str, list[Any]]] = [{} for _row in batch]
             for token_index in range(cap):
                 selected_tokens = output.augmented_logits.argmax(dim=-1)
                 for index, token in enumerate(selected_tokens.tolist()):
@@ -392,6 +439,7 @@ def score_generation(
                         gates[index].append(float(output.position_gate[index].cpu()))
                         ratios[index].append(float(output.writeback_ratio[index].cpu()))
                         margins[index].append(float(output.answer_token_margin[index].cpu()))
+                        _append_memory_telemetry(memory[index], output, index)
                         generated[index].append(int(token))
                         if tokenizer.eos_token_id is not None and int(token) == int(tokenizer.eos_token_id):
                             finished[index] = True
@@ -401,8 +449,8 @@ def score_generation(
                     state=state, selected_tokens=selected_tokens
                 )
             batch_results = []
-            for row, token_ids, row_gates, row_ratios, row_margins in zip(
-                batch, generated, gates, ratios, margins
+            for row, token_ids, row_gates, row_ratios, row_margins, row_memory in zip(
+                batch, generated, gates, ratios, margins, memory
             ):
                 text = tokenizer.decode(token_ids, skip_special_tokens=True)
                 correct, prediction = score_generated(row, text)
@@ -418,7 +466,14 @@ def score_generation(
                         "reader": str(row["reader"]),
                         "answer_token_margins": row_margins,
                         "answer_token_margin_minimum": min(row_margins),
-                        **_telemetry_summary(row_gates, row_ratios),
+                        **_telemetry_summary(
+                            row_gates,
+                            row_ratios,
+                            memory_gates=row_memory.get("memory_gates", ()),
+                            memory_scores=row_memory.get("memory_scores", ()),
+                            memory_entropies=row_memory.get("memory_entropies", ()),
+                            memory_slot_ids=row_memory.get("memory_slot_ids", ()),
+                        ),
                     }
                 )
             results.extend(batch_results)

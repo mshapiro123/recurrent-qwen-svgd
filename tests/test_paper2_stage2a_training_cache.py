@@ -6,10 +6,19 @@ from eval.cache_paper2_stage2a_training import (
     MODEL_SPECS,
     TEACHER_KEY,
     TeacherForcedExample,
+    _gsm8k_registered_span,
     answer_token_positions,
     build_population,
     write_jsonl,
 )
+
+
+def test_prior_content_model_cache_layout_is_split_by_model() -> None:
+    source = __import__("inspect").getsource(
+        __import__("eval.cache_paper2_stage2a_training", fromlist=["main"]).main
+    )
+    assert 'args.model_cache / "teacher_14b"' in source
+    assert 'args.model_cache / "student_0p5b"' in source
 
 
 class StubTokenizer:
@@ -38,6 +47,22 @@ def test_answer_token_positions_respects_mbpp_whole_token_boundaries() -> None:
     )
     assert positions == [1, 2]
     assert exact is True
+
+
+def test_gsm8k_span_uses_registered_numeric_reader_with_commas() -> None:
+    text = "The intermediate result is 120. Final answer: 3,600,000"
+    start, end = _gsm8k_registered_span(text, "3600000")
+    assert text[start:end] == "3,600,000"
+
+
+def test_gsm8k_span_rejects_reader_prediction_mismatch() -> None:
+    text = "Final answer: 3,600,000"
+    try:
+        _gsm8k_registered_span(text, "3600001")
+    except ValueError as error:
+        assert "registered reader span" in str(error)
+    else:
+        raise AssertionError("mismatched registered prediction was accepted")
 
 
 def test_arc_population_allows_whitespace_bearing_answer_token() -> None:

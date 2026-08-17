@@ -4482,6 +4482,19 @@ TARGETS = {
         ],
         "env": {},
     },
+    "paper2_stage2a_t3_screen": {
+        "path": "colab/STAGE5_PAPER2_STAGE2A_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_STAGE2A_VERSION",
+            "paper2_stage2a_t3_screen_v1",
+            "ratified lock asserted before optimizer construction",
+            "T3a and T3b both seeds controls seed zero with escalation",
+            "EMA primary DEV only CONFIRM and EVAL-E remain sealed",
+            "resumable named optimizer state and frozen lineage digest",
+            "colab/run_stage5_paper2_stage2a.py",
+        ],
+        "env": {},
+    },
     "gradient_path_audit": {
         "path": "colab/STAGE5_GRADIENT_PATH_AUDIT_CELL.py",
         "markers": [
