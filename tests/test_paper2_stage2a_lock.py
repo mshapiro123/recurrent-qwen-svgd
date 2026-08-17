@@ -169,6 +169,7 @@ def test_cache_binding_then_signed_ratification_authorizes_training() -> None:
         "memory_owner_manifest_sha256": "7" * 64,
         "teacher_lattice_manifest_sha256": "8" * 64,
         "teacher_lattice_artifact_sha256": "9" * 64,
+        "student_feature_cache_sha256": "c" * 64,
         "mbpp_span_audit_sha256": "a" * 64,
         "optimizer_constructed": False,
         "training_started": False,

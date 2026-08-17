@@ -467,6 +467,7 @@ def bind_stage2a_training_cache(
         "memory_owner_manifest_sha256": receipt.get("memory_owner_manifest_sha256"),
         "teacher_lattice_manifest_sha256": receipt.get("teacher_lattice_manifest_sha256"),
         "teacher_lattice_artifact_sha256": receipt.get("teacher_lattice_artifact_sha256"),
+        "student_feature_cache_sha256": receipt.get("student_feature_cache_sha256"),
         "mbpp_span_audit_sha256": receipt.get("mbpp_span_audit_sha256"),
     }
     for key, value in bindings.items():

@@ -111,6 +111,7 @@
     "non_owner_retrieval": "unrestricted because no self slot exists",
     "teacher_lattice_manifest_sha256": null,
     "teacher_lattice_artifact_sha256": null,
+    "student_feature_cache_sha256": null,
     "mbpp_span_audit_sha256": null,
     "mbpp_target": "exact execution-verified 14B generated program",
     "mbpp_mask": "whole tokens contained in the exact executed code character span; fences, language tags, prose, prompt, and position zero excluded",
@@ -306,6 +307,7 @@
     "training_data.memory_owner_manifest_sha256",
     "training_data.teacher_lattice_manifest_sha256",
     "training_data.teacher_lattice_artifact_sha256",
+    "training_data.student_feature_cache_sha256",
     "training_data.mbpp_span_audit_sha256"
   ],
   "unresolved_before_ratification": [
