@@ -1,0 +1,19 @@
+{
+  "kind": "strategy_t3a_mbpp_population_binding_receipt_v1",
+  "status": "verified_exact_drive_bytes",
+  "drive_id": "1UgrFwVFtle97lYnBUnacQdnvb2pebhzl",
+  "title": "STRATEGY_T3A_MBPP_POPULATION_BINDING_20260817.md",
+  "bytes": 4316,
+  "sha256": "27bf4fc0227789669880898bffbfd050bf1f890ba3167b6ce0f6948612750025",
+  "bindings": [
+    "MBPP target is the exact execution-verified 14B generated program",
+    "MBPP loss mask is the executed code span mapped to whole tokens with formatting excluded",
+    "MBPP concurrence is functional: both generated programs pass the required tests",
+    "all admitted non-DEV rows outside validation train",
+    "slot owners use leave-one-out retrieval and non-owners retrieve unrestricted",
+    "owner versus non-owner telemetry is required",
+    "top-128 14B lattice cache is authorized build work"
+  ],
+  "optimizer_constructed": false,
+  "optimizer_steps": 0
+}

@@ -4469,6 +4469,19 @@ TARGETS = {
         ],
         "env": {},
     },
+    "paper2_stage2a_training_cache": {
+        "path": "colab/STAGE5_PAPER2_STAGE2A_TRAINING_CACHE_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_STAGE2A_TRAINING_CACHE_VERSION",
+            "paper2_stage2a_training_cache_v1",
+            "admitted non-DEV teacher lattice no optimizer no training",
+            "exact executed MBPP code spans with whole-token boundary audit",
+            "slot-owner leave-one-out manifest published before training",
+            "CONFIRM and EVAL-E remain sealed",
+            "colab/run_stage5_paper2_stage2a_training_cache.py",
+        ],
+        "env": {},
+    },
     "gradient_path_audit": {
         "path": "colab/STAGE5_GRADIENT_PATH_AUDIT_CELL.py",
         "markers": [
