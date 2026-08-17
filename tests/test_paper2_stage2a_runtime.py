@@ -11,6 +11,7 @@ from training.paper2_stage2a_runtime import (
     exact_prefix_features,
     memory_augmented_logits,
     stage2a_learning_rate,
+    tensor_digest,
 )
 from training.run_paper2_stage2a import _manifest_core
 from training.paper2_stage2a_objective import (
@@ -181,3 +182,11 @@ def test_population_owner_comparison_is_field_scoped() -> None:
     assert _manifest_core([population]) != _manifest_core(
         [owner | {"owner_slot": 8}]
     )
+
+
+def test_tensor_digest_accepts_scalar_parameters() -> None:
+    first = tensor_digest({"gate": torch.tensor(0.25)})
+    second = tensor_digest({"gate": torch.tensor(0.25)})
+    changed = tensor_digest({"gate": torch.tensor(0.5)})
+    assert first == second
+    assert first != changed
