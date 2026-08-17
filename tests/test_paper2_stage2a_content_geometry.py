@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from eval.eval_paper2_phase3_p31_references import MODEL_SPECS
+from eval.eval_paper2_stage2a_content_geometry import EXPECTED_PANEL_SHA256
 from eval.eval_paper2_stage2a_content_geometry import (
     concurrence_value,
     join_sources,
@@ -19,6 +20,17 @@ def test_stage2a_runner_bootstraps_repo_root_before_project_import() -> None:
     root_insert = runner.index("sys.path.insert(0, str(ROOT))")
     project_import = runner.index("from training.paper2_phase3_p31_completion")
     assert root_insert < project_import
+
+
+def test_stage2a_frozen_panel_snapshot_has_registered_bytes() -> None:
+    from training.paper2_phase3_p31_completion import sha256_file
+
+    panel = (
+        Path(__file__).resolve().parents[1]
+        / "training"
+        / "paper2_stage2a_p34_task_panel.jsonl"
+    )
+    assert sha256_file(panel) == EXPECTED_PANEL_SHA256
 
 
 def source(item_id: str, *, battery: str = "gsm8k") -> dict[str, object]:
