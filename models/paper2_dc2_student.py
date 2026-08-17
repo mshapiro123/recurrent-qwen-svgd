@@ -10,6 +10,8 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
+from .sidecar_v2 import ScratchpadMemoryInjection
+
 
 def _rms(values: torch.Tensor, eps: float = 1e-6) -> torch.Tensor:
     return (values.float().square().mean(dim=-1) + eps).sqrt()
@@ -798,6 +800,7 @@ class Phase3StudentModules(Phase2StudentModules):
         rms_cap: float = 0.550893,
         control_reader: str = "mean",
         control_probes: int = 4,
+        stage2a_memory_dim: Optional[int] = None,
     ) -> None:
         super().__init__(
             tied_embedding=tied_embedding,
@@ -815,6 +818,15 @@ class Phase3StudentModules(Phase2StudentModules):
             control_dim=control_dim,
             max_steps=max_steps,
             rms_cap=rms_cap,
+        )
+        self.stage2a_memory_injection = (
+            ScratchpadMemoryInjection(
+                memory_dim=int(stage2a_memory_dim),
+                scratch_dim=latent_dim,
+                n_slots=n_slots,
+            )
+            if stage2a_memory_dim is not None
+            else None
         )
         if control_reader == "probe":
             install_probe_control_reader(self, n_probes=control_probes)
@@ -834,10 +846,20 @@ class Phase3StudentModules(Phase2StudentModules):
         candidate_ids: Optional[torch.Tensor] = None,
         draft_active: bool = True,
         write_position_mask: Optional[torch.Tensor] = None,
+        stage2a_memory_value: Optional[torch.Tensor] = None,
+        stage2a_amplitude_ceiling: float = 1.0,
     ) -> Phase2StudentOutput:
         if steps < 0 or steps > self.max_steps:
             raise ValueError(f"requested steps violate loop cap {self.max_steps}")
         scratch0 = self.initializer(hidden, attention_mask)
+        if stage2a_memory_value is not None:
+            if self.stage2a_memory_injection is None:
+                raise RuntimeError("Stage 2A memory was supplied without an installed writer")
+            scratch0 = self.stage2a_memory_injection(
+                scratch0,
+                stage2a_memory_value,
+                amplitude_ceiling=stage2a_amplitude_ceiling,
+            )
         context = hidden.float().mean(dim=1)
         flow = self.flow(
             scratch0,

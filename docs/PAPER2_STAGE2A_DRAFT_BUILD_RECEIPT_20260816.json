@@ -6,12 +6,23 @@
     "bytes": 11079,
     "sha256": "57c41caa6d9bfe0174f295f6b7a56634ad26718dbb868f3cac9a3d857405ba2c"
   },
+  "lock_rulings": {
+    "drive_id": "1UOfWqVpV4ByPRVeTbsabgaID-6LohmkF",
+    "bytes": 8972,
+    "sha256": "445e77a089148d58910acabf1e277600e966068068300df26e11e02b12c98c73"
+  },
+  "objective_binding": {
+    "drive_id": "1-2iiv8aaTrBvUR2Zxs4V6BW1P8OLotb_",
+    "bytes": 4821,
+    "sha256": "78cbf2fb397cf2c6319636523a7feea44b1e21e8941ee32e898323e697f18a22"
+  },
   "artifacts": [
     "docs/PAPER2_STAGE2A_CHARTER_DRAFT_20260816.md",
     "training/paper2_stage2a_preregistration.draft.json",
     "training/paper2_stage2a_lock.py",
     "models/sidecar_v2.py",
-    "training/sidecar_v2_data_spine.py"
+    "training/sidecar_v2_data_spine.py",
+    "training/paper2_stage2a_objective.py"
   ],
   "implemented_contracts": [
     "fixed fingerprint keys",
@@ -21,8 +32,14 @@
     "seeded complete-value permutation control",
     "external-V(x) deterministic non-panel manifest selection",
     "zero-gated injection primitive",
+    "exact post-initializer eight-slot scratch write",
+    "binary 14B-correct plus 14B/32B-concurrent V(x) boundary",
+    "non-DEV PCA-128 fit with diagnostic-only Procrustes and teacher-native values",
     "lock validator preventing optimizer authorization with open fields",
-    "explicit prohibition on reuse of DEV-fitted diagnostic geometry"
+    "explicit prohibition on reuse of DEV-fitted diagnostic geometry",
+    "exact registered 0.5 CE plus 0.5 forward-KL answer-region objective",
+    "leave-one-out exclusion for row-owned fingerprint slots",
+    "hard exclusion of the 512-row non-DEV validation split from memory"
   ],
   "training_authorized": false,
   "optimizer_constructed": false,
@@ -30,11 +47,15 @@
   "dev_scores_computed": false,
   "confirm_scored": false,
   "eval_e_scored": false,
+  "new_blockers_found": [
+    "After reserving 512 admitted non-DEV validation rows, at most 5,332 rows remain before 32B concurrence, so 8,192 one-row-per-slot entries are impossible.",
+    "The objective binding requires a 512-row validation split but does not bind its deterministic selection seed/rule."
+  ],
   "tests": {
-    "status": "stage2a_and_adjacent_phase3_clean; full_suite_has_four_unrelated_locked-byte_failures_on_windows",
-    "stage2a_targeted": "32 passed",
-    "stage2a_and_adjacent_phase3": "66 passed",
-    "full_suite": "2796 passed, 4 failed, 1 warning",
+    "status": "stage2a_and_adjacent_phase3_clean; full_suite_has_four unchanged unrelated locked-byte failures on Windows",
+    "stage2a_targeted": "69 passed after objective, leave-one-out, and validation-isolation build",
+    "stage2a_and_adjacent_phase3": "69 passed in the current focused suite",
+    "full_suite": "2807 passed, 4 failed, 1 warning",
     "full_suite_failures": [
       "tests/test_composite_training_design.py locked markdown byte hash",
       "tests/test_paper2_dc1_stage_a_lock.py locked markdown byte count",

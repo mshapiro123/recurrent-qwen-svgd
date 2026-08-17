@@ -1,0 +1,20 @@
+{
+  "kind": "strategy_t3a_objective_binding_receipt_v1",
+  "status": "verified_exact_drive_bytes",
+  "drive_id": "1-2iiv8aaTrBvUR2Zxs4V6BW1P8OLotb_",
+  "title": "STRATEGY_T3A_OBJECTIVE_BINDING_20260817.md",
+  "bytes": 4821,
+  "sha256": "78cbf2fb397cf2c6319636523a7feea44b1e21e8941ee32e898323e697f18a22",
+  "verified_at_utc": "2026-08-17T00:31:19.2209131Z",
+  "bindings": [
+    "L = 0.5 * L_CE + 0.5 * L_KL",
+    "forward teacher-to-student KL at temperature 1.0 over the renormalized cached top-128 teacher lattice",
+    "KP-1R answer-bearing mask; prompt, formatting, and position zero excluded",
+    "mean over unmasked positions within example, then mean over batch",
+    "leave-one-out fingerprint retrieval during training",
+    "512 admitted non-DEV validation rows",
+    "identical objective, masking, and deployment graph across arms"
+  ],
+  "optimizer_constructed": false,
+  "optimizer_steps": 0
+}

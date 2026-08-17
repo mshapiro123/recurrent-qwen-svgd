@@ -3,6 +3,7 @@
 **Date:** 2026-08-16  
 **Status:** draft awaiting Mark's signature; implementation build only  
 **Strategy authority:** Drive `1GhTafphPuxmfq8hDn0Y-BrjWJCmafZKu`, 11,079 bytes, SHA-256 `57c41caa6d9bfe0174f295f6b7a56634ad26718dbb868f3cac9a3d857405ba2c`  
+**Lock rulings:** Drive `1UOfWqVpV4ByPRVeTbsabgaID-6LohmkF`, 8,972 bytes, SHA-256 `445e77a089148d58910acabf1e277600e966068068300df26e11e02b12c98c73`
 **Machine companion:** `training/paper2_stage2a_preregistration.draft.json`  
 **Training:** prohibited until all signature fields are bound and the three authorization flags flip together
 
@@ -49,9 +50,9 @@ The registered chi audit, preservation metrics, and battery decomposition remain
 
 ### 3.2 Memory population
 
-- Candidate contents come only from the approximately 9,200 KP-1R reference-table rows outside DEV.
-- Teacher outputs must pass the exact, locked firm-knowledge rule `V(x)` before selection.
-- Selection of 8,192 slots is deterministic after admission: ascending SHA-256 rank of `seed:battery:item_id:content_sha256`.
+- Candidate contents come only from the 8,712 `verified_train` rows outside DEV. The broader 9,207-row outside-panel count includes 495 DEV rows that the lock ruling now prohibits from fit, keys, and contents.
+- Teacher outputs must pass `V(x)`: the pinned 14B teacher must be correct under the registered reader and the pinned 32B verifier must return the same normalized final answer. No confidence threshold is used.
+- Slot selection is deterministic after admission: ascending SHA-256 rank of `seed:battery:item_id:content_sha256`.
 - The selected manifest, source manifest, `V(x)` rule, and all hashes are frozen before any DEV score is computed.
 - The memory manifest must prove zero overlap with the DEV panel by item, document, and content hash.
 
@@ -67,10 +68,10 @@ For Stage 2A, every learned or fitted coordinate transform must be rebuilt only 
 
 - Slots: 8,192.
 - Fixed keys: student layer-6 fingerprints, PCA-128 from the non-DEV fit.
-- Initial values: teacher layer-12 representations under the ratified transport convention.
-- Retrieval: top-k maximum inner-product search over normalized fixed keys.
+- Initial values: teacher layer-12 PCA-128 representations kept in teacher coordinates. The Procrustes map is diagnostic only and is absent from the live path.
+- Retrieval: top-8 maximum inner-product search over normalized fixed keys at temperature 0.07.
 - Compatibility gate: learned from retrieval confidence telemetry.
-- Injection: learned 128-to-hidden map and scalar zero gate at the exact registered downstream recurrent tensor.
+- Injection: once per emitted token, immediately after `ScratchpadInitializer` returns `S0` and before flow step 1: `S0 <- S0 + g_L * w_L outer (W_L m)`. Here `W_L` maps 128 teacher-PCA dimensions to the 128-dimensional scratch state, `w_L` is an eight-slot nonnegative `2 * sigmoid` write vector, and `g_L` is exactly zero at attachment. Memory reaches hidden states only through scratchpad -> flow -> `AnchoredBridge` -> hidden; no new substrate writer exists.
 - Seeds: 0 and 1.
 
 ### 4.2 T3b: literal n-gram memory
@@ -84,13 +85,14 @@ For Stage 2A, every learned or fitted coordinate transform must be rebuilt only 
 
 - T3a-C architecture and fixed keys.
 - Complete values permuted across slots under a recorded seed.
-- Its training/freeze policy must be fixed before lock. The coding recommendation is to freeze values after permutation so the arm cannot relearn the key-content association it is intended to destroy.
+- Values remain frozen after permutation so the arm cannot relearn the key-content association it is intended to destroy. Its compatibility gate, injection map, slot weights, and injection gate still train.
 
 ### 4.4 Frozen-random-values control
 
 - T3a-C graph with a recorded random-value initialization.
 - Values remain frozen.
-- Compatibility and injection behavior follow the lock-listed control policy.
+- Its compatibility gate, injection map, slot weights, and injection gate still train.
+- Both honesty controls run on seed 0. A control exceeding +3 paired rows triggers seed 1 before interpretation.
 
 ## 5. Trainable and frozen surfaces
 
@@ -99,6 +101,7 @@ The only allowed trainable names are:
 - `memory.values`
 - `memory.compatibility_projection.*`
 - `injection.projection`
+- `injection.slot_logits`
 - `injection.gate`
 
 The substrate, existing sidecar, memory keys, PCA/transport tensors, and query transform are frozen. A startup allowlist assertion and end-of-run tensor digests enforce the boundary.
@@ -116,14 +119,11 @@ The zero-gate test establishes inert attachment. The positive control establishe
 
 ## 7. Training recipe
 
-The registered design calls for a bounded run near 1,000 steps, the standing optimizer and batch recipe, amplitude lottery over `[0.02, 0.11]`, EMA-primary selection, and a pinned `0.05` read. The lock must replace every approximate term with an exact value before signature:
+The registered run is 1,200 steps at batch 128 with AdamW, learning rate `5e-4`, weight decay `0.01`, betas `(0.9, 0.999)`, and 50 warmup steps. The learning rate cosine-decays over the final 120 steps. EMA decay is `0.999`; EMA is primary and raw is secondary. Checkpoints and looks occur every 200 steps. Training uses the amplitude lottery over `[0.02, 0.11]`; the registered read is `0.05` and endpoint-only `0.08` is telemetry. Every checkpoint stores the exact optimizer, EMA, data cursor, generator, and CPU/CUDA RNG states needed for bit-identical resume.
 
-- step count and checkpoint cadence;
-- batch size and data sampling;
-- optimizer, learning rate, weight decay, and parameter groups;
-- EMA decay and initialization;
-- resume state and random-stream contract;
-- control-arm seed allocation.
+The objective is bound by `STRATEGY_T3A_OBJECTIVE_BINDING_20260817.md` (Drive `1-2iiv8aaTrBvUR2Zxs4V6BW1P8OLotb_`, 4,821 bytes, SHA-256 `78cbf2fb397cf2c6319636523a7feea44b1e21e8941ee32e898323e697f18a22`). It is `L = 0.5 * L_CE + 0.5 * L_KL`. `L_KL` is forward teacher-to-student KL at temperature 1.0 over the cached top-128 14B teacher lattice, renormalized on that lattice. `L_CE` targets the teacher token. Both losses apply only at KP-1R-repaired answer-bearing positions; prompt positions, formatting-only tokens, and position zero are excluded. Reduction is the mean over unmasked positions within each example, then the mean over the batch.
+
+Every teacher-forced loss position runs the deployment graph at K=4, with top-k 8 fingerprint retrieval at temperature 0.07. A fingerprint training row's own memory slot is excluded before top-k. The literal n-gram arm has no row-owned slot, so this exclusion is vacuous for that control rather than silently omitted. A 512-row admitted non-DEV validation split monitors training. DEV is used only for the registered 200-step looks and EMA endpoint.
 
 No alpha, rank, slot-count, or amplitude sweep is authorized by this charter.
 
@@ -142,13 +142,11 @@ At every registered read, retain exact row predictions and report:
 
 A positive T3a-C reading requires all of the following:
 
-1. both seeds are positive at their EMA endpoints under the locked net-row criterion;
-2. paired support passes the locked sign-test criterion;
+1. mean two-seed paired delta is at least +8 rows and each seed is strictly positive at its EMA endpoint;
+2. the one-sided paired sign test passes at alpha 0.05;
 3. continuous margins agree in direction;
-4. the shuffled-values control is flat under its locked equivalence band;
-5. chi, quality, lineage, and seal contracts pass.
-
-The exact numerical thresholds remain signature fields. They may not be inferred from DEV after training begins.
+4. the shuffled-values control lies within the inclusive -3 to +3 row equivalence band;
+5. the standing confident-agreement collateral flip fraction chi is at most 0.05% at amplitude 0.05, and quality, lineage, and seal contracts pass.
 
 T3b is compared descriptively and under its preregistered paired rule. The frozen-random arm is an honesty control. Neither may be selected post hoc as the headline arm.
 
@@ -188,16 +186,13 @@ Identity, lineage, quality, chi, or seal contracts fail. Stop with receipts. Do 
 
 The machine companion carries the authoritative blocker list. The substantive open decisions are:
 
-1. exact `V(x)` admission rule and receipt;
-2. non-DEV PCA/transport fit population, direction, seed, and hash;
-3. retrieval constants and control seeds;
-4. shuffled-values training policy;
-5. exact downstream injection tensor and timing;
-6. P3.5 endpoint initialization ratification;
-7. exact training and resume recipe;
-8. exact positive, equivalence, sign-test, margin, and chi thresholds;
-9. control-arm replication allocation;
-10. whether the 2-point CONFIRM-resolvability target binds this screen or the selected successor campaign.
+1. resolve the slot-count contradiction: after reserving the required 512 admitted non-DEV validation rows, at most 5,332 rows remain before the required 32B concurrence filter, so 8,192 one-row-per-slot entries are impossible;
+2. bind and hash a deterministic, battery-stratified 512-row admitted non-DEV validation split that has zero overlap with memory;
+3. materialize and hash the non-DEV `V(x)` source and amended matched-slot manifests;
+4. fit the non-DEV-only geometry, score held-out non-DEV retrieval, and bind its manifest and artifact hashes;
+5. Mark signs the fully materialized executed lock.
+
+The eventual Stage 2A main campaign selected from this screen, not T3a itself, must be designed to a CONFIRM-resolvable target of at least 2 absolute points (approximately 21 of 1,024 DEV rows) with power arithmetic in its own lock.
 
 ## 12. Execution order after signature
 
@@ -213,4 +208,3 @@ The machine companion carries the authoritative blocker list. The substantive op
 ---
 
 **Draft authorization line:** Stage 2A loss-free implementation, data-contract code, tests, and lock assembly are authorized. Training is not authorized. Mark's signature on a fully bound executed lock is required before the first optimizer is constructed.
-
