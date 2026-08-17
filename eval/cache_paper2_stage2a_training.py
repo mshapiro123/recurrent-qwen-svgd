@@ -24,6 +24,7 @@ from eval.eval_paper2_phase3_p31_references import (
 
 
 TEACHER_KEY = "teacher_14b"
+STUDENT_KEY = "base"
 TEACHER_TOP_K = 128
 MAX_ANSWER_TOKENS = 128
 
@@ -383,6 +384,144 @@ def cache_teacher_lattice(
     return artifact, row_manifest, receipt
 
 
+@torch.inference_mode()
+def cache_student_prefix_features(
+    *,
+    model: Any,
+    tokenizer: Any,
+    examples: Sequence[TeacherForcedExample],
+    teacher_manifest: Sequence[Mapping[str, Any]],
+    teacher_token_ids: torch.Tensor,
+    batch_size: int,
+    device: str,
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Cache frozen 0.5B states needed by the registered training graph."""
+
+    tokenizer.padding_side = "right"
+    if tokenizer.pad_token_id is None:
+        tokenizer.pad_token_id = tokenizer.eos_token_id
+    expected = {
+        (str(row["battery"]), str(row["item_id"]), str(row["content_sha256"])): row
+        for row in teacher_manifest
+    }
+    ordered = [
+        example
+        for example in examples
+        if (example.battery, example.item_id, example.content_sha256) in expected
+    ]
+    order_index = {
+        (str(row["battery"]), str(row["item_id"]), str(row["content_sha256"])): index
+        for index, row in enumerate(teacher_manifest)
+    }
+    ordered.sort(
+        key=lambda example: order_index[
+            (example.battery, example.item_id, example.content_sha256)
+        ]
+    )
+    if len(ordered) != len(teacher_manifest):
+        raise RuntimeError("student feature population differs from teacher lattice")
+
+    sequence_offsets = [0]
+    answer_offsets = [0]
+    flat_input_ids: list[torch.Tensor] = []
+    flat_final_hidden: list[torch.Tensor] = []
+    flat_layer6_queries: list[torch.Tensor] = []
+    flat_current_hidden: list[torch.Tensor] = []
+    flat_prefix_positions: list[torch.Tensor] = []
+    flat_student_targets: list[torch.Tensor] = []
+
+    for start in range(0, len(ordered), int(batch_size)):
+        batch = ordered[start : start + int(batch_size)]
+        encoded = tokenizer(
+            [example.text for example in batch],
+            return_tensors="pt",
+            return_offsets_mapping=True,
+            padding=True,
+            add_special_tokens=True,
+        )
+        offsets = encoded.pop("offset_mapping")
+        model_inputs = {key: value.to(device) for key, value in encoded.items()}
+        output = model(
+            **model_inputs,
+            output_hidden_states=True,
+            use_cache=False,
+            return_dict=True,
+        )
+        layer6 = output.hidden_states[6]
+        final = output.hidden_states[-1]
+        for local, example in enumerate(batch):
+            positions, _stable = answer_token_positions(
+                offsets[local].tolist(),
+                span_start=example.span_start,
+                span_end=example.span_end,
+                strict_boundaries=example.strict_boundaries,
+            )
+            positions = positions[:MAX_ANSWER_TOKENS]
+            key = (example.battery, example.item_id, example.content_sha256)
+            expected_count = int(expected[key]["answer_tokens"])
+            if len(positions) != expected_count:
+                raise RuntimeError(f"student/teacher answer-mask mismatch: {key}")
+            prefix_positions = torch.tensor(
+                [position - 1 for position in positions], dtype=torch.int32
+            )
+            prefix_stop = int(max(positions))
+            if prefix_stop < 1:
+                raise RuntimeError("student feature cache reached position zero")
+            flat_input_ids.append(encoded["input_ids"][local, :prefix_stop].to(torch.int32))
+            flat_final_hidden.append(final[local, :prefix_stop].to(torch.bfloat16).cpu())
+            flat_layer6_queries.append(
+                layer6[local, prefix_positions.long()].to(torch.bfloat16).cpu()
+            )
+            flat_current_hidden.append(
+                final[local, prefix_positions.long()].to(torch.bfloat16).cpu()
+            )
+            flat_prefix_positions.append(prefix_positions)
+            flat_student_targets.append(
+                encoded["input_ids"][local, positions].to(torch.int32)
+            )
+            sequence_offsets.append(sequence_offsets[-1] + prefix_stop)
+            answer_offsets.append(answer_offsets[-1] + len(positions))
+        print(
+            f"stage2a_student_feature_progress rows={min(start + len(batch), len(ordered))}/{len(ordered)} "
+            f"tokens={sequence_offsets[-1]} positions={answer_offsets[-1]}",
+            flush=True,
+        )
+
+    observed_targets = torch.cat(flat_student_targets, dim=0)
+    if not torch.equal(observed_targets.cpu(), teacher_token_ids.to(torch.int32).cpu()):
+        raise RuntimeError("0.5B and 14B tokenizers disagree on Stage 2A target IDs")
+    artifact = {
+        "kind": "paper2_stage2a_student_prefix_features_v1",
+        "student_model": MODEL_SPECS[STUDENT_KEY]["model"],
+        "student_revision": MODEL_SPECS[STUDENT_KEY]["revision"],
+        "layer6_index": 6,
+        "final_layer_index": -1,
+        "sequence_offsets": torch.tensor(sequence_offsets, dtype=torch.int64),
+        "answer_offsets": torch.tensor(answer_offsets, dtype=torch.int64),
+        "input_ids": torch.cat(flat_input_ids, dim=0),
+        "final_hidden": torch.cat(flat_final_hidden, dim=0),
+        "layer6_queries": torch.cat(flat_layer6_queries, dim=0),
+        "current_hidden": torch.cat(flat_current_hidden, dim=0),
+        "answer_prefix_positions": torch.cat(flat_prefix_positions, dim=0),
+        "optimizer_constructed": False,
+        "optimizer_steps": 0,
+    }
+    receipt = {
+        "kind": "paper2_stage2a_student_prefix_features_receipt_v1",
+        "status": "complete_frozen_base_cache",
+        "rows": len(ordered),
+        "sequence_tokens": sequence_offsets[-1],
+        "answer_positions": answer_offsets[-1],
+        "layer6": 6,
+        "final_layer": -1,
+        "optimizer_constructed": False,
+        "optimizer_steps": 0,
+        "confirm_scored": False,
+        "eval_e_scored": False,
+    }
+    return artifact, receipt
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--source_rows", type=Path, required=True)
@@ -412,23 +551,6 @@ def main() -> int:
         teacher_rows=read_jsonl(args.teacher_14b_scores),
         tokenizer=tokenizer,
     )
-    owner_path = args.private_dir / "stage2a_memory_owner_manifest.jsonl"
-    write_jsonl(owner_path, owner_rows)
-    population_path = args.private_dir / "stage2a_training_population.jsonl"
-    write_jsonl(
-        population_path,
-        [
-            {
-                "battery": example.battery,
-                "item_id": example.item_id,
-                "content_sha256": example.content_sha256,
-                "owns_memory_slot": example.owner_slot is not None,
-                "owner_slot": example.owner_slot,
-            }
-            for example in examples
-        ],
-    )
-
     model = AutoModelForCausalLM.from_pretrained(
         spec["model"],
         revision=spec["revision"],
@@ -450,10 +572,86 @@ def main() -> int:
     if torch.cuda.is_available():
         torch.cuda.empty_cache()
 
+    owner_by_identity = {
+        (str(row["battery"]), str(row["item_id"]), str(row["content_sha256"])): row
+        for row in owner_rows
+    }
+    filtered_owners = [
+        owner_by_identity[
+            (str(row["battery"]), str(row["item_id"]), str(row["content_sha256"]))
+        ]
+        for row in manifest
+    ]
+    owner_path = args.private_dir / "stage2a_memory_owner_manifest.jsonl"
+    write_jsonl(owner_path, filtered_owners)
+    population_path = args.private_dir / "stage2a_training_population.jsonl"
+    write_jsonl(
+        population_path,
+        [
+            {
+                "battery": row["battery"],
+                "item_id": row["item_id"],
+                "content_sha256": row["content_sha256"],
+                "owns_memory_slot": row["owns_memory_slot"],
+                "owner_slot": row["owner_slot"],
+            }
+            for row in filtered_owners
+        ],
+    )
+    population_receipt.update(
+        {
+            "admitted_rows_before_answer_mask": population_receipt["rows"],
+            "rows": len(manifest),
+            "dropped_answer_boundary_rows": population_receipt["rows"] - len(manifest),
+            "owners": sum(row["owns_memory_slot"] for row in filtered_owners),
+            "non_owners": sum(not row["owns_memory_slot"] for row in filtered_owners),
+            "identity_sha256": canonical_sha256(
+                [
+                    {
+                        "battery": row["battery"],
+                        "item_id": row["item_id"],
+                        "content_sha256": row["content_sha256"],
+                    }
+                    for row in manifest
+                ]
+            ),
+        }
+    )
+
+    student_spec = MODEL_SPECS[STUDENT_KEY]
+    student_tokenizer = AutoTokenizer.from_pretrained(
+        student_spec["model"],
+        revision=student_spec["revision"],
+        cache_dir=args.model_cache,
+    )
+    student = AutoModelForCausalLM.from_pretrained(
+        student_spec["model"],
+        revision=student_spec["revision"],
+        cache_dir=args.model_cache,
+        dtype=torch.bfloat16,
+        attn_implementation="sdpa",
+        low_cpu_mem_usage=True,
+    ).to(args.device).eval()
+    features, feature_receipt = cache_student_prefix_features(
+        model=student,
+        tokenizer=student_tokenizer,
+        examples=examples,
+        teacher_manifest=manifest,
+        teacher_token_ids=artifact["teacher_token_ids"],
+        batch_size=max(1, args.batch_size * 4),
+        device=args.device,
+    )
+    del student
+    gc.collect()
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+
     artifact_path = args.private_dir / "stage2a_teacher_lattice.pt"
     torch.save(artifact, artifact_path)
     manifest_path = args.private_dir / "stage2a_teacher_lattice_manifest.jsonl"
     write_jsonl(manifest_path, manifest)
+    feature_path = args.private_dir / "stage2a_student_prefix_features.pt"
+    torch.save(features, feature_path)
     mbpp_audit_path = args.output_dir / "mbpp_span_audit.json"
     write_json(mbpp_audit_path, receipt["mbpp"])
     receipt.update(
@@ -464,6 +662,8 @@ def main() -> int:
             "teacher_lattice_manifest_sha256": sha256_file(manifest_path),
             "teacher_lattice_artifact_sha256": sha256_file(artifact_path),
             "mbpp_span_audit_sha256": sha256_file(mbpp_audit_path),
+            "student_feature_cache": feature_receipt,
+            "student_feature_cache_sha256": sha256_file(feature_path),
         }
     )
     write_json(args.output_dir / "summary.json", receipt)
