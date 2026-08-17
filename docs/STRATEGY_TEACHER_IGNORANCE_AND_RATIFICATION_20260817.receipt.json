@@ -1,0 +1,17 @@
+{
+  "kind": "strategy_stage2a_final_ratification_receipt_v1",
+  "status": "verified_exact_drive_bytes",
+  "drive_id": "1Pmx3cnuwQDlMskZ8u2zcAnS5On-EqpWi",
+  "title": "STRATEGY_TEACHER_IGNORANCE_AND_RATIFICATION_20260817.md",
+  "bytes": 4917,
+  "sha256": "8588dc9a496fa1ff0693eb0d17ed0c9d56d4a91af46d2c0a111c9af73e58b75b",
+  "bindings": [
+    "teacher-wrong or non-concurrent rows contribute no memory entry and no training signal",
+    "gap-closed claims remain scoped to the teacher-base gap",
+    "execution-verified admission is a named T3-full option, not part of this screen",
+    "Mark ratified the Stage 2A T3a/T3b lock",
+    "T3a-C and T3b run on both seeds; shuffled and frozen-random controls run on seed 0"
+  ],
+  "confirm_scored": false,
+  "eval_e_scored": false
+}

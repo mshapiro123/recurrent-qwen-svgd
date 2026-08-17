@@ -32,6 +32,20 @@
     "sha256": "bfce1e422002e776cd7e40ccbe1911f9a212881feb7352325188a447d3cc7bb0",
     "repo_receipt": "docs/STRATEGY_T3A_SIZING_RULING_20260817.receipt.json"
   },
+  "mbpp_population_binding": {
+    "drive_id": "1UgrFwVFtle97lYnBUnacQdnvb2pebhzl",
+    "title": "STRATEGY_T3A_MBPP_POPULATION_BINDING_20260817.md",
+    "bytes": 4316,
+    "sha256": "27bf4fc0227789669880898bffbfd050bf1f890ba3167b6ce0f6948612750025",
+    "repo_receipt": "docs/STRATEGY_T3A_MBPP_POPULATION_BINDING_20260817.receipt.json"
+  },
+  "final_ratification": {
+    "drive_id": "1Pmx3cnuwQDlMskZ8u2zcAnS5On-EqpWi",
+    "title": "STRATEGY_TEACHER_IGNORANCE_AND_RATIFICATION_20260817.md",
+    "bytes": 4917,
+    "sha256": "8588dc9a496fa1ff0693eb0d17ed0c9d56d4a91af46d2c0a111c9af73e58b75b",
+    "repo_receipt": "docs/STRATEGY_TEACHER_IGNORANCE_AND_RATIFICATION_20260817.receipt.json"
+  },
   "scientific_frame": {
     "anchor": "student early states are an excellent address for teacher content; student answer content is not established",
     "knowledge_presence_verdict": "NO_POSITIVE_KNOWLEDGE_PRESENCE_GATE",
@@ -87,6 +101,22 @@
     "selection_seed": 20260817,
     "selection_rule": "battery-proportional Hamilton quotas after V(x); within-battery SHA256(seed:battery:item_id:content_sha256); excluded list published",
     "panel_overlap_required": 0
+  },
+  "training_data": {
+    "population": "all V(x)-admitted non-DEV rows after the 512-row validation exclusion",
+    "population_manifest_sha256": null,
+    "memory_owner_manifest_sha256": null,
+    "owner_telemetry_required": true,
+    "slot_owner_retrieval": "exclude the row-owned slot before top-k",
+    "non_owner_retrieval": "unrestricted because no self slot exists",
+    "teacher_lattice_manifest_sha256": null,
+    "teacher_lattice_artifact_sha256": null,
+    "mbpp_span_audit_sha256": null,
+    "mbpp_target": "exact execution-verified 14B generated program",
+    "mbpp_mask": "whole tokens contained in the exact executed code character span; fences, language tags, prose, prompt, and position zero excluded",
+    "mbpp_boundary_failure": "drop row and disclose count",
+    "max_target_tokens": 128,
+    "truncated_rows_disclosed": true
   },
   "geometry_fit": {
     "key_layer": 6,
@@ -211,6 +241,8 @@
       "teacher_revision": "cf98f3b3bbb457ad9e2bb7baf9a0125b6b88caa8",
       "teacher_forced_response": true,
       "answer_region_mask": "KP-1R-repaired battery-specific answer-bearing positions only; formatting, prompt, and position zero excluded",
+      "mbpp_answer_region_mask": "whole tokens in the V(x)-executed code span only; boundary failures dropped and truncations disclosed",
+      "training_population": "all admitted non-DEV rows outside validation; leave-one-out only for slot owners",
       "reduction": "mean over unmasked positions within example, then mean over batch",
       "verifier_mask": false,
       "full_inference_graph": "fresh scratch; student layer-6 prefix key; top-k 8 at temperature 0.07; compatibility gate; post-initializer scratch write; K=4; frozen bridge",
@@ -269,11 +301,17 @@
     "data_separation.validation_manifest_sha256",
     "data_separation.firm_knowledge_manifest_sha256",
     "geometry_fit.fit_manifest_sha256",
-    "geometry_fit.artifact_sha256"
+    "geometry_fit.artifact_sha256",
+    "training_data.population_manifest_sha256",
+    "training_data.memory_owner_manifest_sha256",
+    "training_data.teacher_lattice_manifest_sha256",
+    "training_data.teacher_lattice_artifact_sha256",
+    "training_data.mbpp_span_audit_sha256"
   ],
   "unresolved_before_ratification": [
     "Materialize and hash the pre-concurrence validation split, non-DEV V(x) verdicts, excluded-row list, and dynamically sized slot manifest.",
     "Fit the non-DEV-only geometry, score its non-DEV holdout retrieval, and bind manifest/artifact hashes.",
-    "Mark signs the fully materialized executed lock."
+    "Build and hash the admitted training population, owner mapping, MBPP executed-span audit, and top-128 teacher lattice.",
+    "Apply Mark's signed ratification only after every required artifact binding passes."
   ]
 }

@@ -4013,6 +4013,23 @@ def test_stage2a_content_geometry_target_is_wired_and_guarded() -> None:
     assert "optimizer_constructed" in evaluator
 
 
+def test_stage2a_training_cache_target_is_wired_and_guarded() -> None:
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    cell = (ROOT / "colab/STAGE5_PAPER2_STAGE2A_TRAINING_CACHE_CELL.py").read_text(encoding="utf-8")
+    runner = (ROOT / "colab/run_stage5_paper2_stage2a_training_cache.py").read_text(encoding="utf-8")
+    evaluator = (ROOT / "eval/cache_paper2_stage2a_training.py").read_text(encoding="utf-8")
+    assert "paper2_stage2a_training_cache" in bootstrap
+    assert "paper2_stage2a_training_cache_v1" in cell
+    assert "admitted non-DEV teacher lattice no optimizer no training" in cell
+    assert "exact executed MBPP code spans with whole-token boundary audit" in cell
+    assert "CONFIRM and EVAL-E remain sealed" in cell
+    assert "memory_mib >= 39_000" in cell
+    assert "complete_score_blind_pre_training" in runner
+    assert "stage2a_teacher_lattice.pt" in evaluator
+    assert "stage2a_memory_owner_manifest.jsonl" in evaluator
+    assert "optimizer_steps" in evaluator
+
+
 def test_gradient_path_audit_target_is_wired_and_guarded() -> None:
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
     bootstrap_md = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")

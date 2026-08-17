@@ -9,8 +9,10 @@ from torch import nn
 from models.paper2_dc2_student import Phase3StudentModules
 from training.paper2_stage2a_lock import (
     assert_stage2a_training_authorized,
+    bind_stage2a_training_cache,
     load_stage2a_lock,
     materialize_stage2a_lock,
+    ratify_stage2a_lock,
     validate_stage2a_lock,
 )
 
@@ -138,7 +140,56 @@ def test_score_blind_receipts_materialize_but_do_not_authorize() -> None:
     assert materialized["data_separation"]["memory_slots"] == 2_048
     assert materialized["geometry_fit"]["artifact_sha256"] == "4" * 64
     assert materialized["unresolved_before_ratification"] == [
-        "Mark signs the fully materialized executed lock."
+        "Build and hash the admitted training population, owner mapping, MBPP executed-span audit, and top-128 teacher lattice.",
+        "Apply Mark's signed ratification only after every required artifact binding passes.",
     ]
     with pytest.raises(RuntimeError, match="structurally disabled"):
         assert_stage2a_training_authorized(materialized)
+
+
+def test_cache_binding_then_signed_ratification_authorizes_training() -> None:
+    lock = load_stage2a_lock()
+    summary = {
+        "kind": "paper2_stage2a_content_geometry_summary_v1",
+        "status": "complete_score_blind_pre_signature",
+        "validation": {"sha256": "1" * 64},
+        "firm_knowledge": {"sha256": "2" * 64},
+        "memory": {"slots": 2_048, "admitted_nonpanel_rows": 4_095},
+        "geometry": {"fit_manifest_sha256": "3" * 64, "artifact_sha256": "4" * 64},
+        "training_authorized": False,
+        "optimizer_constructed": False,
+        "optimizer_steps": 0,
+        "confirm_scored": False,
+        "eval_e_scored": False,
+    }
+    materialized = materialize_stage2a_lock(lock, summary, summary_sha256="5" * 64)
+    cache_receipt = {
+        "status": "complete_score_blind_pre_training",
+        "population_manifest_sha256": "6" * 64,
+        "memory_owner_manifest_sha256": "7" * 64,
+        "teacher_lattice_manifest_sha256": "8" * 64,
+        "teacher_lattice_artifact_sha256": "9" * 64,
+        "mbpp_span_audit_sha256": "a" * 64,
+        "optimizer_constructed": False,
+        "training_started": False,
+        "optimizer_steps": 0,
+        "confirm_scored": False,
+        "eval_e_scored": False,
+    }
+    cache_bound = bind_stage2a_training_cache(
+        materialized, cache_receipt, receipt_sha256="b" * 64
+    )
+    assert cache_bound["training_data"]["teacher_lattice_artifact_sha256"] == "9" * 64
+    with pytest.raises(RuntimeError, match="structurally disabled"):
+        assert_stage2a_training_authorized(cache_bound)
+
+    ratified = ratify_stage2a_lock(cache_bound)
+    assert ratified["status"] == "approved_for_training"
+    assert ratified["unresolved_before_ratification"] == []
+    assert_stage2a_training_authorized(ratified)
+
+
+def test_ratification_refuses_missing_teacher_cache() -> None:
+    lock = load_stage2a_lock()
+    with pytest.raises(RuntimeError, match="required bindings"):
+        ratify_stage2a_lock(lock)

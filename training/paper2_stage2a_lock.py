@@ -80,6 +80,24 @@ def validate_stage2a_lock(lock: Mapping[str, Any]) -> list[str]:
         "bfce1e422002e776cd7e40ccbe1911f9a212881feb7352325188a447d3cc7bb0"
     ):
         errors.append("T3a sizing-ruling SHA-256 changed")
+    population = lock.get("mbpp_population_binding", {})
+    if population.get("drive_id") != "1UgrFwVFtle97lYnBUnacQdnvb2pebhzl":
+        errors.append("T3a MBPP/population-binding Drive ID changed")
+    if population.get("bytes") != 4_316:
+        errors.append("T3a MBPP/population-binding byte count changed")
+    if population.get("sha256") != (
+        "27bf4fc0227789669880898bffbfd050bf1f890ba3167b6ce0f6948612750025"
+    ):
+        errors.append("T3a MBPP/population-binding SHA-256 changed")
+    ratification = lock.get("final_ratification", {})
+    if ratification.get("drive_id") != "1Pmx3cnuwQDlMskZ8u2zcAnS5On-EqpWi":
+        errors.append("Stage 2A final-ratification Drive ID changed")
+    if ratification.get("bytes") != 4_917:
+        errors.append("Stage 2A final-ratification byte count changed")
+    if ratification.get("sha256") != (
+        "8588dc9a496fa1ff0693eb0d17ed0c9d56d4a91af46d2c0a111c9af73e58b75b"
+    ):
+        errors.append("Stage 2A final-ratification SHA-256 changed")
 
     sealed = lock.get("sealed_partitions", {})
     if sealed.get("confirm_scored") is not False:
@@ -276,6 +294,28 @@ def validate_stage2a_lock(lock: Mapping[str, Any]) -> list[str]:
         "docs/STRATEGY_T3A_OBJECTIVE_BINDING_20260817.receipt.json"
     ):
         errors.append("objective formula source changed")
+    if objective.get("training_population") != (
+        "all admitted non-DEV rows outside validation; leave-one-out only for slot owners"
+    ):
+        errors.append("Stage 2A objective training population changed")
+    if "V(x)-executed code span" not in str(objective.get("mbpp_answer_region_mask")):
+        errors.append("Stage 2A MBPP objective mask changed")
+
+    training_data = lock.get("training_data", {})
+    expected_training_data = {
+        "population": "all V(x)-admitted non-DEV rows after the 512-row validation exclusion",
+        "owner_telemetry_required": True,
+        "slot_owner_retrieval": "exclude the row-owned slot before top-k",
+        "non_owner_retrieval": "unrestricted because no self slot exists",
+        "mbpp_target": "exact execution-verified 14B generated program",
+        "mbpp_mask": "whole tokens contained in the exact executed code character span; fences, language tags, prose, prompt, and position zero excluded",
+        "mbpp_boundary_failure": "drop row and disclose count",
+        "max_target_tokens": 128,
+        "truncated_rows_disclosed": True,
+    }
+    for key, expected in expected_training_data.items():
+        if training_data.get(key) != expected:
+            errors.append(f"registered training-data field changed: {key}")
 
     evaluation = lock.get("evaluation", {})
     if evaluation.get("paired_sign_test_alpha") != 0.05:
@@ -384,7 +424,8 @@ def materialize_stage2a_lock(
         "eval_e_scored": False,
     }
     result["unresolved_before_ratification"] = [
-        "Mark signs the fully materialized executed lock."
+        "Build and hash the admitted training population, owner mapping, MBPP executed-span audit, and top-128 teacher lattice.",
+        "Apply Mark's signed ratification only after every required artifact binding passes.",
     ]
     result["status"] = "draft_awaiting_mark_signature"
     result["locked_before_training"] = False
@@ -393,4 +434,80 @@ def materialize_stage2a_lock(
     errors = validate_stage2a_lock(result)
     if errors:
         raise RuntimeError("materialized Stage 2A lock is invalid: " + "; ".join(errors))
+    return result
+
+
+def bind_stage2a_training_cache(
+    lock: Mapping[str, Any],
+    receipt: Mapping[str, Any],
+    *,
+    receipt_sha256: str,
+) -> dict[str, Any]:
+    """Bind the score-blind teacher lattice and population manifests."""
+
+    if receipt.get("status") != "complete_score_blind_pre_training":
+        raise ValueError("Stage 2A cache receipt is not complete and score-blind")
+    for field in (
+        "optimizer_constructed",
+        "training_started",
+        "confirm_scored",
+        "eval_e_scored",
+    ):
+        if receipt.get(field) is not False:
+            raise ValueError(f"Stage 2A cache receipt has unsafe {field}")
+    if receipt.get("optimizer_steps") != 0:
+        raise ValueError("Stage 2A cache receipt reports optimizer steps")
+    if not _is_sha256(receipt_sha256):
+        raise ValueError("Stage 2A cache receipt SHA is invalid")
+
+    result = copy.deepcopy(dict(lock))
+    data = result["training_data"]
+    bindings = {
+        "population_manifest_sha256": receipt.get("population_manifest_sha256"),
+        "memory_owner_manifest_sha256": receipt.get("memory_owner_manifest_sha256"),
+        "teacher_lattice_manifest_sha256": receipt.get("teacher_lattice_manifest_sha256"),
+        "teacher_lattice_artifact_sha256": receipt.get("teacher_lattice_artifact_sha256"),
+        "mbpp_span_audit_sha256": receipt.get("mbpp_span_audit_sha256"),
+    }
+    for key, value in bindings.items():
+        if not _is_sha256(value):
+            raise ValueError(f"Stage 2A cache receipt is missing {key}")
+        data[key] = str(value)
+    result["training_cache_materialization"] = {
+        "receipt_sha256": receipt_sha256,
+        "optimizer_steps": 0,
+        "confirm_scored": False,
+        "eval_e_scored": False,
+    }
+    result["unresolved_before_ratification"] = [
+        "Apply Mark's signed ratification only after every required artifact binding passes."
+    ]
+    errors = validate_stage2a_lock(result)
+    if errors:
+        raise RuntimeError("cache-bound Stage 2A lock is invalid: " + "; ".join(errors))
+    return result
+
+
+def ratify_stage2a_lock(lock: Mapping[str, Any]) -> dict[str, Any]:
+    """Apply the signed authority only after every machine binding exists."""
+
+    result = copy.deepcopy(dict(lock))
+    missing = [
+        str(path)
+        for path in result.get("required_bound_paths", [])
+        if _get(result, str(path)) in (None, "", [])
+    ]
+    if missing:
+        raise RuntimeError(
+            "Stage 2A cannot be ratified before required bindings exist: "
+            + ", ".join(missing)
+        )
+    result["unresolved_before_ratification"] = []
+    result["status"] = "approved_for_training"
+    result["locked_before_training"] = True
+    result["training_authorized"] = True
+    result["mark_ratified"] = True
+    errors = validate_stage2a_lock(result)
+    if errors:
+        raise RuntimeError("ratified Stage 2A lock is invalid: " + "; ".join(errors))
     return result
