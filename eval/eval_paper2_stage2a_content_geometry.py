@@ -17,6 +17,7 @@ from pathlib import Path
 from typing import Any, Iterable, Mapping, Sequence
 
 import torch
+import transformers
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from eval.eval_paper2_phase3_kp1_t1 import canonical_prompt, last_active
@@ -432,6 +433,13 @@ def main() -> int:
     summary = {
         "kind": "paper2_stage2a_content_geometry_summary_v1",
         "status": "complete_score_blind_pre_signature",
+        "conditions": {
+            "gpu": torch.cuda.get_device_name(0),
+            "gpu_memory_bytes": torch.cuda.get_device_properties(0).total_memory,
+            "precision": "bfloat16",
+            "torch": torch.__version__,
+            "transformers": transformers.__version__,
+        },
         "source": {
             "partition_rows_sha256": sha256_file(args.source_rows),
             "merged_sha256": sha256_file(args.merged_rows),
