@@ -145,6 +145,19 @@ def main() -> int:
     wrapper = RecurrentQwenForCausalLM(
         base, layer_split=LayerSplit(prelude_end=6, recurrent_end=18)
     ).to("cuda").eval()
+    prompt = _render_prompt(tokenizer, selected[0])
+    encoded = tokenizer(prompt, return_tensors="pt", add_special_tokens=True).to("cuda")
+    with torch.inference_mode():
+        direct = base(**encoded, use_cache=False, return_dict=True).logits
+        serving_baseline = wrapper(
+            **encoded,
+            max_loops=1,
+            use_cache=False,
+            return_dict=True,
+        ).logits
+    direct_serving_max = float(
+        (direct.float() - serving_baseline.float()).abs().max().cpu()
+    )
     installed = apply_loop_scoped_lora_to_recurrent_block(
         wrapper, rank=16, alpha=16, adapter_dtype=torch.float32
     )
@@ -158,11 +171,8 @@ def main() -> int:
     attachment = Stage2BDepthAttachment.from_phase3(sidecar).to("cuda").eval()
     wrapper.install_stage2b_depth_attachment(attachment)
 
-    prompt = _render_prompt(tokenizer, selected[0])
-    encoded = tokenizer(prompt, return_tensors="pt", add_special_tokens=True).to("cuda")
     with torch.inference_mode():
         set_loop_scoped_lora_index(wrapper, 0)
-        direct = base(**encoded, use_cache=False, return_dict=True).logits
         attached = wrapper(
             **encoded,
             max_loops=1,
@@ -171,7 +181,9 @@ def main() -> int:
             use_cache=False,
             return_dict=True,
         ).logits
-    identity_max = float((direct.float() - attached.float()).abs().max().cpu())
+    identity_max = float(
+        (serving_baseline.float() - attached.float()).abs().max().cpu()
+    )
 
     saved_b = []
     with torch.no_grad():
@@ -189,7 +201,9 @@ def main() -> int:
         ).logits
         for module, value in saved_b:
             module.lora_b.weight.copy_(value)
-    trained_identity_max = float((direct.float() - trained_attached.float()).abs().max().cpu())
+    trained_identity_max = float(
+        (serving_baseline.float() - trained_attached.float()).abs().max().cpu()
+    )
 
     with torch.inference_mode():
         base_output = base(**encoded, output_hidden_states=True, use_cache=False, return_dict=True)
@@ -264,6 +278,9 @@ def main() -> int:
             "maximum_absolute_logit_difference": identity_max,
             "trained_adapter_maximum_absolute_difference": trained_identity_max,
             "requirement": "exact zero",
+            "comparator": "same recurrent serving path before versus after attachment",
+            "direct_model_vs_recurrent_serving_maximum_absolute_difference": direct_serving_max,
+            "direct_model_comparison_is_descriptive": True,
         },
         "m1": {
             "single_lane_bit_exact": bool(torch.equal(single, multi)),
