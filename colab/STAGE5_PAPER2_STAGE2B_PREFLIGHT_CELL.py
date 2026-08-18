@@ -23,7 +23,8 @@ GH = os.environ.get("GH_TOKEN", "").strip()
 def run(command: list[str], cwd: Path | None = None) -> None:
     printable = " ".join(command).replace(GH, "****") if GH else " ".join(command)
     print("$", printable, flush=True)
-    subprocess.run(command, cwd=cwd or ROOT, check=True, env=os.environ.copy())
+    working_directory = cwd or (ROOT if ROOT.exists() else Path("/content"))
+    subprocess.run(command, cwd=working_directory, check=True, env=os.environ.copy())
 
 
 if not Path("/content/drive/MyDrive").is_dir():
