@@ -1,0 +1,45 @@
+{
+  "kind": "paper2_stage2a_cv1_cross_runtime_audit_v1",
+  "status": "complete_posthoc_read_only",
+  "date": "2026-08-18",
+  "purpose": "Compare the unchanged seed-0 full-dose correct-value endpoint rows from the original Stage 2A A100 screen with the CV-1 L4 diagnostic rerun.",
+  "boundaries": {
+    "optimizer_constructed": false,
+    "training_authorized": false,
+    "confirm_scored": false,
+    "eval_e_scored": false
+  },
+  "source_runtime": {
+    "hardware": "NVIDIA A100-SXM4-40GB",
+    "run": "stage5_paper2_stage2a_t3_screen_20260817"
+  },
+  "diagnostic_runtime": {
+    "hardware": "NVIDIA L4",
+    "run": "stage5_paper2_stage2a_cv1_d5_20260818"
+  },
+  "comparisons": {
+    "t3a": {
+      "checkpoint_sha256": "07378424dca2f5705e61a4bf18721aead574f795a6ff0bfb0762e6ba48769cee",
+      "source_rows_sha256": "6b9c96d1e2ad7bfce24549ca51e4ff7737cfa6d6268d4eaca8d06c50efea5ac3",
+      "diagnostic_rows_sha256": "b3b5a5ba3729e2b6bc946c0a881232ae238ee46dfe3ba9039a972163b75155ad",
+      "source_correct": 505,
+      "diagnostic_correct": 514,
+      "prediction_changed_rows": 158,
+      "correctness_gains": 25,
+      "correctness_losses": 16,
+      "correctness_changed_rows": 41
+    },
+    "t3b": {
+      "checkpoint_sha256": "0c1d00a51e134d232589b6aaa3cc9949563d3c22eca470b8dcde7bbb8b6eda79",
+      "source_rows_sha256": "ec14b5d2a022e200a4e01fa5f14b9db1e7f74a8b7ddd58a6ee6c3282b6532a00",
+      "diagnostic_rows_sha256": "21dff5f854ae6dc0d43d9e375dfd95cc2d341eaf2e8ea2a32547ff209dc42be2",
+      "source_correct": 506,
+      "diagnostic_correct": 512,
+      "prediction_changed_rows": 166,
+      "correctness_gains": 22,
+      "correctness_losses": 16,
+      "correctness_changed_rows": 38
+    }
+  },
+  "interpretation": "The unchanged endpoint did not reproduce row-for-row across the two accelerator/runtime environments. CV-1's within-L4 crossed-value contrasts remain controlled because all value conditions were scored in the same runtime, but its absolute counts must not replace or be pooled with the original A100 screen counts. This audit does not isolate hardware from other runtime-level numerical differences."
+}
