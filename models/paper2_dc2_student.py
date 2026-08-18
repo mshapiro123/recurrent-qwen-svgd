@@ -432,7 +432,11 @@ class Phase3PerPositionAnchoredBridge(AnchoredBridge):
             )
         position_gate = position_gate * gate_mask
         writeback = position_gate * delta
-        hidden = h0 + rho * (previous - h0) + writeback
+        # Internal bridge arithmetic is FP32; cast only at the serving boundary
+        # before the recurrent block consumes the carried state again.
+        hidden = (h0.float() + rho * (previous.float() - h0.float()) + writeback).to(
+            dtype=previous.dtype
+        )
         ratio = _rms(writeback) / _rms(h0).clamp_min(self.eps)
         gate = (
             position_gate[:, 1:].mean()
