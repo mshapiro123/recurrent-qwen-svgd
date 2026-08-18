@@ -492,6 +492,9 @@ class RecurrentQwenForCausalLM(nn.Module):
         internal_control_readout_positions: Optional[torch.Tensor] = None,
         internal_control_overrides: Optional[dict[int, str]] = None,
         recurrent_application_sink: Optional[list[torch.Tensor]] = None,
+        stage2b_depth_enabled: bool = False,
+        stage2b_stage: str = "M4",
+        stage2b_amplitude: float = 0.05,
         logits_to_keep: int | torch.Tensor = 0,
         **_: Any,
     ) -> RecurrentQwenOutput | tuple[Any, ...]:
@@ -558,6 +561,8 @@ class RecurrentQwenForCausalLM(nn.Module):
             raise RuntimeError("Phase G guidance is not installed")
         if oracle_reentry_enabled and not hasattr(self, "oracle_reentry_conditioner"):
             raise RuntimeError("Oracle re-entry conditioner is not installed")
+        if stage2b_depth_enabled and not hasattr(self, "stage2b_depth_attachment"):
+            raise RuntimeError("Stage 2B depth attachment is not installed")
         if oracle_intrablock_enabled and not hasattr(
             self,
             "oracle_intrablock_conditioner",
@@ -763,12 +768,24 @@ class RecurrentQwenForCausalLM(nn.Module):
         internal_control_decisions: list[torch.Tensor] = []
         internal_control_margins: list[torch.Tensor] = []
         recurrent_state = hidden_states
+        stage2b_trace = None
+        if stage2b_depth_enabled:
+            stage2b_trace = self.stage2b_depth_attachment.begin(
+                prelude_hidden=prelude_hidden_states,
+                attention_mask=flat_attention_mask,
+            )
         reentry_reference_rms = None
         if reentry_rescale_mode == "entry_rms" and max_loops > 1:
             reentry_reference_rms = self._masked_sequence_rms(hidden_states, flat_attention_mask)
         reentry_tail_damper = self._load_reentry_tail_damper(reentry_tail_damper_path)
 
         for loop_idx in range(max_loops):
+            adapter_loop_index = (
+                loop_idx
+                if stage2b_depth_enabled and stage2b_stage in {"M3", "M4"}
+                else 0
+            )
+            self._set_loop_scoped_adapter_index(adapter_loop_index)
             if loop_idx > 0 and recurrent_state_overrides:
                 override = recurrent_state_overrides.get(loop_idx)
                 if override is not None:
@@ -781,7 +798,19 @@ class RecurrentQwenForCausalLM(nn.Module):
                     recurrent_state = override
             loop_input = recurrent_state
             if loop_idx > 0:
-                if bridge_prelude_ablation_basis is None:
+                if stage2b_depth_enabled:
+                    stage2b_output = self.stage2b_depth_attachment.reenter(
+                        trace=stage2b_trace,
+                        prelude_hidden=prelude_hidden_states,
+                        recurrent_hidden=loop_input,
+                        attention_mask=flat_attention_mask,
+                        loop_index=loop_idx,
+                        stage=stage2b_stage,
+                        amplitude=float(stage2b_amplitude),
+                    )
+                    loop_input = stage2b_output.hidden
+                    stage2b_trace = stage2b_output.trace
+                elif bridge_prelude_ablation_basis is None:
                     loop_input = self.bridge(loop_input, prelude_hidden=prelude_hidden_states)
                 else:
                     loop_input = self.bridge(
@@ -994,6 +1023,13 @@ class RecurrentQwenForCausalLM(nn.Module):
             all_attentions.extend(attentions)
 
             normed = self.qwen.norm(coda_hidden)
+            if stage2b_depth_enabled:
+                stage2b_trace = self.stage2b_depth_attachment.observe(
+                    trace=stage2b_trace,
+                    coda_hidden=normed,
+                    attention_mask=flat_attention_mask,
+                    loop_index=loop_idx,
+                )
             logits = self.lm_head(self._slice_for_logits(normed, logits_to_keep))
             loop_logits.append(logits)
             if labels_flat is not None:
@@ -1170,6 +1206,8 @@ class RecurrentQwenForCausalLM(nn.Module):
                 metrics[f"oracle_intrablock_residual_rms_ratio_loop_{loop_idx}"] = (
                     torch.stack(values).mean().detach()
                 )
+        if stage2b_depth_enabled and stage2b_trace is not None:
+            metrics.update(stage2b_trace.metrics())
 
         loss = None
         if labels_flat is not None:
@@ -1586,6 +1624,25 @@ class RecurrentQwenForCausalLM(nn.Module):
             if output_attentions and len(layer_outputs) > 1 and torch.is_tensor(layer_outputs[1]):
                 attentions.append(layer_outputs[1])
         return hidden_states, attentions
+
+    def install_stage2b_depth_attachment(self, attachment: nn.Module) -> None:
+        """Install the optional recurrence-boundary attachment protocol."""
+
+        required = ("begin", "observe", "reenter")
+        missing = [name for name in required if not callable(getattr(attachment, name, None))]
+        if missing:
+            raise TypeError(f"Stage 2B attachment is missing methods: {missing}")
+        self.stage2b_depth_attachment = attachment
+
+    def _set_loop_scoped_adapter_index(self, loop_index: int) -> int:
+        changed = 0
+        for module in self.modules():
+            if module is self:
+                continue
+            if getattr(module, "is_loop_scoped_adapter", False):
+                module.set_loop_index(loop_index)
+                changed += 1
+        return changed
 
     def _run_decoder_layer(
         self,
