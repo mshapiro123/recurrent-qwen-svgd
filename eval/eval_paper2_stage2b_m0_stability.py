@@ -150,6 +150,11 @@ def main() -> int:
     )
     if installed <= 0:
         raise RuntimeError("M0 failed to install loop-scoped attention adapters")
+    recurrent_projection_dtype = next(
+        module.base.weight.dtype
+        for module in wrapper.modules()
+        if isinstance(module, LoopScopedLoRALinear)
+    )
     attachment = Stage2BDepthAttachment.from_phase3(sidecar).to("cuda").eval()
     wrapper.install_stage2b_depth_attachment(attachment)
 
@@ -211,7 +216,11 @@ def main() -> int:
         encoded_row = tokenizer(
             _render_prompt(tokenizer, row), return_tensors="pt", add_special_tokens=True
         ).to("cuda")
-        embeds = base.get_input_embeddings()(encoded_row["input_ids"]).detach()
+        embeds = (
+            base.get_input_embeddings()(encoded_row["input_ids"])
+            .detach()
+            .to(recurrent_projection_dtype)
+        )
         direction = torch.randn(embeds.shape, generator=generator, device="cuda", dtype=torch.float32)
         for loops in (1, 2, 3, 4):
             def forward(candidate: torch.Tensor, depth: int = loops) -> torch.Tensor:
