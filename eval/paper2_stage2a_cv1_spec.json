@@ -1,0 +1,33 @@
+{
+  "authority": {
+    "bytes": 9978,
+    "drive_id": "1g6Uh1869pNT3v8RtUzFmdPfOuFRYLz4S",
+    "sha256": "f8b5d2b45a7c6f855943ea88ab3efadfb872eafd945bfaca6aa396bff1f4086a"
+  },
+  "boundaries": {
+    "confirm_scored": false,
+    "eval_e_scored": false,
+    "optimizer_constructed": false,
+    "partition": "dev",
+    "training_authorized": false
+  },
+  "checkpoint_sha256": {
+    "t3a": "07378424dca2f5705e61a4bf18721aead574f795a6ff0bfb0762e6ba48769cee",
+    "t3b": "0c1d00a51e134d232589b6aaa3cc9949563d3c22eca470b8dcde7bbb8b6eda79"
+  },
+  "d5": {
+    "batteries": ["mmlu", "gsm8k"],
+    "permutation_draws": 10000,
+    "permutation_seed": 20260820,
+    "primary_metric": "memory_retrieval_score_mean",
+    "status": "descriptive_no_gate"
+  },
+  "dose_multipliers": [0.0, 0.5, 1.0],
+  "hosts": ["t3a", "t3b"],
+  "kind": "paper2_stage2a_cv1_d5_score_only_spec_v1",
+  "panel_rows": 1024,
+  "random_seed": 20260819,
+  "registered_amplitude": 0.05,
+  "shuffle_seed": 20260818,
+  "value_conditions": ["correct", "shuffled", "random"]
+}

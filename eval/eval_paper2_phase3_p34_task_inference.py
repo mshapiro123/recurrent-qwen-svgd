@@ -88,6 +88,8 @@ class P34TaskInferenceGraph:
         stage2a_memory_system: Stage2AMemorySystem | None = None,
         stage2a_geometry: dict[str, Any] | None = None,
         stage2a_amplitude: float = 0.05,
+        stage2a_value_scale: float = 1.0,
+        stage2a_diagnostic_value_scale_authorized: bool = False,
     ) -> None:
         self.base_model = base_model
         self.sidecar = sidecar
@@ -97,6 +99,7 @@ class P34TaskInferenceGraph:
         self.stage2a_memory_system = stage2a_memory_system
         self.stage2a_geometry = stage2a_geometry
         self.stage2a_amplitude = float(stage2a_amplitude)
+        self.stage2a_value_scale = float(stage2a_value_scale)
         if self.flow_loops < 1:
             raise ValueError("task inference requires at least one flow loop")
         if self.flow_loops > P34_FLOW_LOOPS and not self.allow_clamped_extension:
@@ -108,6 +111,14 @@ class P34TaskInferenceGraph:
                 raise ValueError("Stage 2A memory requires frozen geometry")
             if abs(self.stage2a_amplitude - 0.05) > 1e-12:
                 raise ValueError("Stage 2A registered DEV read amplitude is 0.05")
+            allowed_scales = (0.0, 0.5, 1.0)
+            if not any(abs(self.stage2a_value_scale - value) <= 1e-12 for value in allowed_scales):
+                raise ValueError("Stage 2A diagnostic value scale must be one of 0, 0.5, or 1")
+            if (
+                abs(self.stage2a_value_scale - 1.0) > 1e-12
+                and not stage2a_diagnostic_value_scale_authorized
+            ):
+                raise ValueError("Stage 2A non-unit value scale requires score-only authorization")
         self.contract = TaskInferenceContract(
             cross_token_state_persistence=self.cross_token_persistence
         )
@@ -160,6 +171,7 @@ class P34TaskInferenceGraph:
                 )
                 memory_readout = self.stage2a_memory_system.read_fingerprint(query)
                 memory_value = memory_readout.value
+            memory_value = memory_value * self.stage2a_value_scale
             scratch0 = self.stage2a_memory_system.injection(
                 scratch0,
                 memory_value,
