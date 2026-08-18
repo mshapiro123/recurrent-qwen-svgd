@@ -1,0 +1,18 @@
+{
+  "a100_top_token_id": 1249,
+  "confirm_scored": false,
+  "eval_e_scored": false,
+  "kind": "paper2_stage2b_r1_fixed_prompt_comparison_v1",
+  "l4_top_token_id": 1249,
+  "max_absolute_logit_delta": 0.375,
+  "mean_absolute_logit_delta": 0.05725766718387604,
+  "optimizer_constructed": false,
+  "optimizer_steps": 0,
+  "source_sha256": {
+    "a100_40gb": "7442efb0b55211180b290d3bbde91ee09462500d9bec70e2a8cb731105a1e4d9",
+    "l4": "79bcbc0f41ccf46fdacd7d9cbc83e560a3a76d026fe2451c7d56bac0f2d7214b"
+  },
+  "status": "runtime_aligned",
+  "top_token_identical": true,
+  "vocabulary": 151936
+}

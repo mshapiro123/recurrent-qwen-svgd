@@ -4430,6 +4430,14 @@ TARGETS = {
         ],
         "env": {},
     },
+    "paper2_stage2b_loss_calibration": {
+        "path": "colab/STAGE5_PAPER2_STAGE2B_LOSS_CALIBRATION_CELL.py",
+        "markers": [
+            "paper2_stage2b_loss_calibration_v1",
+            "colab.run_stage5_paper2_stage2b_loss_calibration",
+            "no-training Stage 2B loss calibration",
+        ],
+    },
     "paper2_phase3_kp1_t1": {
         "path": "colab/STAGE5_PAPER2_PHASE3_KP1_T1_CELL.py",
         "markers": [

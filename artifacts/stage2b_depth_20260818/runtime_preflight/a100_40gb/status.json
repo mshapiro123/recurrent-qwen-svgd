@@ -1,0 +1,14 @@
+{
+  "confirm_scored": false,
+  "eval_e_scored": false,
+  "fixed_prompt_logits_sha256": "7442efb0b55211180b290d3bbde91ee09462500d9bec70e2a8cb731105a1e4d9",
+  "fixed_prompt_summary_sha256": "ed058a16d02f1caa595196911cbc5a222104f1f532855425f2d1823d1ee62558",
+  "kind": "paper2_stage2b_preflight_status_v1",
+  "m0_sha256": "00d8d9d114b8534ac907f2f87b5c76ca40ea150d21d2fbe580e0131878a2d1ef",
+  "optimizer_constructed": false,
+  "optimizer_steps": 0,
+  "run_m0": true,
+  "runtime_label": "a100_40gb",
+  "status": "complete_score_only",
+  "updated_at_unix": 1787094893.366226
+}

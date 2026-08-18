@@ -1,0 +1,24 @@
+{
+  "by_battery": {
+    "gsm8k": 369,
+    "mbpp": 67
+  },
+  "confirm_scored": false,
+  "eval_e_scored": false,
+  "gsm8k_available_supervision": "final normalized number only",
+  "kind": "paper2_stage2b_depth_target_feasibility_v1",
+  "mbpp_available_supervision": "final program and unit tests only",
+  "optimizer_constructed": false,
+  "optimizer_steps": 0,
+  "registered_fallback": {
+    "active_depth_mechanism": "per-loop full-sequence distillation plus monotonicity hinge",
+    "verified_depth_weight": 0.0
+  },
+  "rows_with_execution_verified_intermediate_trace": 0,
+  "rows_with_registered_step_boundaries": 0,
+  "source_sha256": "c0e15a890b598544059ac337cc475123f97c05e3c1626febcdee1c6d8fe02615",
+  "status": "fallback_activated",
+  "target_rows": 436,
+  "teacher_sampled_pseudo_steps_used": false,
+  "verdict": "no cheap execution-verified k-step target generator can be built from banked rows"
+}

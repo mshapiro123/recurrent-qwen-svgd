@@ -1,0 +1,59 @@
+{
+  "arbitration": "higher answer_token_margin_minimum wins; exact ties select seed 0",
+  "by_battery": {
+    "arc_challenge": {
+      "ensemble_correct": 41,
+      "rows": 76,
+      "seed_0_correct": 42,
+      "seed_1_correct": 41
+    },
+    "arc_easy": {
+      "ensemble_correct": 189,
+      "rows": 243,
+      "seed_0_correct": 190,
+      "seed_1_correct": 189
+    },
+    "gsm8k": {
+      "ensemble_correct": 103,
+      "rows": 369,
+      "seed_0_correct": 103,
+      "seed_1_correct": 106
+    },
+    "mbpp": {
+      "ensemble_correct": 34,
+      "rows": 67,
+      "seed_0_correct": 34,
+      "seed_1_correct": 34
+    },
+    "mmlu": {
+      "ensemble_correct": 119,
+      "rows": 244,
+      "seed_0_correct": 117,
+      "seed_1_correct": 118
+    },
+    "tier1": {
+      "ensemble_correct": 20,
+      "rows": 25,
+      "seed_0_correct": 20,
+      "seed_1_correct": 20
+    }
+  },
+  "confirm_scored": false,
+  "counts": {
+    "ensemble": 506,
+    "seed_0": 506,
+    "seed_1": 508
+  },
+  "ensemble_minus_best_seed": -2,
+  "eval_e_scored": false,
+  "kind": "paper2_stage2b_seed_ensemble_probe_v1",
+  "optimizer_constructed": false,
+  "rows": 1024,
+  "rows_sha256": "e929121696da54eb9bd148db5fe3b4d2ab6632c1165945aeecb4d53ea7e2041e",
+  "selected_counts": {
+    "seed_0": 747,
+    "seed_1": 277
+  },
+  "status": "complete_score_only_cached_rows",
+  "training_steps": 0
+}

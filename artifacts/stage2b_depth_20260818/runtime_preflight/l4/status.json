@@ -1,0 +1,14 @@
+{
+  "confirm_scored": false,
+  "eval_e_scored": false,
+  "fixed_prompt_logits_sha256": "79bcbc0f41ccf46fdacd7d9cbc83e560a3a76d026fe2451c7d56bac0f2d7214b",
+  "fixed_prompt_summary_sha256": "c7e055b806a42adeb9257f6950e27f98858211c9781555f744915beb46c22bff",
+  "kind": "paper2_stage2b_preflight_status_v1",
+  "m0_sha256": null,
+  "optimizer_constructed": false,
+  "optimizer_steps": 0,
+  "run_m0": false,
+  "runtime_label": "l4",
+  "status": "complete_score_only",
+  "updated_at_unix": 1787095481.257348
+}

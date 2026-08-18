@@ -32,8 +32,8 @@
   "initialization": {
     "seed_0_arm_s_ema_sha256": "a047e2e7b35320376a736492c79d913b8690937da785efa2af002c8f54d26ca6",
     "seed_1_arm_s_ema_sha256": "e36cddb76407c8f853ccb43824c77cf01d15f144780726dd9aec23215467fccb",
-    "m0_identity_receipt_sha256": null,
-    "lora_base_path_identity_receipt_sha256": null
+    "m0_identity_receipt_sha256": "00d8d9d114b8534ac907f2f87b5c76ca40ea150d21d2fbe580e0131878a2d1ef",
+    "lora_base_path_identity_receipt_sha256": "00d8d9d114b8534ac907f2f87b5c76ca40ea150d21d2fbe580e0131878a2d1ef"
   },
   "training": {
     "steps": 24000,
@@ -81,6 +81,24 @@
       "weight_binding": "M0 gradient-share calibration on the exact registered estimator",
       "verified_depth_generator": "fallback activated: banked rows contain no execution-verified intermediate traces or registered step boundaries",
       "verified_depth_feasibility_receipt_sha256": "aa40407b4851cb60cda3ed18c333726fb92b16aa2a89a2247bcdc08e3500ec12"
+    },
+    "data": {
+      "rows": 2920,
+      "old_training_rows": 979,
+      "option_b_new_training_rows": 1941,
+      "code_rows": 1409,
+      "general_rows": 1511,
+      "next_token_positions": 1256942,
+      "maximum_sequence_length": 512,
+      "corpus_sha256": "2e3e4f8cc98f997854381a98819539f835b68830c75a75f7d0f24a9b91c4e135",
+      "calibration_rows": 32,
+      "calibration_positions": 14383,
+      "calibration_manifest_sha256": "5d9e6784f47ddd9a18f9d966e5e6d3392d60159a9872bafba0d02ef386a34b21",
+      "source_sha256": {
+        "dev_c": "05bca2ee3ba71421296b2e31a0439746eb9c1b0e15e2cea4471be202ab6ac29d",
+        "option_b_new": "bd0c84984f1dd47d1ee5dc06172afb7ea9728443d7712ca82ffa836d54edff9b"
+      },
+      "split_contract": "reuse the frozen DEV-C document split for old rows; admit all Option B fresh training documents; no DEV/CONFIRM/EVAL-E contact"
     }
   },
   "dev2": {
@@ -135,24 +153,32 @@
     "seed_ensemble_receipt_sha256": "549b52b77f91a9ce4c7ac54db109fbfad9448846476404aa5caaa2a62ac811a6",
     "seed_ensemble_result": "negative: ensemble 506/1024, best constituent 508/1024",
     "r1_runtime_discordance_receipt_sha256": "e10c45822fd9008a4b8e61388b675467839ee9fe62efa8f52158624424371d6a",
-    "r1_runtime_discordance_status": "desk audit complete; high-margin flips require paired fixed-prompt probe before closure",
-    "r1_fixed_prompt_a100_receipt_sha256": null,
-    "r1_fixed_prompt_l4_receipt_sha256": null
+    "r1_runtime_discordance_status": "closed: fixed prompt reproduced the same top token across A100 and L4; runtime was aligned rather than bit-identical",
+    "r1_fixed_prompt_a100_receipt_sha256": "ed058a16d02f1caa595196911cbc5a222104f1f532855425f2d1823d1ee62558",
+    "r1_fixed_prompt_l4_receipt_sha256": "c7e055b806a42adeb9257f6950e27f98858211c9781555f744915beb46c22bff",
+    "r1_cross_runtime_receipt_sha256": "af837d254b7ca8df2a58d2d3bc211003efa987387d0cef117f189279658988f3"
   },
   "stability": {
-    "m0_receipt_sha256": null,
+    "m0_receipt_sha256": "00d8d9d114b8534ac907f2f87b5c76ca40ea150d21d2fbe580e0131878a2d1ef",
     "required_before_optimizer": true,
     "jvp_finite_required": true,
     "finite_horizon_gain_required": true,
     "routing_spectrum_logged": true,
-    "lane_effective_rank_logged": true
+    "lane_effective_rank_logged": true,
+    "finite_horizon_gain_max": 73.4796,
+    "routing_row_residual_max": 0.0,
+    "routing_column_residual_max": 0.0,
+    "lambda2_mean": 0.9993057,
+    "lane_effective_rank": 1.003187
   },
   "runtime": {
-    "accelerator_class": null,
-    "torch_version": null,
-    "cuda_version": null,
-    "attention_backend": null,
-    "unchanged_endpoint_reproduction_receipt_sha256": null
+    "accelerator_class": "NVIDIA A100-SXM4-40GB",
+    "torch_version": "2.11.0+cu128",
+    "cuda_version": "12.8",
+    "weights_dtype": "bfloat16",
+    "attention_backend": "sdpa",
+    "unchanged_endpoint_reproduction_receipt_sha256": "ed058a16d02f1caa595196911cbc5a222104f1f532855425f2d1823d1ee62558",
+    "cross_runtime_status": "same top token on A100 and L4; max absolute logit delta 0.375 and mean absolute delta 0.0572577"
   },
   "checkpoint_retention": {
     "retain_steps": [0, 1000, 2500, 5000, 6000, 12000, 18000, 21600, 23000, 24000],
@@ -166,10 +192,7 @@
     "remain_sealed": true
   },
   "unresolved_lock_fields": [
-    "M0 calibrated loss weights and hinge delta",
-    "runtime identity and unchanged-endpoint reproduction",
-    "complete R-1 receipt including paired fixed-prompt logits",
-    "M0 stability receipt",
+    "M0 calibrated loss weights",
     "Mark signature"
   ]
 }

@@ -27,8 +27,11 @@ from models.paper2_stage2b_depth import (
 from models.recurrent_wrapper import LayerSplit, RecurrentQwenForCausalLM
 from tests.test_recurrent_wrapper_tiny import TinyCausalLM
 from training.paper2_stage2b_depth import (
+    DepthObjectiveWeights,
     STAGE_ALLOCATIONS,
     bootstrap_mean_interval,
+    calibrated_gradient_share_weights,
+    depth_objective,
     kill_gate_seed_read,
     kill_gate_verdict,
     load_and_validate_lock,
@@ -36,6 +39,7 @@ from training.paper2_stage2b_depth import (
     stage2b_learning_rate,
     stage_for_step,
 )
+from training.paper2_stage2b_data import build_training_corpus, select_calibration_rows
 
 
 def test_log_sinkhorn_is_doubly_stochastic() -> None:
@@ -148,6 +152,103 @@ def test_stage_schedule_and_landing_are_bound() -> None:
     assert stage2b_learning_rate(1, peak=5e-4) == pytest.approx(1e-6)
     assert stage2b_learning_rate(24000, peak=5e-4) == pytest.approx(0.0, abs=1e-15)
     assert STAGE_ALLOCATIONS["M4"] == [5001, 24000]
+
+
+def test_depth_objective_uses_sparse_top128_and_equal_example_weighting() -> None:
+    torch.manual_seed(12)
+    batch, positions, vocabulary = 2, 4, 160
+    base = torch.randn(batch, positions, vocabulary)
+    loop_logits = [base.clone().requires_grad_() for _ in range(4)]
+    teacher_ids = torch.arange(128).view(1, 1, 128).expand(batch, positions, -1)
+    teacher_logits = base.detach().gather(-1, teacher_ids) + 0.2
+    teacher_tokens = torch.tensor([[1, 2, 3, 4], [5, 6, 7, 8]])
+    loss_mask = torch.tensor([[True, False, False, False], [True, True, True, False]])
+    weights = DepthObjectiveWeights(ce=0.3, kl=0.5, monotonicity=0.2)
+
+    total, components = depth_objective(
+        loop_logits=loop_logits,
+        teacher_topk_token_ids=teacher_ids,
+        teacher_topk_logits=teacher_logits,
+        teacher_tokens=teacher_tokens,
+        loss_mask=loss_mask,
+        weights=weights,
+        hinge_delta=0.01,
+    )
+
+    per_token = torch.nn.functional.cross_entropy(
+        base.reshape(-1, vocabulary), teacher_tokens.reshape(-1), reduction="none"
+    ).reshape(batch, positions)
+    expected_ce = torch.stack([per_token[0, 0], per_token[1, :3].mean()]).mean()
+    assert components["ce"].item() == pytest.approx(expected_ce.item())
+    assert components["kl"].item() == pytest.approx(0.0, abs=1e-6)
+    assert components["monotonicity"].item() == pytest.approx(0.03, abs=1e-6)
+    total.backward()
+    assert all(logits.grad is not None for logits in loop_logits)
+
+
+def test_depth_objective_rejects_dense_teacher_logits() -> None:
+    logits = [torch.randn(1, 2, 160) for _ in range(4)]
+    with pytest.raises(ValueError, match="128"):
+        depth_objective(
+            loop_logits=logits,
+            teacher_topk_token_ids=torch.zeros(1, 2, 160, dtype=torch.long),
+            teacher_topk_logits=torch.zeros(1, 2, 160),
+            teacher_tokens=torch.zeros(1, 2, dtype=torch.long),
+            loss_mask=torch.ones(1, 2, dtype=torch.bool),
+            weights=DepthObjectiveWeights(ce=0.3, kl=0.5, monotonicity=0.2),
+            hinge_delta=0.01,
+        )
+
+
+def test_stage2b_full_sequence_corpus_reuses_document_split() -> None:
+    old = [
+        {"document_id": f"old-{index}", "row_id": f"o{index}", "stratum": "general", "input_ids": [1, 2, 3]}
+        for index in range(100)
+    ]
+    new = [
+        {"document_id": f"new-{index}", "row_id": f"n{index}", "stratum": "code", "input_ids": [4, 5, 6, 7]}
+        for index in range(20)
+    ]
+    first, receipt = build_training_corpus(old, new)
+    second, _ = build_training_corpus(old, new)
+    assert first == second
+    assert receipt["counts_by_source"]["option_b_new_train"] == 20
+    assert receipt["old_document_split"]["selected_training_rows"] < 100
+    assert receipt["next_token_positions"] == sum(len(row["input_ids"]) - 1 for row in first)
+
+
+def test_stage2b_calibration_panel_is_balanced_and_deterministic() -> None:
+    rows = [
+        {
+            "document_id": f"{stratum}-{index}",
+            "row_id": f"{stratum}-{index}",
+            "stratum": stratum,
+            "source_partition": "test",
+            "input_ids": [1, 2, 3],
+        }
+        for stratum in ("general", "code")
+        for index in range(40)
+    ]
+    first, receipt = select_calibration_rows(rows)
+    second, _ = select_calibration_rows(rows)
+    assert first == second
+    assert receipt["rows"] == 32
+    assert receipt["counts_by_stratum"] == {"code": 16, "general": 16}
+
+
+def test_gradient_share_calibration_hits_registered_targets() -> None:
+    weights = calibrated_gradient_share_weights(
+        {"ce": 2.0, "kl": 10.0, "monotonicity": 0.5}
+    )
+    weighted = {
+        "ce": weights.ce * 2.0,
+        "kl": weights.kl * 10.0,
+        "monotonicity": weights.monotonicity * 0.5,
+    }
+    total = sum(weighted.values())
+    assert weighted["ce"] / total == pytest.approx(0.3)
+    assert weighted["kl"] / total == pytest.approx(0.5)
+    assert weighted["monotonicity"] / total == pytest.approx(0.2)
 
 
 def test_kill_gate_continues_on_one_separating_seed() -> None:
@@ -289,3 +390,19 @@ def test_stage2b_preflight_target_is_wired_and_score_only() -> None:
     assert "reusable_m0" in runner
     assert "M0 receipt is not passing" in runner
     assert "training.run" not in runner
+
+
+def test_stage2b_loss_calibration_target_is_wired_and_no_optimizer() -> None:
+    root = Path(__file__).resolve().parents[1]
+    bootstrap = (root / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    cell = (root / "colab/STAGE5_PAPER2_STAGE2B_LOSS_CALIBRATION_CELL.py").read_text(
+        encoding="utf-8"
+    )
+    runner = (root / "colab/run_stage5_paper2_stage2b_loss_calibration.py").read_text(
+        encoding="utf-8"
+    )
+    assert "paper2_stage2b_loss_calibration" in bootstrap
+    assert "paper2_stage2b_loss_calibration_v1" in cell
+    assert '"optimizer_constructed": False' in runner
+    assert '"confirm_scored": False' in runner
+    assert "torch.optim" not in runner

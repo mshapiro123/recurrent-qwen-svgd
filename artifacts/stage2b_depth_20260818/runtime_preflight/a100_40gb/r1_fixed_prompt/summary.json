@@ -1,0 +1,143 @@
+{
+  "checkpoint_chain": [
+    {
+      "label": "migrated",
+      "optimizer_state_absent": true,
+      "path": "/content/recurrent-qwen-svgd-stage/stage5_paper2_stage2b_preflight_20260818/chain_seed_0/seed_0_migrated.pt",
+      "sha256": "d0f2b735825d29ab9801a5200493ca9aa65294778aea2fb7f728eb8e85dfc519",
+      "source_seed": 0,
+      "trainable_state_sha256": "97b4bd426f6a5ea265aa27c30520151761d460abebbb7112e23193f5e6a8d059"
+    },
+    {
+      "label": "p33",
+      "path": "/content/recurrent-qwen-svgd-stage/stage5_paper2_stage2b_preflight_20260818/chain_seed_0/seed_0_p33_step_1000.pt",
+      "sha256": "84dc0fb2d1f69114b20888acd95101d6b31c810974a536dc36358b69fe13c70e",
+      "state_keys": [
+        "bridge.gate_control.weight",
+        "bridge.gate_hidden.weight",
+        "bridge.gate_logits",
+        "bridge.gate_scratch.weight",
+        "bridge.hidden_norm.weight",
+        "bridge.key.weight",
+        "bridge.output_projection.weight",
+        "bridge.query.weight",
+        "bridge.rho_logits",
+        "bridge.scratch_norm.weight",
+        "bridge.value.weight",
+        "control.cell.bias_hh",
+        "control.cell.bias_ih",
+        "control.cell.weight_hh",
+        "control.cell.weight_ih",
+        "control.position_embedding.weight"
+      ],
+      "step": 1000
+    },
+    {
+      "label": "i1",
+      "path": "/content/recurrent-qwen-svgd-stage/stage5_paper2_stage2b_preflight_20260818/chain_seed_0/seed_0_i1.pt",
+      "sha256": "01c804bc69d35a01730fff236cf5a8d974899d2e4de7e15b92a227b2a9ce5d88",
+      "state_keys": [
+        "bridge.output_projection.weight"
+      ],
+      "step": 1000
+    },
+    {
+      "controller_rung": 1,
+      "label": "p34",
+      "path": "/content/recurrent-qwen-svgd-stage/stage5_paper2_stage2b_preflight_20260818/chain_seed_0/seed_0_p34_step_4000.pt",
+      "sha256": "381955ec5b78d0a00883c29e9f940feac8cfc8665f7a3a4446c79734532f4ed7",
+      "state_keys": [
+        "bridge.gate_control.weight",
+        "bridge.gate_hidden.weight",
+        "bridge.gate_logits",
+        "bridge.gate_scratch.weight",
+        "bridge.hidden_norm.weight",
+        "bridge.key.weight",
+        "bridge.output_projection.weight",
+        "bridge.query.weight",
+        "bridge.rho_logits",
+        "bridge.scratch_norm.weight",
+        "bridge.value.weight",
+        "control.cell.bias_hh",
+        "control.cell.bias_ih",
+        "control.cell.weight_hh",
+        "control.cell.weight_ih",
+        "control.position_embedding.weight"
+      ],
+      "step": 4000
+    },
+    {
+      "control_reader": "mean",
+      "evaluation_gate_ceiling": 0.02,
+      "label": "p35",
+      "path": "/content/recurrent-qwen-svgd-stage/stage5_paper2_stage2b_preflight_20260818/seed_0_p35_ema_step_4400.pt",
+      "sha256": "a047e2e7b35320376a736492c79d913b8690937da785efa2af002c8f54d26ca6",
+      "state_keys": [
+        "bridge.gate_control.weight",
+        "bridge.gate_hidden.weight",
+        "bridge.gate_logits",
+        "bridge.gate_scratch.weight",
+        "bridge.hidden_norm.weight",
+        "bridge.key.weight",
+        "bridge.output_projection.weight",
+        "bridge.query.weight",
+        "bridge.rho_logits",
+        "bridge.scratch_norm.weight",
+        "bridge.value.weight",
+        "control.cell.bias_hh",
+        "control.cell.bias_ih",
+        "control.cell.weight_hh",
+        "control.cell.weight_ih",
+        "control.position_embedding.weight"
+      ],
+      "step": 4400
+    }
+  ],
+  "confirm_scored": false,
+  "eval_e_scored": false,
+  "first_token_logits_sha256": "7442efb0b55211180b290d3bbde91ee09462500d9bec70e2a8cb731105a1e4d9",
+  "item_id": "gsm8k-evaluation-1156",
+  "kind": "paper2_stage2b_r1_fixed_prompt_v1",
+  "optimizer_constructed": false,
+  "optimizer_steps": 0,
+  "p35_checkpoint_sha256": "a047e2e7b35320376a736492c79d913b8690937da785efa2af002c8f54d26ca6",
+  "panel_sha256": "c0e15a890b598544059ac337cc475123f97c05e3c1626febcdee1c6d8fe02615",
+  "runtime": {
+    "attention_backend": "sdpa",
+    "cuda": "12.8",
+    "cudnn": 91900,
+    "gpu": "NVIDIA A100-SXM4-40GB",
+    "platform": "Linux-6.6.122+-x86_64-with-glibc2.35",
+    "tf32_cudnn": true,
+    "tf32_matmul": false,
+    "torch": "2.11.0+cu128",
+    "weights_dtype": "bfloat16"
+  },
+  "runtime_label": "a100_40gb",
+  "status": "complete_score_only",
+  "t3a_checkpoint_sha256": "07378424dca2f5705e61a4bf18721aead574f795a6ff0bfb0762e6ba48769cee",
+  "top_logits": [
+    22.0,
+    20.875,
+    20.0,
+    19.25,
+    18.25,
+    18.0,
+    18.0,
+    17.875,
+    17.125,
+    16.875
+  ],
+  "top_token_ids": [
+    1249,
+    5338,
+    10061,
+    19357,
+    16,
+    785,
+    50597,
+    39814,
+    334,
+    8420
+  ]
+}
