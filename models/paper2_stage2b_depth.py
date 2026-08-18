@@ -170,6 +170,31 @@ class MultiLaneScratchFlow(nn.Module):
         if prompt_context.shape != context.shape:
             raise ValueError("prompt context must match recurrent context")
 
+        if forced_lane_one and not dynamic_routing and not constitutive_active:
+            # M1 is an identity contract, not merely a numerically close
+            # parameterization. Execute the original single-lane flow on lane
+            # one and replicate its result, avoiding batch-shape-dependent GPU
+            # roundoff from evaluating four identical lanes together.
+            single_state, single_update, _magnitude, _ratio = self.base_flow.step(
+                state[:, 0], context, index
+            )
+            flowed = self.replicate(single_state)
+            update = self.replicate(single_update)
+            routing = self._routing(state, index, False)
+            constitutive = flowed.new_zeros(flowed.shape)
+            row_residual, column_residual = routing_residuals(routing)
+            return MultiLaneStepOutput(
+                state=flowed,
+                read_state=single_state,
+                routing=routing,
+                sinkhorn_row_residual=row_residual,
+                sinkhorn_column_residual=column_residual,
+                lambda2=second_eigenvalue_magnitude(routing),
+                effective_rank=lane_effective_rank(flowed),
+                flow_update=update,
+                constitutive_update=constitutive,
+            )
+
         routing = self._routing(state, index, dynamic_routing)
         carry = torch.einsum("bij,bjsd->bisd", routing.to(state.dtype), state)
         flat = carry.flatten(0, 1)
