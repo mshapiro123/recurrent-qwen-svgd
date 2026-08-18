@@ -272,4 +272,6 @@ def test_stage2b_preflight_target_is_wired_and_score_only() -> None:
     assert "paper2_stage2b_preflight_v1" in cell
     assert "optimizer_constructed\": False" in runner
     assert "confirm_scored\": False" in runner
+    assert "reusable_m0" in runner
+    assert "M0 receipt is not passing" in runner
     assert "training.run" not in runner
