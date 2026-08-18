@@ -4045,6 +4045,25 @@ def test_stage2a_t3_screen_target_is_wired_and_guarded() -> None:
     assert "running_registered_control_escalation" in runner
 
 
+def test_stage2a_cv1_target_is_wired_and_guarded() -> None:
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    cell = (ROOT / "colab/STAGE5_PAPER2_STAGE2A_CV1_CELL.py").read_text(encoding="utf-8")
+    runner = (ROOT / "colab/run_stage5_paper2_stage2a_cv1.py").read_text(encoding="utf-8")
+    evaluator = (ROOT / "eval/eval_paper2_stage2a_cv1.py").read_text(encoding="utf-8")
+    assert "paper2_stage2a_cv1_d5" in bootstrap
+    assert "paper2_stage2a_cv1_d5_v1" in cell
+    assert "score-only crossed values and gate dose no optimizer no training" in cell
+    assert "both comparators per battery dose zero bit exact initialization" in cell
+    assert "D5 retrieval relevance descriptive no gate" in cell
+    assert "DEV reuse only CONFIRM and EVAL-E remain sealed" in cell
+    assert "memory_mib >= 22_000" in cell
+    assert "stage2a_cv1_status" in runner
+    assert "running_d5_analysis" in runner
+    assert "optimizer_constructed" in evaluator
+    assert "dose_zero_host_outputs_bit_exact" in evaluator
+
+
+
 def test_gradient_path_audit_target_is_wired_and_guarded() -> None:
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
     bootstrap_md = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.md").read_text(encoding="utf-8")

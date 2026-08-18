@@ -4495,6 +4495,19 @@ TARGETS = {
         ],
         "env": {},
     },
+    "paper2_stage2a_cv1_d5": {
+        "path": "colab/STAGE5_PAPER2_STAGE2A_CV1_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_STAGE2A_CV1_VERSION",
+            "paper2_stage2a_cv1_d5_v1",
+            "score-only crossed values and gate dose no optimizer no training",
+            "both comparators per battery dose zero bit exact initialization",
+            "D5 retrieval relevance descriptive no gate",
+            "DEV reuse only CONFIRM and EVAL-E remain sealed",
+            "colab/run_stage5_paper2_stage2a_cv1.py",
+        ],
+        "env": {},
+    },
     "gradient_path_audit": {
         "path": "colab/STAGE5_GRADIENT_PATH_AUDIT_CELL.py",
         "markers": [

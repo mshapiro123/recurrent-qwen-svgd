@@ -1,0 +1,49 @@
+# Strategy — T3 Screen Response: The Start-Relative Accounting Changes the Story, the Doorway Is the Bottleneck, Five Rulings
+
+Date: 2026-08-18. Responds to the Stage 2A T3 screen handoff (Drive `1FdmtjME_rBpPMeF9u7MAHHN69TiCc-8K`; archive SHA `e30a294b827ab01d5d333d0c78a0dfca39bfbcbb57156608856063bd2d60ab92`). The registered verdict is ratified, the five recommended decisions are ruled, and one analytic correction — applying our own both-comparators doctrine — reframes what this screen measured and what the next lever is. CONFIRM and EVAL-E remain sealed.
+
+## 1. The correction first: this is not a near miss, and the reason matters
+
+The handoff reports every endpoint against the frozen 502-row base, under which T3a's +5.5 mean reads as a near miss of the +8 gate. But the both-comparators doctrine — banked 2026-08-14 precisely because base-relative accounting conflated lineage contributions once before — requires the second column, and here it inverts the interpretation. The arms initialize from the P3.5 Arm-S EMA endpoints, whose **no-training score at the same 0.05 registered read is +8/+8** (the amplitude-surface cell). Start-relative, the screen looks like this:
+
+| Condition | vs base | vs start (init @ 0.05) |
+|---|---:|---:|
+| T3a seed 0 / seed 1 | +3 / +8 | **−5 / 0** |
+| T3b seed 0 / seed 1 | +4 / +10 | **−4 / +2** |
+| Shuffled / random (seed 0) | −2 / −1 | **−10 / −9** |
+
+The +8 gate numerically coincided with the initialization's own level, so the screen was implicitly asking: does adding trained memory at least *not hurt* the system it attaches to? The answer: **the trained injection pathway costs roughly 9–10 rows on its own** (the controls, which share the pathway but carry junk), **and content repays most but not all of that cost** (T3a −2.5 mean vs start; T3b −1.0; only T3b seed 1 net-positive). Since everything old is frozen and the gate is zero at attach, this entire cost flows through the one new pathway: the trained gate opened (means 0.56–0.62 — nearly as wide for junk as for content), the injected signal perturbs the scratchpad, and the previously tuned write system downstream pays for it. The trainable injection map evidently learned to use even frozen-random values as a serviceable bias — good for training loss, transferring to DEV as the generic MBPP-up/GSM8K-down signature. So the screen's true finding, sharper than "below threshold," is: **content is real but the delivery mechanism is net-harmful as trained — the doorway, not the library, is the bottleneck.** The gate did exactly its job in blocking a scale-up of a mechanism that currently subtracts value on one seed; `SCREEN_BELOW_PROCEED_THRESHOLD` is **ratified**, and with the start-relative view the miss is decisive rather than narrow.
+
+Two subsidiary corrections. **Tier-1's invariant −2 is inherited, not caused:** the initialization endpoints already carry the two named `base_capability_addition` misses from the i1 era; every arm inherits them untouched, so the handoff's attribution to "the common gate/injection recipe" overreaches — the recipe neither fixed nor worsened them. Any successor floor must be defined against initialization, not base, or it penalizes history. And the **GSM8K/MBPP decomposition needs the same dual accounting** — the crossed audit below must report both comparators per battery, since part of the base-relative battery pattern belongs to the initialization, not to memory.
+
+## 2. What survives, cleanly stated
+
+Three things are genuinely banked. The **end-to-end plumbing works**: memory trains through the frozen scratchpad→flow→bridge path with zero lineage violations, writeback ratios two orders under ceiling, and χ discipline intact. The **content signal is real though unresolved**: every content-versus-control contrast points the same way (+4 to +6 rows, p ≈ 0.11–0.29), MMLU separates most clearly, content halves the controls' GSM8K harm, and cross-seed fix/regression Jaccards of 0.84–0.89 say these are systematic behaviors, not churn. And the **humbling result stands**: the literal n-gram table matched or beat the fingerprint memory everywhere that matters, so the beautiful addressing geometry has not yet demonstrated *task* value over surface-form lookup — the fingerprint result remains an addressing discovery, not yet a memory architecture.
+
+## 3. The five decisions
+
+**D1 — no T3-full: ratified.** Banked as registered; all endpoints preserved.
+
+**D2 — crossed-value audit: authorized, with two extensions.** On the fixed seed-0 T3a and T3b checkpoints, swap values among correct/shuffled/random through the *same* trained gate and injection map, score-only, preregistered as diagnostic DEV reuse that cannot alter this verdict. Extension one: a **g_L dose read** — score each checkpoint at gate scalings {0, 0.5×, 1×} — which prices the pathway's harm/help as a function of injection strength for free (the 0 cell reproduces initialization bit-exactly and doubles as an integrity check). Extension two: **both comparators, per battery, in every cell**, per §1. Together these separate content causality from co-adaptation *and* measure the doorway's standalone cost curve — the two numbers the successor design needs.
+
+**D3 — workload-stratified gating as successor prerequisite: ratified, with the floor defined against initialization** per §1. Tier-1 and GSM8K floors that MBPP gains cannot mask, reported per look.
+
+**D4 — literal memory becomes the Stage 2A baseline: ratified.** T3b is the standing bar; the fingerprint line must beat it under the D2 fixed-map audit or a redesigned value target before regaining lead. No sunk-cost defense of the elegant option — the tracker records it plainly.
+
+**D5 — targeted fingerprint probe: ratified, sequenced after D2**, focused on the rows where T3a beats controls (the MMLU separation and GSM8K harm-reduction populations), asking whether retrieval relevance predicts per-row benefit — the row-level version of the content question.
+
+## 4. The strategic consequence: T4 is promoted from rider to next lever
+
+The start-relative decomposition redirects Stage 2A. The next campaign should not be a bigger library (content already repays; supply is not binding) nor a different addressing scheme (D4 settles the baseline question empirically) — it should be a **selective doorway**. That is precisely the memory-sufficiency head (T4) that has been sitting in the queue as a diagnostic rider: a detached head predicting P(injection helps | state), gating delivery so the write fires on the MMLU-like rows where content pays and stays closed on the arithmetic chains where any injection perturbs the knife-edge. The screen's evidence for this is direct — a gate trained only by CE/KL opens ~0.6 even for junk, so gate quality must come from an explicit helps/harms signal, exactly T4's design, trained from the paired pass data D2 will generate. Proposed sequence, pending Mark's nod at the next lock: **D2 crossed audit + g_L dose (score-only, now) → D5 targeted probe (same session) → successor campaign = T3b-baseline memory + T4 sufficiency-gated delivery + D3 stratified floors**, sized per the standing CONFIRM arithmetic only if the audit confirms content causality under fixed maps. The idle observation worth carrying: the knife-edge physics that made write amplitude non-monotonic in P3.5 is the same physics making injection hurt GSM8K here — delivery selectivity is the common repair, and it is the one lever this program has never yet trained with an explicit objective.
+
+## 5. Tracker updates (applied this wave)
+
+Row 4: **screen complete, `SCREEN_BELOW_PROCEED_THRESHOLD`**; start-relative accounting appended; T3b promoted to standing baseline (D4); T3-full not opened. Row 5 (T4): **promoted from diagnostic-only rider to candidate next lever** — sufficiency-gated delivery, contingent on D2 confirming content causality. New row 14: **CV-1 crossed-value audit + g_L dose** (authorized, score-only). Row 13 (fingerprint spine): unchanged as an addressing result; task-value claim explicitly still unproven, D5 is its test.
+
+## 6. Plain-language summary
+
+The memory experiment came back looking like a narrow miss, and our own accounting rule — always measure against the system you started from, not just the original baseline — shows it was actually a clear stop. The starting checkpoints already scored plus-eight at this setting with no memory attached. Training the memory pathway then *cost* about nine or ten answers when the memory held junk, and real content bought most of that back but not all of it. So the library is fine and the librarian's addresses are fine; the delivery door is the problem — it opens almost as readily for garbage as for gold, and every opening jostles the delicate arithmetic the system was already doing. The gate we set caught this before we scaled it, which is exactly what gates are for. Also humbling and duly recorded: the simple word-pattern lookup table did as well as the sophisticated teacher-fingerprint memory, so the fancy version now has to prove itself against the simple one in a controlled swap test — approved today, along with a measurement of how harm scales with how far the door opens. If content proves causal in that test, the next campaign trains the one thing we've never trained directly: a doorkeeper that learns *when* a memory is worth delivering, with separate safety floors for math so code gains can't hide math losses, and the two inherited arithmetic errors properly attributed to history rather than blamed on the memory. Sealed exams stay sealed.
+
+---
+
+**Authorization line:** verdict ratified; D1–D5 ruled as stated; CV-1 (crossed values + g_L dose, both comparators per battery) and the D5 targeted probe are authorized as one score-only session. The successor-campaign shape in §4 awaits the audit receipts and Mark's nod. No seal spend; no training.
