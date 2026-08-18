@@ -11,6 +11,8 @@ from typing import Any, Mapping, Sequence
 import torch
 import torch.nn.functional as F
 
+from models.lora import LoopScopedLoRALinear
+
 
 STAGE2B_TOTAL_STEPS = 24_000
 STAGE2B_KILL_GATE_STEP = 5_000
@@ -50,26 +52,93 @@ class DepthObjectiveWeights:
             raise ValueError("CE, KL, and monotonicity must each remain active")
 
 
-def forward_kl(
+def configure_stage2b_trainable_groups(wrapper: torch.nn.Module) -> dict[str, list[torch.nn.Parameter]]:
+    """Freeze the substrate and expose the three registered optimizer groups."""
+
+    for parameter in wrapper.parameters():
+        parameter.requires_grad_(False)
+    attachment = getattr(wrapper, "stage2b_depth_attachment", None)
+    if attachment is None:
+        raise ValueError("Stage 2B attachment must be installed before grouping parameters")
+    groups: dict[str, list[torch.nn.Parameter]] = {
+        "new_modules": [],
+        "gates": [],
+        "loop_lora": [],
+    }
+    for name, parameter in attachment.named_parameters():
+        group = "gates" if name.startswith(("control.", "bridge.")) else "new_modules"
+        parameter.requires_grad_(True)
+        groups[group].append(parameter)
+    for module in wrapper.modules():
+        if isinstance(module, LoopScopedLoRALinear):
+            for parameter in module.lora_parameters():
+                parameter.requires_grad_(True)
+                groups["loop_lora"].append(parameter)
+    identities = [id(parameter) for values in groups.values() for parameter in values]
+    if len(identities) != len(set(identities)):
+        raise RuntimeError("Stage 2B optimizer groups overlap")
+    if any(not values for values in groups.values()):
+        raise RuntimeError("Stage 2B optimizer group is unexpectedly empty")
+    return groups
+
+
+def calibrated_gradient_share_weights(
+    raw_gradient_norms: Mapping[str, float],
+    *,
+    targets: Mapping[str, float] | None = None,
+) -> DepthObjectiveWeights:
+    targets = targets or {"kl": 0.5, "ce": 0.3, "monotonicity": 0.2}
+    if set(raw_gradient_norms) != {"ce", "kl", "monotonicity"}:
+        raise ValueError("gradient calibration requires CE, KL, and monotonicity norms")
+    if set(targets) != set(raw_gradient_norms) or abs(sum(targets.values()) - 1.0) > 1e-9:
+        raise ValueError("gradient-share targets must name the three active losses and sum to one")
+    unnormalized = {}
+    for name, norm in raw_gradient_norms.items():
+        if not math.isfinite(float(norm)) or float(norm) <= 0.0:
+            raise ValueError(f"nonpositive gradient norm for {name}")
+        unnormalized[name] = float(targets[name]) / float(norm)
+    scale = sum(unnormalized.values())
+    result = DepthObjectiveWeights(
+        ce=unnormalized["ce"] / scale,
+        kl=unnormalized["kl"] / scale,
+        monotonicity=unnormalized["monotonicity"] / scale,
+    )
+    result.validate()
+    return result
+
+
+def sparse_forward_kl(
     student_logits: torch.Tensor,
-    teacher_logits: torch.Tensor,
-    mask: torch.Tensor,
+    teacher_topk_token_ids: torch.Tensor,
+    teacher_topk_logits: torch.Tensor,
+    loss_mask: torch.Tensor,
     *,
     temperature: float = 1.0,
 ) -> torch.Tensor:
-    if student_logits.shape != teacher_logits.shape:
-        raise ValueError("student and teacher logits must align")
-    if mask.shape != student_logits.shape[:-1]:
+    if student_logits.ndim != 3:
+        raise ValueError("student logits must have shape [batch, positions, vocabulary]")
+    batch, positions, vocabulary = student_logits.shape
+    if teacher_topk_token_ids.shape != (batch, positions, 128):
+        raise ValueError("teacher token lattice must have shape [batch, positions, 128]")
+    if teacher_topk_logits.shape != teacher_topk_token_ids.shape:
+        raise ValueError("teacher top-k logits must align with teacher token IDs")
+    if loss_mask.shape != student_logits.shape[:-1] or loss_mask.dtype != torch.bool:
         raise ValueError("loss mask must align with token logits")
+    if bool(((teacher_topk_token_ids < 0) | (teacher_topk_token_ids >= vocabulary)).any()):
+        raise ValueError("teacher lattice token is outside the student vocabulary")
     if temperature <= 0:
         raise ValueError("temperature must be positive")
-    teacher = F.softmax(teacher_logits.float() / temperature, dim=-1)
-    student_log = F.log_softmax(student_logits.float() / temperature, dim=-1)
-    token_kl = F.kl_div(student_log, teacher, reduction="none").sum(dim=-1)
-    selected = token_kl[mask.bool()]
-    if selected.numel() == 0:
-        raise ValueError("depth objective received an empty answer mask")
-    return selected.mean() * temperature**2
+    counts = loss_mask.sum(dim=1)
+    if bool((counts == 0).any()):
+        raise ValueError("every example requires at least one supervised position")
+
+    selected_student = student_logits.gather(-1, teacher_topk_token_ids.long()).float()
+    teacher_log = F.log_softmax(teacher_topk_logits.float() / temperature, dim=-1)
+    student_log = F.log_softmax(selected_student / temperature, dim=-1)
+    token_kl = (teacher_log.exp() * (teacher_log - student_log)).sum(dim=-1)
+    mask = loss_mask.to(token_kl.dtype)
+    per_example = (token_kl * mask).sum(dim=1) / counts.to(token_kl.dtype)
+    return per_example.mean() * temperature**2
 
 
 def monotonicity_hinge(loop_kls: Sequence[torch.Tensor], *, delta: float) -> torch.Tensor:
@@ -85,9 +154,10 @@ def monotonicity_hinge(loop_kls: Sequence[torch.Tensor], *, delta: float) -> tor
 def depth_objective(
     *,
     loop_logits: Sequence[torch.Tensor],
-    teacher_logits: torch.Tensor,
+    teacher_topk_token_ids: torch.Tensor,
+    teacher_topk_logits: torch.Tensor,
     teacher_tokens: torch.Tensor,
-    answer_mask: torch.Tensor,
+    loss_mask: torch.Tensor,
     weights: DepthObjectiveWeights,
     hinge_delta: float,
     verified_depth_losses: Sequence[torch.Tensor] | None = None,
@@ -95,15 +165,43 @@ def depth_objective(
     weights.validate()
     if len(loop_logits) != STAGE2B_FLOW_LOOPS:
         raise ValueError("deep supervision requires four loop outputs")
-    kls = [forward_kl(logits, teacher_logits, answer_mask) for logits in loop_logits]
-    ce_tokens = teacher_tokens.masked_fill(~answer_mask.bool(), -100)
+    if not loop_logits or loop_logits[0].ndim != 3:
+        raise ValueError("loop logits must have shape [batch, positions, vocabulary]")
+    batch, positions, vocabulary = loop_logits[0].shape
+    if any(logits.shape != loop_logits[0].shape for logits in loop_logits):
+        raise ValueError("all loop logits must share one shape")
+    if teacher_tokens.shape != (batch, positions):
+        raise ValueError("teacher targets must have shape [batch, positions]")
+    if loss_mask.shape != (batch, positions) or loss_mask.dtype != torch.bool:
+        raise ValueError("loss mask must be boolean [batch, positions]")
+    if bool(((teacher_tokens < 0) | (teacher_tokens >= vocabulary)).any()):
+        raise ValueError("teacher target token is outside the student vocabulary")
+    counts = loss_mask.sum(dim=1)
+    if bool((counts == 0).any()):
+        raise ValueError("every example requires at least one supervised position")
+    kls = [
+        sparse_forward_kl(
+            logits,
+            teacher_topk_token_ids,
+            teacher_topk_logits,
+            loss_mask,
+        )
+        for logits in loop_logits
+    ]
+    ce_tokens = teacher_tokens.masked_fill(~loss_mask, -100)
     ce = torch.stack(
         [
-            F.cross_entropy(
+            (
+                F.cross_entropy(
                 logits.float().reshape(-1, logits.shape[-1]),
                 ce_tokens.reshape(-1),
                 ignore_index=-100,
-            )
+                reduction="none",
+                )
+                .reshape(batch, positions)
+                .sum(dim=1)
+                / counts.to(torch.float32)
+            ).mean()
             for logits in loop_logits
         ]
     ).mean()

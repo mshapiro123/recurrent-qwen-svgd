@@ -1,0 +1,183 @@
+{
+  "checkpoint_chain": [
+    {
+      "label": "migrated",
+      "optimizer_state_absent": true,
+      "path": "/content/recurrent-qwen-svgd-stage/stage5_paper2_stage2b_preflight_20260818/chain_seed_0/seed_0_migrated.pt",
+      "sha256": "d0f2b735825d29ab9801a5200493ca9aa65294778aea2fb7f728eb8e85dfc519",
+      "source_seed": 0,
+      "trainable_state_sha256": "97b4bd426f6a5ea265aa27c30520151761d460abebbb7112e23193f5e6a8d059"
+    },
+    {
+      "label": "p33",
+      "path": "/content/recurrent-qwen-svgd-stage/stage5_paper2_stage2b_preflight_20260818/chain_seed_0/seed_0_p33_step_1000.pt",
+      "sha256": "84dc0fb2d1f69114b20888acd95101d6b31c810974a536dc36358b69fe13c70e",
+      "state_keys": [
+        "bridge.gate_control.weight",
+        "bridge.gate_hidden.weight",
+        "bridge.gate_logits",
+        "bridge.gate_scratch.weight",
+        "bridge.hidden_norm.weight",
+        "bridge.key.weight",
+        "bridge.output_projection.weight",
+        "bridge.query.weight",
+        "bridge.rho_logits",
+        "bridge.scratch_norm.weight",
+        "bridge.value.weight",
+        "control.cell.bias_hh",
+        "control.cell.bias_ih",
+        "control.cell.weight_hh",
+        "control.cell.weight_ih",
+        "control.position_embedding.weight"
+      ],
+      "step": 1000
+    },
+    {
+      "label": "i1",
+      "path": "/content/recurrent-qwen-svgd-stage/stage5_paper2_stage2b_preflight_20260818/chain_seed_0/seed_0_i1.pt",
+      "sha256": "01c804bc69d35a01730fff236cf5a8d974899d2e4de7e15b92a227b2a9ce5d88",
+      "state_keys": [
+        "bridge.output_projection.weight"
+      ],
+      "step": 1000
+    },
+    {
+      "controller_rung": 1,
+      "label": "p34",
+      "path": "/content/recurrent-qwen-svgd-stage/stage5_paper2_stage2b_preflight_20260818/chain_seed_0/seed_0_p34_step_4000.pt",
+      "sha256": "381955ec5b78d0a00883c29e9f940feac8cfc8665f7a3a4446c79734532f4ed7",
+      "state_keys": [
+        "bridge.gate_control.weight",
+        "bridge.gate_hidden.weight",
+        "bridge.gate_logits",
+        "bridge.gate_scratch.weight",
+        "bridge.hidden_norm.weight",
+        "bridge.key.weight",
+        "bridge.output_projection.weight",
+        "bridge.query.weight",
+        "bridge.rho_logits",
+        "bridge.scratch_norm.weight",
+        "bridge.value.weight",
+        "control.cell.bias_hh",
+        "control.cell.bias_ih",
+        "control.cell.weight_hh",
+        "control.cell.weight_ih",
+        "control.position_embedding.weight"
+      ],
+      "step": 4000
+    },
+    {
+      "control_reader": "mean",
+      "evaluation_gate_ceiling": 0.02,
+      "label": "p35",
+      "path": "/content/recurrent-qwen-svgd-stage/stage5_paper2_stage2b_preflight_20260818/seed_0_p35_ema_step_4400.pt",
+      "sha256": "a047e2e7b35320376a736492c79d913b8690937da785efa2af002c8f54d26ca6",
+      "state_keys": [
+        "bridge.gate_control.weight",
+        "bridge.gate_hidden.weight",
+        "bridge.gate_logits",
+        "bridge.gate_scratch.weight",
+        "bridge.hidden_norm.weight",
+        "bridge.key.weight",
+        "bridge.output_projection.weight",
+        "bridge.query.weight",
+        "bridge.rho_logits",
+        "bridge.scratch_norm.weight",
+        "bridge.value.weight",
+        "control.cell.bias_hh",
+        "control.cell.bias_ih",
+        "control.cell.weight_hh",
+        "control.cell.weight_ih",
+        "control.position_embedding.weight"
+      ],
+      "step": 4400
+    }
+  ],
+  "confirm_scored": false,
+  "eval_e_scored": false,
+  "failures": [],
+  "finite_horizon": {
+    "catastrophe_tripwire": 100.0,
+    "centered_rms_gains": [
+      61.12284851074219,
+      49.12310028076172,
+      48.599491119384766,
+      49.97178649902344,
+      71.23570251464844,
+      42.485435485839844,
+      38.07148361206055,
+      37.56223678588867,
+      30.496891021728516,
+      33.10673522949219,
+      30.58826446533203,
+      28.34723663330078,
+      49.61040496826172,
+      28.078060150146484,
+      24.70026206970215,
+      24.292442321777344,
+      53.08088302612305,
+      31.51041030883789,
+      27.39946174621582,
+      26.049726486206055,
+      73.47956848144531,
+      57.08943557739258,
+      55.24540328979492,
+      49.7177734375,
+      45.637298583984375,
+      34.18141174316406,
+      32.47954177856445,
+      32.2751350402832,
+      63.13333511352539,
+      44.896297454833984,
+      43.89802551269531,
+      39.35740661621094
+    ],
+    "epsilon": 0.02,
+    "estimator": "centered finite difference, RMS output delta over RMS input delta"
+  },
+  "identity": {
+    "comparator": "same recurrent serving path before versus after attachment",
+    "direct_model_comparison_is_descriptive": true,
+    "direct_model_vs_recurrent_serving_maximum_absolute_difference": 0.984375,
+    "maximum_absolute_logit_difference": 0.0,
+    "requirement": "exact zero",
+    "trained_adapter_maximum_absolute_difference": 0.0
+  },
+  "kind": "paper2_stage2b_m0_stability_v1",
+  "loop_scoped_lora_modules": 48,
+  "m1": {
+    "maximum_absolute_state_difference": 0.0,
+    "single_lane_bit_exact": true
+  },
+  "optimizer_constructed": false,
+  "optimizer_steps": 0,
+  "p35_checkpoint_sha256": "a047e2e7b35320376a736492c79d913b8690937da785efa2af002c8f54d26ca6",
+  "panel_sha256": "c0e15a890b598544059ac337cc475123f97c05e3c1626febcdee1c6d8fe02615",
+  "passed": true,
+  "routing": {
+    "column_residual_maximum": 0.0,
+    "lambda2_mean": 0.9993057250976562,
+    "lane_effective_rank_mean": 1.0031874477863312,
+    "row_residual_maximum": 0.0
+  },
+  "runtime": {
+    "attention_backend": "sdpa",
+    "cuda": "12.8",
+    "cudnn": 91900,
+    "gpu": "NVIDIA A100-SXM4-40GB",
+    "platform": "Linux-6.6.122+-x86_64-with-glibc2.35",
+    "torch": "2.11.0+cu128",
+    "weights_dtype": "bfloat16"
+  },
+  "sample_item_ids": [
+    "arc_easy-Mercury_7282030",
+    "mmlu-global_facts-2587",
+    "base_capability_multiplication_01",
+    "arc_challenge-Mercury_7071365",
+    "gsm8k-evaluation-763",
+    "mbpp-227",
+    "arc_easy-NYSEDREGENTS_2014_4_24",
+    "arc_easy-Mercury_SC_401652"
+  ],
+  "status": "passed"
+}
