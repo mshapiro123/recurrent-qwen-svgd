@@ -89,6 +89,22 @@ def test_position_gate_can_depend_on_position_scratch_and_control() -> None:
     assert torch.unique(changed.position_gate[:, 1:]).numel() > 1
 
 
+def test_position_gate_returns_recurrent_serving_dtype() -> None:
+    bridge = Phase3PerPositionAnchoredBridge(
+        hidden_size=16, latent_dim=8, control_dim=6, max_steps=4
+    )
+    h0 = torch.randn(2, 7, 16, dtype=torch.bfloat16)
+    output = bridge(
+        h0=h0,
+        previous=torch.randn_like(h0),
+        scratch=torch.randn(2, 8, 8),
+        control_state=torch.randn(2, 6),
+        loop_index=1,
+    )
+
+    assert output.hidden.dtype == torch.bfloat16
+
+
 def test_gate_ceiling_activates_only_after_migration_identity() -> None:
     torch.manual_seed(20260810)
     bridge = Phase3PerPositionAnchoredBridge(
