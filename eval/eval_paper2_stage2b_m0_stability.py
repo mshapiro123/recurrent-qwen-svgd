@@ -40,13 +40,14 @@ def centered_gain(
     function: Any, state: torch.Tensor, direction: torch.Tensor, *, epsilon: float
 ) -> float:
     direction = direction.float() / _rms(direction).clamp_min(1e-12)
+    serving_direction = direction.to(state.dtype)
     # This is a score-only finite-difference probe. Building one autograd graph
     # per direction needlessly retains full-model activations across the sweep.
     with torch.inference_mode():
-        plus = function(state + float(epsilon) * direction.to(state.dtype))
-        minus = function(state - float(epsilon) * direction.to(state.dtype))
+        plus = function(state + float(epsilon) * serving_direction)
+        minus = function(state - float(epsilon) * serving_direction)
     numerator = _rms(plus - minus)
-    denominator = 2.0 * float(epsilon) * _rms(direction)
+    denominator = 2.0 * float(epsilon) * _rms(serving_direction)
     return float((numerator / denominator.clamp_min(1e-12)).detach().cpu())
 
 

@@ -7,7 +7,7 @@ import pytest
 import torch
 from torch import nn
 
-from eval.eval_paper2_stage2b_m0_stability import stability_verdict
+from eval.eval_paper2_stage2b_m0_stability import centered_gain, stability_verdict
 from eval.eval_paper2_stage2b_riders import (
     compare_fixed_prompt_logits,
     runtime_discordance_audit,
@@ -241,6 +241,18 @@ def test_m0_stability_verdict_uses_catastrophe_tripwires() -> None:
     passed, failures = stability_verdict(receipt)
     assert not passed
     assert "catastrophe" in failures[0]
+
+
+def test_centered_gain_preserves_serving_dtype() -> None:
+    state = torch.randn(2, 3, 4, dtype=torch.bfloat16)
+    direction = torch.randn_like(state, dtype=torch.float32)
+
+    def function(value: torch.Tensor) -> torch.Tensor:
+        assert value.dtype == torch.bfloat16
+        return 2.0 * value
+
+    gain = centered_gain(function, state, direction, epsilon=0.02)
+    assert gain == pytest.approx(2.0, rel=0.05)
 
 
 def test_draft_lock_cannot_authorize_optimizer() -> None:
