@@ -74,7 +74,13 @@ def main() -> int:
         inputs = stage_inputs(scratch_root())
         if RUN_M0:
             m0 = receipts / "m0_stability_summary.json"
-            if not m0.is_file():
+            reusable_m0 = False
+            if m0.is_file():
+                try:
+                    reusable_m0 = bool(json.loads(m0.read_text(encoding="utf-8"))["passed"])
+                except (KeyError, TypeError, ValueError, json.JSONDecodeError):
+                    reusable_m0 = False
+            if not reusable_m0:
                 status("running_m0_stability")
                 run([
                     sys.executable, "-u", "-m", "eval.eval_paper2_stage2b_m0_stability",
@@ -92,6 +98,8 @@ def main() -> int:
                     "--model_cache", str(inputs["model_cache"]),
                     "--output", str(m0),
                 ])
+            if not bool(json.loads(m0.read_text(encoding="utf-8")).get("passed")):
+                raise RuntimeError("M0 receipt is not passing after score-only evaluation")
         fixed = receipts / "r1_fixed_prompt"
         if not (fixed / "summary.json").is_file():
             status("running_r1_fixed_prompt")
