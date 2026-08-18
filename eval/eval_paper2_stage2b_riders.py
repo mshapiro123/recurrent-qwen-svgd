@@ -176,6 +176,30 @@ def compare_fixed_prompt_logits(
     }
 
 
+def fixed_prompt_comparison_receipt(
+    a100_path: str | Path, l4_path: str | Path
+) -> dict[str, Any]:
+    paths = {"a100_40gb": Path(a100_path), "l4": Path(l4_path)}
+    tensors = {
+        label: torch.load(path, map_location="cpu", weights_only=True)
+        for label, path in paths.items()
+    }
+    receipt = compare_fixed_prompt_logits(tensors["a100_40gb"], tensors["l4"])
+    receipt["source_sha256"] = {
+        label: hashlib.sha256(path.read_bytes()).hexdigest()
+        for label, path in paths.items()
+    }
+    receipt.update(
+        {
+            "optimizer_constructed": False,
+            "optimizer_steps": 0,
+            "confirm_scored": False,
+            "eval_e_scored": False,
+        }
+    )
+    return receipt
+
+
 def _write_jsonl(path: Path, rows: Iterable[dict[str, Any]]) -> str:
     payload = "".join(json.dumps(row, sort_keys=True) + "\n" for row in rows)
     path.write_text(payload, encoding="utf-8", newline="")

@@ -10,6 +10,7 @@ from torch import nn
 from eval.eval_paper2_stage2b_m0_stability import centered_gain, stability_verdict
 from eval.eval_paper2_stage2b_riders import (
     compare_fixed_prompt_logits,
+    fixed_prompt_comparison_receipt,
     runtime_discordance_audit,
     seed_ensemble_probe,
 )
@@ -223,6 +224,19 @@ def test_r1_fixed_prompt_comparison_requires_same_top_token() -> None:
     )
     assert aligned["status"] == "runtime_aligned"
     assert discordant["status"] == "runtime_discordant"
+
+
+def test_fixed_prompt_comparison_receipt_hashes_inputs(tmp_path: Path) -> None:
+    a100 = tmp_path / "a100.pt"
+    l4 = tmp_path / "l4.pt"
+    torch.save(torch.tensor([0.0, 2.0, 1.0]), a100)
+    torch.save(torch.tensor([0.1, 1.9, 1.0]), l4)
+
+    receipt = fixed_prompt_comparison_receipt(a100, l4)
+
+    assert receipt["status"] == "runtime_aligned"
+    assert set(receipt["source_sha256"]) == {"a100_40gb", "l4"}
+    assert receipt["optimizer_steps"] == 0
 
 
 def test_m0_stability_verdict_uses_catastrophe_tripwires() -> None:
