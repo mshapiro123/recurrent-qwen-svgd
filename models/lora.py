@@ -18,6 +18,8 @@ DEFAULT_QWEN_LORA_TARGETS = (
     "down_proj",
 )
 
+ATTENTION_LORA_TARGETS = ("q_proj", "k_proj", "v_proj", "o_proj")
+
 
 class LoRALinear(nn.Module):
     """Wrap an existing Linear layer with an identity-preserving LoRA branch."""
@@ -77,6 +79,35 @@ class LoRALinear(nn.Module):
         return self.base
 
 
+class LoopScopedLoRALinear(LoRALinear):
+    """LoRA branch that is structurally disabled on the first loop pass.
+
+    The adapter state may change during training, but ``loop_index == 0`` always
+    returns the frozen base projection exactly. This is stronger than relying on
+    zero initialization and keeps the T=1 path invariant at every checkpoint.
+    """
+
+    is_loop_scoped_adapter = True
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.loop_index = 0
+
+    def set_loop_index(self, loop_index: int) -> None:
+        if int(loop_index) < 0:
+            raise ValueError("loop index must be nonnegative")
+        self.loop_index = int(loop_index)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        base_out = self.base(x)
+        if self.loop_index == 0:
+            return base_out
+        adapter_dtype = self.lora_a.weight.dtype
+        adapter_in = self.dropout(x).to(dtype=adapter_dtype)
+        adapter_out = self.lora_b(self.lora_a(adapter_in)) * self.scaling
+        return base_out + adapter_out.to(dtype=base_out.dtype)
+
+
 def apply_lora_to_recurrent_block(
     wrapper: nn.Module,
     rank: int = 8,
@@ -97,6 +128,38 @@ def apply_lora_to_recurrent_block(
         layer = wrapper.qwen.layers[layer_idx]
         replaced += _replace_lora_targets(layer, target_names, rank, alpha, dropout, adapter_dtype)
     return replaced
+
+
+def apply_loop_scoped_lora_to_recurrent_block(
+    wrapper: nn.Module,
+    *,
+    rank: int = 16,
+    alpha: int = 16,
+    dropout: float = 0.0,
+    adapter_dtype: torch.dtype = torch.float32,
+    target_module_names: Iterable[str] = ATTENTION_LORA_TARGETS,
+) -> int:
+    """Install first-pass-inactive LoRA on recurrent attention projections."""
+
+    target_names = set(target_module_names)
+    replaced = 0
+    for layer_idx in range(wrapper.layer_split.prelude_end, wrapper.layer_split.recurrent_end):
+        layer = wrapper.qwen.layers[layer_idx]
+        replaced += _replace_loop_scoped_lora_targets(
+            layer, target_names, rank, alpha, dropout, adapter_dtype
+        )
+    return replaced
+
+
+def set_loop_scoped_lora_index(module: nn.Module, loop_index: int) -> int:
+    """Set the active recurrent pass on every loop-scoped adapter."""
+
+    changed = 0
+    for child in module.modules():
+        if isinstance(child, LoopScopedLoRALinear):
+            child.set_loop_index(loop_index)
+            changed += 1
+    return changed
 
 
 def apply_lora_to_qwen_layers(
@@ -181,4 +244,36 @@ def _replace_lora_targets(
             replaced += 1
             continue
         replaced += _replace_lora_targets(child, target_names, rank, alpha, dropout, adapter_dtype)
+    return replaced
+
+
+def _replace_loop_scoped_lora_targets(
+    module: nn.Module,
+    target_names: set[str],
+    rank: int,
+    alpha: int,
+    dropout: float,
+    adapter_dtype: torch.dtype,
+) -> int:
+    replaced = 0
+    for child_name, child in list(module.named_children()):
+        if isinstance(child, LoRALinear):
+            continue
+        if child_name in target_names and isinstance(child, nn.Linear):
+            setattr(
+                module,
+                child_name,
+                LoopScopedLoRALinear(
+                    child,
+                    rank=rank,
+                    alpha=alpha,
+                    dropout=dropout,
+                    adapter_dtype=adapter_dtype,
+                ),
+            )
+            replaced += 1
+            continue
+        replaced += _replace_loop_scoped_lora_targets(
+            child, target_names, rank, alpha, dropout, adapter_dtype
+        )
     return replaced

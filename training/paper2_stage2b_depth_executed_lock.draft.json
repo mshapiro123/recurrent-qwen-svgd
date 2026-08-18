@@ -1,0 +1,175 @@
+{
+  "kind": "paper2_stage2b_depth_executed_lock_v1",
+  "status": "draft_score_only_preconditions_in_progress",
+  "locked_before_training": false,
+  "training_authorized": false,
+  "mark_signed": false,
+  "charter": {
+    "drive_id": "1izjyOV3699BaSDTVntKi_8-vJfnl4Gtx",
+    "bytes": 12018,
+    "sha256": "48aed379110a4614b6091592890713af9fe40b444f0a918c8ddef3cf5845d3b0"
+  },
+  "architecture": {
+    "substrate": "Qwen/Qwen2.5-0.5B-Instruct",
+    "substrate_frozen": true,
+    "lanes": 4,
+    "slots_per_lane": 8,
+    "latent_dim": 128,
+    "routing": "lane-axis Birkhoff, log-space Sinkhorn, 20 iterations",
+    "constitutive_innovation": "W_H(h_k) elementwise-multiplied by sigmoid(W_P(prompt_context))",
+    "loop_lora": {
+      "rank": 16,
+      "alpha": 16,
+      "targets": ["q_proj", "k_proj", "v_proj", "o_proj"],
+      "first_pass_scale": 0.0,
+      "later_pass_scale": 1.0
+    },
+    "memory_active": false,
+    "cross_token_persistence": false
+    ,"recurrence_boundary_contract": "the mHC attachment replaces the legacy re-entry bridge only on passes 2-4; pass 1 bypasses mHC and loop-LoRA structurally"
+    ,"layer_split": "6,18"
+  },
+  "initialization": {
+    "seed_0_arm_s_ema_sha256": "a047e2e7b35320376a736492c79d913b8690937da785efa2af002c8f54d26ca6",
+    "seed_1_arm_s_ema_sha256": "e36cddb76407c8f853ccb43824c77cf01d15f144780726dd9aec23215467fccb",
+    "m0_identity_receipt_sha256": null,
+    "lora_base_path_identity_receipt_sha256": null
+  },
+  "training": {
+    "steps": 24000,
+    "batch_size": 128,
+    "seeds": [0, 1],
+    "fixed_flow_loops": 4,
+    "look_interval": 1000,
+    "warmup_steps": 500,
+    "landing_start_step": 21601,
+    "ema_decay": 0.999,
+    "amplitude_lottery": [0.02, 0.11],
+    "registered_read_amplitude": 0.05,
+    "stage_allocations": {
+      "M0": [0, 0],
+      "M1": [0, 0],
+      "M2": [1, 2500],
+      "M3": [2501, 5000],
+      "M4": [5001, 24000]
+    },
+    "learning_rates": {
+      "new_modules": 0.0005,
+      "loop_lora": 0.00005,
+      "gates": 0.0002
+    },
+    "optimizer": "AdamW",
+    "optimizer_betas": [0.9, 0.999],
+    "weight_decay": 0.01,
+    "objective": {
+      "full_sequence_distillation": true,
+      "teacher": "Qwen/Qwen2.5-14B-Instruct",
+      "teacher_revision": "cf98f3b3bbb457ad9e2bb7baf9a0125b6b88caa8",
+      "temperature": 1.0,
+      "teacher_sparse_top_k": 128,
+      "loss_scope": "all non-padding next-token positions at every one of four recurrent passes",
+      "gradient_share_targets": {
+        "kl": 0.5,
+        "ce": 0.3,
+        "monotonicity": 0.2
+      },
+      "ce_weight": null,
+      "kl_weight": null,
+      "monotonicity_weight": null,
+      "verified_depth_weight": 0.0,
+      "hinge_delta": 0.01,
+      "weight_binding": "M0 gradient-share calibration on the exact registered estimator",
+      "verified_depth_generator": "fallback activated: banked rows contain no execution-verified intermediate traces or registered step boundaries",
+      "verified_depth_feasibility_receipt_sha256": "aa40407b4851cb60cda3ed18c333726fb92b16aa2a89a2247bcdc08e3500ec12"
+    }
+  },
+  "dev2": {
+    "rows": 2048,
+    "seed": 20260818,
+    "candidate_rows": 9207,
+    "manifest_sha256": "6b9ebf40128ed21b0351710e9f828bcacb096512704f02f34274a3b8adcc0adb",
+    "receipt_sha256": "d9f1aee6c9f951376c1fa946deb5933481e1b9d180d22a259e3ba6e68751c3b7",
+    "battery_counts": {
+      "arc_challenge": 263,
+      "arc_easy": 6,
+      "gsm8k": 1732,
+      "mbpp": 40,
+      "mmlu": 6,
+      "tier1": 1
+    },
+    "tier1_continuity_source": "DEV-1 retained panel; the non-DEV reserve contains only one additional Tier-1 row",
+    "model_contact_before_manifest_freeze": false
+  },
+  "kill_gate": {
+    "step": 5000,
+    "estimator": "paired row-level mean answer-token-margin difference",
+    "interval": "two-sided percentile row bootstrap, 10000 draws, seed 20260818 + transition index",
+    "required_transitions": ["k2_to_k3", "k3_to_k4"],
+    "continue_rule": "at least one seed has positive means and lower 95% bounds above zero on both required transitions",
+    "terminate_rule": "both seeds fail separation",
+    "capability_endpoint_on_termination": false
+  },
+  "guardrails": {
+    "tier1_floor_vs_initialization": {
+      "panel": "DEV-1",
+      "seed_0_initial_correct": 20,
+      "seed_1_initial_correct": 20,
+      "minimum_correct": 19,
+      "rounding": "one-row permissive floor because one Tier-1 row is four percentage points at n=25"
+    },
+    "gsm8k_floor_vs_initialization": {
+      "panel": "DEV-1 continuity read",
+      "maximum_drop_points": 3.0,
+      "seed_0_initial_correct": 103,
+      "seed_1_initial_correct": 106,
+      "seed_0_minimum_correct": 91,
+      "seed_1_minimum_correct": 94,
+      "rounding": "integer floor rounded downward to permit the less restrictive boundary"
+    },
+    "nonfinite_tripwire": true,
+    "frozen_substrate_tripwire": true,
+    "sinkhorn_residual_alert": 0.00001,
+    "runtime_reproduction_required": true
+  },
+  "riders": {
+    "seed_ensemble_receipt_sha256": "549b52b77f91a9ce4c7ac54db109fbfad9448846476404aa5caaa2a62ac811a6",
+    "seed_ensemble_result": "negative: ensemble 506/1024, best constituent 508/1024",
+    "r1_runtime_discordance_receipt_sha256": "e10c45822fd9008a4b8e61388b675467839ee9fe62efa8f52158624424371d6a",
+    "r1_runtime_discordance_status": "desk audit complete; high-margin flips require paired fixed-prompt probe before closure",
+    "r1_fixed_prompt_a100_receipt_sha256": null,
+    "r1_fixed_prompt_l4_receipt_sha256": null
+  },
+  "stability": {
+    "m0_receipt_sha256": null,
+    "required_before_optimizer": true,
+    "jvp_finite_required": true,
+    "finite_horizon_gain_required": true,
+    "routing_spectrum_logged": true,
+    "lane_effective_rank_logged": true
+  },
+  "runtime": {
+    "accelerator_class": null,
+    "torch_version": null,
+    "cuda_version": null,
+    "attention_backend": null,
+    "unchanged_endpoint_reproduction_receipt_sha256": null
+  },
+  "checkpoint_retention": {
+    "retain_steps": [0, 1000, 2500, 5000, 6000, 12000, 18000, 21600, 23000, 24000],
+    "retain_every_look_receipts": true,
+    "raw_and_ema_at_endpoint": true,
+    "resumable_optimizer_rng_controller_state": true
+  },
+  "sealed_partitions": {
+    "confirm_scored": false,
+    "eval_e_scored": false,
+    "remain_sealed": true
+  },
+  "unresolved_lock_fields": [
+    "M0 calibrated loss weights and hinge delta",
+    "runtime identity and unchanged-endpoint reproduction",
+    "complete R-1 receipt including paired fixed-prompt logits",
+    "M0 stability receipt",
+    "Mark signature"
+  ]
+}

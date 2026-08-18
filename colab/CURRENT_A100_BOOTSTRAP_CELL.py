@@ -4419,6 +4419,17 @@ TARGETS = {
         ],
         "env": {},
     },
+    "paper2_stage2b_preflight": {
+        "path": "colab/STAGE5_PAPER2_STAGE2B_PREFLIGHT_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_STAGE2B_PREFLIGHT_VERSION",
+            "paper2_stage2b_preflight_v1",
+            "score-only M0 stability and R-1 fixed-prompt runtime probe",
+            "no optimizer no training CONFIRM and EVAL-E sealed",
+            "colab.run_stage5_paper2_stage2b_preflight",
+        ],
+        "env": {},
+    },
     "paper2_phase3_kp1_t1": {
         "path": "colab/STAGE5_PAPER2_PHASE3_KP1_T1_CELL.py",
         "markers": [
