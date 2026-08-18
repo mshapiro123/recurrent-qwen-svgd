@@ -1141,6 +1141,67 @@
       ]
     },
     {
+      "id": "stage2a_t3_memory_screen",
+      "status": "supported_bounded_dev_only_screen_negative",
+      "claim": "Teacher-fingerprint memory produced positive DEV net rows in both seeds but missed its locked two-seed mean threshold; a matched literal n-gram memory was descriptively at least as strong, while shuffled and random value controls stayed inside the pooled equivalence band.",
+      "scope": "Stage 2A T3 screen on the reused 1,024-row DEV panel; T3a-C and T3b seeds 0 and 1; shuffled and frozen-random controls seed 0; 1,200 steps; EMA endpoint; registered read amplitude 0.05; CONFIRM and EVAL-E untouched",
+      "metrics": {
+        "base_correct": 502,
+        "panel_rows": 1024,
+        "t3a_seed_0_correct": 505,
+        "t3a_seed_0_net_rows": 3,
+        "t3a_seed_1_correct": 510,
+        "t3a_seed_1_net_rows": 8,
+        "t3a_mean_net_rows": 5.5,
+        "t3a_registered_mean_threshold_rows": 8,
+        "t3a_both_seeds_positive": true,
+        "t3a_threshold_pass": false,
+        "t3b_seed_0_net_rows": 4,
+        "t3b_seed_1_net_rows": 10,
+        "t3b_mean_net_rows": 7.0,
+        "shuffled_seed_0_net_rows": -2,
+        "random_seed_0_net_rows": -1,
+        "controls_equivalence_lower_rows": -3,
+        "controls_equivalence_upper_rows": 3,
+        "controls_inside_equivalence_band": true,
+        "t3a_fix_jaccard_across_seeds": 0.8727272727272727,
+        "t3a_regression_jaccard_across_seeds": 0.84,
+        "t3b_fix_jaccard_across_seeds": 0.8363636363636363,
+        "t3b_regression_jaccard_across_seeds": 0.8913043478260869,
+        "registered_verdict": "SCREEN_BELOW_PROCEED_THRESHOLD",
+        "confirm_scored": false,
+        "eval_e_scored": false
+      },
+      "evidence": [
+        {
+          "path": "outputs/stage5/stage5_paper2_stage2a_t3_screen_20260817/summary.json",
+          "locator": "scripted verdict, per-seed endpoint summaries, controls, and sealed-partition assertions"
+        },
+        {
+          "path": "outputs/stage5/stage5_paper2_stage2a_t3_screen_20260817/analysis/analysis_summary.json",
+          "locator": "battery decomposition, matched-arm contrasts, row overlap, telemetry, and interpretive boundaries"
+        },
+        {
+          "path": "docs/PAPER2_STAGE2A_T3_SCREEN_RESULTS_HANDOFF_20260818.md",
+          "locator": "design, results, interpretation, limitations, plain-language summary, strategy decisions, and artifact hashes"
+        },
+        {
+          "path": "artifacts/stage2a_t3_20260818/stage2a_t3_final_receipts_manifest.json",
+          "locator": "63-file final receipt inventory with SHA-256 hashes"
+        }
+      ],
+      "do_not_claim": [
+        "T3a passed its screen or T3-full is authorized",
+        "teacher-fingerprint memory beats literal n-gram memory",
+        "a capability gain is confirmed",
+        "pooled control equivalence means no battery-specific harm",
+        "MBPP gains are caused by retrieved memory content",
+        "the result generalizes beyond the reused DEV panel",
+        "the student lacks the relevant knowledge",
+        "CONFIRM or EVAL-E has been scored"
+      ]
+    },
+    {
       "id": "speculative_depth_d0",
       "status": "not_recoverable_at_pilot_scale",
       "claim": "Under one 4,000-step seed, binary teacher-disagreement targets did not produce deployment-useful adaptive depth; the target omitted accepted-position harm and labeled many causally unactionable rejections as continue.",

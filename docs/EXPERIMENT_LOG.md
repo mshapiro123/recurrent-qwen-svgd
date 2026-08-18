@@ -2052,3 +2052,18 @@ Colab/Drive backups for selected runs.
   integrity checks. Handoff:
   `docs/PAPER2_PHASE3_P35_RESULTS_HANDOFF_20260815.md`. Analysis:
   `outputs/stage5/stage5_paper2_phase3_p35_20260815/analysis/analysis_summary.json`.
+- 2026-08-18 Stage 2A T3 memory screen: all six planned DEV-only runs
+  completed from the two P3.5 EMA endpoints. Teacher-fingerprint memory T3a-C
+  ended at `+3/+8` rows versus the fixed `502/1024` base, mean `+5.5`, so it
+  missed the locked `+8` two-seed mean threshold despite both seeds being
+  positive. The scripted verdict is `SCREEN_BELOW_PROCEED_THRESHOLD`; T3-full
+  does not open. Literal n-gram memory ended at `+4/+10`, mean `+7`, and was
+  not resolved from T3a in paired comparisons. Shuffled and random value
+  controls ended at `-2/-1`, inside the pooled `[-3,+3]` band, so no seed-1
+  escalation ran. Battery decomposition showed that pooled control flatness
+  was cancellation: both controls gained `+5/+6` MBPP rows while losing six
+  GSM8K and two Tier-1 rows. Content-bearing arms improved that balance but
+  did not establish a teacher-memory advantage. CONFIRM/EVAL-E remained
+  sealed. Handoff: `docs/PAPER2_STAGE2A_T3_SCREEN_RESULTS_HANDOFF_20260818.md`.
+  Analysis:
+  `outputs/stage5/stage5_paper2_stage2a_t3_screen_20260817/analysis/analysis_summary.json`.
