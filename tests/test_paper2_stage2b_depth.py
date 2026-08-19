@@ -47,6 +47,7 @@ from training.paper2_stage2b_depth import (
     stage2b_learning_rate,
     stage_for_step,
 )
+from training.run_paper2_stage2b_depth import audit_stage_gradients
 from training.paper2_stage2b_data import build_training_corpus, select_calibration_rows
 
 
@@ -160,6 +161,35 @@ def test_stage_schedule_and_landing_are_bound() -> None:
     assert stage2b_learning_rate(1, peak=5e-4) == pytest.approx(1e-6)
     assert stage2b_learning_rate(24000, peak=5e-4) == pytest.approx(0.0, abs=1e-15)
     assert STAGE_ALLOCATIONS["M4"] == [5001, 24000]
+
+
+def test_m2_gradient_audit_allows_only_registered_dormant_paths() -> None:
+    active = nn.Parameter(torch.tensor([1.0]))
+    active.grad = torch.tensor([0.5])
+    router = nn.Parameter(torch.tensor([1.0]))
+    lora = nn.Parameter(torch.tensor([1.0]))
+    groups = {"new_modules": [active, router], "gates": [], "loop_lora": [lora]}
+    names = {
+        id(active): "stage2b_depth_attachment.flow.hidden_innovation.weight",
+        id(router): "stage2b_depth_attachment.flow.router.weight",
+        id(lora): "base.model.layers.6.self_attn.q_proj.lora_a.weight",
+    }
+    audit = audit_stage_gradients(groups=groups, parameter_names=names, stage="M2")
+    assert audit["pass"]
+    assert len(audit["missing_expected"]) == 2
+    assert not audit["missing_active"]
+
+
+def test_m3_gradient_audit_rejects_missing_or_nonfinite_active_paths() -> None:
+    missing = nn.Parameter(torch.tensor([1.0]))
+    nonfinite = nn.Parameter(torch.tensor([1.0]))
+    nonfinite.grad = torch.tensor([float("nan")])
+    groups = {"new_modules": [missing], "gates": [nonfinite], "loop_lora": []}
+    names = {id(missing): "flow.router.weight", id(nonfinite): "bridge.gate_logits"}
+    audit = audit_stage_gradients(groups=groups, parameter_names=names, stage="M3")
+    assert not audit["pass"]
+    assert audit["missing_active"] == [{"group": "new_modules", "name": "flow.router.weight"}]
+    assert audit["nonfinite"] == [{"group": "gates", "name": "bridge.gate_logits"}]
 
 
 def test_depth_objective_uses_sparse_top128_and_equal_example_weighting() -> None:
