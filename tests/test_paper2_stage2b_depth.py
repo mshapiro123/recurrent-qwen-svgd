@@ -14,7 +14,12 @@ from eval.eval_paper2_stage2b_riders import (
     runtime_discordance_audit,
     seed_ensemble_probe,
 )
-from eval.prepare_paper2_stage2b_dev2 import build_dev2, merge_reference_scores
+from eval.prepare_paper2_stage2b_dev2 import (
+    REGISTERED_POWER_AT_PLUS_30,
+    build_dev2,
+    merge_reference_scores,
+    registered_power_at_plus_30,
+)
 from models.lora import LoopScopedLoRALinear
 from models.paper2_dc2_student import Phase3StudentModules, SharedResidualFlow
 from models.paper2_stage2b_depth import (
@@ -323,6 +328,13 @@ def test_power_arithmetic_is_monotone_in_effect() -> None:
     smaller = paired_sign_test_power(rows=2048, net_improvement=20, discordance_rate=0.2)
     larger = paired_sign_test_power(rows=2048, net_improvement=30, discordance_rate=0.2)
     assert larger["power"] > smaller["power"]
+
+
+def test_dev2_registered_power_serialization_is_cross_platform_stable() -> None:
+    receipt = registered_power_at_plus_30(2048)
+    assert [entry["power"] for entry in receipt] == list(
+        REGISTERED_POWER_AT_PLUS_30.values()
+    )
 
 
 def test_dev2_is_deterministic_and_excludes_dev1() -> None:

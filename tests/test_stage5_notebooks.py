@@ -4070,6 +4070,8 @@ def test_stage2b_depth_campaign_target_is_wired_and_guarded() -> None:
     runner = (ROOT / "training/run_paper2_stage2b_depth.py").read_text(encoding="utf-8")
     assert "paper2_stage2b_depth" in bootstrap
     assert "paper2_stage2b_depth_campaign_v1" in cell
+    assert "DEV2_RECEIPT_SHA" in orchestrator
+    assert "Stage 2B staged DEV-2 receipt changed" in orchestrator
     assert "signed lock asserted immediately before optimizer construction" in cell
     assert "first wave stops at step 5000 for strategy adjudication" in cell
     assert "CONFIRM and EVAL-E remain sealed" in cell

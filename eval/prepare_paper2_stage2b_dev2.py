@@ -15,6 +15,11 @@ from training.paper2_stage2b_depth import paired_sign_test_power
 
 DEV2_ROWS = 2_048
 DEV2_SEED = 20_260_818
+REGISTERED_POWER_AT_PLUS_30 = {
+    0.10: 0.6650581628736435,
+    0.20: 0.40268117361867667,
+    0.30: 0.3285655850156691,
+}
 
 
 def read_jsonl(path: str | Path) -> list[dict[str, Any]]:
@@ -31,6 +36,24 @@ def _largest_remainder(counts: dict[str, int], total: int) -> dict[str, int]:
     )[: total - sum(allocation.values())]:
         allocation[key] += 1
     return allocation
+
+
+def registered_power_at_plus_30(rows: int) -> list[dict[str, Any]]:
+    receipts = []
+    for rate, registered_power in REGISTERED_POWER_AT_PLUS_30.items():
+        receipt = paired_sign_test_power(
+            rows=rows, net_improvement=30, discordance_rate=rate
+        )
+        if abs(float(receipt["power"]) - registered_power) > 5e-15:
+            raise RuntimeError(
+                f"DEV-2 power arithmetic changed at discordance {rate}: "
+                f"computed={receipt['power']} registered={registered_power}"
+            )
+        # SciPy's final binary float bit differs across supported platforms.
+        # Emit the preregistered value so the receipt bytes remain reproducible.
+        receipt["power"] = registered_power
+        receipts.append(receipt)
+    return receipts
 
 
 def merge_reference_scores(
@@ -186,12 +209,7 @@ def build_dev2(
         "strata": dict(sorted(Counter(f"{r['battery']}::{r['source_partition']}" for r in manifest_rows).items())),
         "battery_counts": dict(sorted(Counter(r["battery"] for r in manifest_rows).items())),
         "battery_role_counts": dict(sorted(Counter(r["battery_role"] for r in manifest_rows).items())),
-        "power_at_plus_30": [
-            paired_sign_test_power(
-                rows=size, net_improvement=30, discordance_rate=rate
-            )
-            for rate in (0.10, 0.20, 0.30)
-        ],
+        "power_at_plus_30": registered_power_at_plus_30(size),
         "excluded_rows": len(excluded),
     }
     return manifest_rows, receipt
