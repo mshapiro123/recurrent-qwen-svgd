@@ -25,6 +25,7 @@ LOCK = ROOT / "training/paper2_stage2b_depth_executed_lock.json"
 OLD_DATA = DRIVE_STAGE5 / "stage5_paper2_dc1_preflight_20260729/private/dev_c/dev_c.jsonl"
 NEW_DATA = DRIVE_STAGE5 / "stage5_paper2_phase2_option_b_teacher_cache_20260806/private/new_documents_target.jsonl"
 REFERENCE_ROWS = DRIVE_STAGE5 / "stage5_paper2_phase3_p31_completion_20260810/private/p31_partitioned_rows.jsonl"
+REFERENCE_SCORES = DRIVE_STAGE5 / "stage5_paper2_phase3_p31_completion_20260810/private/p31_merged_dev_verified_scores.jsonl"
 PANEL = ROOT / "outputs/stage5/stage5_paper2_phase3_p34_lock_20260812/panel/p34_task_panel.jsonl"
 BASE_SCORES = ROOT / "outputs/stage5/stage5_paper2_phase3_p34_lock_20260812/panel/p34_panel_base_scores.jsonl"
 CORPUS_SHA = "2e3e4f8cc98f997854381a98819539f835b68830c75a75f7d0f24a9b91c4e135"
@@ -79,11 +80,15 @@ def prepare_common(scratch: Path) -> dict[str, Path]:
         raise RuntimeError("Stage 2B rebuilt corpus changed")
     reference = scratch / "p31_partitioned_rows.jsonl"
     rsync(REFERENCE_ROWS, reference)
+    reference_scores = scratch / "p31_merged_dev_verified_scores.jsonl"
+    rsync(REFERENCE_SCORES, reference_scores)
     dev2 = DRIVE_RUN / "private/dev2/dev2_manifest.jsonl"
     if not dev2.is_file():
         run([
             sys.executable, "-u", "-m", "eval.prepare_paper2_stage2b_dev2",
-            "--reference-rows", str(reference), "--dev1-rows", str(PANEL),
+            "--reference-rows", str(reference),
+            "--reference-scores", str(reference_scores),
+            "--dev1-rows", str(PANEL),
             "--output-dir", str(dev2.parent),
         ])
     if sha256_file(dev2) != DEV2_SHA:
