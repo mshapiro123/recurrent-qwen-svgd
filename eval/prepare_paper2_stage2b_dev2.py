@@ -47,11 +47,26 @@ def build_dev2(
     by_id = {str(row["item_id"]): row for row in reference}
     if len(by_id) != len(reference):
         raise RuntimeError("reference table contains duplicate item IDs")
-    reserve = [row for item_id, row in by_id.items() if item_id not in dev1_ids]
+    missing_dev1 = dev1_ids - set(by_id)
+    if missing_dev1:
+        raise RuntimeError(f"DEV-1 contains {len(missing_dev1)} IDs absent from reference")
+    dev1_confirm = [
+        item_id for item_id in dev1_ids if by_id[item_id].get("partition") == "confirm"
+    ]
+    if dev1_confirm:
+        raise RuntimeError(
+            f"DEV-1 overlaps sealed CONFIRM on {len(dev1_confirm)} rows"
+        )
+    confirm_rows = [row for row in reference if row.get("partition") == "confirm"]
+    reserve = [
+        row
+        for item_id, row in by_id.items()
+        if item_id not in dev1_ids and row.get("partition") != "confirm"
+    ]
     if len(reserve) != 9_207:
         raise RuntimeError(f"expected 9,207 rows outside DEV-1, observed {len(reserve)}")
-    if any(row.get("partition") == "confirm" for row in reserve):
-        raise RuntimeError("sealed CONFIRM membership leaked into DEV-2 candidates")
+    if len(confirm_rows) != 1_502:
+        raise RuntimeError(f"expected 1,502 sealed CONFIRM rows, observed {len(confirm_rows)}")
 
     strata: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for row in reserve:
@@ -90,6 +105,7 @@ def build_dev2(
         "rows": size,
         "candidate_rows": len(reserve),
         "dev1_rows_excluded": len(dev1_ids),
+        "confirm_rows_excluded": len(confirm_rows),
         "confirm_contact": False,
         "eval_e_contact": False,
         "model_loaded": False,
