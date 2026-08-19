@@ -8,6 +8,7 @@ import pytest
 import torch
 from torch import nn
 
+from colab.run_stage5_paper2_stage2b_depth import archive_previous_failure
 from eval.eval_paper2_stage2b_campaign import Stage2BTaskInferenceGraph
 from training.paper2_stage2b_runtime import (
     DeterministicCycleSampler,
@@ -16,6 +17,19 @@ from training.paper2_stage2b_runtime import (
     atomic_torch_save,
     collate_teacher_rows,
 )
+
+
+def test_failed_colab_status_is_archived_before_retry(tmp_path: Path) -> None:
+    status = tmp_path / "receipts" / "cache_status.json"
+    status.parent.mkdir(parents=True)
+    status.write_text(
+        json.dumps({"status": "failed", "updated_at_unix": 1234.9}) + "\n",
+        encoding="utf-8",
+    )
+    archive = archive_previous_failure(status)
+    assert archive == status.parent / "archaeology/cache_status_failed_1234.json"
+    assert json.loads(archive.read_text(encoding="utf-8"))["status"] == "failed"
+    assert archive_previous_failure(status) == archive
 
 
 def _teacher_row(index: int, length: int) -> dict:

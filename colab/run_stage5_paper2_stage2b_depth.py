@@ -48,6 +48,22 @@ def scratch_root() -> Path:
     raise RuntimeError("Stage 2B requires at least 80 GiB local scratch")
 
 
+def archive_previous_failure(status_path: Path) -> Path | None:
+    if not status_path.is_file():
+        return None
+    payload = json.loads(status_path.read_text(encoding="utf-8"))
+    if payload.get("status") != "failed":
+        return None
+    timestamp = int(float(payload.get("updated_at_unix", 0)))
+    archive = status_path.parent / "archaeology" / (
+        f"{status_path.stem}_failed_{timestamp}.json"
+    )
+    archive.parent.mkdir(parents=True, exist_ok=True)
+    if not archive.exists():
+        shutil.copyfile(status_path, archive)
+    return archive
+
+
 def prepare_common(scratch: Path) -> dict[str, Path]:
     old = scratch / "dev_c.jsonl"
     new = scratch / "new_documents_target.jsonl"
@@ -81,6 +97,9 @@ def main() -> int:
     scratch = scratch_root()
     receipts = DRIVE_RUN / "receipts"
     status_path = receipts / ("cache_status.json" if MODE == "cache" else f"seed_{SEED}_status.json")
+    archived_failure = archive_previous_failure(status_path)
+    if archived_failure is not None:
+        print(f"stage2b_archived_previous_failure={archived_failure}", flush=True)
 
     def status(value: str, **details: Any) -> None:
         atomic_json(
