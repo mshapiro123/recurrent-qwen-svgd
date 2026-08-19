@@ -30,6 +30,7 @@ PANEL = ROOT / "outputs/stage5/stage5_paper2_phase3_p34_lock_20260812/panel/p34_
 BASE_SCORES = ROOT / "outputs/stage5/stage5_paper2_phase3_p34_lock_20260812/panel/p34_panel_base_scores.jsonl"
 CORPUS_SHA = "2e3e4f8cc98f997854381a98819539f835b68830c75a75f7d0f24a9b91c4e135"
 DEV2_SHA = "6b9ebf40128ed21b0351710e9f828bcacb096512704f02f34274a3b8adcc0adb"
+DEV2_RECEIPT_SHA = "d9f1aee6c9f951376c1fa946deb5933481e1b9d180d22a259e3ba6e68751c3b7"
 MODE = os.environ.get("STAGE2B_MODE", "cache").strip().lower()
 SEED = int(os.environ.get("STAGE2B_SEED", "0"))
 TARGET_STEP = int(os.environ.get("STAGE2B_TARGET_STEP", "5000"))
@@ -82,17 +83,37 @@ def prepare_common(scratch: Path) -> dict[str, Path]:
     rsync(REFERENCE_ROWS, reference)
     reference_scores = scratch / "p31_merged_dev_verified_scores.jsonl"
     rsync(REFERENCE_SCORES, reference_scores)
-    dev2 = DRIVE_RUN / "private/dev2/dev2_manifest.jsonl"
-    if not dev2.is_file():
+    dev2_dir = DRIVE_RUN / "private/dev2"
+    dev2 = dev2_dir / "dev2_manifest.jsonl"
+    dev2_receipt = dev2_dir / "dev2_manifest_receipt.json"
+    if (
+        not dev2.is_file()
+        or not dev2_receipt.is_file()
+        or sha256_file(dev2) != DEV2_SHA
+        or sha256_file(dev2_receipt) != DEV2_RECEIPT_SHA
+    ):
+        staged_dev2 = scratch / "dev2_staged"
+        shutil.rmtree(staged_dev2, ignore_errors=True)
         run([
             sys.executable, "-u", "-m", "eval.prepare_paper2_stage2b_dev2",
             "--reference-rows", str(reference),
             "--reference-scores", str(reference_scores),
             "--dev1-rows", str(PANEL),
-            "--output-dir", str(dev2.parent),
+            "--output-dir", str(staged_dev2),
         ])
+        staged_manifest = staged_dev2 / "dev2_manifest.jsonl"
+        staged_receipt = staged_dev2 / "dev2_manifest_receipt.json"
+        if sha256_file(staged_manifest) != DEV2_SHA:
+            raise RuntimeError("Stage 2B staged DEV-2 manifest changed")
+        if sha256_file(staged_receipt) != DEV2_RECEIPT_SHA:
+            raise RuntimeError("Stage 2B staged DEV-2 receipt changed")
+        dev2_dir.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(staged_manifest, dev2)
+        shutil.copyfile(staged_receipt, dev2_receipt)
     if sha256_file(dev2) != DEV2_SHA:
         raise RuntimeError("Stage 2B DEV-2 manifest changed")
+    if sha256_file(dev2_receipt) != DEV2_RECEIPT_SHA:
+        raise RuntimeError("Stage 2B DEV-2 receipt changed")
     return {"data": data, "reference": reference, "dev2": dev2}
 
 
