@@ -61,7 +61,7 @@ if ROOT.exists():
     run(["git", "remote", "set-url", "origin", url])
 else:
     run(["git", "clone", url, str(ROOT)], Path("/content"))
-run(["git", "fetch", "origin", "main"])
+run(["git", "fetch", "origin", REF])
 run(["git", "reset", "--hard", REF])
 run([sys.executable, "-m", "pip", "install", "-q", "-r", "requirements.txt"])
 run(
