@@ -203,7 +203,7 @@ def main() -> int:
             "--p35", str(p35), "--p35_sha256", P35_SHA[SEED],
             "--model_cache", str(scratch / "hf_student_cache"),
             "--output_dir", str(output), "--private_dir", str(private),
-            "--target_step", str(TARGET_STEP), "--resume_interval", "100",
+            "--target_step", str(TARGET_STEP), "--resume_interval", "20",
         ]
         if MODE == "preflight":
             command.append("--preflight_only")

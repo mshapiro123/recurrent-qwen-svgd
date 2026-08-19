@@ -4082,6 +4082,7 @@ def test_stage2b_depth_campaign_target_is_wired_and_guarded() -> None:
     assert '["git", "fetch", "origin", REF]' in cell
     assert "complete_cache_only_release_gpu" in orchestrator
     assert "complete_preflight_no_optimizer" in orchestrator
+    assert '"--resume_interval", "20"' in orchestrator
     assert "awaiting_step_5000_strategy_adjudication" in runner
 
 
