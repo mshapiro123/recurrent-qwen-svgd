@@ -19,6 +19,7 @@ from eval.prepare_paper2_stage2b_dev2 import (
     build_dev2,
     merge_reference_scores,
     registered_power_at_plus_30,
+    write_receipt,
 )
 from models.lora import LoopScopedLoRALinear
 from models.paper2_dc2_student import Phase3StudentModules, SharedResidualFlow
@@ -335,6 +336,14 @@ def test_dev2_registered_power_serialization_is_cross_platform_stable() -> None:
     assert [entry["power"] for entry in receipt] == list(
         REGISTERED_POWER_AT_PLUS_30.values()
     )
+
+
+def test_dev2_receipt_uses_signed_crlf_bytes(tmp_path: Path) -> None:
+    output = tmp_path / "receipt.json"
+    write_receipt(output, {"a": 1, "b": [2, 3]})
+    payload = output.read_bytes()
+    assert payload.endswith(b"\r\n")
+    assert payload.count(b"\n") == payload.count(b"\r\n")
 
 
 def test_dev2_is_deterministic_and_excludes_dev1() -> None:

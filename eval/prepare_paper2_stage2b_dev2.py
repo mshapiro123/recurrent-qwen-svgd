@@ -222,6 +222,11 @@ def write_jsonl(path: Path, rows: Iterable[dict[str, Any]]) -> str:
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
+def write_receipt(path: Path, receipt: dict[str, Any]) -> None:
+    payload = json.dumps(receipt, indent=2, sort_keys=True).replace("\n", "\r\n") + "\r\n"
+    path.write_text(payload, encoding="utf-8", newline="")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--reference-rows", required=True)
@@ -236,7 +241,7 @@ def main() -> int:
     rows, receipt = build_dev2(reference, read_jsonl(args.dev1_rows))
     receipt["manifest_sha256"] = write_jsonl(output / "dev2_manifest.jsonl", rows)
     receipt_path = output / "dev2_manifest_receipt.json"
-    receipt_path.write_text(json.dumps(receipt, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    write_receipt(receipt_path, receipt)
     print(json.dumps(receipt, indent=2, sort_keys=True))
     return 0
 
