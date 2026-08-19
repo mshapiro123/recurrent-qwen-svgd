@@ -4074,6 +4074,7 @@ def test_stage2b_depth_campaign_target_is_wired_and_guarded() -> None:
     assert "first wave stops at step 5000 for strategy adjudication" in cell
     assert "CONFIRM and EVAL-E remain sealed" in cell
     assert "A100-SXM4-40GB" in cell
+    assert '["git", "fetch", "origin", REF]' in cell
     assert "complete_cache_only_release_gpu" in orchestrator
     assert "complete_preflight_no_optimizer" in orchestrator
     assert "awaiting_step_5000_strategy_adjudication" in runner
