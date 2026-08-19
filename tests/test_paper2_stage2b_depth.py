@@ -406,3 +406,24 @@ def test_stage2b_loss_calibration_target_is_wired_and_no_optimizer() -> None:
     assert '"optimizer_constructed": False' in runner
     assert '"confirm_scored": False' in runner
     assert "torch.optim" not in runner
+
+
+def test_stage2b_executed_lock_is_complete_but_unsigned() -> None:
+    root = Path(__file__).resolve().parents[1]
+    lock = json.loads(
+        (root / "training/paper2_stage2b_depth_executed_lock.draft.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert lock["status"] == "assembled_unsigned_ready_for_mark_signature"
+    assert lock["unresolved_lock_fields"] == ["Mark signature"]
+    assert lock["training_authorized"] is False
+    assert lock["locked_before_training"] is False
+    assert lock["mark_signed"] is False
+    for seed in ("0", "1"):
+        weights = lock["training"]["objective"]["weights_by_seed"][seed]
+        assert sum(weights.values()) == pytest.approx(1.0)
+    calibration = lock["training"]["objective"]["calibration"]
+    assert calibration["optimizer_steps"] == 0
+    assert calibration["confirm_scored"] is False
+    assert calibration["eval_e_scored"] is False

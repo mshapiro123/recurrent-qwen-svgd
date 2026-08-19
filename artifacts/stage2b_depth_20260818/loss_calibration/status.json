@@ -1,0 +1,13 @@
+{
+  "confirm_scored": false,
+  "data_summary_sha256": "76b8152ffa3a959e1af0b4dca0369e31e787cfe381d578483f3b7107b6acc9fe",
+  "eval_e_scored": false,
+  "kind": "paper2_stage2b_loss_calibration_status_v1",
+  "optimizer_constructed": false,
+  "optimizer_steps": 0,
+  "seed_0_receipt_sha256": "bde52c5cd44472bd7c1b93d08c03a120ff8e4a7cc2a24aa86156190ec244f075",
+  "seed_1_receipt_sha256": "811d2affa3a6ec503f390c9b2eb9a87ec55ce83df8142bc8b86ddec014926c9d",
+  "status": "complete_no_optimizer",
+  "teacher_receipt_sha256": "610d785fcb35e8103ed0d7043a05440b6e15afdbd39c3a74658c68ee3e218537",
+  "transport": "seed 0 native receipt plus seed 1 Colab control-channel download and local Drive upload after FUSE directory-view failure"
+}

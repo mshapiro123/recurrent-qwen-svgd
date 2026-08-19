@@ -1,6 +1,6 @@
 {
   "kind": "paper2_stage2b_depth_executed_lock_v1",
-  "status": "draft_score_only_preconditions_in_progress",
+  "status": "assembled_unsigned_ready_for_mark_signature",
   "locked_before_training": false,
   "training_authorized": false,
   "mark_signed": false,
@@ -67,18 +67,51 @@
       "teacher_revision": "cf98f3b3bbb457ad9e2bb7baf9a0125b6b88caa8",
       "temperature": 1.0,
       "teacher_sparse_top_k": 128,
+      "teacher_lattice_contract": "teacher top-128 logits are renormalized on their cached support; student logits are gathered and renormalized on the identical support",
       "loss_scope": "all non-padding next-token positions at every one of four recurrent passes",
       "gradient_share_targets": {
         "kl": 0.5,
         "ce": 0.3,
         "monotonicity": 0.2
       },
-      "ce_weight": null,
-      "kl_weight": null,
-      "monotonicity_weight": null,
+      "weights_by_seed": {
+        "0": {
+          "ce": 0.2805809114047303,
+          "kl": 0.6206603068144397,
+          "monotonicity": 0.0987587817808301
+        },
+        "1": {
+          "ce": 0.22366816771879902,
+          "kl": 0.6617089090625827,
+          "monotonicity": 0.11462292321861826
+        }
+      },
       "verified_depth_weight": 0.0,
       "hinge_delta": 0.01,
+      "lambda_m_definition": "the per-seed monotonicity weight above multiplies the sum of the three adjacent-loop hinge terms",
       "weight_binding": "M0 gradient-share calibration on the exact registered estimator",
+      "calibration": {
+        "rows": 32,
+        "next_token_positions": 14383,
+        "manifest_sha256": "5d9e6784f47ddd9a18f9d966e5e6d3392d60159a9872bafba0d02ef386a34b21",
+        "teacher_receipt_sha256": "610d785fcb35e8103ed0d7043a05440b6e15afdbd39c3a74658c68ee3e218537",
+        "seed_0_receipt_sha256": "bde52c5cd44472bd7c1b93d08c03a120ff8e4a7cc2a24aa86156190ec244f075",
+        "seed_1_receipt_sha256": "811d2affa3a6ec503f390c9b2eb9a87ec55ce83df8142bc8b86ddec014926c9d",
+        "realized_gradient_shares": {
+          "0": {"ce": 0.30000000000000004, "kl": 0.5, "monotonicity": 0.2},
+          "1": {"ce": 0.3, "kl": 0.4999999999999999, "monotonicity": 0.19999999999999998}
+        },
+        "parameter_counts": {
+          "new_modules": 884645,
+          "gates": 280880,
+          "loop_lora": 1081344,
+          "total": 2246869
+        },
+        "optimizer_constructed": false,
+        "optimizer_steps": 0,
+        "confirm_scored": false,
+        "eval_e_scored": false
+      },
       "verified_depth_generator": "fallback activated: banked rows contain no execution-verified intermediate traces or registered step boundaries",
       "verified_depth_feasibility_receipt_sha256": "aa40407b4851cb60cda3ed18c333726fb92b16aa2a89a2247bcdc08e3500ec12"
     },
@@ -116,7 +149,14 @@
       "tier1": 1
     },
     "tier1_continuity_source": "DEV-1 retained panel; the non-DEV reserve contains only one additional Tier-1 row",
-    "model_contact_before_manifest_freeze": false
+    "model_contact_before_manifest_freeze": false,
+    "power_at_plus_30_rows": {
+      "one_sided_alpha": 0.05,
+      "discordance_0.1": 0.6650581628736435,
+      "discordance_0.2": 0.40268117361867667,
+      "discordance_0.3": 0.3285655850156691,
+      "interpretation": "the expanded DEV-2 panel improves precision but does not provide 80 percent power for a 30-row effect under the evaluated discordance range"
+    }
   },
   "kill_gate": {
     "step": 5000,
@@ -192,7 +232,6 @@
     "remain_sealed": true
   },
   "unresolved_lock_fields": [
-    "M0 calibrated loss weights",
     "Mark signature"
   ]
 }
