@@ -243,6 +243,54 @@ def _build_model(args: argparse.Namespace) -> tuple[Any, list[dict[str, Any]], d
     return wrapper, chain, groups
 
 
+def _m2_parameter_is_dormant(group: str, name: str) -> bool:
+    if group == "loop_lora":
+        return True
+    if group != "new_modules":
+        return False
+    return name.startswith(
+        (
+            "stage2b_depth_attachment.flow.router_norm.",
+            "stage2b_depth_attachment.flow.router.",
+        )
+    ) or name == "stage2b_depth_attachment.flow.rho_logits"
+
+
+def audit_stage_gradients(
+    *,
+    groups: dict[str, list[torch.nn.Parameter]],
+    parameter_names: dict[int, str],
+    stage: str,
+) -> dict[str, Any]:
+    missing_expected = []
+    missing_active = []
+    nonfinite = []
+    finite = 0
+    for group, parameters in groups.items():
+        for parameter in parameters:
+            name = parameter_names[id(parameter)]
+            gradient = parameter.grad
+            if gradient is None:
+                target = (
+                    missing_expected
+                    if stage == "M2" and _m2_parameter_is_dormant(group, name)
+                    else missing_active
+                )
+                target.append({"group": group, "name": name})
+            elif not bool(torch.isfinite(gradient).all()):
+                nonfinite.append({"group": group, "name": name})
+            else:
+                finite += 1
+    return {
+        "stage": stage,
+        "finite_parameter_tensors": finite,
+        "missing_expected": missing_expected,
+        "missing_active": missing_active,
+        "nonfinite": nonfinite,
+        "pass": finite > 0 and not missing_active and not nonfinite,
+    }
+
+
 def run(args: argparse.Namespace) -> dict[str, Any]:
     lock = json.loads(args.lock.read_text(encoding="utf-8"))
     assert_optimizer_construction_authorized(args.lock)
@@ -264,6 +312,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     if cache.index["corpus_sha256"] != lock["training"]["data"]["corpus_sha256"]:
         raise RuntimeError("Stage 2B teacher cache and signed corpus disagree")
     wrapper, chain, groups = _build_model(args)
+    parameter_names = {id(value): name for name, value in wrapper.named_parameters()}
     trainable_count = {name: sum(value.numel() for value in values) for name, values in groups.items()}
     frozen = {
         name: value for name, value in wrapper.named_parameters() if not value.requires_grad
@@ -345,6 +394,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         monotonicity=float(weights_row["monotonicity"]),
     )
     stop_reason = None
+    last_gradient_audit: dict[str, Any] | None = None
     started = time.time()
     for step in range(start_step + 1, args.target_step + 1):
         batch_indexes = sampler.take(128)
@@ -386,9 +436,13 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             for name in component_sums:
                 component_sums[name] += float(components[name].detach().cpu()) * scale
             del output, loops, loop_logits, total, components, batch
-        gradients = [parameter.grad for group in groups.values() for parameter in group]
-        if not gradients or any(value is None or not bool(torch.isfinite(value).all()) for value in gradients):
+        last_gradient_audit = audit_stage_gradients(
+            groups=groups, parameter_names=parameter_names, stage=stage
+        )
+        if last_gradient_audit["nonfinite"]:
             stop_reason = "nonfinite_gradient"
+        elif last_gradient_audit["missing_active"] or not last_gradient_audit["finite_parameter_tensors"]:
+            stop_reason = "missing_active_gradient"
         if stop_reason is None:
             for group in optimizer.param_groups:
                 group["lr"] = stage2b_learning_rate(step, peak=PEAK_LRS[group["name"]])
@@ -535,6 +589,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         "teacher_cache_index_sha256": sha256_file(args.teacher_cache_index),
         "schedule_hashes": schedule_hashes,
         "frozen_digest": frozen_digest,
+        "last_gradient_audit": last_gradient_audit,
         "confirm_scored": False,
         "eval_e_scored": False,
     }
