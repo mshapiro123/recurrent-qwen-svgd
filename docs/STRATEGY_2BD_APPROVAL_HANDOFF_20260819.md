@@ -1,0 +1,38 @@
+# Strategy → Coding Agent — 2B-D Approval and Launch Handoff: Lock Signed, Amendments A1–A4 Bound, Campaign Authorized
+
+Date: 2026-08-19. **Mark has approved the 2B-D executed lock.** His confirmation of 2026-08-19 in conversation, following the pre-signature review (Drive `1m2IRYaNZSp3R5Zq0J_MsglKd5Z0CAxuo`, SHA `e53f1e856d4816c4798dd48218f607e2aab2d93a3f8f19dac80ec9c91560e8fd`), is the signature of record. The signature applies to the unsigned lock exactly as reviewed — Drive `1k5GyiMkHu_B8orURegmXW24o5w3__Eno`, SHA `83d3ce31…f361` — **plus the four amendments below and nothing else.** Any other change to the lock between this memo and launch stops for strategy review before optimizer construction, per standing rule. Governing chain: 2B-D charter (`1izjyOV3699BaSDTVntKi_8-vJfnl4Gtx`) → pre-campaign lock handoff (`1fgUO5_4SMEpxLAqTvyCoEAyYkVwZdd-S`) → pre-signature review → this approval. CONFIRM and EVAL-E remain sealed.
+
+## 1. What is approved
+
+The executed lock as built and verified: frozen Qwen2.5-0.5B substrate with P3.5 Arm-S EMA initialization; mHC lanes×slots scratchpad with Sinkhorn/Birkhoff lane routing; Full-bandwidth constitutive innovation; loop-scoped LoRA r=16 (exactly zero on pass one, active k ≥ 2, base path bit-exact per the M0 receipt of 0.0); full-sequence forward-KL + CE objective per loop with the monotonicity hinge (δ = 0.01), per-seed calibrated loss weights (seed 0: CE 0.280581 / KL 0.620660 / mono 0.098759; seed 1: CE 0.223668 / KL 0.661709 / mono 0.114623); verified-depth loss weight 0.0 (disclosed fallback, pre-authorized); M-curriculum M2 1–2,500 / M3 2,501–5,000 / M4 5,001–24,000; per-group LRs (new modules 5e-4, LoRA 5e-5, gates 2e-4); 24,000 steps, batch 128, two seeds, looks every 1,000 steps; A100-pinned runtime with unchanged-endpoint reproduction gate; kill-gate at step 5,000 as amended by A3 below.
+
+## 2. The amendments, bound (fold into the signature commit)
+
+**A1 — Panel roles.** Floors (Tier-1, GSM8K vs initialization), both-comparator battery decompositions, and continuity reads bind to **DEV-1**. DEV-2 (2,048 rows; composition 1,732 GSM8K / 263 ARC-C / 40 MBPP / 13 floor-battery) is the **power and margin panel** — it serves the kill-gate margin telemetry and the discrete-effect read, never floor duty. State both roles explicitly in the lock text.
+
+**A2 — Pooled registered endpoint.** The registered discrete endpoint is the **pooled DEV-1 + DEV-2 read (3,072 rows)**, declared now, before any look. Recompute the power table on the pooled panel in the signature commit at the charter's design target (~1.5 points, with the pooled-row equivalent stated) and publish it in the commit; the recomputed table is a launch precondition. Battery-level decomposition of the pooled read still reports per A1. Margins remain the steering instrument; the gate, not the endpoint, is the campaign's decision organ.
+
+**A3 — Kill-gate deferral clause.** One bounded deferral, pre-registered: if **both** seeds fail the margin-separation gate at step 5,000 **but** the per-loop margin-separation trend over looks 3–5 is positive, the gate defers once to step 8,000. Bind the trend estimator in the signature commit **before** the step-5,000 look (a simple pre-declared slope statistic on the K2→3 and K3→4 separation series with a bootstrap sign check is sufficient; your choice of exact form, declared in advance, is what makes it legitimate). Flat-and-trendless at 5,000, or flat again at 8,000, kills as originally written. All other gate terms unchanged: one seed separating at 5,000 → continue to M4 on the original schedule.
+
+**A4 — Watch items (telemetry additions, every look).** (i) **Loop-1 absolute KL** — log per look; a rising curve is the sandbagging signature and triggers strategy review, not automatic action. (ii) **Finite-horizon gain** — log at every audit look; init value 73.4796, tripwire 100 as locked; report the trajectory, not just the breach. (iii) **R-2 desk item** — during the campaign, compare each of R-1's 17 high-margin cross-runtime flipped rows against its measured per-row logit delta from the fixed-prompt probe (max |Δ| 0.375, mean 0.057); code review opens only if a row flipped with margin materially above the observed delta band. R-2 is desk work and must not touch the campaign runtime; the campaign is A100-pinned and unaffected either way.
+
+## 3. Launch sequence
+
+1. Fold A1–A4 into the lock text and flip the lock fields (status → SIGNED, signature line: "Approved by Mark, 2026-08-19, via strategy pre-signature review"). Record the signed lock's SHA-256 in the commit and report it in the first wave.
+2. Publish the recomputed pooled power table (A2) and the declared trend estimator (A3) in the same commit.
+3. Launch **M2 for both seeds**. No new M0 run is required — the existing stability receipt and identity test stand — but the LoRA base-path identity test re-runs at every checkpoint per the lock, unchanged.
+4. Report-backs under the **wave rule**: looks every 1,000 steps with margin telemetry and A4 gauges; sessions released promptly; checkpoint retention per the declared retention list — nothing outside the list is deleted, nothing on the list goes missing.
+5. **Step-5,000 gate read** is the first decision point: apply the gate as amended by A3 and report the read with the bootstrap intervals, both seeds, before proceeding into M4 (or into the deferral window, or termination). Strategy adjudicates the gate wave before M4 spend continues, per the charter.
+6. On termination (if it comes): bank the boundary result as registered, roll remaining budget to Paper Three preparation, no endpoint scored as a capability claim — exactly as chartered.
+
+## 4. Standing constraints (unchanged, restated for the record)
+
+Base path bit-exact at every checkpoint (identity test is a hard gate, not telemetry). CONFIRM and EVAL-E sealed — no seal spend under any branch of this campaign. Registered reads name accelerator class, torch/CUDA versions, and attention backend; unchanged-endpoint reproduction before any cross-session read; absolute totals runtime-indexed. Both comparators (vs frozen base, vs initialization) in every report. Any material mismatch between lock and implementation stops before optimizer construction.
+
+## 5. Plain-language summary
+
+Mark has signed off, and this memo is the formal record. The coding agent's path is short: write the four agreed refinements into the contract (safety floors read on the old balanced panel; final score pooled across both panels with the statistics recomputed; the early-stop test gets one pre-declared extension if the trend is positive but shy of the line; three gauges watched, including the anti-gaming one), mark the contract signed, and start training both copies of the model. The first fifth of the run ends at the go/no-go checkpoint: each thinking loop must be measurably improving on the one before it. If at least one copy shows that, the campaign runs to full length. If neither does — and the trend isn't even pointing the right way — the run stops itself, the negative result is published as the honest boundary it would be, and the budget moves to the next paper. Everything the program learned the hard way is wired in: the original model's behavior stays untouchable to the last bit, every measurement names its hardware, the sealed exams stay sealed, and nothing gets deleted or renamed without the list saying so.
+
+---
+
+**Approval line:** signed 2026-08-19. Fold A1–A4, flip the fields, record the signed SHA, publish the power table and trend estimator, launch M2 both seeds. Wave rule thereafter; first adjudication at the step-5,000 gate read.

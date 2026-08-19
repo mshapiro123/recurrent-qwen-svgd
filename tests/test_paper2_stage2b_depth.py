@@ -29,10 +29,12 @@ from tests.test_recurrent_wrapper_tiny import TinyCausalLM
 from training.paper2_stage2b_depth import (
     DepthObjectiveWeights,
     STAGE_ALLOCATIONS,
+    amended_kill_gate_verdict,
     bootstrap_mean_interval,
     calibrated_gradient_share_weights,
     depth_objective,
     kill_gate_seed_read,
+    kill_gate_trend_read,
     kill_gate_verdict,
     load_and_validate_lock,
     paired_sign_test_power,
@@ -200,6 +202,41 @@ def test_depth_objective_rejects_dense_teacher_logits() -> None:
         )
 
 
+def test_monotonicity_estimator_is_invariant_to_microbatch_partition() -> None:
+    torch.manual_seed(121)
+    batch, positions, vocabulary = 4, 3, 160
+    loops = [torch.randn(batch, positions, vocabulary) for _ in range(4)]
+    teacher_ids = torch.arange(128).view(1, 1, 128).expand(batch, positions, -1)
+    teacher_logits = torch.randn(batch, positions, 128)
+    targets = teacher_ids[..., 0]
+    mask = torch.ones((batch, positions), dtype=torch.bool)
+    weights = DepthObjectiveWeights(ce=0.3, kl=0.5, monotonicity=0.2)
+    full = depth_objective(
+        loop_logits=loops,
+        teacher_topk_token_ids=teacher_ids,
+        teacher_topk_logits=teacher_logits,
+        teacher_tokens=targets,
+        loss_mask=mask,
+        weights=weights,
+        hinge_delta=0.01,
+    )[1]["monotonicity"]
+    split = torch.stack(
+        [
+            depth_objective(
+                loop_logits=[value[index : index + 1] for value in loops],
+                teacher_topk_token_ids=teacher_ids[index : index + 1],
+                teacher_topk_logits=teacher_logits[index : index + 1],
+                teacher_tokens=targets[index : index + 1],
+                loss_mask=mask[index : index + 1],
+                weights=weights,
+                hinge_delta=0.01,
+            )[1]["monotonicity"]
+            for index in range(batch)
+        ]
+    ).mean()
+    assert full == pytest.approx(float(split), abs=1e-7)
+
+
 def test_stage2b_full_sequence_corpus_reuses_document_split() -> None:
     old = [
         {"document_id": f"old-{index}", "row_id": f"o{index}", "stratum": "general", "input_ids": [1, 2, 3]}
@@ -261,6 +298,25 @@ def test_kill_gate_continues_on_one_separating_seed() -> None:
     assert not seed1["separating"]
     assert kill_gate_verdict({0: seed0, 1: seed1}) == "continue_m4"
     assert kill_gate_verdict({0: seed1, 1: seed1}) == "terminate_and_bank_boundary"
+
+
+def test_amended_kill_gate_defers_once_on_replicated_positive_trends() -> None:
+    series = {
+        seed: {
+            "k2_to_k3": [[0.00] * 64, [0.01] * 64, [0.02] * 64],
+            "k3_to_k4": [[0.00] * 64, [0.02] * 64, [0.04] * 64],
+        }
+        for seed in (0, 1)
+    }
+    trend = kill_gate_trend_read(series, draws=200)
+    flat = {seed: {"separating": False} for seed in (0, 1)}
+    assert trend["positive_trend"]
+    assert amended_kill_gate_verdict(flat, step=5000, trend_read=trend) == (
+        "defer_once_to_step_8000"
+    )
+    assert amended_kill_gate_verdict(flat, step=8000, trend_read=trend) == (
+        "terminate_and_bank_boundary"
+    )
 
 
 def test_power_arithmetic_is_monotone_in_effect() -> None:
@@ -370,12 +426,11 @@ def test_centered_gain_preserves_serving_dtype() -> None:
     assert gain == pytest.approx(2.0, rel=0.05)
 
 
-def test_draft_lock_cannot_authorize_optimizer() -> None:
-    path = Path(__file__).resolve().parents[1] / "training/paper2_stage2b_depth_executed_lock.draft.json"
-    lock = load_and_validate_lock(path, require_signature=False)
-    assert lock["training_authorized"] is False
-    with pytest.raises(RuntimeError, match="pending Mark's signature"):
-        load_and_validate_lock(path, require_signature=True)
+def test_signed_lock_authorizes_optimizer_and_keeps_seals_closed() -> None:
+    path = Path(__file__).resolve().parents[1] / "training/paper2_stage2b_depth_executed_lock.json"
+    lock = load_and_validate_lock(path, require_signature=True)
+    assert lock["training_authorized"] is True
+    assert lock["sealed_partitions"]["remain_sealed"] is True
 
 
 def test_stage2b_preflight_target_is_wired_and_score_only() -> None:
@@ -408,18 +463,21 @@ def test_stage2b_loss_calibration_target_is_wired_and_no_optimizer() -> None:
     assert "torch.optim" not in runner
 
 
-def test_stage2b_executed_lock_is_complete_but_unsigned() -> None:
+def test_stage2b_executed_lock_is_signed_and_complete() -> None:
     root = Path(__file__).resolve().parents[1]
     lock = json.loads(
-        (root / "training/paper2_stage2b_depth_executed_lock.draft.json").read_text(
+        (root / "training/paper2_stage2b_depth_executed_lock.json").read_text(
             encoding="utf-8"
         )
     )
-    assert lock["status"] == "assembled_unsigned_ready_for_mark_signature"
-    assert lock["unresolved_lock_fields"] == ["Mark signature"]
-    assert lock["training_authorized"] is False
-    assert lock["locked_before_training"] is False
-    assert lock["mark_signed"] is False
+    assert lock["status"] == "SIGNED"
+    assert lock["unresolved_lock_fields"] == []
+    assert lock["training_authorized"] is True
+    assert lock["locked_before_training"] is True
+    assert lock["mark_signed"] is True
+    assert lock["signature"]["approval_handoff"]["drive_id"] == (
+        "1qUJ-ZaW5W_c1aLRxf4_H70ggsE8lJtWD"
+    )
     for seed in ("0", "1"):
         weights = lock["training"]["objective"]["weights_by_seed"][seed]
         assert sum(weights.values()) == pytest.approx(1.0)
