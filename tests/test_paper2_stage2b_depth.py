@@ -14,7 +14,7 @@ from eval.eval_paper2_stage2b_riders import (
     runtime_discordance_audit,
     seed_ensemble_probe,
 )
-from eval.prepare_paper2_stage2b_dev2 import build_dev2
+from eval.prepare_paper2_stage2b_dev2 import build_dev2, merge_reference_scores
 from models.lora import LoopScopedLoRALinear
 from models.paper2_dc2_student import Phase3StudentModules, SharedResidualFlow
 from models.paper2_stage2b_depth import (
@@ -352,9 +352,58 @@ def test_dev2_is_deterministic_and_excludes_dev1() -> None:
     assert first == second
     assert len(first) == 2048
     assert receipt["candidate_rows"] == 9207
-    assert receipt["confirm_rows_excluded"] == 1502
+    assert "confirm_rows_excluded" not in receipt
     assert not ({row["item_id"] for row in first} & {row["item_id"] for row in dev1})
     assert not any(row["source_partition"] == "confirm" for row in first)
+
+
+def test_dev2_rejects_partition_table_before_score_join() -> None:
+    rows = [
+        {
+            "item_id": "row-0",
+            "document_id": "doc-0",
+            "battery": "gsm8k",
+            "battery_role": "target_primary",
+            "partition": "dev",
+            "content_sha256": "0" * 64,
+        }
+    ]
+    with pytest.raises(RuntimeError, match="joined P3.1 DEV/verified scores"):
+        build_dev2(rows, [])
+
+
+def test_dev2_score_join_leaves_confirm_sealed() -> None:
+    partition = [
+        {
+            "item_id": "dev",
+            "document_id": "dev-doc",
+            "battery": "gsm8k",
+            "battery_role": "target_primary",
+            "partition": "dev",
+            "content_sha256": "0" * 64,
+        },
+        {
+            "item_id": "confirm",
+            "document_id": "confirm-doc",
+            "battery": "gsm8k",
+            "battery_role": "target_primary",
+            "partition": "confirm",
+            "content_sha256": "1" * 64,
+        },
+    ]
+    scores = [{**partition[0], "base_correct": False, "teacher_14b_correct": True}]
+    merged = merge_reference_scores(partition, scores)
+    assert merged[0]["teacher_14b_correct"] is True
+    assert "base_correct" not in merged[1]
+    assert "teacher_14b_correct" not in merged[1]
+
+
+def test_stage2b_runner_freezes_dev2_from_scored_reference() -> None:
+    runner = Path("colab/run_stage5_paper2_stage2b_depth.py").read_text(
+        encoding="utf-8"
+    )
+    assert "p31_merged_dev_verified_scores.jsonl" in runner
+    assert '"--reference-scores", str(reference_scores)' in runner
 
 
 def test_seed_ensemble_uses_registered_margin_rule() -> None:
