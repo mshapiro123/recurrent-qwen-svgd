@@ -20,6 +20,7 @@ from training.paper2_stage2b_runtime import atomic_json, sha256_file
 
 ROOT = Path(__file__).resolve().parents[1]
 RUN_ID = "stage5_paper2_stage2b_depth_20260819"
+AMPLITUDE_RUN_ID = "stage5_paper2_phase3_p35_amplitude_t1_20260816"
 DRIVE_RUN = DRIVE_STAGE5 / RUN_ID
 LOCK = ROOT / "training/paper2_stage2b_depth_executed_lock.json"
 OLD_DATA = DRIVE_STAGE5 / "stage5_paper2_dc1_preflight_20260729/private/dev_c/dev_c.jsonl"
@@ -31,6 +32,10 @@ BASE_SCORES = ROOT / "outputs/stage5/stage5_paper2_phase3_p34_lock_20260812/pane
 CORPUS_SHA = "2e3e4f8cc98f997854381a98819539f835b68830c75a75f7d0f24a9b91c4e135"
 DEV2_SHA = "6b9ebf40128ed21b0351710e9f828bcacb096512704f02f34274a3b8adcc0adb"
 DEV2_RECEIPT_SHA = "d9f1aee6c9f951376c1fa946deb5933481e1b9d180d22a259e3ba6e68751c3b7"
+INITIALIZATION_SCORE_SHA = {
+    0: "13732e986949aa2bcec5b4060947a262b6c3a980305659cf7ca604d61df08815",
+    1: "f3495dd32904bcef4388a02272d8a67fb01eb9fa54d82ebb4eeb341a2667dff1",
+}
 MODE = os.environ.get("STAGE2B_MODE", "cache").strip().lower()
 SEED = int(os.environ.get("STAGE2B_SEED", "0"))
 TARGET_STEP = int(os.environ.get("STAGE2B_TARGET_STEP", "5000"))
@@ -176,9 +181,12 @@ def main() -> int:
             raise RuntimeError("Stage 2B P3.5 source endpoint changed")
         initialization = scratch / f"seed_{SEED}_initialization_dev1.jsonl"
         rsync(
-            DRIVE_STAGE5 / P35_ID / f"private/score_bundle/arm_s_seed_{SEED}/step_4400_ema_ceiling_0.05.jsonl",
+            DRIVE_STAGE5 / AMPLITUDE_RUN_ID
+            / f"private/amplitude_surface/seed_{SEED}_ceiling_0p05.jsonl",
             initialization,
         )
+        if sha256_file(initialization) != INITIALIZATION_SCORE_SHA[SEED]:
+            raise RuntimeError("Stage 2B initialization score receipt changed")
         output = receipts / f"seed_{SEED}"
         private = DRIVE_RUN / f"private/seed_{SEED}"
         command = [
