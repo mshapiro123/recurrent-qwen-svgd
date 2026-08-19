@@ -1,0 +1,23 @@
+{
+  "cache_sha256": "046c3592f55354054ff9fc5d1a7e7ace0f295f0743fdee64c10fdb9cc730742e",
+  "confirm_scored": false,
+  "eval_e_scored": false,
+  "kind": "paper2_stage2b_calibration_teacher_cache_receipt_v1",
+  "manifest_sha256": "5d9e6784f47ddd9a18f9d966e5e6d3392d60159a9872bafba0d02ef386a34b21",
+  "next_token_positions": 14383,
+  "optimizer_constructed": false,
+  "optimizer_steps": 0,
+  "rows": 32,
+  "runtime": {
+    "attention_backend": "sdpa",
+    "cuda": "12.8",
+    "gpu": "NVIDIA A100-SXM4-40GB",
+    "platform": "Linux-6.6.122+-x86_64-with-glibc2.35",
+    "torch": "2.11.0+cu128",
+    "weights_dtype": "bfloat16"
+  },
+  "status": "complete_no_student_or_optimizer_contact",
+  "teacher_model": "Qwen/Qwen2.5-14B-Instruct",
+  "teacher_revision": "cf98f3b3bbb457ad9e2bb7baf9a0125b6b88caa8",
+  "top_k": 128
+}

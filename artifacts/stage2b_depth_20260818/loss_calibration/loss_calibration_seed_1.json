@@ -1,0 +1,142 @@
+{
+  "checkpoint_chain": [
+    {
+      "label": "migrated",
+      "optimizer_state_absent": true,
+      "path": "/content/recurrent-qwen-svgd-stage/stage5_paper2_stage2b_loss_calibration_20260818/chain_seed_1/seed_1_migrated.pt",
+      "sha256": "3ca1cdf8dd16bf4f435e81a675d7514778144c5c881af52a70171659f7734b4f",
+      "source_seed": 1,
+      "trainable_state_sha256": "baa46ebb8465f2c632023a58d4db1c283bf4a1e5e34971784b3a09343f00d8d7"
+    },
+    {
+      "label": "p33",
+      "path": "/content/recurrent-qwen-svgd-stage/stage5_paper2_stage2b_loss_calibration_20260818/chain_seed_1/seed_1_p33_step_1000.pt",
+      "sha256": "e80ad205eb3c4712fdee5303a4887260488f67ff858a2b4b005d724675e52067",
+      "state_keys": [
+        "bridge.gate_control.weight",
+        "bridge.gate_hidden.weight",
+        "bridge.gate_logits",
+        "bridge.gate_scratch.weight",
+        "bridge.hidden_norm.weight",
+        "bridge.key.weight",
+        "bridge.output_projection.weight",
+        "bridge.query.weight",
+        "bridge.rho_logits",
+        "bridge.scratch_norm.weight",
+        "bridge.value.weight",
+        "control.cell.bias_hh",
+        "control.cell.bias_ih",
+        "control.cell.weight_hh",
+        "control.cell.weight_ih",
+        "control.position_embedding.weight"
+      ],
+      "step": 1000
+    },
+    {
+      "label": "i1",
+      "path": "/content/recurrent-qwen-svgd-stage/stage5_paper2_stage2b_loss_calibration_20260818/chain_seed_1/seed_1_i1.pt",
+      "sha256": "2ed3296f510a6c3a66c451051ecbe2284de03b35dde4052827174a66a10c1d4a",
+      "state_keys": [
+        "bridge.output_projection.weight"
+      ],
+      "step": 1000
+    },
+    {
+      "controller_rung": 0,
+      "label": "p34",
+      "path": "/content/recurrent-qwen-svgd-stage/stage5_paper2_stage2b_loss_calibration_20260818/chain_seed_1/seed_1_p34_step_4000.pt",
+      "sha256": "97ad532a5bffd72b2563799047b517e531e00115793bf4808f060148dfffc1ec",
+      "state_keys": [
+        "bridge.gate_control.weight",
+        "bridge.gate_hidden.weight",
+        "bridge.gate_logits",
+        "bridge.gate_scratch.weight",
+        "bridge.hidden_norm.weight",
+        "bridge.key.weight",
+        "bridge.output_projection.weight",
+        "bridge.query.weight",
+        "bridge.rho_logits",
+        "bridge.scratch_norm.weight",
+        "bridge.value.weight",
+        "control.cell.bias_hh",
+        "control.cell.bias_ih",
+        "control.cell.weight_hh",
+        "control.cell.weight_ih",
+        "control.position_embedding.weight"
+      ],
+      "step": 4000
+    },
+    {
+      "control_reader": "mean",
+      "evaluation_gate_ceiling": 0.02,
+      "label": "p35",
+      "path": "/content/recurrent-qwen-svgd-stage/stage5_paper2_stage2b_loss_calibration_20260818/seed_1_p35_ema_step_4400.pt",
+      "sha256": "e36cddb76407c8f853ccb43824c77cf01d15f144780726dd9aec23215467fccb",
+      "state_keys": [
+        "bridge.gate_control.weight",
+        "bridge.gate_hidden.weight",
+        "bridge.gate_logits",
+        "bridge.gate_scratch.weight",
+        "bridge.hidden_norm.weight",
+        "bridge.key.weight",
+        "bridge.output_projection.weight",
+        "bridge.query.weight",
+        "bridge.rho_logits",
+        "bridge.scratch_norm.weight",
+        "bridge.value.weight",
+        "control.cell.bias_hh",
+        "control.cell.bias_ih",
+        "control.cell.weight_hh",
+        "control.cell.weight_ih",
+        "control.position_embedding.weight"
+      ],
+      "step": 4400
+    }
+  ],
+  "component_means": {
+    "ce": 2.2450002282857895,
+    "kl": 1.2164105717092752,
+    "monotonicity": 1.2538974229246378
+  },
+  "confirm_scored": false,
+  "estimator": "mean full-sequence per-example gradient vector over all M4 trainable parameters",
+  "eval_e_scored": false,
+  "kind": "paper2_stage2b_loss_calibration_v1",
+  "next_token_positions": 14383,
+  "optimizer_constructed": false,
+  "optimizer_steps": 0,
+  "p35_checkpoint_sha256": "e36cddb76407c8f853ccb43824c77cf01d15f144780726dd9aec23215467fccb",
+  "parameter_counts": {
+    "gates": 280880,
+    "loop_lora": 1081344,
+    "new_modules": 884645
+  },
+  "raw_gradient_norms": {
+    "ce": 0.7900258917523711,
+    "kl": 0.4450689249169303,
+    "monotonicity": 1.0277388309238364
+  },
+  "realized_independent_gradient_shares": {
+    "ce": 0.3,
+    "kl": 0.4999999999999999,
+    "monotonicity": 0.19999999999999998
+  },
+  "rows": 32,
+  "runtime": {
+    "attention_backend": "sdpa",
+    "cuda": "12.8",
+    "gpu": "NVIDIA A100-SXM4-40GB",
+    "platform": "Linux-6.6.122+-x86_64-with-glibc2.35",
+    "torch": "2.11.0+cu128",
+    "weights_dtype": "bfloat16"
+  },
+  "seed": 1,
+  "status": "complete_no_optimizer",
+  "teacher_cache_manifest_sha256": "5d9e6784f47ddd9a18f9d966e5e6d3392d60159a9872bafba0d02ef386a34b21",
+  "weights": {
+    "ce": 0.22366816771879902,
+    "kl": 0.6617089090625827,
+    "monotonicity": 0.11462292321861826,
+    "verified_depth": 0.0
+  }
+}

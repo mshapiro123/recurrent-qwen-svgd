@@ -1,0 +1,58 @@
+{
+  "calibration": {
+    "counts_by_stratum": {
+      "code": 16,
+      "general": 16
+    },
+    "kind": "paper2_stage2b_loss_calibration_manifest_v1",
+    "manifest_sha256": "5d9e6784f47ddd9a18f9d966e5e6d3392d60159a9872bafba0d02ef386a34b21",
+    "model_contact_before_freeze": false,
+    "next_token_positions": 14383,
+    "optimizer_constructed": false,
+    "optimizer_steps": 0,
+    "rows": 32,
+    "seed": 20260818,
+    "selection": "lowest stable hash within stratum; 1:1 general/code",
+    "status": "frozen_before_model_contact"
+  },
+  "corpus": {
+    "confirm_scored": false,
+    "corpus_sha256": "2e3e4f8cc98f997854381a98819539f835b68830c75a75f7d0f24a9b91c4e135",
+    "counts_by_source": {
+      "dev_c_train": 979,
+      "option_b_new_train": 1941
+    },
+    "counts_by_stratum": {
+      "code": 1409,
+      "general": 1511
+    },
+    "document_overlap_old_new": 0,
+    "eval_e_scored": false,
+    "kind": "paper2_stage2b_full_sequence_corpus_v1",
+    "loss_scope": "every non-padding next-token position",
+    "maximum_sequence_length": 512,
+    "model_contact_before_freeze": false,
+    "new_document_policy": "all Option-B fresh training documents",
+    "next_token_positions": 1256942,
+    "old_document_split": {
+      "evaluation_fraction": 0.2,
+      "excluded_evaluation_rows": 192,
+      "seed": 20260804,
+      "selected_training_rows": 979
+    },
+    "optimizer_constructed": false,
+    "optimizer_steps": 0,
+    "rows": 2920,
+    "status": "frozen_before_teacher_or_student_contact"
+  },
+  "kind": "paper2_stage2b_data_prelock_packet_v1",
+  "paths": {
+    "loss_calibration_rows": "/content/recurrent-qwen-svgd-stage/stage5_paper2_stage2b_loss_calibration_20260818/data_prelock/loss_calibration_rows.jsonl",
+    "training_corpus": "/content/recurrent-qwen-svgd-stage/stage5_paper2_stage2b_loss_calibration_20260818/data_prelock/training_corpus.jsonl"
+  },
+  "source_data_sha256": {
+    "dev_c": "05bca2ee3ba71421296b2e31a0439746eb9c1b0e15e2cea4471be202ab6ac29d",
+    "option_b_new": "bd0c84984f1dd47d1ee5dc06172afb7ea9728443d7712ca82ffa836d54edff9b"
+  },
+  "status": "complete_no_model_contact"
+}
