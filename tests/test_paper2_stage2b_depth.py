@@ -327,14 +327,20 @@ def test_power_arithmetic_is_monotone_in_effect() -> None:
 
 def test_dev2_is_deterministic_and_excludes_dev1() -> None:
     rows = []
-    for index in range(10_231):
+    for index in range(11_733):
+        if index < 1_519:
+            partition = "dev"
+        elif index < 10_231:
+            partition = "verified_train"
+        else:
+            partition = "confirm"
         rows.append(
             {
                 "item_id": f"row-{index}",
                 "document_id": f"doc-{index}",
                 "battery": ("gsm8k", "arc_challenge", "mbpp")[index % 3],
                 "battery_role": "target_primary",
-                "partition": "dev" if index < 1519 else "verified_train",
+                "partition": partition,
                 "content_sha256": f"{index:064x}",
                 "base_correct": index % 2 == 0,
                 "teacher_14b_correct": index % 3 == 0,
@@ -346,7 +352,9 @@ def test_dev2_is_deterministic_and_excludes_dev1() -> None:
     assert first == second
     assert len(first) == 2048
     assert receipt["candidate_rows"] == 9207
+    assert receipt["confirm_rows_excluded"] == 1502
     assert not ({row["item_id"] for row in first} & {row["item_id"] for row in dev1})
+    assert not any(row["source_partition"] == "confirm" for row in first)
 
 
 def test_seed_ensemble_uses_registered_margin_rule() -> None:
