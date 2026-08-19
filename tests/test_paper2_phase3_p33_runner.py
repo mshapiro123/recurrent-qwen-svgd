@@ -65,6 +65,14 @@ def test_tensor_digest_is_stable() -> None:
     assert runner.tensor_digest(values) == runner.tensor_digest(dict(reversed(list(values.items()))))
 
 
+def test_tensor_digest_accepts_scalar_bfloat16() -> None:
+    first = runner.tensor_digest({"scale": torch.tensor(0.25, dtype=torch.bfloat16)})
+    second = runner.tensor_digest({"scale": torch.tensor(0.25, dtype=torch.bfloat16)})
+    changed = runner.tensor_digest({"scale": torch.tensor(0.5, dtype=torch.bfloat16)})
+    assert first == second
+    assert first != changed
+
+
 def test_batch_maps_source_local_anchors_into_concatenated_cache() -> None:
     cache = {
         "documents": ["old-0", "old-1", "new-0", "new-1", "new-2"],
