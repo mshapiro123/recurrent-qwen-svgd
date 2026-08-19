@@ -4063,6 +4063,22 @@ def test_stage2a_cv1_target_is_wired_and_guarded() -> None:
     assert "dose_zero_host_outputs_bit_exact" in evaluator
 
 
+def test_stage2b_depth_campaign_target_is_wired_and_guarded() -> None:
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    cell = (ROOT / "colab/STAGE5_PAPER2_STAGE2B_DEPTH_CELL.py").read_text(encoding="utf-8")
+    orchestrator = (ROOT / "colab/run_stage5_paper2_stage2b_depth.py").read_text(encoding="utf-8")
+    runner = (ROOT / "training/run_paper2_stage2b_depth.py").read_text(encoding="utf-8")
+    assert "paper2_stage2b_depth" in bootstrap
+    assert "paper2_stage2b_depth_campaign_v1" in cell
+    assert "signed lock asserted immediately before optimizer construction" in cell
+    assert "first wave stops at step 5000 for strategy adjudication" in cell
+    assert "CONFIRM and EVAL-E remain sealed" in cell
+    assert "A100-SXM4-40GB" in cell
+    assert "complete_cache_only_release_gpu" in orchestrator
+    assert "complete_preflight_no_optimizer" in orchestrator
+    assert "awaiting_step_5000_strategy_adjudication" in runner
+
+
 
 def test_gradient_path_audit_target_is_wired_and_guarded() -> None:
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")

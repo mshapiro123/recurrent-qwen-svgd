@@ -16,6 +16,7 @@ from models.lora import LoopScopedLoRALinear
 
 STAGE2B_TOTAL_STEPS = 24_000
 STAGE2B_KILL_GATE_STEP = 5_000
+STAGE2B_KILL_GATE_DEFERRAL_STEP = 8_000
 STAGE2B_LOOK_INTERVAL = 1_000
 STAGE2B_BATCH_SIZE = 128
 STAGE2B_FLOW_LOOPS = 4
@@ -107,7 +108,7 @@ def calibrated_gradient_share_weights(
     return result
 
 
-def sparse_forward_kl(
+def sparse_forward_kl_per_example(
     student_logits: torch.Tensor,
     teacher_topk_token_ids: torch.Tensor,
     teacher_topk_logits: torch.Tensor,
@@ -138,7 +139,24 @@ def sparse_forward_kl(
     token_kl = (teacher_log.exp() * (teacher_log - student_log)).sum(dim=-1)
     mask = loss_mask.to(token_kl.dtype)
     per_example = (token_kl * mask).sum(dim=1) / counts.to(token_kl.dtype)
-    return per_example.mean() * temperature**2
+    return per_example * temperature**2
+
+
+def sparse_forward_kl(
+    student_logits: torch.Tensor,
+    teacher_topk_token_ids: torch.Tensor,
+    teacher_topk_logits: torch.Tensor,
+    loss_mask: torch.Tensor,
+    *,
+    temperature: float = 1.0,
+) -> torch.Tensor:
+    return sparse_forward_kl_per_example(
+        student_logits,
+        teacher_topk_token_ids,
+        teacher_topk_logits,
+        loss_mask,
+        temperature=temperature,
+    ).mean()
 
 
 def monotonicity_hinge(loop_kls: Sequence[torch.Tensor], *, delta: float) -> torch.Tensor:
@@ -148,7 +166,7 @@ def monotonicity_hinge(loop_kls: Sequence[torch.Tensor], *, delta: float) -> tor
         raise ValueError("hinge margin must be finite and nonnegative")
     return torch.stack(
         [F.relu(loop_kls[index] - loop_kls[index - 1] + delta) for index in range(1, 4)]
-    ).sum()
+    ).sum(dim=0)
 
 
 def depth_objective(
@@ -179,8 +197,8 @@ def depth_objective(
     counts = loss_mask.sum(dim=1)
     if bool((counts == 0).any()):
         raise ValueError("every example requires at least one supervised position")
-    kls = [
-        sparse_forward_kl(
+    per_example_kls = [
+        sparse_forward_kl_per_example(
             logits,
             teacher_topk_token_ids,
             teacher_topk_logits,
@@ -205,8 +223,10 @@ def depth_objective(
             for logits in loop_logits
         ]
     ).mean()
-    kl = torch.stack(kls).mean()
-    mono = monotonicity_hinge(kls, delta=hinge_delta)
+    kl = torch.stack(per_example_kls).mean()
+    # The calibration is rowwise. Keep the hinge rowwise as well so changing
+    # microbatch size cannot change the registered estimator.
+    mono = monotonicity_hinge(per_example_kls, delta=hinge_delta).mean()
     if weights.verified_depth > 0:
         if not verified_depth_losses:
             raise ValueError("verified-depth weight is active but no verified targets were supplied")
@@ -300,6 +320,103 @@ def kill_gate_verdict(seed_reads: Mapping[int, Mapping[str, Any]]) -> str:
     return "continue_m4" if any(separating) else "terminate_and_bank_boundary"
 
 
+def kill_gate_trend_read(
+    series_by_seed: Mapping[int, Mapping[str, Sequence[Sequence[float]]]],
+    *,
+    draws: int = 10_000,
+    alpha: float = 0.05,
+    seed: int = 20260819,
+) -> dict[str, Any]:
+    """Registered looks-3--5 slope test for the single kill-gate deferral."""
+
+    transitions = ("k2_to_k3", "k3_to_k4")
+    expected_seeds = (0, 1)
+    if tuple(sorted(series_by_seed)) != expected_seeds:
+        raise ValueError("trend read requires exactly seeds 0 and 1")
+    tensors: dict[int, dict[str, torch.Tensor]] = {}
+    for seed_index in expected_seeds:
+        if tuple(sorted(series_by_seed[seed_index])) != transitions:
+            raise ValueError("trend read requires both registered transitions")
+        tensors[seed_index] = {}
+        for transition in transitions:
+            looks = series_by_seed[seed_index][transition]
+            if len(looks) != 3 or not looks[0]:
+                raise ValueError("trend read requires nonempty looks 3, 4, and 5")
+            if any(len(values) != len(looks[0]) for values in looks):
+                raise ValueError("row identities must remain paired across looks")
+            tensors[seed_index][transition] = torch.tensor(looks, dtype=torch.float64)
+
+    x = torch.tensor([3.0, 4.0, 5.0], dtype=torch.float64)
+    centered = x - x.mean()
+    denominator = float(centered.square().sum())
+
+    def slope(values: torch.Tensor) -> torch.Tensor:
+        return (values * centered.to(values.device)).sum(dim=-1) / denominator
+
+    reads: dict[str, Any] = {}
+    all_positive = True
+    for transition_index, transition in enumerate(transitions):
+        point_series = torch.stack(
+            [tensors[seed_index][transition].mean(dim=1) for seed_index in expected_seeds]
+        ).mean(dim=0)
+        point_slope = float(slope(point_series))
+        generator = torch.Generator().manual_seed(seed + transition_index)
+        boot = []
+        for _ in range(draws):
+            resampled = []
+            for seed_index in expected_seeds:
+                values = tensors[seed_index][transition]
+                indexes = torch.randint(
+                    values.shape[1],
+                    (values.shape[1],),
+                    generator=generator,
+                )
+                resampled.append(values[:, indexes].mean(dim=1))
+            boot.append(slope(torch.stack(resampled).mean(dim=0)))
+        bootstrap = torch.stack(boot)
+        lower = float(torch.quantile(bootstrap, alpha))
+        probability_nonpositive = float((bootstrap <= 0).double().mean())
+        positive = point_slope > 0.0 and lower > 0.0
+        all_positive = all_positive and positive
+        reads[transition] = {
+            "point_slope_per_1000_steps": point_slope,
+            "one_sided_95_percent_lower_bound": lower,
+            "bootstrap_probability_nonpositive": probability_nonpositive,
+            "positive": positive,
+        }
+    return {
+        "kind": "paper2_stage2b_kill_gate_trend_v1",
+        "looks": [3, 4, 5],
+        "steps": [3000, 4000, 5000],
+        "equal_seed_weighting": True,
+        "row_pairing_preserved_across_looks": True,
+        "bootstrap_draws": draws,
+        "one_sided_alpha": alpha,
+        "seed": seed,
+        "transitions": reads,
+        "positive_trend": all_positive,
+    }
+
+
+def amended_kill_gate_verdict(
+    seed_reads: Mapping[int, Mapping[str, Any]],
+    *,
+    step: int,
+    trend_read: Mapping[str, Any] | None = None,
+) -> str:
+    if set(seed_reads) != {0, 1}:
+        raise ValueError("registered kill gate requires both seeds")
+    if any(bool(read["separating"]) for read in seed_reads.values()):
+        return "continue_m4"
+    if step == STAGE2B_KILL_GATE_STEP:
+        if trend_read is not None and bool(trend_read.get("positive_trend")):
+            return "defer_once_to_step_8000"
+        return "terminate_and_bank_boundary"
+    if step == STAGE2B_KILL_GATE_DEFERRAL_STEP:
+        return "terminate_and_bank_boundary"
+    raise ValueError("amended verdict is defined only at steps 5000 and 8000")
+
+
 def paired_sign_test_power(
     *,
     rows: int,
@@ -359,7 +476,7 @@ def validate_lock(lock: Mapping[str, Any], *, require_signature: bool) -> None:
         raise RuntimeError("Stage 2B-D kill-gate position changed")
     if require_signature:
         if not (
-            lock.get("status") == "approved_for_training"
+            lock.get("status") == "SIGNED"
             and lock.get("locked_before_training") is True
             and lock.get("training_authorized") is True
             and lock.get("mark_signed") is True

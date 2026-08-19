@@ -4438,6 +4438,19 @@ TARGETS = {
             "no-training Stage 2B loss calibration",
         ],
     },
+    "paper2_stage2b_depth": {
+        "path": "colab/STAGE5_PAPER2_STAGE2B_DEPTH_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_STAGE2B_DEPTH_VERSION",
+            "paper2_stage2b_depth_campaign_v1",
+            "signed lock asserted immediately before optimizer construction",
+            "first wave stops at step 5000 for strategy adjudication",
+            "resumable sharded 14B cache and deterministic seed checkpoints",
+            "DEV-1 floors DEV-2 margins CONFIRM and EVAL-E remain sealed",
+            "colab.run_stage5_paper2_stage2b_depth",
+        ],
+        "env": {},
+    },
     "paper2_phase3_kp1_t1": {
         "path": "colab/STAGE5_PAPER2_PHASE3_KP1_T1_CELL.py",
         "markers": [

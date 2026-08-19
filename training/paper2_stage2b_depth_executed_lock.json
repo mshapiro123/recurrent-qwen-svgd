@@ -1,9 +1,27 @@
 {
   "kind": "paper2_stage2b_depth_executed_lock_v1",
-  "status": "assembled_unsigned_ready_for_mark_signature",
-  "locked_before_training": false,
-  "training_authorized": false,
-  "mark_signed": false,
+  "status": "SIGNED",
+  "locked_before_training": true,
+  "training_authorized": true,
+  "mark_signed": true,
+  "signature": {
+    "line": "Approved by Mark, 2026-08-19, via strategy pre-signature review",
+    "date": "2026-08-19",
+    "pre_signature_review": {
+      "drive_id": "1m2IRYaNZSp3R5Zq0J_MsglKd5Z0CAxuo",
+      "bytes": 5281,
+      "sha256": "e53f1e856d4816c4798dd48218f607e2aab2d93a3f8f19dac80ec9c91560e8fd"
+    },
+    "approval_handoff": {
+      "drive_id": "1qUJ-ZaW5W_c1aLRxf4_H70ggsE8lJtWD",
+      "bytes": 7724,
+      "sha256": "e203fe92d903615827cfeb58cf185913bdbca7a63aa946e906913a495c24f095"
+    },
+    "unsigned_lock": {
+      "drive_id": "1k5GyiMkHu_B8orURegmXW24o5w3__Eno",
+      "sha256": "83d3ce31288f78e064877797b8f0d2b02d4b4a6b8422011b310c939a08f6f361"
+    }
+  },
   "charter": {
     "drive_id": "1izjyOV3699BaSDTVntKi_8-vJfnl4Gtx",
     "bytes": 12018,
@@ -158,6 +176,39 @@
       "interpretation": "the expanded DEV-2 panel improves precision but does not provide 80 percent power for a 30-row effect under the evaluated discordance range"
     }
   },
+  "evaluation_panels": {
+    "dev1": {
+      "rows": 1024,
+      "roles": [
+        "Tier-1 safety floor",
+        "GSM8K safety floor",
+        "both-comparator battery decomposition",
+        "continuity read"
+      ]
+    },
+    "dev2": {
+      "rows": 2048,
+      "roles": [
+        "kill-gate margin telemetry",
+        "discrete-effect read"
+      ],
+      "prohibited_role": "safety-floor duty"
+    },
+    "pooled_registered_endpoint": {
+      "rows": 3072,
+      "declared_before_first_look": true,
+      "design_target_points": 1.5,
+      "design_target_rows": 46,
+      "actual_target_points": 1.4973958333333333,
+      "one_sided_alpha": 0.05,
+      "power_by_discordance": {
+        "0.1": 0.8222548192963631,
+        "0.2": 0.5805480450725693,
+        "0.3": 0.434738342597202
+      },
+      "interpretation": "discrete endpoint only; margins and the kill gate remain the campaign decision instrument"
+    }
+  },
   "kill_gate": {
     "step": 5000,
     "estimator": "paired row-level mean answer-token-margin difference",
@@ -165,7 +216,22 @@
     "required_transitions": ["k2_to_k3", "k3_to_k4"],
     "continue_rule": "at least one seed has positive means and lower 95% bounds above zero on both required transitions",
     "terminate_rule": "both seeds fail separation",
-    "capability_endpoint_on_termination": false
+    "capability_endpoint_on_termination": false,
+    "single_deferral": {
+      "eligible_at_step": 5000,
+      "deferred_step": 8000,
+      "condition": "both seeds fail separation at step 5000 and both required transition slopes pass the registered positive-trend test",
+      "estimator": {
+        "looks": [3, 4, 5],
+        "steps": [3000, 4000, 5000],
+        "transitions": ["k2_to_k3", "k3_to_k4"],
+        "slope": "ordinary least-squares slope over the three equally spaced looks",
+        "seed_weighting": "equal",
+        "bootstrap": "10000 row-stratified draws; row pairing preserved across looks; seed 20260819 + transition index",
+        "positive_rule": "point slope and one-sided 95 percent lower bound are above zero for both transitions"
+      },
+      "repeat_deferral_allowed": false
+    }
   },
   "guardrails": {
     "tier1_floor_vs_initialization": {
@@ -196,7 +262,14 @@
     "r1_runtime_discordance_status": "closed: fixed prompt reproduced the same top token across A100 and L4; runtime was aligned rather than bit-identical",
     "r1_fixed_prompt_a100_receipt_sha256": "ed058a16d02f1caa595196911cbc5a222104f1f532855425f2d1823d1ee62558",
     "r1_fixed_prompt_l4_receipt_sha256": "c7e055b806a42adeb9257f6950e27f98858211c9781555f744915beb46c22bff",
-    "r1_cross_runtime_receipt_sha256": "af837d254b7ca8df2a58d2d3bc211003efa987387d0cef117f189279658988f3"
+    "r1_cross_runtime_receipt_sha256": "af837d254b7ca8df2a58d2d3bc211003efa987387d0cef117f189279658988f3",
+    "r2_desk_item": {
+      "population": "R-1 17 high-margin cross-runtime flipped rows",
+      "fixed_prompt_max_absolute_logit_delta": 0.375,
+      "fixed_prompt_mean_absolute_logit_delta": 0.0572577,
+      "code_review_trigger": "any flipped row margin materially above its observed per-row delta band",
+      "campaign_runtime_contact": false
+    }
   },
   "stability": {
     "m0_receipt_sha256": "00d8d9d114b8534ac907f2f87b5c76ca40ea150d21d2fbe580e0131878a2d1ef",
@@ -209,7 +282,12 @@
     "routing_row_residual_max": 0.0,
     "routing_column_residual_max": 0.0,
     "lambda2_mean": 0.9993057,
-    "lane_effective_rank": 1.003187
+    "lane_effective_rank": 1.003187,
+    "per_look_watch_items": {
+      "loop_1_absolute_kl": "rising trajectory triggers strategy review, not automatic action",
+      "finite_horizon_gain": "report every audit look; hard tripwire remains 100",
+      "r2_cross_runtime_desk_read": "desk-only; never touches the A100 campaign runtime"
+    }
   },
   "runtime": {
     "accelerator_class": "NVIDIA A100-SXM4-40GB",
@@ -231,7 +309,5 @@
     "eval_e_scored": false,
     "remain_sealed": true
   },
-  "unresolved_lock_fields": [
-    "Mark signature"
-  ]
+  "unresolved_lock_fields": []
 }
