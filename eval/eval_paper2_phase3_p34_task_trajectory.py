@@ -462,12 +462,14 @@ def score_generation(
                                 and int(token) == int(tokenizer.eos_token_id)
                             ):
                                 finished[index] = True
-                all_finished = (
-                    bool(finished_mask.all().item())
-                    if vectorized_telemetry
-                    else all(finished)
-                )
-                if all_finished or token_index + 1 == cap:
+                # Running the vectorized path to the registered cap avoids a
+                # CPU-GPU synchronization on every token. Rows are truncated
+                # at their first EOS below, so predictions and telemetry stay
+                # identical to the early-exit path.
+                if (
+                    not vectorized_telemetry
+                    and all(finished)
+                ) or token_index + 1 == cap:
                     break
                 state, output = graph.advance_cached(
                     state=state, selected_tokens=selected_tokens

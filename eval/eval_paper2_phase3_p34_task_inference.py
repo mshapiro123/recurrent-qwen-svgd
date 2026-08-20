@@ -138,8 +138,13 @@ class P34TaskInferenceGraph:
         initial_scratch: torch.Tensor | None = None,
         input_ids: torch.Tensor | None = None,
         layer6_hidden: torch.Tensor | None = None,
+        current_positions: torch.Tensor | None = None,
     ) -> P34NextTokenOutput:
-        _write_mask, positions = current_position_mask(attention_mask)
+        positions = (
+            current_position_mask(attention_mask)[1]
+            if current_positions is None
+            else current_positions
+        )
         batch_index = torch.arange(hidden.shape[0], device=hidden.device)
         scratch0 = (
             self.sidecar.initializer(hidden, attention_mask.bool())
@@ -316,6 +321,7 @@ class P34TaskInferenceGraph:
             base_logits=output.logits[batch_index, positions],
             input_ids=state.input_ids,
             layer6_hidden=state.layer6_hidden,
+            current_positions=positions,
         )
         if self.cross_token_persistence:
             state.sidecar_scratch = augmented.scratch_state.detach()
@@ -339,6 +345,12 @@ class P34TaskInferenceGraph:
                 ),
             ],
             dim=1,
+        )
+        positions = torch.full(
+            (selected_tokens.shape[0],),
+            attention.shape[1] - 1,
+            dtype=torch.long,
+            device=attention.device,
         )
         output = self.base_model(
             input_ids=selected_tokens,
@@ -370,6 +382,7 @@ class P34TaskInferenceGraph:
             ),
             input_ids=input_ids,
             layer6_hidden=layer6_hidden,
+            current_positions=positions,
         )
         updated.sidecar_scratch = (
             augmented.scratch_state.detach()
