@@ -7,6 +7,7 @@ from pathlib import Path
 
 import pytest
 import torch
+import torch
 
 import eval.eval_paper2_stage2b_autopsy as autopsy_eval
 
@@ -19,10 +20,54 @@ from training.paper2_stage2b_autopsy import (
     stable_dev2_subsample,
     validate_autopsy_lock,
 )
+from eval.eval_paper2_stage2b_campaign import Stage2BTaskInferenceGraph
 
 
 ROOT = Path(__file__).resolve().parents[1]
 LOCK = ROOT / "training/paper2_stage2b_autopsy_lock.json"
+
+
+class _ProjectionWrapper(torch.nn.Module):
+    def __init__(self) -> None:
+        super().__init__()
+        self.anchor = torch.nn.Parameter(torch.zeros(()))
+        self.calls: list[int] = []
+
+    def forward(self, input_ids: torch.Tensor, **kwargs):
+        keep = int(kwargs["logits_to_keep"])
+        self.calls.append(keep)
+        batch, width = input_ids.shape
+        logits = torch.arange(batch * 4 * width * 7, dtype=torch.float32).reshape(
+            batch, 1, 4, width, 7
+        )
+        if keep:
+            logits = logits[:, :, :, -keep:, :]
+        return type(
+            "Output",
+            (),
+            {
+                "loop_logits": logits,
+                "metrics": {
+                    "stage2b_position_gate_mean": torch.tensor(0.25),
+                    "stage2b_writeback_ratio_mean": torch.tensor(0.5),
+                },
+            },
+        )()
+
+
+def test_stage2b_task_graph_last_token_projection_is_exact() -> None:
+    wrapper = _ProjectionWrapper()
+    input_ids = torch.tensor([[1, 2, 3], [4, 5, 6]])
+    attention = torch.ones_like(input_ids)
+    full = Stage2BTaskInferenceGraph(
+        wrapper=wrapper, stage="M2", amplitude=0.05, last_token_projection=False
+    ).next_token(input_ids=input_ids, attention_mask=attention)
+    sliced = Stage2BTaskInferenceGraph(
+        wrapper=wrapper, stage="M2", amplitude=0.05, last_token_projection=True
+    ).next_token(input_ids=input_ids, attention_mask=attention)
+    assert wrapper.calls == [0, 1]
+    assert torch.equal(full.augmented_logits, sliced.augmented_logits)
+    assert torch.equal(full.base_logits, sliced.base_logits)
 
 
 def test_autopsy_signed_lock_is_score_only_and_sealed() -> None:

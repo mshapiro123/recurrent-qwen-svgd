@@ -578,6 +578,52 @@ def _zero_write_logits(wrapper: Any, tokenizer: Any, row: Mapping[str, Any]) -> 
     return output.loop_logits.detach().float().cpu()
 
 
+@torch.inference_mode()
+def _last_token_projection_receipt(
+    wrapper: Any, tokenizer: Any, rows: Sequence[Mapping[str, Any]]
+) -> dict[str, Any]:
+    """Prove that last-position LM-head projection preserves the registered read."""
+
+    prepared = [(row, *_forced_target(tokenizer, row)) for row in rows]
+    width = max(len(prompt) + len(target) for _row, prompt, target in prepared)
+    input_ids = torch.zeros((len(prepared), width), dtype=torch.long, device="cuda")
+    attention = torch.zeros_like(input_ids)
+    for index, (_row, prompt, target) in enumerate(prepared):
+        tokens = prompt + target
+        input_ids[index, : len(tokens)] = torch.tensor(tokens, device="cuda")
+        attention[index, : len(tokens)] = 1
+
+    common = {
+        "wrapper": wrapper,
+        "stage": "M2",
+        "amplitude": 0.05,
+        "flow_loops": 4,
+        "diagnostic_mode": "standard",
+    }
+    full = Stage2BTaskInferenceGraph(**common, last_token_projection=False).next_token(
+        input_ids=input_ids, attention_mask=attention
+    )
+    sliced = Stage2BTaskInferenceGraph(**common, last_token_projection=True).next_token(
+        input_ids=input_ids, attention_mask=attention
+    )
+    cells = {}
+    for name in ("augmented_logits", "base_logits", "position_gate", "writeback_ratio"):
+        left = getattr(full, name).detach().float().cpu()
+        right = getattr(sliced, name).detach().float().cpu()
+        cells[name] = {
+            "bit_exact": torch.equal(left, right),
+            "max_abs_difference": float((left - right).abs().max()),
+        }
+    all_pass = all(cell["bit_exact"] for cell in cells.values())
+    return {
+        "rows": len(rows),
+        "cells": cells,
+        "all_pass": all_pass,
+        "optimization": "project LM-head logits at the final sequence position only",
+        "estimator_change": False,
+    }
+
+
 def _offdiagonal_cosine(states: torch.Tensor, *, center: bool) -> dict[str, float]:
     values = states.float()
     if center:
@@ -780,6 +826,20 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         "optimizer_steps": 0,
         "confirm_scored": False,
         "eval_e_scored": False,
+    }
+    atomic_json(args.output_dir / "status.json", receipt)
+
+    projection = {}
+    for state_name, state in (("initialization", initialization_state), ("stop", stop_state)):
+        _apply_state(wrapper, state)
+        projection[state_name] = _last_token_projection_receipt(
+            wrapper, tokenizer, dev2_subsample[:6]
+        )
+    if not all(cell["all_pass"] for cell in projection.values()):
+        raise RuntimeError("Stage 2B-A last-token projection equivalence failed")
+    receipt["last_token_projection_equivalence"] = {
+        "cells": projection,
+        "all_pass": True,
     }
     atomic_json(args.output_dir / "status.json", receipt)
 
