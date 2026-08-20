@@ -4105,7 +4105,7 @@ def test_stage2b_autopsy_targets_are_score_only_and_sealed() -> None:
     assert '"paper2_stage2b_autopsy"' in bootstrap
     assert "paper2_stage2b_autopsy_prelock_v1" in prelock
     assert "inventory historical checkpoints without substitution" in prelock
-    assert "paper2_stage2b_autopsy_v2" in cell
+    assert "paper2_stage2b_autopsy_v3" in cell
     assert "signed score-only lock no optimizer no training" in cell
     assert "zero-write full-logit identity precedes diagnostic cells" in cell
     assert "A100-SXM4-40GB" in cell
