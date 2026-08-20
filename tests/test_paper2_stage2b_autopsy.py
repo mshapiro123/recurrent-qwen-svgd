@@ -4,12 +4,14 @@ import copy
 import json
 from collections import Counter
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 import torch
 from transformers import Qwen2Config, Qwen2ForCausalLM
 
 import eval.eval_paper2_stage2b_autopsy as autopsy_eval
+import eval.eval_paper2_phase3_p34_task_trajectory as trajectory_eval
 
 from models.paper2_dc2_student import Phase3StudentModules
 from models.paper2_stage2b_depth import Stage2BDepthAttachment
@@ -135,6 +137,79 @@ def test_stage2b_incremental_cache_preserves_greedy_transport() -> None:
         cached_state, cached_output = cached.advance_cached(
             state=cached_state, selected_tokens=recompute_token
         )
+
+
+def test_generation_vectorized_telemetry_preserves_eos_truncation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class Encoded(dict):
+        def to(self, _device: torch.device) -> "Encoded":
+            return self
+
+    class Tokenizer:
+        eos_token_id = 9
+        pad_token_id = 0
+        padding_side = "right"
+
+        def __call__(self, prompts: list[str], **_kwargs: object) -> Encoded:
+            batch = len(prompts)
+            return Encoded(
+                input_ids=torch.ones((batch, 2), dtype=torch.long),
+                attention_mask=torch.ones((batch, 2), dtype=torch.long),
+            )
+
+        def decode(self, token_ids: list[int], **_kwargs: object) -> str:
+            return ",".join(str(token) for token in token_ids)
+
+    token_steps = ([1, 2], [9, 3], [4, 4], [5, 9])
+
+    def output(step: int) -> SimpleNamespace:
+        logits = torch.full((2, 10), -10.0)
+        logits[torch.arange(2), torch.tensor(token_steps[step])] = 10.0
+        return SimpleNamespace(
+            augmented_logits=logits,
+            position_gate=torch.tensor([step + 0.1, step + 0.2]),
+            writeback_ratio=torch.tensor([step + 0.3, step + 0.4]),
+            answer_token_margin=torch.tensor([step + 0.5, step + 0.6]),
+            memory_compatibility_gate=None,
+        )
+
+    class Graph:
+        device = torch.device("cpu")
+
+        def prefill_cached(self, **_kwargs: object) -> tuple[int, SimpleNamespace]:
+            return 0, output(0)
+
+        def advance_cached(
+            self, *, state: int, selected_tokens: torch.Tensor
+        ) -> tuple[int, SimpleNamespace]:
+            del selected_tokens
+            return state + 1, output(state + 1)
+
+    monkeypatch.setattr(
+        trajectory_eval, "_generation_prompt", lambda _row: ("prompt", 4)
+    )
+    monkeypatch.setattr(
+        trajectory_eval, "_chat_prompt", lambda _tokenizer, prompt: prompt
+    )
+    monkeypatch.setattr(
+        trajectory_eval,
+        "score_generated",
+        lambda _row, text: (True, text),
+    )
+    rows = [
+        {"item_id": "a", "battery": "gsm8k", "reader": "test"},
+        {"item_id": "b", "battery": "gsm8k", "reader": "test"},
+    ]
+    scored = trajectory_eval.score_generation(
+        Graph(), Tokenizer(), rows, batch_size=2
+    )
+    assert scored[0]["generated_token_ids"] == [1, 9]
+    assert scored[1]["generated_token_ids"] == [2, 3, 4, 9]
+    assert scored[0]["generated_tokens"] == 2
+    assert scored[1]["generated_tokens"] == 4
+    assert scored[0]["position_gate_mean"] == pytest.approx(0.6)
+    assert scored[1]["position_gate_mean"] == pytest.approx(1.7)
 
 
 def test_autopsy_signed_lock_is_score_only_and_sealed() -> None:

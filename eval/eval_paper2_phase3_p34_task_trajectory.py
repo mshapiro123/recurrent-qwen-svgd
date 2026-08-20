@@ -432,22 +432,62 @@ def score_generation(
             ratios: list[list[float]] = [[] for _row in batch]
             margins: list[list[float]] = [[] for _row in batch]
             memory: list[dict[str, list[Any]]] = [{} for _row in batch]
+            generated_steps: list[torch.Tensor] = []
+            gate_steps: list[torch.Tensor] = []
+            ratio_steps: list[torch.Tensor] = []
+            margin_steps: list[torch.Tensor] = []
+            vectorized_telemetry = output.memory_compatibility_gate is None
+            finished_mask = torch.zeros(
+                len(batch), dtype=torch.bool, device=graph.device
+            )
             for token_index in range(cap):
                 selected_tokens = output.augmented_logits.argmax(dim=-1)
-                for index, token in enumerate(selected_tokens.tolist()):
-                    if not finished[index]:
-                        gates[index].append(float(output.position_gate[index].cpu()))
-                        ratios[index].append(float(output.writeback_ratio[index].cpu()))
-                        margins[index].append(float(output.answer_token_margin[index].cpu()))
-                        _append_memory_telemetry(memory[index], output, index)
-                        generated[index].append(int(token))
-                        if tokenizer.eos_token_id is not None and int(token) == int(tokenizer.eos_token_id):
-                            finished[index] = True
-                if all(finished) or token_index + 1 == cap:
+                if vectorized_telemetry:
+                    generated_steps.append(selected_tokens.detach())
+                    gate_steps.append(output.position_gate.detach())
+                    ratio_steps.append(output.writeback_ratio.detach())
+                    margin_steps.append(output.answer_token_margin.detach())
+                    if tokenizer.eos_token_id is not None:
+                        finished_mask |= selected_tokens.eq(int(tokenizer.eos_token_id))
+                else:
+                    for index, token in enumerate(selected_tokens.tolist()):
+                        if not finished[index]:
+                            gates[index].append(float(output.position_gate[index].cpu()))
+                            ratios[index].append(float(output.writeback_ratio[index].cpu()))
+                            margins[index].append(float(output.answer_token_margin[index].cpu()))
+                            _append_memory_telemetry(memory[index], output, index)
+                            generated[index].append(int(token))
+                            if (
+                                tokenizer.eos_token_id is not None
+                                and int(token) == int(tokenizer.eos_token_id)
+                            ):
+                                finished[index] = True
+                all_finished = (
+                    bool(finished_mask.all().item())
+                    if vectorized_telemetry
+                    else all(finished)
+                )
+                if all_finished or token_index + 1 == cap:
                     break
                 state, output = graph.advance_cached(
                     state=state, selected_tokens=selected_tokens
                 )
+            if vectorized_telemetry:
+                token_rows = torch.stack(generated_steps, dim=1).cpu().tolist()
+                gate_rows = torch.stack(gate_steps, dim=1).float().cpu().tolist()
+                ratio_rows = torch.stack(ratio_steps, dim=1).float().cpu().tolist()
+                margin_rows = torch.stack(margin_steps, dim=1).float().cpu().tolist()
+                for index, token_ids in enumerate(token_rows):
+                    length = len(token_ids)
+                    if (
+                        tokenizer.eos_token_id is not None
+                        and int(tokenizer.eos_token_id) in token_ids
+                    ):
+                        length = token_ids.index(int(tokenizer.eos_token_id)) + 1
+                    generated[index] = [int(token) for token in token_ids[:length]]
+                    gates[index] = [float(value) for value in gate_rows[index][:length]]
+                    ratios[index] = [float(value) for value in ratio_rows[index][:length]]
+                    margins[index] = [float(value) for value in margin_rows[index][:length]]
             batch_results = []
             for row, token_ids, row_gates, row_ratios, row_margins, row_memory in zip(
                 batch, generated, gates, ratios, margins, memory
