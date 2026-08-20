@@ -580,10 +580,10 @@ def _zero_write_logits(wrapper: Any, tokenizer: Any, row: Mapping[str, Any]) -> 
 
 
 @torch.inference_mode()
-def _last_token_projection_receipt(
+def _sparse_loop_projection_receipt(
     wrapper: Any, tokenizer: Any, rows: Sequence[Mapping[str, Any]]
 ) -> dict[str, Any]:
-    """Prove that last-position LM-head projection preserves the registered read."""
+    """Prove that skipping unused loop projections preserves the registered read."""
 
     prepared = [(row, *_forced_target(tokenizer, row)) for row in rows]
     width = max(len(prompt) + len(target) for _row, prompt, target in prepared)
@@ -601,16 +601,24 @@ def _last_token_projection_receipt(
         "flow_loops": 4,
         "diagnostic_mode": "standard",
     }
-    full = Stage2BTaskInferenceGraph(**common, last_token_projection=False).next_token(
+    full = Stage2BTaskInferenceGraph(
+        **common,
+        last_token_projection=False,
+        sparse_loop_projection=False,
+    ).next_token(
         input_ids=input_ids, attention_mask=attention
     )
-    sliced = Stage2BTaskInferenceGraph(**common, last_token_projection=True).next_token(
+    sparse = Stage2BTaskInferenceGraph(
+        **common,
+        last_token_projection=False,
+        sparse_loop_projection=True,
+    ).next_token(
         input_ids=input_ids, attention_mask=attention
     )
     cells = {}
     for name in ("augmented_logits", "base_logits", "position_gate", "writeback_ratio"):
         left = getattr(full, name).detach().float().cpu()
-        right = getattr(sliced, name).detach().float().cpu()
+        right = getattr(sparse, name).detach().float().cpu()
         cells[name] = {
             "bit_exact": torch.equal(left, right),
             "max_abs_difference": float((left - right).abs().max()),
@@ -620,7 +628,7 @@ def _last_token_projection_receipt(
         "rows": len(rows),
         "cells": cells,
         "all_pass": all_pass,
-        "optimization": "project LM-head logits at the final sequence position only",
+        "optimization": "project full-sequence LM-head logits on loops 1 and 4 only",
         "estimator_change": False,
     }
 
@@ -833,16 +841,16 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     projection = {}
     for state_name, state in (("initialization", initialization_state), ("stop", stop_state)):
         _apply_state(wrapper, state)
-        projection[state_name] = _last_token_projection_receipt(
+        projection[state_name] = _sparse_loop_projection_receipt(
             wrapper, tokenizer, dev2_subsample[:6]
         )
-    receipt["last_token_projection_equivalence"] = {
+    receipt["sparse_loop_projection_equivalence"] = {
         "cells": projection,
         "all_pass": all(cell["all_pass"] for cell in projection.values()),
     }
     atomic_json(args.output_dir / "status.json", receipt)
-    if not receipt["last_token_projection_equivalence"]["all_pass"]:
-        raise RuntimeError("Stage 2B-A last-token projection equivalence failed")
+    if not receipt["sparse_loop_projection_equivalence"]["all_pass"]:
+        raise RuntimeError("Stage 2B-A sparse-loop projection equivalence failed")
 
     _apply_state(wrapper, initialization_state)
     zero_init_logits = _zero_write_logits(wrapper, tokenizer, dev2_subsample[0])

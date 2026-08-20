@@ -31,11 +31,12 @@ class _ProjectionWrapper(torch.nn.Module):
     def __init__(self) -> None:
         super().__init__()
         self.anchor = torch.nn.Parameter(torch.zeros(()))
-        self.calls: list[int] = []
+        self.calls: list[tuple[int, bool]] = []
 
     def forward(self, input_ids: torch.Tensor, **kwargs):
         keep = int(kwargs["logits_to_keep"])
-        self.calls.append(keep)
+        sparse = bool(kwargs["stage2b_score_only_sparse_logits"])
+        self.calls.append((keep, sparse))
         batch, width = input_ids.shape
         logits = torch.arange(batch * 4 * width * 7, dtype=torch.float32).reshape(
             batch, 1, 4, width, 7
@@ -55,19 +56,27 @@ class _ProjectionWrapper(torch.nn.Module):
         )()
 
 
-def test_stage2b_task_graph_last_token_projection_is_exact() -> None:
+def test_stage2b_task_graph_sparse_loop_projection_is_exact() -> None:
     wrapper = _ProjectionWrapper()
     input_ids = torch.tensor([[1, 2, 3], [4, 5, 6]])
     attention = torch.ones_like(input_ids)
     full = Stage2BTaskInferenceGraph(
-        wrapper=wrapper, stage="M2", amplitude=0.05, last_token_projection=False
+        wrapper=wrapper,
+        stage="M2",
+        amplitude=0.05,
+        last_token_projection=False,
+        sparse_loop_projection=False,
     ).next_token(input_ids=input_ids, attention_mask=attention)
-    sliced = Stage2BTaskInferenceGraph(
-        wrapper=wrapper, stage="M2", amplitude=0.05, last_token_projection=True
+    sparse = Stage2BTaskInferenceGraph(
+        wrapper=wrapper,
+        stage="M2",
+        amplitude=0.05,
+        last_token_projection=False,
+        sparse_loop_projection=True,
     ).next_token(input_ids=input_ids, attention_mask=attention)
-    assert wrapper.calls == [0, 1]
-    assert torch.equal(full.augmented_logits, sliced.augmented_logits)
-    assert torch.equal(full.base_logits, sliced.base_logits)
+    assert wrapper.calls == [(0, False), (0, True)]
+    assert torch.equal(full.augmented_logits, sparse.augmented_logits)
+    assert torch.equal(full.base_logits, sparse.base_logits)
 
 
 def test_autopsy_signed_lock_is_score_only_and_sealed() -> None:

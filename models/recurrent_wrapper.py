@@ -496,6 +496,7 @@ class RecurrentQwenForCausalLM(nn.Module):
         stage2b_stage: str = "M4",
         stage2b_amplitude: float = 0.05,
         stage2b_diagnostic_mode: str = "standard",
+        stage2b_score_only_sparse_logits: bool = False,
         logits_to_keep: int | torch.Tensor = 0,
         **_: Any,
     ) -> RecurrentQwenOutput | tuple[Any, ...]:
@@ -564,6 +565,15 @@ class RecurrentQwenForCausalLM(nn.Module):
             raise RuntimeError("Oracle re-entry conditioner is not installed")
         if stage2b_depth_enabled and not hasattr(self, "stage2b_depth_attachment"):
             raise RuntimeError("Stage 2B depth attachment is not installed")
+        if stage2b_score_only_sparse_logits:
+            if not stage2b_depth_enabled or not return_loop_logits:
+                raise ValueError(
+                    "Stage 2B sparse logits require the depth attachment and loop logits"
+                )
+            if labels is not None or internal_control_enabled or num_trajectories != 1:
+                raise ValueError(
+                    "Stage 2B sparse logits are score-only, uncontrolled, and single-trajectory"
+                )
         if oracle_intrablock_enabled and not hasattr(
             self,
             "oracle_intrablock_conditioner",
@@ -1032,7 +1042,17 @@ class RecurrentQwenForCausalLM(nn.Module):
                     attention_mask=flat_attention_mask,
                     loop_index=loop_idx,
                 )
-            logits = self.lm_head(self._slice_for_logits(normed, logits_to_keep))
+            project_loop = (
+                not stage2b_score_only_sparse_logits
+                or loop_idx in {0, max_loops - 1}
+            )
+            sliced_normed = self._slice_for_logits(normed, logits_to_keep)
+            if project_loop:
+                logits = self.lm_head(sliced_normed)
+            else:
+                logits = sliced_normed.new_zeros(
+                    (*sliced_normed.shape[:-1], self.lm_head.out_features)
+                )
             loop_logits.append(logits)
             if labels_flat is not None:
                 if not self._keeps_full_logits(logits_to_keep):
@@ -1079,7 +1099,7 @@ class RecurrentQwenForCausalLM(nn.Module):
         logits_stack = torch.stack(loop_logits, dim=1)
         weighted_logits = (
             logits_stack[:, -1]
-            if internal_control_enabled
+            if internal_control_enabled or stage2b_score_only_sparse_logits
             else (halting_weights[:, :, None, None] * logits_stack).sum(dim=1)
         )
 
@@ -1210,6 +1230,10 @@ class RecurrentQwenForCausalLM(nn.Module):
                 )
         if stage2b_depth_enabled and stage2b_trace is not None:
             metrics.update(stage2b_trace.metrics())
+        if stage2b_score_only_sparse_logits:
+            metrics["stage2b_score_only_sparse_logits"] = torch.tensor(
+                1.0, device=hidden_states.device
+            )
 
         loss = None
         if labels_flat is not None:
