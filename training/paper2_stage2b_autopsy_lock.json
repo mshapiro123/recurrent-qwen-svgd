@@ -50,7 +50,18 @@
     "rows": 256,
     "seed": 20260819,
     "selection": "proportional battery-stratified allocation with minimum one per represented battery, then lowest stable hash",
-    "manifest_sha256": "OPEN_PRELOCK"
+    "manifest_sha256": "d48d5d7c0ad9d6b9a6267e50fb0d0c753aa5ff2a7bc883ab00508c6bd8d84bc4",
+    "selection_receipt_sha256": "19a9df5ced8ce6f52ac87c32c3251eb67f63eb450f3fd9c01601ae09236463b1"
+  },
+  "prelock_receipt": {
+    "repository_path": "docs/receipts/paper2_stage2b_autopsy_prelock_20260820.json",
+    "drive_path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_stage2b_autopsy_20260820/receipts/prelock.json",
+    "sha256": "4c01812ecd545c076ae540b3e3bdbce5e314933157ea5e6a8aa7d0ef1c95d732",
+    "status": "blocked_on_historical_checkpoint_inventory",
+    "model_loaded": false,
+    "optimizer_steps": 0,
+    "confirm_scored": false,
+    "eval_e_scored": false
   },
   "heldout_training_slice": {
     "rows": 32,
@@ -63,7 +74,31 @@
     "steps": [0, 20, 60, 100, 200, 300, 500, 700, 1000],
     "state_variant": "ema",
     "panel": "dev2_subsample",
-    "checkpoint_sha256_by_seed": "OPEN_PRELOCK_CHECKPOINT_INVENTORY"
+    "checkpoint_sha256_by_seed": {
+      "0": {
+        "0": "deterministic_signed_initialization",
+        "20": "MISSING",
+        "60": "MISSING",
+        "100": "MISSING",
+        "200": "MISSING",
+        "300": "MISSING",
+        "500": "MISSING",
+        "700": "MISSING",
+        "1000": "50cbf437adda668812dbe53a015792d3dc8ebc02cb785fba594c512b64bf2f58"
+      },
+      "1": {
+        "0": "deterministic_signed_initialization",
+        "20": "MISSING",
+        "60": "MISSING",
+        "100": "MISSING",
+        "200": "MISSING",
+        "300": "MISSING",
+        "500": "MISSING",
+        "700": "MISSING",
+        "1000": "830bbfa11dca4d3b9ed56db96a7c40c887f56fb4a5227555edc1bd447b6662bc"
+      }
+    },
+    "execution_status": "BLOCKED_PENDING_STRATEGY_AMENDMENT"
   },
   "amplitude_response": {
     "checkpoint": 1000,
@@ -115,8 +150,7 @@
     "remain_sealed": true
   },
   "unresolved_lock_fields": [
-    "dev2_subsample.manifest_sha256",
-    "onset_trajectory.checkpoint_sha256_by_seed",
+    "strategy_amendment_for_missing_onset_checkpoints",
     "strategy_confirmation_of_inherited_flow_off_interpretation",
     "mark_signature"
   ]
