@@ -376,6 +376,45 @@ def _same_predictions(left: Sequence[Mapping[str, Any]], right: Sequence[Mapping
     )
 
 
+def _prediction_mismatch_ids(
+    left: Sequence[Mapping[str, Any]], right: Sequence[Mapping[str, Any]]
+) -> list[str]:
+    left_rows = {str(row["item_id"]): row for row in left}
+    right_rows = {str(row["item_id"]): row for row in right}
+    if set(left_rows) != set(right_rows):
+        return sorted(set(left_rows).symmetric_difference(right_rows))
+    keys = ("prediction", "augmented_correct", "generated_token_ids")
+    return sorted(
+        item
+        for item in left_rows
+        if any(left_rows[item].get(key) != right_rows[item].get(key) for key in keys)
+    )
+
+
+def _archive_cross_session_zero_write(
+    path: Path, *, private_dir: Path
+) -> dict[str, Any]:
+    if not path.is_file():
+        raise RuntimeError(f"Stage 2B-A zero-write replay source is missing: {path}")
+    digest = sha256_file(path)
+    destination = (
+        private_dir
+        / "superseded"
+        / f"{path.stem}__cross_session_zero_write__{digest[:16]}.jsonl"
+    )
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    if not destination.exists():
+        shutil.copy2(path, destination)
+    if sha256_file(destination) != digest:
+        raise RuntimeError("Stage 2B-A cross-session zero-write archive changed")
+    path.unlink()
+    return {
+        "source": str(path),
+        "path": str(destination),
+        "sha256": digest,
+    }
+
+
 @torch.inference_mode()
 def _component_pass_one_receipt(
     wrapper: Any, tokenizer: Any, row: Mapping[str, Any]
@@ -1132,9 +1171,61 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             )
             amplitude[state_name][str(gamma)] = summary
             amplitude_rows[state_name][gamma] = rows
-    zero_identity = _same_predictions(
+    zero_mismatch_ids = _prediction_mismatch_ids(
         amplitude_rows["initialization"][0.0], amplitude_rows["stop"][0.0]
     )
+    zero_replay: dict[str, Any] = {
+        "triggered": bool(zero_mismatch_ids),
+        "initial_mismatch_count": len(zero_mismatch_ids),
+        "initial_mismatch_item_ids": zero_mismatch_ids,
+        "reason": (
+            "Cross-session infrastructure recovery produced a non-identical cached "
+            "gamma-zero pair; both cells were archived and replayed in one evaluator process."
+            if zero_mismatch_ids
+            else None
+        ),
+        "archived_sources": [],
+    }
+    if zero_mismatch_ids:
+        for state_name in ("initialization", "stop"):
+            condition = _condition_name(state_name, gamma=0.0)
+            zero_replay["archived_sources"].append(
+                _archive_cross_session_zero_write(
+                    args.private_dir / f"dev1__{condition}.jsonl",
+                    private_dir=args.private_dir,
+                )
+            )
+            (args.private_dir / f"dev1__{condition}.partial.jsonl").unlink(
+                missing_ok=True
+            )
+        for state_name, state in (
+            ("initialization", initialization_state),
+            ("stop", stop_state),
+        ):
+            _apply_state(wrapper, state)
+            condition = _condition_name(state_name, gamma=0.0)
+            rows, summary = _score_dev1_condition(
+                wrapper=wrapper,
+                tokenizer=tokenizer,
+                panel=dev1,
+                base_rows=base_rows,
+                initialization_rows=initialization_rows,
+                seed=args.seed,
+                gamma=0.0,
+                mode="zero_write",
+                condition=condition,
+                private_dir=args.private_dir,
+                mcq_batch_size=args.mcq_batch_size,
+                generation_batch_size=args.generation_batch_size,
+            )
+            amplitude[state_name]["0.0"] = summary
+            amplitude_rows[state_name][0.0] = rows
+    final_zero_mismatch_ids = _prediction_mismatch_ids(
+        amplitude_rows["initialization"][0.0], amplitude_rows["stop"][0.0]
+    )
+    zero_replay["final_mismatch_count"] = len(final_zero_mismatch_ids)
+    zero_replay["final_mismatch_item_ids"] = final_zero_mismatch_ids
+    zero_identity = not final_zero_mismatch_ids
     if not zero_identity:
         raise RuntimeError("Stage 2B-A zero-write identity gate failed")
     receipt["amplitude_response"] = {
@@ -1142,6 +1233,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         "zero_write_checkpoint_independent": zero_identity,
         "zero_write_full_logit_bit_exact": zero_logit_exact,
         "zero_write_full_logit_max_abs_difference": zero_logit_max_abs,
+        "zero_write_cross_session_replay": zero_replay,
     }
     atomic_json(args.output_dir / "status.json", receipt)
 

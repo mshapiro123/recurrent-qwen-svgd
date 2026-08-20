@@ -346,6 +346,41 @@ def test_margin_correlation_reports_pearson_and_spearman() -> None:
     assert receipt["spearman"] == pytest.approx(1.0)
 
 
+def test_zero_write_mismatch_ids_detect_only_prediction_changes() -> None:
+    left = [
+        {
+            "item_id": "same",
+            "prediction": "a",
+            "augmented_correct": True,
+            "generated_token_ids": [1],
+        },
+        {
+            "item_id": "changed",
+            "prediction": "b",
+            "augmented_correct": False,
+            "generated_token_ids": [2],
+        },
+    ]
+    right = copy.deepcopy(left)
+    right[0]["non_identity_telemetry"] = 123
+    right[1]["generated_token_ids"] = [3]
+    assert autopsy_eval._prediction_mismatch_ids(left, right) == ["changed"]
+
+
+def test_cross_session_zero_write_archive_is_hash_preserving(tmp_path: Path) -> None:
+    source = tmp_path / "dev1__initialization__gamma_0p00.jsonl"
+    autopsy_eval.write_jsonl(source, [{"item_id": "row", "prediction": "a"}])
+    digest = autopsy_eval.sha256_file(source)
+    receipt = autopsy_eval._archive_cross_session_zero_write(
+        source, private_dir=tmp_path
+    )
+    archived = Path(receipt["path"])
+    assert not source.exists()
+    assert archived.is_file()
+    assert receipt["sha256"] == digest
+    assert autopsy_eval.sha256_file(archived) == digest
+
+
 def test_decision_mapping_composes_hypotheses() -> None:
     assert decision_mapping({"h_b_magnitude": True, "h_a_attractor": True}) == [
         "radius_control_successor",
