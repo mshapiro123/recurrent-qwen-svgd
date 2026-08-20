@@ -125,6 +125,42 @@ def _checkpoint_payload(
     }
 
 
+def retained_checkpoint_path(private_dir: Path, step: int) -> Path:
+    if step not in RETAIN_STEPS:
+        raise ValueError(f"step {step} is not a registered retention step")
+    return private_dir / "retained" / f"resume_step_{step:05d}.pt"
+
+
+def save_retained_checkpoint(private_dir: Path, step: int, payload: Mapping[str, Any]) -> dict[str, Any]:
+    """Write a named, immutable campaign state and return its integrity receipt."""
+
+    path = retained_checkpoint_path(private_dir, step)
+    if path.exists():
+        existing = torch.load(path, map_location="cpu", weights_only=False)
+        if int(existing.get("step", -1)) != step:
+            raise RuntimeError(f"Stage 2B retained checkpoint identity changed: {path}")
+        digest = sha256_file(path)
+    else:
+        digest = atomic_torch_save(path, dict(payload))
+    return {"step": step, "path": str(path), "sha256": digest, "exists": True}
+
+
+def retention_artifact_receipt(private_dir: Path, current_step: int) -> list[dict[str, Any]]:
+    """Verify every registered artifact due by current_step; absence is fatal."""
+
+    artifacts = []
+    for step in sorted(value for value in RETAIN_STEPS if value <= current_step):
+        path = retained_checkpoint_path(private_dir, step)
+        if not path.is_file():
+            raise RuntimeError(
+                f"Stage 2B retention law R-3: missing due artifact step={step} path={path}"
+            )
+        artifacts.append(
+            {"step": step, "path": str(path), "sha256": sha256_file(path), "exists": True}
+        )
+    return artifacts
+
+
 @torch.inference_mode()
 def _pass_one_identity(wrapper: Any, row: Mapping[str, Any], device: str) -> float:
     inputs = row["input_ids"].long().unsqueeze(0).to(device)
@@ -373,6 +409,26 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         preflight["start_step"] = start_step
         atomic_json(args.output_dir / "preoptimizer_receipt.json", preflight)
 
+    if start_step == 0:
+        save_retained_checkpoint(
+            args.private_dir,
+            0,
+            _checkpoint_payload(
+                wrapper=wrapper,
+                optimizer=optimizer,
+                ema=ema,
+                sampler=sampler,
+                amplitude_generator=amplitude_generator,
+                step=0,
+                seed=args.seed,
+                lock_sha256=lock_sha,
+                history=history,
+                schedule_hashes=schedule_hashes,
+                frozen_digest=frozen_digest,
+            ),
+        )
+    retention_artifact_receipt(args.private_dir, start_step)
+
     tokenizer = AutoTokenizer.from_pretrained(
         MODEL_SPECS["base"]["model"], revision=MODEL_SPECS["base"]["revision"]
     )
@@ -450,6 +506,25 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             _update_ema(ema, wrapper, 0.999)
         if stop_reason is not None:
             break
+
+        if step in RETAIN_STEPS:
+            save_retained_checkpoint(
+                args.private_dir,
+                step,
+                _checkpoint_payload(
+                    wrapper=wrapper,
+                    optimizer=optimizer,
+                    ema=ema,
+                    sampler=sampler,
+                    amplitude_generator=amplitude_generator,
+                    step=step,
+                    seed=args.seed,
+                    lock_sha256=lock_sha,
+                    history=history,
+                    schedule_hashes=schedule_hashes,
+                    frozen_digest=frozen_digest,
+                ),
+            )
 
         if step % args.resume_interval == 0 and step % 1000 != 0:
             atomic_torch_save(
@@ -534,6 +609,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
                     "lane_effective_rank_mean": diagnostic["lane_effective_rank_mean"],
                     "lambda2_mean": diagnostic["lambda2_mean"],
                 },
+                "retention_artifacts": retention_artifact_receipt(args.private_dir, step),
                 "confirm_scored": False,
                 "eval_e_scored": False,
             }

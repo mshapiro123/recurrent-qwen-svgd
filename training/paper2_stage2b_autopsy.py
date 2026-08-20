@@ -9,6 +9,9 @@ from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
+import torch
+import torch.nn.functional as F
+
 
 LOCK_KIND = "paper2_stage2b_autopsy_lock_v1"
 DIAGNOSTIC_MODES = {
@@ -45,6 +48,20 @@ def validate_autopsy_lock(lock: Mapping[str, Any], *, require_signature: bool) -
         raise RuntimeError("Stage 2B-A contains an unknown diagnostic mode")
     if lock.get("flow_loops") != [1, 2, 3, 4]:
         raise RuntimeError("Stage 2B-A K sweep changed")
+    onset = lock.get("onset_trajectory", {})
+    if onset.get("steps") != [0, 1000] or onset.get("execution_mode") != (
+        "exact_endpoints_plus_contemporaneous_training_telemetry"
+    ):
+        raise RuntimeError("Stage 2B-A amended endpoint contract changed")
+    arm6 = lock.get("correction_field_clusterability", {})
+    if arm6.get("authorization") != (
+        "read_only_gradient_probe_autograd_without_optimizer_or_parameter_mutation"
+    ):
+        raise RuntimeError("Stage 2B-A Arm 6 authorization changed")
+    if arm6.get("clustering", {}).get("rotation_null_replicates") != 128:
+        raise RuntimeError("Stage 2B-A Arm 6 null count changed")
+    if lock.get("retention_incident", {}).get("id") != "R-3":
+        raise RuntimeError("Stage 2B-A retention incident is not banked")
     if require_signature:
         if lock.get("status") != "SIGNED" or lock.get("mark_signed") is not True:
             raise RuntimeError("Stage 2B-A score-only execution remains unsigned")
@@ -168,3 +185,102 @@ def decision_mapping(flags: Mapping[str, bool]) -> list[str]:
 
 def battery_counts(rows: Sequence[Mapping[str, Any]]) -> dict[str, int]:
     return dict(sorted(Counter(str(row["battery"]) for row in rows).items()))
+
+
+def spherical_kmeans(
+    values: torch.Tensor,
+    *,
+    clusters: int,
+    restarts: int,
+    iterations: int,
+    seed: int,
+) -> tuple[torch.Tensor, float]:
+    """Deterministic spherical k-means selected by cosine silhouette."""
+
+    x = F.normalize(values.float(), dim=-1, eps=1e-12)
+    if x.ndim != 2 or not 2 <= clusters < x.shape[0]:
+        raise ValueError("invalid spherical k-means geometry")
+    generator = torch.Generator(device=x.device).manual_seed(seed)
+    best_labels = None
+    best_silhouette = -float("inf")
+    for _restart in range(restarts):
+        indices = torch.randperm(x.shape[0], generator=generator, device=x.device)[:clusters]
+        centers = x[indices].clone()
+        labels = x.new_full((x.shape[0],), -1, dtype=torch.long)
+        for _iteration in range(iterations):
+            updated_labels = (x @ centers.T).argmax(dim=1)
+            if torch.equal(updated_labels, labels):
+                break
+            labels = updated_labels
+            updated = []
+            for cluster in range(clusters):
+                members = x[labels == cluster]
+                if members.numel() == 0:
+                    similarity = (x @ centers.T).amax(dim=1)
+                    center = x[similarity.argmin()]
+                else:
+                    center = members.mean(dim=0)
+                updated.append(F.normalize(center, dim=0, eps=1e-12))
+            centers = torch.stack(updated)
+        silhouette = cosine_silhouette(x, labels)
+        if silhouette > best_silhouette:
+            best_silhouette = silhouette
+            best_labels = labels.clone()
+    if best_labels is None:
+        raise RuntimeError("spherical k-means produced no partition")
+    return best_labels, best_silhouette
+
+
+def cosine_silhouette(values: torch.Tensor, labels: torch.Tensor) -> float:
+    x = F.normalize(values.float(), dim=-1, eps=1e-12)
+    distance = (1.0 - x @ x.T).clamp_min(0.0)
+    silhouettes = []
+    for index in range(x.shape[0]):
+        own = labels == labels[index]
+        own[index] = False
+        if not bool(own.any()):
+            silhouettes.append(x.new_zeros(()))
+            continue
+        within = distance[index, own].mean()
+        outside = []
+        for label in labels.unique(sorted=True):
+            if int(label) != int(labels[index]):
+                outside.append(distance[index, labels == label].mean())
+        between = torch.stack(outside).min()
+        silhouettes.append((between - within) / torch.maximum(within, between).clamp_min(1e-12))
+    return float(torch.stack(silhouettes).mean().cpu())
+
+
+def normalized_gram_eigengap(values: torch.Tensor, *, max_rank: int = 8) -> dict[str, Any]:
+    x = F.normalize(values.float(), dim=-1, eps=1e-12)
+    eigenvalues = torch.linalg.eigvalsh(x @ x.T).flip(0).clamp_min(0.0)
+    trace = eigenvalues.sum().clamp_min(1e-12)
+    ranks = min(max_rank, eigenvalues.numel() - 1)
+    gaps = (eigenvalues[:ranks] - eigenvalues[1 : ranks + 1]) / trace
+    selected = int(gaps.argmax())
+    return {
+        "normalization": "(lambda_r-lambda_{r+1})/trace(Gram)",
+        "selected_rank": selected + 1,
+        "maximum": float(gaps[selected].cpu()),
+        "by_rank": {str(index + 1): float(value.cpu()) for index, value in enumerate(gaps)},
+        "leading_eigenvalues": [float(value.cpu()) for value in eigenvalues[: max_rank + 1]],
+    }
+
+
+def discrete_mutual_information(labels: Sequence[int], batteries: Sequence[str]) -> dict[str, float]:
+    if len(labels) != len(batteries) or not labels:
+        raise ValueError("mutual information requires paired nonempty labels")
+    joint = Counter(zip(labels, batteries))
+    left = Counter(labels)
+    right = Counter(batteries)
+    total = float(len(labels))
+    mi = 0.0
+    for (label, battery), count in joint.items():
+        probability = count / total
+        mi += probability * math.log(probability / ((left[label] / total) * (right[battery] / total)))
+    entropy = -sum((count / total) * math.log(count / total) for count in right.values())
+    return {
+        "nats": mi,
+        "battery_entropy_nats": entropy,
+        "normalized_by_battery_entropy": mi / entropy if entropy > 0.0 else float("nan"),
+    }

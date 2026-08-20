@@ -28,9 +28,12 @@ from eval.eval_paper2_stage2b_campaign import (
 )
 from training.paper2_stage2b_autopsy import (
     battery_counts,
+    discrete_mutual_information,
     load_and_validate_autopsy_lock,
     margin_correlation_receipt,
+    normalized_gram_eigengap,
     sha256_file,
+    spherical_kmeans,
     stable_dev2_subsample,
 )
 from training.paper2_stage2b_depth import (
@@ -173,6 +176,248 @@ def _same_predictions(left: Sequence[Mapping[str, Any]], right: Sequence[Mapping
         all(left_rows[item].get(key) == right_rows[item].get(key) for key in keys)
         for item in left_rows
     )
+
+
+@torch.inference_mode()
+def _component_pass_one_receipt(
+    wrapper: Any, tokenizer: Any, row: Mapping[str, Any]
+) -> dict[str, Any]:
+    prompt, target = _forced_target(tokenizer, row)
+    tokens = torch.tensor([prompt + target], dtype=torch.long, device="cuda")
+    attention = torch.ones_like(tokens)
+    logits = {}
+    for mode in ("standard", "constitutive_off", "fresh_state_each_loop", "inherited_flow_off"):
+        output = wrapper(
+            input_ids=tokens,
+            attention_mask=attention,
+            max_loops=1,
+            stage2b_depth_enabled=True,
+            stage2b_stage="M2",
+            stage2b_amplitude=0.05,
+            stage2b_diagnostic_mode=mode,
+            return_loop_logits=True,
+            use_cache=False,
+            return_dict=True,
+        )
+        logits[mode] = output.loop_logits.detach().cpu()
+    standard = logits["standard"]
+    cells = {}
+    for mode, value in logits.items():
+        cells[mode] = {
+            "bit_exact_against_standard": torch.equal(value, standard),
+            "max_abs_difference": float((value.float() - standard.float()).abs().max()),
+        }
+        if not cells[mode]["bit_exact_against_standard"]:
+            raise RuntimeError(f"Stage 2B-A component pass-one identity failed: {mode}")
+    return {"row_id": str(row["item_id"]), "cells": cells, "all_pass": True}
+
+
+def _component_activation_receipt(component: Mapping[str, Any]) -> dict[str, Any]:
+    metric = {
+        "constitutive_off": "stage2b_constitutive_update_loop_{loop}_max_abs",
+        "fresh_state_each_loop": "stage2b_carry_contribution_loop_{loop}_max_abs",
+        "inherited_flow_off": "stage2b_flow_update_loop_{loop}_max_abs",
+    }
+    cells = {}
+    for mode, template in metric.items():
+        maxima = component[mode]["dev2"]["activation_maxima"]
+        values = {str(loop): float(maxima[template.format(loop=loop)]) for loop in range(1, 5)}
+        exact = all(value == 0.0 for value in values.values())
+        if not exact:
+            raise RuntimeError(f"Stage 2B-A disabled component remained active: {mode} {values}")
+        cells[mode] = {"metric": template, "per_loop_max_abs": values, "exact_zero": True}
+    return {"cells": cells, "all_pass": True}
+
+
+def _unit(value: torch.Tensor) -> torch.Tensor:
+    return F.normalize(value.float(), dim=-1, eps=1e-12)
+
+
+def _extract_correction_field(
+    *,
+    wrapper: Any,
+    tokenizer: Any,
+    rows: Sequence[Mapping[str, Any]],
+    batch_size: int,
+) -> dict[str, Any]:
+    """Read per-row local correction and deployed-write directions without mutation."""
+
+    state_before = _state_digest(_named_trainable_state(wrapper))
+    versions_before = {name: parameter._version for name, parameter in wrapper.named_parameters()}
+    corrections = {loop: [] for loop in (2, 3, 4)}
+    writes = {loop: [] for loop in (2, 3, 4)}
+    batteries = []
+    item_ids = []
+    zero_correction_rows = {loop: 0 for loop in (2, 3, 4)}
+    prepared = [(row, *_forced_target(tokenizer, row)) for row in rows]
+    bridge = wrapper.stage2b_depth_attachment.bridge
+    for start in range(0, len(prepared), batch_size):
+        batch = prepared[start : start + batch_size]
+        width = max(len(prompt) + len(target) for _row, prompt, target in batch)
+        input_ids = torch.zeros((len(batch), width), dtype=torch.long, device="cuda")
+        attention = torch.zeros_like(input_ids)
+        spans = []
+        for index, (row, prompt, target) in enumerate(batch):
+            tokens = prompt + target
+            input_ids[index, : len(tokens)] = torch.tensor(tokens, device="cuda")
+            attention[index, : len(tokens)] = 1
+            spans.append((len(prompt) - 1, target))
+            batteries.append(str(row["battery"]))
+            item_ids.append(str(row["item_id"]))
+
+        captured = []
+
+        def capture(_module: Any, _inputs: Any, output: Any) -> None:
+            output.hidden.retain_grad()
+            captured.append(output)
+
+        wrapper.zero_grad(set_to_none=True)
+        handle = bridge.register_forward_hook(capture)
+        try:
+            output = wrapper(
+                input_ids=input_ids,
+                attention_mask=attention,
+                max_loops=4,
+                stage2b_depth_enabled=True,
+                stage2b_stage="M2",
+                stage2b_amplitude=0.05,
+                stage2b_diagnostic_mode="standard",
+                return_loop_logits=True,
+                use_cache=False,
+                return_dict=True,
+            )
+        finally:
+            handle.remove()
+        if len(captured) != 3:
+            raise RuntimeError(f"Stage 2B-A expected three bridge reentries, observed {len(captured)}")
+        final_logits = output.loop_logits[:, 0, -1].float()
+        losses = []
+        for index, (first, targets) in enumerate(spans):
+            target_ids = torch.tensor(targets, device="cuda")
+            losses.append(
+                F.cross_entropy(final_logits[index, first : first + len(targets)], target_ids)
+            )
+        torch.stack(losses).sum().backward()
+        writable = attention.bool()
+        writable[:, 0] = False
+        for loop, bridge_output in zip((2, 3, 4), captured):
+            if bridge_output.hidden.grad is None or bridge_output.position_gate is None:
+                raise RuntimeError("Stage 2B-A correction-field hook did not receive gradients")
+            writeback = bridge_output.delta * bridge_output.position_gate
+            for index in range(len(batch)):
+                mask = writable[index]
+                correction = -bridge_output.hidden.grad[index, mask].float().mean(dim=0)
+                write = writeback[index, mask].detach().float().mean(dim=0)
+                if float(correction.norm()) == 0.0:
+                    zero_correction_rows[loop] += 1
+                corrections[loop].append(_unit(correction).cpu())
+                writes[loop].append(_unit(write).cpu())
+        wrapper.zero_grad(set_to_none=True)
+        print(
+            f"stage2b_arm6_progress rows={min(start + batch_size, len(rows))}/{len(rows)}",
+            flush=True,
+        )
+    versions_after = {name: parameter._version for name, parameter in wrapper.named_parameters()}
+    state_after = _state_digest(_named_trainable_state(wrapper))
+    if versions_after != versions_before or state_after != state_before:
+        raise RuntimeError("Stage 2B-A Arm 6 mutated model parameters")
+    return {
+        "corrections": {loop: torch.stack(values) for loop, values in corrections.items()},
+        "writes": {loop: torch.stack(values) for loop, values in writes.items()},
+        "batteries": batteries,
+        "item_ids": item_ids,
+        "zero_correction_rows": zero_correction_rows,
+        "parameter_state_digest_before": state_before,
+        "parameter_state_digest_after": state_after,
+        "parameter_versions_unchanged": True,
+    }
+
+
+def _empirical_upper_p(observed: float, null: Sequence[float]) -> float:
+    return (1.0 + sum(value >= observed for value in null)) / (len(null) + 1.0)
+
+
+def _clusterability_receipt(
+    directions: torch.Tensor, batteries: Sequence[str], *, seed: int
+) -> dict[str, Any]:
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    x = _unit(directions.to(device))
+    selected = None
+    by_k = {}
+    for clusters in range(2, 9):
+        labels, silhouette = spherical_kmeans(
+            x, clusters=clusters, restarts=8, iterations=50, seed=seed + clusters
+        )
+        by_k[str(clusters)] = silhouette
+        if selected is None or silhouette > selected[2]:
+            selected = (clusters, labels, silhouette)
+    assert selected is not None
+    clusters, labels, silhouette = selected
+    eigengap = normalized_gram_eigengap(x, max_rank=8)
+
+    null_silhouettes = []
+    null_eigengaps = []
+    generator = torch.Generator(device=device).manual_seed(seed + 10_000)
+    for replicate in range(128):
+        null = _unit(torch.randn(x.shape, generator=generator, device=device))
+        maximum = -float("inf")
+        for null_clusters in range(2, 9):
+            _labels, value = spherical_kmeans(
+                null,
+                clusters=null_clusters,
+                restarts=8,
+                iterations=50,
+                seed=seed + 100_000 + replicate * 10 + null_clusters,
+            )
+            maximum = max(maximum, value)
+        null_silhouettes.append(maximum)
+        null_eigengaps.append(normalized_gram_eigengap(null, max_rank=8)["maximum"])
+
+    permutation = torch.randperm(x.shape[1], generator=generator, device=device)
+    signs = torch.where(
+        torch.rand((x.shape[1],), generator=generator, device=device) < 0.5,
+        x.new_tensor(-1.0),
+        x.new_tensor(1.0),
+    )
+    transformed = x[:, permutation] * signs
+    gram_invariance = float(((x @ x.T) - (transformed @ transformed.T)).abs().max().cpu())
+
+    label_list = [int(value) for value in labels.cpu().tolist()]
+    association = discrete_mutual_information(label_list, list(batteries))
+    rng = random.Random(seed + 20_000)
+    permuted_mi = []
+    shuffled = list(batteries)
+    for _ in range(4096):
+        rng.shuffle(shuffled)
+        permuted_mi.append(discrete_mutual_information(label_list, shuffled)["nats"])
+    association["permutation_replicates"] = 4096
+    association["upper_tail_p"] = _empirical_upper_p(association["nats"], permuted_mi)
+    return {
+        "rows": int(x.shape[0]),
+        "dimensions": int(x.shape[1]),
+        "spherical_kmeans": {
+            "candidate_clusters": list(range(2, 9)),
+            "silhouette_by_k": by_k,
+            "selected_clusters": clusters,
+            "selected_silhouette": silhouette,
+            "isotropic_row_direction_null_replicates": 128,
+            "null_mean": sum(null_silhouettes) / len(null_silhouettes),
+            "upper_tail_p": _empirical_upper_p(silhouette, null_silhouettes),
+        },
+        "gram_eigengap": {
+            **eigengap,
+            "isotropic_row_direction_null_replicates": 128,
+            "null_mean": sum(null_eigengaps) / len(null_eigengaps),
+            "upper_tail_p": _empirical_upper_p(eigengap["maximum"], null_eigengaps),
+        },
+        "cluster_battery_mutual_information": association,
+        "shared_signed_permutation_gram_max_abs_difference": gram_invariance,
+        "null_semantics": {
+            "clusterability": "independent isotropic row directions preserving unit row norms",
+            "battery_association": "battery-label permutation with cluster labels fixed",
+            "shared_signed_permutation": "Gram-invariance pipeline sanity check, not a null",
+        },
+    }
 
 
 @torch.inference_mode()
@@ -449,6 +694,9 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
 
     _apply_state(wrapper, stop_state)
     component = {}
+    component_pass_one = _component_pass_one_receipt(
+        wrapper, tokenizer, dev2_subsample[0]
+    )
     for mode in ("standard", "constitutive_off", "fresh_state_each_loop", "inherited_flow_off"):
         condition = _condition_name("stop", gamma=0.05, mode=mode)
         _rows, dev1_summary = _score_dev1_condition(
@@ -477,7 +725,58 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             batch_size=args.margin_batch_size,
         )
         component[mode] = {"dev1": dev1_summary, "dev2": dev2_summary}
-    receipt["component_attribution"] = component
+    receipt["component_attribution"] = {
+        "cells": component,
+        "pass_one_identity": component_pass_one,
+        "disabled_component_activation": _component_activation_receipt(component),
+    }
+    atomic_json(args.output_dir / "status.json", receipt)
+
+    arm6 = {}
+    arm6_private = {}
+    for state_name, state in (("initialization", initialization_state), ("stop", stop_state)):
+        _apply_state(wrapper, state)
+        extracted = _extract_correction_field(
+            wrapper=wrapper,
+            tokenizer=tokenizer,
+            rows=dev2_subsample,
+            batch_size=args.margin_batch_size,
+        )
+        private_path = args.private_dir / f"correction_field__{state_name}.pt"
+        torch.save(extracted, private_path)
+        arm6_private[state_name] = extracted
+        arm6[state_name] = {
+            "correction_field_clusterability_loop4": _clusterability_receipt(
+                extracted["corrections"][4],
+                extracted["batteries"],
+                seed=20260819 + args.seed + (0 if state_name == "initialization" else 1000),
+            ),
+            "descriptive_correction_geometry": {
+                str(loop): normalized_gram_eigengap(extracted["corrections"][loop], max_rank=8)
+                for loop in (2, 3, 4)
+            },
+            "zero_correction_rows": extracted["zero_correction_rows"],
+            "parameter_state_digest_before": extracted["parameter_state_digest_before"],
+            "parameter_state_digest_after": extracted["parameter_state_digest_after"],
+            "parameter_versions_unchanged": extracted["parameter_versions_unchanged"],
+            "private_artifact": {"path": str(private_path), "sha256": sha256_file(private_path)},
+        }
+    mean_field = {}
+    for loop in (2, 3, 4):
+        correction_mean = arm6_private["initialization"]["corrections"][loop].mean(dim=0)
+        trained_write_mean = arm6_private["stop"]["writes"][loop].mean(dim=0)
+        mean_field[str(loop)] = float(
+            F.cosine_similarity(correction_mean, trained_write_mean, dim=0, eps=1e-12)
+        )
+    arm6["mean_field_confirmation"] = {
+        "primary_loop": 4,
+        "cosine_by_loop": mean_field,
+        "primary_cosine": mean_field["4"],
+        "definition": "cosine(mean normalized stop writebacks, mean normalized init correction directions)",
+    }
+    arm6["optimizer_constructed"] = False
+    arm6["parameter_mutation"] = False
+    receipt["correction_field_clusterability"] = arm6
     atomic_json(args.output_dir / "status.json", receipt)
 
     attractor = {}
@@ -548,28 +847,17 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             batch_size=args.margin_batch_size,
         )
         onset[str(step)] = summary
-    for specification in args.trajectory_checkpoint:
-        step_text, path_text, expected_sha = specification.split("=", 2)
-        step = int(step_text)
-        state = _checkpoint_state(Path(path_text), expected_sha256=expected_sha)
-        _apply_state(wrapper, state)
-        condition = f"onset_step_{step:05d}"
-        _rows, summary = _score_dev2_condition(
-            wrapper=wrapper,
-            tokenizer=tokenizer,
-            rows=dev2_subsample,
-            seed=args.seed,
-            gamma=0.05,
-            mode="standard",
-            condition=condition,
-            private_dir=args.private_dir,
-            batch_size=args.margin_batch_size,
-        )
-        onset[str(step)] = summary
     if set(map(int, onset)) != set(lock["onset_trajectory"]["steps"]):
         raise RuntimeError("Stage 2B-A onset checkpoint set changed")
-    receipt["onset_trajectory"] = onset
-    receipt["training_log_monotonicity"] = args.training_log_monotonicity
+    training_summary = json.loads(args.training_summary.read_text(encoding="utf-8"))
+    if int(training_summary.get("seed", -1)) != args.seed:
+        raise RuntimeError("Stage 2B-A contemporaneous training summary seed changed")
+    receipt["onset_trajectory"] = {
+        "checkpointed_score_endpoints": onset,
+        "contemporaneous_training_telemetry": training_summary.get("history", []),
+        "telemetry_role": "training_process_telemetry_not_checkpointed_score_trajectory",
+        "claim_boundary": lock["onset_trajectory"]["claim_boundary"],
+    }
     receipt["runtime"] = {
         "platform": platform.platform(),
         "torch": torch.__version__,
@@ -615,14 +903,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--seed", type=int, choices=(0, 1))
     for name in (
         "lock", "dev1_panel", "dev2_manifest", "dev2_subsample_manifest", "reference_rows", "base_scores",
-        "initialization_scores", "heldout_teacher_cache", "stop_checkpoint", "migrated",
+        "initialization_scores", "heldout_teacher_cache", "stop_checkpoint", "training_summary", "migrated",
         "p33", "i1", "p34", "p35", "model_cache", "output_dir", "private_dir",
     ):
         parser.add_argument(f"--{name}", type=Path)
     for name in ("migrated_sha256", "p33_sha256", "i1_sha256", "p34_sha256", "p35_sha256"):
         parser.add_argument(f"--{name}")
-    parser.add_argument("--trajectory_checkpoint", action="append", default=[])
-    parser.add_argument("--training_log_monotonicity", type=float)
     parser.add_argument("--device", default="cuda")
     parser.add_argument("--mcq_batch_size", type=int, default=8)
     parser.add_argument("--generation_batch_size", type=int, default=2)
@@ -633,10 +919,9 @@ def parse_args() -> argparse.Namespace:
         required.extend(
             [
                 "seed", "lock", "dev1_panel", "reference_rows", "base_scores", "initialization_scores",
-                "heldout_teacher_cache", "stop_checkpoint", "migrated", "p33", "i1",
+                "heldout_teacher_cache", "stop_checkpoint", "training_summary", "migrated", "p33", "i1",
                 "p34", "p35", "model_cache", "output_dir", "private_dir",
                 "migrated_sha256", "p33_sha256", "i1_sha256", "p34_sha256", "p35_sha256",
-                "training_log_monotonicity",
             ]
         )
     missing = [name for name in required if getattr(args, name) is None]

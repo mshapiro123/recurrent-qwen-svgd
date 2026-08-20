@@ -10,7 +10,13 @@
     "strategy_stop_analysis_bytes": 12680,
     "strategy_stop_analysis_sha256": "58f2420d7728df66cf8cc5ee5b1142d92840c975cd7bc37db881d613f9f9e791",
     "registered_stop_handoff_drive_id": "1WoHNkiI6xK8r6BohgeYZyj0ouORHO0HN",
-    "registered_stop_handoff_sha256": "bfeb74e91b59e89c798009bb3551b4a4593fb2e4073324ce7b35910ecd31d312"
+    "registered_stop_handoff_sha256": "bfeb74e91b59e89c798009bb3551b4a4593fb2e4073324ce7b35910ecd31d312",
+    "amendment_ratification_drive_id": "1za4UuKAoHQfQaYxRbCR_wasgFC5FT9x9",
+    "amendment_ratification_bytes": 7833,
+    "amendment_ratification_sha256": "5e0b08d93a873da637cdbbff8673cb4da09381e312b54bbf96b51713b92f98ce",
+    "routing_geometry_drive_id": "1LYQhAAbfWzugnzj11AQoWCcnTz-ZLd3H",
+    "routing_geometry_bytes": 13819,
+    "routing_geometry_sha256": "36c79056b2a34df19e7470af33f3421368de4c0cc76a73ab44d79a3f1997edf1"
   },
   "scope": "Two Stage 2B-D seeds through step 1000; DEV-1, fixed DEV-2 subsample, and frozen loss-calibration slice only",
   "source_lock_canonical_sha256": "30a97e175200d3a58bc0cc0c200acec301d3a4f4cd662466d4c3491b9f816597",
@@ -71,9 +77,16 @@
     "role": "per-loop CE and forward-KL at initialization and step 1000"
   },
   "onset_trajectory": {
-    "steps": [0, 20, 60, 100, 200, 300, 500, 700, 1000],
+    "superseded_steps": [0, 20, 60, 100, 200, 300, 500, 700, 1000],
+    "steps": [0, 1000],
     "state_variant": "ema",
     "panel": "dev2_subsample",
+    "execution_mode": "exact_endpoints_plus_contemporaneous_training_telemetry",
+    "claim_boundary": "training telemetry is not a checkpointed causal or task-score trajectory; no interpolation, replay, or onset-timing claim",
+    "training_summary_sha256_by_seed": {
+      "0": "90b6e4c9fea538b7876349550e8caa02e5094c2f02d4535c8b7ecff4397669b0",
+      "1": "faafb98887555a0fa7fe876ffc33f35b0c61f9fa35b9e574ff667f1835c1fb23"
+    },
     "checkpoint_sha256_by_seed": {
       "0": {
         "0": "deterministic_signed_initialization",
@@ -98,7 +111,7 @@
         "1000": "830bbfa11dca4d3b9ed56db96a7c40c887f56fb4a5227555edc1bd447b6662bc"
       }
     },
-    "execution_status": "BLOCKED_PENDING_STRATEGY_AMENDMENT"
+    "execution_status": "AMENDED_EXECUTABLE_PENDING_MARK_SIGNATURE"
   },
   "amplitude_response": {
     "checkpoint": 1000,
@@ -117,7 +130,43 @@
       "inherited_flow_off"
     ],
     "implementation_note": "inherited_flow_off disables the inherited SharedResidualFlow update while preserving final bridge execution; disabling the final bridge is already the zero-write plumbing control and is scientifically non-discriminating",
+    "activation_receipt": {
+      "loops": [1, 2, 3, 4],
+      "pass_one_bit_exact_against_standard": true,
+      "constitutive_off_exact_zero_metric": "stage2b_constitutive_update_loop_{loop}_max_abs",
+      "fresh_state_each_loop_exact_zero_metric": "stage2b_carry_contribution_loop_{loop}_max_abs",
+      "inherited_flow_off_exact_zero_metric": "stage2b_flow_update_loop_{loop}_max_abs"
+    },
     "panels": ["dev1", "dev2_subsample"]
+  },
+  "correction_field_clusterability": {
+    "authorization": "read_only_gradient_probe_autograd_without_optimizer_or_parameter_mutation",
+    "panel": "dev2_subsample",
+    "rows": 256,
+    "checkpoints": [0, 1000],
+    "loss": "mean answer-bearing-token cross entropy on the frozen gold/teacher target",
+    "correction_direction": "negative gradient at the bridge write-path output, averaged across active writable sequence positions and L2-normalized per row",
+    "primary_loop": 4,
+    "descriptive_loops": [2, 3, 4],
+    "clustering": {
+      "method": "deterministic spherical k-means",
+      "candidate_clusters": [2, 3, 4, 5, 6, 7, 8],
+      "restarts": 8,
+      "iterations": 50,
+      "selection": "maximum silhouette with the same maximum applied inside every null replicate",
+      "rotation_null_replicates": 128,
+      "rotation_null": "independent isotropic row rotations preserving row norms",
+      "shared_signed_permutation": "Gram-invariance pipeline sanity check",
+      "eigengap_normalization": "(lambda_r-lambda_{r+1})/trace(Gram)",
+      "eigengap_ranks": [1, 2, 3, 4, 5, 6, 7, 8]
+    },
+    "cluster_battery_mi": {
+      "estimator": "mutual information in nats plus normalization by battery entropy",
+      "permutation_replicates": 4096,
+      "label_shuffle_role": "null for cluster-battery association only"
+    },
+    "mean_field_confirmation": "cosine between the mean normalized step-1000 loop-4 writeback direction and the mean normalized initialization loop-4 correction direction",
+    "null_scope_note": "a shared orthogonal rotation preserves Gram geometry exactly and is a sanity control, not a clusterability null"
   },
   "attractor_discriminators": {
     "checkpoints": [0, 1000],
@@ -142,16 +191,21 @@
     "No checkpoint selection from diagnostic cells.",
     "No CONFIRM or EVAL-E contact.",
     "The router-geometry proposal is successor-design context and is not tested by this autopsy.",
-    "The M2 recipe remains closed as built regardless of the autopsy result."
+    "The M2 recipe remains closed as built regardless of the autopsy result.",
+    "Arm 6 permits backward passes only to read intermediate gradients; no optimizer is constructed and no parameter is mutated."
   ],
+  "retention_incident": {
+    "id": "R-3",
+    "root_cause": "RETAIN_STEPS was declared but not wired to the save path; resume.pt was overwritten every 20 steps",
+    "law": "every look receipt verifies existence and SHA-256 of every retention artifact due by that step; missing is stop-the-line",
+    "preflight": "a dry run crosses one retained step and asserts the named durable checkpoint exists"
+  },
   "sealed_partitions": {
     "confirm_scored": false,
     "eval_e_scored": false,
     "remain_sealed": true
   },
   "unresolved_lock_fields": [
-    "strategy_amendment_for_missing_onset_checkpoints",
-    "strategy_confirmation_of_inherited_flow_off_interpretation",
     "mark_signature"
   ]
 }

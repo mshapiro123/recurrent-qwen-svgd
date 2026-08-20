@@ -47,7 +47,11 @@ from training.paper2_stage2b_depth import (
     stage2b_learning_rate,
     stage_for_step,
 )
-from training.run_paper2_stage2b_depth import audit_stage_gradients
+from training.run_paper2_stage2b_depth import (
+    audit_stage_gradients,
+    retention_artifact_receipt,
+    save_retained_checkpoint,
+)
 from training.paper2_stage2b_data import build_training_corpus, select_calibration_rows
 
 
@@ -58,6 +62,14 @@ def test_log_sinkhorn_is_doubly_stochastic() -> None:
     assert row.max().item() < 1e-5
     assert column.max().item() < 1e-5
     assert torch.linalg.matrix_norm(matrix, ord=2).max().item() <= 1.00001
+
+
+def test_retention_law_writes_and_verifies_due_named_artifacts(tmp_path: Path) -> None:
+    save_retained_checkpoint(tmp_path, 0, {"step": 0, "value": torch.tensor([1.0])})
+    save_retained_checkpoint(tmp_path, 1_000, {"step": 1_000, "value": torch.tensor([2.0])})
+    receipt = retention_artifact_receipt(tmp_path, 1_000)
+    assert [row["step"] for row in receipt] == [0, 1_000]
+    assert all(row["exists"] and len(row["sha256"]) == 64 for row in receipt)
 
 
 def test_multilane_m1_reproduces_single_lane_flow() -> None:
@@ -214,7 +226,7 @@ def test_stage2b_component_modes_are_live_and_distinct() -> None:
             "fresh_state_each_loop",
             "inherited_flow_off",
         ):
-            outputs[mode] = wrapper(
+            result = wrapper(
                 input_ids=input_ids,
                 attention_mask=attention_mask,
                 max_loops=4,
@@ -223,7 +235,27 @@ def test_stage2b_component_modes_are_live_and_distinct() -> None:
                 stage2b_amplitude=0.05,
                 stage2b_diagnostic_mode=mode,
                 return_dict=True,
-            ).logits
+            )
+            outputs[mode] = result.logits
+            metrics = result.metrics
+            assert metrics["stage2b_flow_update_loop_1_max_abs"].item() == 0.0
+            assert metrics["stage2b_constitutive_update_loop_1_max_abs"].item() == 0.0
+            assert metrics["stage2b_carry_contribution_loop_1_max_abs"].item() == 0.0
+            if mode == "constitutive_off":
+                assert all(
+                    metrics[f"stage2b_constitutive_update_loop_{loop}_max_abs"].item() == 0.0
+                    for loop in range(1, 5)
+                )
+            if mode == "fresh_state_each_loop":
+                assert all(
+                    metrics[f"stage2b_carry_contribution_loop_{loop}_max_abs"].item() == 0.0
+                    for loop in range(1, 5)
+                )
+            if mode == "inherited_flow_off":
+                assert all(
+                    metrics[f"stage2b_flow_update_loop_{loop}_max_abs"].item() == 0.0
+                    for loop in range(1, 5)
+                )
     for mode in outputs:
         assert torch.isfinite(outputs[mode]).all()
     assert not torch.equal(outputs["standard"], outputs["constitutive_off"])

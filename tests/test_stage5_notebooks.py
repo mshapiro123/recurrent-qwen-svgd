@@ -4105,12 +4105,14 @@ def test_stage2b_autopsy_targets_are_score_only_and_sealed() -> None:
     assert '"paper2_stage2b_autopsy"' in bootstrap
     assert "paper2_stage2b_autopsy_prelock_v1" in prelock
     assert "inventory historical checkpoints without substitution" in prelock
-    assert "paper2_stage2b_autopsy_v1" in cell
+    assert "paper2_stage2b_autopsy_v2" in cell
     assert "signed score-only lock no optimizer no training" in cell
     assert "zero-write full-logit identity precedes diagnostic cells" in cell
     assert "A100-SXM4-40GB" in cell
     assert "validate_autopsy_lock(lock, require_signature=True)" in orchestrator
-    assert 'lock["onset_trajectory"]["checkpoint_sha256_by_seed"]' in orchestrator
+    assert "TRAINING_SUMMARY_SHA" in orchestrator
+    assert "exact endpoints plus contemporaneous telemetry no onset interpolation" in cell
+    assert "Arm 6 read-only autograd no optimizer no parameter mutation" in cell
     assert "zero_write_full_logit_bit_exact" in evaluator
     assert "stage2b_diagnostic_mode" in evaluator
 
