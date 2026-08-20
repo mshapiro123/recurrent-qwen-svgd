@@ -33,7 +33,8 @@ class Stage2BTaskInferenceGraph:
     amplitude: float
     flow_loops: int = 4
     diagnostic_mode: str = "standard"
-    last_token_projection: bool = True
+    last_token_projection: bool = False
+    sparse_loop_projection: bool = True
 
     @property
     def device(self) -> torch.device:
@@ -50,6 +51,7 @@ class Stage2BTaskInferenceGraph:
             stage2b_stage=self.stage,
             stage2b_amplitude=self.amplitude,
             stage2b_diagnostic_mode=self.diagnostic_mode,
+            stage2b_score_only_sparse_logits=self.sparse_loop_projection,
             return_loop_logits=True,
             logits_to_keep=1 if self.last_token_projection else 0,
             use_cache=False,

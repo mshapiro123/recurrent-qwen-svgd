@@ -187,6 +187,34 @@ def _tiny_stage2b_wrapper() -> tuple[RecurrentQwenForCausalLM, torch.Tensor, tor
     return wrapper, input_ids, torch.ones_like(input_ids)
 
 
+def test_stage2b_score_only_sparse_logits_preserve_first_and_last_loops() -> None:
+    wrapper, input_ids, attention_mask = _tiny_stage2b_wrapper()
+    with torch.no_grad():
+        full = wrapper(
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            max_loops=4,
+            stage2b_depth_enabled=True,
+            stage2b_stage="M2",
+            return_loop_logits=True,
+            return_dict=True,
+        )
+        sparse = wrapper(
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            max_loops=4,
+            stage2b_depth_enabled=True,
+            stage2b_stage="M2",
+            stage2b_score_only_sparse_logits=True,
+            return_loop_logits=True,
+            return_dict=True,
+        )
+    assert torch.equal(full.loop_logits[:, :, 0], sparse.loop_logits[:, :, 0])
+    assert torch.equal(full.loop_logits[:, :, -1], sparse.loop_logits[:, :, -1])
+    assert torch.count_nonzero(sparse.loop_logits[:, :, 1:3]).item() == 0
+    assert torch.equal(full.loop_logits[:, :, -1], sparse.logits[:, None])
+
+
 def test_stage2b_zero_write_is_checkpoint_independent() -> None:
     wrapper, input_ids, attention_mask = _tiny_stage2b_wrapper()
     with torch.no_grad():
