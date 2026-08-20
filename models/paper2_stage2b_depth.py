@@ -158,6 +158,7 @@ class MultiLaneScratchFlow(nn.Module):
         prompt_context: torch.Tensor | None = None,
         dynamic_routing: bool = True,
         constitutive_active: bool = True,
+        inherited_flow_active: bool = True,
         forced_lane_one: bool = False,
     ) -> MultiLaneStepOutput:
         if state.shape[1:] != (self.n_lanes, self.n_slots, self.latent_dim):
@@ -199,11 +200,15 @@ class MultiLaneScratchFlow(nn.Module):
         carry = torch.einsum("bij,bjsd->bisd", routing.to(state.dtype), state)
         flat = carry.flatten(0, 1)
         repeated_context = context.repeat_interleave(self.n_lanes, dim=0)
-        flowed, update, _magnitude, _ratio = self.base_flow.step(
-            flat, repeated_context, index
-        )
-        flowed = flowed.unflatten(0, (state.shape[0], self.n_lanes))
-        update = update.unflatten(0, (state.shape[0], self.n_lanes))
+        if inherited_flow_active:
+            flowed, update, _magnitude, _ratio = self.base_flow.step(
+                flat, repeated_context, index
+            )
+            flowed = flowed.unflatten(0, (state.shape[0], self.n_lanes))
+            update = update.unflatten(0, (state.shape[0], self.n_lanes))
+        else:
+            flowed = carry
+            update = carry.new_zeros(carry.shape)
         if constitutive_active:
             hidden = self.hidden_innovation(context.float())
             gate = torch.sigmoid(self.prompt_gate(prompt_context.float()))
@@ -259,6 +264,7 @@ class MultiLaneScratchFlow(nn.Module):
 @dataclass
 class Stage2BDepthTrace:
     lane_state: torch.Tensor | None
+    initial_lane_state: torch.Tensor | None
     reference: torch.Tensor
     control_state: torch.Tensor | None
     routing_steps: list[MultiLaneStepOutput]
@@ -355,6 +361,7 @@ class Stage2BDepthAttachment(nn.Module):
     ) -> Stage2BDepthTrace:
         return Stage2BDepthTrace(
             lane_state=None,
+            initial_lane_state=None,
             reference=prelude_hidden,
             control_state=None,
             routing_steps=[],
@@ -375,6 +382,7 @@ class Stage2BDepthAttachment(nn.Module):
                 raise RuntimeError("Stage 2B scratch was initialized more than once")
             scratch = self.initializer(coda_hidden, attention_mask.bool())
             trace.lane_state = self.flow.replicate(scratch)
+            trace.initial_lane_state = trace.lane_state.clone()
         elif trace.lane_state is None:
             raise RuntimeError("Stage 2B scratch was not initialized after pass one")
         return trace
@@ -389,25 +397,49 @@ class Stage2BDepthAttachment(nn.Module):
         loop_index: int,
         stage: str,
         amplitude: float,
+        diagnostic_mode: str = "standard",
     ) -> Stage2BReentryOutput:
         if stage not in self.STAGES:
             raise ValueError(f"unknown Stage 2B curriculum stage: {stage}")
         if loop_index < 1 or loop_index > self.flow.max_steps:
             raise ValueError("Stage 2B re-entry index violates the loop cap")
-        if not 0.0 < float(amplitude) <= 0.11:
+        diagnostic_modes = {
+            "standard",
+            "zero_write",
+            "constitutive_off",
+            "fresh_state_each_loop",
+            "inherited_flow_off",
+        }
+        if diagnostic_mode not in diagnostic_modes:
+            raise ValueError(f"unknown Stage 2B diagnostic mode: {diagnostic_mode}")
+        if diagnostic_mode == "zero_write":
+            if float(amplitude) != 0.0:
+                raise ValueError("zero-write diagnostic requires amplitude 0")
+        elif not 0.0 < float(amplitude) <= 0.11:
             raise ValueError("Stage 2B amplitude must be inside the registered (0, 0.11] range")
         if trace.lane_state is None:
             raise RuntimeError("Stage 2B re-entry preceded post-coda scratch initialization")
+        if trace.initial_lane_state is None:
+            raise RuntimeError("Stage 2B initial scratch state is unavailable")
         context = self._masked_mean(recurrent_hidden.float(), attention_mask)
         prompt_context = self._masked_mean(prelude_hidden.float(), attention_mask)
         forced_lane_one = stage == "M1"
+        step_state = (
+            trace.initial_lane_state.clone()
+            if diagnostic_mode == "fresh_state_each_loop"
+            else trace.lane_state
+        )
         step = self.flow.step(
-            trace.lane_state,
+            step_state,
             context,
             loop_index - 1,
             prompt_context=prompt_context,
             dynamic_routing=stage in {"M3", "M4"},
-            constitutive_active=stage in {"M2", "M3", "M4"},
+            constitutive_active=(
+                stage in {"M2", "M3", "M4"}
+                and diagnostic_mode != "constitutive_off"
+            ),
+            inherited_flow_active=diagnostic_mode != "inherited_flow_off",
             forced_lane_one=forced_lane_one,
         )
         innovation_norm = step.flow_update.float().square().mean(dim=-1).sqrt().mean(dim=(1, 2))
@@ -419,6 +451,14 @@ class Stage2BDepthAttachment(nn.Module):
             top2_margin=context.new_zeros((context.shape[0],)),
             position_bucket=torch.zeros(context.shape[0], dtype=torch.long, device=context.device),
         )
+        if diagnostic_mode == "zero_write":
+            trace.lane_state = step.state
+            trace.control_state = control_state
+            trace.routing_steps.append(step)
+            trace.writeback_ratios.append(context.new_zeros((context.shape[0],)))
+            trace.position_gates.append(context.new_zeros((context.shape[0],)))
+            return Stage2BReentryOutput(hidden=recurrent_hidden, trace=trace)
+
         self.bridge.set_gate_ceiling(float(amplitude))
         bridge = self.bridge(
             h0=prelude_hidden,

@@ -4452,6 +4452,31 @@ TARGETS = {
         ],
         "env": {},
     },
+    "paper2_stage2b_autopsy_prelock": {
+        "path": "colab/STAGE5_PAPER2_STAGE2B_AUTOPSY_PRELOCK_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_STAGE2B_AUTOPSY_PRELOCK_VERSION",
+            "paper2_stage2b_autopsy_prelock_v1",
+            "no model load no optimizer no training CONFIRM and EVAL-E sealed",
+            "freeze 256-row DEV-2 subsample before autopsy model contact",
+            "inventory historical checkpoints without substitution",
+            "colab.run_stage5_paper2_stage2b_autopsy",
+        ],
+        "env": {},
+    },
+    "paper2_stage2b_autopsy": {
+        "path": "colab/STAGE5_PAPER2_STAGE2B_AUTOPSY_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_STAGE2B_AUTOPSY_VERSION",
+            "paper2_stage2b_autopsy_v1",
+            "signed score-only lock no optimizer no training",
+            "CONFIRM and EVAL-E remain sealed",
+            "zero-write full-logit identity precedes diagnostic cells",
+            "five-arm autopsy both seeds one A100-SXM4-40GB session",
+            "colab.run_stage5_paper2_stage2b_autopsy",
+        ],
+        "env": {},
+    },
     "paper2_phase3_kp1_t1": {
         "path": "colab/STAGE5_PAPER2_PHASE3_KP1_T1_CELL.py",
         "markers": [
