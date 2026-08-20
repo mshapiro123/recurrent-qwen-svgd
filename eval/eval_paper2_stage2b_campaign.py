@@ -33,6 +33,7 @@ class Stage2BTaskInferenceGraph:
     amplitude: float
     flow_loops: int = 4
     diagnostic_mode: str = "standard"
+    last_token_projection: bool = True
 
     @property
     def device(self) -> torch.device:
@@ -50,6 +51,7 @@ class Stage2BTaskInferenceGraph:
             stage2b_amplitude=self.amplitude,
             stage2b_diagnostic_mode=self.diagnostic_mode,
             return_loop_logits=True,
+            logits_to_keep=1 if self.last_token_projection else 0,
             use_cache=False,
             return_dict=True,
         )
@@ -58,8 +60,12 @@ class Stage2BTaskInferenceGraph:
         positions = current_position_mask(attention_mask)[1]
         batch = torch.arange(input_ids.shape[0], device=input_ids.device)
         loops = output.loop_logits[:, 0]
-        selected = loops[batch, -1, positions, :]
-        base = loops[batch, 0, positions, :]
+        if self.last_token_projection:
+            selected = loops[:, -1, -1, :]
+            base = loops[:, 0, -1, :]
+        else:
+            selected = loops[batch, -1, positions, :]
+            base = loops[batch, 0, positions, :]
         top2 = selected.float().topk(2, dim=-1).values
         metrics = output.metrics or {}
         gate = float(metrics.get("stage2b_position_gate_mean", torch.tensor(0.0)).cpu())
