@@ -1337,6 +1337,9 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         "gpu": torch.cuda.get_device_name(0),
         "weights_dtype": "bfloat16",
         "attention_backend": "sdpa",
+        "mcq_batch_size": args.mcq_batch_size,
+        "generation_batch_size": args.generation_batch_size,
+        "margin_batch_size": args.margin_batch_size,
     }
     receipt["status"] = "complete_score_only"
     atomic_json(args.output_dir / "summary.json", receipt)
@@ -1383,7 +1386,7 @@ def parse_args() -> argparse.Namespace:
         parser.add_argument(f"--{name}")
     parser.add_argument("--device", default="cuda")
     parser.add_argument("--mcq_batch_size", type=int, default=8)
-    parser.add_argument("--generation_batch_size", type=int, default=2)
+    parser.add_argument("--generation_batch_size", type=int, default=8)
     parser.add_argument("--margin_batch_size", type=int, default=2)
     args = parser.parse_args()
     required = ["dev2_manifest", "dev2_subsample_manifest"]
