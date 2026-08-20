@@ -23,7 +23,10 @@ GH = os.environ.get("GH_TOKEN", "").strip()
 
 
 def run(command: list[str], cwd: Path | None = None) -> str:
-    print("$", " ".join(command).replace(GH, "****"), flush=True)
+    rendered = " ".join(command)
+    if GH:
+        rendered = rendered.replace(GH, "****")
+    print("$", rendered, flush=True)
     process = subprocess.run(
         command,
         cwd=cwd or (ROOT if ROOT.exists() else Path("/content")),
