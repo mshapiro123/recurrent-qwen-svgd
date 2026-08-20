@@ -515,7 +515,16 @@ def test_dev1_condition_reuses_hash_pinned_precomputed_rows(tmp_path: Path) -> N
         for row in panel
     }
     precomputed = [
-        {**row, "augmented_correct": True, "prediction": "ok"}
+        {
+            **row,
+            "kind": "paper2_p35_task_row_v1",
+            "seed": 99,
+            "look": 400,
+            "augmented_correct": True,
+            "prediction": "ok",
+            "autopsy_condition": "source_condition",
+            "serving_transport": "source_transport",
+        }
         for row in panel
     ]
     rows, summary = autopsy_eval._score_dev1_condition(
@@ -536,6 +545,12 @@ def test_dev1_condition_reuses_hash_pinned_precomputed_rows(tmp_path: Path) -> N
     )
     assert len(rows) == len(panel)
     assert summary["reused_precomputed_rows"]["sha256"] == "abc"
+    assert all(row["kind"] == "paper2_stage2b_dev1_row_v1" for row in rows)
+    assert all(row["seed"] == 0 and row["look"] == 1000 for row in rows)
+    assert all(
+        row["autopsy_condition"] == "initialization__gamma_0p02" for row in rows
+    )
+    assert all(row["serving_transport"] == "hash_pinned_precomputed_v1" for row in rows)
     assert not (tmp_path / "dev1__initialization__gamma_0p02.partial.jsonl").exists()
 
 

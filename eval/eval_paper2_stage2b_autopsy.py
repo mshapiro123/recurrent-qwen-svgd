@@ -154,6 +154,7 @@ def _score_dev1_condition(
                 raise RuntimeError("Stage 2B-A DEV-1 comparator coverage is incomplete")
             enriched.append(
                 {
+                    **dict(row),
                     "kind": "paper2_stage2b_dev1_row_v1",
                     "seed": seed,
                     "look": 1000,
@@ -170,7 +171,6 @@ def _score_dev1_condition(
                             "augmented_correct", initialization_rows[item_id].get("correct")
                         )
                     ),
-                    **dict(row),
                     "autopsy_condition": condition,
                     "serving_transport": serving_transport,
                 }
