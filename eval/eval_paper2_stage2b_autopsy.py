@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import copy
 import json
 import math
 import platform
@@ -17,12 +18,11 @@ import torch.nn.functional as F
 from transformers import AutoTokenizer
 
 from eval.eval_paper2_phase3_p31_references import MODEL_SPECS
-from eval.eval_paper2_phase3_p34_task_trajectory import score_generation
+from eval.eval_paper2_phase3_p34_task_trajectory import score_generation, score_mcq
 from eval.eval_paper2_stage2b_campaign import (
     Stage2BTaskInferenceGraph,
     _forced_target,
     read_jsonl,
-    score_dev1,
     score_dev2_margins,
     write_jsonl,
 )
@@ -103,6 +103,111 @@ def _score_dev1_condition(
     mcq_batch_size: int,
     generation_batch_size: int,
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    final_path = private_dir / f"dev1__{condition}.jsonl"
+    partial_path = private_dir / f"dev1__{condition}.partial.jsonl"
+    source = {str(row["item_id"]): row for row in panel}
+    expected_ids = list(source)
+
+    def enrich(scored: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
+        enriched = []
+        for row in scored:
+            item_id = str(row["item_id"])
+            if item_id not in source or item_id not in base_rows or item_id not in initialization_rows:
+                raise RuntimeError("Stage 2B-A DEV-1 comparator coverage is incomplete")
+            enriched.append(
+                {
+                    "kind": "paper2_stage2b_dev1_row_v1",
+                    "seed": seed,
+                    "look": 1000,
+                    "item_id": item_id,
+                    "battery": str(source[item_id]["battery"]),
+                    "current_correct": bool(row["augmented_correct"]),
+                    "base_correct": bool(
+                        base_rows[item_id].get(
+                            "correct", base_rows[item_id].get("augmented_correct")
+                        )
+                    ),
+                    "initialization_correct": bool(
+                        initialization_rows[item_id].get(
+                            "augmented_correct", initialization_rows[item_id].get("correct")
+                        )
+                    ),
+                    **dict(row),
+                    "autopsy_condition": condition,
+                }
+            )
+        return enriched
+
+    def validate_cached(rows: Sequence[Mapping[str, Any]], *, complete: bool) -> None:
+        ids = [str(row["item_id"]) for row in rows]
+        if len(ids) != len(set(ids)):
+            raise RuntimeError(f"Stage 2B-A duplicate resumable DEV-1 rows: {condition}")
+        if not set(ids).issubset(source):
+            raise RuntimeError(f"Stage 2B-A foreign resumable DEV-1 rows: {condition}")
+        if complete and set(ids) != set(expected_ids):
+            raise RuntimeError(f"Stage 2B-A complete DEV-1 cache is incomplete: {condition}")
+        for row in rows:
+            if (
+                int(row.get("seed", -1)) != seed
+                or int(row.get("look", -1)) != 1000
+                or str(row.get("autopsy_condition")) != condition
+            ):
+                raise RuntimeError(f"Stage 2B-A resumable DEV-1 metadata changed: {condition}")
+
+    def summarize(rows: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
+        by_battery: dict[str, list[Mapping[str, Any]]] = defaultdict(list)
+        for row in rows:
+            by_battery[str(row["battery"])].append(row)
+        battery = {}
+        for name, selected in sorted(by_battery.items()):
+            current = sum(bool(row["current_correct"]) for row in selected)
+            base = sum(bool(row["base_correct"]) for row in selected)
+            initialization = sum(bool(row["initialization_correct"]) for row in selected)
+            battery[name] = {
+                "rows": len(selected),
+                "current_correct": current,
+                "base_correct": base,
+                "initialization_correct": initialization,
+                "delta_vs_base_rows": current - base,
+                "delta_vs_initialization_rows": current - initialization,
+            }
+        tier1 = int(battery["tier1"]["current_correct"])
+        gsm8k = int(battery["gsm8k"]["current_correct"])
+        tier1_floor = 19
+        gsm8k_floor = 91 if seed == 0 else 94
+        summary = {
+            "kind": "paper2_stage2b_dev1_summary_v1",
+            "seed": seed,
+            "look": 1000,
+            "rows": len(rows),
+            "battery": battery,
+            "safety": {
+                "tier1_floor": tier1_floor,
+                "tier1_correct": tier1,
+                "tier1_pass": tier1 >= tier1_floor,
+                "gsm8k_floor": gsm8k_floor,
+                "gsm8k_correct": gsm8k,
+                "gsm8k_pass": gsm8k >= gsm8k_floor,
+            },
+            "both_comparators_reported": True,
+            "autopsy_condition": condition,
+            "gamma": gamma,
+            "diagnostic_mode": mode,
+        }
+        summary["safety"]["pass"] = bool(
+            summary["safety"]["tier1_pass"] and summary["safety"]["gsm8k_pass"]
+        )
+        return summary
+
+    if final_path.exists():
+        rows = read_jsonl(final_path)
+        validate_cached(rows, complete=True)
+        return rows, summarize(rows)
+
+    rows = read_jsonl(partial_path) if partial_path.exists() else []
+    validate_cached(rows, complete=False)
+    row_by_id = {str(row["item_id"]): dict(row) for row in rows}
+
     graph = Stage2BTaskInferenceGraph(
         wrapper=wrapper,
         stage="M2",
@@ -110,23 +215,56 @@ def _score_dev1_condition(
         flow_loops=4,
         diagnostic_mode=mode,
     )
-    rows, summary = score_dev1(
-        graph=graph,
-        tokenizer=tokenizer,
-        panel=panel,
-        base_rows=base_rows,
-        initialization_rows=initialization_rows,
-        seed=seed,
-        look=1000,
-        mcq_batch_size=mcq_batch_size,
-        generation_batch_size=generation_batch_size,
-    )
-    for row in rows:
-        row["autopsy_condition"] = condition
-    summary["autopsy_condition"] = condition
-    summary["gamma"] = gamma
-    summary["diagnostic_mode"] = mode
-    write_jsonl(private_dir / f"dev1__{condition}.jsonl", rows)
+    mcq = [
+        row
+        for row in panel
+        if row["battery"] in {"arc_easy", "arc_challenge", "mmlu"}
+        and str(row["item_id"]) not in row_by_id
+    ]
+    if mcq:
+        for row in enrich(score_mcq(graph, tokenizer, mcq, batch_size=mcq_batch_size)):
+            row_by_id[str(row["item_id"])] = row
+        write_jsonl(partial_path, [row_by_id[item_id] for item_id in expected_ids if item_id in row_by_id])
+
+    generation = [
+        row
+        for row in panel
+        if row["battery"] in {"gsm8k", "mbpp", "tier1"}
+        and str(row["item_id"]) not in row_by_id
+    ]
+    rows_since_persist = 0
+
+    def emit_batch(scored: list[dict[str, Any]]) -> None:
+        nonlocal rows_since_persist
+        for row in enrich(scored):
+            item_id = str(row["item_id"])
+            if item_id in row_by_id:
+                raise RuntimeError(f"Stage 2B-A duplicate generated row during resume: {item_id}")
+            row_by_id[item_id] = row
+        rows_since_persist += len(scored)
+        if rows_since_persist >= 8:
+            ordered = [row_by_id[item_id] for item_id in expected_ids if item_id in row_by_id]
+            write_jsonl(partial_path, ordered)
+            print(
+                f"stage2b_dev1_resume condition={condition} rows={len(ordered)}/{len(expected_ids)}",
+                flush=True,
+            )
+            rows_since_persist = 0
+
+    if generation:
+        score_generation(
+            graph,
+            tokenizer,
+            generation,
+            batch_size=generation_batch_size,
+            emit_batch=emit_batch,
+        )
+
+    rows = [row_by_id[item_id] for item_id in expected_ids if item_id in row_by_id]
+    validate_cached(rows, complete=True)
+    summary = summarize(rows)
+    write_jsonl(final_path, rows)
+    partial_path.unlink(missing_ok=True)
     return rows, summary
 
 
@@ -699,20 +837,38 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     )
     for mode in ("standard", "constitutive_off", "fresh_state_each_loop", "inherited_flow_off"):
         condition = _condition_name("stop", gamma=0.05, mode=mode)
-        _rows, dev1_summary = _score_dev1_condition(
-            wrapper=wrapper,
-            tokenizer=tokenizer,
-            panel=dev1,
-            base_rows=base_rows,
-            initialization_rows=initialization_rows,
-            seed=args.seed,
-            gamma=0.05,
-            mode=mode,
-            condition=condition,
-            private_dir=args.private_dir,
-            mcq_batch_size=args.mcq_batch_size,
-            generation_batch_size=args.generation_batch_size,
-        )
+        if mode == "standard":
+            source_condition = _condition_name("stop", gamma=0.05)
+            source_rows = amplitude_rows["stop"][0.05]
+            copied_rows = []
+            for row in source_rows:
+                copied = dict(row)
+                copied["autopsy_condition"] = condition
+                copied_rows.append(copied)
+            write_jsonl(args.private_dir / f"dev1__{condition}.jsonl", copied_rows)
+            dev1_summary = copy.deepcopy(amplitude["stop"]["0.05"])
+            dev1_summary.update(
+                {
+                    "autopsy_condition": condition,
+                    "diagnostic_mode": mode,
+                    "reused_identical_condition": source_condition,
+                }
+            )
+        else:
+            _rows, dev1_summary = _score_dev1_condition(
+                wrapper=wrapper,
+                tokenizer=tokenizer,
+                panel=dev1,
+                base_rows=base_rows,
+                initialization_rows=initialization_rows,
+                seed=args.seed,
+                gamma=0.05,
+                mode=mode,
+                condition=condition,
+                private_dir=args.private_dir,
+                mcq_batch_size=args.mcq_batch_size,
+                generation_batch_size=args.generation_batch_size,
+            )
         _margin_rows, dev2_summary = _score_dev2_condition(
             wrapper=wrapper,
             tokenizer=tokenizer,

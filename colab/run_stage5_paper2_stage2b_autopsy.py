@@ -59,6 +59,20 @@ def run(command: list[str]) -> None:
     subprocess.run(command, cwd=ROOT, check=True, env=os.environ.copy())
 
 
+def archive_incomplete_status(path: Path, *, label: str) -> dict[str, Any] | None:
+    if not path.is_file():
+        return None
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if payload.get("status") == "complete_score_only":
+        return None
+    digest = sha256_file(path)
+    destination = DRIVE_RUN / "receipts/superseded" / f"{label}__{digest[:16]}.json"
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    if not destination.exists():
+        shutil.copy2(path, destination)
+    return {"source": str(path), "path": str(destination), "sha256": digest}
+
+
 def scratch_root() -> Path:
     for candidate in (Path("/mnt/local-scratch"), Path("/content/local-scratch"), Path("/content")):
         if candidate.exists() and shutil.disk_usage(candidate).free >= 80 * 1024**3:
@@ -158,8 +172,36 @@ def execute(scratch: Path) -> dict[str, Any]:
     rsync(CALIBRATION_TEACHER, teacher)
     if sha256_file(teacher) != lock["heldout_training_slice"]["teacher_cache_sha256"]:
         raise RuntimeError("Stage 2B-A heldout teacher cache changed")
+    archived_attempts = []
+    archived = archive_incomplete_status(
+        DRIVE_RUN / "receipts/status.json", label="run_status_before_resume"
+    )
+    if archived:
+        archived_attempts.append(archived)
     summaries = []
     for seed in (0, 1):
+        output = DRIVE_RUN / f"receipts/seed_{seed}"
+        private = DRIVE_RUN / f"private/seed_{seed}"
+        summary = output / "summary.json"
+        if summary.is_file():
+            payload = json.loads(summary.read_text(encoding="utf-8"))
+            if (
+                payload.get("status") != "complete_score_only"
+                or int(payload.get("seed", -1)) != seed
+                or payload.get("lock_sha256") != sha256_file(LOCK)
+                or payload.get("optimizer_steps") != 0
+                or payload.get("confirm_scored") is not False
+                or payload.get("eval_e_scored") is not False
+            ):
+                raise RuntimeError(f"Stage 2B-A completed seed receipt failed resume validation: {seed}")
+            summaries.append({"seed": seed, "path": str(summary), "sha256": sha256_file(summary)})
+            print(f"stage2b_seed_resume seed={seed} status=complete_score_only", flush=True)
+            continue
+        archived = archive_incomplete_status(
+            output / "status.json", label=f"seed_{seed}_status_before_resume"
+        )
+        if archived:
+            archived_attempts.append(archived)
         chain = stage_chain(scratch / f"chain_seed_{seed}", seed=seed, expected_p34=P34_SHA[seed])
         p35 = scratch / f"seed_{seed}_p35_ema_step_4400.pt"
         rsync(DRIVE_STAGE5 / P35_ID / f"private/arm_s_seed_{seed}/ema_step_4400.pt", p35)
@@ -180,8 +222,6 @@ def execute(scratch: Path) -> dict[str, Any]:
         rsync(DRIVE_SOURCE / f"receipts/seed_{seed}/summary.json", training_summary)
         if sha256_file(training_summary) != TRAINING_SUMMARY_SHA[seed]:
             raise RuntimeError("Stage 2B-A contemporaneous training summary changed")
-        output = DRIVE_RUN / f"receipts/seed_{seed}"
-        private = DRIVE_RUN / f"private/seed_{seed}"
         command = [
             sys.executable, "-u", "-m", "eval.eval_paper2_stage2b_autopsy",
             "--seed", str(seed), "--lock", str(LOCK),
@@ -199,12 +239,12 @@ def execute(scratch: Path) -> dict[str, Any]:
             "--training_summary", str(training_summary),
         ]
         run(command)
-        summary = output / "summary.json"
         summaries.append({"seed": seed, "path": str(summary), "sha256": sha256_file(summary)})
     receipt = {
         "kind": "paper2_stage2b_autopsy_execution_v1",
         "status": "complete_score_only",
         "seed_summaries": summaries,
+        "superseded_incomplete_attempts": archived_attempts,
         "optimizer_constructed": False,
         "optimizer_steps": 0,
         "confirm_scored": False,

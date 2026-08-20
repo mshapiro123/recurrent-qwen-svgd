@@ -8,6 +8,8 @@ from pathlib import Path
 import pytest
 import torch
 
+import eval.eval_paper2_stage2b_autopsy as autopsy_eval
+
 from training.paper2_stage2b_autopsy import (
     discrete_mutual_information,
     decision_mapping,
@@ -121,3 +123,113 @@ def test_autopsy_runner_contains_no_optimizer_or_sealed_partition_path() -> None
     assert "validate_autopsy_lock(lock, require_signature=True)" in orchestrator
     assert '"optimizer_steps": 0' in evaluator
     assert '"optimizer_steps": 0' in orchestrator
+
+
+def test_dev1_condition_resumes_from_atomic_generation_batches(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    rows_by_id = [
+        ("arc_easy", "arc_easy"),
+        ("arc_challenge", "arc_challenge"),
+        ("mmlu", "mmlu"),
+        *((f"gsm8k-{index}", "gsm8k") for index in range(8)),
+        ("mbpp", "mbpp"),
+        ("tier1", "tier1"),
+    ]
+    panel = [{"item_id": item_id, "battery": battery} for item_id, battery in rows_by_id]
+    comparators = {
+        item_id: {"item_id": item_id, "correct": False, "augmented_correct": False}
+        for item_id, _battery in rows_by_id
+    }
+
+    class FakeGraph:
+        def __init__(self, **_kwargs: object) -> None:
+            pass
+
+    def scored(rows: list[dict[str, str]]) -> list[dict[str, object]]:
+        return [
+            {
+                "item_id": row["item_id"],
+                "battery": row["battery"],
+                "augmented_correct": True,
+                "prediction": "ok",
+            }
+            for row in rows
+        ]
+
+    calls: list[list[str]] = []
+
+    def interrupted_generation(
+        _graph: object,
+        _tokenizer: object,
+        rows: list[dict[str, str]],
+        *,
+        batch_size: int,
+        emit_batch: object,
+    ) -> list[dict[str, object]]:
+        del batch_size
+        calls.append([row["item_id"] for row in rows])
+        emit_batch(scored(rows[:8]))
+        raise RuntimeError("simulated backend loss")
+
+    monkeypatch.setattr(autopsy_eval, "Stage2BTaskInferenceGraph", FakeGraph)
+    monkeypatch.setattr(
+        autopsy_eval,
+        "score_mcq",
+        lambda _graph, _tokenizer, rows, *, batch_size: scored(rows),
+    )
+    monkeypatch.setattr(autopsy_eval, "score_generation", interrupted_generation)
+    with pytest.raises(RuntimeError, match="backend loss"):
+        autopsy_eval._score_dev1_condition(
+            wrapper=object(),
+            tokenizer=object(),
+            panel=panel,
+            base_rows=comparators,
+            initialization_rows=comparators,
+            seed=0,
+            gamma=0.05,
+            mode="standard",
+            condition="resume_test",
+            private_dir=tmp_path,
+            mcq_batch_size=8,
+            generation_batch_size=2,
+        )
+    partial = tmp_path / "dev1__resume_test.partial.jsonl"
+    assert partial.is_file()
+    assert len(autopsy_eval.read_jsonl(partial)) == 11
+
+    def completed_generation(
+        _graph: object,
+        _tokenizer: object,
+        rows: list[dict[str, str]],
+        *,
+        batch_size: int,
+        emit_batch: object,
+    ) -> list[dict[str, object]]:
+        del batch_size
+        calls.append([row["item_id"] for row in rows])
+        result = scored(rows)
+        emit_batch(result)
+        return result
+
+    monkeypatch.setattr(autopsy_eval, "score_generation", completed_generation)
+    rows, summary = autopsy_eval._score_dev1_condition(
+        wrapper=object(),
+        tokenizer=object(),
+        panel=panel,
+        base_rows=comparators,
+        initialization_rows=comparators,
+        seed=0,
+        gamma=0.05,
+        mode="standard",
+        condition="resume_test",
+        private_dir=tmp_path,
+        mcq_batch_size=8,
+        generation_batch_size=2,
+    )
+    expected_generation = [f"gsm8k-{index}" for index in range(8)] + ["mbpp", "tier1"]
+    assert calls == [expected_generation, ["mbpp", "tier1"]]
+    assert [row["item_id"] for row in rows] == [item_id for item_id, _battery in rows_by_id]
+    assert summary["rows"] == len(rows_by_id)
+    assert not partial.exists()
+    assert (tmp_path / "dev1__resume_test.jsonl").is_file()
