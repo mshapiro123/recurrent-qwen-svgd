@@ -329,3 +329,42 @@ def test_dev1_condition_reuses_hash_pinned_precomputed_rows(tmp_path: Path) -> N
     assert len(rows) == len(panel)
     assert summary["reused_precomputed_rows"]["sha256"] == "abc"
     assert not (tmp_path / "dev1__initialization__gamma_0p02.partial.jsonl").exists()
+
+
+def test_k_sweep_reuses_identical_k4_amplitude_cell(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    rows = [{"item_id": "row-1", "battery": "gsm8k"}]
+    calls = []
+
+    class FakeGraph:
+        def __init__(self, **kwargs: object) -> None:
+            calls.append(int(kwargs["flow_loops"]))
+
+    def fake_score(
+        _graph: object,
+        _tokenizer: object,
+        _rows: list[dict[str, str]],
+        *,
+        batch_size: int,
+    ) -> list[dict[str, object]]:
+        del batch_size
+        return [{"item_id": "row-1", "battery": "gsm8k", "augmented_correct": False}]
+
+    monkeypatch.setattr(autopsy_eval, "Stage2BTaskInferenceGraph", FakeGraph)
+    monkeypatch.setattr(autopsy_eval, "score_generation", fake_score)
+    summary = autopsy_eval._k_sweep(
+        wrapper=object(),
+        tokenizer=object(),
+        rows=rows,
+        seed=0,
+        condition="stop",
+        private_dir=tmp_path,
+        batch_size=2,
+        precomputed_k4=[
+            {"item_id": "row-1", "battery": "gsm8k", "augmented_correct": True}
+        ],
+    )
+    assert calls == [1, 2, 3]
+    assert summary["4"]["correct"] == 1
+    assert summary["4"]["reused_identical_amplitude_cell"] is True

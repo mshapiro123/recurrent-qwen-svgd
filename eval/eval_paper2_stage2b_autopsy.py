@@ -771,16 +771,27 @@ def _k_sweep(
     condition: str,
     private_dir: Path,
     batch_size: int,
+    precomputed_k4: Sequence[Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
     summary = {}
     for loops in (1, 2, 3, 4):
-        graph = Stage2BTaskInferenceGraph(
-            wrapper=wrapper,
-            stage="M2",
-            amplitude=0.05,
-            flow_loops=loops,
-        )
-        scored = score_generation(graph, tokenizer, rows, batch_size=batch_size)
+        if loops == 4 and precomputed_k4 is not None:
+            expected_ids = {str(row["item_id"]) for row in rows}
+            scored = [
+                dict(row)
+                for row in precomputed_k4
+                if str(row["item_id"]) in expected_ids
+            ]
+            if {str(row["item_id"]) for row in scored} != expected_ids:
+                raise RuntimeError("Stage 2B-A reused K=4 row coverage changed")
+        else:
+            graph = Stage2BTaskInferenceGraph(
+                wrapper=wrapper,
+                stage="M2",
+                amplitude=0.05,
+                flow_loops=loops,
+            )
+            scored = score_generation(graph, tokenizer, rows, batch_size=batch_size)
         for row in scored:
             row["seed"] = seed
             row["flow_loops"] = loops
@@ -790,6 +801,7 @@ def _k_sweep(
             "rows": len(scored),
             "correct": sum(bool(row["augmented_correct"]) for row in scored),
             "battery_counts": battery_counts(scored),
+            "reused_identical_amplitude_cell": loops == 4 and precomputed_k4 is not None,
         }
     return summary
 
@@ -1085,6 +1097,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             condition=state_name,
             private_dir=args.private_dir,
             batch_size=args.generation_batch_size,
+            precomputed_k4=amplitude_rows[state_name][0.05],
         )
     receipt["attractor_discriminators"] = attractor
     atomic_json(args.output_dir / "status.json", receipt)
