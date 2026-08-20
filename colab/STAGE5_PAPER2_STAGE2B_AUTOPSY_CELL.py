@@ -11,7 +11,7 @@ from pathlib import Path
 from google.colab import drive
 
 
-STAGE5_PAPER2_STAGE2B_AUTOPSY_VERSION = "paper2_stage2b_autopsy_v2"
+STAGE5_PAPER2_STAGE2B_AUTOPSY_VERSION = "paper2_stage2b_autopsy_v3"
 # Safety marker: signed score-only lock no optimizer no training
 # Safety marker: CONFIRM and EVAL-E remain sealed
 # Contract marker: zero-write full-logit identity precedes diagnostic cells
@@ -19,6 +19,7 @@ STAGE5_PAPER2_STAGE2B_AUTOPSY_VERSION = "paper2_stage2b_autopsy_v2"
 # Contract marker: exact endpoints plus contemporaneous telemetry no onset interpolation
 # Contract marker: Arm 6 read-only autograd no optimizer no parameter mutation
 # Reliability marker: batch-resumable DEV-1 and sparse transport
+# Reliability marker: durable inner evaluator diagnostics
 REPO = "mshapiro123/recurrent-qwen-svgd"
 ROOT = Path("/content/recurrent-qwen-svgd")
 REF = os.environ.get("STAGE5_BOOTSTRAP_REF", "main").strip() or "main"
