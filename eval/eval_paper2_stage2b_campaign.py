@@ -49,6 +49,7 @@ class Stage2BTaskInferenceGraph:
         prelude_cache: Any = None,
         loop_caches: tuple[Any, ...] | None = None,
         current_token_only: bool = False,
+        current_positions: torch.Tensor | None = None,
     ) -> P34NextTokenOutput:
         output = self.wrapper(
             input_ids=input_ids,
@@ -68,7 +69,11 @@ class Stage2BTaskInferenceGraph:
         )
         if output.loop_logits is None:
             raise RuntimeError("Stage 2B task read requires loop logits")
-        positions = current_position_mask(attention_mask)[1]
+        positions = (
+            current_position_mask(attention_mask)[1]
+            if current_positions is None
+            else current_positions
+        )
         batch = torch.arange(input_ids.shape[0], device=input_ids.device)
         loops = output.loop_logits[:, 0]
         if self.last_token_projection or current_token_only:
@@ -79,14 +84,24 @@ class Stage2BTaskInferenceGraph:
             base = loops[batch, 0, positions, :]
         top2 = selected.float().topk(2, dim=-1).values
         metrics = output.metrics or {}
-        gate = float(metrics.get("stage2b_position_gate_mean", torch.tensor(0.0)).cpu())
-        ratio = float(metrics.get("stage2b_writeback_ratio_mean", torch.tensor(0.0)).cpu())
         rows = input_ids.shape[0]
+        gate = metrics.get("stage2b_position_gate_mean")
+        ratio = metrics.get("stage2b_writeback_ratio_mean")
+        gate_rows = (
+            gate.to(device=input_ids.device).reshape(1).expand(rows)
+            if isinstance(gate, torch.Tensor)
+            else torch.zeros((rows,), device=input_ids.device)
+        )
+        ratio_rows = (
+            ratio.to(device=input_ids.device).reshape(1).expand(rows)
+            if isinstance(ratio, torch.Tensor)
+            else torch.zeros((rows,), device=input_ids.device)
+        )
         return P34NextTokenOutput(
             augmented_logits=selected,
             base_logits=base,
-            writeback_ratio=torch.full((rows,), ratio, device=input_ids.device),
-            position_gate=torch.full((rows,), gate, device=input_ids.device),
+            writeback_ratio=ratio_rows,
+            position_gate=gate_rows,
             current_positions=positions,
             scratch_state=torch.empty((rows, 0, 0), device=input_ids.device),
             answer_token_margin=top2[:, 0] - top2[:, 1],
@@ -116,11 +131,13 @@ class Stage2BTaskInferenceGraph:
                 DynamicCache(config=self.wrapper.config)
                 for _ in range(self.flow_loops)
             )
+            positions = current_position_mask(attention_mask)[1]
             output = self._run(
                 input_ids,
                 attention_mask,
                 prelude_cache=prelude_cache,
                 loop_caches=loop_caches,
+                current_positions=positions,
             )
             state = P34CachedPrefix(
                 input_ids=input_ids,
@@ -163,12 +180,19 @@ class Stage2BTaskInferenceGraph:
             caches = state.past_key_values
             if not isinstance(caches, dict) or set(caches) != {"prelude", "loops"}:
                 raise RuntimeError("Stage 2B incremental cache state changed")
+            positions = torch.full(
+                (selected_tokens.shape[0],),
+                attention.shape[1] - 1,
+                dtype=torch.long,
+                device=selected_tokens.device,
+            )
             output = self._run(
                 selected_tokens,
                 attention,
                 prelude_cache=caches["prelude"],
                 loop_caches=tuple(caches["loops"]),
                 current_token_only=True,
+                current_positions=positions,
             )
             updated = P34CachedPrefix(
                 input_ids=torch.cat([state.input_ids, selected_tokens], dim=1),
