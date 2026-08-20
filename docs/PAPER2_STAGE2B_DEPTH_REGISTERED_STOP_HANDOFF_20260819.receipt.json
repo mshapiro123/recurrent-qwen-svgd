@@ -1,0 +1,38 @@
+{
+  "kind": "paper2_stage2b_depth_handoff_drive_receipt_v1",
+  "date": "2026-08-19",
+  "parent_folder_id": "1aSbU2i8JZ37g5bJpyweLuvFaV0y92Qjr",
+  "files": [
+    {
+      "name": "PAPER2_STAGE2B_DEPTH_REGISTERED_STOP_HANDOFF_20260819.md",
+      "drive_id": "1WoHNkiI6xK8r6BohgeYZyj0ouORHO0HN",
+      "bytes": 14484,
+      "sha256": "bfeb74e91b59e89c798009bb3551b4a4593fb2e4073324ce7b35910ecd31d312"
+    },
+    {
+      "name": "PAPER2_STAGE2B_DEPTH_REGISTERED_STOP_ANALYSIS_20260819.json",
+      "drive_id": "1zvk2fntwwJ6p6-zsDDuUv4qQUP_BnqUt",
+      "bytes": 11878,
+      "sha256": "878e9a11afa8fc0bcdb8e2db6afa587e0c698da55822fd183314faa63e74de14"
+    },
+    {
+      "name": "PAPER2_STAGE2B_DEPTH_FINAL_RECEIPTS_MANIFEST_20260819.json",
+      "drive_id": "1OwU_B_PKXJx8HfOoFq-y20oPQPjrggND",
+      "bytes": 2916,
+      "sha256": "7053b768b95d2afc9ffb0dc84bb20a68393565682138920084f707f1d6f145d2"
+    },
+    {
+      "name": "stage2b_depth_step1000_stop_20260819.svg",
+      "drive_id": "1IBWyqZhJqK3JyLevj2g3nU4WXI44hsKP",
+      "bytes": 35494,
+      "sha256": "1f23937879e06710c4c7b96e6e86eb33faa591ea815cfefa9f1e71f7b7b0ccb8"
+    },
+    {
+      "name": "stage2b_depth_step1000_stop_20260819.png",
+      "drive_id": "1VDvO8eFQ0TbVk6FW5fYBsGHE7u-JYOCS",
+      "bytes": 168330,
+      "sha256": "20be944011fa1a2e7b667a3ee4413fb7d9fa91d9057349cc4b873c99fc3d823d"
+    }
+  ],
+  "metadata_readback_verified": true
+}
