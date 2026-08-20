@@ -8,6 +8,7 @@ import json
 import math
 import platform
 import random
+import traceback
 from collections import defaultdict
 from pathlib import Path
 from typing import Any, Mapping, Sequence
@@ -835,13 +836,13 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         projection[state_name] = _last_token_projection_receipt(
             wrapper, tokenizer, dev2_subsample[:6]
         )
-    if not all(cell["all_pass"] for cell in projection.values()):
-        raise RuntimeError("Stage 2B-A last-token projection equivalence failed")
     receipt["last_token_projection_equivalence"] = {
         "cells": projection,
-        "all_pass": True,
+        "all_pass": all(cell["all_pass"] for cell in projection.values()),
     }
     atomic_json(args.output_dir / "status.json", receipt)
+    if not receipt["last_token_projection_equivalence"]["all_pass"]:
+        raise RuntimeError("Stage 2B-A last-token projection equivalence failed")
 
     _apply_state(wrapper, initialization_state)
     zero_init_logits = _zero_write_logits(wrapper, tokenizer, dev2_subsample[0])
@@ -1148,7 +1149,30 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
-    result = freeze_dev2_subsample(args) if args.freeze_dev2_subsample else run(args)
+    try:
+        result = freeze_dev2_subsample(args) if args.freeze_dev2_subsample else run(args)
+    except Exception as error:
+        if not args.freeze_dev2_subsample and args.output_dir is not None:
+            status_path = args.output_dir / "status.json"
+            failure = (
+                json.loads(status_path.read_text(encoding="utf-8"))
+                if status_path.is_file()
+                else {"kind": RUN_KIND, "seed": args.seed}
+            )
+            failure.update(
+                {
+                    "status": "failed_evaluator",
+                    "exception_type": type(error).__name__,
+                    "exception": str(error),
+                    "traceback": traceback.format_exc(),
+                    "optimizer_constructed": False,
+                    "optimizer_steps": 0,
+                    "confirm_scored": False,
+                    "eval_e_scored": False,
+                }
+            )
+            atomic_json(status_path, failure)
+        raise
     print(json.dumps(result, indent=2, sort_keys=True))
     return 0
 

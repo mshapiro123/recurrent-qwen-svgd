@@ -54,9 +54,30 @@ def atomic_json(path: Path, payload: Any) -> None:
     temporary.replace(path)
 
 
-def run(command: list[str]) -> None:
+def run(command: list[str], *, log_path: Path | None = None) -> None:
     print("$", " ".join(command), flush=True)
-    subprocess.run(command, cwd=ROOT, check=True, env=os.environ.copy())
+    if log_path is None:
+        subprocess.run(command, cwd=ROOT, check=True, env=os.environ.copy())
+        return
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+    process = subprocess.Popen(
+        command,
+        cwd=ROOT,
+        env=os.environ.copy(),
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        bufsize=1,
+    )
+    assert process.stdout is not None
+    with log_path.open("w", encoding="utf-8", newline="") as log:
+        for line in process.stdout:
+            print(line, end="", flush=True)
+            log.write(line)
+            log.flush()
+    return_code = process.wait()
+    if return_code:
+        raise subprocess.CalledProcessError(return_code, command)
 
 
 def archive_incomplete_status(path: Path, *, label: str) -> dict[str, Any] | None:
@@ -238,7 +259,10 @@ def execute(scratch: Path) -> dict[str, Any]:
             "--output_dir", str(output), "--private_dir", str(private),
             "--training_summary", str(training_summary),
         ]
-        run(command)
+        run(
+            command,
+            log_path=DRIVE_RUN / "receipts/logs" / f"seed_{seed}_latest.log",
+        )
         summaries.append({"seed": seed, "path": str(summary), "sha256": sha256_file(summary)})
     receipt = {
         "kind": "paper2_stage2b_autopsy_execution_v1",
