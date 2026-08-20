@@ -103,6 +103,8 @@ def _score_dev1_condition(
     private_dir: Path,
     mcq_batch_size: int,
     generation_batch_size: int,
+    precomputed_rows: Sequence[Mapping[str, Any]] | None = None,
+    precomputed_source: Mapping[str, Any] | None = None,
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     final_path = private_dir / f"dev1__{condition}.jsonl"
     partial_path = private_dir / f"dev1__{condition}.partial.jsonl"
@@ -204,6 +206,15 @@ def _score_dev1_condition(
         rows = read_jsonl(final_path)
         validate_cached(rows, complete=True)
         return rows, summarize(rows)
+
+    if precomputed_rows is not None:
+        rows = enrich(precomputed_rows)
+        validate_cached(rows, complete=True)
+        summary = summarize(rows)
+        summary["reused_precomputed_rows"] = dict(precomputed_source or {})
+        write_jsonl(final_path, rows)
+        partial_path.unlink(missing_ok=True)
+        return rows, summary
 
     rows = read_jsonl(partial_path) if partial_path.exists() else []
     validate_cached(rows, complete=False)
@@ -865,6 +876,24 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
 
     amplitude = defaultdict(dict)
     amplitude_rows: dict[str, dict[float, list[dict[str, Any]]]] = defaultdict(dict)
+    initialization_precomputed = {
+        0.02: read_jsonl(args.initialization_scores_0p02),
+        0.05: read_jsonl(args.initialization_scores),
+    }
+    initialization_sources = {
+        0.02: {
+            "path": str(args.initialization_scores_0p02),
+            "sha256": sha256_file(args.initialization_scores_0p02),
+            "checkpoint": "p35_ema_step_4400",
+            "scorer_path": "registered_p35_amplitude_surface",
+        },
+        0.05: {
+            "path": str(args.initialization_scores),
+            "sha256": sha256_file(args.initialization_scores),
+            "checkpoint": "p35_ema_step_4400",
+            "scorer_path": "registered_p35_amplitude_surface",
+        },
+    }
     for state_name, state in (("initialization", initialization_state), ("stop", stop_state)):
         _apply_state(wrapper, state)
         for gamma in (0.0, 0.01, 0.02, 0.05):
@@ -883,6 +912,16 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
                 private_dir=args.private_dir,
                 mcq_batch_size=args.mcq_batch_size,
                 generation_batch_size=args.generation_batch_size,
+                precomputed_rows=(
+                    initialization_precomputed.get(gamma)
+                    if state_name == "initialization"
+                    else None
+                ),
+                precomputed_source=(
+                    initialization_sources.get(gamma)
+                    if state_name == "initialization"
+                    else None
+                ),
             )
             amplitude[state_name][str(gamma)] = summary
             amplitude_rows[state_name][gamma] = rows
@@ -1128,7 +1167,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--seed", type=int, choices=(0, 1))
     for name in (
         "lock", "dev1_panel", "dev2_manifest", "dev2_subsample_manifest", "reference_rows", "base_scores",
-        "initialization_scores", "heldout_teacher_cache", "stop_checkpoint", "training_summary", "migrated",
+        "initialization_scores", "initialization_scores_0p02", "heldout_teacher_cache", "stop_checkpoint", "training_summary", "migrated",
         "p33", "i1", "p34", "p35", "model_cache", "output_dir", "private_dir",
     ):
         parser.add_argument(f"--{name}", type=Path)
@@ -1144,6 +1183,7 @@ def parse_args() -> argparse.Namespace:
         required.extend(
             [
                 "seed", "lock", "dev1_panel", "reference_rows", "base_scores", "initialization_scores",
+                "initialization_scores_0p02",
                 "heldout_teacher_cache", "stop_checkpoint", "training_summary", "migrated", "p33", "i1",
                 "p34", "p35", "model_cache", "output_dir", "private_dir",
                 "migrated_sha256", "p33_sha256", "i1_sha256", "p34_sha256", "p35_sha256",
