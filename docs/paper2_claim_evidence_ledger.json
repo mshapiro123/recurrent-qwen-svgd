@@ -1202,6 +1202,75 @@
       ]
     },
     {
+      "id": "stage2b_depth_registered_stop",
+      "status": "registered_negative_replicated_safety_stop",
+      "claim": "Both registered Stage 2B-D seeds independently failed the DEV-1 safety floor at step 1,000; the protected first pass stayed bit-exact, while each additional recurrent loop reduced the DEV-2 teacher-token margin and K4 crossed below zero.",
+      "scope": "Two Stage 2B-D M2 seeds through step 1,000; reused 1,024-row DEV-1 safety panel and 2,048-row DEV-2 margin panel; A100-SXM4-40GB BF16 SDPA; CONFIRM and EVAL-E sealed",
+      "metrics": {
+        "registered_verdict": "REPLICATED_DEV1_HARD_FLOOR_STOP_AT_STEP_1000",
+        "seed_0_initialization_correct": 510,
+        "seed_0_step_1000_correct": 294,
+        "seed_0_delta_vs_initialization_rows": -216,
+        "seed_1_initialization_correct": 510,
+        "seed_1_step_1000_correct": 301,
+        "seed_1_delta_vs_initialization_rows": -209,
+        "dev1_rows": 1024,
+        "seed_0_gsm8k_correct": 2,
+        "seed_1_gsm8k_correct": 2,
+        "seed_0_mbpp_correct": 0,
+        "seed_1_mbpp_correct": 0,
+        "seed_0_tier1_correct": 0,
+        "seed_1_tier1_correct": 0,
+        "seed_0_loop_margins": [
+          2.742134025931591,
+          1.0041812326680883,
+          0.2664077374618046,
+          -0.08731372699276108
+        ],
+        "seed_1_loop_margins": [
+          2.742134025931591,
+          1.0077941582662788,
+          0.2654223538224869,
+          -0.08781961559793672
+        ],
+        "pass_one_max_abs_difference_both_seeds": 0.0,
+        "step_5000_adjudication_eligible": false,
+        "confirm_scored": false,
+        "eval_e_scored": false
+      },
+      "evidence": [
+        {
+          "path": "artifacts/stage2b_depth_20260819/analysis/analysis_summary.json",
+          "locator": "validated cross-seed boundary receipt, exact battery results, per-loop margins, integrity checks, and source hashes"
+        },
+        {
+          "path": "artifacts/stage2b_depth_20260819/final_receipts_manifest.json",
+          "locator": "source-summary, checkpoint, analysis, figure, implementation, and compute-closeout receipt hashes"
+        },
+        {
+          "path": "docs/PAPER2_STAGE2B_DEPTH_REGISTERED_STOP_HANDOFF_20260819.md",
+          "locator": "locked design, registered result, localization, limitations, recommendations, and plain-language summary"
+        },
+        {
+          "path": "docs/figures/stage2b_depth_step1000_stop_20260819.svg",
+          "locator": "pooled DEV-1 scores, battery deltas, and replicated loop-margin trajectory"
+        },
+        {
+          "path": "training/paper2_stage2b_depth_executed_lock.json",
+          "locator": "signed constants, safety floors, sealed-partition contract, and adjudication rules"
+        }
+      ],
+      "do_not_claim": [
+        "Stage 2B reached or failed its step-5,000 depth-separation adjudication",
+        "dynamic routing, loop LoRA, or M3/M4 behavior was tested",
+        "one component has been causally identified as the source of harm",
+        "all recurrent depth training is harmful or impossible",
+        "a smaller amplitude or task-preserving objective cannot rescue the route",
+        "the result generalizes beyond the reused DEV panels",
+        "CONFIRM or EVAL-E has been scored"
+      ]
+    },
+    {
       "id": "speculative_depth_d0",
       "status": "not_recoverable_at_pilot_scale",
       "claim": "Under one 4,000-step seed, binary teacher-disagreement targets did not produce deployment-useful adaptive depth; the target omitted accepted-position harm and labeled many causally unactionable rejections as continue.",

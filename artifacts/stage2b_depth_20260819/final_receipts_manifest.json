@@ -1,0 +1,74 @@
+{
+  "kind": "paper2_stage2b_depth_final_receipts_manifest_v1",
+  "date": "2026-08-19",
+  "registered_verdict": "REPLICATED_DEV1_HARD_FLOOR_STOP_AT_STEP_1000",
+  "execution_commit": "dae24d8c3fae04b0ef4a73da1310921828ece525",
+  "signed_lock_canonical_sha256": "30a97e175200d3a58bc0cc0c200acec301d3a4f4cd662466d4c3491b9f816597",
+  "source_receipts": [
+    {
+      "path": "MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_stage2b_depth_20260819/receipts/seed_0_summary.json",
+      "bytes": 89113,
+      "sha256": "90b6e4c9fea538b7876349550e8caa02e5094c2f02d4535c8b7ecff4397669b0"
+    },
+    {
+      "path": "MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_stage2b_depth_20260819/receipts/seed_1_summary.json",
+      "bytes": 89108,
+      "sha256": "faafb98887555a0fa7fe876ffc33f35b0c61f9fa35b9e574ff667f1835c1fb23"
+    },
+    {
+      "path": "MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_stage2b_depth_20260819/private/seed_0/ema_step_01000.pt",
+      "sha256": "50cbf437adda668812dbe53a015792d3dc8ebc02cb785fba594c512b64bf2f58"
+    },
+    {
+      "path": "MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_stage2b_depth_20260819/private/seed_1/ema_step_01000.pt",
+      "sha256": "830bbfa11dca4d3b9ed56db96a7c40c887f56fb4a5227555edc1bd447b6662bc"
+    }
+  ],
+  "repository_artifacts": [
+    {
+      "path": "docs/PAPER2_STAGE2B_DEPTH_REGISTERED_STOP_HANDOFF_20260819.md",
+      "bytes": 14484,
+      "sha256": "bfeb74e91b59e89c798009bb3551b4a4593fb2e4073324ce7b35910ecd31d312"
+    },
+    {
+      "path": "artifacts/stage2b_depth_20260819/analysis/analysis_summary.json",
+      "bytes": 11878,
+      "sha256": "878e9a11afa8fc0bcdb8e2db6afa587e0c698da55822fd183314faa63e74de14"
+    },
+    {
+      "path": "docs/figures/stage2b_depth_step1000_stop_20260819.svg",
+      "bytes": 35494,
+      "sha256": "1f23937879e06710c4c7b96e6e86eb33faa591ea815cfefa9f1e71f7b7b0ccb8"
+    },
+    {
+      "path": "docs/figures/stage2b_depth_step1000_stop_20260819.png",
+      "bytes": 168330,
+      "sha256": "20be944011fa1a2e7b667a3ee4413fb7d9fa91d9057349cc4b873c99fc3d823d"
+    },
+    {
+      "path": "analysis/analyze_paper2_stage2b_depth_stop.py",
+      "bytes": 14442,
+      "sha256": "87a3ea0ac298ee56e5496ceb8cad02499d00318ba202c77f98d70ed0138e52e7"
+    },
+    {
+      "path": "tests/test_paper2_stage2b_depth_stop_analysis.py",
+      "bytes": 4633,
+      "sha256": "c72df77a550e4f4df7f0aceb9e823bf536da04875f82c47deeba2e1810c1fd55"
+    },
+    {
+      "path": "training/paper2_stage2b_depth_executed_lock.json",
+      "bytes": 13203,
+      "sha256": "074dc564190a050209925d42caa8f0d8a24b901342df11c2efca54cad655eb17"
+    }
+  ],
+  "sealed_partitions": {
+    "confirm_scored": false,
+    "eval_e_scored": false
+  },
+  "compute_closeout": {
+    "seed_0_a100_released": true,
+    "seed_1_a100_released": true,
+    "cpu_closeout_released": true,
+    "server_sessions_after_closeout": 0
+  }
+}

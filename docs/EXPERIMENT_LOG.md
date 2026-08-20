@@ -2067,3 +2067,17 @@ Colab/Drive backups for selected runs.
   sealed. Handoff: `docs/PAPER2_STAGE2A_T3_SCREEN_RESULTS_HANDOFF_20260818.md`.
   Analysis:
   `outputs/stage5/stage5_paper2_stage2a_t3_screen_20260817/analysis/analysis_summary.json`.
+- 2026-08-19 Stage 2B-D registered depth campaign: both signed seeds ran M2
+  through the first scheduled look and independently exited through
+  `dev1_hard_floor` at step 1,000. DEV-1 pooled scores were `294/1024` and
+  `301/1024`, versus matched initializations of `510/1024`; GSM8K was
+  `2/369`, MBPP `0/67`, and Tier-1 `0/25` in both seeds. The protected
+  pass-one path remained bit-exact (`max_abs=0.0`), active gradients were
+  finite, finite-horizon catastrophe flags stayed false, and Sinkhorn
+  residuals stayed zero. DEV-2 mean teacher-token margins fell monotonically
+  from `2.7421` at K1 to approximately `-0.0876` at K4 in both seeds. The
+  registered verdict is `REPLICATED_DEV1_HARD_FLOOR_STOP_AT_STEP_1000`.
+  Step-5,000 adjudication is ineligible; optimizer continuation is not
+  authorized. CONFIRM and EVAL-E remained sealed. Handoff:
+  `docs/PAPER2_STAGE2B_DEPTH_REGISTERED_STOP_HANDOFF_20260819.md`. Analysis:
+  `artifacts/stage2b_depth_20260819/analysis/analysis_summary.json`.

@@ -51,6 +51,15 @@ def test_paper2_ledger_closes_phase_g_and_records_t1_replication_state() -> None
     assert claims["speculative_depth_d0"]["status"] == "not_recoverable_at_pilot_scale"
     assert claims["speculative_depth_d0"]["metrics"]["accepted_position_net_loss"] == 4928
     assert claims["speculative_depth_d0"]["metrics"]["t1_retention_correct"] == 1005
+    stage2b = claims["stage2b_depth_registered_stop"]
+    assert stage2b["status"] == "registered_negative_replicated_safety_stop"
+    assert stage2b["metrics"]["registered_verdict"] == (
+        "REPLICATED_DEV1_HARD_FLOOR_STOP_AT_STEP_1000"
+    )
+    assert stage2b["metrics"]["step_5000_adjudication_eligible"] is False
+    assert stage2b["metrics"]["pass_one_max_abs_difference_both_seeds"] == 0.0
+    assert stage2b["metrics"]["confirm_scored"] is False
+    assert stage2b["metrics"]["eval_e_scored"] is False
     assert payload["active_queue"]["t1"].startswith("two_registered_negatives")
     assert claims["coconut_composite_integrity"]["status"] == (
         "engineering_preflight_bounded_fail"
