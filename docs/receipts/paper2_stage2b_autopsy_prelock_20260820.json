@@ -1,0 +1,223 @@
+{
+  "confirm_scored": false,
+  "dev2_subsample": {
+    "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_stage2b_autopsy_20260820/private/prelock/dev2_autopsy_subsample.jsonl",
+    "receipt_sha256": "19a9df5ced8ce6f52ac87c32c3251eb67f63eb450f3fd9c01601ae09236463b1",
+    "sha256": "d48d5d7c0ad9d6b9a6267e50fb0d0c753aa5ff2a7bc883ab00508c6bd8d84bc4"
+  },
+  "eval_e_scored": false,
+  "kind": "paper2_stage2b_autopsy_prelock_v1",
+  "missing_trajectory_cells": [
+    {
+      "seed": 0,
+      "step": 20
+    },
+    {
+      "seed": 0,
+      "step": 60
+    },
+    {
+      "seed": 0,
+      "step": 100
+    },
+    {
+      "seed": 0,
+      "step": 200
+    },
+    {
+      "seed": 0,
+      "step": 300
+    },
+    {
+      "seed": 0,
+      "step": 500
+    },
+    {
+      "seed": 0,
+      "step": 700
+    },
+    {
+      "seed": 1,
+      "step": 20
+    },
+    {
+      "seed": 1,
+      "step": 60
+    },
+    {
+      "seed": 1,
+      "step": 100
+    },
+    {
+      "seed": 1,
+      "step": 200
+    },
+    {
+      "seed": 1,
+      "step": 300
+    },
+    {
+      "seed": 1,
+      "step": 500
+    },
+    {
+      "seed": 1,
+      "step": 700
+    }
+  ],
+  "model_loaded": false,
+  "optimizer_constructed": false,
+  "optimizer_steps": 0,
+  "source_runner_checkpoint_behavior": "resume.pt was atomically overwritten every 20 steps; named snapshots were emitted only at registered looks",
+  "status": "blocked_on_historical_checkpoint_inventory",
+  "trajectory_checkpoint_inventory": {
+    "0": {
+      "0": {
+        "available": true,
+        "construction": "deterministic signed initialization"
+      },
+      "100": {
+        "available": false,
+        "candidates": [
+          "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_stage2b_depth_20260819/private/seed_0/ema_step_00100.pt",
+          "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_stage2b_depth_20260819/private/seed_0/resume_step_00100.pt",
+          "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_stage2b_depth_20260819/private/seed_0/checkpoints/ema_step_00100.pt",
+          "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_stage2b_depth_20260819/private/seed_0/checkpoints/resume_step_00100.pt"
+        ]
+      },
+      "1000": {
+        "available": true,
+        "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_stage2b_depth_20260819/private/seed_0/ema_step_01000.pt",
+        "sha256": "50cbf437adda668812dbe53a015792d3dc8ebc02cb785fba594c512b64bf2f58"
+      },
+      "20": {
+        "available": false,
+        "candidates": [
+          "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_stage2b_depth_20260819/private/seed_0/ema_step_00020.pt",
+          "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_stage2b_depth_20260819/private/seed_0/resume_step_00020.pt",
+          "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_stage2b_depth_20260819/private/seed_0/checkpoints/ema_step_00020.pt",
+          "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_stage2b_depth_20260819/private/seed_0/checkpoints/resume_step_00020.pt"
+        ]
+      },
+      "200": {
+        "available": false,
+        "candidates": [
+          "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_stage2b_depth_20260819/private/seed_0/ema_step_00200.pt",
+          "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_stage2b_depth_20260819/private/seed_0/resume_step_00200.pt",
+          "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_stage2b_depth_20260819/private/seed_0/checkpoints/ema_step_00200.pt",
+          "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_stage2b_depth_20260819/private/seed_0/checkpoints/resume_step_00200.pt"
+        ]
+      },
+      "300": {
+        "available": false,
+        "candidates": [
+          "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_stage2b_depth_20260819/private/seed_0/ema_step_00300.pt",
+          "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_stage2b_depth_20260819/private/seed_0/resume_step_00300.pt",
+          "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_stage2b_depth_20260819/private/seed_0/checkpoints/ema_step_00300.pt",
+          "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_stage2b_depth_20260819/private/seed_0/checkpoints/resume_step_00300.pt"
+        ]
+      },
+      "500": {
+        "available": false,
+        "candidates": [
+          "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_stage2b_depth_20260819/private/seed_0/ema_step_00500.pt",
+          "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_stage2b_depth_20260819/private/seed_0/resume_step_00500.pt",
+          "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_stage2b_depth_20260819/private/seed_0/checkpoints/ema_step_00500.pt",
+          "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_stage2b_depth_20260819/private/seed_0/checkpoints/resume_step_00500.pt"
+        ]
+      },
+      "60": {
+        "available": false,
+        "candidates": [
+          "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_stage2b_depth_20260819/private/seed_0/ema_step_00060.pt",
+          "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_stage2b_depth_20260819/private/seed_0/resume_step_00060.pt",
+          "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_stage2b_depth_20260819/private/seed_0/checkpoints/ema_step_00060.pt",
+          "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_stage2b_depth_20260819/private/seed_0/checkpoints/resume_step_00060.pt"
+        ]
+      },
+      "700": {
+        "available": false,
+        "candidates": [
+          "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_stage2b_depth_20260819/private/seed_0/ema_step_00700.pt",
+          "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_stage2b_depth_20260819/private/seed_0/resume_step_00700.pt",
+          "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_stage2b_depth_20260819/private/seed_0/checkpoints/ema_step_00700.pt",
+          "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_stage2b_depth_20260819/private/seed_0/checkpoints/resume_step_00700.pt"
+        ]
+      }
+    },
+    "1": {
+      "0": {
+        "available": true,
+        "construction": "deterministic signed initialization"
+      },
+      "100": {
+        "available": false,
+        "candidates": [
+          "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_stage2b_depth_20260819/private/seed_1/ema_step_00100.pt",
+          "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_stage2b_depth_20260819/private/seed_1/resume_step_00100.pt",
+          "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_stage2b_depth_20260819/private/seed_1/checkpoints/ema_step_00100.pt",
+          "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_stage2b_depth_20260819/private/seed_1/checkpoints/resume_step_00100.pt"
+        ]
+      },
+      "1000": {
+        "available": true,
+        "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_stage2b_depth_20260819/private/seed_1/ema_step_01000.pt",
+        "sha256": "830bbfa11dca4d3b9ed56db96a7c40c887f56fb4a5227555edc1bd447b6662bc"
+      },
+      "20": {
+        "available": false,
+        "candidates": [
+          "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_stage2b_depth_20260819/private/seed_1/ema_step_00020.pt",
+          "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_stage2b_depth_20260819/private/seed_1/resume_step_00020.pt",
+          "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_stage2b_depth_20260819/private/seed_1/checkpoints/ema_step_00020.pt",
+          "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_stage2b_depth_20260819/private/seed_1/checkpoints/resume_step_00020.pt"
+        ]
+      },
+      "200": {
+        "available": false,
+        "candidates": [
+          "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_stage2b_depth_20260819/private/seed_1/ema_step_00200.pt",
+          "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_stage2b_depth_20260819/private/seed_1/resume_step_00200.pt",
+          "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_stage2b_depth_20260819/private/seed_1/checkpoints/ema_step_00200.pt",
+          "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_stage2b_depth_20260819/private/seed_1/checkpoints/resume_step_00200.pt"
+        ]
+      },
+      "300": {
+        "available": false,
+        "candidates": [
+          "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_stage2b_depth_20260819/private/seed_1/ema_step_00300.pt",
+          "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_stage2b_depth_20260819/private/seed_1/resume_step_00300.pt",
+          "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_stage2b_depth_20260819/private/seed_1/checkpoints/ema_step_00300.pt",
+          "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_stage2b_depth_20260819/private/seed_1/checkpoints/resume_step_00300.pt"
+        ]
+      },
+      "500": {
+        "available": false,
+        "candidates": [
+          "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_stage2b_depth_20260819/private/seed_1/ema_step_00500.pt",
+          "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_stage2b_depth_20260819/private/seed_1/resume_step_00500.pt",
+          "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_stage2b_depth_20260819/private/seed_1/checkpoints/ema_step_00500.pt",
+          "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_stage2b_depth_20260819/private/seed_1/checkpoints/resume_step_00500.pt"
+        ]
+      },
+      "60": {
+        "available": false,
+        "candidates": [
+          "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_stage2b_depth_20260819/private/seed_1/ema_step_00060.pt",
+          "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_stage2b_depth_20260819/private/seed_1/resume_step_00060.pt",
+          "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_stage2b_depth_20260819/private/seed_1/checkpoints/ema_step_00060.pt",
+          "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_stage2b_depth_20260819/private/seed_1/checkpoints/resume_step_00060.pt"
+        ]
+      },
+      "700": {
+        "available": false,
+        "candidates": [
+          "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_stage2b_depth_20260819/private/seed_1/ema_step_00700.pt",
+          "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_stage2b_depth_20260819/private/seed_1/resume_step_00700.pt",
+          "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_stage2b_depth_20260819/private/seed_1/checkpoints/ema_step_00700.pt",
+          "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_stage2b_depth_20260819/private/seed_1/checkpoints/resume_step_00700.pt"
+        ]
+      }
+    }
+  }
+}
