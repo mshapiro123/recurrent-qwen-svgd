@@ -1,8 +1,8 @@
 {
   "kind": "paper2_stage2b_autopsy_lock_v1",
-  "status": "DRAFT_UNEXECUTABLE",
-  "mark_signed": false,
-  "locked_before_model_contact": false,
+  "status": "SIGNED",
+  "mark_signed": true,
+  "locked_before_model_contact": true,
   "training_authorized": false,
   "optimizer_steps_allowed": 0,
   "authority": {
@@ -16,7 +16,10 @@
     "amendment_ratification_sha256": "5e0b08d93a873da637cdbbff8673cb4da09381e312b54bbf96b51713b92f98ce",
     "routing_geometry_drive_id": "1LYQhAAbfWzugnzj11AQoWCcnTz-ZLd3H",
     "routing_geometry_bytes": 13819,
-    "routing_geometry_sha256": "36c79056b2a34df19e7470af33f3421368de4c0cc76a73ab44d79a3f1997edf1"
+    "routing_geometry_sha256": "36c79056b2a34df19e7470af33f3421368de4c0cc76a73ab44d79a3f1997edf1",
+    "signature_record_drive_id": "1OSaglrQTMNkf_hWDLudeMIXYnnNLdrwK",
+    "signature_record_bytes": 2132,
+    "signature_record_sha256": "bbdd5c05d08e6e6e9fc2c4d2a3d128b657f7b4b479c185c18b089b756aee481b"
   },
   "scope": "Two Stage 2B-D seeds through step 1000; DEV-1, fixed DEV-2 subsample, and frozen loss-calibration slice only",
   "source_lock_canonical_sha256": "30a97e175200d3a58bc0cc0c200acec301d3a4f4cd662466d4c3491b9f816597",
@@ -111,7 +114,7 @@
         "1000": "830bbfa11dca4d3b9ed56db96a7c40c887f56fb4a5227555edc1bd447b6662bc"
       }
     },
-    "execution_status": "AMENDED_EXECUTABLE_PENDING_MARK_SIGNATURE"
+    "execution_status": "SIGNED_EXECUTABLE"
   },
   "amplitude_response": {
     "checkpoint": 1000,
@@ -205,7 +208,5 @@
     "eval_e_scored": false,
     "remain_sealed": true
   },
-  "unresolved_lock_fields": [
-    "mark_signature"
-  ]
+  "unresolved_lock_fields": []
 }
