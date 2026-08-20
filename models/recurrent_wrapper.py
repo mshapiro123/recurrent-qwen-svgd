@@ -84,6 +84,7 @@ class RecurrentQwenOutput:
     final_recurrent_hidden: Optional[torch.Tensor] = None
     final_post_norm_hidden: Optional[torch.Tensor] = None
     past_key_values: Optional[Any] = None
+    stage2b_loop_past_key_values: Optional[tuple[Any, ...]] = None
     hidden_states: Optional[tuple[torch.Tensor, ...]] = None
     attentions: Optional[tuple[torch.Tensor, ...]] = None
     metrics: dict[str, torch.Tensor] = field(default_factory=dict)
@@ -497,6 +498,7 @@ class RecurrentQwenForCausalLM(nn.Module):
         stage2b_amplitude: float = 0.05,
         stage2b_diagnostic_mode: str = "standard",
         stage2b_score_only_sparse_logits: bool = False,
+        stage2b_loop_past_key_values: Optional[tuple[Any, ...]] = None,
         logits_to_keep: int | torch.Tensor = 0,
         **_: Any,
     ) -> RecurrentQwenOutput | tuple[Any, ...]:
@@ -626,10 +628,23 @@ class RecurrentQwenForCausalLM(nn.Module):
             or sample_latents
             or particle_update_mode != "none"
         )
+        stage2b_incremental_cache = (
+            stage2b_depth_enabled
+            and stage2b_loop_past_key_values is not None
+            and num_trajectories == 1
+            and not sample_latents
+            and particle_update_mode == "none"
+        )
+        if stage2b_incremental_cache and len(stage2b_loop_past_key_values) != max_loops:
+            raise ValueError("Stage 2B incremental cache requires one cache per loop")
+        if stage2b_incremental_cache and past_key_values is None:
+            raise ValueError("Stage 2B incremental cache requires a prelude cache")
+        if stage2b_incremental_cache and not use_cache:
+            raise ValueError("Stage 2B incremental cache requires use_cache=True")
         if recurrent_cache_invalid and not use_cache_was_explicit:
             use_cache = False
 
-        if use_cache and recurrent_cache_invalid:
+        if use_cache and recurrent_cache_invalid and not stage2b_incremental_cache:
             raise ValueError(
                 "KV cache is only supported for the identity-shaped single-pass path. "
                 "Set use_cache=False for recurrent loops or multi-trajectory sampling."
@@ -966,7 +981,11 @@ class RecurrentQwenForCausalLM(nn.Module):
                 hidden_states=loop_input,
                 causal_mask=flat_causal_mask,
                 position_ids=flat_position_ids,
-                past_key_values=past_key_values if num_trajectories == 1 else None,
+                past_key_values=(
+                    stage2b_loop_past_key_values[loop_idx]
+                    if stage2b_incremental_cache
+                    else past_key_values if num_trajectories == 1 else None
+                ),
                 use_cache=use_cache,
                 output_attentions=output_attentions,
                 cache_position=cache_position,
@@ -1024,7 +1043,11 @@ class RecurrentQwenForCausalLM(nn.Module):
                 hidden_states=recurrent_state,
                 causal_mask=flat_causal_mask,
                 position_ids=flat_position_ids,
-                past_key_values=past_key_values if num_trajectories == 1 else None,
+                past_key_values=(
+                    stage2b_loop_past_key_values[loop_idx]
+                    if stage2b_incremental_cache
+                    else past_key_values if num_trajectories == 1 else None
+                ),
                 use_cache=use_cache,
                 output_attentions=output_attentions,
                 cache_position=cache_position,
@@ -1448,6 +1471,11 @@ class RecurrentQwenForCausalLM(nn.Module):
                 num_trajectories,
             ),
             past_key_values=past_key_values if use_cache else None,
+            stage2b_loop_past_key_values=(
+                tuple(stage2b_loop_past_key_values)
+                if stage2b_incremental_cache
+                else None
+            ),
             hidden_states=tuple(hidden_history) if output_hidden_states else None,
             attentions=tuple(all_attentions) if output_attentions else None,
             metrics=metrics,

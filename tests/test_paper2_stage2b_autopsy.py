@@ -7,10 +7,13 @@ from pathlib import Path
 
 import pytest
 import torch
-import torch
+from transformers import Qwen2Config, Qwen2ForCausalLM
 
 import eval.eval_paper2_stage2b_autopsy as autopsy_eval
 
+from models.paper2_dc2_student import Phase3StudentModules
+from models.paper2_stage2b_depth import Stage2BDepthAttachment
+from models.recurrent_wrapper import LayerSplit, RecurrentQwenForCausalLM
 from training.paper2_stage2b_autopsy import (
     discrete_mutual_information,
     decision_mapping,
@@ -77,6 +80,61 @@ def test_stage2b_task_graph_sparse_loop_projection_is_exact() -> None:
     assert wrapper.calls == [(0, False), (0, True)]
     assert torch.equal(full.augmented_logits, sparse.augmented_logits)
     assert torch.equal(full.base_logits, sparse.base_logits)
+
+
+def test_stage2b_incremental_cache_preserves_greedy_transport() -> None:
+    torch.manual_seed(20260820)
+    config = Qwen2Config(
+        vocab_size=37,
+        hidden_size=16,
+        intermediate_size=32,
+        num_hidden_layers=4,
+        num_attention_heads=4,
+        num_key_value_heads=2,
+        max_position_embeddings=64,
+        use_cache=True,
+    )
+    base = Qwen2ForCausalLM(config).eval()
+    wrapper = RecurrentQwenForCausalLM(
+        base, layer_split=LayerSplit(prelude_end=1, recurrent_end=3)
+    ).eval()
+    sidecar = Phase3StudentModules(
+        tied_embedding=base.model.embed_tokens,
+        hidden_size=16,
+        latent_dim=8,
+        n_slots=8,
+        control_dim=4,
+        draft_rank=4,
+        max_steps=4,
+        rms_cap=0.5,
+    ).eval()
+    wrapper.install_stage2b_depth_attachment(Stage2BDepthAttachment.from_phase3(sidecar))
+    common = {
+        "wrapper": wrapper,
+        "stage": "M2",
+        "amplitude": 0.05,
+        "flow_loops": 4,
+    }
+    recompute = Stage2BTaskInferenceGraph(**common, incremental_cache=False)
+    cached = Stage2BTaskInferenceGraph(**common, incremental_cache=True)
+    input_ids = torch.tensor([[1, 2, 3, 4]])
+    attention_mask = torch.ones_like(input_ids)
+    recompute_state, recompute_output = recompute.prefill_cached(
+        input_ids=input_ids, attention_mask=attention_mask
+    )
+    cached_state, cached_output = cached.prefill_cached(
+        input_ids=input_ids, attention_mask=attention_mask
+    )
+    for _step in range(3):
+        recompute_token = recompute_output.augmented_logits.argmax(dim=-1)
+        cached_token = cached_output.augmented_logits.argmax(dim=-1)
+        assert torch.equal(recompute_token, cached_token)
+        recompute_state, recompute_output = recompute.advance_cached(
+            state=recompute_state, selected_tokens=recompute_token
+        )
+        cached_state, cached_output = cached.advance_cached(
+            state=cached_state, selected_tokens=recompute_token
+        )
 
 
 def test_autopsy_signed_lock_is_score_only_and_sealed() -> None:
@@ -329,6 +387,99 @@ def test_dev1_condition_reuses_hash_pinned_precomputed_rows(tmp_path: Path) -> N
     assert len(rows) == len(panel)
     assert summary["reused_precomputed_rows"]["sha256"] == "abc"
     assert not (tmp_path / "dev1__initialization__gamma_0p02.partial.jsonl").exists()
+
+
+def test_dev1_condition_archives_rows_from_superseded_transport(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    batteries = (
+        "arc_easy",
+        "arc_challenge",
+        "mmlu",
+        "gsm8k",
+        "mbpp",
+        "tier1",
+    )
+    panel = [
+        {"item_id": f"item-{index}", "battery": battery}
+        for index, battery in enumerate(batteries)
+    ]
+    comparators = {
+        row["item_id"]: {"item_id": row["item_id"], "augmented_correct": False}
+        for row in panel
+    }
+    partial = tmp_path / "dev1__transport_test.partial.jsonl"
+    legacy = [{
+        "kind": "paper2_stage2b_dev1_row_v1",
+        "seed": 0,
+        "look": 1000,
+        "item_id": "item-0",
+        "battery": "arc_easy",
+        "current_correct": True,
+        "base_correct": False,
+        "initialization_correct": False,
+        "augmented_correct": True,
+        "autopsy_condition": "transport_test",
+    }]
+    autopsy_eval.write_jsonl(partial, legacy)
+    legacy_sha = autopsy_eval.sha256_file(partial)
+
+    class FakeGraph:
+        def __init__(self, **_kwargs: object) -> None:
+            pass
+
+    def scored(rows: list[dict[str, str]]) -> list[dict[str, object]]:
+        return [
+            {
+                "item_id": row["item_id"],
+                "battery": row["battery"],
+                "augmented_correct": True,
+            }
+            for row in rows
+        ]
+
+    monkeypatch.setattr(autopsy_eval, "Stage2BTaskInferenceGraph", FakeGraph)
+    monkeypatch.setattr(
+        autopsy_eval,
+        "score_mcq",
+        lambda _graph, _tokenizer, rows, *, batch_size: scored(rows),
+    )
+
+    def score_all_generation(
+        _graph: object,
+        _tokenizer: object,
+        rows: list[dict[str, str]],
+        *,
+        batch_size: int,
+        emit_batch: object,
+    ) -> list[dict[str, object]]:
+        del batch_size
+        result = scored(rows)
+        emit_batch(result)
+        return result
+
+    monkeypatch.setattr(autopsy_eval, "score_generation", score_all_generation)
+    rows, _summary = autopsy_eval._score_dev1_condition(
+        wrapper=object(),
+        tokenizer=object(),
+        panel=panel,
+        base_rows=comparators,
+        initialization_rows=comparators,
+        seed=0,
+        gamma=0.05,
+        mode="standard",
+        condition="transport_test",
+        private_dir=tmp_path,
+        mcq_batch_size=8,
+        generation_batch_size=2,
+    )
+    archived = list((tmp_path / "superseded").glob("*.jsonl"))
+    assert len(archived) == 1
+    assert autopsy_eval.sha256_file(archived[0]) == legacy_sha
+    assert all(
+        row["serving_transport"] == "exact_mcq_incremental_generation_v1"
+        for row in rows
+    )
 
 
 def test_k_sweep_reuses_identical_k4_amplitude_cell(

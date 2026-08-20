@@ -26,7 +26,7 @@ from eval.eval_paper2_phase3_p34_task_trajectory import score_generation, score_
 
 @dataclass
 class Stage2BTaskInferenceGraph:
-    """Uncached registered task graph over the recurrent Stage 2B wrapper."""
+    """Registered task graph over the recurrent Stage 2B wrapper."""
 
     wrapper: Any
     stage: str
@@ -35,13 +35,20 @@ class Stage2BTaskInferenceGraph:
     diagnostic_mode: str = "standard"
     last_token_projection: bool = False
     sparse_loop_projection: bool = True
+    incremental_cache: bool = False
 
     @property
     def device(self) -> torch.device:
         return next(self.wrapper.parameters()).device
 
     def _run(
-        self, input_ids: torch.Tensor, attention_mask: torch.Tensor
+        self,
+        input_ids: torch.Tensor,
+        attention_mask: torch.Tensor,
+        *,
+        prelude_cache: Any = None,
+        loop_caches: tuple[Any, ...] | None = None,
+        current_token_only: bool = False,
     ) -> P34NextTokenOutput:
         output = self.wrapper(
             input_ids=input_ids,
@@ -52,9 +59,11 @@ class Stage2BTaskInferenceGraph:
             stage2b_amplitude=self.amplitude,
             stage2b_diagnostic_mode=self.diagnostic_mode,
             stage2b_score_only_sparse_logits=self.sparse_loop_projection,
+            stage2b_loop_past_key_values=loop_caches,
             return_loop_logits=True,
             logits_to_keep=1 if self.last_token_projection else 0,
-            use_cache=False,
+            past_key_values=prelude_cache,
+            use_cache=loop_caches is not None,
             return_dict=True,
         )
         if output.loop_logits is None:
@@ -62,7 +71,7 @@ class Stage2BTaskInferenceGraph:
         positions = current_position_mask(attention_mask)[1]
         batch = torch.arange(input_ids.shape[0], device=input_ids.device)
         loops = output.loop_logits[:, 0]
-        if self.last_token_projection:
+        if self.last_token_projection or current_token_only:
             selected = loops[:, -1, -1, :]
             base = loops[:, 0, -1, :]
         else:
@@ -99,6 +108,34 @@ class Stage2BTaskInferenceGraph:
     def prefill_cached(
         self, *, input_ids: torch.Tensor, attention_mask: torch.Tensor
     ) -> tuple[P34CachedPrefix, P34NextTokenOutput]:
+        if self.incremental_cache:
+            from transformers.cache_utils import DynamicCache
+
+            prelude_cache = DynamicCache(config=self.wrapper.config)
+            loop_caches = tuple(
+                DynamicCache(config=self.wrapper.config)
+                for _ in range(self.flow_loops)
+            )
+            output = self._run(
+                input_ids,
+                attention_mask,
+                prelude_cache=prelude_cache,
+                loop_caches=loop_caches,
+            )
+            state = P34CachedPrefix(
+                input_ids=input_ids,
+                hidden=torch.empty(
+                    (input_ids.shape[0], input_ids.shape[1], 0),
+                    device=input_ids.device,
+                ),
+                layer6_hidden=torch.empty(
+                    (input_ids.shape[0], input_ids.shape[1], 0),
+                    device=input_ids.device,
+                ),
+                attention_mask=attention_mask,
+                past_key_values={"prelude": prelude_cache, "loops": loop_caches},
+            )
+            return state, output
         state = P34CachedPrefix(
             input_ids=input_ids,
             hidden=torch.empty((input_ids.shape[0], input_ids.shape[1], 0), device=input_ids.device),
@@ -122,6 +159,31 @@ class Stage2BTaskInferenceGraph:
             ],
             dim=1,
         )
+        if self.incremental_cache:
+            caches = state.past_key_values
+            if not isinstance(caches, dict) or set(caches) != {"prelude", "loops"}:
+                raise RuntimeError("Stage 2B incremental cache state changed")
+            output = self._run(
+                selected_tokens,
+                attention,
+                prelude_cache=caches["prelude"],
+                loop_caches=tuple(caches["loops"]),
+                current_token_only=True,
+            )
+            updated = P34CachedPrefix(
+                input_ids=torch.cat([state.input_ids, selected_tokens], dim=1),
+                hidden=torch.empty(
+                    (selected_tokens.shape[0], attention.shape[1], 0),
+                    device=selected_tokens.device,
+                ),
+                layer6_hidden=torch.empty(
+                    (selected_tokens.shape[0], attention.shape[1], 0),
+                    device=selected_tokens.device,
+                ),
+                attention_mask=attention,
+                past_key_values=caches,
+            )
+            return updated, output
         return self.prefill_cached(input_ids=input_ids, attention_mask=attention)
 
 
