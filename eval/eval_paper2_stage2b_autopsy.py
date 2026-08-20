@@ -8,6 +8,7 @@ import json
 import math
 import platform
 import random
+import shutil
 import traceback
 from collections import defaultdict
 from pathlib import Path
@@ -18,7 +19,11 @@ import torch
 import torch.nn.functional as F
 from transformers import AutoTokenizer
 
-from eval.eval_paper2_phase3_p31_references import MODEL_SPECS
+from eval.eval_paper2_phase3_p31_references import (
+    MODEL_SPECS,
+    _chat_prompt,
+    _generation_prompt,
+)
 from eval.eval_paper2_phase3_p34_task_trajectory import score_generation, score_mcq
 from eval.eval_paper2_stage2b_campaign import (
     Stage2BTaskInferenceGraph,
@@ -110,6 +115,36 @@ def _score_dev1_condition(
     partial_path = private_dir / f"dev1__{condition}.partial.jsonl"
     source = {str(row["item_id"]): row for row in panel}
     expected_ids = list(source)
+    serving_transport = (
+        "hash_pinned_precomputed_v1"
+        if precomputed_rows is not None
+        else "exact_mcq_incremental_generation_v1"
+    )
+
+    def archive_transport_mismatch(path: Path) -> bool:
+        if not path.exists():
+            return False
+        cached = read_jsonl(path)
+        if all(row.get("serving_transport") == serving_transport for row in cached):
+            return False
+        digest = sha256_file(path)
+        destination = (
+            private_dir
+            / "superseded"
+            / f"{path.stem}__transport_pre_v1__{digest[:16]}.jsonl"
+        )
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        if not destination.exists():
+            shutil.copy2(path, destination)
+        if sha256_file(destination) != digest:
+            raise RuntimeError("Stage 2B-A superseded transport archive changed")
+        path.unlink()
+        print(
+            f"stage2b_transport_archive source={path} "
+            f"destination={destination} sha256={digest}",
+            flush=True,
+        )
+        return True
 
     def enrich(scored: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
         enriched = []
@@ -137,6 +172,7 @@ def _score_dev1_condition(
                     ),
                     **dict(row),
                     "autopsy_condition": condition,
+                    "serving_transport": serving_transport,
                 }
             )
         return enriched
@@ -154,6 +190,7 @@ def _score_dev1_condition(
                 int(row.get("seed", -1)) != seed
                 or int(row.get("look", -1)) != 1000
                 or str(row.get("autopsy_condition")) != condition
+                or str(row.get("serving_transport")) != serving_transport
             ):
                 raise RuntimeError(f"Stage 2B-A resumable DEV-1 metadata changed: {condition}")
 
@@ -201,6 +238,9 @@ def _score_dev1_condition(
             summary["safety"]["tier1_pass"] and summary["safety"]["gsm8k_pass"]
         )
         return summary
+
+    archive_transport_mismatch(final_path)
+    archive_transport_mismatch(partial_path)
 
     if final_path.exists():
         rows = read_jsonl(final_path)
@@ -264,8 +304,16 @@ def _score_dev1_condition(
             rows_since_persist = 0
 
     if generation:
+        generation_graph = Stage2BTaskInferenceGraph(
+            wrapper=wrapper,
+            stage="M2",
+            amplitude=gamma,
+            flow_loops=4,
+            diagnostic_mode=mode,
+            incremental_cache=True,
+        )
         score_generation(
-            graph,
+            generation_graph,
             tokenizer,
             generation,
             batch_size=generation_batch_size,
@@ -644,6 +692,135 @@ def _sparse_loop_projection_receipt(
     }
 
 
+def _cache_length(cache: Any, layer_index: int) -> int:
+    try:
+        return int(cache.get_seq_length(layer_idx=layer_index))
+    except TypeError:
+        return int(cache.get_seq_length(layer_index))
+
+
+@torch.inference_mode()
+def _incremental_cache_transport_receipt(
+    wrapper: Any,
+    tokenizer: Any,
+    rows: Sequence[Mapping[str, Any]],
+    *,
+    steps: int = 8,
+) -> dict[str, Any]:
+    """Require identical greedy decisions across cached and recompute serving."""
+
+    selected_rows = []
+    for battery in ("gsm8k", "mbpp", "tier1"):
+        match = next((row for row in rows if row["battery"] == battery), None)
+        if match is None:
+            raise RuntimeError(
+                f"Stage 2B-A cache transport lacks a {battery} sentinel row"
+            )
+        selected_rows.append(match)
+    extra = next(
+        (
+            row
+            for row in rows
+            if row["battery"] == "gsm8k"
+            and str(row["item_id"]) != str(selected_rows[0]["item_id"])
+        ),
+        None,
+    )
+    if extra is not None:
+        selected_rows.append(extra)
+    prompts = [
+        _chat_prompt(tokenizer, _generation_prompt(row)[0])
+        for row in selected_rows
+    ]
+    tokenizer.padding_side = "left"
+    if tokenizer.pad_token_id is None:
+        tokenizer.pad_token_id = tokenizer.eos_token_id
+    encoded = tokenizer(prompts, return_tensors="pt", padding=True).to("cuda")
+    common = {
+        "wrapper": wrapper,
+        "stage": "M2",
+        "amplitude": 0.05,
+        "flow_loops": 4,
+        "diagnostic_mode": "standard",
+    }
+    recompute_graph = Stage2BTaskInferenceGraph(**common, incremental_cache=False)
+    cached_graph = Stage2BTaskInferenceGraph(**common, incremental_cache=True)
+    recompute_state, recompute = recompute_graph.prefill_cached(
+        input_ids=encoded["input_ids"], attention_mask=encoded["attention_mask"]
+    )
+    cached_state, cached = cached_graph.prefill_cached(
+        input_ids=encoded["input_ids"], attention_mask=encoded["attention_mask"]
+    )
+    cache_bundle = cached_state.past_key_values
+    if not isinstance(cache_bundle, dict):
+        raise RuntimeError("Stage 2B-A cache transport did not return a cache bundle")
+    lengths = {
+        "prelude": _cache_length(cache_bundle["prelude"], 0),
+        "loop_recurrent": [
+            _cache_length(cache, wrapper.layer_split.prelude_end)
+            for cache in cache_bundle["loops"]
+        ],
+        "loop_coda": [
+            _cache_length(cache, wrapper.layer_split.recurrent_end)
+            for cache in cache_bundle["loops"]
+        ],
+    }
+    if lengths["prelude"] <= 0 or any(
+        length <= 0
+        for length in (*lengths["loop_recurrent"], *lengths["loop_coda"])
+    ):
+        raise RuntimeError("Stage 2B-A incremental caches were not populated")
+
+    decisions = []
+    all_exact = True
+    for step in range(steps):
+        recompute_tokens = recompute.augmented_logits.argmax(dim=-1)
+        cached_tokens = cached.augmented_logits.argmax(dim=-1)
+        exact = torch.equal(recompute_tokens, cached_tokens)
+        all_exact = all_exact and exact
+        decisions.append(
+            {
+                "step": step,
+                "selected_tokens_exact": exact,
+                "augmented_logit_max_abs_difference": float(
+                    (recompute.augmented_logits - cached.augmented_logits)
+                    .float()
+                    .abs()
+                    .max()
+                    .cpu()
+                ),
+                "base_logit_max_abs_difference": float(
+                    (recompute.base_logits - cached.base_logits)
+                    .float()
+                    .abs()
+                    .max()
+                    .cpu()
+                ),
+            }
+        )
+        if step + 1 == steps:
+            break
+        recompute_state, recompute = recompute_graph.advance_cached(
+            state=recompute_state, selected_tokens=recompute_tokens
+        )
+        cached_state, cached = cached_graph.advance_cached(
+            state=cached_state, selected_tokens=recompute_tokens
+        )
+    return {
+        "rows": len(selected_rows),
+        "sentinels": [
+            {"item_id": str(row["item_id"]), "battery": str(row["battery"])}
+            for row in selected_rows
+        ],
+        "steps": steps,
+        "selected_tokens_exact_at_every_step": all_exact,
+        "cache_lengths_after_prefill": lengths,
+        "decisions": decisions,
+        "transport_only": True,
+        "fresh_scratch_per_emitted_token": True,
+    }
+
+
 def _offdiagonal_cosine(states: torch.Tensor, *, center: bool) -> dict[str, float]:
     values = states.float()
     if center:
@@ -790,6 +967,7 @@ def _k_sweep(
                 stage="M2",
                 amplitude=0.05,
                 flow_loops=loops,
+                incremental_cache=True,
             )
             scored = score_generation(graph, tokenizer, rows, batch_size=batch_size)
         for row in scored:
@@ -874,6 +1052,23 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     atomic_json(args.output_dir / "status.json", receipt)
     if not receipt["sparse_loop_projection_equivalence"]["all_pass"]:
         raise RuntimeError("Stage 2B-A sparse-loop projection equivalence failed")
+
+    cache_transport = {}
+    for state_name, state in (("initialization", initialization_state), ("stop", stop_state)):
+        _apply_state(wrapper, state)
+        cache_transport[state_name] = _incremental_cache_transport_receipt(
+            wrapper, tokenizer, dev1, steps=8
+        )
+    receipt["incremental_cache_transport"] = {
+        "cells": cache_transport,
+        "all_pass": all(
+            cell["selected_tokens_exact_at_every_step"]
+            for cell in cache_transport.values()
+        ),
+    }
+    atomic_json(args.output_dir / "status.json", receipt)
+    if not receipt["incremental_cache_transport"]["all_pass"]:
+        raise RuntimeError("Stage 2B-A incremental cache transport failed")
 
     _apply_state(wrapper, initialization_state)
     zero_init_logits = _zero_write_logits(wrapper, tokenizer, dev2_subsample[0])
