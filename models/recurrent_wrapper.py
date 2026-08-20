@@ -495,6 +495,7 @@ class RecurrentQwenForCausalLM(nn.Module):
         stage2b_depth_enabled: bool = False,
         stage2b_stage: str = "M4",
         stage2b_amplitude: float = 0.05,
+        stage2b_diagnostic_mode: str = "standard",
         logits_to_keep: int | torch.Tensor = 0,
         **_: Any,
     ) -> RecurrentQwenOutput | tuple[Any, ...]:
@@ -807,6 +808,7 @@ class RecurrentQwenForCausalLM(nn.Module):
                         loop_index=loop_idx,
                         stage=stage2b_stage,
                         amplitude=float(stage2b_amplitude),
+                        diagnostic_mode=stage2b_diagnostic_mode,
                     )
                     loop_input = stage2b_output.hidden
                     stage2b_trace = stage2b_output.trace

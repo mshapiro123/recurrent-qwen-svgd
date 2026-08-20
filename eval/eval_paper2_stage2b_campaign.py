@@ -32,6 +32,7 @@ class Stage2BTaskInferenceGraph:
     stage: str
     amplitude: float
     flow_loops: int = 4
+    diagnostic_mode: str = "standard"
 
     @property
     def device(self) -> torch.device:
@@ -47,6 +48,7 @@ class Stage2BTaskInferenceGraph:
             stage2b_depth_enabled=True,
             stage2b_stage=self.stage,
             stage2b_amplitude=self.amplitude,
+            stage2b_diagnostic_mode=self.diagnostic_mode,
             return_loop_logits=True,
             use_cache=False,
             return_dict=True,
@@ -269,6 +271,7 @@ def score_dev2_margins(
             stage2b_depth_enabled=True,
             stage2b_stage=graph.stage,
             stage2b_amplitude=graph.amplitude,
+            stage2b_diagnostic_mode=graph.diagnostic_mode,
             return_loop_logits=True,
             use_cache=False,
             return_dict=True,

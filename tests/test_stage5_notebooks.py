@@ -4086,6 +4086,35 @@ def test_stage2b_depth_campaign_target_is_wired_and_guarded() -> None:
     assert "awaiting_step_5000_strategy_adjudication" in runner
 
 
+def test_stage2b_autopsy_targets_are_score_only_and_sealed() -> None:
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    prelock = (ROOT / "colab/STAGE5_PAPER2_STAGE2B_AUTOPSY_PRELOCK_CELL.py").read_text(
+        encoding="utf-8"
+    )
+    cell = (ROOT / "colab/STAGE5_PAPER2_STAGE2B_AUTOPSY_CELL.py").read_text(
+        encoding="utf-8"
+    )
+    orchestrator = (ROOT / "colab/run_stage5_paper2_stage2b_autopsy.py").read_text(
+        encoding="utf-8"
+    )
+    evaluator = (ROOT / "eval/eval_paper2_stage2b_autopsy.py").read_text(
+        encoding="utf-8"
+    )
+
+    assert '"paper2_stage2b_autopsy_prelock"' in bootstrap
+    assert '"paper2_stage2b_autopsy"' in bootstrap
+    assert "paper2_stage2b_autopsy_prelock_v1" in prelock
+    assert "inventory historical checkpoints without substitution" in prelock
+    assert "paper2_stage2b_autopsy_v1" in cell
+    assert "signed score-only lock no optimizer no training" in cell
+    assert "zero-write full-logit identity precedes diagnostic cells" in cell
+    assert "A100-SXM4-40GB" in cell
+    assert "validate_autopsy_lock(lock, require_signature=True)" in orchestrator
+    assert 'lock["onset_trajectory"]["checkpoint_sha256_by_seed"]' in orchestrator
+    assert "zero_write_full_logit_bit_exact" in evaluator
+    assert "stage2b_diagnostic_mode" in evaluator
+
+
 
 def test_gradient_path_audit_target_is_wired_and_guarded() -> None:
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")

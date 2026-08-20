@@ -1,0 +1,123 @@
+{
+  "kind": "paper2_stage2b_autopsy_lock_v1",
+  "status": "DRAFT_UNEXECUTABLE",
+  "mark_signed": false,
+  "locked_before_model_contact": false,
+  "training_authorized": false,
+  "optimizer_steps_allowed": 0,
+  "authority": {
+    "strategy_stop_analysis_drive_id": "1jeWnmBZHxOgaQw_Dnf9NqOYSrxmpSfoX",
+    "strategy_stop_analysis_bytes": 12680,
+    "strategy_stop_analysis_sha256": "58f2420d7728df66cf8cc5ee5b1142d92840c975cd7bc37db881d613f9f9e791",
+    "registered_stop_handoff_drive_id": "1WoHNkiI6xK8r6BohgeYZyj0ouORHO0HN",
+    "registered_stop_handoff_sha256": "bfeb74e91b59e89c798009bb3551b4a4593fb2e4073324ce7b35910ecd31d312"
+  },
+  "scope": "Two Stage 2B-D seeds through step 1000; DEV-1, fixed DEV-2 subsample, and frozen loss-calibration slice only",
+  "source_lock_canonical_sha256": "30a97e175200d3a58bc0cc0c200acec301d3a4f4cd662466d4c3491b9f816597",
+  "runtime": {
+    "accelerator": "NVIDIA A100-SXM4-40GB",
+    "torch": "2.11.0+cu128",
+    "cuda": "12.8",
+    "weights_dtype": "bfloat16",
+    "attention_backend": "sdpa",
+    "same_session_for_all_cells": true
+  },
+  "seeds": [0, 1],
+  "stop_checkpoints": {
+    "0": {
+      "step": 1000,
+      "state_variant": "ema",
+      "sha256": "50cbf437adda668812dbe53a015792d3dc8ebc02cb785fba594c512b64bf2f58"
+    },
+    "1": {
+      "step": 1000,
+      "state_variant": "ema",
+      "sha256": "830bbfa11dca4d3b9ed56db96a7c40c887f56fb4a5227555edc1bd447b6662bc"
+    }
+  },
+  "initialization": {
+    "construction": "rebuild from the signed P3.5 Arm-S endpoint under seed 20260819 plus seed before Stage 2B module construction",
+    "seed_0_p35_sha256": "a047e2e7b35320376a736492c79d913b8690937da785efa2af002c8f54d26ca6",
+    "seed_1_p35_sha256": "e36cddb76407c8f853ccb43824c77cf01d15f144780726dd9aec23215467fccb"
+  },
+  "dev1": {
+    "rows": 1024,
+    "role": "amplitude, component, and generative K-sweep discrete reads",
+    "both_comparators_required": true
+  },
+  "dev2_subsample": {
+    "source_manifest_sha256": "6b9ebf40128ed21b0351710e9f828bcacb096512704f02f34274a3b8adcc0adb",
+    "rows": 256,
+    "seed": 20260819,
+    "selection": "proportional battery-stratified allocation with minimum one per represented battery, then lowest stable hash",
+    "manifest_sha256": "OPEN_PRELOCK"
+  },
+  "heldout_training_slice": {
+    "rows": 32,
+    "next_token_positions": 14383,
+    "manifest_sha256": "5d9e6784f47ddd9a18f9d966e5e6d3392d60159a9872bafba0d02ef386a34b21",
+    "teacher_cache_sha256": "046c3592f55354054ff9fc5d1a7e7ace0f295f0743fdee64c10fdb9cc730742e",
+    "role": "per-loop CE and forward-KL at initialization and step 1000"
+  },
+  "onset_trajectory": {
+    "steps": [0, 20, 60, 100, 200, 300, 500, 700, 1000],
+    "state_variant": "ema",
+    "panel": "dev2_subsample",
+    "checkpoint_sha256_by_seed": "OPEN_PRELOCK_CHECKPOINT_INVENTORY"
+  },
+  "amplitude_response": {
+    "checkpoint": 1000,
+    "gamma": [0.0, 0.01, 0.02, 0.05],
+    "panel": "dev1",
+    "zero_write_gate": "step-1000 and initialization predictions must be bit-identical at gamma 0",
+    "comparators": ["matched-amplitude initialization", "registered initialization at gamma 0.05", "base"]
+  },
+  "component_attribution": {
+    "checkpoint": 1000,
+    "gamma": 0.05,
+    "diagnostic_modes": [
+      "standard",
+      "constitutive_off",
+      "fresh_state_each_loop",
+      "inherited_flow_off"
+    ],
+    "implementation_note": "inherited_flow_off disables the inherited SharedResidualFlow update while preserving final bridge execution; disabling the final bridge is already the zero-write plumbing control and is scientifically non-discriminating",
+    "panels": ["dev1", "dev2_subsample"]
+  },
+  "attractor_discriminators": {
+    "checkpoints": [0, 1000],
+    "k1_k4_margin_correlation": ["pearson", "spearman"],
+    "loop4_state_similarity": ["raw_offdiagonal_cosine", "centered_offdiagonal_cosine", "loop4_minus_loop1_direction_cosine"],
+    "k_sweep_population": "dev1 generative rows",
+    "flow_loops": [1, 2, 3, 4]
+  },
+  "flow_loops": [1, 2, 3, 4],
+  "objective_task_divergence": {
+    "checkpoints": [0, 1000],
+    "metrics": ["per_loop_ce", "per_loop_forward_kl", "monotonicity_component"],
+    "training_log_trajectory": true
+  },
+  "decision_mapping": {
+    "h_b_magnitude": "a gamma below 0.05 beats the registered initialization on DEV-1; successor is margin-indexed radius control and trainable gate temperature",
+    "h_c_constitutive": "constitutive_off restores materially more capability than inherited_flow_off; successor replaces the constitutive constructor with a gated additive innovation",
+    "h_a_attractor": "task-signal correlation collapses, recurrent states converge across questions, and heldout CE/KL improves or stays flat while task margins fall; every successor requires an explicit task-preservation anchor"
+  },
+  "claim_boundaries": [
+    "No optimizer construction or parameter update.",
+    "No checkpoint selection from diagnostic cells.",
+    "No CONFIRM or EVAL-E contact.",
+    "The router-geometry proposal is successor-design context and is not tested by this autopsy.",
+    "The M2 recipe remains closed as built regardless of the autopsy result."
+  ],
+  "sealed_partitions": {
+    "confirm_scored": false,
+    "eval_e_scored": false,
+    "remain_sealed": true
+  },
+  "unresolved_lock_fields": [
+    "dev2_subsample.manifest_sha256",
+    "onset_trajectory.checkpoint_sha256_by_seed",
+    "strategy_confirmation_of_inherited_flow_off_interpretation",
+    "mark_signature"
+  ]
+}

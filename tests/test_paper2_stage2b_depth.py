@@ -154,6 +154,97 @@ def test_stage2b_attachment_preserves_one_pass_and_reports_reentry() -> None:
     assert deeper.metrics["stage2b_sinkhorn_column_residual_max"].item() == 0.0
 
 
+def _tiny_stage2b_wrapper() -> tuple[RecurrentQwenForCausalLM, torch.Tensor, torch.Tensor]:
+    torch.manual_seed(51)
+    base = TinyCausalLM().eval()
+    wrapper = RecurrentQwenForCausalLM(
+        base, layer_split=LayerSplit(prelude_end=1, recurrent_end=3)
+    ).eval()
+    sidecar = Phase3StudentModules(
+        tied_embedding=base.model.embed_tokens,
+        hidden_size=8,
+        latent_dim=8,
+        n_slots=8,
+        control_dim=4,
+        draft_rank=4,
+        max_steps=4,
+        rms_cap=0.5,
+    ).eval()
+    wrapper.install_stage2b_depth_attachment(Stage2BDepthAttachment.from_phase3(sidecar))
+    input_ids = torch.tensor([[1, 2, 3, 4]])
+    return wrapper, input_ids, torch.ones_like(input_ids)
+
+
+def test_stage2b_zero_write_is_checkpoint_independent() -> None:
+    wrapper, input_ids, attention_mask = _tiny_stage2b_wrapper()
+    with torch.no_grad():
+        before = wrapper(
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            max_loops=4,
+            stage2b_depth_enabled=True,
+            stage2b_stage="M2",
+            stage2b_amplitude=0.0,
+            stage2b_diagnostic_mode="zero_write",
+            return_dict=True,
+        ).logits
+        wrapper.stage2b_depth_attachment.flow.hidden_innovation.weight.normal_()
+        after = wrapper(
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            max_loops=4,
+            stage2b_depth_enabled=True,
+            stage2b_stage="M2",
+            stage2b_amplitude=0.0,
+            stage2b_diagnostic_mode="zero_write",
+            return_dict=True,
+        ).logits
+    assert torch.equal(before, after)
+
+
+def test_stage2b_component_modes_are_live_and_distinct() -> None:
+    wrapper, input_ids, attention_mask = _tiny_stage2b_wrapper()
+    with torch.no_grad():
+        wrapper.stage2b_depth_attachment.flow.hidden_innovation.weight.normal_(std=0.2)
+        wrapper.stage2b_depth_attachment.flow.prompt_gate.weight.normal_(std=0.2)
+        outputs = {}
+        for mode in (
+            "standard",
+            "constitutive_off",
+            "fresh_state_each_loop",
+            "inherited_flow_off",
+        ):
+            outputs[mode] = wrapper(
+                input_ids=input_ids,
+                attention_mask=attention_mask,
+                max_loops=4,
+                stage2b_depth_enabled=True,
+                stage2b_stage="M2",
+                stage2b_amplitude=0.05,
+                stage2b_diagnostic_mode=mode,
+                return_dict=True,
+            ).logits
+    for mode in outputs:
+        assert torch.isfinite(outputs[mode]).all()
+    assert not torch.equal(outputs["standard"], outputs["constitutive_off"])
+    assert not torch.equal(outputs["standard"], outputs["fresh_state_each_loop"])
+    assert not torch.equal(outputs["standard"], outputs["inherited_flow_off"])
+
+
+def test_stage2b_diagnostic_mode_rejects_unregistered_values() -> None:
+    wrapper, input_ids, attention_mask = _tiny_stage2b_wrapper()
+    with pytest.raises(ValueError, match="diagnostic mode"):
+        wrapper(
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            max_loops=2,
+            stage2b_depth_enabled=True,
+            stage2b_stage="M2",
+            stage2b_diagnostic_mode="invented",
+            return_dict=True,
+        )
+
+
 def test_stage_schedule_and_landing_are_bound() -> None:
     assert stage_for_step(1) == "M2"
     assert stage_for_step(2501) == "M3"
