@@ -23,14 +23,27 @@ ROOT = Path(__file__).resolve().parents[1]
 LOCK = ROOT / "training/paper2_stage2b_autopsy_lock.json"
 
 
-def test_autopsy_draft_is_score_only_and_sealed() -> None:
+def test_autopsy_signed_lock_is_score_only_and_sealed() -> None:
     lock = json.loads(LOCK.read_text(encoding="utf-8"))
-    validate_autopsy_lock(lock, require_signature=False)
-    with pytest.raises(RuntimeError, match="unsigned"):
-        validate_autopsy_lock(lock, require_signature=True)
+    validate_autopsy_lock(lock, require_signature=True)
+    assert lock["status"] == "SIGNED"
+    assert lock["mark_signed"] is True
+    assert lock["locked_before_model_contact"] is True
+    assert lock["authority"]["signature_record_drive_id"] == (
+        "1OSaglrQTMNkf_hWDLudeMIXYnnNLdrwK"
+    )
+    assert lock["authority"]["signature_record_sha256"] == (
+        "bbdd5c05d08e6e6e9fc2c4d2a3d128b657f7b4b479c185c18b089b756aee481b"
+    )
     assert lock["optimizer_steps_allowed"] == 0
     assert lock["training_authorized"] is False
     assert lock["sealed_partitions"]["remain_sealed"] is True
+
+    unsigned = copy.deepcopy(lock)
+    unsigned["status"] = "DRAFT_UNEXECUTABLE"
+    unsigned["mark_signed"] = False
+    with pytest.raises(RuntimeError, match="unsigned"):
+        validate_autopsy_lock(unsigned, require_signature=True)
 
 
 def test_autopsy_lock_rejects_training_or_seal_contact() -> None:
