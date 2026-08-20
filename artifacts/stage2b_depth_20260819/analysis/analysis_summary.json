@@ -1,0 +1,346 @@
+{
+  "analysis_date": "2026-08-19",
+  "cross_seed": {
+    "all_additional_loops_reduce_margin_both_seeds": true,
+    "both_stop_reason": "dev1_hard_floor",
+    "both_stopped_at_first_registered_look": true,
+    "finite_horizon_catastrophe_any_seed": false,
+    "gradient_audit_pass_both_seeds": true,
+    "loop4_mean_margin_below_zero_both_seeds": true,
+    "mean_dev1_current_correct": 297.5,
+    "mean_dev1_delta_vs_base_rows": -204.5,
+    "mean_dev1_delta_vs_initialization_rows": -212.5,
+    "optimizer_continuation_authorized": false,
+    "pass_one_identity_exact_both_seeds": true,
+    "step_5000_adjudication_eligible": false
+  },
+  "figure_receipts": [
+    {
+      "bytes": 35494,
+      "name": "stage2b_depth_step1000_stop_20260819.svg",
+      "sha256": "1f23937879e06710c4c7b96e6e86eb33faa591ea815cfefa9f1e71f7b7b0ccb8"
+    },
+    {
+      "bytes": 168330,
+      "name": "stage2b_depth_step1000_stop_20260819.png",
+      "sha256": "20be944011fa1a2e7b667a3ee4413fb7d9fa91d9057349cc4b873c99fc3d823d"
+    }
+  ],
+  "interpretation": {
+    "not_established": [
+      "Which individual M2 component caused the harmful recurrent direction.",
+      "Whether a smaller read amplitude, task rehearsal, or a different objective would rescue the route.",
+      "Any claim about CONFIRM, EVAL-E, or out-of-DEV generalization."
+    ],
+    "supported": [
+      "The registered DEV-1 safety floor failed severely and independently in both seeds.",
+      "The frozen pass-one serving path remained bit-exact, excluding frozen-substrate corruption.",
+      "Finite gradients and near-unit finite-horizon gains exclude numerical explosion at the stop.",
+      "Each additional recurrent loop reduced the mean teacher-token margin in both seeds.",
+      "Generation batteries suffered more than multiple-choice batteries at this checkpoint."
+    ]
+  },
+  "kind": "paper2_stage2b_depth_registered_stop_analysis_v1",
+  "lock_sha256": "30a97e175200d3a58bc0cc0c200acec301d3a4f4cd662466d4c3491b9f816597",
+  "registered_verdict": "REPLICATED_DEV1_HARD_FLOOR_STOP_AT_STEP_1000",
+  "scope": "Two registered Stage 2B-D seeds, M2 through step 1,000, DEV-1 safety and DEV-2 margin telemetry; CONFIRM and EVAL-E sealed",
+  "sealed_partitions": {
+    "confirm_scored": false,
+    "eval_e_scored": false
+  },
+  "seeds": [
+    {
+      "battery": {
+        "arc_challenge": {
+          "base_correct": 41,
+          "current_correct": 36,
+          "delta_vs_base_rows": -5,
+          "delta_vs_initialization_rows": -5,
+          "initialization_correct": 41,
+          "rows": 76
+        },
+        "arc_easy": {
+          "base_correct": 189,
+          "current_correct": 172,
+          "delta_vs_base_rows": -17,
+          "delta_vs_initialization_rows": -20,
+          "initialization_correct": 192,
+          "rows": 243
+        },
+        "gsm8k": {
+          "base_correct": 107,
+          "current_correct": 2,
+          "delta_vs_base_rows": -105,
+          "delta_vs_initialization_rows": -103,
+          "initialization_correct": 105,
+          "rows": 369
+        },
+        "mbpp": {
+          "base_correct": 28,
+          "current_correct": 0,
+          "delta_vs_base_rows": -28,
+          "delta_vs_initialization_rows": -35,
+          "initialization_correct": 35,
+          "rows": 67
+        },
+        "mmlu": {
+          "base_correct": 115,
+          "current_correct": 84,
+          "delta_vs_base_rows": -31,
+          "delta_vs_initialization_rows": -33,
+          "initialization_correct": 117,
+          "rows": 244
+        },
+        "tier1": {
+          "base_correct": 22,
+          "current_correct": 0,
+          "delta_vs_base_rows": -22,
+          "delta_vs_initialization_rows": -20,
+          "initialization_correct": 20,
+          "rows": 25
+        }
+      },
+      "confirm_scored": false,
+      "dev2": {
+        "all_additional_loops_reduce_margin": true,
+        "loop4_margin_below_zero": true,
+        "per_loop_mean_teacher_token_margin": [
+          2.742134025931591,
+          1.0041812326680883,
+          0.2664077374618046,
+          -0.08731372699276108
+        ],
+        "rows": 2048,
+        "transition_means": {
+          "k1_to_k2": -1.7379527932635028,
+          "k2_to_k3": -0.7377734952062838,
+          "k3_to_k4": -0.35372146445456565
+        }
+      },
+      "ema_checkpoint": {
+        "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_stage2b_depth_20260819/private/seed_0/ema_step_01000.pt",
+        "sha256": "50cbf437adda668812dbe53a015792d3dc8ebc02cb785fba594c512b64bf2f58"
+      },
+      "eval_e_scored": false,
+      "finite_horizon": {
+        "catastrophe": false,
+        "catastrophe_threshold": 100.0,
+        "centered_directional_gains": [
+          0.9998219609260559,
+          0.9999878406524658,
+          1.0006341934204102,
+          1.0012612342834473
+        ],
+        "kind": "paper2_stage2b_finite_horizon_watch_v1",
+        "lambda2_mean": 1.0,
+        "lane_effective_rank_mean": 2.995072364807129,
+        "sinkhorn_column_residual_max": 0.0,
+        "sinkhorn_row_residual_max": 0.0
+      },
+      "frozen_digest": "10cee6152671afcc24e8f14259b4b7791fbc5e504caa61c140c17fd86fe76e97",
+      "generative_family": {
+        "base_correct": 157,
+        "current_correct": 2,
+        "initialization_correct": 160,
+        "rows": 461
+      },
+      "gradient_audit": {
+        "finite_parameter_tensors": 36,
+        "missing_active": [],
+        "missing_expected_count": 100,
+        "pass": true,
+        "stage": "M2"
+      },
+      "multiple_choice_family": {
+        "base_correct": 345,
+        "current_correct": 292,
+        "initialization_correct": 350,
+        "rows": 563
+      },
+      "objective_components": {
+        "ce": 1.9199112467467785,
+        "kl": 1.0303509142249823,
+        "monotonicity": 0.9786996757611632
+      },
+      "pass_one_max_abs_difference": 0.0,
+      "pooled_dev1": {
+        "base_accuracy": 0.490234375,
+        "base_correct": 502,
+        "current_accuracy": 0.287109375,
+        "current_correct": 294,
+        "delta_vs_base_rows": -208,
+        "delta_vs_initialization_rows": -216,
+        "initialization_accuracy": 0.498046875,
+        "initialization_correct": 510,
+        "rows": 1024
+      },
+      "safety": {
+        "gsm8k_correct": 2,
+        "gsm8k_floor": 91,
+        "gsm8k_pass": false,
+        "pass": false,
+        "tier1_correct": 0,
+        "tier1_floor": 19,
+        "tier1_pass": false
+      },
+      "seed": 0,
+      "source_summary": {
+        "bytes": 89113,
+        "name": "seed_0_summary.json",
+        "sha256": "90b6e4c9fea538b7876349550e8caa02e5094c2f02d4535c8b7ecff4397669b0"
+      },
+      "status": "stopped",
+      "step": 1000,
+      "stop_reason": "dev1_hard_floor",
+      "target_step": 5000,
+      "teacher_cache_index_sha256": "1a45ef7e8a05c0543eae53c15caa5f1d6abf31ade7ad7dee515f5584b6a18307"
+    },
+    {
+      "battery": {
+        "arc_challenge": {
+          "base_correct": 41,
+          "current_correct": 37,
+          "delta_vs_base_rows": -4,
+          "delta_vs_initialization_rows": -5,
+          "initialization_correct": 42,
+          "rows": 76
+        },
+        "arc_easy": {
+          "base_correct": 189,
+          "current_correct": 173,
+          "delta_vs_base_rows": -16,
+          "delta_vs_initialization_rows": -17,
+          "initialization_correct": 190,
+          "rows": 243
+        },
+        "gsm8k": {
+          "base_correct": 107,
+          "current_correct": 2,
+          "delta_vs_base_rows": -105,
+          "delta_vs_initialization_rows": -106,
+          "initialization_correct": 108,
+          "rows": 369
+        },
+        "mbpp": {
+          "base_correct": 28,
+          "current_correct": 0,
+          "delta_vs_base_rows": -28,
+          "delta_vs_initialization_rows": -33,
+          "initialization_correct": 33,
+          "rows": 67
+        },
+        "mmlu": {
+          "base_correct": 115,
+          "current_correct": 89,
+          "delta_vs_base_rows": -26,
+          "delta_vs_initialization_rows": -28,
+          "initialization_correct": 117,
+          "rows": 244
+        },
+        "tier1": {
+          "base_correct": 22,
+          "current_correct": 0,
+          "delta_vs_base_rows": -22,
+          "delta_vs_initialization_rows": -20,
+          "initialization_correct": 20,
+          "rows": 25
+        }
+      },
+      "confirm_scored": false,
+      "dev2": {
+        "all_additional_loops_reduce_margin": true,
+        "loop4_margin_below_zero": true,
+        "per_loop_mean_teacher_token_margin": [
+          2.742134025931591,
+          1.0077941582662788,
+          0.2654223538224869,
+          -0.08781961559793672
+        ],
+        "rows": 2048,
+        "transition_means": {
+          "k1_to_k2": -1.7343398676653123,
+          "k2_to_k3": -0.7423718044437919,
+          "k3_to_k4": -0.35324196942042363
+        }
+      },
+      "ema_checkpoint": {
+        "path": "/content/drive/MyDrive/recurrent-qwen-svgd-artifacts/stage5/stage5_paper2_stage2b_depth_20260819/private/seed_1/ema_step_01000.pt",
+        "sha256": "830bbfa11dca4d3b9ed56db96a7c40c887f56fb4a5227555edc1bd447b6662bc"
+      },
+      "eval_e_scored": false,
+      "finite_horizon": {
+        "catastrophe": false,
+        "catastrophe_threshold": 100.0,
+        "centered_directional_gains": [
+          1.0003485679626465,
+          1.0015615224838257,
+          1.0035033226013184,
+          1.004819631576538
+        ],
+        "kind": "paper2_stage2b_finite_horizon_watch_v1",
+        "lambda2_mean": 1.0,
+        "lane_effective_rank_mean": 2.995107650756836,
+        "sinkhorn_column_residual_max": 0.0,
+        "sinkhorn_row_residual_max": 0.0
+      },
+      "frozen_digest": "d5ff6dcc774ebe65162168df570f29b0c4af71f101c63f8272186381bf4a9f3a",
+      "generative_family": {
+        "base_correct": 157,
+        "current_correct": 2,
+        "initialization_correct": 161,
+        "rows": 461
+      },
+      "gradient_audit": {
+        "finite_parameter_tensors": 36,
+        "missing_active": [],
+        "missing_expected_count": 100,
+        "pass": true,
+        "stage": "M2"
+      },
+      "multiple_choice_family": {
+        "base_correct": 345,
+        "current_correct": 299,
+        "initialization_correct": 349,
+        "rows": 563
+      },
+      "objective_components": {
+        "ce": 1.9541714899241924,
+        "kl": 1.028661446645856,
+        "monotonicity": 0.9109814995899796
+      },
+      "pass_one_max_abs_difference": 0.0,
+      "pooled_dev1": {
+        "base_accuracy": 0.490234375,
+        "base_correct": 502,
+        "current_accuracy": 0.2939453125,
+        "current_correct": 301,
+        "delta_vs_base_rows": -201,
+        "delta_vs_initialization_rows": -209,
+        "initialization_accuracy": 0.498046875,
+        "initialization_correct": 510,
+        "rows": 1024
+      },
+      "safety": {
+        "gsm8k_correct": 2,
+        "gsm8k_floor": 94,
+        "gsm8k_pass": false,
+        "pass": false,
+        "tier1_correct": 0,
+        "tier1_floor": 19,
+        "tier1_pass": false
+      },
+      "seed": 1,
+      "source_summary": {
+        "bytes": 89108,
+        "name": "seed_1_summary.json",
+        "sha256": "faafb98887555a0fa7fe876ffc33f35b0c61f9fa35b9e574ff667f1835c1fb23"
+      },
+      "status": "stopped",
+      "step": 1000,
+      "stop_reason": "dev1_hard_floor",
+      "target_step": 5000,
+      "teacher_cache_index_sha256": "1a45ef7e8a05c0543eae53c15caa5f1d6abf31ade7ad7dee515f5584b6a18307"
+    }
+  ],
+  "status": "complete_registered_early_stop"
+}

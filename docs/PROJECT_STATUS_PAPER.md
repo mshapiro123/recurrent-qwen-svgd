@@ -1,8 +1,8 @@
 # Project Status: Deterministic Program Closed
 
-**Canonical date:** August 15, 2026
+**Canonical date:** August 19, 2026
 **Part 1 status:** closed
-**Part 2 status:** Phase 1 and Option B are banked. Phase 3 P3.5 is complete on DEV. Stabilized mean-reader endpoints gained `+4` and `+6` rows of 1,024 against the frozen base, a registered mean of `+5` below the Branch-B floor of `+8`; the program returns effect-size work to Stage 2A. The probe reader lost two paired task rows against its matched mean-reader control and is not promoted. CONFIRM and EVAL-E remain sealed.
+**Part 2 status:** Phase 1, Option B, Phase 3, and the Stage 2A memory screen are banked. The signed Stage 2B-D depth campaign stopped at the first registered look: both seeds independently failed the DEV-1 hard floor at step 1,000, with pooled scores `294/1024` and `301/1024` from matched initializations of `510/1024`. Pass one stayed bit-exact, but every additional loop reduced DEV-2 teacher-token margin and K4 crossed below zero. The step-5,000 adjudication is ineligible; no continuation is authorized. CONFIRM and EVAL-E remain sealed.
 
 This page is the short status index. It replaces the earlier June recovery narrative, which became stale after the loop-closure repair, synthetic mechanism installation, Phase A dense-control comparison, and inverse-task boundary program.
 
@@ -51,6 +51,7 @@ This page is the short status index. It replaces the earlier June recovery narra
 - [E1 draft and readiness handoff](PAPER2_PHASE2_E1_PREREGISTRATION_DRAFT_HANDOFF_20260808.md)
 - [P3.5 prerequisites handoff](PAPER2_PHASE3_P35_PREREQUISITES_HANDOFF_20260815.md)
 - [P3.5 result handoff](PAPER2_PHASE3_P35_RESULTS_HANDOFF_20260815.md)
+- [Stage 2B-D registered stop result](PAPER2_STAGE2B_DEPTH_REGISTERED_STOP_HANDOFF_20260819.md)
 - [Experiment log](EXPERIMENT_LOG.md)
 
 ## Established
@@ -197,6 +198,7 @@ fragile positions is the common interpretive frame.
 20. Banked: post-hoc P3.4 DEV diagnostics identify a knife-edge discrete score surface and an undamped endpoint as the leading P3.5 design concerns. A paired fixed-ceiling probe was seed-specific rather than monotone (`+3/+5` for seed 0 and `+10/+3` for seed 1 at `0.02/0.08`), so one evaluation ceiling must be pinned before the next run and cannot be selected from this reused DEV probe. An L4 oracle refresh found only `3943/4096` frozen-source matches under the serving BF16 reader and deployed-source changes on `8.20%/2.42%` of rows. P3.5 must repair the source-anchor estimator; any persistent path must re-anchor directions from the current source token. No new training is authorized by these diagnostics. CONFIRM and EVAL-E remain sealed. Handoff: `docs/PAPER2_PHASE3_P34_STABILITY_AND_REFRESH_HANDOFF_20260815.md`.
 21. Banked: P3.5's exact-reader prerequisite repaired the registered causal estimator to `4096/4096` BF16 serving-reader identity with no dropped audit rows. The no-training seed-0 DEV persistence probe found behaviorally active carry but no free pooled gain: fresh scratch `76/195`, carried scratch `75/195`, two fixes, three regressions, and later-token changes on `35/195` rows. Persistence remained outside the P3.5 training matrix. Handoff: `docs/PAPER2_PHASE3_P35_PREREQUISITES_HANDOFF_20260815.md`.
 22. Banked: P3.5 completed the stabilized mean-reader spine in two seeds and the one-seed probe-reader comparison. Registered EMA/`0.02` mean-reader endpoints were `+4` and `+6` rows of 1,024, mean `+5`, so the locked verdict is Branch C and the sealed exam remains unspent. EMA reduced endpoint churn but did not preserve the prior effect; causal capture and continuous margins plateaued. The selection-barred `0.08` reads were strongly seed-dependent (`+15` and `+6`). The probe reader finished at `+2`, two paired rows below its matched mean-reader control, with no `pi_dep` gain and only a `0.129`-point precision increase at matched recall; it is not promoted. CONFIRM and EVAL-E remain sealed. Handoff: `docs/PAPER2_PHASE3_P35_RESULTS_HANDOFF_20260815.md`.
+23. Banked: the signed Stage 2B-D campaign exited through the registered DEV-1 hard floor at the first look in both seeds. Step-1,000 scores were `294/1024` and `301/1024`, down 216 and 209 rows from matched `510/1024` initializations. GSM8K was `2/369`, MBPP `0/67`, and Tier-1 `0/25` in each seed. Pass-one identity remained exact, gradients and finite-horizon watches remained healthy, but every additional loop reduced DEV-2 teacher-token margin and K4 crossed below zero. Verdict: `REPLICATED_DEV1_HARD_FLOOR_STOP_AT_STEP_1000`. The step-5,000 gate is ineligible, no continuation is authorized, and CONFIRM/EVAL-E remain sealed. Handoff: `docs/PAPER2_STAGE2B_DEPTH_REGISTERED_STOP_HANDOFF_20260819.md`.
 
 Closed pending that decision: additional Phase G sweeps, coverage, selection,
 LPRM, per-trajectory halting, particles, SVGD, the intra-block oracle probe,
