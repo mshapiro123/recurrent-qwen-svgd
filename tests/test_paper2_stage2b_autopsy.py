@@ -117,6 +117,7 @@ def test_autopsy_runner_contains_no_optimizer_or_sealed_partition_path() -> None
     assert "optimizer.step" not in evaluator
     assert "stage5_paper2_phase3_confirm" not in orchestrator.lower()
     assert "stage5_paper2_eval_e" not in orchestrator.lower()
+    assert 'f"receipts/seed_{seed}/summary.json"' in orchestrator
     assert "validate_autopsy_lock(lock, require_signature=True)" in orchestrator
     assert '"optimizer_steps": 0' in evaluator
     assert '"optimizer_steps": 0' in orchestrator

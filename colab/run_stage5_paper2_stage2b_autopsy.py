@@ -177,7 +177,7 @@ def execute(scratch: Path) -> dict[str, Any]:
         if sha256_file(initialization) != INITIALIZATION_SCORE_SHA[seed]:
             raise RuntimeError("Stage 2B-A initialization score receipt changed")
         training_summary = scratch / f"seed_{seed}_training_summary.json"
-        rsync(DRIVE_SOURCE / f"receipts/seed_{seed}_summary.json", training_summary)
+        rsync(DRIVE_SOURCE / f"receipts/seed_{seed}/summary.json", training_summary)
         if sha256_file(training_summary) != TRAINING_SUMMARY_SHA[seed]:
             raise RuntimeError("Stage 2B-A contemporaneous training summary changed")
         output = DRIVE_RUN / f"receipts/seed_{seed}"
