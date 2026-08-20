@@ -212,6 +212,81 @@ def test_generation_vectorized_telemetry_preserves_eos_truncation(
     assert scored[1]["position_gate_mean"] == pytest.approx(1.7)
 
 
+def test_generation_vectorized_path_avoids_eos_synchronization(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class Encoded(dict):
+        def to(self, _device: torch.device) -> "Encoded":
+            return self
+
+    class Tokenizer:
+        eos_token_id = 9
+        pad_token_id = 0
+        padding_side = "right"
+
+        def __call__(self, prompts: list[str], **_kwargs: object) -> Encoded:
+            return Encoded(
+                input_ids=torch.ones((len(prompts), 2), dtype=torch.long),
+                attention_mask=torch.ones((len(prompts), 2), dtype=torch.long),
+            )
+
+        def decode(self, token_ids: list[int], **_kwargs: object) -> str:
+            return ",".join(str(token) for token in token_ids)
+
+    class Graph:
+        device = torch.device("cpu")
+
+        def __init__(self) -> None:
+            self.advance_calls = 0
+
+        @staticmethod
+        def output() -> SimpleNamespace:
+            logits = torch.full((2, 10), -10.0)
+            logits[:, 9] = 10.0
+            return SimpleNamespace(
+                augmented_logits=logits,
+                position_gate=torch.tensor([0.1, 0.2]),
+                writeback_ratio=torch.tensor([0.01, 0.02]),
+                answer_token_margin=torch.tensor([1.0, 2.0]),
+                memory_compatibility_gate=None,
+            )
+
+        def prefill_cached(self, **_kwargs: object) -> tuple[int, SimpleNamespace]:
+            return 0, self.output()
+
+        def advance_cached(
+            self, *, state: int, selected_tokens: torch.Tensor
+        ) -> tuple[int, SimpleNamespace]:
+            del selected_tokens
+            self.advance_calls += 1
+            return state + 1, self.output()
+
+    monkeypatch.setattr(
+        trajectory_eval, "_generation_prompt", lambda _row: ("prompt", 4)
+    )
+    monkeypatch.setattr(
+        trajectory_eval, "_chat_prompt", lambda _tokenizer, prompt: prompt
+    )
+    monkeypatch.setattr(
+        trajectory_eval,
+        "score_generated",
+        lambda _row, text: (True, text),
+    )
+    rows = [
+        {"item_id": "a", "battery": "gsm8k", "reader": "test"},
+        {"item_id": "b", "battery": "gsm8k", "reader": "test"},
+    ]
+    graph = Graph()
+    scored = trajectory_eval.score_generation(
+        graph, Tokenizer(), rows, batch_size=2
+    )
+    assert graph.advance_calls == 3
+    assert scored[0]["generated_token_ids"] == [9]
+    assert scored[1]["generated_token_ids"] == [9]
+    assert scored[0]["telemetry_positions"] == 1
+    assert scored[1]["telemetry_positions"] == 1
+
+
 def test_autopsy_signed_lock_is_score_only_and_sealed() -> None:
     lock = json.loads(LOCK.read_text(encoding="utf-8"))
     validate_autopsy_lock(lock, require_signature=True)
