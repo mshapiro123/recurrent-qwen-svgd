@@ -40,6 +40,10 @@ INITIALIZATION_SCORE_SHA = {
     0: "13732e986949aa2bcec5b4060947a262b6c3a980305659cf7ca604d61df08815",
     1: "f3495dd32904bcef4388a02272d8a67fb01eb9fa54d82ebb4eeb341a2667dff1",
 }
+INITIALIZATION_SCORE_0P02_SHA = {
+    0: "baf14141ff75e8c6a280a68f91b6b20256b19bdc2fef615717193feaccf71a02",
+    1: "ad965c1b462d953d9c503ab12e193b7bdc3cd422cd74cf6b2525ffb06c444442",
+}
 ONSET_STEPS = (20, 60, 100, 200, 300, 500, 700)
 TRAINING_SUMMARY_SHA = {
     0: "90b6e4c9fea538b7876349550e8caa02e5094c2f02d4535c8b7ecff4397669b0",
@@ -239,6 +243,13 @@ def execute(scratch: Path) -> dict[str, Any]:
         )
         if sha256_file(initialization) != INITIALIZATION_SCORE_SHA[seed]:
             raise RuntimeError("Stage 2B-A initialization score receipt changed")
+        initialization_0p02 = scratch / f"seed_{seed}_initialization_dev1_0p02.jsonl"
+        rsync(
+            DRIVE_STAGE5 / AMPLITUDE_RUN_ID / f"private/amplitude_surface/seed_{seed}_ceiling_0p02.jsonl",
+            initialization_0p02,
+        )
+        if sha256_file(initialization_0p02) != INITIALIZATION_SCORE_0P02_SHA[seed]:
+            raise RuntimeError("Stage 2B-A initialization 0.02 score receipt changed")
         training_summary = scratch / f"seed_{seed}_training_summary.json"
         rsync(DRIVE_SOURCE / f"receipts/seed_{seed}/summary.json", training_summary)
         if sha256_file(training_summary) != TRAINING_SUMMARY_SHA[seed]:
@@ -249,6 +260,7 @@ def execute(scratch: Path) -> dict[str, Any]:
             "--dev1_panel", str(PANEL), "--dev2_manifest", str(DEV2_MANIFEST),
             "--dev2_subsample_manifest", str(dev2_subsample), "--reference_rows", str(reference),
             "--base_scores", str(BASE_SCORES), "--initialization_scores", str(initialization),
+            "--initialization_scores_0p02", str(initialization_0p02),
             "--heldout_teacher_cache", str(teacher), "--stop_checkpoint", str(stop),
             "--migrated", str(chain["migrated"]), "--migrated_sha256", MIGRATED_SHA[seed],
             "--p33", str(chain["p33"]), "--p33_sha256", P33_SHA[seed],

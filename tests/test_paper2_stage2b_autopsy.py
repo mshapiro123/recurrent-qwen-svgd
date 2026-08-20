@@ -287,3 +287,45 @@ def test_dev1_condition_resumes_from_atomic_generation_batches(
     assert summary["rows"] == len(rows_by_id)
     assert not partial.exists()
     assert (tmp_path / "dev1__resume_test.jsonl").is_file()
+
+
+def test_dev1_condition_reuses_hash_pinned_precomputed_rows(tmp_path: Path) -> None:
+    batteries = (
+        "arc_easy",
+        "arc_challenge",
+        "mmlu",
+        "gsm8k",
+        "mbpp",
+        "tier1",
+    )
+    panel = [
+        {"item_id": f"item-{index}", "battery": battery}
+        for index, battery in enumerate(batteries)
+    ]
+    comparators = {
+        row["item_id"]: {"item_id": row["item_id"], "augmented_correct": False}
+        for row in panel
+    }
+    precomputed = [
+        {**row, "augmented_correct": True, "prediction": "ok"}
+        for row in panel
+    ]
+    rows, summary = autopsy_eval._score_dev1_condition(
+        wrapper=object(),
+        tokenizer=object(),
+        panel=panel,
+        base_rows=comparators,
+        initialization_rows=comparators,
+        seed=0,
+        gamma=0.02,
+        mode="standard",
+        condition="initialization__gamma_0p02",
+        private_dir=tmp_path,
+        mcq_batch_size=8,
+        generation_batch_size=2,
+        precomputed_rows=precomputed,
+        precomputed_source={"sha256": "abc", "scorer_path": "registered"},
+    )
+    assert len(rows) == len(panel)
+    assert summary["reused_precomputed_rows"]["sha256"] == "abc"
+    assert not (tmp_path / "dev1__initialization__gamma_0p02.partial.jsonl").exists()
