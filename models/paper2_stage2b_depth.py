@@ -268,13 +268,14 @@ class Stage2BDepthTrace:
     reference: torch.Tensor
     control_state: torch.Tensor | None
     routing_steps: list[MultiLaneStepOutput]
+    carry_contributions: list[torch.Tensor]
     writeback_ratios: list[torch.Tensor]
     position_gates: list[torch.Tensor]
 
     def metrics(self) -> dict[str, torch.Tensor]:
         if not self.routing_steps:
             zero = self.reference.new_zeros(())
-            return {
+            metrics = {
                 "stage2b_reentry_steps": zero,
                 "stage2b_sinkhorn_row_residual_max": zero,
                 "stage2b_sinkhorn_column_residual_max": zero,
@@ -283,11 +284,17 @@ class Stage2BDepthTrace:
                 "stage2b_writeback_ratio_mean": zero,
                 "stage2b_position_gate_mean": zero,
             }
+            for loop in range(1, 5):
+                metrics[f"stage2b_flow_update_loop_{loop}_max_abs"] = zero
+                metrics[f"stage2b_constitutive_update_loop_{loop}_max_abs"] = zero
+                metrics[f"stage2b_carry_contribution_loop_{loop}_max_abs"] = zero
+                metrics[f"stage2b_writeback_ratio_loop_{loop}_max"] = zero
+            return metrics
         row = torch.stack([step.sinkhorn_row_residual for step in self.routing_steps])
         column = torch.stack([step.sinkhorn_column_residual for step in self.routing_steps])
         lambda2 = torch.stack([step.lambda2 for step in self.routing_steps])
         rank = torch.stack([step.effective_rank for step in self.routing_steps])
-        return {
+        metrics = {
             "stage2b_reentry_steps": self.reference.new_tensor(len(self.routing_steps)),
             "stage2b_sinkhorn_row_residual_max": row.amax().detach(),
             "stage2b_sinkhorn_column_residual_max": column.amax().detach(),
@@ -296,6 +303,24 @@ class Stage2BDepthTrace:
             "stage2b_writeback_ratio_mean": torch.stack(self.writeback_ratios).mean().detach(),
             "stage2b_position_gate_mean": torch.stack(self.position_gates).mean().detach(),
         }
+        zero = self.reference.new_zeros(())
+        # Loop one is the prelude identity pass. Re-entry contributions begin at
+        # loop two, so recording loop one as exact zero is part of the contract.
+        for loop in range(1, 5):
+            index = loop - 2
+            if index < 0 or index >= len(self.routing_steps):
+                flow = constitutive = carry = ratio = zero
+            else:
+                step = self.routing_steps[index]
+                flow = step.flow_update.detach().abs().amax()
+                constitutive = step.constitutive_update.detach().abs().amax()
+                carry = self.carry_contributions[index].detach().abs().amax()
+                ratio = self.writeback_ratios[index].detach().amax()
+            metrics[f"stage2b_flow_update_loop_{loop}_max_abs"] = flow
+            metrics[f"stage2b_constitutive_update_loop_{loop}_max_abs"] = constitutive
+            metrics[f"stage2b_carry_contribution_loop_{loop}_max_abs"] = carry
+            metrics[f"stage2b_writeback_ratio_loop_{loop}_max"] = ratio
+        return metrics
 
 
 @dataclass(frozen=True)
@@ -365,6 +390,7 @@ class Stage2BDepthAttachment(nn.Module):
             reference=prelude_hidden,
             control_state=None,
             routing_steps=[],
+            carry_contributions=[],
             writeback_ratios=[],
             position_gates=[],
         )
@@ -429,6 +455,7 @@ class Stage2BDepthAttachment(nn.Module):
             if diagnostic_mode == "fresh_state_each_loop"
             else trace.lane_state
         )
+        carry_contribution = step_state - trace.initial_lane_state
         step = self.flow.step(
             step_state,
             context,
@@ -455,6 +482,7 @@ class Stage2BDepthAttachment(nn.Module):
             trace.lane_state = step.state
             trace.control_state = control_state
             trace.routing_steps.append(step)
+            trace.carry_contributions.append(carry_contribution)
             trace.writeback_ratios.append(context.new_zeros((context.shape[0],)))
             trace.position_gates.append(context.new_zeros((context.shape[0],)))
             return Stage2BReentryOutput(hidden=recurrent_hidden, trace=trace)
@@ -472,6 +500,7 @@ class Stage2BDepthAttachment(nn.Module):
         trace.lane_state = step.state
         trace.control_state = control_state
         trace.routing_steps.append(step)
+        trace.carry_contributions.append(carry_contribution)
         trace.writeback_ratios.append(bridge.realized_writeback_ratio)
         trace.position_gates.append(bridge.position_gate)
         return Stage2BReentryOutput(hidden=bridge.hidden, trace=trace)

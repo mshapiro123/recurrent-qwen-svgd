@@ -41,6 +41,10 @@ INITIALIZATION_SCORE_SHA = {
     1: "f3495dd32904bcef4388a02272d8a67fb01eb9fa54d82ebb4eeb341a2667dff1",
 }
 ONSET_STEPS = (20, 60, 100, 200, 300, 500, 700)
+TRAINING_SUMMARY_SHA = {
+    0: "90b6e4c9fea538b7876349550e8caa02e5094c2f02d4535c8b7ecff4397669b0",
+    1: "faafb98887555a0fa7fe876ffc33f35b0c61f9fa35b9e574ff667f1835c1fb23",
+}
 
 
 def atomic_json(path: Path, payload: Any) -> None:
@@ -172,13 +176,10 @@ def execute(scratch: Path) -> dict[str, Any]:
         )
         if sha256_file(initialization) != INITIALIZATION_SCORE_SHA[seed]:
             raise RuntimeError("Stage 2B-A initialization score receipt changed")
-        trajectory = lock["onset_trajectory"]["checkpoint_sha256_by_seed"][str(seed)]
-        trajectory_args = []
-        for step in ONSET_STEPS:
-            spec = trajectory[str(step)]
-            local = scratch / f"seed_{seed}_onset_{step:05d}.pt"
-            rsync(Path(spec["path"]), local)
-            trajectory_args.extend(["--trajectory_checkpoint", f"{step}={local}={spec['sha256']}"])
+        training_summary = scratch / f"seed_{seed}_training_summary.json"
+        rsync(DRIVE_SOURCE / f"receipts/seed_{seed}_summary.json", training_summary)
+        if sha256_file(training_summary) != TRAINING_SUMMARY_SHA[seed]:
+            raise RuntimeError("Stage 2B-A contemporaneous training summary changed")
         output = DRIVE_RUN / f"receipts/seed_{seed}"
         private = DRIVE_RUN / f"private/seed_{seed}"
         command = [
@@ -195,8 +196,7 @@ def execute(scratch: Path) -> dict[str, Any]:
             "--p35", str(p35), "--p35_sha256", P35_SHA[seed],
             "--model_cache", str(scratch / "hf_student_cache"),
             "--output_dir", str(output), "--private_dir", str(private),
-            "--training_log_monotonicity", str(0.9786996757611632 if seed == 0 else 0.912061),
-            *trajectory_args,
+            "--training_summary", str(training_summary),
         ]
         run(command)
         summary = output / "summary.json"

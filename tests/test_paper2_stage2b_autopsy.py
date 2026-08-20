@@ -6,10 +6,14 @@ from collections import Counter
 from pathlib import Path
 
 import pytest
+import torch
 
 from training.paper2_stage2b_autopsy import (
+    discrete_mutual_information,
     decision_mapping,
     margin_correlation_receipt,
+    normalized_gram_eigengap,
+    spherical_kmeans,
     stable_dev2_subsample,
     validate_autopsy_lock,
 )
@@ -70,6 +74,25 @@ def test_decision_mapping_composes_hypotheses() -> None:
         "radius_control_successor",
         "task_preservation_anchor_required",
     ]
+
+
+def test_arm6_geometry_primitives_detect_separated_directions() -> None:
+    generator = torch.Generator().manual_seed(7)
+    left = torch.randn((16, 8), generator=generator) * 0.01
+    right = torch.randn((16, 8), generator=generator) * 0.01
+    left[:, 0] += 1.0
+    right[:, 0] -= 1.0
+    values = torch.cat([left, right])
+    labels, silhouette = spherical_kmeans(
+        values, clusters=2, restarts=4, iterations=20, seed=11
+    )
+    assert silhouette > 0.9
+    gap = normalized_gram_eigengap(values, max_rank=4)
+    assert gap["maximum"] > 0.0
+    association = discrete_mutual_information(
+        labels.tolist(), ["left"] * 16 + ["right"] * 16
+    )
+    assert association["normalized_by_battery_entropy"] == pytest.approx(1.0)
 
 
 def test_autopsy_runner_contains_no_optimizer_or_sealed_partition_path() -> None:

@@ -252,6 +252,7 @@ def score_dev2_margins(
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     prepared = [(row, *_forced_target(tokenizer, row)) for row in rows]
     results = []
+    activation_maxima: dict[str, float] = {}
     for start in range(0, len(prepared), batch_size):
         batch = prepared[start : start + batch_size]
         widths = [len(prompt) + len(target) for _row, prompt, target in batch]
@@ -276,6 +277,10 @@ def score_dev2_margins(
             use_cache=False,
             return_dict=True,
         )
+        for name, value in (output.metrics or {}).items():
+            if name.startswith("stage2b_") and "_loop_" in name:
+                scalar = float(value.detach().float().abs().amax().cpu())
+                activation_maxima[name] = max(activation_maxima.get(name, 0.0), scalar)
         loops = output.loop_logits[:, 0]
         for local, ((row, _prompt, _target), (first, targets)) in enumerate(zip(batch, spans)):
             per_loop = []
@@ -316,5 +321,6 @@ def score_dev2_margins(
             for index in range(1, 4)
         },
         "battery_counts": dict(sorted(Counter(row["battery"] for row in results).items())),
+        "activation_maxima": dict(sorted(activation_maxima.items())),
     }
     return results, summary
