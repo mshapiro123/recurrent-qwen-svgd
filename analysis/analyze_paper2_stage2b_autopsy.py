@@ -26,10 +26,18 @@ EXECUTION_SESSIONS = (
     "gpu-a100-s-kkb-usc1b2-2ki9mjv2avcv5",
     "gpu-a100-s-kkb-ass1c2-sqq094w45cyp",
     "gpu-a100-s-kkb-use1b2-3v3wh1cmymx60",
+    "gpu-a100-s-kkb-usc1c1-136xe36zf4pt5",
+    "gpu-a100-s-kkb-usc1f1-22l3n9eirgmxj",
+    "gpu-a100-s-kkb-usc1c0-34h8yrptjtva0",
+    "gpu-a100-s-kkb-ass1c0-uhsx0epxjsgm",
 )
 RUNNER_COMMITS = (
-    "745ee5e7",
+    "745ee5e7147227760b116a47e3606c80947d29bb",
     "1979f376272fbc7a6c06cf3388fc28e880e22234",
+    "7030d80984f27607a652c58db051f362d9224cc4",
+    "3ddec4b6142132cee4f54f56cf20b99d2d6dd1fc",
+    "ee07684f5b7ab8c23fe2a20bd32ef10b4178e643",
+    "508449544228e223dd4608d1fb7100e1686a089e",
 )
 
 
@@ -484,7 +492,7 @@ def analyze(seed_paths: list[Path], output: Path, figure_stem: Path) -> dict[str
             "execution_deviation": {
                 "signed_condition": "same_session_for_all_cells",
                 "reason": (
-                    "Colab infrastructure and proxy interruptions required three resumptions "
+                    "Colab infrastructure and DriveFS interruptions required seven resumptions "
                     "before batch completion"
                 ),
                 "session_endpoints_in_order": list(EXECUTION_SESSIONS),
@@ -492,7 +500,12 @@ def analyze(seed_paths: list[Path], output: Path, figure_stem: Path) -> dict[str
                 "repair_scope": (
                     "The second runner commit archives cross-session gamma-zero files and "
                     "replays both checkpoint states in one evaluator process before retaining "
-                    "the hard zero-write identity gate"
+                    "the hard zero-write identity gate. The third runner commit moves hot-path "
+                    "receipt writes to local scratch and mirrors them durably every five minutes. "
+                    "The fourth adds strict correction-field artifact resume, the fifth replaces "
+                    "the algebraically identical pairwise cosine silhouette implementation with "
+                    "its vectorized form, and the sixth adds per-batch atomic K-sweep resume plus "
+                    "validated reuse of complete registered cells."
                 ),
                 "scope": "Resume used the same A100-SXM4-40GB class, bfloat16 weights, and SDPA backend",
                 "scientific_substitution": False,
