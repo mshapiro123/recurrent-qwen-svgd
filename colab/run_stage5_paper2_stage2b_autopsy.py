@@ -7,6 +7,7 @@ import os
 import shutil
 import subprocess
 import sys
+import threading
 import time
 import traceback
 from pathlib import Path
@@ -49,6 +50,10 @@ TRAINING_SUMMARY_SHA = {
     0: "90b6e4c9fea538b7876349550e8caa02e5094c2f02d4535c8b7ecff4397669b0",
     1: "faafb98887555a0fa7fe876ffc33f35b0c61f9fa35b9e574ff667f1835c1fb23",
 }
+LOCAL_IO = os.environ.get("STAGE2B_AUTOPSY_LOCAL_IO", "0").strip() == "1"
+MIRROR_INTERVAL_SECONDS = int(
+    os.environ.get("STAGE2B_AUTOPSY_MIRROR_INTERVAL_SECONDS", "300")
+)
 
 
 def atomic_json(path: Path, payload: Any) -> None:
@@ -82,6 +87,77 @@ def run(command: list[str], *, log_path: Path | None = None) -> None:
     return_code = process.wait()
     if return_code:
         raise subprocess.CalledProcessError(return_code, command)
+
+
+def tree_sync_command(
+    source: Path, destination: Path, *, delete: bool = False
+) -> list[str]:
+    command = ["rsync", "--archive", "--partial"]
+    if delete:
+        command.append("--delete")
+    command.extend([f"{source}/", f"{destination}/"])
+    return command
+
+
+def sync_tree(source: Path, destination: Path, *, delete: bool = False) -> None:
+    if not source.is_dir():
+        return
+    destination.mkdir(parents=True, exist_ok=True)
+    subprocess.run(
+        tree_sync_command(source, destination, delete=delete),
+        check=True,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    )
+
+
+class PeriodicDurableMirror:
+    """Mirror local score receipts to Drive without putting DriveFS in the hot path."""
+
+    def __init__(
+        self,
+        mappings: list[tuple[Path, Path]],
+        *,
+        interval_seconds: int = MIRROR_INTERVAL_SECONDS,
+    ) -> None:
+        self.mappings = mappings
+        self.interval_seconds = interval_seconds
+        self.stop_event = threading.Event()
+        self.thread: threading.Thread | None = None
+        self.failures: list[str] = []
+
+    def sync(self, *, strict: bool) -> None:
+        errors = []
+        for source, destination in self.mappings:
+            try:
+                sync_tree(source, destination)
+            except (OSError, subprocess.SubprocessError) as error:
+                errors.append(f"{source} -> {destination}: {error}")
+        if errors:
+            self.failures.extend(errors)
+            print("stage2b_durable_mirror_warning " + " | ".join(errors), flush=True)
+            if strict:
+                raise RuntimeError("Stage 2B-A final durable mirror failed: " + " | ".join(errors))
+
+    def _worker(self) -> None:
+        while not self.stop_event.wait(self.interval_seconds):
+            self.sync(strict=False)
+
+    def __enter__(self) -> "PeriodicDurableMirror":
+        self.thread = threading.Thread(
+            target=self._worker,
+            name="stage2b-durable-mirror",
+            daemon=True,
+        )
+        self.thread.start()
+        return self
+
+    def __exit__(self, _exc_type: object, _exc: object, _tb: object) -> None:
+        self.stop_event.set()
+        if self.thread is not None:
+            self.thread.join(timeout=max(30, self.interval_seconds))
+        self.sync(strict=True)
 
 
 def archive_incomplete_status(path: Path, *, label: str) -> dict[str, Any] | None:
@@ -205,11 +281,12 @@ def execute(scratch: Path) -> dict[str, Any]:
         archived_attempts.append(archived)
     summaries = []
     for seed in (0, 1):
-        output = DRIVE_RUN / f"receipts/seed_{seed}"
-        private = DRIVE_RUN / f"private/seed_{seed}"
-        summary = output / "summary.json"
-        if summary.is_file():
-            payload = json.loads(summary.read_text(encoding="utf-8"))
+        durable_output = DRIVE_RUN / f"receipts/seed_{seed}"
+        durable_private = DRIVE_RUN / f"private/seed_{seed}"
+        durable_log = DRIVE_RUN / "receipts/logs" / f"seed_{seed}_latest.log"
+        durable_summary = durable_output / "summary.json"
+        if durable_summary.is_file():
+            payload = json.loads(durable_summary.read_text(encoding="utf-8"))
             if (
                 payload.get("status") != "complete_score_only"
                 or int(payload.get("seed", -1)) != seed
@@ -219,9 +296,39 @@ def execute(scratch: Path) -> dict[str, Any]:
                 or payload.get("eval_e_scored") is not False
             ):
                 raise RuntimeError(f"Stage 2B-A completed seed receipt failed resume validation: {seed}")
-            summaries.append({"seed": seed, "path": str(summary), "sha256": sha256_file(summary)})
+            summaries.append(
+                {
+                    "seed": seed,
+                    "path": str(durable_summary),
+                    "sha256": sha256_file(durable_summary),
+                }
+            )
             print(f"stage2b_seed_resume seed={seed} status=complete_score_only", flush=True)
             continue
+
+        if LOCAL_IO:
+            local_io = scratch / "durable_io" / f"seed_{seed}"
+            output = local_io / "receipts"
+            private = local_io / "private"
+            log_path = local_io / "logs" / f"seed_{seed}_latest.log"
+            sync_tree(durable_output, output, delete=True)
+            sync_tree(durable_private, private, delete=True)
+            if durable_log.is_file():
+                log_path.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(durable_log, log_path)
+            mirror = PeriodicDurableMirror(
+                [
+                    (output, durable_output),
+                    (private, durable_private),
+                    (log_path.parent, durable_log.parent),
+                ]
+            )
+        else:
+            output = durable_output
+            private = durable_private
+            log_path = durable_log
+            mirror = PeriodicDurableMirror([], interval_seconds=MIRROR_INTERVAL_SECONDS)
+        summary = output / "summary.json"
         archived = archive_incomplete_status(
             output / "status.json", label=f"seed_{seed}_status_before_resume"
         )
@@ -271,11 +378,17 @@ def execute(scratch: Path) -> dict[str, Any]:
             "--output_dir", str(output), "--private_dir", str(private),
             "--training_summary", str(training_summary),
         ]
-        run(
-            command,
-            log_path=DRIVE_RUN / "receipts/logs" / f"seed_{seed}_latest.log",
+        with mirror:
+            run(command, log_path=log_path)
+        if not durable_summary.is_file():
+            raise RuntimeError(f"Stage 2B-A seed {seed} summary was not mirrored durably")
+        summaries.append(
+            {
+                "seed": seed,
+                "path": str(durable_summary),
+                "sha256": sha256_file(durable_summary),
+            }
         )
-        summaries.append({"seed": seed, "path": str(summary), "sha256": sha256_file(summary)})
     receipt = {
         "kind": "paper2_stage2b_autopsy_execution_v1",
         "status": "complete_score_only",

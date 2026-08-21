@@ -12,6 +12,7 @@ from transformers import Qwen2Config, Qwen2ForCausalLM
 
 import eval.eval_paper2_stage2b_autopsy as autopsy_eval
 import eval.eval_paper2_phase3_p34_task_trajectory as trajectory_eval
+import colab.run_stage5_paper2_stage2b_autopsy as autopsy_runner
 
 from models.paper2_dc2_student import Phase3StudentModules
 from models.paper2_stage2b_depth import Stage2BDepthAttachment
@@ -30,6 +31,17 @@ from eval.eval_paper2_stage2b_campaign import Stage2BTaskInferenceGraph
 
 ROOT = Path(__file__).resolve().parents[1]
 LOCK = ROOT / "training/paper2_stage2b_autopsy_lock.json"
+
+
+def test_local_io_mirror_uses_delete_only_when_staging_from_drive() -> None:
+    source = Path("/source")
+    destination = Path("/destination")
+    staged = autopsy_runner.tree_sync_command(source, destination, delete=True)
+    mirrored = autopsy_runner.tree_sync_command(source, destination, delete=False)
+    assert staged[:4] == ["rsync", "--archive", "--partial", "--delete"]
+    assert mirrored[:3] == ["rsync", "--archive", "--partial"]
+    assert staged[-2:] == mirrored[-2:]
+    assert all(path.endswith("/") for path in staged[-2:])
 
 
 class _ProjectionWrapper(torch.nn.Module):
