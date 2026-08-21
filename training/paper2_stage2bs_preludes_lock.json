@@ -1,7 +1,7 @@
 {
   "kind": "paper2_stage2bs_preludes_lock_v1",
-  "status": "BLOCKED_PENDING_F1_ESTIMATOR_RATIFICATION",
-  "mark_signed": false,
+  "status": "SIGNED",
+  "mark_signed": true,
   "locked_before_model_contact": true,
   "training_authorized": false,
   "optimizer_steps_allowed": 0,
@@ -10,6 +10,12 @@
     "bytes": 7558,
     "sha256": "0c738c28d5c759530f6c6ce9e35afcb78bc38af14e6d06e289688a0c584be566",
     "filename": "STRATEGY_2BS_PRELUDE_HANDOFF_20260821.md"
+  },
+  "amendment_authority": {
+    "drive_id": "1EdkabZdjO-bhlKfVaXzVzyZXoO-rBQ94",
+    "bytes": 2250,
+    "sha256": "d9b0a3ede5c8bafe42e0e06f8ec2074b27126b163519c26869e0019ca4279bcc",
+    "filename": "STRATEGY_2BS_PRELUDE_AMENDMENT_PA1_20260821.md"
   },
   "runtime": {
     "accelerator": "NVIDIA A100-SXM4",
@@ -41,10 +47,11 @@
   },
   "prelude_2": {
     "checkpoint_pair": ["signed_initialization", "ema_step_1000"],
-    "primary_ratio": "relative_frobenius_WP_over_relative_frobenius_WH",
+    "superseded_primary_ratio": "relative_frobenius_WP_over_relative_frobenius_WH",
+    "primary_ratio": "absolute_delta_WP_over_absolute_delta_WH",
     "blocking_finding": "W_P0 is the exact zero matrix, so its registered relative Frobenius movement is undefined",
-    "proposed_amendment": "absolute_frobenius_delta_WP_over_absolute_frobenius_delta_WH because W_P and W_H have identical shape",
-    "f1_estimator": "PENDING_RATIFICATION",
+    "f1_estimator": "absolute_delta_WP_over_absolute_delta_WH",
+    "degenerate_guard": "delta_W_H_below_dtype_epsilon_times_sqrt_numel",
     "starved_max": 0.25,
     "not_starved_min": 0.75,
     "svd_rank": 3,
