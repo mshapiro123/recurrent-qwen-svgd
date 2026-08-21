@@ -4478,6 +4478,30 @@ TARGETS = {
         ],
         "env": {},
     },
+    "paper2_stage2bs_preflight": {
+        "path": "colab/STAGE5_PAPER2_STAGE2BS_PRELUDES_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_STAGE2BS_PRELUDES_VERSION",
+            "paper2_stage2bs_preludes_v1",
+            "mandatory bit-exact preflight relay precedes every probe cell",
+            "both score-only preludes one pinned session no optimizer no training",
+            "CONFIRM and EVAL-E remain sealed",
+            "colab.run_stage5_paper2_stage2bs_preludes",
+        ],
+        "env": {"STAGE2BS_PRELUDE_MODE": "preflight"},
+    },
+    "paper2_stage2bs_preludes": {
+        "path": "colab/STAGE5_PAPER2_STAGE2BS_PRELUDES_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_STAGE2BS_PRELUDES_VERSION",
+            "paper2_stage2bs_preludes_v1",
+            "mandatory bit-exact preflight relay precedes every probe cell",
+            "both score-only preludes one pinned session no optimizer no training",
+            "CONFIRM and EVAL-E remain sealed",
+            "colab.run_stage5_paper2_stage2bs_preludes",
+        ],
+        "env": {"STAGE2BS_PRELUDE_MODE": "run"},
+    },
     "paper2_phase3_kp1_t1": {
         "path": "colab/STAGE5_PAPER2_PHASE3_KP1_T1_CELL.py",
         "markers": [

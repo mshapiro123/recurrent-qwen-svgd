@@ -419,6 +419,9 @@ def score_generation(
     for cap, selected in sorted(by_cap.items()):
         for start in range(0, len(selected), batch_size):
             batch = selected[start : start + batch_size]
+            prepare_probe_batch = getattr(graph, "prepare_probe_batch", None)
+            if prepare_probe_batch is not None:
+                prepare_probe_batch(batch)
             prompts = [
                 _chat_prompt(tokenizer, _generation_prompt(row)[0]) for row in batch
             ]

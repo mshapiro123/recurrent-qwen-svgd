@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 from collections import Counter, defaultdict
 from dataclasses import dataclass
@@ -36,6 +37,58 @@ class Stage2BTaskInferenceGraph:
     last_token_projection: bool = False
     sparse_loop_projection: bool = True
     incremental_cache: bool = False
+    loop_diagnostic_modes: Mapping[int, str] | None = None
+    recurrent_state_noise: Mapping[int, tuple[torch.Tensor, float]] | None = None
+    recurrent_state_permutations: Mapping[int, torch.Tensor] | None = None
+    probe_noise_epsilon: float | None = None
+    probe_noise_loop_index: int = 1
+    probe_noise_seed_prefix: str = ""
+    probe_transplant_loop_index: int | None = None
+    _probe_item_ids: tuple[str, ...] = ()
+
+    def prepare_probe_batch(self, rows: Sequence[Mapping[str, Any]]) -> None:
+        self._probe_item_ids = tuple(str(row["item_id"]) for row in rows)
+        if self.probe_transplant_loop_index is not None and len(rows) % 2:
+            raise RuntimeError("Stage 2B transplant batches must contain complete pairs")
+
+    def _probe_controls(
+        self, input_ids: torch.Tensor
+    ) -> tuple[dict[int, tuple[torch.Tensor, float]] | None, dict[int, torch.Tensor] | None]:
+        noise = None
+        if self.probe_noise_epsilon is not None:
+            if len(self._probe_item_ids) != input_ids.shape[0]:
+                raise RuntimeError("Stage 2B noise probe row identity is not bound to the batch")
+            hidden = int(self.wrapper.config.hidden_size)
+            tensors = []
+            for item_id in self._probe_item_ids:
+                material = (
+                    f"{self.probe_noise_seed_prefix}|{item_id}|"
+                    f"{self.probe_noise_epsilon:.9g}"
+                ).encode("utf-8")
+                seed = int.from_bytes(hashlib.sha256(material).digest()[:8], "big") % (2**63 - 1)
+                generator = torch.Generator(device=input_ids.device).manual_seed(seed)
+                tensors.append(
+                    torch.randn(
+                        (input_ids.shape[1], hidden),
+                        generator=generator,
+                        device=input_ids.device,
+                        dtype=torch.float32,
+                    )
+                )
+            noise = {
+                int(self.probe_noise_loop_index): (
+                    torch.stack(tensors),
+                    float(self.probe_noise_epsilon),
+                )
+            }
+        permutation = None
+        if self.probe_transplant_loop_index is not None:
+            if len(self._probe_item_ids) != input_ids.shape[0]:
+                raise RuntimeError("Stage 2B transplant row identity is not bound to the batch")
+            indices = torch.arange(input_ids.shape[0], device=input_ids.device)
+            indices = indices.reshape(-1, 2).flip(1).reshape(-1)
+            permutation = {int(self.probe_transplant_loop_index): indices}
+        return noise, permutation
 
     @property
     def device(self) -> torch.device:
@@ -51,6 +104,7 @@ class Stage2BTaskInferenceGraph:
         current_token_only: bool = False,
         current_positions: torch.Tensor | None = None,
     ) -> P34NextTokenOutput:
+        probe_noise, probe_permutation = self._probe_controls(input_ids)
         output = self.wrapper(
             input_ids=input_ids,
             attention_mask=attention_mask,
@@ -59,6 +113,23 @@ class Stage2BTaskInferenceGraph:
             stage2b_stage=self.stage,
             stage2b_amplitude=self.amplitude,
             stage2b_diagnostic_mode=self.diagnostic_mode,
+            stage2b_loop_diagnostic_modes=(
+                dict(self.loop_diagnostic_modes) if self.loop_diagnostic_modes else None
+            ),
+            stage2b_recurrent_state_noise=(
+                probe_noise
+                if probe_noise is not None
+                else (dict(self.recurrent_state_noise) if self.recurrent_state_noise else None)
+            ),
+            stage2b_recurrent_state_permutations=(
+                probe_permutation
+                if probe_permutation is not None
+                else (
+                    dict(self.recurrent_state_permutations)
+                    if self.recurrent_state_permutations
+                    else None
+                )
+            ),
             stage2b_score_only_sparse_logits=self.sparse_loop_projection,
             stage2b_loop_past_key_values=loop_caches,
             return_loop_logits=True,
@@ -69,6 +140,13 @@ class Stage2BTaskInferenceGraph:
         )
         if output.loop_logits is None:
             raise RuntimeError("Stage 2B task read requires loop logits")
+        if self.loop_diagnostic_modes:
+            maxima = getattr(self, "_probe_metric_maxima", {})
+            for name, value in (output.metrics or {}).items():
+                if name.startswith("stage2b_") and isinstance(value, torch.Tensor):
+                    scalar = float(value.detach().float().amax().cpu())
+                    maxima[name] = max(float(maxima.get(name, -float("inf"))), scalar)
+            self._probe_metric_maxima = maxima
         positions = (
             current_position_mask(attention_mask)[1]
             if current_positions is None

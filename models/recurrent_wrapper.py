@@ -497,6 +497,11 @@ class RecurrentQwenForCausalLM(nn.Module):
         stage2b_stage: str = "M4",
         stage2b_amplitude: float = 0.05,
         stage2b_diagnostic_mode: str = "standard",
+        stage2b_loop_diagnostic_modes: Optional[dict[int, str]] = None,
+        stage2b_recurrent_state_noise: Optional[
+            dict[int, tuple[torch.Tensor, float]]
+        ] = None,
+        stage2b_recurrent_state_permutations: Optional[dict[int, torch.Tensor]] = None,
         stage2b_score_only_sparse_logits: bool = False,
         stage2b_loop_past_key_values: Optional[tuple[Any, ...]] = None,
         logits_to_keep: int | torch.Tensor = 0,
@@ -822,9 +827,55 @@ class RecurrentQwenForCausalLM(nn.Module):
                             f"got override={tuple(override.shape)}, expected={tuple(recurrent_state.shape)}"
                         )
                     recurrent_state = override
+            if loop_idx > 0 and stage2b_recurrent_state_noise:
+                noise_spec = stage2b_recurrent_state_noise.get(loop_idx)
+                if noise_spec is not None:
+                    noise, epsilon = noise_spec
+                    noise = noise.to(
+                        device=recurrent_state.device, dtype=recurrent_state.dtype
+                    )
+                    if noise.shape != recurrent_state.shape:
+                        raise ValueError(
+                            "stage2b_recurrent_state_noise entries must match the carried recurrent state shape; "
+                            f"got noise={tuple(noise.shape)}, expected={tuple(recurrent_state.shape)}"
+                        )
+                    noise_mask = flat_attention_mask
+                    if (
+                        noise_mask is not None
+                        and noise_mask.shape[-1] != recurrent_state.shape[1]
+                    ):
+                        noise_mask = noise_mask[:, -recurrent_state.shape[1] :]
+                    row_rms = self._masked_sequence_rms(
+                        recurrent_state, noise_mask
+                    ).unsqueeze(-1)
+                    recurrent_state = recurrent_state + (
+                        float(epsilon) * row_rms * noise.float()
+                    ).to(recurrent_state.dtype)
+            if loop_idx > 0 and stage2b_recurrent_state_permutations:
+                permutation = stage2b_recurrent_state_permutations.get(loop_idx)
+                if permutation is not None:
+                    permutation = permutation.to(device=recurrent_state.device, dtype=torch.long)
+                    expected = torch.arange(
+                        recurrent_state.shape[0], device=recurrent_state.device
+                    )
+                    if (
+                        permutation.shape != expected.shape
+                        or not torch.equal(permutation.sort().values, expected)
+                    ):
+                        raise ValueError(
+                            "stage2b_recurrent_state_permutations entries must be batch permutations"
+                        )
+                    recurrent_state = recurrent_state.index_select(0, permutation)
             loop_input = recurrent_state
             if loop_idx > 0:
                 if stage2b_depth_enabled:
+                    loop_diagnostic_mode = (
+                        stage2b_loop_diagnostic_modes.get(
+                            loop_idx, stage2b_diagnostic_mode
+                        )
+                        if stage2b_loop_diagnostic_modes
+                        else stage2b_diagnostic_mode
+                    )
                     stage2b_output = self.stage2b_depth_attachment.reenter(
                         trace=stage2b_trace,
                         prelude_hidden=prelude_hidden_states,
@@ -833,7 +884,7 @@ class RecurrentQwenForCausalLM(nn.Module):
                         loop_index=loop_idx,
                         stage=stage2b_stage,
                         amplitude=float(stage2b_amplitude),
-                        diagnostic_mode=stage2b_diagnostic_mode,
+                        diagnostic_mode=loop_diagnostic_mode,
                     )
                     loop_input = stage2b_output.hidden
                     stage2b_trace = stage2b_output.trace
