@@ -383,7 +383,7 @@ def build_figure(seeds: list[dict[str, Any]], stem: Path) -> list[Path]:
         0.5,
         -0.01,
         "Two seeds; DEV receipts only; no optimizer, CONFIRM, or EVAL-E contact. "
-        "One Colab infrastructure replacement; same A100 40GB class.",
+        "Eight Colab resumptions after infrastructure interruptions; same A100 40GB class.",
         ha="center",
         color="#555555",
         fontsize=8.5,
@@ -398,7 +398,13 @@ def build_figure(seeds: list[dict[str, Any]], stem: Path) -> list[Path]:
     return [svg, png]
 
 
-def analyze(seed_paths: list[Path], output: Path, figure_stem: Path) -> dict[str, Any]:
+def analyze(
+    seed_paths: list[Path],
+    output: Path,
+    figure_stem: Path,
+    manifest: Path | None = None,
+    handoff: Path | None = None,
+) -> dict[str, Any]:
     if len(seed_paths) != 2:
         raise AssertionError("Exactly two seed summaries are required")
     seeds = [summarize_seed(path, index) for index, path in enumerate(seed_paths)]
@@ -516,6 +522,30 @@ def analyze(seed_paths: list[Path], output: Path, figure_stem: Path) -> dict[str
     }
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    if manifest is not None:
+        manifest_payload = {
+            "kind": "paper2_stage2b_autopsy_final_receipts_manifest_v1",
+            "status": "complete_score_only",
+            "lock": file_receipt(ROOT / "training/paper2_stage2b_autopsy_lock.json"),
+            "source_seed_summaries": [file_receipt(path) for path in seed_paths],
+            "analysis": file_receipt(output),
+            "figures": [file_receipt(path) for path in figures],
+            "handoff": file_receipt(handoff) if handoff is not None and handoff.exists() else None,
+            "integrity": {
+                "all_seed_receipts_pass": True,
+                "optimizer_constructed": False,
+                "optimizer_steps": 0,
+                "confirm_scored": False,
+                "eval_e_scored": False,
+                "same_hardware_configuration": True,
+                "same_session_for_all_cells": False,
+            },
+        }
+        manifest.parent.mkdir(parents=True, exist_ok=True)
+        manifest.write_text(
+            json.dumps(manifest_payload, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
     return result
 
 
@@ -532,12 +562,28 @@ def parse_args() -> argparse.Namespace:
         type=Path,
         default=ROOT / "docs/figures/stage2b_autopsy_20260820",
     )
+    parser.add_argument(
+        "--manifest",
+        type=Path,
+        default=ROOT / "artifacts/stage2b_autopsy_20260820/final_receipts_manifest.json",
+    )
+    parser.add_argument(
+        "--handoff",
+        type=Path,
+        default=ROOT / "docs/PAPER2_STAGE2B_AUTOPSY_RESULT_HANDOFF_20260820.md",
+    )
     return parser.parse_args()
 
 
 def main() -> int:
     args = parse_args()
-    result = analyze(args.seed_summary, args.output, args.figure_stem)
+    result = analyze(
+        args.seed_summary,
+        args.output,
+        args.figure_stem,
+        manifest=args.manifest,
+        handoff=args.handoff,
+    )
     print(json.dumps(result, indent=2, sort_keys=True))
     return 0
 
