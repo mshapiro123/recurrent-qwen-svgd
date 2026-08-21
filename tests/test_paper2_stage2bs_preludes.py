@@ -46,11 +46,12 @@ def _wrapper(batch: int = 2, *, randomize_innovation: bool = True):
     return wrapper, ids, torch.ones_like(ids)
 
 
-def test_prelude_lock_records_the_f1_estimator_blocker() -> None:
-    lock = load_lock(
-        ROOT / "training/paper2_stage2bs_preludes_lock.json", require_signed=False
-    )
-    assert lock["status"] == "BLOCKED_PENDING_F1_ESTIMATOR_RATIFICATION"
+def test_prelude_lock_records_the_ratified_f1_estimator() -> None:
+    lock = load_lock(ROOT / "training/paper2_stage2bs_preludes_lock.json")
+    assert lock["status"] == "SIGNED"
+    assert lock["mark_signed"] is True
+    assert lock["prelude_2"]["f1_estimator"] == "absolute_delta_WP_over_absolute_delta_WH"
+    assert lock["amendment_authority"]["drive_id"] == "1EdkabZdjO-bhlKfVaXzVzyZXoO-rBQ94"
     assert lock["optimizer_steps_allowed"] == 0
     assert lock["sealed"] == {"confirm_scored": False, "eval_e_scored": False}
 

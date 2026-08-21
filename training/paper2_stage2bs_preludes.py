@@ -42,6 +42,14 @@ def validate_lock(lock: Mapping[str, Any], *, require_signed: bool = True) -> No
         != "0c738c28d5c759530f6c6ce9e35afcb78bc38af14e6d06e289688a0c584be566"
     ):
         raise RuntimeError("Stage 2B-S prelude authority changed")
+    amendment = lock.get("amendment_authority", {})
+    if (
+        amendment.get("drive_id") != "1EdkabZdjO-bhlKfVaXzVzyZXoO-rBQ94"
+        or amendment.get("bytes") != 2250
+        or amendment.get("sha256")
+        != "d9b0a3ede5c8bafe42e0e06f8ec2074b27126b163519c26869e0019ca4279bcc"
+    ):
+        raise RuntimeError("Stage 2B-S prelude amendment authority changed")
     runtime = lock.get("runtime", {})
     if runtime.get("weights_dtype") != "bfloat16" or runtime.get("attention_backend") != "sdpa":
         raise RuntimeError("Stage 2B-S runtime semantics changed")
@@ -56,6 +64,11 @@ def validate_lock(lock: Mapping[str, Any], *, require_signed: bool = True) -> No
         raise RuntimeError("Stage 2B-S K2/K3 zero-write indices changed")
     if probes.get("transplant_pairs_per_seed") != 64:
         raise RuntimeError("Stage 2B-S transplant pair count changed")
+    desk = lock.get("prelude_2", {})
+    if desk.get("f1_estimator") != "absolute_delta_WP_over_absolute_delta_WH":
+        raise RuntimeError("Stage 2B-S F1 estimator changed")
+    if desk.get("degenerate_guard") != "delta_W_H_below_dtype_epsilon_times_sqrt_numel":
+        raise RuntimeError("Stage 2B-S F1 degenerate guard changed")
 
 
 def load_lock(path: str | Path, *, require_signed: bool = True) -> dict[str, Any]:

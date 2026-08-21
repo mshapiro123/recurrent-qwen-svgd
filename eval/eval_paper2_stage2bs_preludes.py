@@ -429,6 +429,11 @@ def run_desk(args: argparse.Namespace) -> dict[str, Any]:
         same_shapes.append(tuple(initial[wh_name].shape) == tuple(initial[wp_name].shape))
         wh_move = float(movement[wh_name]["delta_frobenius"])
         wp_move = float(movement[wp_name]["delta_frobenius"])
+        wh_dtype = initial[wh_name].dtype
+        if not wh_dtype.is_floating_point:
+            raise RuntimeError("Stage 2B-S W_H must use a floating-point dtype")
+        wh_epsilon_scale = float(torch.finfo(wh_dtype).eps) * float(initial[wh_name].numel()) ** 0.5
+        wh_degenerate = wh_move < wh_epsilon_scale
         artifact = torch.load(args.correction_artifacts[seed], map_location="cpu", weights_only=False)
         references = correction_references(artifact, seed=20260819 + seed)
         singular = {}
@@ -473,10 +478,22 @@ def run_desk(args: argparse.Namespace) -> dict[str, Any]:
                 "W_H_relative_frobenius": movement[wh_name]["relative_frobenius"],
                 "W_P_relative_frobenius": movement[wp_name]["relative_frobenius"],
                 "W_P_relative_frobenius_defined": movement[wp_name]["relative_frobenius"] is not None,
-                "W_P_delta_over_W_H_delta": wp_move / max(wh_move, 1e-12),
+                "F1_raw_values": {
+                    "W_P_delta_frobenius": wp_move,
+                    "W_H_delta_frobenius": wh_move,
+                    "W_H_initial_frobenius": float(torch.linalg.vector_norm(initial[wh_name].float())),
+                    "W_P_initial_frobenius": float(torch.linalg.vector_norm(initial[wp_name].float())),
+                    "W_H_final_frobenius": float(torch.linalg.vector_norm(final[wh_name].float())),
+                    "W_P_final_frobenius": float(torch.linalg.vector_norm(final[wp_name].float())),
+                    "W_H_dtype": str(wh_dtype),
+                    "W_H_dtype_epsilon_scale": wh_epsilon_scale,
+                    "W_H_degenerate": wh_degenerate,
+                },
+                "W_P_delta_over_W_H_delta": None if wh_degenerate else wp_move / wh_move,
                 "top_singular_geometry": singular,
             }
         )
+    degenerate = any(row["F1_raw_values"]["W_H_degenerate"] for row in seed_rows)
     ratios = [row["W_P_delta_over_W_H_delta"] for row in seed_rows]
     args.private_dir.mkdir(parents=True, exist_ok=True)
     vectors_path = args.private_dir / "top_singular_vectors.pt"
@@ -490,7 +507,7 @@ def run_desk(args: argparse.Namespace) -> dict[str, Any]:
             "estimator": "absolute_delta_WP_over_absolute_delta_WH",
             "same_shape_asserted": all(same_shapes),
             "ratios": ratios,
-            "verdict": starvation_verdict(ratios),
+            "verdict": "DEGENERATE" if degenerate else starvation_verdict(ratios),
         },
         "private_singular_vectors": {"path": str(vectors_path), "sha256": sha256_file(vectors_path)},
         "model_loaded": False,
