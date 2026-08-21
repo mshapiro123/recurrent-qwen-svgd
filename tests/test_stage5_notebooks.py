@@ -4117,6 +4117,18 @@ def test_stage2b_autopsy_targets_are_score_only_and_sealed() -> None:
     assert "stage2b_diagnostic_mode" in evaluator
 
 
+def test_stage2bs_prelude_targets_are_wired_and_guarded() -> None:
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    cell = (ROOT / "colab/STAGE5_PAPER2_STAGE2BS_PRELUDES_CELL.py").read_text(encoding="utf-8")
+    runner = (ROOT / "colab/run_stage5_paper2_stage2bs_preludes.py").read_text(encoding="utf-8")
+    assert '"paper2_stage2bs_preflight"' in bootstrap
+    assert '"paper2_stage2bs_preludes"' in bootstrap
+    assert "mandatory bit-exact preflight relay precedes every probe cell" in cell
+    assert "STAGE2BS_PRELUDE_MODE" in cell
+    assert "optimizer_constructed" in runner
+    assert "confirm_scored" in runner and "eval_e_scored" in runner
+
+
 
 def test_gradient_path_audit_target_is_wired_and_guarded() -> None:
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
