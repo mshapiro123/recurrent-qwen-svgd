@@ -1073,17 +1073,77 @@ def _k_sweep(
     precomputed_k4: Sequence[Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
     summary = {}
+    generation_caps = {"tier1": 64, "gsm8k": 256, "mbpp": 384}
+    ordered_rows = sorted(rows, key=lambda row: generation_caps[str(row["battery"])])
+    expected_ids = [str(row["item_id"]) for row in ordered_rows]
+
+    def validate_cached(
+        cached: Sequence[Mapping[str, Any]], *, loops: int, complete: bool
+    ) -> None:
+        item_ids = [str(row["item_id"]) for row in cached]
+        if len(item_ids) != len(set(item_ids)) or not set(item_ids).issubset(expected_ids):
+            raise RuntimeError("Stage 2B-A K-sweep cached row identity changed")
+        if complete and (len(item_ids) != len(expected_ids) or set(item_ids) != set(expected_ids)):
+            raise RuntimeError("Stage 2B-A K-sweep cached row coverage changed")
+        for row in cached:
+            if (
+                int(row.get("seed", -1)) != seed
+                or int(row.get("flow_loops", -1)) != loops
+                or row.get("autopsy_condition") != condition
+            ):
+                raise RuntimeError("Stage 2B-A K-sweep cached metadata changed")
+
     for loops in (1, 2, 3, 4):
+        final_path = private_dir / f"k_sweep__{condition}__k{loops}.jsonl"
+        partial_path = private_dir / f"k_sweep__{condition}__k{loops}.partial.jsonl"
+        resumed = False
+        if final_path.is_file():
+            scored = read_jsonl(final_path)
+            validate_cached(scored, loops=loops, complete=True)
+            resumed = True
         if loops == 4 and precomputed_k4 is not None:
-            expected_ids = {str(row["item_id"]) for row in rows}
-            scored = [
-                dict(row)
-                for row in precomputed_k4
-                if str(row["item_id"]) in expected_ids
-            ]
-            if {str(row["item_id"]) for row in scored} != expected_ids:
-                raise RuntimeError("Stage 2B-A reused K=4 row coverage changed")
-        else:
+            if not resumed:
+                by_id = {
+                    str(row["item_id"]): dict(row)
+                    for row in precomputed_k4
+                    if str(row["item_id"]) in set(expected_ids)
+                }
+                if set(by_id) != set(expected_ids):
+                    raise RuntimeError("Stage 2B-A reused K=4 row coverage changed")
+                scored = [by_id[item_id] for item_id in expected_ids]
+                for row in scored:
+                    row["seed"] = seed
+                    row["flow_loops"] = loops
+                    row["autopsy_condition"] = condition
+                validate_cached(scored, loops=loops, complete=True)
+                write_jsonl(final_path, scored)
+                partial_path.unlink(missing_ok=True)
+        elif not resumed:
+            cached = read_jsonl(partial_path) if partial_path.is_file() else []
+            validate_cached(cached, loops=loops, complete=False)
+            row_by_id = {str(row["item_id"]): dict(row) for row in cached}
+            pending = [row for row in ordered_rows if str(row["item_id"]) not in row_by_id]
+
+            def emit_batch(batch_rows: list[dict[str, Any]]) -> None:
+                for row in batch_rows:
+                    row["seed"] = seed
+                    row["flow_loops"] = loops
+                    row["autopsy_condition"] = condition
+                    item_id = str(row["item_id"])
+                    if item_id in row_by_id:
+                        raise RuntimeError(
+                            f"Stage 2B-A duplicate K-sweep row during resume: {item_id}"
+                        )
+                    row_by_id[item_id] = row
+                ordered = [row_by_id[item_id] for item_id in expected_ids if item_id in row_by_id]
+                validate_cached(ordered, loops=loops, complete=False)
+                write_jsonl(partial_path, ordered)
+                print(
+                    f"stage2b_k_resume condition={condition} loops={loops} "
+                    f"rows={len(ordered)}/{len(expected_ids)}",
+                    flush=True,
+                )
+
             graph = Stage2BTaskInferenceGraph(
                 wrapper=wrapper,
                 stage="M2",
@@ -1091,17 +1151,24 @@ def _k_sweep(
                 flow_loops=loops,
                 incremental_cache=True,
             )
-            scored = score_generation(graph, tokenizer, rows, batch_size=batch_size)
-        for row in scored:
-            row["seed"] = seed
-            row["flow_loops"] = loops
-            row["autopsy_condition"] = condition
-        write_jsonl(private_dir / f"k_sweep__{condition}__k{loops}.jsonl", scored)
+            if pending:
+                score_generation(
+                    graph,
+                    tokenizer,
+                    pending,
+                    batch_size=batch_size,
+                    emit_batch=emit_batch,
+                )
+            scored = [row_by_id[item_id] for item_id in expected_ids if item_id in row_by_id]
+            validate_cached(scored, loops=loops, complete=True)
+            write_jsonl(final_path, scored)
+            partial_path.unlink(missing_ok=True)
         summary[str(loops)] = {
             "rows": len(scored),
             "correct": sum(bool(row["augmented_correct"]) for row in scored),
             "battery_counts": battery_counts(scored),
             "reused_identical_amplitude_cell": loops == 4 and precomputed_k4 is not None,
+            "resumed_from_validated_private_artifact": resumed,
         }
     return summary
 

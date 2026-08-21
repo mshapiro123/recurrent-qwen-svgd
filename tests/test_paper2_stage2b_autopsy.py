@@ -480,6 +480,74 @@ def test_correction_field_artifact_resume_validates_rows_state_and_tensors() -> 
         )
 
 
+def test_k_sweep_reuses_complete_validated_cells(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    rows = [
+        {"item_id": "a", "battery": "tier1", "cap": 64},
+        {"item_id": "b", "battery": "gsm8k", "cap": 256},
+    ]
+    monkeypatch.setattr(
+        autopsy_eval,
+        "_generation_prompt",
+        lambda row: ("prompt", int(row["cap"])),
+    )
+    monkeypatch.setattr(
+        autopsy_eval,
+        "Stage2BTaskInferenceGraph",
+        lambda **_kwargs: SimpleNamespace(),
+    )
+    calls = []
+
+    def score(_graph: object, _tokenizer: object, pending: list[dict[str, object]], **kwargs: object):
+        calls.append([row["item_id"] for row in pending])
+        batch = [
+            {
+                "item_id": row["item_id"],
+                "battery": row["battery"],
+                "augmented_correct": row["item_id"] == "a",
+            }
+            for row in pending
+        ]
+        kwargs["emit_batch"](batch)
+        return batch
+
+    monkeypatch.setattr(autopsy_eval, "score_generation", score)
+    precomputed = [
+        {"item_id": row["item_id"], "battery": row["battery"], "augmented_correct": True}
+        for row in rows
+    ]
+    first = autopsy_eval._k_sweep(
+        wrapper=object(),
+        tokenizer=object(),
+        rows=rows,
+        seed=0,
+        condition="initialization",
+        private_dir=tmp_path,
+        batch_size=8,
+        precomputed_k4=precomputed,
+    )
+    assert len(calls) == 3
+    assert all(not cell["resumed_from_validated_private_artifact"] for cell in first.values())
+
+    monkeypatch.setattr(
+        autopsy_eval,
+        "score_generation",
+        lambda *_args, **_kwargs: pytest.fail("complete K cell should be reused"),
+    )
+    second = autopsy_eval._k_sweep(
+        wrapper=object(),
+        tokenizer=object(),
+        rows=rows,
+        seed=0,
+        condition="initialization",
+        private_dir=tmp_path,
+        batch_size=8,
+        precomputed_k4=precomputed,
+    )
+    assert all(cell["resumed_from_validated_private_artifact"] for cell in second.values())
+
+
 def test_autopsy_runner_contains_no_optimizer_or_sealed_partition_path() -> None:
     evaluator = (ROOT / "eval/eval_paper2_stage2b_autopsy.py").read_text(encoding="utf-8")
     orchestrator = (ROOT / "colab/run_stage5_paper2_stage2b_autopsy.py").read_text(
@@ -771,9 +839,12 @@ def test_k_sweep_reuses_identical_k4_amplitude_cell(
         _rows: list[dict[str, str]],
         *,
         batch_size: int,
+        emit_batch: object,
     ) -> list[dict[str, object]]:
         del batch_size
-        return [{"item_id": "row-1", "battery": "gsm8k", "augmented_correct": False}]
+        batch = [{"item_id": "row-1", "battery": "gsm8k", "augmented_correct": False}]
+        emit_batch(batch)
+        return batch
 
     monkeypatch.setattr(autopsy_eval, "Stage2BTaskInferenceGraph", FakeGraph)
     monkeypatch.setattr(autopsy_eval, "score_generation", fake_score)
