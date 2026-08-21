@@ -30,6 +30,7 @@ EXECUTION_SESSIONS = (
     "gpu-a100-s-kkb-usc1f1-22l3n9eirgmxj",
     "gpu-a100-s-kkb-usc1c0-34h8yrptjtva0",
     "gpu-a100-s-kkb-ass1c0-uhsx0epxjsgm",
+    "gpu-a100-s-kkb-usc1c1-irzgm8lw61wx",
 )
 RUNNER_COMMITS = (
     "745ee5e7147227760b116a47e3606c80947d29bb",
@@ -492,7 +493,7 @@ def analyze(seed_paths: list[Path], output: Path, figure_stem: Path) -> dict[str
             "execution_deviation": {
                 "signed_condition": "same_session_for_all_cells",
                 "reason": (
-                    "Colab infrastructure and DriveFS interruptions required seven resumptions "
+                    "Colab infrastructure and DriveFS interruptions required eight resumptions "
                     "before batch completion"
                 ),
                 "session_endpoints_in_order": list(EXECUTION_SESSIONS),
