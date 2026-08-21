@@ -1,0 +1,52 @@
+{
+  "analysis": {
+    "bytes": 127219,
+    "name": "analysis_summary.json",
+    "sha256": "6af9fe8b26e3ab91682c896e07bdd76f9205014f96fb719e5535cc369f24b06e"
+  },
+  "figures": [
+    {
+      "bytes": 76376,
+      "name": "stage2b_autopsy_20260820.svg",
+      "sha256": "197d3b3d0b8125511095888b53ab443943c6be4f46714a901e292750bbfc330a"
+    },
+    {
+      "bytes": 427505,
+      "name": "stage2b_autopsy_20260820.png",
+      "sha256": "b5ff8a885ab782a12eb0cb72f798921eb265ceb32dac7d27d4e96710e1db331e"
+    }
+  ],
+  "handoff": {
+    "bytes": 17312,
+    "name": "PAPER2_STAGE2B_AUTOPSY_RESULT_HANDOFF_20260820.md",
+    "sha256": "01bf9d2b04d375c480ac4ec5f9de43a731af737cfc08dbd304c8b0e9e114431d"
+  },
+  "integrity": {
+    "all_seed_receipts_pass": true,
+    "confirm_scored": false,
+    "eval_e_scored": false,
+    "optimizer_constructed": false,
+    "optimizer_steps": 0,
+    "same_hardware_configuration": true,
+    "same_session_for_all_cells": false
+  },
+  "kind": "paper2_stage2b_autopsy_final_receipts_manifest_v1",
+  "lock": {
+    "bytes": 10318,
+    "name": "paper2_stage2b_autopsy_lock.json",
+    "sha256": "c35cda73642d52badb32fda54251ab9d9da47fb5d268fa3106762a64b204d167"
+  },
+  "source_seed_summaries": [
+    {
+      "bytes": 78748,
+      "name": "seed_0_summary.json",
+      "sha256": "fccfa9b992128b145ee4069e6180a2b93b5435af423c233df32650e2544a03d4"
+    },
+    {
+      "bytes": 79502,
+      "name": "seed_1_summary.json",
+      "sha256": "624d418174333a3d835353de6960762cbbb84d065369d11669f6d60cf73aba42"
+    }
+  ],
+  "status": "complete_score_only"
+}
