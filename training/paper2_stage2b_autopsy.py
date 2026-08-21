@@ -234,21 +234,21 @@ def spherical_kmeans(
 def cosine_silhouette(values: torch.Tensor, labels: torch.Tensor) -> float:
     x = F.normalize(values.float(), dim=-1, eps=1e-12)
     distance = (1.0 - x @ x.T).clamp_min(0.0)
-    silhouettes = []
-    for index in range(x.shape[0]):
-        own = labels == labels[index]
-        own[index] = False
-        if not bool(own.any()):
-            silhouettes.append(x.new_zeros(()))
-            continue
-        within = distance[index, own].mean()
-        outside = []
-        for label in labels.unique(sorted=True):
-            if int(label) != int(labels[index]):
-                outside.append(distance[index, labels == label].mean())
-        between = torch.stack(outside).min()
-        silhouettes.append((between - within) / torch.maximum(within, between).clamp_min(1e-12))
-    return float(torch.stack(silhouettes).mean().cpu())
+    unique, inverse = labels.unique(sorted=True, return_inverse=True)
+    if unique.numel() < 2:
+        raise ValueError("cosine silhouette requires at least two clusters")
+    membership = F.one_hot(inverse, num_classes=unique.numel()).to(distance.dtype)
+    counts = membership.sum(dim=0)
+    distance_sums = distance @ membership
+    means = distance_sums / counts.clamp_min(1.0).unsqueeze(0)
+    row_index = torch.arange(x.shape[0], device=x.device)
+    own_counts = counts[inverse]
+    within = distance_sums[row_index, inverse] / (own_counts - 1.0).clamp_min(1.0)
+    outside = means.masked_fill(membership.bool(), float("inf"))
+    between = outside.amin(dim=1)
+    silhouettes = (between - within) / torch.maximum(within, between).clamp_min(1e-12)
+    silhouettes = torch.where(own_counts > 1.0, silhouettes, torch.zeros_like(silhouettes))
+    return float(silhouettes.mean().cpu())
 
 
 def normalized_gram_eigengap(values: torch.Tensor, *, max_rank: int = 8) -> dict[str, Any]:

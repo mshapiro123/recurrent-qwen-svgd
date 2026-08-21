@@ -18,6 +18,7 @@ from models.paper2_dc2_student import Phase3StudentModules
 from models.paper2_stage2b_depth import Stage2BDepthAttachment
 from models.recurrent_wrapper import LayerSplit, RecurrentQwenForCausalLM
 from training.paper2_stage2b_autopsy import (
+    cosine_silhouette,
     discrete_mutual_information,
     decision_mapping,
     margin_correlation_receipt,
@@ -417,6 +418,35 @@ def test_arm6_geometry_primitives_detect_separated_directions() -> None:
         labels.tolist(), ["left"] * 16 + ["right"] * 16
     )
     assert association["normalized_by_battery_entropy"] == pytest.approx(1.0)
+
+
+def test_vectorized_cosine_silhouette_matches_rowwise_estimator() -> None:
+    generator = torch.Generator().manual_seed(23)
+    values = torch.randn((19, 13), generator=generator)
+    labels = torch.tensor([0] * 7 + [1] * 6 + [2] * 5 + [3])
+
+    x = torch.nn.functional.normalize(values.float(), dim=-1, eps=1e-12)
+    distance = (1.0 - x @ x.T).clamp_min(0.0)
+    expected = []
+    for index in range(x.shape[0]):
+        own = labels == labels[index]
+        own[index] = False
+        if not bool(own.any()):
+            expected.append(x.new_zeros(()))
+            continue
+        within = distance[index, own].mean()
+        outside = [
+            distance[index, labels == label].mean()
+            for label in labels.unique(sorted=True)
+            if int(label) != int(labels[index])
+        ]
+        between = torch.stack(outside).min()
+        expected.append(
+            (between - within) / torch.maximum(within, between).clamp_min(1e-12)
+        )
+    expected_value = float(torch.stack(expected).mean())
+
+    assert cosine_silhouette(values, labels) == pytest.approx(expected_value, abs=1e-7)
 
 
 def test_correction_field_artifact_resume_validates_rows_state_and_tensors() -> None:
