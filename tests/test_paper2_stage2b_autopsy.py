@@ -419,6 +419,37 @@ def test_arm6_geometry_primitives_detect_separated_directions() -> None:
     assert association["normalized_by_battery_entropy"] == pytest.approx(1.0)
 
 
+def test_correction_field_artifact_resume_validates_rows_state_and_tensors() -> None:
+    rows = [
+        {"item_id": "a", "battery": "gsm8k"},
+        {"item_id": "b", "battery": "mbpp"},
+    ]
+    artifact = {
+        "corrections": {loop: torch.ones((2, 4)) for loop in (2, 3, 4)},
+        "writes": {loop: torch.ones((2, 4)) for loop in (2, 3, 4)},
+        "batteries": ["gsm8k", "mbpp"],
+        "item_ids": ["a", "b"],
+        "zero_correction_rows": {loop: 0 for loop in (2, 3, 4)},
+        "parameter_state_digest_before": "digest",
+        "parameter_state_digest_after": "digest",
+        "parameter_versions_unchanged": True,
+    }
+    validated = autopsy_eval._validate_correction_field_artifact(
+        artifact,
+        rows=rows,
+        expected_state_digest="digest",
+    )
+    assert validated["item_ids"] == ["a", "b"]
+
+    artifact["corrections"][4][0, 0] = float("nan")
+    with pytest.raises(RuntimeError, match="rows invalid"):
+        autopsy_eval._validate_correction_field_artifact(
+            artifact,
+            rows=rows,
+            expected_state_digest="digest",
+        )
+
+
 def test_autopsy_runner_contains_no_optimizer_or_sealed_partition_path() -> None:
     evaluator = (ROOT / "eval/eval_paper2_stage2b_autopsy.py").read_text(encoding="utf-8")
     orchestrator = (ROOT / "colab/run_stage5_paper2_stage2b_autopsy.py").read_text(

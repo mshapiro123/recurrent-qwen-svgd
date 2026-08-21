@@ -570,6 +570,89 @@ def _extract_correction_field(
     }
 
 
+def _validate_correction_field_artifact(
+    artifact: Mapping[str, Any],
+    *,
+    rows: Sequence[Mapping[str, Any]],
+    expected_state_digest: str,
+) -> dict[str, Any]:
+    """Validate a resumable Arm 6 artifact against the active row and model state."""
+
+    expected_item_ids = [str(row["item_id"]) for row in rows]
+    expected_batteries = [str(row["battery"]) for row in rows]
+    if list(artifact.get("item_ids", [])) != expected_item_ids:
+        raise RuntimeError("Stage 2B-A correction-field artifact row order changed")
+    if list(artifact.get("batteries", [])) != expected_batteries:
+        raise RuntimeError("Stage 2B-A correction-field artifact battery order changed")
+    if artifact.get("parameter_state_digest_before") != expected_state_digest:
+        raise RuntimeError("Stage 2B-A correction-field artifact state digest changed")
+    if artifact.get("parameter_state_digest_after") != expected_state_digest:
+        raise RuntimeError("Stage 2B-A correction-field artifact post-state digest changed")
+    if artifact.get("parameter_versions_unchanged") is not True:
+        raise RuntimeError("Stage 2B-A correction-field artifact lacks immutability proof")
+    expected_loops = {2, 3, 4}
+    corrections = artifact.get("corrections")
+    writes = artifact.get("writes")
+    if not isinstance(corrections, Mapping) or set(corrections) != expected_loops:
+        raise RuntimeError("Stage 2B-A correction-field correction loops changed")
+    if not isinstance(writes, Mapping) or set(writes) != expected_loops:
+        raise RuntimeError("Stage 2B-A correction-field write loops changed")
+    hidden_size = None
+    for family_name, family in (("correction", corrections), ("write", writes)):
+        for loop in sorted(expected_loops):
+            tensor = family[loop]
+            if not isinstance(tensor, torch.Tensor) or tensor.ndim != 2:
+                raise RuntimeError(
+                    f"Stage 2B-A correction-field {family_name} tensor invalid at loop {loop}"
+                )
+            if tensor.shape[0] != len(rows) or not torch.isfinite(tensor).all():
+                raise RuntimeError(
+                    f"Stage 2B-A correction-field {family_name} rows invalid at loop {loop}"
+                )
+            if hidden_size is None:
+                hidden_size = tensor.shape[1]
+            elif tensor.shape[1] != hidden_size:
+                raise RuntimeError("Stage 2B-A correction-field hidden width changed")
+    zero_rows = artifact.get("zero_correction_rows")
+    if not isinstance(zero_rows, Mapping) or set(zero_rows) != expected_loops:
+        raise RuntimeError("Stage 2B-A correction-field zero-row receipt changed")
+    return dict(artifact)
+
+
+def _load_or_extract_correction_field(
+    *,
+    wrapper: Any,
+    tokenizer: Any,
+    rows: Sequence[Mapping[str, Any]],
+    batch_size: int,
+    private_path: Path,
+) -> tuple[dict[str, Any], bool]:
+    expected_state_digest = _state_digest(_named_trainable_state(wrapper))
+    if private_path.is_file():
+        loaded = torch.load(private_path, map_location="cpu", weights_only=False)
+        if not isinstance(loaded, Mapping):
+            raise RuntimeError("Stage 2B-A correction-field artifact is not a mapping")
+        return (
+            _validate_correction_field_artifact(
+                loaded,
+                rows=rows,
+                expected_state_digest=expected_state_digest,
+            ),
+            True,
+        )
+    extracted = _extract_correction_field(
+        wrapper=wrapper,
+        tokenizer=tokenizer,
+        rows=rows,
+        batch_size=batch_size,
+    )
+    private_path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = private_path.with_suffix(private_path.suffix + ".tmp")
+    torch.save(extracted, temporary)
+    temporary.replace(private_path)
+    return extracted, False
+
+
 def _empirical_upper_p(observed: float, null: Sequence[float]) -> float:
     return (1.0 + sum(value >= observed for value in null)) / (len(null) + 1.0)
 
@@ -1299,14 +1382,14 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     arm6_private = {}
     for state_name, state in (("initialization", initialization_state), ("stop", stop_state)):
         _apply_state(wrapper, state)
-        extracted = _extract_correction_field(
+        private_path = args.private_dir / f"correction_field__{state_name}.pt"
+        extracted, resumed = _load_or_extract_correction_field(
             wrapper=wrapper,
             tokenizer=tokenizer,
             rows=dev2_subsample,
             batch_size=args.margin_batch_size,
+            private_path=private_path,
         )
-        private_path = args.private_dir / f"correction_field__{state_name}.pt"
-        torch.save(extracted, private_path)
         arm6_private[state_name] = extracted
         arm6[state_name] = {
             "correction_field_clusterability_loop4": _clusterability_receipt(
@@ -1322,6 +1405,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             "parameter_state_digest_before": extracted["parameter_state_digest_before"],
             "parameter_state_digest_after": extracted["parameter_state_digest_after"],
             "parameter_versions_unchanged": extracted["parameter_versions_unchanged"],
+            "resumed_from_validated_private_artifact": resumed,
             "private_artifact": {"path": str(private_path), "sha256": sha256_file(private_path)},
         }
     mean_field = {}
