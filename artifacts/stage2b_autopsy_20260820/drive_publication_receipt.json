@@ -1,0 +1,16 @@
+{
+  "kind": "paper2_stage2b_autopsy_drive_publication_receipt_v1",
+  "status": "byte_identical",
+  "published_at": "2026-08-21",
+  "repository_commit_containing_handoff": "aaf69f7173947baa8ab63d586115e71a06314171",
+  "parent_folder_id": "1aSbU2i8JZ37g5bJpyweLuvFaV0y92Qjr",
+  "file": {
+    "name": "PAPER2_STAGE2B_AUTOPSY_RESULT_HANDOFF_20260820.md",
+    "drive_id": "1ZqkboylYAEvdq4K99cGnn-xUMqg1vCt6",
+    "url": "https://drive.google.com/file/d/1ZqkboylYAEvdq4K99cGnn-xUMqg1vCt6/view?usp=drivesdk",
+    "mime_type": "text/markdown",
+    "bytes": 17312,
+    "local_sha256": "01bf9d2b04d375c480ac4ec5f9de43a731af737cfc08dbd304c8b0e9e114431d",
+    "remote_sha256": "01bf9d2b04d375c480ac4ec5f9de43a731af737cfc08dbd304c8b0e9e114431d"
+  }
+}
