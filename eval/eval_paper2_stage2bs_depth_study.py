@@ -34,7 +34,9 @@ from eval.eval_paper2_stage2b_autopsy import (
 )
 from models.paper2_stage2b_depth import Stage2BDepthTrace, Stage2BReentryOutput
 from training.paper2_stage2bs_depth_study import (
+    EXPECTED_INITIALIZATION_STATE_DIGESTS,
     EXPECTED_NATIVE_COUNTS,
+    INITIALIZATION_SEED_BASE,
     SCHEDULES,
     load_lock,
     schedule_amplitudes,
@@ -863,13 +865,22 @@ def run_study(args: argparse.Namespace) -> dict[str, Any]:
     lock = load_lock(args.lock)
     if any(term in str(value).casefold() for value in vars(args).values() for term in ("confirm", "eval_e")):
         raise RuntimeError("Stage 2B-S depth study attempted sealed-partition contact")
-    random.seed(20260822 + args.seed)
-    np.random.seed(20260822 + args.seed)
-    torch.manual_seed(20260822 + args.seed)
+    initialization_seed = INITIALIZATION_SEED_BASE + args.seed
+    random.seed(initialization_seed)
+    np.random.seed(initialization_seed)
+    torch.manual_seed(initialization_seed)
     if torch.cuda.is_available():
-        torch.cuda.manual_seed_all(20260822 + args.seed)
+        torch.cuda.manual_seed_all(initialization_seed)
     wrapper, checkpoint_chain, _groups = _build_model(args)
     initialization = _named_trainable_state(wrapper)
+    initialization_digest = _state_digest(initialization)
+    expected_initialization_digest = EXPECTED_INITIALIZATION_STATE_DIGESTS[args.seed]
+    if initialization_digest != expected_initialization_digest:
+        raise RuntimeError(
+            "Stage 2B-S initialization state changed before scoring: "
+            f"seed={args.seed} expected={expected_initialization_digest} "
+            f"observed={initialization_digest}"
+        )
     stop = _checkpoint_state(args.stop_checkpoint, expected_sha256=args.stop_sha256)
     tokenizer = AutoTokenizer.from_pretrained(
         MODEL_SPECS["base"]["model"], revision=MODEL_SPECS["base"]["revision"]
@@ -919,6 +930,8 @@ def run_study(args: argparse.Namespace) -> dict[str, Any]:
         "expected_correct_by_k": expected,
         "runtime": _runtime_receipt(),
         "session_id": args.session_id,
+        "initialization_seed": initialization_seed,
+        "initialization_state_digest": initialization_digest,
         "lock_sha256": sha256_file(args.lock),
         "optimizer_constructed": False,
         "optimizer_steps": 0,

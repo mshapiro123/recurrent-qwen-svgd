@@ -11,7 +11,9 @@ from models.paper2_stage2b_depth import Stage2BDepthAttachment
 from models.recurrent_wrapper import LayerSplit, RecurrentQwenForCausalLM
 from tests.test_recurrent_wrapper_tiny import TinyCausalLM
 from training.paper2_stage2bs_depth_study import (
+    EXPECTED_INITIALIZATION_STATE_DIGESTS,
     EXPECTED_NATIVE_COUNTS,
+    INITIALIZATION_SEED_BASE,
     load_lock,
     resolve_keys,
     schedule_amplitudes,
@@ -52,6 +54,11 @@ def test_locked_contract_is_machine_readable() -> None:
     assert lock["eval_e_scored"] is False
     assert lock["runtime"]["generation_batch_size"] == 8
     assert lock["runtime"]["margin_batch_size"] == 2
+    assert lock["initialization"]["seed_base"] == INITIALIZATION_SEED_BASE
+    assert lock["initialization"]["state_digest_by_seed"] == {
+        str(seed): digest
+        for seed, digest in EXPECTED_INITIALIZATION_STATE_DIGESTS.items()
+    }
 
 
 def test_schedule_amplitude_matrix_matches_lock() -> None:

@@ -16,6 +16,11 @@ SCHEDULES = (
     "partial_interleave_pairs",
 )
 EXPECTED_NATIVE_COUNTS = {0: [162, 10, 2, 2], 1: [162, 9, 5, 2]}
+INITIALIZATION_SEED_BASE = 20260819
+EXPECTED_INITIALIZATION_STATE_DIGESTS = {
+    0: "f4c8bcc7497c5502e2ea321278e85c5ef5a812755b8fe413dcfc507c3b003b18",
+    1: "3421b93d0f0a7ae6005a10c170e96f9ea7dfc1396a4c66180b28fd925ffa36c6",
+}
 ADDITIVITY_FLOOR_ROWS = 20
 
 
@@ -54,6 +59,18 @@ def validate_lock(lock: Mapping[str, Any]) -> None:
         str(seed): values for seed, values in EXPECTED_NATIVE_COUNTS.items()
     }:
         raise RuntimeError("Stage 2B-S native preflight expectations changed")
+    initialization = lock.get("initialization", {})
+    if initialization.get("seed_base") != INITIALIZATION_SEED_BASE:
+        raise RuntimeError("Stage 2B-S initialization seed convention changed")
+    if initialization.get("state_digest_by_seed") != {
+        str(seed): digest
+        for seed, digest in EXPECTED_INITIALIZATION_STATE_DIGESTS.items()
+    }:
+        raise RuntimeError("Stage 2B-S initialization state identity changed")
+    if initialization.get("estimator_source") != (
+        "banked Stage 2B-S prelude initialization receipts"
+    ):
+        raise RuntimeError("Stage 2B-S initialization estimator source changed")
     if lock.get("schedules") != list(SCHEDULES):
         raise RuntimeError("Stage 2B-S schedule set changed")
     if lock.get("amplitude_cross") != [0.0, 0.02, 0.05]:
