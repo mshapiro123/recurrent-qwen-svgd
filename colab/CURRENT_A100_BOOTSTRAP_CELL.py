@@ -4727,6 +4727,7 @@ else:
         f"https://api.github.com/repos/{REPO}/git/ref/heads/{REF}?cache_bust={int(time.time())}"
     )
     RESOLVED_REF = ((ref_payload.get("object") or {}).get("sha") or REF).strip()
+os.environ["STAGE5_BOOTSTRAP_REF"] = RESOLVED_REF
 if PREFER_LOCAL_HEAD:
     try:
         local_head = subprocess.check_output(
