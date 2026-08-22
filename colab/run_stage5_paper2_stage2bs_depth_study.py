@@ -145,7 +145,7 @@ def main() -> int:
     mode = os.environ.get("STAGE2BS_DEPTH_MODE", "preflight").strip().lower()
     if mode not in {"preflight", "run"}:
         raise RuntimeError(f"Unknown Stage 2B-S depth-study mode: {mode}")
-    generation_batch_size = int(os.environ.get("STAGE2BS_DEPTH_GENERATION_BATCH_SIZE", "16"))
+    generation_batch_size = int(os.environ.get("STAGE2BS_DEPTH_GENERATION_BATCH_SIZE", "4"))
     margin_batch_size = int(os.environ.get("STAGE2BS_DEPTH_MARGIN_BATCH_SIZE", "8"))
     if generation_batch_size < 1 or margin_batch_size < 1:
         raise RuntimeError("Stage 2B-S batch sizes must be positive")
