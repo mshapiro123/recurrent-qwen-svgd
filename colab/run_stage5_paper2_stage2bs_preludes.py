@@ -93,7 +93,9 @@ def preflight(scratch: Path) -> dict[str, Any]:
     summaries = []
     for seed in (0, 1):
         output = DRIVE_RUN / f"receipts/preflight/seed_{seed}"
-        private = scratch / f"preflight_seed_{seed}"
+        # The K-sweep already validates and resumes partial row files. Keep those
+        # files durable so a Colab VM loss costs at most one in-flight batch.
+        private = DRIVE_RUN / f"private/preflight/seed_{seed}"
         reference = scratch / f"reference_k_sweep_seed_{seed}"
         reference.mkdir(parents=True, exist_ok=True)
         for loop in range(1, 5):
@@ -112,9 +114,6 @@ def preflight(scratch: Path) -> dict[str, Any]:
         receipt = output / "preflight.json"
         if json.loads(receipt.read_text(encoding="utf-8")).get("status") != "PASS":
             raise RuntimeError(f"Stage 2B-S preflight did not pass for seed {seed}")
-        durable_private = DRIVE_RUN / f"private/preflight/seed_{seed}"
-        durable_private.mkdir(parents=True, exist_ok=True)
-        subprocess.run(["rsync", "--archive", f"{private}/", f"{durable_private}/"], check=True)
         summaries.append({"seed": seed, "path": str(receipt), "sha256": sha256_file(receipt)})
     result = {
         "kind": "paper2_stage2bs_preflight_wave_v1",
