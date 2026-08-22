@@ -147,7 +147,8 @@ def main() -> int:
         raise RuntimeError(f"Unknown Stage 2B-S depth-study mode: {mode}")
     scratch = scratch_root()
     result = result_root(scratch)
-    durable = DRIVE_STAGE5 / RUN_ID
+    configured_durable = os.environ.get("STAGE2BS_DEPTH_DURABLE_ROOT", "").strip()
+    durable = Path(configured_durable) if configured_durable else DRIVE_STAGE5 / RUN_ID
     if durable.is_dir():
         rsync(durable, result)
     mirror = DurableMirror(result, durable)
@@ -160,7 +161,7 @@ def main() -> int:
         atomic_json(
             status_path,
             {
-                "kind": "paper2_stage2bs_depth_study_status_v1",
+            "kind": "paper2_stage2bs_depth_study_status_v1",
                 "status": value,
                 "session_id": session,
                 "updated_at_unix": time.time(),
@@ -168,6 +169,7 @@ def main() -> int:
                 "optimizer_steps": 0,
                 "confirm_scored": False,
                 "eval_e_scored": False,
+                "durable_root": str(durable),
                 **details,
             },
         )

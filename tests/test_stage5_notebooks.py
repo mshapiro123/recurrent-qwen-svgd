@@ -4146,6 +4146,7 @@ def test_stage2bs_depth_study_target_is_wired_and_score_only() -> None:
     assert "optimizer_steps" in runner
     assert "confirm_scored" in runner
     assert "eval_e_scored" in runner
+    assert "STAGE2BS_DEPTH_DURABLE_ROOT" in runner
     assert "torch.optim" not in evaluator
     assert "optimizer.step" not in evaluator
 
