@@ -580,15 +580,15 @@ def parse_args() -> argparse.Namespace:
     common = ["output_dir", "private_dir"]
     if args.phase in {"initialize", "preflight", "probes"}:
         common += [
-            "seed", "dev1_panel", "migrated", "p33", "i1", "p34", "p35", "model_cache",
+            "seed", "migrated", "p33", "i1", "p34", "p35", "model_cache",
             "migrated_sha256", "p33_sha256", "i1_sha256", "p34_sha256", "p35_sha256",
         ]
     if args.phase == "initialize":
         pass
     elif args.phase == "preflight":
-        common += ["reference_k_sweep_dir"]
+        common += ["dev1_panel", "reference_k_sweep_dir"]
     elif args.phase == "probes":
-        common += ["preflight_receipt", "preflight_private_dir"]
+        common += ["dev1_panel", "preflight_receipt", "preflight_private_dir"]
     else:
         common += ["initialization_states", "stop_checkpoints", "correction_artifacts"]
     missing = [name for name in common if getattr(args, name) is None]
