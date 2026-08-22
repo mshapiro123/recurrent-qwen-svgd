@@ -4501,6 +4501,19 @@ TARGETS = {
         ],
         "env": {"STAGE2BS_PRELUDE_MODE": "run"},
     },
+    "paper2_stage2bs_reconciliation": {
+        "path": "colab/STAGE5_PAPER2_STAGE2BS_RECONCILIATION_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_STAGE2BS_RECONCILIATION_VERSION",
+            "paper2_stage2bs_reconciliation_v1",
+            "immutable initialization paired tensor trace before any optimizer",
+            "P3.5 one-shot graph versus Stage 2B recurrent serving graph",
+            "DEV-1 only CONFIRM and EVAL-E remain sealed",
+            "no optimizer no training all retained artifacts SHA-256 banked",
+            "colab.run_stage5_paper2_stage2bs_reconciliation",
+        ],
+        "env": {},
+    },
     "paper2_phase3_kp1_t1": {
         "path": "colab/STAGE5_PAPER2_PHASE3_KP1_T1_CELL.py",
         "markers": [
