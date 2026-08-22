@@ -712,6 +712,7 @@ def _score_generation_cell(
                 int(row.get("seed", -1)) != seed
                 or row.get("endpoint") != endpoint
                 or row.get("schedule_provenance") != provenance
+                or int(row.get("generation_batch_size", -1)) != batch_size
             ):
                 raise RuntimeError(f"Stage 2B-S cached generation provenance changed: {slug}")
 
@@ -735,6 +736,7 @@ def _score_generation_cell(
                     "seed": seed,
                     "endpoint": endpoint,
                     "schedule_provenance": provenance,
+                    "generation_batch_size": batch_size,
                 }
             )
             by_id[item_id] = row
@@ -787,6 +789,7 @@ def _score_margin_cell(
             int(row.get("seed", -1)) != seed
             or row.get("endpoint") != endpoint
             or row.get("schedule_provenance") != provenance
+            or int(row.get("margin_batch_size", -1)) != batch_size
         ):
             raise RuntimeError(f"Stage 2B-S cached margin provenance changed: {slug}")
     by_id = {str(row["item_id"]): dict(row) for row in cached}
@@ -806,6 +809,7 @@ def _score_margin_cell(
             item_id = str(row["item_id"])
             if item_id in by_id:
                 raise RuntimeError(f"Stage 2B-S duplicate margin row: {item_id}")
+            row["margin_batch_size"] = batch_size
             by_id[item_id] = row
         ordered = [by_id[item_id] for item_id in expected if item_id in by_id]
         write_jsonl(partial_path, ordered)
