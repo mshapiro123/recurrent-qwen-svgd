@@ -48,7 +48,10 @@
   "runtime": {
     "accelerator": "NVIDIA A100-SXM4-40GB_or_80GB",
     "weights_dtype": "bfloat16",
-    "attention_backend": "sdpa"
+    "attention_backend": "sdpa",
+    "generation_batch_size": 8,
+    "margin_batch_size": 2,
+    "estimator_source": "eval.eval_paper2_stage2b_autopsy defaults used by the banked native K sweep"
   },
   "delivery": {
     "folder_id": "1aSbU2i8JZ37g5bJpyweLuvFaV0y92Qjr",

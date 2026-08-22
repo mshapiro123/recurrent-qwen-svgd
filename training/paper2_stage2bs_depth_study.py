@@ -67,6 +67,9 @@ def validate_lock(lock: Mapping[str, Any]) -> None:
         raise RuntimeError("Stage 2B-S panel cardinality changed")
     if panels.get("confirm_scored") is not False or panels.get("eval_e_scored") is not False:
         raise RuntimeError("Stage 2B-S sealed partition contract changed")
+    runtime = lock.get("runtime", {})
+    if runtime.get("generation_batch_size") != 8 or runtime.get("margin_batch_size") != 2:
+        raise RuntimeError("Stage 2B-S banked estimator batch sizes changed")
     semantics = lock.get("k_semantics", {})
     if semantics.get("native_interleaved") != "total_recurrent_passes_including_identity_pass":
         raise RuntimeError("native K semantics changed")

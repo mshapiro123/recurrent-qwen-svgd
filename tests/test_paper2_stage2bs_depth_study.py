@@ -50,6 +50,8 @@ def test_locked_contract_is_machine_readable() -> None:
     assert lock["optimizer_steps_allowed"] == 0
     assert lock["confirm_scored"] is False
     assert lock["eval_e_scored"] is False
+    assert lock["runtime"]["generation_batch_size"] == 8
+    assert lock["runtime"]["margin_batch_size"] == 2
 
 
 def test_schedule_amplitude_matrix_matches_lock() -> None:
