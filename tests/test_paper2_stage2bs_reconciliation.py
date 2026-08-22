@@ -70,6 +70,7 @@ def test_colab_target_is_score_only_and_sealed() -> None:
     assert "no optimizer no training" in cell
     assert "CONFIRM and EVAL-E remain sealed" in cell
     assert "optimizer_steps" in runner
+    assert "STAGE5_RECONCILIATION_RESULT_ROOT" in runner
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(
         encoding="utf-8"
     )

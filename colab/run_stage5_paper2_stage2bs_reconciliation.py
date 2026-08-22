@@ -49,7 +49,8 @@ def scratch_root() -> Path:
 
 def main() -> int:
     scratch = scratch_root()
-    status_path = DRIVE_RUN / "receipts/status.json"
+    result_run = Path(os.environ.get("STAGE5_RECONCILIATION_RESULT_ROOT", str(DRIVE_RUN)))
+    status_path = result_run / "receipts/status.json"
     try:
         lock = json.loads(LOCK.read_text(encoding="utf-8"))
         if not lock.get("locked_before_trace"):
@@ -61,8 +62,8 @@ def main() -> int:
             rsync(DRIVE_STAGE5 / P35_ID / f"private/arm_s_seed_{seed}/ema_step_4400.pt", p35)
             if sha256_file(p35) != P35_SHA[seed]:
                 raise RuntimeError("Stage 2B-S reconciliation P3.5 endpoint changed")
-            output = DRIVE_RUN / f"receipts/seed_{seed}"
-            private = DRIVE_RUN / f"private/seed_{seed}"
+            output = result_run / f"receipts/seed_{seed}"
+            private = result_run / f"private/seed_{seed}"
             run(
                 [
                     sys.executable,
@@ -140,7 +141,7 @@ def main() -> int:
             "confirm_scored": False,
             "eval_e_scored": False,
         }
-        atomic_json(DRIVE_RUN / "receipts/summary.json", result)
+        atomic_json(result_run / "receipts/summary.json", result)
         atomic_json(status_path, result)
         print(json.dumps(result, indent=2, sort_keys=True))
         return 0
