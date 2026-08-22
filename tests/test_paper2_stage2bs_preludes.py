@@ -64,6 +64,15 @@ def test_preflight_partials_are_durable_and_resumable() -> None:
     assert 'private = scratch / f"preflight_seed_{seed}"' not in runner
 
 
+def test_score_blind_initialization_phase_is_available_for_desk_recovery() -> None:
+    evaluator = (ROOT / "eval/eval_paper2_stage2bs_preludes.py").read_text(
+        encoding="utf-8"
+    )
+    assert 'choices=("initialize", "preflight", "probes", "desk")' in evaluator
+    assert '"status": "complete_score_blind"' in evaluator
+    assert '"task_rows_scored": 0' in evaluator
+
+
 def test_registered_wp_initialization_has_zero_relative_denominator() -> None:
     wrapper, _ids, _attention = _wrapper(randomize_innovation=False)
     weight = wrapper.stage2b_depth_attachment.flow.prompt_gate.weight

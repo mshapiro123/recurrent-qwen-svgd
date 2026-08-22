@@ -106,20 +106,56 @@ def _model_and_tokenizer(args: argparse.Namespace) -> tuple[Any, Any, dict[str, 
     return wrapper, tokenizer, initialization, chain
 
 
-def run_preflight(args: argparse.Namespace) -> dict[str, Any]:
-    lock = load_lock(args.lock)
-    wrapper, tokenizer, initialization, chain = _model_and_tokenizer(args)
-    rows = _generation_rows(read_jsonl(args.dev1_panel))
+def _save_initialization(
+    *, args: argparse.Namespace, initialization: Mapping[str, torch.Tensor]
+) -> tuple[Path, str]:
     args.private_dir.mkdir(parents=True, exist_ok=True)
-    init_state_path = args.private_dir / "initialization_state.pt"
+    path = args.private_dir / "initialization_state.pt"
+    digest = _state_digest(initialization)
     torch.save(
         {
             "kind": "paper2_stage2bs_initialization_state_v1",
             "seed": args.seed,
-            "state": initialization,
-            "state_digest": _state_digest(initialization),
+            "state": dict(initialization),
+            "state_digest": digest,
         },
-        init_state_path,
+        path,
+    )
+    return path, digest
+
+
+def run_initialize(args: argparse.Namespace) -> dict[str, Any]:
+    load_lock(args.lock)
+    _wrapper, _tokenizer, initialization, chain = _model_and_tokenizer(args)
+    path, digest = _save_initialization(args=args, initialization=initialization)
+    result = {
+        "kind": "paper2_stage2bs_initialization_v1",
+        "status": "complete_score_blind",
+        "seed": args.seed,
+        "lock_sha256": sha256_file(args.lock),
+        "checkpoint_chain": chain,
+        "initialization_state": {
+            "path": str(path),
+            "sha256": sha256_file(path),
+            "state_digest": digest,
+        },
+        "model_loaded": True,
+        "optimizer_constructed": False,
+        "optimizer_steps": 0,
+        "task_rows_scored": 0,
+        "confirm_scored": False,
+        "eval_e_scored": False,
+    }
+    atomic_json(args.output_dir / "initialization.json", result)
+    return result
+
+
+def run_preflight(args: argparse.Namespace) -> dict[str, Any]:
+    lock = load_lock(args.lock)
+    wrapper, tokenizer, initialization, chain = _model_and_tokenizer(args)
+    rows = _generation_rows(read_jsonl(args.dev1_panel))
+    init_state_path, init_state_digest = _save_initialization(
+        args=args, initialization=initialization
     )
     sweep_dir = args.private_dir / "preflight_k_sweep"
     sweep = _k_sweep(
@@ -155,7 +191,7 @@ def run_preflight(args: argparse.Namespace) -> dict[str, Any]:
         "initialization_state": {
             "path": str(init_state_path),
             "sha256": sha256_file(init_state_path),
-            "state_digest": _state_digest(initialization),
+            "state_digest": init_state_digest,
         },
         "runtime": _runtime_receipt(),
         "rows": len(rows),
@@ -522,7 +558,9 @@ def run_desk(args: argparse.Namespace) -> dict[str, Any]:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--phase", choices=("preflight", "probes", "desk"), required=True)
+    parser.add_argument(
+        "--phase", choices=("initialize", "preflight", "probes", "desk"), required=True
+    )
     parser.add_argument("--seed", type=int, choices=(0, 1))
     parser.add_argument("--lock", type=Path, required=True)
     parser.add_argument("--dev1_panel", type=Path)
@@ -540,12 +578,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--generation_batch_size", type=int, default=8)
     args = parser.parse_args()
     common = ["output_dir", "private_dir"]
-    if args.phase in {"preflight", "probes"}:
+    if args.phase in {"initialize", "preflight", "probes"}:
         common += [
             "seed", "dev1_panel", "migrated", "p33", "i1", "p34", "p35", "model_cache",
             "migrated_sha256", "p33_sha256", "i1_sha256", "p34_sha256", "p35_sha256",
         ]
-    if args.phase == "preflight":
+    if args.phase == "initialize":
+        pass
+    elif args.phase == "preflight":
         common += ["reference_k_sweep_dir"]
     elif args.phase == "probes":
         common += ["preflight_receipt", "preflight_private_dir"]
@@ -561,7 +601,9 @@ def main() -> int:
     args = parse_args()
     args.output_dir.mkdir(parents=True, exist_ok=True)
     try:
-        if args.phase == "preflight":
+        if args.phase == "initialize":
+            result = run_initialize(args)
+        elif args.phase == "preflight":
             result = run_preflight(args)
         elif args.phase == "probes":
             result = run_probes(args)
