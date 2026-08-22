@@ -1,0 +1,58 @@
+{
+  "kind": "paper2_stage2bs_depth_study_lock_v1",
+  "status": "LOCKED",
+  "locked_before_score": true,
+  "authority": {
+    "drive_id": "1fQVbb8PrJPOHwLwpnv7mj73ON6uVMZBa",
+    "bytes": 7423,
+    "sha256": "1f9d889788a765631d2830153aa06508901f05930efbeb225567337ff048915e"
+  },
+  "basis": {
+    "drive_id": "122c2W-ITzUlwLncl3DZRSonsYL3qg7Z6",
+    "bytes": 13221,
+    "sha256": "d9200a484160142a36b5579ba346aed19b7b6b6e5ef0c4f143ffcd85b6b087b4"
+  },
+  "training_authorized": false,
+  "optimizer_steps_allowed": 0,
+  "confirm_scored": false,
+  "eval_e_scored": false,
+  "seeds": [0, 1],
+  "endpoints": ["initialization", "ema_step_1000"],
+  "expected_native_counts": {
+    "0": [162, 10, 2, 2],
+    "1": [162, 9, 5, 2]
+  },
+  "schedules": [
+    "native_interleaved",
+    "deferred_terminal_write_no_reentry",
+    "per_loop_write_no_reentry",
+    "partial_interleave_pairs"
+  ],
+  "amplitude_cross": [0.0, 0.02, 0.05],
+  "additivity_floor_rows": 20,
+  "panels": {
+    "generative_rows": 461,
+    "dev2_margin_rows": 2048,
+    "confirm_scored": false,
+    "eval_e_scored": false
+  },
+  "k_semantics": {
+    "native_interleaved": "total_recurrent_passes_including_identity_pass",
+    "deferred_terminal_write_no_reentry": "sidecar_updates_after_one_identity_pass",
+    "per_loop_write_no_reentry": "sidecar_updates_after_one_identity_pass",
+    "partial_interleave_pairs": "sidecar_updates_after_one_identity_pass"
+  },
+  "partial_interleave_rule": "group_sidecar_updates_in_ordered_pairs; after each complete pair write once and reenter once; an odd terminal update forms a final one-update write-and-reentry group",
+  "deferred_control_rule": "advance the Stage 2B M2 flow and recurrent control at every sidecar update; apply only the final bridge write",
+  "per_loop_no_reentry_rule": "advance flow and control at every update; apply each bridge write to the carried post-coda head state; never execute the recurrent block between writes",
+  "runtime": {
+    "accelerator": "NVIDIA A100-SXM4-40GB_or_80GB",
+    "weights_dtype": "bfloat16",
+    "attention_backend": "sdpa"
+  },
+  "delivery": {
+    "folder_id": "1aSbU2i8JZ37g5bJpyweLuvFaV0y92Qjr",
+    "one_wave": true,
+    "retention_verification_at_look": true
+  }
+}

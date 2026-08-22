@@ -4129,6 +4129,27 @@ def test_stage2bs_prelude_targets_are_wired_and_guarded() -> None:
     assert "confirm_scored" in runner and "eval_e_scored" in runner
 
 
+def test_stage2bs_depth_study_target_is_wired_and_score_only() -> None:
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
+    cell = (ROOT / "colab/STAGE5_PAPER2_STAGE2BS_DEPTH_STUDY_CELL.py").read_text(encoding="utf-8")
+    runner = (ROOT / "colab/run_stage5_paper2_stage2bs_depth_study.py").read_text(encoding="utf-8")
+    evaluator = (ROOT / "eval/eval_paper2_stage2bs_depth_study.py").read_text(encoding="utf-8")
+    assert '"paper2_stage2bs_depth_preflight"' in bootstrap
+    assert '"paper2_stage2bs_depth_study"' in bootstrap
+    assert '"STAGE2BS_DEPTH_MODE": "preflight"' in bootstrap
+    assert '"STAGE2BS_DEPTH_MODE": "run"' in bootstrap
+    assert "native 162 10 2 2 preflight before every variant cell" in cell
+    assert "provenance-tagged schedules no hybrid K curves" in cell
+    assert "461-row generation plus 2048-row DEV-2 margins both seeds both endpoints" in cell
+    assert "score-only no optimizer no training CONFIRM and EVAL-E sealed" in cell
+    assert "optimizer_constructed" in runner
+    assert "optimizer_steps" in runner
+    assert "confirm_scored" in runner
+    assert "eval_e_scored" in runner
+    assert "torch.optim" not in evaluator
+    assert "optimizer.step" not in evaluator
+
+
 
 def test_gradient_path_audit_target_is_wired_and_guarded() -> None:
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
