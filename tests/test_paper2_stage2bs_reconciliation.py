@@ -77,3 +77,4 @@ def test_colab_target_is_score_only_and_sealed() -> None:
     assert "STAGE5_PAPER2_STAGE2BS_RECONCILIATION_CELL.py" in bootstrap
     assert 'assert GH_TOKEN, "Missing GH_TOKEN' not in bootstrap
     assert 'if GH_TOKEN:' in bootstrap
+    assert 'os.environ["STAGE5_BOOTSTRAP_REF"] = RESOLVED_REF' in bootstrap
