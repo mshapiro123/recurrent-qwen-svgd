@@ -1,0 +1,343 @@
+{
+  "kind": "paper2_stage2bs_stopped_wave_analysis_v1",
+  "prelude1": {
+    "artifacts": {
+      "autopsy_k1_reference": {
+        "correct": 162,
+        "rows": 461,
+        "sha256": "867aa08ba92cdcb34cc1b605c4899c5745cac49fc9adec9ea4ed0572f109b499"
+      },
+      "autopsy_k2_reference": {
+        "correct": 10,
+        "rows": 461,
+        "sha256": "62c0d8dd11f3ceb605311ea44381012c9884d8a7781862d35eef91459e95ce69"
+      },
+      "autopsy_k3_reference": {
+        "correct": 2,
+        "rows": 461,
+        "sha256": "6675a7204085094813c8d423a210bf36824a3b0ee632d6f0ac5bd79ae92ba850"
+      },
+      "autopsy_k4_reference": {
+        "correct": 160,
+        "rows": 461,
+        "sha256": "d35c95b741114228914144f1801d57d149d8f325576f9175aef39ade7bb841f6"
+      },
+      "live_k1": {
+        "correct": 162,
+        "rows": 461,
+        "sha256": "d095e00adb48203c5315c07ee7b2544cb3f0ce1ad23fa8f0c55fdf84095967f9"
+      },
+      "live_k2": {
+        "correct": 10,
+        "rows": 461,
+        "sha256": "8705d55c55fe0ec4237a785e24d895585e5776be9848ff1a85497b16b02adf51"
+      },
+      "live_k3": {
+        "correct": 2,
+        "rows": 461,
+        "sha256": "8b541dab738f84c566c737336e0a214476b17c9b5e37bd4ef54954d715f1a25a"
+      },
+      "live_k4_fresh_partial": {
+        "correct": 0,
+        "rows": 105,
+        "sha256": "a5d8752c54bd76e3065463bf8923705cdd98e5f89de86735a28ed6ace13153dc"
+      },
+      "live_k4_quarantined": {
+        "correct": 2,
+        "rows": 461,
+        "sha256": "e9eada5b8da7d22c867845d4825a16407d4ac0a039617108d12b5bba470dc307"
+      },
+      "p35_amplitude_cell": {
+        "correct": 510,
+        "rows": 1024,
+        "sha256": "13732e986949aa2bcec5b4060947a262b6c3a980305659cf7ca604d61df08815"
+      }
+    },
+    "interpretation": "The registered K-sweep combined two scoring graphs. The live Stage 2B graph reproduced K1-K3 but not the imported P3.5 K4 cell, so the authorized Stage 2B perturbation probes have no valid 160-correct native baseline.",
+    "mandatory_gate_pass": false,
+    "preflight_expected_correct_by_k": [
+      162,
+      10,
+      2,
+      160
+    ],
+    "preflight_observed_correct_by_k": [
+      162,
+      10,
+      2,
+      2
+    ],
+    "probe_cells_run": false,
+    "provenance_tests": {
+      "autopsy_k4_vs_p35_amplitude_generation": {
+        "all_shared_predictions_exact": true,
+        "first_mismatches": [],
+        "left_only": 0,
+        "left_rows": 461,
+        "prediction_exact_rows": 461,
+        "prediction_mismatch_rows": 0,
+        "right_only": 0,
+        "right_rows": 461,
+        "shared_rows": 461
+      },
+      "fresh_live_partial_vs_autopsy_k4": {
+        "all_shared_predictions_exact": false,
+        "first_mismatches": [
+          {
+            "item_id": "base_capability_addition_00",
+            "keys": [
+              "generated_token_ids",
+              "prediction"
+            ]
+          },
+          {
+            "item_id": "base_capability_addition_02",
+            "keys": [
+              "generated_token_ids",
+              "prediction"
+            ]
+          },
+          {
+            "item_id": "base_capability_addition_03",
+            "keys": [
+              "generated_token_ids",
+              "prediction",
+              "augmented_correct"
+            ]
+          },
+          {
+            "item_id": "base_capability_addition_05",
+            "keys": [
+              "generated_token_ids",
+              "prediction",
+              "augmented_correct"
+            ]
+          },
+          {
+            "item_id": "base_capability_addition_07",
+            "keys": [
+              "generated_token_ids",
+              "prediction",
+              "augmented_correct"
+            ]
+          },
+          {
+            "item_id": "base_capability_addition_09",
+            "keys": [
+              "generated_token_ids",
+              "prediction",
+              "augmented_correct"
+            ]
+          },
+          {
+            "item_id": "base_capability_addition_10",
+            "keys": [
+              "generated_token_ids",
+              "prediction",
+              "augmented_correct"
+            ]
+          },
+          {
+            "item_id": "base_capability_addition_11",
+            "keys": [
+              "generated_token_ids",
+              "prediction",
+              "augmented_correct"
+            ]
+          },
+          {
+            "item_id": "base_capability_addition_12",
+            "keys": [
+              "generated_token_ids",
+              "prediction",
+              "augmented_correct"
+            ]
+          },
+          {
+            "item_id": "base_capability_division_03",
+            "keys": [
+              "generated_token_ids",
+              "prediction",
+              "augmented_correct"
+            ]
+          }
+        ],
+        "left_only": 0,
+        "left_rows": 105,
+        "prediction_exact_rows": 0,
+        "prediction_mismatch_rows": 105,
+        "right_only": 356,
+        "right_rows": 461,
+        "shared_rows": 105
+      },
+      "live_k1_vs_autopsy_k1": {
+        "all_shared_predictions_exact": true,
+        "first_mismatches": [],
+        "left_only": 0,
+        "left_rows": 461,
+        "prediction_exact_rows": 461,
+        "prediction_mismatch_rows": 0,
+        "right_only": 0,
+        "right_rows": 461,
+        "shared_rows": 461
+      },
+      "live_k2_vs_autopsy_k2": {
+        "all_shared_predictions_exact": true,
+        "first_mismatches": [],
+        "left_only": 0,
+        "left_rows": 461,
+        "prediction_exact_rows": 461,
+        "prediction_mismatch_rows": 0,
+        "right_only": 0,
+        "right_rows": 461,
+        "shared_rows": 461
+      },
+      "live_k3_vs_autopsy_k3": {
+        "all_shared_predictions_exact": true,
+        "first_mismatches": [],
+        "left_only": 0,
+        "left_rows": 461,
+        "prediction_exact_rows": 461,
+        "prediction_mismatch_rows": 0,
+        "right_only": 0,
+        "right_rows": 461,
+        "shared_rows": 461
+      },
+      "live_stage2b_k4_vs_autopsy_k4": {
+        "all_shared_predictions_exact": false,
+        "first_mismatches": [
+          {
+            "item_id": "base_capability_addition_00",
+            "keys": [
+              "generated_token_ids",
+              "prediction"
+            ]
+          },
+          {
+            "item_id": "base_capability_addition_02",
+            "keys": [
+              "generated_token_ids",
+              "prediction"
+            ]
+          },
+          {
+            "item_id": "base_capability_addition_03",
+            "keys": [
+              "generated_token_ids",
+              "prediction",
+              "augmented_correct"
+            ]
+          },
+          {
+            "item_id": "base_capability_addition_05",
+            "keys": [
+              "generated_token_ids",
+              "prediction",
+              "augmented_correct"
+            ]
+          },
+          {
+            "item_id": "base_capability_addition_07",
+            "keys": [
+              "generated_token_ids",
+              "prediction",
+              "augmented_correct"
+            ]
+          },
+          {
+            "item_id": "base_capability_addition_09",
+            "keys": [
+              "generated_token_ids",
+              "prediction",
+              "augmented_correct"
+            ]
+          },
+          {
+            "item_id": "base_capability_addition_10",
+            "keys": [
+              "generated_token_ids",
+              "prediction",
+              "augmented_correct"
+            ]
+          },
+          {
+            "item_id": "base_capability_addition_11",
+            "keys": [
+              "generated_token_ids",
+              "prediction",
+              "augmented_correct"
+            ]
+          },
+          {
+            "item_id": "base_capability_addition_12",
+            "keys": [
+              "generated_token_ids",
+              "prediction",
+              "augmented_correct"
+            ]
+          },
+          {
+            "item_id": "base_capability_division_03",
+            "keys": [
+              "generated_token_ids",
+              "prediction",
+              "augmented_correct"
+            ]
+          }
+        ],
+        "left_only": 0,
+        "left_rows": 461,
+        "prediction_exact_rows": 0,
+        "prediction_mismatch_rows": 461,
+        "right_only": 0,
+        "right_rows": 461,
+        "shared_rows": 461
+      }
+    },
+    "scorer_provenance": {
+      "failed_live_k4": "Stage2BTaskInferenceGraph live recomputation",
+      "k1_to_k3": "Stage2BTaskInferenceGraph live recomputation",
+      "registered_autopsy_k4": "precomputed P3.5 amplitude cell reused by _k_sweep"
+    }
+  },
+  "prelude2": {
+    "confirm_scored": false,
+    "estimator": "absolute_delta_WP_over_absolute_delta_WH",
+    "eval_e_scored": false,
+    "optimizer_steps": 0,
+    "ratios": [
+      2.4479682191159373,
+      2.1774574307176775
+    ],
+    "receipt_path": "receipts/prelude2/prelude2.json under the durable Stage 2B-S run root",
+    "receipt_sha256": "a115817abe291eee26327e005a474ccd66f351bccb506867bec1d9005a3959c4",
+    "same_shape_asserted": true,
+    "seed_raw_values": [
+      {
+        "W_H_degenerate": false,
+        "W_H_delta_frobenius": 0.922859787940979,
+        "W_H_dtype": "torch.float32",
+        "W_H_dtype_epsilon_scale": 4.037096116736741e-05,
+        "W_H_final_frobenius": 0.9655047655105591,
+        "W_H_initial_frobenius": 0.33862611651420593,
+        "W_P_delta_frobenius": 2.25913143157959,
+        "W_P_final_frobenius": 2.25913143157959,
+        "W_P_initial_frobenius": 0.0
+      },
+      {
+        "W_H_degenerate": false,
+        "W_H_delta_frobenius": 0.9664180278778076,
+        "W_H_dtype": "torch.float32",
+        "W_H_dtype_epsilon_scale": 4.037096116736741e-05,
+        "W_H_final_frobenius": 1.011124849319458,
+        "W_H_initial_frobenius": 0.3385710120201111,
+        "W_P_delta_frobenius": 2.1043341159820557,
+        "W_P_final_frobenius": 2.1043341159820557,
+        "W_P_initial_frobenius": 0.0
+      }
+    ],
+    "verdict": "NOT_STARVED"
+  },
+  "sealed_partitions_untouched": true,
+  "status": "prelude1_stopped_prelude2_complete"
+}
