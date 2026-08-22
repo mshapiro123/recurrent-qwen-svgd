@@ -1,5 +1,7 @@
 # Paper Two Stage 2B-A Score-Only Autopsy: Results and Strategy Handoff
 
+> **Correction, 2026-08-21:** The initialization K4 cell in this handoff's generative K-sweep was imported from the P3.5 amplitude scorer, while K1-K3 used the Stage 2B task-inference graph. A matched native Stage 2B rerun produced `162/10/2/2`, not `162/10/2/160`, and matched the original K1-K3 predictions exactly. The K4 recovery and every conclusion specifically dependent on it are withdrawn. See `PAPER2_STAGE2BS_PRELUDE_RESULT_HANDOFF_20260821.md` for the exact provenance audit and claim boundaries. Other autopsy measurements remain subject to the scoped review stated there.
+
 **Date:** 2026-08-21
 
 **Status:** complete; both score-only seed receipts validated
