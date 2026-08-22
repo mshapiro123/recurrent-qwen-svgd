@@ -4502,6 +4502,19 @@ TARGETS = {
         ],
         "env": {"STAGE2BS_PRELUDE_MODE": "run"},
     },
+    "paper2_stage2bs_reconciliation": {
+        "path": "colab/STAGE5_PAPER2_STAGE2BS_RECONCILIATION_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_STAGE2BS_RECONCILIATION_VERSION",
+            "paper2_stage2bs_reconciliation_v1",
+            "immutable initialization paired tensor trace before any optimizer",
+            "P3.5 one-shot graph versus Stage 2B recurrent serving graph",
+            "DEV-1 only CONFIRM and EVAL-E remain sealed",
+            "no optimizer no training all retained artifacts SHA-256 banked",
+            "colab.run_stage5_paper2_stage2bs_reconciliation",
+        ],
+        "env": {},
+    },
     "paper2_phase3_kp1_t1": {
         "path": "colab/STAGE5_PAPER2_PHASE3_KP1_T1_CELL.py",
         "markers": [
@@ -4670,21 +4683,24 @@ if TARGET not in TARGETS:
     raise AssertionError(f"Unknown TARGET={TARGET!r}; expected one of {sorted(TARGETS)}")
 
 GH_TOKEN = secret("GH_TOKEN", "GITHUB_TOKEN")
-assert GH_TOKEN, "Missing GH_TOKEN or GITHUB_TOKEN in Colab secrets."
 # Nested launchers run in this same interpreter. Reuse the already-authorized
-# token instead of prompting Colab Secrets a second time from hidden code.
-os.environ.setdefault("GH_TOKEN", GH_TOKEN)
+# token instead of prompting Colab Secrets a second time from hidden code. The
+# repository is public, so CLI-launched read-only targets may omit the token.
+if GH_TOKEN:
+    os.environ.setdefault("GH_TOKEN", GH_TOKEN)
 
 
 def github_json(url):
+    headers = {
+        "Accept": "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28",
+        "Cache-Control": "no-cache",
+    }
+    if GH_TOKEN:
+        headers["Authorization"] = f"Bearer {GH_TOKEN}"
     request = urllib.request.Request(
         url,
-        headers={
-            "Authorization": f"Bearer {GH_TOKEN}",
-            "Accept": "application/vnd.github+json",
-            "X-GitHub-Api-Version": "2022-11-28",
-            "Cache-Control": "no-cache",
-        },
+        headers=headers,
     )
     with urllib.request.urlopen(request) as response:
         return json.loads(response.read().decode("utf-8"))

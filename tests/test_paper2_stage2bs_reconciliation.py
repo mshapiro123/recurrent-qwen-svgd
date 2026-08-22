@@ -75,3 +75,5 @@ def test_colab_target_is_score_only_and_sealed() -> None:
     )
     assert '"paper2_stage2bs_reconciliation"' in bootstrap
     assert "STAGE5_PAPER2_STAGE2BS_RECONCILIATION_CELL.py" in bootstrap
+    assert 'assert GH_TOKEN, "Missing GH_TOKEN' not in bootstrap
+    assert 'if GH_TOKEN:' in bootstrap
