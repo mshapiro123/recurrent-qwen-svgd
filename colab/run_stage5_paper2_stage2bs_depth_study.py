@@ -14,8 +14,16 @@ import traceback
 from pathlib import Path
 from typing import Any
 
-from colab.run_stage5_paper2_phase3_p34_a2 import DRIVE_STAGE5, MIGRATED_SHA, P33_SHA, rsync
-from colab.run_stage5_paper2_phase3_p35 import I1_SHA, stage_chain
+from colab.run_stage5_paper2_phase3_p34_a2 import (
+    DRIVE_STAGE5,
+    I1_ID,
+    MIGRATED_SHA,
+    MIGRATION_ID,
+    P33_ID,
+    P33_SHA,
+    rsync,
+)
+from colab.run_stage5_paper2_phase3_p35 import I1_SHA, P34_ID, stage_chain
 from colab.run_stage5_paper2_phase3_p35_amplitude_t1_preflight import P34_SHA, P35_ID, P35_SHA
 from training.paper2_stage2bs_depth_study import load_lock, resolve_keys, sha256_file
 
@@ -119,8 +127,80 @@ def session_id() -> str:
     return f"{platform.node()}__{gpu_uuid}".replace("/", "_")
 
 
-def model_args(scratch: Path, seed: int) -> list[str]:
-    chain = stage_chain(scratch / f"chain_seed_{seed}", seed=seed, expected_p34=P34_SHA[seed])
+def stage_registered_chain(scratch: Path, seed: int) -> tuple[dict[str, Path], dict[str, Any]]:
+    """Stage the locked checkpoint chain, allowing one SHA-exact retained mirror."""
+
+    chain_root = scratch / f"chain_seed_{seed}"
+    drive_p34 = (
+        DRIVE_STAGE5 / P34_ID / f"private/main_seed_{seed}/checkpoint_step_4000.pt"
+    )
+    if drive_p34.is_file():
+        chain = stage_chain(chain_root, seed=seed, expected_p34=P34_SHA[seed])
+        return chain, {
+            "p34_source": "drive_canonical",
+            "source_path": str(drive_p34),
+            "expected_sha256": P34_SHA[seed],
+            "observed_sha256": sha256_file(chain["p34"]),
+        }
+
+    if seed != 1:
+        raise FileNotFoundError(drive_p34)
+    fallback_value = os.environ.get("STAGE2BS_SEED1_P34_FALLBACK", "").strip()
+    if not fallback_value:
+        raise RuntimeError(
+            "Seed-1 P3.4 Drive artifact is absent and STAGE2BS_SEED1_P34_FALLBACK is unset"
+        )
+    fallback = Path(fallback_value)
+    if not fallback.is_file():
+        raise FileNotFoundError(fallback)
+    fallback_sha = sha256_file(fallback)
+    if fallback_sha != P34_SHA[seed]:
+        raise RuntimeError(
+            "Seed-1 P3.4 retained-mirror SHA mismatch: "
+            f"expected={P34_SHA[seed]} observed={fallback_sha}"
+        )
+
+    chain = {
+        "migrated": chain_root / f"seed_{seed}_migrated.pt",
+        "p33": chain_root / f"seed_{seed}_p33_step_1000.pt",
+        "i1": chain_root / f"seed_{seed}_i1.pt",
+        "p34": chain_root / f"seed_{seed}_p34_step_4000.pt",
+    }
+    rsync(
+        DRIVE_STAGE5
+        / MIGRATION_ID
+        / f"private/migrated_checkpoints/seed_{seed}_full_a2_phase3_migrated.pt",
+        chain["migrated"],
+    )
+    rsync(DRIVE_STAGE5 / P33_ID / f"private/seed_{seed}/checkpoint_step_1000.pt", chain["p33"])
+    rsync(DRIVE_STAGE5 / I1_ID / f"private/seed_{seed}/resume.pt", chain["i1"])
+    chain["p34"].parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(fallback, chain["p34"])
+    expected = {
+        "migrated": MIGRATED_SHA[seed],
+        "p33": P33_SHA[seed],
+        "i1": I1_SHA[seed],
+        "p34": P34_SHA[seed],
+    }
+    for name, path in chain.items():
+        observed = sha256_file(path)
+        if observed != expected[name]:
+            raise RuntimeError(
+                f"Stage 2B-S staged {name} SHA mismatch: "
+                f"expected={expected[name]} observed={observed}"
+            )
+    return chain, {
+        "p34_source": "local_durable_sha_exact_fallback",
+        "source_path": str(fallback),
+        "missing_drive_path": str(drive_p34),
+        "expected_sha256": P34_SHA[seed],
+        "observed_sha256": fallback_sha,
+    }
+
+
+def model_args(scratch: Path, seed: int, receipts: Path) -> list[str]:
+    chain, provenance = stage_registered_chain(scratch, seed)
+    atomic_json(receipts / f"seed_{seed}/checkpoint_provenance.json", provenance)
     p35 = scratch / f"seed_{seed}_p35_ema_step_4400.pt"
     rsync(DRIVE_STAGE5 / P35_ID / f"private/arm_s_seed_{seed}/ema_step_4400.pt", p35)
     if sha256_file(p35) != P35_SHA[seed]:
@@ -231,7 +311,7 @@ def main() -> int:
                 str(generation_batch_size),
                 "--margin_batch_size",
                 str(margin_batch_size),
-                *model_args(scratch, seed),
+                *model_args(scratch, seed, receipts),
             ]
             if mode == "preflight":
                 command.append("--preflight_only")
