@@ -145,6 +145,10 @@ def main() -> int:
     mode = os.environ.get("STAGE2BS_DEPTH_MODE", "preflight").strip().lower()
     if mode not in {"preflight", "run"}:
         raise RuntimeError(f"Unknown Stage 2B-S depth-study mode: {mode}")
+    generation_batch_size = int(os.environ.get("STAGE2BS_DEPTH_GENERATION_BATCH_SIZE", "16"))
+    margin_batch_size = int(os.environ.get("STAGE2BS_DEPTH_MARGIN_BATCH_SIZE", "8"))
+    if generation_batch_size < 1 or margin_batch_size < 1:
+        raise RuntimeError("Stage 2B-S batch sizes must be positive")
     scratch = scratch_root()
     result = result_root(scratch)
     configured_durable = os.environ.get("STAGE2BS_DEPTH_DURABLE_ROOT", "").strip()
@@ -170,6 +174,8 @@ def main() -> int:
                 "confirm_scored": False,
                 "eval_e_scored": False,
                 "durable_root": str(durable),
+                "generation_batch_size": generation_batch_size,
+                "margin_batch_size": margin_batch_size,
                 **details,
             },
         )
@@ -211,6 +217,10 @@ def main() -> int:
                 str(private),
                 "--session_id",
                 session,
+                "--generation_batch_size",
+                str(generation_batch_size),
+                "--margin_batch_size",
+                str(margin_batch_size),
                 *model_args(scratch, seed),
             ]
             if mode == "preflight":
