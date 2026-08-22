@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="820" viewBox="0 0 1400 820" role="img" aria-labelledby="title desc">
+  <title id="title">Stage 2B-S serving-graph reconciliation</title>
+  <desc id="desc">The historical P3.5 scorer uses four sidecar-only flow updates and one final write, while the Stage 2B success graph uses three update-write-reentry cycles. Tensor agreement falls sharply at the first sidecar update in both seeds.</desc>
+  <rect width="1400" height="820" fill="#ffffff"/>
+  <text x="64" y="58" font-family="Arial, sans-serif" font-size="30" font-weight="700" fill="#17212b">Stage 2B-S serving-graph reconciliation</text>
+  <text x="64" y="88" font-family="Arial, sans-serif" font-size="16" fill="#52606d">Same prompt, same initialization checkpoint, K=4, gamma=0.05, A100 BF16/SDPA</text>
+
+  <text x="64" y="138" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#17212b">A. The two scorers execute different programs</text>
+  <text x="64" y="188" font-family="Arial, sans-serif" font-size="16" font-weight="700" fill="#126e82">Historical P3.5 amplitude scorer</text>
+  <g font-family="Arial, sans-serif" font-size="14" fill="#17212b" text-anchor="middle">
+    <rect x="64" y="210" width="190" height="56" rx="6" fill="#e8f4f7" stroke="#126e82" stroke-width="2"/>
+    <text x="159" y="243">Full frozen-base pass</text>
+    <rect x="308" y="210" width="270" height="56" rx="6" fill="#e8f4f7" stroke="#126e82" stroke-width="2"/>
+    <text x="443" y="235">Four sidecar-only flow steps</text>
+    <text x="443" y="254">no recurrent re-entry</text>
+    <rect x="632" y="210" width="230" height="56" rx="6" fill="#e8f4f7" stroke="#126e82" stroke-width="2"/>
+    <text x="747" y="235">One loop-4 bridge write</text>
+    <text x="747" y="254">at gamma 0.05</text>
+    <rect x="916" y="210" width="190" height="56" rx="6" fill="#e8f4f7" stroke="#126e82" stroke-width="2"/>
+    <text x="1011" y="243">LM-head projection</text>
+  </g>
+  <g stroke="#126e82" stroke-width="3" fill="none">
+    <path d="M254 238 H308"/><path d="M578 238 H632"/><path d="M862 238 H916"/>
+  </g>
+
+  <text x="64" y="316" font-family="Arial, sans-serif" font-size="16" font-weight="700" fill="#8a3e20">Registered Stage 2B success graph</text>
+  <g font-family="Arial, sans-serif" font-size="14" fill="#17212b" text-anchor="middle">
+    <rect x="64" y="338" width="190" height="56" rx="6" fill="#faeee8" stroke="#8a3e20" stroke-width="2"/>
+    <text x="159" y="362">Identity recurrent pass</text>
+    <text x="159" y="381">initializes state</text>
+    <rect x="308" y="328" width="554" height="76" rx="6" fill="#faeee8" stroke="#8a3e20" stroke-width="2"/>
+    <text x="585" y="354">Three cycles: multi-lane flow + constitutive update</text>
+    <text x="585" y="376">then bridge write, recurrent-block re-entry, and coda</text>
+    <rect x="916" y="338" width="190" height="56" rx="6" fill="#faeee8" stroke="#8a3e20" stroke-width="2"/>
+    <text x="1011" y="362">Loop-3 logits</text>
+    <text x="1011" y="381">define K=4 output</text>
+  </g>
+  <g stroke="#8a3e20" stroke-width="3" fill="none">
+    <path d="M254 366 H308"/><path d="M862 366 H916"/>
+  </g>
+  <rect x="1155" y="212" width="180" height="180" rx="6" fill="#f6f7f8" stroke="#c3cad1"/>
+  <text x="1175" y="242" font-family="Arial, sans-serif" font-size="15" font-weight="700" fill="#17212b">Operative finding</text>
+  <text x="1175" y="272" font-family="Arial, sans-serif" font-size="14" fill="#36424d">Stage 2B generated</text>
+  <text x="1175" y="293" font-family="Arial, sans-serif" font-size="14" fill="#36424d">the registered losses</text>
+  <text x="1175" y="314" font-family="Arial, sans-serif" font-size="14" fill="#36424d">and DEV floors.</text>
+  <text x="1175" y="345" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#8a3e20">Native K4 = 2/461</text>
+  <text x="1175" y="372" font-family="Arial, sans-serif" font-size="13" fill="#52606d">P3.5 K4 is descriptive</text>
+
+  <text x="64" y="460" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#17212b">B. Tensor cosine agreement falls at the first algorithmically different update</text>
+  <line x1="96" y1="716" x2="1324" y2="716" stroke="#7b8794" stroke-width="1.5"/>
+  <line x1="96" y1="510" x2="96" y2="716" stroke="#7b8794" stroke-width="1.5"/>
+  <g font-family="Arial, sans-serif" font-size="12" fill="#52606d">
+    <text x="62" y="720">0.0</text><text x="62" y="620">0.5</text><text x="62" y="516">1.0</text>
+    <text x="106" y="746" text-anchor="middle">Prefix</text>
+    <text x="300" y="746" text-anchor="middle">Initializer</text>
+    <text x="494" y="746" text-anchor="middle">Update 1</text>
+    <text x="688" y="746" text-anchor="middle">Update 2</text>
+    <text x="882" y="746" text-anchor="middle">Update 3</text>
+    <text x="1076" y="746" text-anchor="middle">Final logits</text>
+  </g>
+  <g stroke="#e1e5e8" stroke-width="1">
+    <line x1="96" y1="613" x2="1324" y2="613"/><line x1="96" y1="510" x2="1324" y2="510"/>
+  </g>
+  <polyline points="106,510 300,510 494,583 688,606 882,622 1076,584" fill="none" stroke="#126e82" stroke-width="4"/>
+  <polyline points="106,510 300,510 494,576 688,584 882,599 1076,583" fill="none" stroke="#8a3e20" stroke-width="4"/>
+  <g fill="#126e82">
+    <circle cx="106" cy="510" r="5"/><circle cx="300" cy="510" r="5"/><circle cx="494" cy="583" r="5"/><circle cx="688" cy="606" r="5"/><circle cx="882" cy="622" r="5"/><circle cx="1076" cy="584" r="5"/>
+  </g>
+  <g fill="#8a3e20">
+    <rect x="101" y="505" width="10" height="10"/><rect x="295" y="505" width="10" height="10"/><rect x="489" y="571" width="10" height="10"/><rect x="683" y="579" width="10" height="10"/><rect x="877" y="594" width="10" height="10"/><rect x="1071" y="578" width="10" height="10"/>
+  </g>
+  <g font-family="Arial, sans-serif" font-size="13" fill="#17212b">
+    <line x1="1162" y1="542" x2="1202" y2="542" stroke="#126e82" stroke-width="4"/><circle cx="1182" cy="542" r="5" fill="#126e82"/><text x="1215" y="547">Seed 0</text>
+    <line x1="1162" y1="571" x2="1202" y2="571" stroke="#8a3e20" stroke-width="4"/><rect x="1177" y="566" width="10" height="10" fill="#8a3e20"/><text x="1215" y="576">Seed 1</text>
+  </g>
+  <text x="494" y="790" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#8a3e20">First algorithmic divergence: update 1</text>
+  <text x="64" y="804" font-family="Arial, sans-serif" font-size="12" fill="#6b7785">Native evaluator replay was bit-exact for each graph in both seeds; no optimizer, training, CONFIRM, or EVAL-E read occurred.</text>
+</svg>

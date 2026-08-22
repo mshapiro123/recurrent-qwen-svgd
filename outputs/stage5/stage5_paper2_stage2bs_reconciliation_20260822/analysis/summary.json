@@ -1,0 +1,245 @@
+{
+  "kind": "paper2_stage2bs_reconciliation_wave_v1",
+  "status": "complete_score_only",
+  "authority": {
+    "drive_file_id": "1V4LREoiFsGlT-IsMMbuSO0WgPA78xArF",
+    "sha256": "4cb2f9b2e05da7bbe1400a43e64412df59743ecf921aaca1463605460537153f"
+  },
+  "identity_contract_result": {
+    "strict_bit_exact_equivalence": false,
+    "strict_first_divergence": "prefix_output",
+    "algorithmic_equivalence": false,
+    "algorithmic_first_divergence": "loop_1_post_state",
+    "explanation": "P3.5 executes four sidecar-only flow updates then one loop-4 bridge write and LM-head projection; Stage 2B executes one identity recurrent pass then three sidecar updates, three bridge writes, and three recurrent re-entries."
+  },
+  "success_defining_graph": "Stage2BTaskInferenceGraph",
+  "historical_p35_same_graph": false,
+  "registered_prediction_supported": false,
+  "seed_agreement": true,
+  "decision_mapping": "SCORER_ARTIFACT__BANK_NATIVE_STAGE2B_K4_AND_FOOTNOTE_P35_AMPLITUDE",
+  "optimizer_constructed": false,
+  "optimizer_steps": 0,
+  "training_performed": false,
+  "confirm_scored": false,
+  "eval_e_scored": false,
+  "seeds": [
+    {
+      "seed": 0,
+      "native_trace_validation": {
+        "p35": {
+          "bit_exact": true,
+          "comparable": true,
+          "cosine": 0.9999997019767761,
+          "left_top1": 1249,
+          "max_abs_delta": 0.0,
+          "rank_k": 128,
+          "right_top1": 1249,
+          "shape": [
+            1,
+            151936
+          ],
+          "top128_token_set_agreement": 1.0,
+          "top1_equal": true,
+          "top_abs_coordinate_agreement_at_k": 1.0
+        },
+        "stage2b": {
+          "bit_exact": true,
+          "comparable": true,
+          "cosine": 0.9999946355819702,
+          "left_top1": 785,
+          "max_abs_delta": 0.0,
+          "rank_k": 128,
+          "right_top1": 785,
+          "shape": [
+            1,
+            151936
+          ],
+          "top128_token_set_agreement": 1.0,
+          "top1_equal": true,
+          "top_abs_coordinate_agreement_at_k": 1.0
+        }
+      },
+      "strict_first_divergence": {
+        "classification": "prompt_or_prefix_semantics",
+        "comparison": {
+          "bit_exact": false,
+          "comparable": true,
+          "cosine": 1.0000711679458618,
+          "max_abs_delta": 0.0625,
+          "order": 1,
+          "rank_k": 32,
+          "shape": [
+            1,
+            118,
+            896
+          ],
+          "stage": "prefix_output",
+          "top_abs_coordinate_agreement_at_k": 1.0
+        },
+        "stage": "prefix_output"
+      },
+      "algorithmic_first_divergence": "loop_1_post_state",
+      "final_logits": {
+        "bit_exact": false,
+        "comparable": true,
+        "cosine": 0.6429545283317566,
+        "left_top1": 1249,
+        "max_abs_delta": 11.046875,
+        "rank_k": 128,
+        "right_top1": 785,
+        "shape": [
+          1,
+          151936
+        ],
+        "top128_token_set_agreement": 0.5078125,
+        "top1_equal": false,
+        "top_abs_coordinate_agreement_at_k": 0.5
+      },
+      "decision_mapping": "SCORER_ARTIFACT__BANK_NATIVE_STAGE2B_K4_AND_FOOTNOTE_P35_AMPLITUDE",
+      "initialization_immutable": true,
+      "metrics": {
+        "initializer_scratch": {
+          "cosine": 0.9999984502792358,
+          "max_abs_delta": 9.792391210794449E-05,
+          "top_rank_agreement": 1.0
+        },
+        "loop_1_post_state": {
+          "cosine": 0.6476166248321533,
+          "max_abs_delta": 0.46089544892311096,
+          "top_rank_agreement": 0.5625
+        },
+        "loop_2_post_state": {
+          "cosine": 0.5351517200469971,
+          "max_abs_delta": 0.6406354308128357,
+          "top_rank_agreement": 0.5
+        },
+        "prefix_output": {
+          "cosine": 1.0000711679458618,
+          "max_abs_delta": 0.0625,
+          "top_rank_agreement": 1.0
+        },
+        "loop_3_post_state": {
+          "cosine": 0.4548594057559967,
+          "max_abs_delta": 0.8317112922668457,
+          "top_rank_agreement": 0.34375
+        },
+        "final_next_token_logits": {
+          "cosine": 0.6429545283317566,
+          "max_abs_delta": 11.046875,
+          "top_rank_agreement": 0.5
+        }
+      },
+      "summary_sha256": "b52b4d6c36ea9076e4d7404ca3909f2d01631a85d4be2d88f1abd91ee6b53b8e",
+      "stage_table_sha256": "f6cd049d503ffe9836738007e847b25e6ac925e6cf6951d9348c19762293b079"
+    },
+    {
+      "seed": 1,
+      "native_trace_validation": {
+        "p35": {
+          "bit_exact": true,
+          "comparable": true,
+          "cosine": 0.999998152256012,
+          "left_top1": 1249,
+          "max_abs_delta": 0.0,
+          "rank_k": 128,
+          "right_top1": 1249,
+          "shape": [
+            1,
+            151936
+          ],
+          "top128_token_set_agreement": 1.0,
+          "top1_equal": true,
+          "top_abs_coordinate_agreement_at_k": 1.0
+        },
+        "stage2b": {
+          "bit_exact": true,
+          "comparable": true,
+          "cosine": 0.9999803304672241,
+          "left_top1": 785,
+          "max_abs_delta": 0.0,
+          "rank_k": 128,
+          "right_top1": 785,
+          "shape": [
+            1,
+            151936
+          ],
+          "top128_token_set_agreement": 1.0,
+          "top1_equal": true,
+          "top_abs_coordinate_agreement_at_k": 1.0
+        }
+      },
+      "strict_first_divergence": {
+        "classification": "prompt_or_prefix_semantics",
+        "comparison": {
+          "bit_exact": false,
+          "comparable": true,
+          "cosine": 1.0000711679458618,
+          "max_abs_delta": 0.0625,
+          "order": 1,
+          "rank_k": 32,
+          "shape": [
+            1,
+            118,
+            896
+          ],
+          "stage": "prefix_output",
+          "top_abs_coordinate_agreement_at_k": 1.0
+        },
+        "stage": "prefix_output"
+      },
+      "algorithmic_first_divergence": "loop_1_post_state",
+      "final_logits": {
+        "bit_exact": false,
+        "comparable": true,
+        "cosine": 0.6471863389015198,
+        "left_top1": 1249,
+        "max_abs_delta": 11.03125,
+        "rank_k": 128,
+        "right_top1": 785,
+        "shape": [
+          1,
+          151936
+        ],
+        "top128_token_set_agreement": 0.4921875,
+        "top1_equal": false,
+        "top_abs_coordinate_agreement_at_k": 0.484375
+      },
+      "decision_mapping": "SCORER_ARTIFACT__BANK_NATIVE_STAGE2B_K4_AND_FOOTNOTE_P35_AMPLITUDE",
+      "initialization_immutable": true,
+      "metrics": {
+        "initializer_scratch": {
+          "cosine": 0.9999984502792358,
+          "max_abs_delta": 9.487196803092957E-05,
+          "top_rank_agreement": 1.0
+        },
+        "loop_1_post_state": {
+          "cosine": 0.680999219417572,
+          "max_abs_delta": 0.6552550792694092,
+          "top_rank_agreement": 0.65625
+        },
+        "loop_2_post_state": {
+          "cosine": 0.6351110935211182,
+          "max_abs_delta": 0.8081343770027161,
+          "top_rank_agreement": 0.75
+        },
+        "prefix_output": {
+          "cosine": 1.0000711679458618,
+          "max_abs_delta": 0.0625,
+          "top_rank_agreement": 1.0
+        },
+        "loop_3_post_state": {
+          "cosine": 0.5733161568641663,
+          "max_abs_delta": 1.0164473056793213,
+          "top_rank_agreement": 0.625
+        },
+        "final_next_token_logits": {
+          "cosine": 0.6471863389015198,
+          "max_abs_delta": 11.03125,
+          "top_rank_agreement": 0.484375
+        }
+      },
+      "summary_sha256": "965a0c68886f0ec91735d42dfbff815f5f4f92288ec814dfffe45eefc85919c7",
+      "stage_table_sha256": "d3f019481cca5e5bd30b0986a06b0649fc90bd38a0a4478d407fccba6b0e8bf2"
+    }
+  ]
+}
