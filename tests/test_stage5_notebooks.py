@@ -4149,6 +4149,8 @@ def test_stage2bs_depth_study_target_is_wired_and_score_only() -> None:
     assert "STAGE2BS_DEPTH_DURABLE_ROOT" in runner
     assert "STAGE2BS_DEPTH_GENERATION_BATCH_SIZE" in runner
     assert "STAGE2BS_DEPTH_MARGIN_BATCH_SIZE" in runner
+    assert "generation_batch_size" in evaluator
+    assert "margin_batch_size" in evaluator
     assert "torch.optim" not in evaluator
     assert "optimizer.step" not in evaluator
 
