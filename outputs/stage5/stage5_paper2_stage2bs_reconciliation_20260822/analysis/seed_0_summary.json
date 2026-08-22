@@ -1,0 +1,231 @@
+{
+  "artifacts": {
+    "paired_trace_tensors": {
+      "path": "/mnt/local-scratch/recurrent-qwen-svgd-stage/stage5_paper2_stage2bs_reconciliation_20260822/results/private/seed_0/seed_0_paired_trace_tensors.pt",
+      "sha256": "420721d6145e5930210997afbbdc7a7168dcdc80be6dd02aa5ced64d572795d3"
+    },
+    "stage_table": {
+      "path": "/mnt/local-scratch/recurrent-qwen-svgd-stage/stage5_paper2_stage2bs_reconciliation_20260822/results/receipts/seed_0/seed_0_stage_table.json",
+      "sha256": "f6cd049d503ffe9836738007e847b25e6ac925e6cf6951d9348c19762293b079"
+    }
+  },
+  "authority": {
+    "drive_file_id": "1V4LREoiFsGlT-IsMMbuSO0WgPA78xArF",
+    "file_name": "STRATEGY_2BS_RECONCILIATION_HANDOFF_20260822.md",
+    "sha256": "4cb2f9b2e05da7bbe1400a43e64412df59743ecf921aaca1463605460537153f",
+    "size_bytes": 7370,
+    "status": "authorized_under_mark_ratification"
+  },
+  "checkpoint_chain": [
+    {
+      "label": "migrated",
+      "optimizer_state_absent": true,
+      "path": "/content/recurrent-qwen-svgd-stage/stage5_paper2_stage2bs_reconciliation_20260822/chain_seed_0/seed_0_migrated.pt",
+      "sha256": "d0f2b735825d29ab9801a5200493ca9aa65294778aea2fb7f728eb8e85dfc519",
+      "source_seed": 0,
+      "trainable_state_sha256": "97b4bd426f6a5ea265aa27c30520151761d460abebbb7112e23193f5e6a8d059"
+    },
+    {
+      "label": "p33",
+      "path": "/content/recurrent-qwen-svgd-stage/stage5_paper2_stage2bs_reconciliation_20260822/chain_seed_0/seed_0_p33_step_1000.pt",
+      "sha256": "84dc0fb2d1f69114b20888acd95101d6b31c810974a536dc36358b69fe13c70e",
+      "state_keys": [
+        "bridge.gate_control.weight",
+        "bridge.gate_hidden.weight",
+        "bridge.gate_logits",
+        "bridge.gate_scratch.weight",
+        "bridge.hidden_norm.weight",
+        "bridge.key.weight",
+        "bridge.output_projection.weight",
+        "bridge.query.weight",
+        "bridge.rho_logits",
+        "bridge.scratch_norm.weight",
+        "bridge.value.weight",
+        "control.cell.bias_hh",
+        "control.cell.bias_ih",
+        "control.cell.weight_hh",
+        "control.cell.weight_ih",
+        "control.position_embedding.weight"
+      ],
+      "step": 1000
+    },
+    {
+      "label": "i1",
+      "path": "/content/recurrent-qwen-svgd-stage/stage5_paper2_stage2bs_reconciliation_20260822/chain_seed_0/seed_0_i1.pt",
+      "sha256": "01c804bc69d35a01730fff236cf5a8d974899d2e4de7e15b92a227b2a9ce5d88",
+      "state_keys": [
+        "bridge.output_projection.weight"
+      ],
+      "step": 1000
+    },
+    {
+      "controller_rung": 1,
+      "label": "p34",
+      "path": "/content/recurrent-qwen-svgd-stage/stage5_paper2_stage2bs_reconciliation_20260822/chain_seed_0/seed_0_p34_step_4000.pt",
+      "sha256": "381955ec5b78d0a00883c29e9f940feac8cfc8665f7a3a4446c79734532f4ed7",
+      "state_keys": [
+        "bridge.gate_control.weight",
+        "bridge.gate_hidden.weight",
+        "bridge.gate_logits",
+        "bridge.gate_scratch.weight",
+        "bridge.hidden_norm.weight",
+        "bridge.key.weight",
+        "bridge.output_projection.weight",
+        "bridge.query.weight",
+        "bridge.rho_logits",
+        "bridge.scratch_norm.weight",
+        "bridge.value.weight",
+        "control.cell.bias_hh",
+        "control.cell.bias_ih",
+        "control.cell.weight_hh",
+        "control.cell.weight_ih",
+        "control.position_embedding.weight"
+      ],
+      "step": 4000
+    },
+    {
+      "control_reader": "mean",
+      "evaluation_gate_ceiling": 0.02,
+      "label": "p35",
+      "path": "/content/recurrent-qwen-svgd-stage/stage5_paper2_stage2bs_reconciliation_20260822/seed_0_p35_ema_step_4400.pt",
+      "sha256": "a047e2e7b35320376a736492c79d913b8690937da785efa2af002c8f54d26ca6",
+      "state_keys": [
+        "bridge.gate_control.weight",
+        "bridge.gate_hidden.weight",
+        "bridge.gate_logits",
+        "bridge.gate_scratch.weight",
+        "bridge.hidden_norm.weight",
+        "bridge.key.weight",
+        "bridge.output_projection.weight",
+        "bridge.query.weight",
+        "bridge.rho_logits",
+        "bridge.scratch_norm.weight",
+        "bridge.value.weight",
+        "control.cell.bias_hh",
+        "control.cell.bias_ih",
+        "control.cell.weight_hh",
+        "control.cell.weight_ih",
+        "control.position_embedding.weight"
+      ],
+      "step": 4400
+    }
+  ],
+  "confirm_scored": false,
+  "decision_mapping": "SCORER_ARTIFACT__BANK_NATIVE_STAGE2B_K4_AND_FOOTNOTE_P35_AMPLITUDE",
+  "eval_e_scored": false,
+  "final_logits": {
+    "bit_exact": false,
+    "comparable": true,
+    "cosine": 0.6429545283317566,
+    "left_top1": 1249,
+    "max_abs_delta": 11.046875,
+    "rank_k": 128,
+    "right_top1": 785,
+    "shape": [
+      1,
+      151936
+    ],
+    "top128_token_set_agreement": 0.5078125,
+    "top1_equal": false,
+    "top_abs_coordinate_agreement_at_k": 0.5
+  },
+  "first_divergence": {
+    "classification": "prompt_or_prefix_semantics",
+    "comparison": {
+      "bit_exact": false,
+      "comparable": true,
+      "cosine": 1.0000711679458618,
+      "max_abs_delta": 0.0625,
+      "order": 1,
+      "rank_k": 32,
+      "shape": [
+        1,
+        118,
+        896
+      ],
+      "stage": "prefix_output",
+      "top_abs_coordinate_agreement_at_k": 1.0
+    },
+    "stage": "prefix_output"
+  },
+  "initialization_immutable": true,
+  "initialization_state_digest_after": "9da0dc63863a7183797fad2b7753ef5d0cefb51c8f9f07783524f5710ded3ad1",
+  "initialization_state_digest_before": "9da0dc63863a7183797fad2b7753ef5d0cefb51c8f9f07783524f5710ded3ad1",
+  "kind": "paper2_stage2bs_reconciliation_v1",
+  "lock_sha256": "0396ae35200bcd60bee898bd593bcf0aa11d95a43dd34a4c79d1b6315cdb4121",
+  "matched_row": {
+    "battery": "gsm8k",
+    "item_id": "gsm8k-evaluation-763",
+    "prompt_token_sha256": "6ca3e188d33b4ce651a7e98de673f17cfba91e2138c9f9f37e71198aff819e12",
+    "prompt_tokens": 118
+  },
+  "optimizer_constructed": false,
+  "optimizer_steps": 0,
+  "registered_prediction_supported": false,
+  "runtime": {
+    "attention_backend": "sdpa",
+    "cuda": "12.8",
+    "gpu": "NVIDIA A100-SXM4-40GB",
+    "hostname": "4f503cbc48e8",
+    "torch": "2.11.0+cu128",
+    "weights_dtype": "bfloat16"
+  },
+  "seed": 0,
+  "source_provenance": {
+    "checks": {
+      "dev_floors_use_stage2b_graph": true,
+      "p35_serving_runs_flow_then_one_bridge": true,
+      "stage2b_serving_runs_recurrent_wrapper": true,
+      "training_uses_stage2b_wrapper": true
+    },
+    "files": {
+      "eval/eval_paper2_phase3_p34_task_inference.py": "f8372b4d21ff428fe13d0f13b063ad682eb0a634ce906860c0b4606a15521e7b",
+      "eval/eval_paper2_stage2b_campaign.py": "3bf9c0f2c1d5c8d69951ef023a15bebce421a19c5b113b01d47a0578737b3a83",
+      "training/run_paper2_stage2b_depth.py": "dbe8fe0d1630434c1f2ebb84c474deeb324554876bb4029e032a2333a6cfb08e"
+    },
+    "historical_p35_graph": "P34TaskInferenceGraph_one_base_forward_four_sidecar_steps_one_bridge_write",
+    "same_graph": false,
+    "success_defining_graph": "Stage2BTaskInferenceGraph_over_RecurrentQwenForCausalLM"
+  },
+  "status": "complete_score_only",
+  "trace_semantics": {
+    "p35": "four sidecar flow updates followed by one loop-4 bridge write and one LM-head projection",
+    "stage2b": "one identity recurrent pass followed by three sidecar updates, three bridge writes, and three recurrent re-entries",
+    "stage2b_loop_labels": "loop_i denotes sidecar update i; the initial identity pass is recorded under base_*"
+  },
+  "trace_validation": {
+    "p35": {
+      "bit_exact": true,
+      "comparable": true,
+      "cosine": 0.9999997019767761,
+      "left_top1": 1249,
+      "max_abs_delta": 0.0,
+      "rank_k": 128,
+      "right_top1": 1249,
+      "shape": [
+        1,
+        151936
+      ],
+      "top128_token_set_agreement": 1.0,
+      "top1_equal": true,
+      "top_abs_coordinate_agreement_at_k": 1.0
+    },
+    "stage2b": {
+      "bit_exact": true,
+      "comparable": true,
+      "cosine": 0.9999946355819702,
+      "left_top1": 785,
+      "max_abs_delta": 0.0,
+      "rank_k": 128,
+      "right_top1": 785,
+      "shape": [
+        1,
+        151936
+      ],
+      "top128_token_set_agreement": 1.0,
+      "top1_equal": true,
+      "top_abs_coordinate_agreement_at_k": 1.0
+    }
+  },
+  "training_performed": false
+}

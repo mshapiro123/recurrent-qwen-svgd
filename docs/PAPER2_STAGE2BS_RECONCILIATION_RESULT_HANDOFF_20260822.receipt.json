@@ -1,0 +1,23 @@
+{
+  "figure_png": {
+    "drive_file_id": "1dCHDyicmtLJZcaWeRZK_laIljs0Vp2t1",
+    "file_name": "paper2_stage2bs_reconciliation_20260822.png",
+    "sha256": "72f0354159a6ab1ee992eabd84b1754bd9eed1706d227d4ecd51a09c86bdce42",
+    "size_bytes": 71219
+  },
+  "figure_svg": {
+    "drive_file_id": "1FmjHsxDu6-_PJtEqdgdSNOAEcl__UO75",
+    "file_name": "paper2_stage2bs_reconciliation_20260822.svg",
+    "sha256": "077d8b38ad0e62f62cf5770e4cda2837bdab6eacd20838c508c60c57dce6ffe7",
+    "size_bytes": 6629
+  },
+  "handoff": {
+    "drive_file_id": "1LRXB5QpAMOjdtPhm5pKBYnD0MPClGzDM",
+    "file_name": "PAPER2_STAGE2BS_RECONCILIATION_RESULT_HANDOFF_20260822.md",
+    "sha256": "29ccff05bbffb6863155ce50cff8ca4424b9a7b03057d600fda92cf70c65ebc8",
+    "size_bytes": 12613
+  },
+  "kind": "paper2_stage2bs_reconciliation_handoff_publication_receipt_v1",
+  "parent_drive_folder_id": "1aSbU2i8JZ37g5bJpyweLuvFaV0y92Qjr",
+  "status": "published_and_byte_hashed"
+}
