@@ -4514,6 +4514,32 @@ TARGETS = {
         ],
         "env": {},
     },
+    "paper2_stage2bs_depth_preflight": {
+        "path": "colab/STAGE5_PAPER2_STAGE2BS_DEPTH_STUDY_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_STAGE2BS_DEPTH_STUDY_VERSION",
+            "paper2_stage2bs_depth_study_v1",
+            "native 162 10 2 2 preflight before every variant cell",
+            "provenance-tagged schedules no hybrid K curves",
+            "461-row generation plus 2048-row DEV-2 margins both seeds both endpoints",
+            "score-only no optimizer no training CONFIRM and EVAL-E sealed",
+            "colab.run_stage5_paper2_stage2bs_depth_study",
+        ],
+        "env": {"STAGE2BS_DEPTH_MODE": "preflight"},
+    },
+    "paper2_stage2bs_depth_study": {
+        "path": "colab/STAGE5_PAPER2_STAGE2BS_DEPTH_STUDY_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_STAGE2BS_DEPTH_STUDY_VERSION",
+            "paper2_stage2bs_depth_study_v1",
+            "native 162 10 2 2 preflight before every variant cell",
+            "provenance-tagged schedules no hybrid K curves",
+            "461-row generation plus 2048-row DEV-2 margins both seeds both endpoints",
+            "score-only no optimizer no training CONFIRM and EVAL-E sealed",
+            "colab.run_stage5_paper2_stage2bs_depth_study",
+        ],
+        "env": {"STAGE2BS_DEPTH_MODE": "run"},
+    },
     "paper2_phase3_kp1_t1": {
         "path": "colab/STAGE5_PAPER2_PHASE3_KP1_T1_CELL.py",
         "markers": [
