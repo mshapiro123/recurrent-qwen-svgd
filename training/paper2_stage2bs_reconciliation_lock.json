@@ -1,0 +1,65 @@
+{
+  "authority": {
+    "drive_file_id": "1V4LREoiFsGlT-IsMMbuSO0WgPA78xArF",
+    "file_name": "STRATEGY_2BS_RECONCILIATION_HANDOFF_20260822.md",
+    "sha256": "4cb2f9b2e05da7bbe1400a43e64412df59743ecf921aaca1463605460537153f",
+    "size_bytes": 7370,
+    "status": "authorized_under_mark_ratification"
+  },
+  "constraints": {
+    "confirm_scored": false,
+    "eval_e_scored": false,
+    "optimizer_constructed": false,
+    "optimizer_steps": 0,
+    "runtime_pinned": true,
+    "training_authorized": false
+  },
+  "identity_contract": {
+    "comparison": {
+      "amplitude": 0.05,
+      "checkpoint": "identical_immutable_stage2b_initialization_state",
+      "flow_loops": 4,
+      "generation_prefix": "identical",
+      "prompt_tokens": "identical",
+      "runtime": "identical_dtype_backend_and_process"
+    },
+    "equivalence_claim": "The P3.5 amplitude evaluator and Stage 2B task-inference evaluator are equivalent only if both execute the same ordered initializer, recurrent state update, capped AnchoredBridge write, and suffix/head computation four times with identical reset and cache semantics.",
+    "first_divergence_rule": "The earliest required identity checkpoint that fails defines the first divergence.",
+    "required_identity_checkpoints": [
+      "tokenized_inputs",
+      "prefix_output",
+      "initializer_scratch_and_context",
+      "loop_1_pre_and_post_state",
+      "loop_1_uncapped_and_capped_write",
+      "loop_1_suffix_head_input",
+      "loop_2_pre_and_post_state",
+      "loop_2_uncapped_and_capped_write",
+      "loop_2_suffix_head_input",
+      "loop_3_pre_and_post_state",
+      "loop_3_uncapped_and_capped_write",
+      "loop_3_suffix_head_input",
+      "loop_4_pre_and_post_state",
+      "loop_4_uncapped_and_capped_write",
+      "loop_4_suffix_head_input",
+      "final_next_token_logits"
+    ],
+    "same_process_tolerance": "bit_exact",
+    "success_defining_graph_rule": "The authoritative graph is the graph that generated the registered Stage 2B-D CE, forward-KL, monotonicity losses, and DEV floors, established from static call-chain provenance and a matched dynamic trace rather than evaluator naming."
+  },
+  "kind": "paper2_stage2bs_reconciliation_lock_v1",
+  "locked_before_trace": true,
+  "registered_prediction": {
+    "first_divergence": "bridge_or_amplitude_application",
+    "p35_semantics": "single_strong_corrective_write",
+    "predicted_success_defining_graph": "stage2b_task_inference_graph"
+  },
+  "retention": [
+    "identity_contract",
+    "runtime_manifest",
+    "matched_row_manifest",
+    "per_stage_trace_table",
+    "first_divergence_classification",
+    "success_defining_graph_determination",
+    "artifact_sha256_manifest"
+  ]
+}
