@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import json
+import shutil
 from pathlib import Path
 
 import torch
 
+from colab import run_stage5_paper2_stage2bs_depth_study as depth_runner
 from eval.eval_paper2_stage2bs_depth_study import Stage2BScheduleGraph
 from models.paper2_dc2_student import Phase3StudentModules
 from models.paper2_stage2b_depth import Stage2BDepthAttachment
@@ -21,6 +23,10 @@ from training.paper2_stage2bs_depth_study import (
 
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def _sha(path: Path) -> str:
+    return depth_runner.sha256_file(path)
 
 
 def _tiny_wrapper() -> tuple[RecurrentQwenForCausalLM, torch.Tensor, torch.Tensor]:
@@ -195,3 +201,50 @@ def test_every_schedule_emits_finite_full_sequence_logits() -> None:
         ).sequence_logits(input_ids=tokens, attention_mask=mask)
         assert logits.shape[:2] == tokens.shape
         assert torch.isfinite(logits).all()
+
+
+def test_seed1_p34_sha_exact_fallback_is_provenance_receipted(
+    tmp_path: Path, monkeypatch
+) -> None:
+    drive = tmp_path / "drive"
+    inputs = {
+        "migrated": drive
+        / depth_runner.MIGRATION_ID
+        / "private/migrated_checkpoints/seed_1_full_a2_phase3_migrated.pt",
+        "p33": drive / depth_runner.P33_ID / "private/seed_1/checkpoint_step_1000.pt",
+        "i1": drive / depth_runner.I1_ID / "private/seed_1/resume.pt",
+    }
+    for name, path in inputs.items():
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(f"locked-{name}".encode())
+    fallback = tmp_path / "seed1-p34.pt"
+    fallback.write_bytes(b"locked-p34")
+    monkeypatch.setattr(depth_runner, "DRIVE_STAGE5", drive)
+    monkeypatch.setitem(depth_runner.MIGRATED_SHA, 1, _sha(inputs["migrated"]))
+    monkeypatch.setitem(depth_runner.P33_SHA, 1, _sha(inputs["p33"]))
+    monkeypatch.setitem(depth_runner.I1_SHA, 1, _sha(inputs["i1"]))
+    monkeypatch.setitem(depth_runner.P34_SHA, 1, _sha(fallback))
+    monkeypatch.setenv("STAGE2BS_SEED1_P34_FALLBACK", str(fallback))
+
+    def copy(source: Path, destination: Path) -> None:
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source, destination)
+
+    monkeypatch.setattr(depth_runner, "rsync", copy)
+    chain, provenance = depth_runner.stage_registered_chain(tmp_path / "scratch", 1)
+    assert _sha(chain["p34"]) == _sha(fallback)
+    assert provenance["p34_source"] == "local_durable_sha_exact_fallback"
+    assert provenance["observed_sha256"] == provenance["expected_sha256"]
+
+
+def test_seed1_p34_fallback_rejects_wrong_hash(tmp_path: Path, monkeypatch) -> None:
+    fallback = tmp_path / "wrong.pt"
+    fallback.write_bytes(b"wrong")
+    monkeypatch.setattr(depth_runner, "DRIVE_STAGE5", tmp_path / "missing-drive")
+    monkeypatch.setenv("STAGE2BS_SEED1_P34_FALLBACK", str(fallback))
+    try:
+        depth_runner.stage_registered_chain(tmp_path / "scratch", 1)
+    except RuntimeError as error:
+        assert "retained-mirror SHA mismatch" in str(error)
+    else:
+        raise AssertionError("Wrong-hash seed-1 fallback was accepted")
