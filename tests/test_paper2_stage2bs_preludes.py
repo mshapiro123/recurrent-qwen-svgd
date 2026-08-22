@@ -56,6 +56,14 @@ def test_prelude_lock_records_the_ratified_f1_estimator() -> None:
     assert lock["sealed"] == {"confirm_scored": False, "eval_e_scored": False}
 
 
+def test_preflight_partials_are_durable_and_resumable() -> None:
+    runner = (ROOT / "colab/run_stage5_paper2_stage2bs_preludes.py").read_text(
+        encoding="utf-8"
+    )
+    assert 'private = DRIVE_RUN / f"private/preflight/seed_{seed}"' in runner
+    assert 'private = scratch / f"preflight_seed_{seed}"' not in runner
+
+
 def test_registered_wp_initialization_has_zero_relative_denominator() -> None:
     wrapper, _ids, _attention = _wrapper(randomize_innovation=False)
     weight = wrapper.stage2b_depth_attachment.flow.prompt_gate.weight
