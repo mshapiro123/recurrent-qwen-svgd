@@ -22,6 +22,14 @@
     "0": [162, 10, 2, 2],
     "1": [162, 9, 5, 2]
   },
+  "initialization": {
+    "seed_base": 20260819,
+    "state_digest_by_seed": {
+      "0": "f4c8bcc7497c5502e2ea321278e85c5ef5a812755b8fe413dcfc507c3b003b18",
+      "1": "3421b93d0f0a7ae6005a10c170e96f9ea7dfc1396a4c66180b28fd925ffa36c6"
+    },
+    "estimator_source": "banked Stage 2B-S prelude initialization receipts"
+  },
   "schedules": [
     "native_interleaved",
     "deferred_terminal_write_no_reentry",
