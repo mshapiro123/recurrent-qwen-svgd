@@ -62,6 +62,10 @@ class P34NextTokenOutput:
     memory_slot_indices: torch.Tensor | None = None
     memory_slot_scores: torch.Tensor | None = None
     memory_slot_weights: torch.Tensor | None = None
+    accumulated_write_magnitude: torch.Tensor | None = None
+    deployed_write_magnitude: torch.Tensor | None = None
+    accumulated_write_ratio: torch.Tensor | None = None
+    deployed_write_ratio: torch.Tensor | None = None
 
 
 @dataclass

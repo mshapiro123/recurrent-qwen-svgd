@@ -4518,7 +4518,7 @@ TARGETS = {
         "path": "colab/STAGE5_PAPER2_STAGE2BS_DEPTH_STUDY_CELL.py",
         "markers": [
             "STAGE5_PAPER2_STAGE2BS_DEPTH_STUDY_VERSION",
-            "paper2_stage2bs_depth_study_v2",
+            "paper2_stage2bs_depth_study_v3",
             "banked native curves 162 10 2 2 and 162 9 5 1",
             "cascade direct discriminator stops before either branch",
             "provenance-tagged schedules no hybrid K curves",
@@ -4532,7 +4532,7 @@ TARGETS = {
         "path": "colab/STAGE5_PAPER2_STAGE2BS_DEPTH_STUDY_CELL.py",
         "markers": [
             "STAGE5_PAPER2_STAGE2BS_DEPTH_STUDY_VERSION",
-            "paper2_stage2bs_depth_study_v2",
+            "paper2_stage2bs_depth_study_v3",
             "banked native curves 162 10 2 2 and 162 9 5 1",
             "cascade direct discriminator stops before either branch",
             "provenance-tagged schedules no hybrid K curves",
@@ -4546,7 +4546,7 @@ TARGETS = {
         "path": "colab/STAGE5_PAPER2_STAGE2BS_DEPTH_STUDY_CELL.py",
         "markers": [
             "STAGE5_PAPER2_STAGE2BS_DEPTH_STUDY_VERSION",
-            "paper2_stage2bs_depth_study_v2",
+            "paper2_stage2bs_depth_study_v3",
             "banked native curves 162 10 2 2 and 162 9 5 1",
             "cascade direct discriminator stops before either branch",
             "provenance-tagged schedules no hybrid K curves",
@@ -4555,6 +4555,19 @@ TARGETS = {
             "colab.run_stage5_paper2_stage2bs_depth_study",
         ],
         "env": {"STAGE2BS_DEPTH_MODE": "cascade_direct"},
+    },
+    "paper2_stage2bs_cascade_final": {
+        "path": "colab/STAGE5_PAPER2_STAGE2BS_DEPTH_STUDY_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_STAGE2BS_DEPTH_STUDY_VERSION",
+            "paper2_stage2bs_depth_study_v3",
+            "banked native curves 162 10 2 2 and 162 9 5 1",
+            "final per-loop no-reentry cell dual accumulated and deployed write telemetry",
+            "DEV-2 margins mandatory only on the final deciding cell",
+            "score-only no optimizer no training CONFIRM and EVAL-E sealed",
+            "colab.run_stage5_paper2_stage2bs_depth_study",
+        ],
+        "env": {"STAGE2BS_DEPTH_MODE": "cascade_final"},
     },
     "paper2_phase3_kp1_t1": {
         "path": "colab/STAGE5_PAPER2_PHASE3_KP1_T1_CELL.py",

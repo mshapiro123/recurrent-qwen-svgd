@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any, Mapping, Sequence
 
 
-LOCK_KIND = "paper2_stage2bs_depth_study_cascade_lock_v2"
+LOCK_KIND = "paper2_stage2bs_depth_study_cascade_lock_v3"
 SCHEDULES = (
     "native_interleaved",
     "deferred_terminal_write_no_reentry",
@@ -24,6 +24,9 @@ EXPECTED_INITIALIZATION_STATE_DIGESTS = {
 ADDITIVITY_FLOOR_ROWS = 20
 DIRECT_SCHEDULE = "deferred_terminal_write_no_reentry"
 DIRECT_AMPLITUDE = 0.05
+FINAL_SCHEDULE = "per_loop_write_no_reentry"
+FINAL_AMPLITUDE = 0.05
+FINAL_FLAT_BAND_ROWS = 9
 
 
 def sha256_file(path: str | Path) -> str:
@@ -63,6 +66,12 @@ def validate_lock(lock: Mapping[str, Any]) -> None:
         "sha256": "6a52d1bc1e57fd403cfaa767b6029b5d7a8f206751bfeb03e4a80eb08b0ce7e7",
     }:
         raise RuntimeError("Stage 2B-S math-foundations basis changed")
+    if lock.get("final_cell_authority") != {
+        "drive_id": "1JB2gFt7cwthK4gyY4BgBCVNUfKoStDqF",
+        "bytes": 4196,
+        "sha256": "60b52390d2db1e898a88bffaba494211e700322154c08208edc462f684c20911",
+    }:
+        raise RuntimeError("Stage 2B-S final-cell authority changed")
     if lock.get("expected_native_counts") != {
         str(seed): values for seed, values in EXPECTED_NATIVE_COUNTS.items()
     }:
@@ -128,6 +137,42 @@ def validate_lock(lock: Mapping[str, Any]) -> None:
         raise RuntimeError("Stage 2B-S final margin requirement changed")
     if cascade.get("all_three_fail_action") != "bank_SUBTRACTIVE_and_close_implementation_line":
         raise RuntimeError("Stage 2B-S close-out clause changed")
+    if cascade.get("final_cell") != {
+        "endpoint": "initialization",
+        "schedule": FINAL_SCHEDULE,
+        "amplitude": FINAL_AMPLITUDE,
+        "k_values": [1, 2, 3, 4],
+        "both_seeds": True,
+        "flat_band_rows": FINAL_FLAT_BAND_ROWS,
+        "effect_floor_rows": ADDITIVITY_FLOOR_ROWS,
+        "flat_requires_accumulated_write_growth": True,
+        "flat_action": "bank_SCHEDULE_NEUTRALIZED_and_close_cascade",
+        "improves_or_collapses_or_split_action": "stop_and_relay",
+        "partial_interleave_authorized": False,
+    }:
+        raise RuntimeError("Stage 2B-S final-cell contract changed")
+    if cascade.get("dual_write_telemetry") != {
+        "accumulated_raw": (
+            "sum across writes of active-token RMS for each incremental bridge delta "
+            "before aggregation"
+        ),
+        "deployed_raw": (
+            "active-token RMS of final post-write hidden minus the pre-write post-coda hidden"
+        ),
+        "normalized": (
+            "each raw magnitude divided by active-token RMS of the pre-write post-coda hidden"
+        ),
+    }:
+        raise RuntimeError("Stage 2B-S dual-write telemetry contract changed")
+    if cascade.get("flat_followup_margins") != {
+        "schedule": DIRECT_SCHEDULE,
+        "endpoint": "initialization",
+        "amplitude": DIRECT_AMPLITUDE,
+        "k_values": [1, 4],
+        "seeds": [0, 1],
+        "rows_per_cell": 2048,
+    }:
+        raise RuntimeError("Stage 2B-S final margin contract changed")
 
 
 def load_lock(path: str | Path) -> dict[str, Any]:
@@ -236,4 +281,77 @@ def resolve_direct_branch(
         "clears_k1_plus_20_by_seed": {str(seed): clears[seed] for seed in sorted(clears)},
         "best_higher_k_by_seed": {str(seed): best[seed] for seed in sorted(best)},
         "requires_relay_before_branch": True,
+    }
+
+
+def resolve_final_cell(rows: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
+    """Apply the ratified final-cell map without opening partial interleave."""
+
+    by_seed = {
+        seed: [row for row in rows if int(row["seed"]) == seed]
+        for seed in (0, 1)
+    }
+    if any(sorted(int(row["k"]) for row in cells) != [1, 2, 3, 4] for cells in by_seed.values()):
+        raise RuntimeError("Stage 2B-S final cell lacks registered K coverage")
+    classifications: dict[int, str] = {}
+    diagnostics: dict[int, dict[str, Any]] = {}
+    for seed, cells in by_seed.items():
+        if any(
+            row.get("endpoint") != "initialization"
+            or row.get("schedule") != FINAL_SCHEDULE
+            or float(row.get("amplitude", -1.0)) != FINAL_AMPLITUDE
+            for row in cells
+        ):
+            raise RuntimeError("Stage 2B-S final cell contains an off-contract row")
+        ordered = sorted(cells, key=lambda row: int(row["k"]))
+        counts = [int(row["correct"]) for row in ordered]
+        accumulated = [float(row["accumulated_write_magnitude_mean"]) for row in ordered]
+        improves = max(counts[1:]) - 162 >= ADDITIVITY_FLOOR_ROWS
+        collapses = 162 - min(counts[1:]) >= ADDITIVITY_FLOOR_ROWS
+        flat = all(abs(value - counts[0]) <= FINAL_FLAT_BAND_ROWS for value in counts)
+        grows = all(
+            later > earlier
+            for earlier, later in zip(accumulated, accumulated[1:])
+        )
+        if improves:
+            classification = "IMPROVES_REQUIRED_RELAY"
+        elif collapses:
+            classification = "COLLAPSES_REQUIRED_RELAY"
+        elif flat and grows:
+            classification = "FLAT_ACCUMULATING"
+        else:
+            classification = "AMBIGUOUS_REQUIRED_RELAY"
+        classifications[seed] = classification
+        diagnostics[seed] = {
+            "correct_by_k": counts,
+            "delta_vs_native_k1_by_k": [value - 162 for value in counts],
+            "accumulated_write_magnitude_mean_by_k": accumulated,
+            "deployed_write_magnitude_mean_by_k": [
+                float(row["deployed_write_magnitude_mean"]) for row in ordered
+            ],
+            "flat_within_rows": FINAL_FLAT_BAND_ROWS,
+            "accumulated_write_strictly_grows": grows,
+            "classification": classification,
+        }
+    values = set(classifications.values())
+    if values == {"FLAT_ACCUMULATING"}:
+        verdict = "SCHEDULE_NEUTRALIZED_AWAITING_MARGIN_BANK"
+        score_margins = True
+    elif len(values) > 1:
+        verdict = "STOP_SEED_SPLIT_REQUIRED_RELAY"
+        score_margins = False
+    else:
+        verdict = next(iter(values))
+        score_margins = False
+    return {
+        "verdict": verdict,
+        "classification_by_seed": {
+            str(seed): classifications[seed] for seed in sorted(classifications)
+        },
+        "diagnostics_by_seed": {
+            str(seed): diagnostics[seed] for seed in sorted(diagnostics)
+        },
+        "score_registered_deferred_margins": score_margins,
+        "partial_interleave_authorized": False,
+        "requires_relay": not score_margins,
     }

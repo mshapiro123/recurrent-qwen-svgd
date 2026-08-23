@@ -4137,14 +4137,17 @@ def test_stage2bs_depth_study_target_is_wired_and_score_only() -> None:
     assert '"paper2_stage2bs_depth_preflight"' in bootstrap
     assert '"paper2_stage2bs_depth_study"' in bootstrap
     assert '"paper2_stage2bs_cascade_direct"' in bootstrap
+    assert '"paper2_stage2bs_cascade_final"' in bootstrap
     assert '"STAGE2BS_DEPTH_MODE": "preflight"' in bootstrap
     assert '"STAGE2BS_DEPTH_MODE": "cascade_direct"' in bootstrap
+    assert '"STAGE2BS_DEPTH_MODE": "cascade_final"' in bootstrap
     assert '"STAGE2BS_DEPTH_MODE": "run"' in bootstrap
     assert "banked native curves 162 10 2 2 and 162 9 5 1" in cell
     assert "cascade direct discriminator stops before either branch" in cell
     assert "provenance-tagged schedules no hybrid K curves" in cell
     assert "DEV-2 margins mandatory only on the final deciding cell" in cell
     assert "score-only no optimizer no training CONFIRM and EVAL-E sealed" in cell
+    assert "final per-loop no-reentry cell dual accumulated and deployed write telemetry" in cell
     assert "optimizer_constructed" in runner
     assert "optimizer_steps" in runner
     assert "confirm_scored" in runner

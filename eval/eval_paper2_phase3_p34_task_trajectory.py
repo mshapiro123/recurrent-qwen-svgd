@@ -439,6 +439,18 @@ def score_generation(
             gate_steps: list[torch.Tensor] = []
             ratio_steps: list[torch.Tensor] = []
             margin_steps: list[torch.Tensor] = []
+            write_steps: dict[str, list[torch.Tensor]] = {
+                "accumulated_write_magnitude": [],
+                "deployed_write_magnitude": [],
+                "accumulated_write_ratio": [],
+                "deployed_write_ratio": [],
+            }
+            write_fields_present = [
+                getattr(output, name, None) is not None for name in write_steps
+            ]
+            if any(write_fields_present) and not all(write_fields_present):
+                raise RuntimeError("partial dual-write telemetry is not admissible")
+            has_write_telemetry = all(write_fields_present)
             vectorized_telemetry = output.memory_compatibility_gate is None
             finished_mask = torch.zeros(
                 len(batch), dtype=torch.bool, device=graph.device
@@ -450,6 +462,12 @@ def score_generation(
                     gate_steps.append(output.position_gate.detach())
                     ratio_steps.append(output.writeback_ratio.detach())
                     margin_steps.append(output.answer_token_margin.detach())
+                    if has_write_telemetry:
+                        for name, values in write_steps.items():
+                            tensor = getattr(output, name)
+                            if tensor is None:
+                                raise RuntimeError("dual-write telemetry disappeared during generation")
+                            values.append(tensor.detach())
                     if tokenizer.eos_token_id is not None:
                         finished_mask |= selected_tokens.eq(int(tokenizer.eos_token_id))
                 else:
@@ -482,6 +500,11 @@ def score_generation(
                 gate_rows = torch.stack(gate_steps, dim=1).float().cpu().tolist()
                 ratio_rows = torch.stack(ratio_steps, dim=1).float().cpu().tolist()
                 margin_rows = torch.stack(margin_steps, dim=1).float().cpu().tolist()
+                write_rows = {
+                    name: torch.stack(values, dim=1).float().cpu().tolist()
+                    for name, values in write_steps.items()
+                    if values
+                }
                 for index, token_ids in enumerate(token_rows):
                     length = len(token_ids)
                     if (
@@ -493,6 +516,10 @@ def score_generation(
                     gates[index] = [float(value) for value in gate_rows[index][:length]]
                     ratios[index] = [float(value) for value in ratio_rows[index][:length]]
                     margins[index] = [float(value) for value in margin_rows[index][:length]]
+                    for name, rows_by_item in write_rows.items():
+                        memory[index][name] = [
+                            float(value) for value in rows_by_item[index][:length]
+                        ]
             batch_results = []
             for row, token_ids, row_gates, row_ratios, row_margins, row_memory in zip(
                 batch, generated, gates, ratios, margins, memory
@@ -519,6 +546,16 @@ def score_generation(
                             memory_entropies=row_memory.get("memory_entropies", ()),
                             memory_slot_ids=row_memory.get("memory_slot_ids", ()),
                         ),
+                        **{
+                            f"{name}_{stat}": (
+                                sum(row_memory[name]) / len(row_memory[name])
+                                if stat == "mean"
+                                else max(row_memory[name])
+                            )
+                            for name in write_steps
+                            if row_memory.get(name)
+                            for stat in ("mean", "max")
+                        },
                     }
                 )
             results.extend(batch_results)

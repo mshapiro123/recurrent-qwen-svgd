@@ -18,6 +18,7 @@ from training.paper2_stage2bs_depth_study import (
     INITIALIZATION_SEED_BASE,
     load_lock,
     resolve_direct_branch,
+    resolve_final_cell,
     resolve_keys,
     schedule_amplitudes,
 )
@@ -70,6 +71,12 @@ def test_locked_contract_is_machine_readable() -> None:
     assert lock["cascade"]["direct_discriminator"]["stop_after_both_seeds"] is True
     assert lock["cascade"]["all_three_fail_action"] == (
         "bank_SUBTRACTIVE_and_close_implementation_line"
+    )
+    assert lock["cascade"]["final_cell"]["partial_interleave_authorized"] is False
+    authority = ROOT / "docs/STRATEGY_2BS_FINAL_CELL_AUTHORIZATION_20260823.md"
+    assert authority.stat().st_size == 4196
+    assert _sha(authority) == (
+        "60b52390d2db1e898a88bffaba494211e700322154c08208edc462f684c20911"
     )
 
 
@@ -156,6 +163,48 @@ def test_direct_cascade_seed_split_enters_neither_branch() -> None:
         )
     result = resolve_direct_branch(rows, native_k1_by_seed={0: 162, 1: 162})
     assert result["branch"] == "STOP_SEED_SPLIT_REQUIRED_RELAY"
+
+
+def _final_rows(seed: int, counts: list[int]) -> list[dict[str, object]]:
+    return [
+        {
+            "seed": seed,
+            "endpoint": "initialization",
+            "schedule": "per_loop_write_no_reentry",
+            "amplitude": 0.05,
+            "k": k,
+            "correct": count,
+            "accumulated_write_magnitude_mean": float(k),
+            "deployed_write_magnitude_mean": 0.5,
+        }
+        for k, count in enumerate(counts, start=1)
+    ]
+
+
+def test_final_cell_flat_accumulating_opens_only_registered_margins() -> None:
+    result = resolve_final_cell(_final_rows(0, [159] * 4) + _final_rows(1, [159] * 4))
+    assert result["verdict"] == "SCHEDULE_NEUTRALIZED_AWAITING_MARGIN_BANK"
+    assert result["score_registered_deferred_margins"] is True
+    assert result["partial_interleave_authorized"] is False
+
+
+def test_final_cell_surprises_stop_before_margins() -> None:
+    improves = resolve_final_cell(
+        _final_rows(0, [159, 183, 183, 183])
+        + _final_rows(1, [159, 183, 183, 183])
+    )
+    assert improves["verdict"] == "IMPROVES_REQUIRED_RELAY"
+    assert improves["score_registered_deferred_margins"] is False
+    collapses = resolve_final_cell(
+        _final_rows(0, [159, 140, 140, 140])
+        + _final_rows(1, [159, 140, 140, 140])
+    )
+    assert collapses["verdict"] == "COLLAPSES_REQUIRED_RELAY"
+    split = resolve_final_cell(
+        _final_rows(0, [159] * 4) + _final_rows(1, [159, 183, 183, 183])
+    )
+    assert split["verdict"] == "STOP_SEED_SPLIT_REQUIRED_RELAY"
+    assert split["partial_interleave_authorized"] is False
 
 
 def test_banked_preflight_resume_uses_retained_original_receipt(tmp_path: Path) -> None:
@@ -252,6 +301,29 @@ def test_score_only_schedule_patches_are_restored() -> None:
         assert wrapper.stage2b_depth_attachment.observe == observe
         assert wrapper.stage2b_depth_attachment.reenter == reenter
         assert wrapper._run_layer_range == run_layers
+
+
+def test_per_loop_schedule_emits_exact_dual_write_telemetry() -> None:
+    wrapper, tokens, mask = _tiny_wrapper()
+    output = Stage2BScheduleGraph(
+        wrapper=wrapper,
+        schedule="per_loop_write_no_reentry",
+        k=4,
+        amplitude=0.05,
+    ).next_token(input_ids=tokens, attention_mask=mask)
+    for value in (
+        output.accumulated_write_magnitude,
+        output.deployed_write_magnitude,
+        output.accumulated_write_ratio,
+        output.deployed_write_ratio,
+    ):
+        assert value is not None
+        assert value.shape == (1,)
+        assert torch.isfinite(value).all()
+        assert bool((value >= 0).all())
+    assert bool(
+        (output.accumulated_write_magnitude + 1e-7 >= output.deployed_write_magnitude).all()
+    )
 
 
 def test_partial_interleave_provenance_counts_ordered_pairs() -> None:

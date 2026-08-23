@@ -36,6 +36,7 @@ from models.paper2_stage2b_depth import Stage2BDepthTrace, Stage2BReentryOutput
 from training.paper2_stage2bs_depth_study import (
     EXPECTED_INITIALIZATION_STATE_DIGESTS,
     EXPECTED_NATIVE_COUNTS,
+    FINAL_SCHEDULE,
     INITIALIZATION_SEED_BASE,
     SCHEDULES,
     load_lock,
@@ -123,6 +124,9 @@ class Stage2BScheduleGraph:
         self.amplitude = float(amplitude)
         self.incremental_cache = bool(incremental_cache)
         self._base_hidden: torch.Tensor | None = None
+        self._deployed_hidden: torch.Tensor | None = None
+        self._write_deltas: list[torch.Tensor] = []
+        self._telemetry_attention_mask: torch.Tensor | None = None
         self._logical_updates = 0
 
     @property
@@ -235,7 +239,17 @@ class Stage2BScheduleGraph:
         )
         trace.writeback_ratios.append(bridge.realized_writeback_ratio)
         trace.position_gates.append(bridge.position_gate)
+        self._write_deltas.append((bridge.hidden - previous_hidden).detach().clone())
         return bridge.hidden
+
+    @staticmethod
+    def _active_token_rms(
+        values: torch.Tensor, attention_mask: torch.Tensor
+    ) -> torch.Tensor:
+        active = attention_mask[:, -values.shape[1] :].to(values.device).float()
+        denominator = active.sum(dim=1).clamp_min(1.0) * values.shape[-1]
+        squared = values.float().square().sum(dim=-1)
+        return ((squared * active).sum(dim=1) / denominator).sqrt()
 
     @contextmanager
     def _patched_schedule(self) -> Iterator[None]:
@@ -248,6 +262,9 @@ class Stage2BScheduleGraph:
         original_run_layers = self.wrapper._run_layer_range
         captured: dict[str, torch.Tensor] = {}
         self._base_hidden = None
+        self._deployed_hidden = None
+        self._write_deltas = []
+        self._telemetry_attention_mask = None
         self._logical_updates = 0
 
         if self.schedule in {
@@ -286,6 +303,8 @@ class Stage2BScheduleGraph:
                         logical_index=index,
                         write=write,
                     )
+                self._deployed_hidden = current.detach().clone()
+                self._telemetry_attention_mask = kwargs["attention_mask"].detach().clone()
                 coda_hidden.copy_(current)
                 self._logical_updates = self.k
                 return trace
@@ -402,6 +421,31 @@ class Stage2BScheduleGraph:
             if isinstance(ratio, torch.Tensor)
             else torch.zeros(rows, device=input_ids.device)
         )
+        accumulated_raw = deployed_raw = accumulated_ratio = deployed_ratio = None
+        if self.schedule == FINAL_SCHEDULE:
+            if (
+                self._base_hidden is None
+                or self._deployed_hidden is None
+                or self._telemetry_attention_mask is None
+                or len(self._write_deltas) != self.k
+            ):
+                raise RuntimeError("Stage 2B-S final cell lacks exact dual-write telemetry")
+            base_rms = self._active_token_rms(
+                self._base_hidden, self._telemetry_attention_mask
+            ).clamp_min(1e-12)
+            accumulated_raw = torch.stack(
+                [
+                    self._active_token_rms(delta, self._telemetry_attention_mask)
+                    for delta in self._write_deltas
+                ],
+                dim=0,
+            ).sum(dim=0)
+            deployed_raw = self._active_token_rms(
+                self._deployed_hidden - self._base_hidden,
+                self._telemetry_attention_mask,
+            )
+            accumulated_ratio = accumulated_raw / base_rms
+            deployed_ratio = deployed_raw / base_rms
         return P34NextTokenOutput(
             augmented_logits=selected,
             base_logits=base,
@@ -410,6 +454,10 @@ class Stage2BScheduleGraph:
             current_positions=positions,
             scratch_state=torch.empty((rows, 0, 0), device=input_ids.device),
             answer_token_margin=top2[:, 0] - top2[:, 1],
+            accumulated_write_magnitude=accumulated_raw,
+            deployed_write_magnitude=deployed_raw,
+            accumulated_write_ratio=accumulated_ratio,
+            deployed_write_ratio=deployed_ratio,
         )
 
     @torch.inference_mode()
@@ -842,6 +890,18 @@ def _task_summary(
     native_k1 = sum(
         bool(native_k1_rows[str(row["item_id"])]["augmented_correct"]) for row in rows
     )
+    telemetry = {}
+    for name in (
+        "accumulated_write_magnitude",
+        "deployed_write_magnitude",
+        "accumulated_write_ratio",
+        "deployed_write_ratio",
+    ):
+        mean_key = f"{name}_mean"
+        max_key = f"{name}_max"
+        if all(mean_key in row and max_key in row for row in rows):
+            telemetry[mean_key] = sum(float(row[mean_key]) for row in rows) / len(rows)
+            telemetry[max_key] = max(float(row[max_key]) for row in rows)
     return {
         "rows": len(rows),
         "correct": current,
@@ -858,6 +918,7 @@ def _task_summary(
         },
         "schedule_provenance": dict(provenance),
         "both_comparators_reported": True,
+        **telemetry,
     }
 
 
@@ -964,7 +1025,7 @@ def run_study(args: argparse.Namespace) -> dict[str, Any]:
     args.private_dir.mkdir(parents=True, exist_ok=True)
 
     _apply_state(wrapper, initialization)
-    if args.cascade_stage == "direct":
+    if args.cascade_stage in {"direct", "final", "final_margins"}:
         preflight_rows, preflight = _load_banked_preflight(
             args=args,
             wrapper=wrapper,
@@ -1083,6 +1144,131 @@ def run_study(args: argparse.Namespace) -> dict[str, Any]:
             "preflight": preflight,
             "panels": {"generative_rows": len(generation), "dev2_margin_rows_scored": 0},
             "cells": cells,
+            "optimizer_constructed": False,
+            "optimizer_steps": 0,
+            "confirm_scored": False,
+            "eval_e_scored": False,
+        }
+        atomic_json(args.output_dir / "summary.json", result)
+        return result
+
+    if args.cascade_stage == "final":
+        native_k1 = {str(row["item_id"]): row for row in preflight_rows[1]}
+        endpoint_private = args.private_dir / "cascade_final" / "initialization"
+        cells = []
+        for k in range(1, 5):
+            graph = Stage2BScheduleGraph(
+                wrapper=wrapper,
+                schedule=FINAL_SCHEDULE,
+                k=k,
+                amplitude=0.05,
+                incremental_cache=True,
+            )
+            rows = _score_generation_cell(
+                graph=graph,
+                tokenizer=tokenizer,
+                rows=generation,
+                seed=args.seed,
+                endpoint="initialization",
+                private_dir=endpoint_private,
+                batch_size=args.generation_batch_size,
+            )
+            cell = {
+                "seed": args.seed,
+                "endpoint": "initialization",
+                "schedule": graph.schedule,
+                "k": k,
+                "amplitude": graph.amplitude,
+                **_task_summary(
+                    rows,
+                    source_rows=source_rows,
+                    base_rows=base_rows,
+                    native_k1_rows=native_k1,
+                    provenance=graph.provenance.as_dict(),
+                ),
+            }
+            required = {
+                "accumulated_write_magnitude_mean",
+                "deployed_write_magnitude_mean",
+                "accumulated_write_ratio_mean",
+                "deployed_write_ratio_mean",
+            }
+            if not required.issubset(cell):
+                raise RuntimeError("Stage 2B-S final cell omitted dual-write telemetry")
+            cells.append(cell)
+        if _state_digest(_named_trainable_state(wrapper)) != initialization_digest:
+            raise RuntimeError("Stage 2B-S final cell mutated initialization")
+        result = {
+            "kind": RUN_KIND,
+            "status": "cascade_final_complete_score_only",
+            "seed": args.seed,
+            "lock_sha256": sha256_file(args.lock),
+            "checkpoint_chain": checkpoint_chain,
+            "state_digests": {"initialization": initialization_digest},
+            "runtime": _runtime_receipt(),
+            "preflight": preflight,
+            "panels": {"generative_rows": len(generation), "dev2_margin_rows_scored": 0},
+            "cells": cells,
+            "optimizer_constructed": False,
+            "optimizer_steps": 0,
+            "confirm_scored": False,
+            "eval_e_scored": False,
+        }
+        atomic_json(args.output_dir / "summary.json", result)
+        return result
+
+    if args.cascade_stage == "final_margins":
+        reference = {str(row["item_id"]): row for row in read_jsonl(args.reference_rows)}
+        manifest = read_jsonl(args.dev2_manifest)
+        dev2 = [reference[str(row["item_id"])] for row in manifest]
+        if len(dev2) != 2048:
+            raise RuntimeError(f"Stage 2B-S DEV-2 changed: {len(dev2)}")
+        margin_cells = []
+        endpoint_private = args.private_dir / "cascade_final_margins" / "initialization"
+        for k in (1, 4):
+            graph = Stage2BScheduleGraph(
+                wrapper=wrapper,
+                schedule="deferred_terminal_write_no_reentry",
+                k=k,
+                amplitude=0.05,
+                incremental_cache=False,
+            )
+            rows, summary = _score_margin_cell(
+                graph=graph,
+                tokenizer=tokenizer,
+                rows=dev2,
+                seed=args.seed,
+                endpoint="initialization",
+                private_dir=endpoint_private,
+                batch_size=args.margin_batch_size,
+            )
+            margin_cells.append(
+                {
+                    "seed": args.seed,
+                    "endpoint": "initialization",
+                    "schedule": graph.schedule,
+                    "k": k,
+                    "amplitude": graph.amplitude,
+                    **summary,
+                }
+            )
+        if _state_digest(_named_trainable_state(wrapper)) != initialization_digest:
+            raise RuntimeError("Stage 2B-S final margin pass mutated initialization")
+        result = {
+            "kind": RUN_KIND,
+            "status": "cascade_final_margins_complete_score_only",
+            "seed": args.seed,
+            "lock_sha256": sha256_file(args.lock),
+            "checkpoint_chain": checkpoint_chain,
+            "state_digests": {"initialization": initialization_digest},
+            "runtime": _runtime_receipt(),
+            "preflight": preflight,
+            "panels": {
+                "generative_rows_scored": 0,
+                "dev2_margin_rows": len(dev2),
+                "dev2_manifest_sha256": sha256_file(args.dev2_manifest),
+            },
+            "margin_cells": margin_cells,
             "optimizer_constructed": False,
             "optimizer_steps": 0,
             "confirm_scored": False,
@@ -1263,7 +1449,9 @@ def main() -> int:
     parser.add_argument("--margin_batch_size", type=int, default=2)
     parser.add_argument("--session_id", required=True)
     parser.add_argument("--preflight_only", action="store_true")
-    parser.add_argument("--cascade_stage", choices=("direct",))
+    parser.add_argument(
+        "--cascade_stage", choices=("direct", "final", "final_margins")
+    )
     parser.add_argument("--banked_preflight_receipt", type=Path)
     parser.add_argument("--banked_preflight_private", type=Path)
     parser.add_argument("--device", default="cuda")

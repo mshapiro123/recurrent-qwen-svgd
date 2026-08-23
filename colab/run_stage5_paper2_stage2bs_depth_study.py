@@ -28,6 +28,7 @@ from colab.run_stage5_paper2_phase3_p35_amplitude_t1_preflight import P34_SHA, P
 from training.paper2_stage2bs_depth_study import (
     load_lock,
     resolve_direct_branch,
+    resolve_final_cell,
     resolve_keys,
     sha256_file,
 )
@@ -267,7 +268,7 @@ def banked_preflight_inputs(
 def main() -> int:
     lock = load_lock(LOCK)
     mode = os.environ.get("STAGE2BS_DEPTH_MODE", "preflight").strip().lower()
-    if mode not in {"preflight", "cascade_direct", "run"}:
+    if mode not in {"preflight", "cascade_direct", "cascade_final", "run"}:
         raise RuntimeError(f"Unknown Stage 2B-S depth-study mode: {mode}")
     generation_batch_size = int(
         os.environ.get(
@@ -359,14 +360,14 @@ def main() -> int:
             ]
             if mode == "preflight":
                 command.append("--preflight_only")
-            elif mode == "cascade_direct":
+            elif mode in {"cascade_direct", "cascade_final"}:
                 banked_receipt, banked_private = banked_preflight_inputs(
                     result=result, receipts=receipts, seed=seed
                 )
                 command.extend(
                     [
                         "--cascade_stage",
-                        "direct",
+                        "direct" if mode == "cascade_direct" else "final",
                         "--banked_preflight_receipt",
                         str(banked_receipt),
                         "--banked_preflight_private",
@@ -379,6 +380,7 @@ def main() -> int:
             expected_status = {
                 "preflight": "preflight_pass_score_only",
                 "cascade_direct": "cascade_direct_complete_score_only",
+                "cascade_final": "cascade_final_complete_score_only",
                 "run": "complete_score_only",
             }[mode]
             if payload.get("status") != expected_status:
@@ -476,6 +478,168 @@ def main() -> int:
             status(
                 decision["branch"].lower(),
                 cascade_direct_sha256=sha256_file(receipts / "cascade_direct_wave.json"),
+            )
+            mirror.close()
+            print(json.dumps(wave, indent=2, sort_keys=True))
+            return 0
+        if mode == "cascade_final":
+            primary = [
+                cell for summary in summaries for cell in summary["payload"]["cells"]
+            ]
+            decision = resolve_final_cell(primary)
+            margin_summaries = []
+            if decision["score_registered_deferred_margins"]:
+                for seed in (0, 1):
+                    status("running_registered_final_margins", seed=seed)
+                    output = receipts / f"seed_{seed}_final_margins"
+                    private = result / f"private/seed_{seed}"
+                    banked_receipt, banked_private = banked_preflight_inputs(
+                        result=result, receipts=receipts, seed=seed
+                    )
+                    command = [
+                        sys.executable,
+                        "-u",
+                        "-m",
+                        "eval.eval_paper2_stage2bs_depth_study",
+                        "--seed",
+                        str(seed),
+                        "--lock",
+                        str(LOCK),
+                        "--dev1_panel",
+                        str(PANEL),
+                        "--dev2_manifest",
+                        str(dev2),
+                        "--reference_rows",
+                        str(reference),
+                        "--base_scores",
+                        str(BASE_SCORES),
+                        "--output_dir",
+                        str(output),
+                        "--private_dir",
+                        str(private),
+                        "--session_id",
+                        session,
+                        "--generation_batch_size",
+                        str(generation_batch_size),
+                        "--margin_batch_size",
+                        str(margin_batch_size),
+                        *model_args(scratch, seed, receipts),
+                        "--cascade_stage",
+                        "final_margins",
+                        "--banked_preflight_receipt",
+                        str(banked_receipt),
+                        "--banked_preflight_private",
+                        str(banked_private),
+                    ]
+                    run(command)
+                    summary_path = output / "summary.json"
+                    payload = json.loads(summary_path.read_text(encoding="utf-8"))
+                    if payload.get("status") != "cascade_final_margins_complete_score_only":
+                        raise RuntimeError(
+                            f"Stage 2B-S seed {seed} final margins did not complete"
+                        )
+                    margin_summaries.append(
+                        {
+                            "seed": seed,
+                            "path": str(summary_path),
+                            "sha256": sha256_file(summary_path),
+                            "payload": payload,
+                        }
+                    )
+                    mirror.sync()
+            retention = []
+            for summary in summaries:
+                seed = summary["seed"]
+                retention.append(
+                    {
+                        "role": f"seed_{seed}_final_summary",
+                        "path": summary["path"],
+                        "sha256": summary["sha256"],
+                        "exists": Path(summary["path"]).is_file(),
+                    }
+                )
+                for k in range(1, 5):
+                    path = (
+                        result
+                        / f"private/seed_{seed}/cascade_final/initialization/generation"
+                        / f"per_loop_write_no_reentry__k{k}__gamma_0p05.jsonl"
+                    )
+                    retention.append(
+                        {
+                            "role": f"seed_{seed}_final_k{k}",
+                            "path": str(path),
+                            "sha256": sha256_file(path),
+                            "exists": path.is_file(),
+                        }
+                    )
+            for summary in margin_summaries:
+                seed = summary["seed"]
+                retention.append(
+                    {
+                        "role": f"seed_{seed}_margin_summary",
+                        "path": summary["path"],
+                        "sha256": summary["sha256"],
+                        "exists": Path(summary["path"]).is_file(),
+                    }
+                )
+                for k in (1, 4):
+                    path = (
+                        result
+                        / f"private/seed_{seed}/cascade_final_margins/initialization/margins"
+                        / f"deferred_terminal_write_no_reentry__k{k}__gamma_0p05.jsonl"
+                    )
+                    retention.append(
+                        {
+                            "role": f"seed_{seed}_deferred_margin_k{k}",
+                            "path": str(path),
+                            "sha256": sha256_file(path),
+                            "exists": path.is_file(),
+                        }
+                    )
+            if not all(row["exists"] for row in retention):
+                raise RuntimeError("Stage 2B-S final-cell retention failed")
+            final_status = (
+                "SCHEDULE_NEUTRALIZED_MARGIN_BANKED"
+                if decision["score_registered_deferred_margins"]
+                else decision["verdict"]
+            )
+            wave = {
+                "kind": "paper2_stage2bs_cascade_final_wave_v1",
+                "status": final_status,
+                "session_id": session,
+                "lock_sha256": sha256_file(LOCK),
+                "registered_decision": decision,
+                "seed_summaries": [
+                    {key: row[key] for key in ("seed", "path", "sha256")}
+                    for row in summaries
+                ],
+                "margin_summaries": [
+                    {key: row[key] for key in ("seed", "path", "sha256")}
+                    for row in margin_summaries
+                ],
+                "margin_cells": [
+                    cell
+                    for summary in margin_summaries
+                    for cell in summary["payload"]["margin_cells"]
+                ],
+                "retention_verification": retention,
+                "partial_interleave_executed": False,
+                "optimizer_constructed": False,
+                "optimizer_steps": 0,
+                "confirm_scored": False,
+                "eval_e_scored": False,
+            }
+            final_path = receipts / "cascade_final_wave.json"
+            atomic_json(final_path, wave)
+            mirror.sync()
+            durable_wave = durable / "receipts/cascade_final_wave.json"
+            if not durable_wave.is_file() or sha256_file(durable_wave) != sha256_file(
+                final_path
+            ):
+                raise RuntimeError("Stage 2B-S final wave durability check failed")
+            status(
+                final_status.lower(),
+                cascade_final_sha256=sha256_file(final_path),
             )
             mirror.close()
             print(json.dumps(wave, indent=2, sort_keys=True))

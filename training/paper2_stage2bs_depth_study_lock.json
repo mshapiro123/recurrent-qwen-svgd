@@ -1,5 +1,5 @@
 {
-  "kind": "paper2_stage2bs_depth_study_cascade_lock_v2",
+  "kind": "paper2_stage2bs_depth_study_cascade_lock_v3",
   "status": "LOCKED",
   "locked_before_score": true,
   "authority": {
@@ -16,6 +16,11 @@
     "drive_id": "1OfUuCvwTxlx4R1LEN7Ns3uCoGFy5oKa3",
     "bytes": 18018,
     "sha256": "6a52d1bc1e57fd403cfaa767b6029b5d7a8f206751bfeb03e4a80eb08b0ce7e7"
+  },
+  "final_cell_authority": {
+    "drive_id": "1JB2gFt7cwthK4gyY4BgBCVNUfKoStDqF",
+    "bytes": 4196,
+    "sha256": "60b52390d2db1e898a88bffaba494211e700322154c08208edc462f684c20911"
   },
   "training_authorized": false,
   "optimizer_steps_allowed": 0,
@@ -73,7 +78,33 @@
       "partial_interleave_pairs"
     ],
     "final_deciding_cell_requires_dev2_margins": true,
-    "all_three_fail_action": "bank_SUBTRACTIVE_and_close_implementation_line"
+    "all_three_fail_action": "bank_SUBTRACTIVE_and_close_implementation_line",
+    "final_cell": {
+      "endpoint": "initialization",
+      "schedule": "per_loop_write_no_reentry",
+      "amplitude": 0.05,
+      "k_values": [1, 2, 3, 4],
+      "both_seeds": true,
+      "flat_band_rows": 9,
+      "effect_floor_rows": 20,
+      "flat_requires_accumulated_write_growth": true,
+      "flat_action": "bank_SCHEDULE_NEUTRALIZED_and_close_cascade",
+      "improves_or_collapses_or_split_action": "stop_and_relay",
+      "partial_interleave_authorized": false
+    },
+    "dual_write_telemetry": {
+      "accumulated_raw": "sum across writes of active-token RMS for each incremental bridge delta before aggregation",
+      "deployed_raw": "active-token RMS of final post-write hidden minus the pre-write post-coda hidden",
+      "normalized": "each raw magnitude divided by active-token RMS of the pre-write post-coda hidden"
+    },
+    "flat_followup_margins": {
+      "schedule": "deferred_terminal_write_no_reentry",
+      "endpoint": "initialization",
+      "amplitude": 0.05,
+      "k_values": [1, 4],
+      "seeds": [0, 1],
+      "rows_per_cell": 2048
+    }
   },
   "runtime": {
     "accelerator": "NVIDIA A100-SXM4-40GB_or_80GB",
