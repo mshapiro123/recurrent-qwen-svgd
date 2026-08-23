@@ -158,6 +158,47 @@ def test_direct_cascade_seed_split_enters_neither_branch() -> None:
     assert result["branch"] == "STOP_SEED_SPLIT_REQUIRED_RELAY"
 
 
+def test_banked_preflight_resume_uses_retained_original_receipt(tmp_path: Path) -> None:
+    result = tmp_path / "result"
+    receipts = result / "receipts"
+    private = result / "private/seed_0/preflight/original-session"
+    private.mkdir(parents=True)
+    wrapper = receipts / "seed_0/preflight.json"
+    wrapper.parent.mkdir(parents=True)
+    wrapper.write_text(
+        json.dumps(
+            {
+                "kind": "paper2_stage2bs_depth_banked_preflight_v2",
+                "observed_correct_by_k": [162, 10, 2, 2],
+                "source_session_id": "original-session",
+            }
+        ),
+        encoding="utf-8",
+    )
+    retained = receipts / "banked_preflight/seed_0/preflight.json"
+    retained.parent.mkdir(parents=True)
+    retained.write_text(
+        json.dumps(
+            {
+                "kind": "paper2_stage2bs_depth_native_preflight_v1",
+                "observed_correct_by_k": [162, 10, 2, 2],
+                "session_id": "original-session",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    observed_receipt, observed_private = depth_runner.banked_preflight_inputs(
+        result=result, receipts=receipts, seed=0
+    )
+
+    assert observed_receipt == retained
+    assert observed_private == private
+    assert json.loads(retained.read_text(encoding="utf-8"))["session_id"] == (
+        "original-session"
+    )
+
+
 def test_lock_json_has_no_optimizer_or_sealed_partition_escape_hatch() -> None:
     raw = json.loads(
         (ROOT / "training/paper2_stage2bs_depth_study_lock.json").read_text(

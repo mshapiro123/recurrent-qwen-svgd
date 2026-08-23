@@ -232,6 +232,10 @@ def banked_preflight_inputs(
     if not source.is_file():
         raise FileNotFoundError(f"Missing banked Stage 2B-S preflight receipt: {source}")
     payload = json.loads(source.read_text(encoding="utf-8"))
+    retained = receipts / f"banked_preflight/seed_{seed}/preflight.json"
+    if not str(payload.get("session_id", "")).strip() and retained.is_file():
+        source = retained
+        payload = json.loads(source.read_text(encoding="utf-8"))
     expected = [162, 10, 2, 2] if seed == 0 else [162, 9, 5, 1]
     if payload.get("observed_correct_by_k") != expected:
         raise RuntimeError(f"Banked Stage 2B-S seed-{seed} preflight changed")
@@ -241,9 +245,9 @@ def banked_preflight_inputs(
     private = result / f"private/seed_{seed}/preflight/{session}"
     if not private.is_dir():
         raise FileNotFoundError(private)
-    retained = receipts / f"banked_preflight/seed_{seed}/preflight.json"
     retained.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(source, retained)
+    if source.resolve() != retained.resolve():
+        shutil.copy2(source, retained)
     atomic_json(
         receipts / f"banked_preflight/seed_{seed}/provenance.json",
         {
