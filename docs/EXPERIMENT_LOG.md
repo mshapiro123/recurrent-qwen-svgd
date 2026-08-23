@@ -2100,3 +2100,22 @@ Colab/Drive backups for selected runs.
   `docs/PAPER2_STAGE2BS_DIRECT_CASCADE_AND_DESK_MATH_HANDOFF_20260823.md`.
   Analysis:
   `outputs/stage5/stage5_paper2_stage2bs_direct_desk_20260823/analysis/summary.json`.
+- 2026-08-23 Stage 2B-S final write-schedule cell: the authorized
+  `per_loop_write_no_reentry` schedule completed K1-K4 at gamma 0.05 in both
+  seeds. Correct counts were `159/159/161/159` and `159/158/158/155`, inside
+  the registered nine-row flat band and below the `182/461` effect floor.
+  Accumulated write magnitude grew monotonically from approximately 5.03% to
+  18.65% of hidden RMS, with more than 99.95% of the accumulated displacement
+  deployed at K4. The path was behaviorally active: K4 changed `206/461` and
+  `208/461` predictions relative to K1. Those changes were not
+  correction-aligned, with fixes/regressions of `11/11` and `10/14`.
+  Deferred DEV-2 K4-minus-K1 teacher-token margin was `+0.000373` (95%
+  bootstrap CI `[-0.001295,+0.002036]`) and `-0.001135`
+  (`[-0.002358,+0.000108]`); both medians were zero. The registered final
+  status is `SCHEDULE_NEUTRALIZED_MARGIN_BANKED`. Partial interleave was not
+  run, optimizer steps remained zero, and CONFIRM/EVAL-E remained sealed.
+  Colab's approximately one-hour assignment lifetime required content-addressed
+  resume across several score-only sessions; canonical cell hashes and panel
+  identities remained fixed. Handoff:
+  `docs/PAPER2_STAGE2BS_FINAL_CELL_RESULT_HANDOFF_20260823.md`. Analysis:
+  `docs/receipts/paper2_stage2bs_final_cell_analysis_20260823.json`.

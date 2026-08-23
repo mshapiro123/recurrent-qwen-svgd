@@ -1,0 +1,48 @@
+{
+  "archive": {
+    "bytes": 15437678,
+    "sha256": "b13b2a9131aea63d11602e8c6aaa9ccfb6ed86ba824cbdd04fb1e2489a417d08"
+  },
+  "authority": {
+    "bytes": 4196,
+    "drive_id": "1JB2gFt7cwthK4gyY4BgBCVNUfKoStDqF",
+    "name": "STRATEGY_2BS_FINAL_CELL_AUTHORIZATION_20260823.md",
+    "sha256": "60b52390d2db1e898a88bffaba494211e700322154c08208edc462f684c20911"
+  },
+  "canonical_artifacts": {
+    "analysis_script": {
+      "path": "analysis/build_paper2_stage2bs_final_cell.py",
+      "sha256": "2934664ccccdb46ae797994c230d670e69f418f6cb76232958139ea494dc05b6"
+    },
+    "analysis_summary": {
+      "path": "docs/receipts/paper2_stage2bs_final_cell_analysis_20260823.json",
+      "sha256": "2afe92d4f74ea2158fb0c206a26935615e1687e1e92f77c14f2d334899e36e69"
+    },
+    "figure_png": {
+      "path": "docs/figures/paper2_stage2bs_final_cell_20260823.png",
+      "sha256": "7ebbff265137b107069e237ad7cbf51c378e0d0607881bee109e16a3bc6f3d45"
+    },
+    "figure_svg": {
+      "path": "docs/figures/paper2_stage2bs_final_cell_20260823.svg",
+      "sha256": "43dc14c95c31cbd24d1b57b6ead6eea7dc409268e11ccc8a1a467cb412e2198c"
+    },
+    "handoff": {
+      "bytes": 12621,
+      "path": "docs/PAPER2_STAGE2BS_FINAL_CELL_RESULT_HANDOFF_20260823.md",
+      "sha256": "16bcb70387316eb6567aaf6c0062bcd5e0d223c7efd7ac5d3120cc79faf5ed21"
+    },
+    "wave_receipt": {
+      "sha256": "387c2891f1465802239936e1321561a1a05eac0f0818fd9af4abff3f828bd32e"
+    }
+  },
+  "confirm_scored": false,
+  "eval_e_scored": false,
+  "executed_code_commit": "f0ce749d322ebe2abe8d5406192a23b050a6c2d5",
+  "executed_lock_sha256": "058c5b5fcf7542760fc5e8ef00d2f053fa84fbb7cb9a5d2e5d0901b2d950ab60",
+  "kind": "paper2_stage2bs_final_cell_handoff_receipt_v1",
+  "optimizer_constructed": false,
+  "optimizer_steps": 0,
+  "paid_colab_sessions_after_closeout": 0,
+  "partial_interleave_executed": false,
+  "status": "SCHEDULE_NEUTRALIZED_MARGIN_BANKED"
+}
