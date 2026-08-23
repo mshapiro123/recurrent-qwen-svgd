@@ -861,6 +861,75 @@ def _task_summary(
     }
 
 
+def _load_banked_preflight(
+    *,
+    args: argparse.Namespace,
+    wrapper: Any,
+    expected_rows: Sequence[Mapping[str, Any]],
+    initialization_digest: str,
+) -> tuple[dict[int, list[dict[str, Any]]], dict[str, Any]]:
+    if args.banked_preflight_receipt is None or args.banked_preflight_private is None:
+        raise RuntimeError("Stage 2B-S cascade requires banked preflight inputs")
+    receipt = json.loads(args.banked_preflight_receipt.read_text(encoding="utf-8"))
+    expected_counts = EXPECTED_NATIVE_COUNTS[args.seed]
+    if int(receipt.get("seed", -1)) != args.seed:
+        raise RuntimeError("Stage 2B-S banked preflight seed changed")
+    if receipt.get("observed_correct_by_k") != expected_counts:
+        raise RuntimeError("Stage 2B-S banked preflight counts changed")
+    if receipt.get("initialization_state_digest") != initialization_digest:
+        raise RuntimeError("Stage 2B-S banked preflight state identity changed")
+    expected_ids = [str(row["item_id"]) for row in expected_rows]
+    by_k: dict[int, list[dict[str, Any]]] = {}
+    for k in range(1, 5):
+        graph = Stage2BScheduleGraph(
+            wrapper=wrapper,
+            schedule="native_interleaved",
+            k=k,
+            amplitude=0.05,
+            incremental_cache=True,
+        )
+        path = (
+            args.banked_preflight_private
+            / "generation"
+            / f"{_cell_slug('native_interleaved', k, 0.05)}.jsonl"
+        )
+        rows = read_jsonl(path)
+        if [str(row["item_id"]) for row in rows] != expected_ids:
+            raise RuntimeError(f"Stage 2B-S banked preflight row identity changed at K{k}")
+        provenance = graph.provenance.as_dict()
+        if any(
+            int(row.get("seed", -1)) != args.seed
+            or row.get("endpoint") != "initialization"
+            or row.get("schedule_provenance") != provenance
+            for row in rows
+        ):
+            raise RuntimeError(f"Stage 2B-S banked preflight provenance changed at K{k}")
+        observed = sum(bool(row["augmented_correct"]) for row in rows)
+        if observed != expected_counts[k - 1]:
+            raise RuntimeError(f"Stage 2B-S banked preflight score changed at K{k}")
+        by_k[k] = rows
+    current = {
+        "kind": "paper2_stage2bs_depth_banked_preflight_v2",
+        "status": "BANKED_PASS",
+        "seed": args.seed,
+        "observed_correct_by_k": expected_counts,
+        "expected_correct_by_k": expected_counts,
+        "source_receipt": str(args.banked_preflight_receipt),
+        "source_receipt_sha256": sha256_file(args.banked_preflight_receipt),
+        "source_private": str(args.banked_preflight_private),
+        "source_session_id": receipt.get("session_id"),
+        "runtime": receipt.get("runtime"),
+        "initialization_seed": receipt.get("initialization_seed"),
+        "initialization_state_digest": initialization_digest,
+        "lock_sha256": sha256_file(args.lock),
+        "optimizer_constructed": False,
+        "optimizer_steps": 0,
+        "confirm_scored": False,
+        "eval_e_scored": False,
+    }
+    return by_k, current
+
+
 def run_study(args: argparse.Namespace) -> dict[str, Any]:
     lock = load_lock(args.lock)
     if any(term in str(value).casefold() for value in vars(args).values() for term in ("confirm", "eval_e")):
@@ -888,11 +957,6 @@ def run_study(args: argparse.Namespace) -> dict[str, Any]:
     panel = read_jsonl(args.dev1_panel)
     generation = _generation_rows(panel)
     source_rows = {str(row["item_id"]): row for row in panel}
-    reference = {str(row["item_id"]): row for row in read_jsonl(args.reference_rows)}
-    manifest = read_jsonl(args.dev2_manifest)
-    dev2 = [reference[str(row["item_id"])] for row in manifest]
-    if len(dev2) != 2048:
-        raise RuntimeError(f"Stage 2B-S DEV-2 changed: {len(dev2)}")
     base_rows = {str(row["item_id"]): row for row in read_jsonl(args.base_scores)}
     if not {str(row["item_id"]) for row in generation}.issubset(base_rows):
         raise RuntimeError("Stage 2B-S base comparator coverage is incomplete")
@@ -900,46 +964,54 @@ def run_study(args: argparse.Namespace) -> dict[str, Any]:
     args.private_dir.mkdir(parents=True, exist_ok=True)
 
     _apply_state(wrapper, initialization)
-    preflight_rows: dict[int, list[dict[str, Any]]] = {}
-    preflight_counts = []
-    for k in range(1, 5):
-        graph = Stage2BScheduleGraph(
+    if args.cascade_stage == "direct":
+        preflight_rows, preflight = _load_banked_preflight(
+            args=args,
             wrapper=wrapper,
-            schedule="native_interleaved",
-            k=k,
-            amplitude=0.05,
-            incremental_cache=True,
+            expected_rows=generation,
+            initialization_digest=initialization_digest,
         )
-        rows = _score_generation_cell(
-            graph=graph,
-            tokenizer=tokenizer,
-            rows=generation,
-            seed=args.seed,
-            endpoint="initialization",
-            private_dir=args.private_dir / "preflight" / args.session_id,
-            batch_size=args.generation_batch_size,
-        )
-        preflight_rows[k] = rows
-        preflight_counts.append(sum(bool(row["augmented_correct"]) for row in rows))
-    expected = EXPECTED_NATIVE_COUNTS[args.seed]
-    preflight = {
-        "kind": "paper2_stage2bs_depth_native_preflight_v1",
-        "status": "PASS" if preflight_counts == expected else "STOP_MISMATCH",
-        "seed": args.seed,
-        "observed_correct_by_k": preflight_counts,
-        "expected_correct_by_k": expected,
-        "runtime": _runtime_receipt(),
-        "session_id": args.session_id,
-        "initialization_seed": initialization_seed,
-        "initialization_state_digest": initialization_digest,
-        "lock_sha256": sha256_file(args.lock),
-        "optimizer_constructed": False,
-        "optimizer_steps": 0,
-        "confirm_scored": False,
-        "eval_e_scored": False,
-    }
+    else:
+        preflight_rows = {}
+        preflight_counts = []
+        for k in range(1, 5):
+            graph = Stage2BScheduleGraph(
+                wrapper=wrapper,
+                schedule="native_interleaved",
+                k=k,
+                amplitude=0.05,
+                incremental_cache=True,
+            )
+            rows = _score_generation_cell(
+                graph=graph,
+                tokenizer=tokenizer,
+                rows=generation,
+                seed=args.seed,
+                endpoint="initialization",
+                private_dir=args.private_dir / "preflight" / args.session_id,
+                batch_size=args.generation_batch_size,
+            )
+            preflight_rows[k] = rows
+            preflight_counts.append(sum(bool(row["augmented_correct"]) for row in rows))
+        expected = EXPECTED_NATIVE_COUNTS[args.seed]
+        preflight = {
+            "kind": "paper2_stage2bs_depth_native_preflight_v2",
+            "status": "PASS" if preflight_counts == expected else "STOP_MISMATCH",
+            "seed": args.seed,
+            "observed_correct_by_k": preflight_counts,
+            "expected_correct_by_k": expected,
+            "runtime": _runtime_receipt(),
+            "session_id": args.session_id,
+            "initialization_seed": initialization_seed,
+            "initialization_state_digest": initialization_digest,
+            "lock_sha256": sha256_file(args.lock),
+            "optimizer_constructed": False,
+            "optimizer_steps": 0,
+            "confirm_scored": False,
+            "eval_e_scored": False,
+        }
     atomic_json(args.output_dir / "preflight.json", preflight)
-    if preflight["status"] != "PASS":
+    if preflight["status"] not in {"PASS", "BANKED_PASS"}:
         raise RuntimeError(
             f"Stage 2B-S native preflight mismatch seed={args.seed}: {preflight_counts}"
         )
@@ -960,6 +1032,70 @@ def run_study(args: argparse.Namespace) -> dict[str, Any]:
         }
         atomic_json(args.output_dir / "summary.json", result)
         return result
+
+    if args.cascade_stage == "direct":
+        native_k1 = {str(row["item_id"]): row for row in preflight_rows[1]}
+        endpoint_private = args.private_dir / "cascade_direct" / "initialization"
+        cells = []
+        for k in range(1, 5):
+            graph = Stage2BScheduleGraph(
+                wrapper=wrapper,
+                schedule="deferred_terminal_write_no_reentry",
+                k=k,
+                amplitude=0.05,
+                incremental_cache=True,
+            )
+            rows = _score_generation_cell(
+                graph=graph,
+                tokenizer=tokenizer,
+                rows=generation,
+                seed=args.seed,
+                endpoint="initialization",
+                private_dir=endpoint_private,
+                batch_size=args.generation_batch_size,
+            )
+            cells.append(
+                {
+                    "seed": args.seed,
+                    "endpoint": "initialization",
+                    "schedule": graph.schedule,
+                    "k": k,
+                    "amplitude": graph.amplitude,
+                    **_task_summary(
+                        rows,
+                        source_rows=source_rows,
+                        base_rows=base_rows,
+                        native_k1_rows=native_k1,
+                        provenance=graph.provenance.as_dict(),
+                    ),
+                }
+            )
+        if _state_digest(_named_trainable_state(wrapper)) != initialization_digest:
+            raise RuntimeError("Stage 2B-S direct discriminator mutated initialization")
+        result = {
+            "kind": RUN_KIND,
+            "status": "cascade_direct_complete_score_only",
+            "seed": args.seed,
+            "lock_sha256": sha256_file(args.lock),
+            "checkpoint_chain": checkpoint_chain,
+            "state_digests": {"initialization": initialization_digest},
+            "runtime": _runtime_receipt(),
+            "preflight": preflight,
+            "panels": {"generative_rows": len(generation), "dev2_margin_rows_scored": 0},
+            "cells": cells,
+            "optimizer_constructed": False,
+            "optimizer_steps": 0,
+            "confirm_scored": False,
+            "eval_e_scored": False,
+        }
+        atomic_json(args.output_dir / "summary.json", result)
+        return result
+
+    reference = {str(row["item_id"]): row for row in read_jsonl(args.reference_rows)}
+    manifest = read_jsonl(args.dev2_manifest)
+    dev2 = [reference[str(row["item_id"])] for row in manifest]
+    if len(dev2) != 2048:
+        raise RuntimeError(f"Stage 2B-S DEV-2 changed: {len(dev2)}")
 
     all_cells = []
     margin_references: dict[str, dict[str, Mapping[str, Any]]] = {}
@@ -1127,6 +1263,9 @@ def main() -> int:
     parser.add_argument("--margin_batch_size", type=int, default=2)
     parser.add_argument("--session_id", required=True)
     parser.add_argument("--preflight_only", action="store_true")
+    parser.add_argument("--cascade_stage", choices=("direct",))
+    parser.add_argument("--banked_preflight_receipt", type=Path)
+    parser.add_argument("--banked_preflight_private", type=Path)
     parser.add_argument("--device", default="cuda")
     args = parser.parse_args()
     result = run_study(args)

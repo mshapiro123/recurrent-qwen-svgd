@@ -17,6 +17,7 @@ from training.paper2_stage2bs_depth_study import (
     EXPECTED_NATIVE_COUNTS,
     INITIALIZATION_SEED_BASE,
     load_lock,
+    resolve_direct_branch,
     resolve_keys,
     schedule_amplitudes,
 )
@@ -65,6 +66,11 @@ def test_locked_contract_is_machine_readable() -> None:
         str(seed): digest
         for seed, digest in EXPECTED_INITIALIZATION_STATE_DIGESTS.items()
     }
+    assert lock["expected_native_counts"]["1"] == [162, 9, 5, 1]
+    assert lock["cascade"]["direct_discriminator"]["stop_after_both_seeds"] is True
+    assert lock["cascade"]["all_three_fail_action"] == (
+        "bank_SUBTRACTIVE_and_close_implementation_line"
+    )
 
 
 def test_schedule_amplitude_matrix_matches_lock() -> None:
@@ -113,6 +119,43 @@ def test_key_resolution_escalates_seed_disagreement() -> None:
     result = resolve_keys(cells, native_k1_by_seed={0: 162, 1: 162})
     assert result["seed_disagreement"] is True
     assert result["requires_strategy_escalation"] is True
+
+
+def test_direct_cascade_stops_for_relay_before_recovery_branch() -> None:
+    rows = []
+    for seed in (0, 1):
+        rows.extend(
+            {
+                "seed": seed,
+                "endpoint": "initialization",
+                "schedule": "deferred_terminal_write_no_reentry",
+                "amplitude": 0.05,
+                "k": k,
+                "correct": 190 if k == 4 else 160,
+            }
+            for k in range(1, 5)
+        )
+    result = resolve_direct_branch(rows, native_k1_by_seed={0: 162, 1: 162})
+    assert result["branch"] == "RECOVERY_BRANCH_AUTHORIZED_AWAITING_RELAY"
+    assert result["requires_relay_before_branch"] is True
+
+
+def test_direct_cascade_seed_split_enters_neither_branch() -> None:
+    rows = []
+    for seed, k4 in ((0, 190), (1, 170)):
+        rows.extend(
+            {
+                "seed": seed,
+                "endpoint": "initialization",
+                "schedule": "deferred_terminal_write_no_reentry",
+                "amplitude": 0.05,
+                "k": k,
+                "correct": k4 if k == 4 else 160,
+            }
+            for k in range(1, 5)
+        )
+    result = resolve_direct_branch(rows, native_k1_by_seed={0: 162, 1: 162})
+    assert result["branch"] == "STOP_SEED_SPLIT_REQUIRED_RELAY"
 
 
 def test_lock_json_has_no_optimizer_or_sealed_partition_escape_hatch() -> None:

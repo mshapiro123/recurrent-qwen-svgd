@@ -4136,11 +4136,14 @@ def test_stage2bs_depth_study_target_is_wired_and_score_only() -> None:
     evaluator = (ROOT / "eval/eval_paper2_stage2bs_depth_study.py").read_text(encoding="utf-8")
     assert '"paper2_stage2bs_depth_preflight"' in bootstrap
     assert '"paper2_stage2bs_depth_study"' in bootstrap
+    assert '"paper2_stage2bs_cascade_direct"' in bootstrap
     assert '"STAGE2BS_DEPTH_MODE": "preflight"' in bootstrap
+    assert '"STAGE2BS_DEPTH_MODE": "cascade_direct"' in bootstrap
     assert '"STAGE2BS_DEPTH_MODE": "run"' in bootstrap
-    assert "native 162 10 2 2 preflight before every variant cell" in cell
+    assert "banked native curves 162 10 2 2 and 162 9 5 1" in cell
+    assert "cascade direct discriminator stops before either branch" in cell
     assert "provenance-tagged schedules no hybrid K curves" in cell
-    assert "461-row generation plus 2048-row DEV-2 margins both seeds both endpoints" in cell
+    assert "DEV-2 margins mandatory only on the final deciding cell" in cell
     assert "score-only no optimizer no training CONFIRM and EVAL-E sealed" in cell
     assert "optimizer_constructed" in runner
     assert "optimizer_steps" in runner

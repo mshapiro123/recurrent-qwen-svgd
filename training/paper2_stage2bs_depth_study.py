@@ -8,20 +8,22 @@ from pathlib import Path
 from typing import Any, Mapping, Sequence
 
 
-LOCK_KIND = "paper2_stage2bs_depth_study_lock_v1"
+LOCK_KIND = "paper2_stage2bs_depth_study_cascade_lock_v2"
 SCHEDULES = (
     "native_interleaved",
     "deferred_terminal_write_no_reentry",
     "per_loop_write_no_reentry",
     "partial_interleave_pairs",
 )
-EXPECTED_NATIVE_COUNTS = {0: [162, 10, 2, 2], 1: [162, 9, 5, 2]}
+EXPECTED_NATIVE_COUNTS = {0: [162, 10, 2, 2], 1: [162, 9, 5, 1]}
 INITIALIZATION_SEED_BASE = 20260819
 EXPECTED_INITIALIZATION_STATE_DIGESTS = {
     0: "f4c8bcc7497c5502e2ea321278e85c5ef5a812755b8fe413dcfc507c3b003b18",
     1: "3421b93d0f0a7ae6005a10c170e96f9ea7dfc1396a4c66180b28fd925ffa36c6",
 }
 ADDITIVITY_FLOOR_ROWS = 20
+DIRECT_SCHEDULE = "deferred_terminal_write_no_reentry"
+DIRECT_AMPLITUDE = 0.05
 
 
 def sha256_file(path: str | Path) -> str:
@@ -43,18 +45,24 @@ def validate_lock(lock: Mapping[str, Any]) -> None:
         raise RuntimeError("Stage 2B-S depth-study optimizer allowance changed")
     authority = lock.get("authority", {})
     if authority != {
-        "drive_id": "1fQVbb8PrJPOHwLwpnv7mj73ON6uVMZBa",
-        "bytes": 7423,
-        "sha256": "1f9d889788a765631d2830153aa06508901f05930efbeb225567337ff048915e",
+        "drive_id": "1BL-2x_mdRqJY56u55Tyf1kXHBT4JkHom",
+        "bytes": 6525,
+        "sha256": "868c2ba8a839c075d3fba14315e0242846b7c90557e673dad9eda3a24fa7017e",
     }:
         raise RuntimeError("Stage 2B-S depth-study authority changed")
     basis = lock.get("basis", {})
     if basis != {
-        "drive_id": "122c2W-ITzUlwLncl3DZRSonsYL3qg7Z6",
-        "bytes": 13221,
-        "sha256": "d9200a484160142a36b5579ba346aed19b7b6b6e5ef0c4f143ffcd85b6b087b4",
+        "drive_id": "1x8BTHXEJnhVHhtsI7mhRG_Wy_vf49iTi",
+        "bytes": 12336,
+        "sha256": "c28eca58e3b681b81196f6ff8f724533eca1aa5a184db82360c6e3bf020ba878",
     }:
         raise RuntimeError("Stage 2B-S depth-study basis changed")
+    if lock.get("math_foundations") != {
+        "drive_id": "1OfUuCvwTxlx4R1LEN7Ns3uCoGFy5oKa3",
+        "bytes": 18018,
+        "sha256": "6a52d1bc1e57fd403cfaa767b6029b5d7a8f206751bfeb03e4a80eb08b0ce7e7",
+    }:
+        raise RuntimeError("Stage 2B-S math-foundations basis changed")
     if lock.get("expected_native_counts") != {
         str(seed): values for seed, values in EXPECTED_NATIVE_COUNTS.items()
     }:
@@ -98,6 +106,28 @@ def validate_lock(lock: Mapping[str, Any]) -> None:
         "reenter once; an odd terminal update forms a final one-update write-and-reentry group"
     ):
         raise RuntimeError("partial-interleave rule changed")
+    cascade = lock.get("cascade", {})
+    if cascade.get("direct_discriminator") != {
+        "endpoint": "initialization",
+        "schedule": DIRECT_SCHEDULE,
+        "amplitude": DIRECT_AMPLITUDE,
+        "k_values": [1, 2, 3, 4],
+        "stop_after_both_seeds": True,
+    }:
+        raise RuntimeError("Stage 2B-S direct-discriminator contract changed")
+    if cascade.get("clearance_rule") != "both_seeds_any_k_gt_1_at_or_above_native_k1_plus_20":
+        raise RuntimeError("Stage 2B-S cascade clearance rule changed")
+    if cascade.get("seed_split_rule") != "stop_and_relay_before_any_branch":
+        raise RuntimeError("Stage 2B-S cascade seed-split rule changed")
+    if cascade.get("fallback_order") != [
+        "per_loop_write_no_reentry",
+        "partial_interleave_pairs",
+    ]:
+        raise RuntimeError("Stage 2B-S cascade fallback order changed")
+    if cascade.get("final_deciding_cell_requires_dev2_margins") is not True:
+        raise RuntimeError("Stage 2B-S final margin requirement changed")
+    if cascade.get("all_three_fail_action") != "bank_SUBTRACTIVE_and_close_implementation_line":
+        raise RuntimeError("Stage 2B-S close-out clause changed")
 
 
 def load_lock(path: str | Path) -> dict[str, Any]:
@@ -159,4 +189,51 @@ def resolve_keys(
         "seed_disagreement": seed_disagreement,
         "qualifying_cells_by_seed": qualifying,
         "requires_strategy_escalation": bool(seed_disagreement or (additive and not schedule_dependent)),
+    }
+
+
+def resolve_direct_branch(
+    rows: Sequence[Mapping[str, Any]], *, native_k1_by_seed: Mapping[int, int]
+) -> dict[str, Any]:
+    """Resolve only the ratified direct-discriminator branch gate."""
+
+    expected_seeds = set(native_k1_by_seed)
+    by_seed: dict[int, list[Mapping[str, Any]]] = {
+        seed: [row for row in rows if int(row["seed"]) == seed]
+        for seed in expected_seeds
+    }
+    if {seed for seed, cells in by_seed.items() if cells} != expected_seeds:
+        raise RuntimeError("Stage 2B-S direct discriminator lacks both seeds")
+    clears: dict[int, bool] = {}
+    best: dict[int, dict[str, Any]] = {}
+    for seed, cells in by_seed.items():
+        if any(
+            row.get("endpoint") != "initialization"
+            or row.get("schedule") != DIRECT_SCHEDULE
+            or float(row.get("amplitude", -1.0)) != DIRECT_AMPLITUDE
+            for row in cells
+        ):
+            raise RuntimeError("Stage 2B-S direct discriminator contains an off-contract cell")
+        if sorted(int(row["k"]) for row in cells) != [1, 2, 3, 4]:
+            raise RuntimeError("Stage 2B-S direct discriminator K coverage changed")
+        candidates = [row for row in cells if int(row["k"]) > 1]
+        best_cell = max(candidates, key=lambda row: int(row["correct"]))
+        delta = int(best_cell["correct"]) - int(native_k1_by_seed[seed])
+        clears[seed] = delta >= ADDITIVITY_FLOOR_ROWS
+        best[seed] = {
+            "k": int(best_cell["k"]),
+            "correct": int(best_cell["correct"]),
+            "delta_vs_native_k1_rows": delta,
+        }
+    if len(set(clears.values())) > 1:
+        branch = "STOP_SEED_SPLIT_REQUIRED_RELAY"
+    elif all(clears.values()):
+        branch = "RECOVERY_BRANCH_AUTHORIZED_AWAITING_RELAY"
+    else:
+        branch = "FALLBACK_BRANCH_AUTHORIZED_AWAITING_RELAY"
+    return {
+        "branch": branch,
+        "clears_k1_plus_20_by_seed": {str(seed): clears[seed] for seed in sorted(clears)},
+        "best_higher_k_by_seed": {str(seed): best[seed] for seed in sorted(best)},
+        "requires_relay_before_branch": True,
     }

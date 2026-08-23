@@ -1271,6 +1271,45 @@
       ]
     },
     {
+      "id": "stage2bs_native_depth_baseline_and_cascade",
+      "status": "baseline_banked_cascade_authorized",
+      "claim": "On the matched Stage 2B serving graph, both initialization seeds show severe native depth collapse after K1; the staged write-schedule cascade is authorized but no variant result is yet available.",
+      "scope": "Two initialization seeds on the matched 461-row generative slice; A100-SXM4-40GB BF16 SDPA; score-only; zero variant cells in the banked preflight; CONFIRM and EVAL-E sealed",
+      "metrics": {
+        "seed_0_native_correct_by_k": [162, 10, 2, 2],
+        "seed_1_native_correct_by_k": [162, 9, 5, 1],
+        "seed_1_prior_k4_value_status": "unsupported_lock_transcription_retired",
+        "additivity_floor_rows_above_native_k1": 20,
+        "variant_cells_scored_at_baseline_handoff": 0,
+        "optimizer_constructed": false,
+        "optimizer_steps": 0,
+        "confirm_scored": false,
+        "eval_e_scored": false
+      },
+      "evidence": [
+        {
+          "path": "docs/PAPER2_STAGE2BS_DEPTH_PREFLIGHT_STOP_HANDOFF_20260823.md",
+          "locator": "matched native curves, provenance correction, measured compute cost, and staged-cascade amendment request"
+        },
+        {
+          "path": "outputs/stage5/stage5_paper2_stage2bs_depth_study_20260822/analysis/preflight_stop_analysis.json",
+          "locator": "machine-readable seed counts, runtime, identity gates, and stop receipt"
+        },
+        {
+          "path": "training/paper2_stage2bs_depth_study_lock.json",
+          "locator": "ratified seed-1 correction, direct-discriminator branch, seed-split stop, conditional margins, and mechanical close-out clause"
+        }
+      ],
+      "do_not_claim": [
+        "deferred terminal write restores or improves K1",
+        "the depth pathway is schedule-dependent or schedule-neutralized",
+        "all three registered schedules fail",
+        "the existing implementation line has closed",
+        "step-1,000 or DEV-2 conditional cells have been scored",
+        "CONFIRM or EVAL-E has been scored"
+      ]
+    },
+    {
       "id": "speculative_depth_d0",
       "status": "not_recoverable_at_pilot_scale",
       "claim": "Under one 4,000-step seed, binary teacher-disagreement targets did not produce deployment-useful adaptive depth; the target omitted accepted-position harm and labeled many causally unactionable rejections as continue.",
