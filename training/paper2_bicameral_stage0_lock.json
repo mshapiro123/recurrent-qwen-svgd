@@ -1,0 +1,45 @@
+{
+  "kind": "paper2_bicameral_stage0_lock_v1",
+  "status": "LOCKED_STAGE0_ONLY",
+  "mark_ratified": true,
+  "training_authorized": false,
+  "gpu_authorized": false,
+  "sealed_partitions_authorized": false,
+  "optimizer_steps_allowed": 0,
+  "authority": {
+    "drive_id": "1xeAJYfq2lIvIm76nszshH4xmaeAkiDl2",
+    "filename": "STRATEGY_BICAMERAL_2BS_CHARTER_DRAFT_20260823.md",
+    "bytes": 17644,
+    "sha256": "51083fa2917cf24c73fd9bd0b7e4673fa5536507f6283f635dbed3ddcc0272ac",
+    "ratification_record_drive_id": "1Ud8CYsIAAvpVHlf0f2Ty1wXN9HMrRCY9",
+    "ratification_record_bytes": 40308,
+    "ratification_record_sha256": "23d7880a7b49fff18b2ad40326f6b2a4330080a5780cc9ac8d0df730a143b5b0"
+  },
+  "inputs": {
+    "0": {
+      "correction_field_sha256": "edcb287f1b90ea812655746a855abf477d7e240501e078b1b70fe17cdd7564ed",
+      "state_features_sha256": "a331a73310f7b67196575cc057fc13835c21c83d73ef9a1038e517390bcfb27b"
+    },
+    "1": {
+      "correction_field_sha256": "8adf371acbe0f7237c7ac26796def257bfc2109173f9036564c15332df480824",
+      "state_features_sha256": "4fdbd4029492558d4cf9489a725e8cc96ae269445d0b2c6f7fb02d06226d6b08"
+    }
+  },
+  "analysis": {
+    "correction_loop": 4,
+    "forced_cluster_counts": [2, 3],
+    "spherical_kmeans_restarts": 8,
+    "spherical_kmeans_iterations": 50,
+    "seed_base": 20260819,
+    "wht_block_size": 128,
+    "wht_blocks": 7,
+    "rho_reach_state": "loop4",
+    "common_mode_direction": "unit_normalized_global_mean_correction",
+    "residual_correlation": "mean_offdiagonal_cosine_after_common_mode_projection"
+  },
+  "architecture_reference": {
+    "required_filename": "bicameral_torch.py",
+    "must_be_byte_identified_before_port": true,
+    "available_at_lock_materialization": false
+  }
+}
