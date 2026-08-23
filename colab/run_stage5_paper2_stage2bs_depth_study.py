@@ -25,7 +25,12 @@ from colab.run_stage5_paper2_phase3_p34_a2 import (
 )
 from colab.run_stage5_paper2_phase3_p35 import I1_SHA, P34_ID, stage_chain
 from colab.run_stage5_paper2_phase3_p35_amplitude_t1_preflight import P34_SHA, P35_ID, P35_SHA
-from training.paper2_stage2bs_depth_study import load_lock, resolve_keys, sha256_file
+from training.paper2_stage2bs_depth_study import (
+    load_lock,
+    resolve_direct_branch,
+    resolve_keys,
+    sha256_file,
+)
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -220,10 +225,45 @@ def model_args(scratch: Path, seed: int, receipts: Path) -> list[str]:
     ]
 
 
+def banked_preflight_inputs(
+    *, result: Path, receipts: Path, seed: int
+) -> tuple[Path, Path]:
+    source = receipts / f"seed_{seed}/preflight.json"
+    if not source.is_file():
+        raise FileNotFoundError(f"Missing banked Stage 2B-S preflight receipt: {source}")
+    payload = json.loads(source.read_text(encoding="utf-8"))
+    expected = [162, 10, 2, 2] if seed == 0 else [162, 9, 5, 1]
+    if payload.get("observed_correct_by_k") != expected:
+        raise RuntimeError(f"Banked Stage 2B-S seed-{seed} preflight changed")
+    session = str(payload.get("session_id", "")).strip()
+    if not session:
+        raise RuntimeError(f"Banked Stage 2B-S seed-{seed} session is absent")
+    private = result / f"private/seed_{seed}/preflight/{session}"
+    if not private.is_dir():
+        raise FileNotFoundError(private)
+    retained = receipts / f"banked_preflight/seed_{seed}/preflight.json"
+    retained.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(source, retained)
+    atomic_json(
+        receipts / f"banked_preflight/seed_{seed}/provenance.json",
+        {
+            "kind": "paper2_stage2bs_banked_preflight_provenance_v1",
+            "seed": seed,
+            "source_receipt": str(source),
+            "source_receipt_sha256": sha256_file(source),
+            "retained_receipt": str(retained),
+            "retained_receipt_sha256": sha256_file(retained),
+            "private_source": str(private),
+            "observed_correct_by_k": expected,
+        },
+    )
+    return retained, private
+
+
 def main() -> int:
     lock = load_lock(LOCK)
     mode = os.environ.get("STAGE2BS_DEPTH_MODE", "preflight").strip().lower()
-    if mode not in {"preflight", "run"}:
+    if mode not in {"preflight", "cascade_direct", "run"}:
         raise RuntimeError(f"Unknown Stage 2B-S depth-study mode: {mode}")
     generation_batch_size = int(
         os.environ.get(
@@ -315,12 +355,28 @@ def main() -> int:
             ]
             if mode == "preflight":
                 command.append("--preflight_only")
+            elif mode == "cascade_direct":
+                banked_receipt, banked_private = banked_preflight_inputs(
+                    result=result, receipts=receipts, seed=seed
+                )
+                command.extend(
+                    [
+                        "--cascade_stage",
+                        "direct",
+                        "--banked_preflight_receipt",
+                        str(banked_receipt),
+                        "--banked_preflight_private",
+                        str(banked_private),
+                    ]
+                )
             run(command)
             summary_path = output / "summary.json"
             payload = json.loads(summary_path.read_text(encoding="utf-8"))
-            expected_status = (
-                "preflight_pass_score_only" if mode == "preflight" else "complete_score_only"
-            )
+            expected_status = {
+                "preflight": "preflight_pass_score_only",
+                "cascade_direct": "cascade_direct_complete_score_only",
+                "run": "complete_score_only",
+            }[mode]
             if payload.get("status") != expected_status:
                 raise RuntimeError(f"Stage 2B-S seed {seed} did not complete")
             summaries.append(
@@ -351,6 +407,72 @@ def main() -> int:
             }
             atomic_json(receipts / "preflight_wave.json", wave)
             status("preflight_pass_awaiting_required_relay")
+            mirror.close()
+            print(json.dumps(wave, indent=2, sort_keys=True))
+            return 0
+        if mode == "cascade_direct":
+            primary = [
+                cell for summary in summaries for cell in summary["payload"]["cells"]
+            ]
+            decision = resolve_direct_branch(
+                primary, native_k1_by_seed={0: 162, 1: 162}
+            )
+            retention = []
+            for summary in summaries:
+                seed = summary["seed"]
+                retention.append(
+                    {
+                        "role": f"seed_{seed}_direct_summary",
+                        "path": summary["path"],
+                        "sha256": summary["sha256"],
+                        "exists": Path(summary["path"]).is_file(),
+                    }
+                )
+                for k in range(1, 5):
+                    path = (
+                        result
+                        / f"private/seed_{seed}/cascade_direct/initialization/generation"
+                        / f"deferred_terminal_write_no_reentry__k{k}__gamma_0p05.jsonl"
+                    )
+                    retention.append(
+                        {
+                            "role": f"seed_{seed}_direct_k{k}",
+                            "path": str(path),
+                            "sha256": sha256_file(path),
+                            "exists": path.is_file(),
+                        }
+                    )
+            if not all(row["exists"] for row in retention):
+                raise RuntimeError("Stage 2B-S direct-discriminator retention failed")
+            wave = {
+                "kind": "paper2_stage2bs_cascade_direct_wave_v1",
+                "status": decision["branch"],
+                "session_id": session,
+                "lock_sha256": sha256_file(LOCK),
+                "registered_decision": decision,
+                "seed_summaries": [
+                    {key: row[key] for key in ("seed", "path", "sha256")}
+                    for row in summaries
+                ],
+                "retention_verification": retention,
+                "dev2_margin_rows_scored": 0,
+                "optimizer_constructed": False,
+                "optimizer_steps": 0,
+                "confirm_scored": False,
+                "eval_e_scored": False,
+                "branch_execution_started": False,
+            }
+            atomic_json(receipts / "cascade_direct_wave.json", wave)
+            mirror.sync()
+            durable_wave = durable / "receipts/cascade_direct_wave.json"
+            if not durable_wave.is_file() or sha256_file(durable_wave) != sha256_file(
+                receipts / "cascade_direct_wave.json"
+            ):
+                raise RuntimeError("Stage 2B-S direct wave durability check failed")
+            status(
+                decision["branch"].lower(),
+                cascade_direct_sha256=sha256_file(receipts / "cascade_direct_wave.json"),
+            )
             mirror.close()
             print(json.dumps(wave, indent=2, sort_keys=True))
             return 0

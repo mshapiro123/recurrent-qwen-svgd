@@ -11,17 +11,18 @@ from pathlib import Path
 from google.colab import drive
 
 
-STAGE5_PAPER2_STAGE2BS_DEPTH_STUDY_VERSION = "paper2_stage2bs_depth_study_v1"
-# Contract marker: native 162 10 2 2 preflight before every variant cell
+STAGE5_PAPER2_STAGE2BS_DEPTH_STUDY_VERSION = "paper2_stage2bs_depth_study_v2"
+# Contract marker: banked native curves 162 10 2 2 and 162 9 5 1
+# Contract marker: cascade direct discriminator stops before either branch
 # Contract marker: provenance-tagged schedules no hybrid K curves
-# Contract marker: 461-row generation plus 2048-row DEV-2 margins both seeds both endpoints
+# Contract marker: DEV-2 margins mandatory only on the final deciding cell
 # Contract marker: score-only no optimizer no training CONFIRM and EVAL-E sealed
 REPO = "mshapiro123/recurrent-qwen-svgd"
 ROOT = Path("/content/recurrent-qwen-svgd")
 REF = os.environ.get("STAGE5_BOOTSTRAP_REF", "main").strip() or "main"
 GH = os.environ.get("GH_TOKEN", "").strip()
 MODE = os.environ.get("STAGE2BS_DEPTH_MODE", "preflight").strip().lower()
-if MODE not in {"preflight", "run"}:
+if MODE not in {"preflight", "cascade_direct", "run"}:
     raise RuntimeError(f"Unknown Stage 2B-S depth-study mode: {MODE}")
 
 
