@@ -2081,3 +2081,22 @@ Colab/Drive backups for selected runs.
   authorized. CONFIRM and EVAL-E remained sealed. Handoff:
   `docs/PAPER2_STAGE2B_DEPTH_REGISTERED_STOP_HANDOFF_20260819.md`. Analysis:
   `artifacts/stage2b_depth_20260819/analysis/analysis_summary.json`.
+- 2026-08-23 Stage 2B-S direct cascade and desk-math wave: the registered
+  deferred-terminal-write/no-re-entry discriminator completed K1-K4 in both
+  seeds at gamma 0.05. Every cell scored `159/461`, with GSM8K `105/369`, MBPP
+  `34/67`, and Tier-1 `20/25`. This removes the native depth collapse
+  (`162/10/2/2` and `162/9/5/1`) but misses the `182/461` K1+20 threshold and
+  creates no additive gain. Seven of eight higher-K cells are
+  prediction-identical to K1; the only changed prediction remains wrong. Mean
+  maximum deployed write/RMS shrinks from about 3.7% at K1 to 0.9% at K4. The
+  machine verdict is `FALLBACK_BRANCH_AUTHORIZED_AWAITING_RELAY`; no fallback
+  has started, optimizer steps remain zero, and CONFIRM/EVAL-E remain sealed.
+  The CPU desk wave found 38-49 outliers per matrix under the specified IID-MP
+  fit rather than the predicted one or two, with weak tested directional
+  alignments. Per-row margin fits show signal attenuation contributes roughly
+  five to six times more absolute movement than accumulated bias, falsifying
+  the registered bias-dominance prediction. D-M3 was deferred; D-M4 is
+  planning-only. Handoff:
+  `docs/PAPER2_STAGE2BS_DIRECT_CASCADE_AND_DESK_MATH_HANDOFF_20260823.md`.
+  Analysis:
+  `outputs/stage5/stage5_paper2_stage2bs_direct_desk_20260823/analysis/summary.json`.
