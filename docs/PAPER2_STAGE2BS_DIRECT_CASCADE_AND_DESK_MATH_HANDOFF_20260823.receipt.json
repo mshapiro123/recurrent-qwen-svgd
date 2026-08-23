@@ -1,0 +1,62 @@
+{
+  "kind": "paper2_stage2bs_direct_cascade_and_desk_math_handoff_receipt_v1",
+  "date": "2026-08-23",
+  "status": "complete_awaiting_strategy_relay",
+  "handoff": {
+    "path": "docs/PAPER2_STAGE2BS_DIRECT_CASCADE_AND_DESK_MATH_HANDOFF_20260823.md",
+    "bytes": 14256,
+    "sha256": "fc5ec23593a55c008196f18ba3e19e9f33911967d04303d5e1d29c9904c83a4e"
+  },
+  "analysis": {
+    "path": "outputs/stage5/stage5_paper2_stage2bs_direct_desk_20260823/analysis/summary.json",
+    "bytes": 21754,
+    "sha256": "563cdc6f1a927405fe8fde4f03bbaf9883ca30e1175dca20316a5a56e6b2c60c"
+  },
+  "source_receipts": {
+    "direct_archive": {
+      "bytes": 8882436,
+      "sha256": "6dd4c644a129a4e84cbe59edc772d4a5b8df176cc4a9ccf1f02c7459a965308e"
+    },
+    "direct_wave": {
+      "sha256": "73d38cb8e48c4880dc9aa59eec16c788f746e0a0277fb7d1abf5ce5a47c960f1"
+    },
+    "desk_math": {
+      "bytes": 27679,
+      "sha256": "5d5f21f5a70a9b09f860b2fdd473ef75e760fdea5e50410dfa152b0cecd110aa"
+    }
+  },
+  "figures": [
+    {
+      "path": "docs/figures/paper2_stage2bs_direct_cascade_20260823.png",
+      "bytes": 130545,
+      "sha256": "c3b57bb9c82b28254a102fa362bd91b638eaf03df4d0de67659a6cf1abbbeaf4"
+    },
+    {
+      "path": "docs/figures/paper2_stage2bs_direct_cascade_20260823.svg",
+      "bytes": 81017,
+      "sha256": "3d080c4aa531a1cd3e9ab540c028d5b48002d668cc64dd720e3c630c45cf7fe9"
+    },
+    {
+      "path": "docs/figures/paper2_stage2bs_desk_math_20260823.png",
+      "bytes": 121828,
+      "sha256": "45bd6606d351c6e73cd853c7dad86aab53c8f2a397d237279829b99f083c0a4d"
+    },
+    {
+      "path": "docs/figures/paper2_stage2bs_desk_math_20260823.svg",
+      "bytes": 72548,
+      "sha256": "8b0c70f672b08a23f6ae4c6edf8f13a0802fb907c13166d98982c3c52b3f173d"
+    }
+  ],
+  "analysis_builder": {
+    "path": "eval/build_paper2_stage2bs_direct_desk_handoff.py",
+    "bytes": 14744,
+    "sha256": "3b5c577f8eafd354afdded77fc92d83fc9e1ed05f0bcc1913388d0408904706f"
+  },
+  "registered_decision": "FALLBACK_BRANCH_AUTHORIZED_AWAITING_RELAY",
+  "branch_execution_started": false,
+  "optimizer_constructed": false,
+  "optimizer_steps": 0,
+  "confirm_scored": false,
+  "eval_e_scored": false,
+  "paid_colab_sessions_after_closeout": 0
+}
