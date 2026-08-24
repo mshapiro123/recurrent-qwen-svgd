@@ -1,0 +1,41 @@
+{
+  "kind": "paper2_bicameral_batch_concat_identity_diagnostic_v1",
+  "status": "hard_gate_failed",
+  "training_performed": false,
+  "optimizer_constructed": false,
+  "sealed_partition_touched": false,
+  "runtime": {
+    "gpu_name": "NVIDIA A100-SXM4-40GB",
+    "gpu_total_gib": 39.4935302734375,
+    "torch_version": "2.11.0+cu128",
+    "cuda_version": "12.8",
+    "python_version": "3.13.15"
+  },
+  "model_id": "Qwen/Qwen2.5-0.5B-Instruct",
+  "model_config_commit": "7ae557604adf67be50417f59c2c2f167def9a775",
+  "input": {
+    "batch_size": 1,
+    "sequence_length": 64,
+    "seed": 20260823
+  },
+  "comparison": {
+    "single_batch_middle_vs_first_half_of_duplicated_batch_middle": {
+      "exact_equal": false,
+      "maximum_absolute_hidden_difference": 0.25,
+      "nonzero_hidden_differences": 49192,
+      "compared_values": 57344
+    },
+    "base_graph_logits_vs_zero_gate_batch_concat_graph_logits": {
+      "exact_equal": false,
+      "maximum_absolute_logit_difference": 0.375,
+      "nonzero_logit_differences": 8969555,
+      "compared_values": 9723904
+    }
+  },
+  "registered_contract_conflict": {
+    "requirement_1": "frozen middle evaluated twice by batch concatenation",
+    "requirement_2": "all-gates-zero output equals the base path with exact float equality",
+    "observed": "batch-dependent BF16 kernels make the two requirements incompatible on the pinned substrate and runtime",
+    "strategy_ruling_required": true
+  }
+}

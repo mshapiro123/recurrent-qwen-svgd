@@ -1,0 +1,97 @@
+{
+  "bicameral_parameter_count": 2308,
+  "branch_cache_timings": [
+    {
+      "batch_size": 1,
+      "maximum_ms": 23.993343353271484,
+      "mean_ms": 23.79079666137695,
+      "median_ms": 23.76191997528076,
+      "milliseconds_per_row": 23.76191997528076,
+      "minimum_ms": 23.69843292236328,
+      "peak_allocated_gib": 1.0210533142089844,
+      "peak_reserved_gib": 1.21875,
+      "repeats": 10,
+      "sequence_length": 64
+    },
+    {
+      "batch_size": 1,
+      "maximum_ms": 24.648704528808594,
+      "mean_ms": 23.898418998718263,
+      "median_ms": 23.820287704467773,
+      "milliseconds_per_row": 23.820287704467773,
+      "minimum_ms": 23.627775192260742,
+      "peak_allocated_gib": 1.0283417701721191,
+      "peak_reserved_gib": 1.220703125,
+      "repeats": 10,
+      "sequence_length": 128
+    },
+    {
+      "batch_size": 1,
+      "maximum_ms": 27.31110382080078,
+      "mean_ms": 24.38184928894043,
+      "median_ms": 23.921663284301758,
+      "milliseconds_per_row": 23.921663284301758,
+      "minimum_ms": 23.561216354370117,
+      "peak_allocated_gib": 1.0353045463562012,
+      "peak_reserved_gib": 1.2265625,
+      "repeats": 10,
+      "sequence_length": 256
+    },
+    {
+      "batch_size": 1,
+      "maximum_ms": 23.880704879760742,
+      "mean_ms": 23.664230346679688,
+      "median_ms": 23.628799438476562,
+      "milliseconds_per_row": 23.628799438476562,
+      "minimum_ms": 23.51923179626465,
+      "peak_allocated_gib": 1.0556387901306152,
+      "peak_reserved_gib": 1.2265625,
+      "repeats": 10,
+      "sequence_length": 512
+    },
+    {
+      "batch_size": 8,
+      "maximum_ms": 27.966463088989258,
+      "mean_ms": 27.28540153503418,
+      "median_ms": 27.22713565826416,
+      "milliseconds_per_row": 3.40339195728302,
+      "minimum_ms": 26.640384674072266,
+      "peak_allocated_gib": 1.17250394821167,
+      "peak_reserved_gib": 1.263671875,
+      "repeats": 10,
+      "sequence_length": 256
+    }
+  ],
+  "closed_form_fit_256_rows_ms": 2.5491320000128326,
+  "hard_gate_pass": false,
+  "kind": "paper2_bicameral_step1_cost_probe_v1",
+  "model_config_commit": "7ae557604adf67be50417f59c2c2f167def9a775",
+  "model_id": "Qwen/Qwen2.5-0.5B-Instruct",
+  "model_load_seconds": 17.747737490999953,
+  "optimizer_constructed": false,
+  "planning_projection_at_batch8_seq256": {
+    "minutes_per_1000_training_rows": 0.056723199288050336,
+    "minutes_per_2048_row_panel": 0.11616911214192709,
+    "minutes_per_461_row_slice": 0.026149394871791205,
+    "seconds_per_row": 0.00340339195728302,
+    "training_row_count_unbound": true,
+    "two_seed_formula_gpu_hours": "2 * seconds_per_row * (training_rows + 461 + 2048) / 3600"
+  },
+  "runtime": {
+    "cuda_version": "12.8",
+    "gpu_name": "NVIDIA A100-SXM4-40GB",
+    "gpu_total_gib": 39.4935302734375,
+    "python_version": "3.13.15",
+    "torch_version": "2.11.0+cu128"
+  },
+  "sealed_partition_touched": false,
+  "status": "complete",
+  "step1_trainable_parameter_count": 256,
+  "t1_real_substrate": {
+    "compared_values": 9723904,
+    "exact_equal": false,
+    "maximum_absolute_logit_difference": 0.375,
+    "nonzero_logit_differences": 8969555
+  },
+  "training_performed": false
+}

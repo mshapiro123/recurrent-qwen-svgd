@@ -1,0 +1,75 @@
+{
+  "kind": "paper2_bicameral_stage0_geometry_concise_receipt_v1",
+  "status": "complete_with_registered_escalation",
+  "confirm_scored": false,
+  "eval_e_scored": false,
+  "gpu_used": false,
+  "optimizer_constructed": false,
+  "optimizer_steps": 0,
+  "lock_sha256": "f9aa094f50e265ba0cf8427d8e15af17d9dc6d6d38332163faff68991e71d7d3",
+  "full_summary_sha256": "67a38f34d5c8d4c52b5904a9e3104f150bff03bf1eca5dc4190923d71d583dc5",
+  "registered_predictions": {
+    "p5_rho_reach_below_0p5": true,
+    "p6_forced_k2_silhouette_at_least_0p70": true
+  },
+  "seeds": {
+    "0": {
+      "k2": {
+        "silhouette": 0.7643004655838013,
+        "cluster_rows": [38, 218],
+        "rho_reach": [0.08469405770301819, 0.12284313142299652],
+        "initializer_sha256": "9da58e15c518d3b1f35aa3459fb443418dc894163004d69d976ec4afd5dde018"
+      },
+      "k3": {
+        "silhouette": 0.73246169090271,
+        "cluster_rows": [3, 37, 216],
+        "initializer_sha256": "aeb2621cc99c8bbe3edab6a6632a9dd7feb89dcbe9702483adb89fd26ca74a05"
+      },
+      "global_common_mode_fraction": 0.7131123542785645,
+      "common_mode_direction_sha256": "57ab22ad5f3c5709878570687bc9d28570310356a37cdb2d35bc82d48687ac53",
+      "cross_fitted_rho_res": {
+        "terminal_rank": 8,
+        "pooled_mean": 0.015329149295450862,
+        "pooled_sd": 0.006856915328412581,
+        "cluster_means": [0.04609796618460678, 0.009965777544130106],
+        "cluster_mean_spike_counts": [4.35, 16.475],
+        "decision": "RHO_ESCALATE_AT_RANK_CAP"
+      }
+    },
+    "1": {
+      "k2": {
+        "silhouette": 0.7662428021430969,
+        "cluster_rows": [38, 218],
+        "rho_reach": [0.0852886214852333, 0.1222134679555893],
+        "initializer_sha256": "2c1671fd2f103af1d408959b6b1cf3a44332bcc05acd836030e34f1c51a954a2"
+      },
+      "k3": {
+        "silhouette": 0.7650049328804016,
+        "cluster_rows": [14, 24, 218],
+        "initializer_sha256": "b174a4e944a52a74718fe3832d19302fbd203a27102313c8a62eaf28550f2625"
+      },
+      "global_common_mode_fraction": 0.7137715220451355,
+      "common_mode_direction_sha256": "0a29ac01da05cf85d9c11c9565d9e239312243a63308e215a7ea11c206101d7e",
+      "cross_fitted_rho_res": {
+        "terminal_rank": 8,
+        "pooled_mean": 0.01540789843688232,
+        "pooled_sd": 0.006789075748335223,
+        "cluster_means": [0.04604376992210746, 0.010067700655054116],
+        "cluster_mean_spike_counts": [4.325, 16.5],
+        "decision": "RHO_ESCALATE_AT_RANK_CAP"
+      }
+    }
+  },
+  "registered_thresholds": {
+    "sizing_stands_at_or_below": 0.0003,
+    "sizing_inflates_at_or_below": 0.001,
+    "escalate_above_at_rank_cap": 0.001,
+    "rank_cap": 8
+  },
+  "interpretation": {
+    "k2": "replicated but predominantly task-family-associated",
+    "k3": "unstable and not activated",
+    "structured_bank": "secondary shaping only; approximately ten percent reachable energy",
+    "step2": "design escalation required before sizing or training"
+  }
+}
