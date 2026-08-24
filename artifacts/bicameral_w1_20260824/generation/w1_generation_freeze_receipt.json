@@ -5,9 +5,9 @@
     "tier1": 25
   },
   "config": "artifacts\\bicameral_w1_20260824\\generation\\w1_generation_config.json",
-  "config_bytes": 517,
+  "config_bytes": 499,
   "config_canonical_sha256": "15fffbe8b4efb9b19d16a69d6ba88604356bcc247eb24bcbd049a83d47310445",
-  "config_sha256": "351abd97b83abec37d4885b60b3b80907fbd26ab8d0a019d551df7f1274248a2",
+  "config_sha256": "d87943947de19de6e54e475da7462a02bd910f840a6642604bd6c56b31a78f85",
   "confirm_scored": false,
   "eval_e_scored": false,
   "kind": "paper2_bicameral_w1_generation_freeze_receipt_v1",

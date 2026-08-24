@@ -1,2 +1,4 @@
 artifacts/bicameral_w0_20260824/*.json text eol=lf
 artifacts/bicameral_w0_20260824/*.jsonl text eol=lf
+artifacts/bicameral_w1_20260824/generation/*.json text eol=lf
+artifacts/bicameral_w1_20260824/generation/*.jsonl text eol=lf

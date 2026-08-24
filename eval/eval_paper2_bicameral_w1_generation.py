@@ -81,7 +81,12 @@ def freeze_generation_manifest(
     if len({str(row["item_id"]) for row in rows}) != len(rows):
         raise RuntimeError("W1 generation item ids are not unique")
     write_jsonl(output, rows)
-    atomic_json(config_output, GENERATION_CONFIG)
+    config_output.parent.mkdir(parents=True, exist_ok=True)
+    config_output.write_text(
+        json.dumps(GENERATION_CONFIG, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+        newline="",
+    )
     return {
         "kind": "paper2_bicameral_w1_generation_freeze_receipt_v1",
         "status": "frozen_before_scoring",
