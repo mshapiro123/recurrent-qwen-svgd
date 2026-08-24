@@ -36,6 +36,7 @@ from training.paper2_bicameral_w1 import (
     ORACLE_TARGET_ASSISTED,
     POPULATION_TARGET,
     build_phase_b_granularity_targets,
+    deterministic_permutation,
 )
 from training.paper2_stage2bs_depth_study import INITIALIZATION_SEED_BASE, sha256_file
 from training.run_paper2_stage2b_depth import _build_model
@@ -293,6 +294,20 @@ def _directions_for_seed(args: argparse.Namespace, rows: Sequence[Mapping[str, A
             "target_tag": POPULATION_TARGET,
             "oracle_routed": arm in {"l1", "l3"},
         }
+        if arm in {"l1", "l2", "l3"}:
+            permutation = deterministic_permutation(
+                values.shape[0], family=f"phase_b:{arm}:seed{args.seed}"
+            )
+            shuffled = values[permutation]
+            arms[f"l5_{arm}"] = {
+                "directions": {
+                    str(row["item_id"]): shuffled[item_to_index[str(row["item_id"])]]
+                    for row in rows
+                },
+                "target_tag": POPULATION_TARGET,
+                "oracle_routed": False,
+                "control_for": arm,
+            }
     return arms
 
 
@@ -325,6 +340,8 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             row["seed"] = args.seed
             row["target_tag"] = payload["target_tag"]
             row["oracle_routed"] = payload["oracle_routed"]
+            if "control_for" in payload:
+                row["control_for"] = payload["control_for"]
         summary = _arm_summary(scored, arm=arm, seed=args.seed)
         summary.update(
             {
@@ -334,6 +351,8 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
                 "config_sha256": sha256_file(args.generation_config),
             }
         )
+        if "control_for" in payload:
+            summary["control_for"] = payload["control_for"]
         write_jsonl(row_path, scored)
         atomic_json(summary_path, summary)
         cells.append(summary)
