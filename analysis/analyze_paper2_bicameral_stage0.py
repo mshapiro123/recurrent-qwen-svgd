@@ -5,6 +5,8 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
+import statistics
 from collections import Counter
 from pathlib import Path
 from typing import Any, Mapping
@@ -90,6 +92,7 @@ def reachable_fraction(
         "captured_energy": float(captured_by_s.sum()),
         "nonzero_state_bands": int((state_energy_by_s > 0.0).sum()),
         "coefficient_l2": float(coefficients.norm()),
+        "coefficients": [float(value) for value in coefficients],
         "estimator": (
             "sum_s <delta_h_tilde_s,h_tilde_s>^2/||h_tilde_s||^2 "
             "/ ||delta_h_tilde||^2; each s pools rows and seven WHT128 blocks"
@@ -171,15 +174,19 @@ def cluster_receipt(
         tensors[f"cluster_{cluster}_correction_mean"] = correction_mean.cpu()
         tensors[f"cluster_{cluster}_correction_mean_unit"] = _unit(correction_mean).cpu()
         tensors[f"cluster_{cluster}_state_loop4_mean"] = state_mean.cpu()
+        reachability = reachable_fraction(
+            correction_rows, state_rows, block_size=block_size
+        )
+        tensors[f"cluster_{cluster}_bank_gain"] = torch.tensor(
+            reachability.pop("coefficients"), dtype=torch.float32
+        )
         battery_counts = Counter(b for b, keep in zip(batteries, mask.tolist()) if keep)
         cells[key] = {
             "rows": int(mask.sum()),
             "battery_counts": dict(sorted(battery_counts.items())),
             "post_global_projection_rho_res": float(residual_cosines.mean()),
             "post_global_projection_rho_res_median": float(residual_cosines.median()),
-            "rho_reach": reachable_fraction(
-                correction_rows, state_rows, block_size=block_size
-            ),
+            "rho_reach": reachability,
         }
     for item_id, battery, label in zip(item_ids, batteries, labels.tolist()):
         assignments.append({"item_id": item_id, "battery": battery, "cluster": int(label)})
@@ -194,6 +201,200 @@ def cluster_receipt(
         },
         tensors,
     )
+
+
+def _project_off(values: torch.Tensor, basis: torch.Tensor) -> torch.Tensor:
+    if basis.numel() == 0:
+        return values
+    return values - (values @ basis.T) @ basis
+
+
+def _feature_basis(values: torch.Tensor, rank: int) -> torch.Tensor:
+    """Return feature-space singular vectors for an uncentered row matrix."""
+
+    if values.ndim != 2 or not 1 <= rank <= min(values.shape):
+        raise ValueError("invalid nuisance-basis geometry")
+    _u, _s, vh = torch.linalg.svd(values.float(), full_matrices=False)
+    return vh[:rank]
+
+
+def _gram_ratio(residuals: torch.Tensor) -> float:
+    rows = int(residuals.shape[0])
+    if rows < 2:
+        return float("nan")
+    total = residuals.sum(dim=0).square().sum() - residuals.square().sum()
+    mean_offdiagonal = total / (rows * (rows - 1))
+    mean_energy = residuals.square().sum(dim=1).mean().clamp_min(1e-12)
+    return float(mean_offdiagonal / mean_energy)
+
+
+def _mp_spike_receipt(residuals: torch.Tensor) -> dict[str, Any]:
+    rows, dimensions = residuals.shape
+    covariance_eigenvalues = torch.linalg.eigvalsh(
+        residuals @ residuals.T / max(rows, 1)
+    ).clamp_min(0.0)
+    sigma2 = residuals.square().sum() / max(rows * dimensions, 1)
+    aspect = dimensions / max(rows, 1)
+    edge = sigma2 * (1.0 + math.sqrt(aspect)) ** 2
+    return {
+        "rows": rows,
+        "dimensions": dimensions,
+        "aspect_d_over_n": aspect,
+        "noise_variance": float(sigma2),
+        "mp_upper_edge": float(edge),
+        "spikes_above_edge": int((covariance_eigenvalues > edge).sum()),
+        "largest_eigenvalue": float(covariance_eigenvalues[-1]),
+    }
+
+
+def _crossfit_fold(
+    corrections: torch.Tensor,
+    labels: torch.Tensor,
+    *,
+    cluster: int,
+    fit_indices: torch.Tensor,
+    evaluation_indices: torch.Tensor,
+    nuisance_rank: int,
+) -> dict[str, Any]:
+    other = torch.where(labels != cluster)[0]
+    nuisance_rows = torch.cat([corrections[fit_indices], corrections[other]], dim=0)
+    nuisance_basis = _feature_basis(nuisance_rows, nuisance_rank)
+    fit_projected = _project_off(corrections[fit_indices], nuisance_basis)
+    cluster_direction = _unit(fit_projected.mean(dim=0))
+    combined_basis = torch.cat([nuisance_basis, cluster_direction.unsqueeze(0)], dim=0)
+    combined_basis = torch.linalg.qr(combined_basis.T, mode="reduced").Q.T
+    residuals = _project_off(corrections[evaluation_indices], combined_basis)
+    return {
+        "rho_res": _gram_ratio(residuals),
+        "mp": _mp_spike_receipt(residuals),
+        "fit_rows": int(fit_indices.numel()),
+        "evaluation_rows": int(evaluation_indices.numel()),
+    }
+
+
+def cross_fitted_residual_correlation(
+    corrections: torch.Tensor,
+    labels: torch.Tensor,
+    *,
+    splits: int,
+    seed_base: int,
+    rank_start: int,
+    rank_max: int,
+    persistence_fraction: float,
+) -> dict[str, Any]:
+    """Implement registered ruling R-S0-A without same-sample deflation."""
+
+    x = _unit(corrections)
+    clusters = [int(value) for value in labels.unique(sorted=True)]
+    permutations: dict[tuple[int, int], torch.Tensor] = {}
+    for cluster in clusters:
+        members = torch.where(labels == cluster)[0]
+        for split in range(splits):
+            generator = torch.Generator().manual_seed(seed_base + split)
+            permutations[(cluster, split)] = members[
+                torch.randperm(members.numel(), generator=generator)
+            ]
+
+    by_rank: dict[str, Any] = {}
+    terminal_by_cluster: dict[int, int] = {cluster: rank_max for cluster in clusters}
+    unresolved = set(clusters)
+    fold_cache: dict[tuple[int, int], list[dict[str, Any]]] = {}
+    for rank in range(rank_start, rank_max + 1):
+        rank_cells: dict[str, Any] = {}
+        for cluster in clusters:
+            folds = []
+            for split in range(splits):
+                permutation = permutations[(cluster, split)]
+                midpoint = permutation.numel() // 2
+                left, right = permutation[:midpoint], permutation[midpoint:]
+                for fit, evaluation, direction in (
+                    (left, right, "A_to_B"),
+                    (right, left, "B_to_A"),
+                ):
+                    cell = _crossfit_fold(
+                        x,
+                        labels,
+                        cluster=cluster,
+                        fit_indices=fit,
+                        evaluation_indices=evaluation,
+                        nuisance_rank=rank,
+                    )
+                    cell["split"] = split
+                    cell["direction"] = direction
+                    folds.append(cell)
+            fold_cache[(cluster, rank)] = folds
+            rhos = [cell["rho_res"] for cell in folds]
+            spike_fraction = sum(
+                cell["mp"]["spikes_above_edge"] > 0 for cell in folds
+            ) / len(folds)
+            rank_cells[str(cluster)] = {
+                "rho_res_mean": statistics.fmean(rhos),
+                "rho_res_sd": statistics.stdev(rhos),
+                "spike_persistence_fraction": spike_fraction,
+                "folds": folds,
+            }
+            if cluster in unresolved and spike_fraction < persistence_fraction:
+                terminal_by_cluster[cluster] = rank
+                unresolved.remove(cluster)
+        by_rank[str(rank)] = rank_cells
+    terminal_rank = max(terminal_by_cluster.values())
+    terminal_clusters = {}
+    pooled_folds = []
+    for cluster in clusters:
+        folds = fold_cache[(cluster, terminal_rank)]
+        rhos = [cell["rho_res"] for cell in folds]
+        rows = int((labels == cluster).sum())
+        terminal_clusters[str(cluster)] = {
+            "rows": rows,
+            "rho_res_mean": statistics.fmean(rhos),
+            "rho_res_sd": statistics.stdev(rhos),
+            "cluster_terminal_rank": terminal_by_cluster[cluster],
+            "residual_spike_count_mean": statistics.fmean(
+                cell["mp"]["spikes_above_edge"] for cell in folds
+            ),
+        }
+    total_rows = sum(cell["rows"] for cell in terminal_clusters.values())
+    for fold_index in range(2 * splits):
+        pooled_folds.append(
+            sum(
+                terminal_clusters[str(cluster)]["rows"]
+                * fold_cache[(cluster, terminal_rank)][fold_index]["rho_res"]
+                for cluster in clusters
+            )
+            / total_rows
+        )
+    pooled_mean = statistics.fmean(pooled_folds)
+    if pooled_mean <= 3e-4:
+        decision = "RHO_SIZING_STANDS"
+    elif pooled_mean <= 1e-3:
+        decision = "RHO_SIZING_INFLATES"
+    elif terminal_rank == rank_max:
+        decision = "RHO_ESCALATE_AT_RANK_CAP"
+    else:
+        decision = "RHO_UNMAPPED_STRATEGY_REVIEW"
+    return {
+        "kind": "cross_fitted_within_cluster_residual_correlation_v1",
+        "splits": splits,
+        "directions_per_split": 2,
+        "split_seed_rule": "20260823 + split_index",
+        "nuisance_basis": (
+            "top-m feature-space right singular vectors of fit-cluster rows plus "
+            "all rows outside the evaluated cluster"
+        ),
+        "same_sample_projection_prohibited": True,
+        "rank_start": rank_start,
+        "rank_max": rank_max,
+        "mp_persistence_fraction": persistence_fraction,
+        "terminal_rank": terminal_rank,
+        "terminal_clusters": terminal_clusters,
+        "pooled": {
+            "rho_res_mean": pooled_mean,
+            "rho_res_sd": statistics.stdev(pooled_folds),
+            "weights": "cluster row counts",
+            "decision": decision,
+        },
+        "by_rank": by_rank,
+    }
 
 
 def validate_lock(lock: Mapping[str, Any]) -> None:
@@ -260,6 +461,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             "common_mode": common_mode,
             "forced_clusterings": {},
         }
+        forced_tensors: dict[int, dict[str, torch.Tensor]] = {}
         for clusters in analysis["forced_cluster_counts"]:
             receipt, tensors = cluster_receipt(
                 corrections,
@@ -280,6 +482,18 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
                 "sha256": sha256_file(tensor_path),
             }
             seed_receipt["forced_clusterings"][str(clusters)] = receipt
+            forced_tensors[clusters] = tensors
+        seed_receipt["cross_fitted_residual_correlation"] = (
+            cross_fitted_residual_correlation(
+                corrections,
+                forced_tensors[2]["labels"],
+                splits=analysis["crossfit_splits"],
+                seed_base=analysis["crossfit_seed_base"],
+                rank_start=analysis["nuisance_rank_start"],
+                rank_max=analysis["nuisance_rank_max"],
+                persistence_fraction=analysis["mp_persistence_fraction"],
+            )
+        )
         output["seeds"][str(seed)] = seed_receipt
         atomic_json(args.output_dir / "status.json", output)
     output["status"] = "complete"

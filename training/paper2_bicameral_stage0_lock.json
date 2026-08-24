@@ -15,6 +15,12 @@
     "ratification_record_bytes": 40308,
     "ratification_record_sha256": "23d7880a7b49fff18b2ad40326f6b2a4330080a5780cc9ac8d0df730a143b5b0"
   },
+  "interim_ruling": {
+    "drive_id": "1xs1vIOWW_duv4ISKugKIJj014ijNglkx",
+    "filename": "STRATEGY_BICAMERAL_STAGE0_INTERIM_RULINGS_20260823.md",
+    "bytes": 10930,
+    "sha256": "2e8ea1a14a6e11c6665dbb2b6f13d861400a41311a30a5802e935649fe4156bf"
+  },
   "inputs": {
     "0": {
       "correction_field_sha256": "edcb287f1b90ea812655746a855abf477d7e240501e078b1b70fe17cdd7564ed",
@@ -35,11 +41,21 @@
     "wht_blocks": 7,
     "rho_reach_state": "loop4",
     "common_mode_direction": "unit_normalized_global_mean_correction",
-    "residual_correlation": "mean_offdiagonal_cosine_after_common_mode_projection"
+    "residual_correlation": "cross_fitted_within_cluster_residual_gram_ratio",
+    "crossfit_splits": 20,
+    "crossfit_seed_base": 20260823,
+    "nuisance_rank_start": 1,
+    "nuisance_rank_max": 8,
+    "mp_persistence_fraction": 0.8,
+    "rho_res_thresholds": [0.0003, 0.001]
   },
   "architecture_reference": {
     "required_filename": "bicameral_torch.py",
     "must_be_byte_identified_before_port": true,
-    "available_at_lock_materialization": false
+    "available_at_lock_materialization": true,
+    "drive_id": "1KR-35tkctPSqfx22rI83D7tmyEN5zf3q",
+    "source_filename": "bicameral_torch_reference_v1.py",
+    "bytes": 13452,
+    "sha256": "14231e8480177769e0f230724d710f3e47aae52fd791a81f1f11adb25f850cb2"
   }
 }
