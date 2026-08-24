@@ -65,9 +65,10 @@ def deterministic_permutation(size: int, *, family: str, seed: int = SHUFFLE_SEE
     digest = hashlib.sha256(f"{seed}:{family}".encode("utf-8")).digest()
     generator = random.Random(int.from_bytes(digest[:8], "big"))
     order = list(range(size))
-    generator.shuffle(order)
-    if any(index == source for index, source in enumerate(order)):
-        order = order[1:] + order[:1]
+    # Sattolo's algorithm produces one cycle, hence a guaranteed derangement.
+    for index in range(size - 1, 0, -1):
+        other = generator.randrange(index)
+        order[index], order[other] = order[other], order[index]
     if any(index == source for index, source in enumerate(order)):
         raise RuntimeError("registered derangement construction failed")
     return order
