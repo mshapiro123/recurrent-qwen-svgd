@@ -1,0 +1,550 @@
+{
+  "confirm_scored": false,
+  "eval_e_scored": false,
+  "gpu_used": false,
+  "kind": "paper2_bicameral_w3_desk_wave_v1",
+  "optimizer_constructed": false,
+  "optimizer_steps": 0,
+  "seeds": {
+    "0": {
+      "dm5": {
+        "cells": [
+          {
+            "eval_rows_per_split": 64,
+            "fit_rows_per_split": 192,
+            "mean_cosine": 0.881449818611145,
+            "mean_explained_energy": 0.7830758482217789,
+            "normal_approx_independent_eval_splits_for_80pct_power": 1,
+            "positive_cosine_fraction": 1.0,
+            "projected_map_parameters": 16,
+            "rank": 4,
+            "split_mean_cosine_sd": 0.01459940243512392,
+            "splits": 20
+          },
+          {
+            "eval_rows_per_split": 64,
+            "fit_rows_per_split": 192,
+            "mean_cosine": 0.883307158946991,
+            "mean_explained_energy": 0.7845622897148132,
+            "normal_approx_independent_eval_splits_for_80pct_power": 1,
+            "positive_cosine_fraction": 1.0,
+            "projected_map_parameters": 64,
+            "rank": 8,
+            "split_mean_cosine_sd": 0.010676570236682892,
+            "splits": 20
+          },
+          {
+            "eval_rows_per_split": 64,
+            "fit_rows_per_split": 192,
+            "mean_cosine": 0.8800517916679382,
+            "mean_explained_energy": 0.7796149969100952,
+            "normal_approx_independent_eval_splits_for_80pct_power": 1,
+            "positive_cosine_fraction": 1.0,
+            "projected_map_parameters": 256,
+            "rank": 16,
+            "split_mean_cosine_sd": 0.00986255519092083,
+            "splits": 20
+          },
+          {
+            "eval_rows_per_split": 64,
+            "fit_rows_per_split": 192,
+            "mean_cosine": 0.8854849934577942,
+            "mean_explained_energy": 0.7883795142173767,
+            "normal_approx_independent_eval_splits_for_80pct_power": 1,
+            "positive_cosine_fraction": 1.0,
+            "projected_map_parameters": 1024,
+            "rank": 32,
+            "split_mean_cosine_sd": 0.017199808731675148,
+            "splits": 20
+          },
+          {
+            "eval_rows_per_split": 64,
+            "fit_rows_per_split": 192,
+            "mean_cosine": 0.8840411305427551,
+            "mean_explained_energy": 0.7837242275476456,
+            "normal_approx_independent_eval_splits_for_80pct_power": 1,
+            "positive_cosine_fraction": 1.0,
+            "projected_map_parameters": 4096,
+            "rank": 64,
+            "split_mean_cosine_sd": 0.016790712252259254,
+            "splits": 20
+          }
+        ],
+        "input_effective_rank": 13.85978685236316,
+        "input_width": 1792,
+        "kind": "paper2_bicameral_dm5_map_estimand_power_v1",
+        "output_effective_rank": 16.661848230393346,
+        "output_width": 896,
+        "rows": 256,
+        "scope": "desk feasibility and power planning only; no Step-2 gate"
+      },
+      "inputs": {
+        "correction_field_sha256": "edcb287f1b90ea812655746a855abf477d7e240501e078b1b70fe17cdd7564ed",
+        "k2_initializers_sha256": "9da58e15c518d3b1f35aa3459fb443418dc894163004d69d976ec4afd5dde018",
+        "state_features_sha256": "a331a73310f7b67196575cc057fc13835c21c83d73ef9a1038e517390bcfb27b"
+      },
+      "seed": 0,
+      "x6": {
+        "common_mode_energy_fraction": 0.7131123542785645,
+        "directions": [
+          {
+            "battery_association": {
+              "empirical_p": 0.000999000999000999,
+              "eta_squared": 0.950149714892146,
+              "null_p95": 0.04616513103246689,
+              "permutation_draws": 1000
+            },
+            "by_battery": {
+              "arc_challenge": {
+                "absolute_mean": 0.7599714994430542,
+                "rows": 32,
+                "signed_mean": 0.7599714994430542
+              },
+              "arc_easy": {
+                "absolute_mean": 0.12358178943395615,
+                "rows": 1,
+                "signed_mean": 0.12358178943395615
+              },
+              "gsm8k": {
+                "absolute_mean": 0.11985822767019272,
+                "rows": 216,
+                "signed_mean": -0.1188831701874733
+              },
+              "mbpp": {
+                "absolute_mean": 0.13683345913887024,
+                "rows": 5,
+                "signed_mean": 0.13683345913887024
+              },
+              "mmlu": {
+                "absolute_mean": 0.7262692451477051,
+                "rows": 1,
+                "signed_mean": 0.7262692451477051
+              },
+              "tier1": {
+                "absolute_mean": 0.17434144020080566,
+                "rows": 1,
+                "signed_mean": -0.17434144020080566
+              }
+            },
+            "by_cluster": {
+              "0": {
+                "absolute_mean": 0.6770927309989929,
+                "rows": 38,
+                "signed_mean": 0.6770927309989929
+              },
+              "1": {
+                "absolute_mean": 0.12012522667646408,
+                "rows": 218,
+                "signed_mean": -0.11802534759044647
+              }
+            },
+            "cluster_association": {
+              "empirical_p": 0.000999000999000999,
+              "eta_squared": 0.8755405983802607,
+              "null_p95": 0.014612906612455845,
+              "permutation_draws": 1000
+            },
+            "direction": 1,
+            "residual_energy_fraction": 0.31815228695102776,
+            "singular_value": 4.833854403302172
+          },
+          {
+            "battery_association": {
+              "empirical_p": 0.22277722277722278,
+              "eta_squared": 0.026735845872260754,
+              "null_p95": 0.04816204309463501,
+              "permutation_draws": 1000
+            },
+            "by_battery": {
+              "arc_challenge": {
+                "absolute_mean": 0.11495576053857803,
+                "rows": 32,
+                "signed_mean": -0.040242135524749756
+              },
+              "arc_easy": {
+                "absolute_mean": 0.036511048674583435,
+                "rows": 1,
+                "signed_mean": -0.036511048674583435
+              },
+              "gsm8k": {
+                "absolute_mean": 0.1250516176223755,
+                "rows": 216,
+                "signed_mean": 0.004549264442175627
+              },
+              "mbpp": {
+                "absolute_mean": 0.10805096477270126,
+                "rows": 5,
+                "signed_mean": 0.10805096477270126
+              },
+              "mmlu": {
+                "absolute_mean": 0.02901221439242363,
+                "rows": 1,
+                "signed_mean": 0.02901221439242363
+              },
+              "tier1": {
+                "absolute_mean": 0.22764870524406433,
+                "rows": 1,
+                "signed_mean": -0.22764870524406433
+              }
+            },
+            "by_cluster": {
+              "0": {
+                "absolute_mean": 0.11178556084632874,
+                "rows": 38,
+                "signed_mean": -0.018907399848103523
+              },
+              "1": {
+                "absolute_mean": 0.12511609494686127,
+                "rows": 218,
+                "signed_mean": 0.0032957864459604025
+              }
+            },
+            "cluster_association": {
+              "empirical_p": 0.45054945054945056,
+              "eta_squared": 0.002528701904652802,
+              "null_p95": 0.01399305835366249,
+              "permutation_draws": 1000
+            },
+            "direction": 2,
+            "residual_energy_fraction": 0.08589759093395503,
+            "singular_value": 2.5116928683749364
+          },
+          {
+            "battery_association": {
+              "empirical_p": 0.003996003996003996,
+              "eta_squared": 0.08208292536317265,
+              "null_p95": 0.053084637969732285,
+              "permutation_draws": 1000
+            },
+            "by_battery": {
+              "arc_challenge": {
+                "absolute_mean": 0.17674073576927185,
+                "rows": 32,
+                "signed_mean": -0.056429632008075714
+              },
+              "arc_easy": {
+                "absolute_mean": 0.21053312718868256,
+                "rows": 1,
+                "signed_mean": -0.21053312718868256
+              },
+              "gsm8k": {
+                "absolute_mean": 0.09477713704109192,
+                "rows": 216,
+                "signed_mean": 0.009451288729906082
+              },
+              "mbpp": {
+                "absolute_mean": 0.10003156960010529,
+                "rows": 5,
+                "signed_mean": 0.0779019221663475
+              },
+              "mmlu": {
+                "absolute_mean": 0.04264635592699051,
+                "rows": 1,
+                "signed_mean": 0.04264635592699051
+              },
+              "tier1": {
+                "absolute_mean": 0.45735400915145874,
+                "rows": 1,
+                "signed_mean": -0.45735400915145874
+              }
+            },
+            "by_cluster": {
+              "0": {
+                "absolute_mean": 0.1631186157464981,
+                "rows": 38,
+                "signed_mean": -0.036147166043519974
+              },
+              "1": {
+                "absolute_mean": 0.09697131812572479,
+                "rows": 218,
+                "signed_mean": 0.006300876848399639
+              }
+            },
+            "cluster_association": {
+              "empirical_p": 0.08191808191808192,
+              "eta_squared": 0.01176338821578463,
+              "null_p95": 0.016059542074799538,
+              "permutation_draws": 1000
+            },
+            "direction": 3,
+            "residual_energy_fraction": 0.06748868567400386,
+            "singular_value": 2.2263401872848463
+          }
+        ],
+        "kind": "paper2_bicameral_x6_metadata_alignment_v1",
+        "residual_effective_rank": 24.585449608758275
+      }
+    },
+    "1": {
+      "dm5": {
+        "cells": [
+          {
+            "eval_rows_per_split": 64,
+            "fit_rows_per_split": 192,
+            "mean_cosine": 0.8755024671554565,
+            "mean_explained_energy": 0.7713863283395768,
+            "normal_approx_independent_eval_splits_for_80pct_power": 1,
+            "positive_cosine_fraction": 0.996875,
+            "projected_map_parameters": 16,
+            "rank": 4,
+            "split_mean_cosine_sd": 0.016391251236200333,
+            "splits": 20
+          },
+          {
+            "eval_rows_per_split": 64,
+            "fit_rows_per_split": 192,
+            "mean_cosine": 0.8781700134277344,
+            "mean_explained_energy": 0.7760316282510757,
+            "normal_approx_independent_eval_splits_for_80pct_power": 1,
+            "positive_cosine_fraction": 1.0,
+            "projected_map_parameters": 64,
+            "rank": 8,
+            "split_mean_cosine_sd": 0.012058648280799389,
+            "splits": 20
+          },
+          {
+            "eval_rows_per_split": 64,
+            "fit_rows_per_split": 192,
+            "mean_cosine": 0.8839441537857056,
+            "mean_explained_energy": 0.7860969275236129,
+            "normal_approx_independent_eval_splits_for_80pct_power": 1,
+            "positive_cosine_fraction": 1.0,
+            "projected_map_parameters": 256,
+            "rank": 16,
+            "split_mean_cosine_sd": 0.012693790718913078,
+            "splits": 20
+          },
+          {
+            "eval_rows_per_split": 64,
+            "fit_rows_per_split": 192,
+            "mean_cosine": 0.8742178678512573,
+            "mean_explained_energy": 0.7689349293708801,
+            "normal_approx_independent_eval_splits_for_80pct_power": 1,
+            "positive_cosine_fraction": 1.0,
+            "projected_map_parameters": 1024,
+            "rank": 32,
+            "split_mean_cosine_sd": 0.01726766861975193,
+            "splits": 20
+          },
+          {
+            "eval_rows_per_split": 64,
+            "fit_rows_per_split": 192,
+            "mean_cosine": 0.8843972086906433,
+            "mean_explained_energy": 0.7839181184768677,
+            "normal_approx_independent_eval_splits_for_80pct_power": 1,
+            "positive_cosine_fraction": 1.0,
+            "projected_map_parameters": 4096,
+            "rank": 64,
+            "split_mean_cosine_sd": 0.01139453798532486,
+            "splits": 20
+          }
+        ],
+        "input_effective_rank": 13.84331572428659,
+        "input_width": 1792,
+        "kind": "paper2_bicameral_dm5_map_estimand_power_v1",
+        "output_effective_rank": 16.443385772764795,
+        "output_width": 896,
+        "rows": 256,
+        "scope": "desk feasibility and power planning only; no Step-2 gate"
+      },
+      "inputs": {
+        "correction_field_sha256": "8adf371acbe0f7237c7ac26796def257bfc2109173f9036564c15332df480824",
+        "k2_initializers_sha256": "2c1671fd2f103af1d408959b6b1cf3a44332bcc05acd836030e34f1c51a954a2",
+        "state_features_sha256": "4fdbd4029492558d4cf9489a725e8cc96ae269445d0b2c6f7fb02d06226d6b08"
+      },
+      "seed": 1,
+      "x6": {
+        "common_mode_energy_fraction": 0.7137715220451355,
+        "directions": [
+          {
+            "battery_association": {
+              "empirical_p": 0.000999000999000999,
+              "eta_squared": 0.9502567676164099,
+              "null_p95": 0.04729296639561653,
+              "permutation_draws": 1000
+            },
+            "by_battery": {
+              "arc_challenge": {
+                "absolute_mean": 0.763428270816803,
+                "rows": 32,
+                "signed_mean": 0.763428270816803
+              },
+              "arc_easy": {
+                "absolute_mean": 0.12524595856666565,
+                "rows": 1,
+                "signed_mean": 0.12524595856666565
+              },
+              "gsm8k": {
+                "absolute_mean": 0.12046241015195847,
+                "rows": 216,
+                "signed_mean": -0.11954405903816223
+              },
+              "mbpp": {
+                "absolute_mean": 0.14239291846752167,
+                "rows": 5,
+                "signed_mean": 0.14239291846752167
+              },
+              "mmlu": {
+                "absolute_mean": 0.7218074202537537,
+                "rows": 1,
+                "signed_mean": 0.7218074202537537
+              },
+              "tier1": {
+                "absolute_mean": 0.16720719635486603,
+                "rows": 1,
+                "signed_mean": -0.16720719635486603
+              }
+            },
+            "by_cluster": {
+              "0": {
+                "absolute_mean": 0.6806178092956543,
+                "rows": 38,
+                "signed_mean": 0.6806178092956543
+              },
+              "1": {
+                "absolute_mean": 0.12069877982139587,
+                "rows": 218,
+                "signed_mean": -0.11863980442285538
+              }
+            },
+            "cluster_association": {
+              "empirical_p": 0.000999000999000999,
+              "eta_squared": 0.8768095486790215,
+              "null_p95": 0.013491732999682426,
+              "permutation_draws": 1000
+            },
+            "direction": 1,
+            "residual_energy_fraction": 0.32174777995199083,
+            "singular_value": 4.855503104197838
+          },
+          {
+            "battery_association": {
+              "empirical_p": 0.18181818181818182,
+              "eta_squared": 0.02745703738182424,
+              "null_p95": 0.045396871864795685,
+              "permutation_draws": 1000
+            },
+            "by_battery": {
+              "arc_challenge": {
+                "absolute_mean": 0.11574186384677887,
+                "rows": 32,
+                "signed_mean": 0.04024830460548401
+              },
+              "arc_easy": {
+                "absolute_mean": 0.030968965962529182,
+                "rows": 1,
+                "signed_mean": 0.030968965962529182
+              },
+              "gsm8k": {
+                "absolute_mean": 0.12481341511011124,
+                "rows": 216,
+                "signed_mean": -0.004455819260329008
+              },
+              "mbpp": {
+                "absolute_mean": 0.1115233451128006,
+                "rows": 5,
+                "signed_mean": -0.1115233451128006
+              },
+              "mmlu": {
+                "absolute_mean": 0.02729227766394615,
+                "rows": 1,
+                "signed_mean": -0.02729227766394615
+              },
+              "tier1": {
+                "absolute_mean": 0.22845104336738586,
+                "rows": 1,
+                "signed_mean": 0.22845104336738586
+              }
+            },
+            "by_cluster": {
+              "0": {
+                "absolute_mean": 0.11285917460918427,
+                "rows": 38,
+                "signed_mean": 0.01850096881389618
+              },
+              "1": {
+                "absolute_mean": 0.12485833466053009,
+                "rows": 218,
+                "signed_mean": -0.003224940737709403
+              }
+            },
+            "cluster_association": {
+              "empirical_p": 0.45254745254745254,
+              "eta_squared": 0.0024353321763177726,
+              "null_p95": 0.014157775789499283,
+              "permutation_draws": 1000
+            },
+            "direction": 2,
+            "residual_energy_fraction": 0.0855943037533644,
+            "singular_value": 2.504372281977006
+          },
+          {
+            "battery_association": {
+              "empirical_p": 0.003996003996003996,
+              "eta_squared": 0.08153423301323473,
+              "null_p95": 0.050118476152420044,
+              "permutation_draws": 1000
+            },
+            "by_battery": {
+              "arc_challenge": {
+                "absolute_mean": 0.17508722841739655,
+                "rows": 32,
+                "signed_mean": 0.05610669031739235
+              },
+              "arc_easy": {
+                "absolute_mean": 0.20796900987625122,
+                "rows": 1,
+                "signed_mean": 0.20796900987625122
+              },
+              "gsm8k": {
+                "absolute_mean": 0.09498518705368042,
+                "rows": 216,
+                "signed_mean": -0.009378858841955662
+              },
+              "mbpp": {
+                "absolute_mean": 0.10130671411752701,
+                "rows": 5,
+                "signed_mean": -0.07925871759653091
+              },
+              "mmlu": {
+                "absolute_mean": 0.03799492493271828,
+                "rows": 1,
+                "signed_mean": -0.03799492493271828
+              },
+              "tier1": {
+                "absolute_mean": 0.45673930644989014,
+                "rows": 1,
+                "signed_mean": 0.45673930644989014
+              }
+            },
+            "by_cluster": {
+              "0": {
+                "absolute_mean": 0.16177158057689667,
+                "rows": 38,
+                "signed_mean": 0.035819098353385925
+              },
+              "1": {
+                "absolute_mean": 0.0971628800034523,
+                "rows": 218,
+                "signed_mean": -0.0062436931766569614
+              }
+            },
+            "cluster_association": {
+              "empirical_p": 0.07592407592407592,
+              "eta_squared": 0.011541744371343242,
+              "null_p95": 0.014070316217839718,
+              "permutation_draws": 1000
+            },
+            "direction": 3,
+            "residual_energy_fraction": 0.06769738997570168,
+            "singular_value": 2.227216417043907
+          }
+        ],
+        "kind": "paper2_bicameral_x6_metadata_alignment_v1",
+        "residual_effective_rank": 24.283774839354738
+      }
+    }
+  },
+  "status": "complete_cpu_only",
+  "training_performed": false
+}
