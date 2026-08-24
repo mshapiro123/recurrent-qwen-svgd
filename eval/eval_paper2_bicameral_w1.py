@@ -112,6 +112,8 @@ def interface_patch(
             return trace
         hidden = kwargs["coda_hidden"]
         if retain_grad:
+            if not hidden.requires_grad:
+                hidden.requires_grad_(True)
             hidden.retain_grad()
         captured["hidden"] = hidden
         captured["attention_mask"] = kwargs["attention_mask"]

@@ -21,6 +21,15 @@ def test_external_write_is_exactly_gamma_rms_on_active_rows() -> None:
     assert torch.equal(deployed[0, 3:], hidden[0, 3:])
 
 
+def test_frozen_interface_can_be_promoted_to_a_gradient_leaf() -> None:
+    hidden = torch.randn(2, 3, 4)
+    assert hidden.requires_grad is False
+    hidden.requires_grad_(True)
+    hidden.square().mean().backward()
+    assert hidden.grad is not None
+    assert torch.count_nonzero(hidden.grad) > 0
+
+
 def test_shuffle_is_deterministic_derangement() -> None:
     left = deterministic_permutation(64, family="l0a")
     right = deterministic_permutation(64, family="l0a")
