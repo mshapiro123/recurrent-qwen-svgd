@@ -1,0 +1,18 @@
+{
+  "attention": "sdpa",
+  "batch_size": 8,
+  "caps": {
+    "gsm8k": 256,
+    "mbpp": 384,
+    "tier1": 64
+  },
+  "decoder": "greedy_incremental_cache_v1",
+  "dtype": "bfloat16",
+  "evaluator": "EV-LADDER-1",
+  "gamma": 0.05,
+  "kind": "paper2_bicameral_w1_generation_config_v1",
+  "optimizer_steps": 0,
+  "schedule": "sequential_shared_middle_v1",
+  "target_schedule": "one_fixed_arm_target_per_row_at_every_decode_step_v1",
+  "write_schedule": "all_active_prefill_then_each_new_causal_token_v1"
+}

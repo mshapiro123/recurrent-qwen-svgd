@@ -120,8 +120,9 @@ def interface_patch(
         captured["hidden"] = hidden
         captured["attention_mask"] = kwargs["attention_mask"]
         if direction is not None:
+            active_mask = kwargs["attention_mask"][:, -hidden.shape[1] :]
             deployed, telemetry = scale_external_write(
-                hidden, direction.to(hidden.device), kwargs["attention_mask"], gamma=GAMMA
+                hidden, direction.to(hidden.device), active_mask, gamma=GAMMA
             )
             hidden.copy_(deployed)
             captured["telemetry"] = telemetry

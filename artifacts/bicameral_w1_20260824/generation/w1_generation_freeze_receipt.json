@@ -1,0 +1,23 @@
+{
+  "battery_counts": {
+    "gsm8k": 369,
+    "mbpp": 67,
+    "tier1": 25
+  },
+  "config": "artifacts\\bicameral_w1_20260824\\generation\\w1_generation_config.json",
+  "config_bytes": 517,
+  "config_canonical_sha256": "15fffbe8b4efb9b19d16a69d6ba88604356bcc247eb24bcbd049a83d47310445",
+  "config_sha256": "351abd97b83abec37d4885b60b3b80907fbd26ab8d0a019d551df7f1274248a2",
+  "confirm_scored": false,
+  "eval_e_scored": false,
+  "kind": "paper2_bicameral_w1_generation_freeze_receipt_v1",
+  "manifest": "artifacts\\bicameral_w1_20260824\\generation\\w1_generation_461.jsonl",
+  "manifest_bytes": 331329,
+  "manifest_sha256": "01457fe62207263d0f04a03e61a906289c34db55c2d929bfe6a841eeef2607af",
+  "optimizer_constructed": false,
+  "optimizer_steps": 0,
+  "rows": 461,
+  "source": "outputs\\stage5\\stage5_paper2_phase3_p34_lock_20260812\\panel\\p34_task_panel.jsonl",
+  "source_sha256": "2e7e1d2be75ef8b7a536fe9a5554b3bf7883d54b1472e5b76ef50380c8270642",
+  "status": "frozen_before_scoring"
+}
