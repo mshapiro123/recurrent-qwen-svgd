@@ -74,6 +74,37 @@ def deterministic_permutation(size: int, *, family: str, seed: int = SHUFFLE_SEE
     return order
 
 
+def build_phase_b_granularity_targets(
+    row_targets: torch.Tensor,
+    cluster_assignments: torch.Tensor,
+) -> dict[str, torch.Tensor]:
+    """Construct the registered L1/L2/L3 targets from frozen assignments."""
+
+    if row_targets.ndim != 2:
+        raise ValueError("Phase B row targets must have shape [N,D]")
+    assignments = torch.as_tensor(cluster_assignments, dtype=torch.long).cpu()
+    if assignments.ndim != 1 or assignments.numel() != row_targets.shape[0]:
+        raise ValueError("Phase B assignments must have shape [N]")
+    labels = torch.unique(assignments, sorted=True)
+    if labels.numel() != 2 or not torch.equal(labels, torch.tensor([0, 1])):
+        raise ValueError("Phase B requires exactly the frozen k=2 labels {0,1}")
+
+    targets = row_targets.float()
+    means = torch.stack([targets[assignments == label].mean(dim=0) for label in labels])
+    if not torch.isfinite(means).all():
+        raise ValueError("Phase B cluster means must be finite")
+
+    own_cluster = means[assignments]
+    other_cluster = means[1 - assignments]
+    global_mean = targets.mean(dim=0, keepdim=True).expand_as(targets)
+    return {
+        "l1": own_cluster.to(row_targets.dtype),
+        "l2": global_mean.to(row_targets.dtype),
+        "l3": other_cluster.to(row_targets.dtype),
+        "cluster_means": means.to(row_targets.dtype),
+    }
+
+
 def bootstrap_mean_ci(
     values: Sequence[float],
     *,

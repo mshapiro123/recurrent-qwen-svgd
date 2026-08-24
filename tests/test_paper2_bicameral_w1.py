@@ -4,6 +4,7 @@ import torch
 
 from training.paper2_bicameral_w1 import (
     bootstrap_mean_ci,
+    build_phase_b_granularity_targets,
     deterministic_permutation,
     project_cost_hours,
     resolve_phase_a,
@@ -66,3 +67,26 @@ def test_winner_requires_both_seeds_and_prefers_l0d_on_tie() -> None:
             cells.append({"arm": arm, "seed": seed, "mean": mean, "ci_low": low})
     result = resolve_phase_a(cells)
     assert result["winner"] == "l0d"
+
+
+def test_phase_b_granularity_targets_use_frozen_k2_assignments() -> None:
+    targets = torch.tensor([[1.0, 0.0], [3.0, 2.0], [9.0, 4.0]])
+    assignments = torch.tensor([0, 0, 1])
+    result = build_phase_b_granularity_targets(targets, assignments)
+
+    assert torch.equal(result["cluster_means"], torch.tensor([[2.0, 1.0], [9.0, 4.0]]))
+    assert torch.equal(result["l1"], torch.tensor([[2.0, 1.0], [2.0, 1.0], [9.0, 4.0]]))
+    assert torch.equal(result["l2"], torch.tensor([[13 / 3, 2.0]]).expand(3, -1))
+    assert torch.equal(result["l3"], torch.tensor([[9.0, 4.0], [9.0, 4.0], [2.0, 1.0]]))
+
+
+def test_phase_b_granularity_targets_reject_non_k2_labels() -> None:
+    with torch.no_grad():
+        try:
+            build_phase_b_granularity_targets(
+                torch.ones(3, 2), torch.tensor([0, 1, 2])
+            )
+        except ValueError as error:
+            assert "k=2" in str(error)
+        else:
+            raise AssertionError("non-k2 Phase B assignments were accepted")
