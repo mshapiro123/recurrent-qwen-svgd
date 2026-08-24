@@ -19,6 +19,9 @@ BOOTSTRAP_DRAWS = 10_000
 CLUSTER_EXTENSION_MIN_FRACTION = 0.05
 ORACLE_TARGET_ASSISTED = "oracle-target-assisted"
 POPULATION_TARGET = "population-target"
+RS0A_SPLITS = 20
+RS0A_SEED_BASE = 20260823
+RS0A_NUISANCE_RANK = 8
 
 
 def rms(value: torch.Tensor, *, dim: int | tuple[int, ...] = -1) -> torch.Tensor:
@@ -157,6 +160,130 @@ def orient_residual_directions(
         "orientation_signs": [int(value) for value in signs],
         "oriented_inner_products": [float(value) for value in oriented_dots],
     }
+
+
+def extend_frozen_centroids(
+    features: torch.Tensor,
+    centroids: torch.Tensor,
+) -> tuple[torch.Tensor, dict[str, Any]]:
+    """Assign DEV-2 features to the frozen Stage-0 spherical centroids."""
+
+    if features.ndim != 2 or centroids.ndim != 2:
+        raise ValueError("frozen-centroid extension expects [N,D] and [2,D]")
+    if centroids.shape[0] != 2 or features.shape[1] != centroids.shape[1]:
+        raise ValueError("frozen-centroid extension geometry changed")
+    unit_features = torch.nn.functional.normalize(features.float(), dim=-1, eps=1e-12)
+    unit_centroids = torch.nn.functional.normalize(centroids.float(), dim=-1, eps=1e-12)
+    similarities = unit_features @ unit_centroids.T
+    assignments = similarities.argmax(dim=1).cpu()
+    receipt = validate_cluster_extension(assignments)
+    receipt.update(
+        {
+            "assignment": "nearest_frozen_stage0_centroid_no_refit",
+            "maximum_similarity_mean": float(similarities.max(dim=1).values.mean()),
+            "margin_mean": float(
+                (similarities.max(dim=1).values - similarities.min(dim=1).values).mean()
+            ),
+        }
+    )
+    return assignments, receipt
+
+
+def _feature_basis(values: torch.Tensor, rank: int) -> torch.Tensor:
+    if values.ndim != 2 or not 1 <= rank <= min(values.shape):
+        raise ValueError("invalid R-S0-A nuisance-basis geometry")
+    _u, _s, vh = torch.linalg.svd(values.float(), full_matrices=False)
+    return vh[:rank]
+
+
+def _project_off(values: torch.Tensor, basis: torch.Tensor) -> torch.Tensor:
+    if basis.numel() == 0:
+        return values
+    return values - (values @ basis.T) @ basis
+
+
+def build_crossfitted_residual_directions(
+    corrections: torch.Tensor,
+    labels: torch.Tensor,
+    *,
+    directions: int = 3,
+    splits: int = RS0A_SPLITS,
+    seed_base: int = RS0A_SEED_BASE,
+    nuisance_rank: int = RS0A_NUISANCE_RANK,
+) -> tuple[torch.Tensor, dict[str, Any]]:
+    """Pool held-out R-S0-A residual covariance and return its leading axes.
+
+    Every residual row is projected by a nuisance basis and cluster direction
+    estimated on the opposite split. Pooling only those held-out residual outer
+    products preserves the cross-fitted estimand while yielding one deterministic
+    per-seed eigenbasis for W1-L6.
+    """
+
+    x = torch.nn.functional.normalize(corrections.float(), dim=-1, eps=1e-12)
+    labels = torch.as_tensor(labels, dtype=torch.long).cpu()
+    if x.ndim != 2 or labels.shape != (x.shape[0],):
+        raise ValueError("R-S0-A residual directions require paired [N,D] rows")
+    if not torch.equal(torch.unique(labels, sorted=True), torch.tensor([0, 1])):
+        raise ValueError("R-S0-A residual directions require frozen labels {0,1}")
+    if not 1 <= directions <= x.shape[1]:
+        raise ValueError("invalid number of residual directions")
+
+    covariance = torch.zeros((x.shape[1], x.shape[1]), dtype=torch.float64)
+    heldout_rows = 0
+    fold_receipts = []
+    for cluster in (0, 1):
+        members = torch.where(labels == cluster)[0]
+        other = torch.where(labels != cluster)[0]
+        for split in range(int(splits)):
+            generator = torch.Generator().manual_seed(int(seed_base) + split)
+            order = members[torch.randperm(members.numel(), generator=generator)]
+            midpoint = order.numel() // 2
+            for fit, evaluate, direction_name in (
+                (order[:midpoint], order[midpoint:], "A_to_B"),
+                (order[midpoint:], order[:midpoint], "B_to_A"),
+            ):
+                nuisance_rows = torch.cat([x[fit], x[other]], dim=0)
+                nuisance = _feature_basis(nuisance_rows, int(nuisance_rank))
+                fit_projected = _project_off(x[fit], nuisance)
+                cluster_direction = torch.nn.functional.normalize(
+                    fit_projected.mean(dim=0), dim=0, eps=1e-12
+                )
+                combined = torch.cat([nuisance, cluster_direction.unsqueeze(0)], dim=0)
+                combined = torch.linalg.qr(combined.T, mode="reduced").Q.T
+                residual = _project_off(x[evaluate], combined).double()
+                covariance += residual.T @ residual
+                heldout_rows += int(residual.shape[0])
+                fold_receipts.append(
+                    {
+                        "cluster": cluster,
+                        "split": split,
+                        "direction": direction_name,
+                        "fit_rows": int(fit.numel()),
+                        "evaluation_rows": int(evaluate.numel()),
+                    }
+                )
+    covariance /= max(heldout_rows, 1)
+    eigenvalues, eigenvectors = torch.linalg.eigh(covariance)
+    order = torch.argsort(eigenvalues, descending=True)
+    selected_values = eigenvalues[order[:directions]]
+    selected_vectors = eigenvectors[:, order[:directions]].T.float()
+    oriented, orientation = orient_residual_directions(selected_vectors, x.mean(dim=0))
+    total = eigenvalues.clamp_min(0).sum().clamp_min(1e-30)
+    receipt = {
+        "kind": "paper2_bicameral_w1_crossfitted_residual_directions_v1",
+        "rows": int(x.shape[0]),
+        "dimensions": int(x.shape[1]),
+        "splits": int(splits),
+        "directions_per_split": 2,
+        "seed_base": int(seed_base),
+        "nuisance_rank": int(nuisance_rank),
+        "heldout_row_appearances": heldout_rows,
+        "eigenvalues": [float(value) for value in selected_values],
+        "energy_fractions": [float(value / total) for value in selected_values],
+        "orientation": orientation,
+        "folds": fold_receipts,
+    }
+    return oriented, receipt
 
 
 def bootstrap_mean_ci(

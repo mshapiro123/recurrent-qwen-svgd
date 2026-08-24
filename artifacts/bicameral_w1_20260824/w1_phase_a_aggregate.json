@@ -1,0 +1,143 @@
+{
+  "confirm_scored": false,
+  "eval_e_scored": false,
+  "kind": "paper2_bicameral_w1_aggregate_v1",
+  "optimizer_constructed": false,
+  "optimizer_steps": 0,
+  "phase_a": {
+    "decision": {
+      "eligible": [
+        {
+          "family": "l0a",
+          "pooled_mean": 1.8892675742536085
+        },
+        {
+          "family": "l0c",
+          "pooled_mean": 2.3515169950696873
+        }
+      ],
+      "key": "PHASE-A-WINNER",
+      "winner": "l0c"
+    },
+    "families": {
+      "l0a": {
+        "pooled_seed_mean": 1.8892675742536085,
+        "seed_ci_low": [
+          1.826100657787174,
+          1.826100657787174
+        ],
+        "seed_means": [
+          1.8892675742536085,
+          1.8892675742536085
+        ],
+        "shuffle_seed_means": [
+          0.47494218473730143,
+          0.46204030778608285
+        ]
+      },
+      "l0b": {
+        "pooled_seed_mean": -0.1842894482324482,
+        "seed_ci_low": [
+          -0.18979378485328197,
+          -0.18979378485328197
+        ],
+        "seed_means": [
+          -0.1842894482324482,
+          -0.1842894482324482
+        ],
+        "shuffle_seed_means": [
+          -0.1881848877601442,
+          -0.19023818428377126
+        ]
+      },
+      "l0c": {
+        "pooled_seed_mean": 2.3515169950696873,
+        "seed_ci_low": [
+          2.312776724456853,
+          2.312776724456853
+        ],
+        "seed_means": [
+          2.3515169950696873,
+          2.3515169950696873
+        ],
+        "shuffle_seed_means": [
+          0.9846599951370081,
+          0.9834050541685428
+        ]
+      },
+      "l0d": {
+        "pooled_seed_mean": -0.027637733990559354,
+        "seed_ci_low": [
+          -0.03167789743401954,
+          -0.03167789743401954
+        ],
+        "seed_means": [
+          -0.027637733990559354,
+          -0.027637733990559354
+        ],
+        "shuffle_seed_means": [
+          -0.03283503346028738,
+          -0.03533738660371455
+        ]
+      },
+      "l0g": {
+        "pooled_seed_mean": -0.1963431346903235,
+        "seed_ci_low": [
+          -0.20338204626541484,
+          -0.20338204626541484
+        ],
+        "seed_means": [
+          -0.1963431346903235,
+          -0.1963431346903235
+        ],
+        "shuffle_seed_means": [
+          -0.1936377264391922,
+          -0.19377378217177466
+        ]
+      }
+    }
+  },
+  "status": "phase_a_complete",
+  "w3_desk": {
+    "dm5_best_rank_cells": {
+      "0": {
+        "eval_rows_per_split": 64,
+        "fit_rows_per_split": 192,
+        "mean_cosine": 0.8854849934577942,
+        "mean_explained_energy": 0.7883795142173767,
+        "normal_approx_independent_eval_splits_for_80pct_power": 1,
+        "positive_cosine_fraction": 1.0,
+        "projected_map_parameters": 1024,
+        "rank": 32,
+        "split_mean_cosine_sd": 0.017199808731675148,
+        "splits": 20
+      },
+      "1": {
+        "eval_rows_per_split": 64,
+        "fit_rows_per_split": 192,
+        "mean_cosine": 0.8843972086906433,
+        "mean_explained_energy": 0.7839181184768677,
+        "normal_approx_independent_eval_splits_for_80pct_power": 1,
+        "positive_cosine_fraction": 1.0,
+        "projected_map_parameters": 4096,
+        "rank": 64,
+        "split_mean_cosine_sd": 0.01139453798532486,
+        "splits": 20
+      }
+    },
+    "x6": {
+      "0": {
+        "common_mode_energy_fraction": 0.7131123542785645,
+        "residual_direction_1_battery_eta_squared": 0.950149714892146,
+        "residual_direction_1_cluster_eta_squared": 0.8755405983802607,
+        "residual_direction_1_energy_fraction": 0.31815228695102776
+      },
+      "1": {
+        "common_mode_energy_fraction": 0.7137715220451355,
+        "residual_direction_1_battery_eta_squared": 0.9502567676164099,
+        "residual_direction_1_cluster_eta_squared": 0.8768095486790215,
+        "residual_direction_1_energy_fraction": 0.32174777995199083
+      }
+    }
+  }
+}

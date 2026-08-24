@@ -6,8 +6,10 @@ from training.paper2_bicameral_w1 import (
     ORACLE_TARGET_ASSISTED,
     POPULATION_TARGET,
     bootstrap_mean_ci,
+    build_crossfitted_residual_directions,
     build_phase_b_granularity_targets,
     deterministic_permutation,
+    extend_frozen_centroids,
     project_cost_hours,
     orient_residual_directions,
     resolve_phase_a,
@@ -119,3 +121,39 @@ def test_l6_orientation_is_nonnegative_against_correction_mean() -> None:
     assert torch.equal(oriented, torch.tensor([[1.0, 0.0], [1.0, -1.0], [0.0, 1.0]]))
     assert receipt["orientation_signs"] == [1, -1, 1]
     assert all(value >= 0 for value in receipt["oriented_inner_products"])
+
+
+def test_frozen_centroid_extension_uses_cosine_without_refitting() -> None:
+    features = torch.tensor([[2.0, 0.0], [0.0, 4.0], [3.0, 1.0], [1.0, 3.0]])
+    centroids = torch.eye(2)
+    assignments, receipt = extend_frozen_centroids(features, centroids)
+    assert torch.equal(assignments, torch.tensor([0, 1, 0, 1]))
+    assert receipt["counts"] == [2, 2]
+    assert receipt["assignment"] == "nearest_frozen_stage0_centroid_no_refit"
+
+
+def test_crossfitted_residual_directions_are_deterministic_and_oriented() -> None:
+    generator = torch.Generator().manual_seed(7)
+    corrections = torch.randn(40, 12, generator=generator)
+    corrections[:20, 0] += 2.0
+    corrections[20:, 1] += 2.0
+    labels = torch.tensor([0] * 20 + [1] * 20)
+    first, first_receipt = build_crossfitted_residual_directions(
+        corrections,
+        labels,
+        directions=3,
+        splits=3,
+        nuisance_rank=2,
+    )
+    second, second_receipt = build_crossfitted_residual_directions(
+        corrections,
+        labels,
+        directions=3,
+        splits=3,
+        nuisance_rank=2,
+    )
+    assert torch.equal(first, second)
+    assert first_receipt == second_receipt
+    assert first.shape == (3, 12)
+    assert torch.allclose(first @ first.T, torch.eye(3), atol=1e-5)
+    assert all(value >= 0 for value in first_receipt["orientation"]["oriented_inner_products"])
