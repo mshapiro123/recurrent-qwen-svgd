@@ -1,0 +1,95 @@
+{
+  "authority": {
+    "authorization_bytes": 8703,
+    "authorization_drive_id": "1TQH3WUvdzp-ueriVaYcaOFnyD1GIU1dk",
+    "authorization_sha256": "a998a51ab497b89c67d44f57213ef12a5dc12dbc136897ef9397f5d793e0e7b1",
+    "rulings_bytes": 8836,
+    "rulings_drive_id": "1HIimhh_-2DPMNBK-uydgXzIKF0fy2N5n",
+    "rulings_sha256": "7fa09f4b2dc1678f681962a160f754f934783ec3dc05ae98f44dba2c574af726"
+  },
+  "confirm_scored": false,
+  "eval_e_scored": false,
+  "files": [
+    {
+      "bytes": 14072,
+      "path": "docs/PAPER2_BICAMERAL_W1_RESULT_HANDOFF_20260824.md",
+      "sha256": "630ad9ed7105a568b926a9a3d72ddac55b8bb8609d31f840f833ac19bea43d4a"
+    },
+    {
+      "bytes": 4037,
+      "path": "artifacts/bicameral_w1_20260824/w1_phase_a_aggregate.json",
+      "sha256": "37bca1aefa8f99c11a89d324b6081901e9e767080a916d3f3d77ae2be7667be6"
+    },
+    {
+      "bytes": 6938,
+      "path": "artifacts/bicameral_w1_20260824/w1_phase_b_analysis.json",
+      "sha256": "5e05260d0763386b5d644a8e93bcd7f48ff7c4c58250eebdc1bdb3bbcaf33fa7"
+    },
+    {
+      "bytes": 32536,
+      "path": "artifacts/bicameral_w1_20260824/w1_generation_analysis.json",
+      "sha256": "ef716783ad1f46fe373988b30316ac54b799a8c1ba54d17590291dcee8037cbd"
+    },
+    {
+      "bytes": 20282,
+      "path": "artifacts/bicameral_w1_20260824/w3_desk_summary.json",
+      "sha256": "072c3405929aa6512e8ddd97ff122da52419281c0a6d27546c545c26f949d508"
+    },
+    {
+      "bytes": 165037,
+      "path": "artifacts/bicameral_w1_20260824/figures/paper2_bicameral_w1_summary.png",
+      "sha256": "27ed0941169886e31b62a555ae6504cd94f304514c1e971775c990dcdb5e24c2"
+    },
+    {
+      "bytes": 126643,
+      "path": "artifacts/bicameral_w1_20260824/figures/paper2_bicameral_w1_summary.svg",
+      "sha256": "8656b71443e382ce8b12f4825a5b5606130a1148b3c25bee1ec2deb679167d6c"
+    },
+    {
+      "bytes": 39350,
+      "path": "artifacts/bicameral_w1_20260824/figures/paper2_bicameral_w1_cluster_composition.png",
+      "sha256": "a8fb173ec307fc895e178150b2e416fbceb4aa30065b5af7b5eefaccd1cae072"
+    },
+    {
+      "bytes": 43588,
+      "path": "artifacts/bicameral_w1_20260824/figures/paper2_bicameral_w1_cluster_composition.svg",
+      "sha256": "f8a9c0dffa7d0a04896f062c5f1e585944cd637d6bcb34e5ab0428ab8dae97b2"
+    },
+    {
+      "bytes": 35002614,
+      "path": "artifacts/bicameral_w1_20260824/remote/seed_0_bundle.tar.gz",
+      "sha256": "e465cc3252defde42a2a571b8d5e87352cbb6de4faa75231b5f91834cd63f7fc"
+    },
+    {
+      "bytes": 35001389,
+      "path": "artifacts/bicameral_w1_20260824/remote/seed_1_bundle.tar.gz",
+      "sha256": "f60a2e20745601b8b291aecbeaea87497d7c510d964b083703be9631b220fcf6"
+    },
+    {
+      "bytes": 14409425,
+      "path": "artifacts/bicameral_w1_20260824/remote/phase_b_bundle.tar.gz",
+      "sha256": "b9c22650f4137eee038fa84d42ef7d060aa7532da4bf1b675fddfccab1372344"
+    },
+    {
+      "bytes": 20829637,
+      "path": "artifacts/bicameral_w1_20260824/remote/w1_generation_bundle.tar.gz",
+      "sha256": "41b03693bb06cb915f44e4a03cb0da5649fab69717e5650a405b04e3d880a186"
+    }
+  ],
+  "kind": "paper2_bicameral_w1_result_manifest_v1",
+  "optimizer_constructed": false,
+  "optimizer_steps": 0,
+  "registered_read": {
+    "generation_key": "TARGETS-NOT-ANSWER-GRADE",
+    "l6_key": "H-noise",
+    "margin_branch": "GLOBAL-STEER-WITH-GLOBAL-ADVANTAGE_REQUIRES_STRATEGY_ADJUDICATION"
+  },
+  "source_commit": "eeb65ec38b3898cebf12ae25f3dc1cadf169e31a",
+  "status": "complete_score_only",
+  "verification": {
+    "colab_active_sessions_after_closeout": 0,
+    "focused_tests": "24 passed",
+    "generation_bundle_internal_files": 59,
+    "generation_bundle_internal_mismatches": 0
+  }
+}
