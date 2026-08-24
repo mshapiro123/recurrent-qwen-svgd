@@ -1,0 +1,18 @@
+{
+  "confirm_scored": false,
+  "eval_e_scored": false,
+  "kind": "paper2_bicameral_w1_injection_position_stop_v1",
+  "optimizer_constructed": false,
+  "optimizer_steps": 0,
+  "paid_sessions_after_stop": 0,
+  "recommended_ruling": "terminal_interface_all_active_positions",
+  "seed_0_archive": {
+    "bytes": 35002614,
+    "path": "artifacts/bicameral_w1_20260824/remote/seed_0_bundle.tar.gz",
+    "sha256": "e465cc3252defde42a2a571b8d5e87352cbb6de4faa75231b5f91834cd63f7fc",
+    "summary_sha256": "901829de34f80d745f223dc27bfa231f10e1e2498c18606bf1f7b2df6e1648b3"
+  },
+  "seed_0_status": "complete_engineering_receipt_pending_position_ruling",
+  "seed_1_status": "terminated_during_target_extraction_before_margin_scoring",
+  "status": "STOPPED_FOR_STRATEGY_CLARIFICATION"
+}
