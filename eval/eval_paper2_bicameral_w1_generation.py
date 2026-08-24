@@ -21,10 +21,13 @@ from eval.eval_paper2_bicameral_w1 import (
     SCHEDULE,
     atomic_json,
     build_controls,
+    extract_student_targets,
     interface_patch,
     read_jsonl,
     write_jsonl,
 )
+from eval.eval_paper2_bicameral_w1_phase_b import _centroids
+from eval.eval_paper2_stage2b_autopsy import _extract_correction_field
 from eval.eval_paper2_phase3_p34_task_inference import (
     P34CachedPrefix,
     P34NextTokenOutput,
@@ -37,6 +40,7 @@ from training.paper2_bicameral_w1 import (
     POPULATION_TARGET,
     build_phase_b_granularity_targets,
     deterministic_permutation,
+    extend_frozen_centroids,
 )
 from training.paper2_stage2bs_depth_study import INITIALIZATION_SEED_BASE, sha256_file
 from training.run_paper2_stage2b_depth import _build_model
@@ -268,10 +272,105 @@ def _positive_phase_b_arms(summary_paths: Sequence[Path]) -> list[str]:
     )
 
 
+def _prepare_generation_artifacts(
+    args: argparse.Namespace,
+    rows: Sequence[Mapping[str, Any]],
+    *,
+    wrapper: Any,
+    tokenizer: Any,
+) -> tuple[Path, Path]:
+    item_ids = [str(row["item_id"]) for row in rows]
+    target_path = args.private_dir / f"seed_{args.seed}_generation_targets.pt"
+    if target_path.is_file():
+        targets = torch.load(target_path, map_location="cpu", weights_only=False)
+        if targets.get("item_ids") != item_ids:
+            raise RuntimeError("W1 resumed generation-target population changed")
+    else:
+        targets = extract_student_targets(
+            wrapper=wrapper,
+            tokenizer=tokenizer,
+            rows=rows,
+            batch_size=2,
+            allow_dry_neighbor_fallback=False,
+        )
+        torch.save(targets, target_path)
+
+    assignment_path = args.private_dir / f"seed_{args.seed}_generation_assignments.pt"
+    feature_path = args.private_dir / f"seed_{args.seed}_generation_assignment_features.pt"
+    if assignment_path.is_file():
+        assignments = torch.load(assignment_path, map_location="cpu", weights_only=False)
+        if assignments.get("item_ids") != item_ids:
+            raise RuntimeError("W1 resumed generation-assignment population changed")
+    else:
+        extracted = _extract_correction_field(
+            wrapper=wrapper,
+            tokenizer=tokenizer,
+            rows=rows,
+            batch_size=2,
+        )
+        feature_artifact = {
+            "kind": "paper2_bicameral_w1_generation_assignment_features_v1",
+            "seed": args.seed,
+            "item_ids": item_ids,
+            "features": extracted["corrections"][4].float(),
+            "parameter_state_digest_before": extracted["parameter_state_digest_before"],
+            "parameter_state_digest_after": extracted["parameter_state_digest_after"],
+            "parameter_versions_unchanged": extracted["parameter_versions_unchanged"],
+            "oracle_derived_assignment_feature": True,
+        }
+        torch.save(feature_artifact, feature_path)
+        initializers = torch.load(
+            args.stage0_initializers, map_location="cpu", weights_only=False
+        )
+        labels, extension = extend_frozen_centroids(
+            feature_artifact["features"], _centroids(initializers)
+        )
+        assignments = {
+            "kind": "paper2_bicameral_w1_generation_assignments_v1",
+            "seed": args.seed,
+            "item_ids": item_ids,
+            "assignments": labels,
+            "extension": extension,
+            "feature_sha256": sha256_file(feature_path),
+            "stage0_initializers_sha256": sha256_file(args.stage0_initializers),
+            "oracle_derived_assignment_feature": True,
+        }
+        torch.save(assignments, assignment_path)
+
+    pre_score_path = args.output_dir / f"seed_{args.seed}_generation_pre_score.json"
+    pre_score = {
+        "kind": "paper2_bicameral_w1_generation_pre_score_v1",
+        "status": "frozen_before_scoring",
+        "seed": args.seed,
+        "rows": len(rows),
+        "targets": {
+            "path": target_path.name,
+            "bytes": target_path.stat().st_size,
+            "sha256": sha256_file(target_path),
+        },
+        "assignments": {
+            "path": assignment_path.name,
+            "bytes": assignment_path.stat().st_size,
+            "sha256": sha256_file(assignment_path),
+        },
+        "assignment_extension": assignments["extension"],
+        "optimizer_constructed": False,
+        "optimizer_steps": 0,
+        "confirm_scored": False,
+        "eval_e_scored": False,
+    }
+    atomic_json(pre_score_path, pre_score)
+    return target_path, assignment_path
+
+
 def _directions_for_seed(args: argparse.Namespace, rows: Sequence[Mapping[str, Any]]) -> dict[str, dict[str, Any]]:
-    cache = torch.load(args.phase_a_targets, map_location="cpu", weights_only=False)
-    item_to_index = {str(item): index for index, item in enumerate(cache["item_ids"])}
-    controls = build_controls(cache["families"], seed=args.seed)
+    generation_cache = torch.load(
+        args.generation_targets, map_location="cpu", weights_only=False
+    )
+    item_to_index = {
+        str(item): index for index, item in enumerate(generation_cache["item_ids"])
+    }
+    controls = build_controls(generation_cache["families"], seed=args.seed)
     arms: dict[str, dict[str, Any]] = {}
     for arm in ("l0a", "l5_a", "l0c", "l5_c", "l4"):
         values = controls[arm]
@@ -281,17 +380,32 @@ def _directions_for_seed(args: argparse.Namespace, rows: Sequence[Mapping[str, A
             "oracle_routed": True,
         }
 
-    assignments = torch.load(args.phase_b_assignments, map_location="cpu", weights_only=False)
-    labels = torch.as_tensor(assignments["assignments"], dtype=torch.long)
-    granularity = build_phase_b_granularity_targets(cache["families"]["l0c"].float(), labels)
+    margin_cache = torch.load(args.phase_a_targets, map_location="cpu", weights_only=False)
+    margin_assignments = torch.load(
+        args.phase_b_assignments, map_location="cpu", weights_only=False
+    )
+    margin_labels = torch.as_tensor(margin_assignments["assignments"], dtype=torch.long)
+    granularity = build_phase_b_granularity_targets(
+        margin_cache["families"]["l0c"].float(), margin_labels
+    )
+    generation_assignments = torch.load(
+        args.generation_assignments, map_location="cpu", weights_only=False
+    )
+    generation_labels = torch.as_tensor(
+        generation_assignments["assignments"], dtype=torch.long
+    )
+    cluster_means = granularity["cluster_means"].float()
+    global_mean = margin_cache["families"]["l0c"].float().mean(dim=0)
     residual = torch.load(args.phase_b_residual, map_location="cpu", weights_only=False)
     phase_b_positive = _positive_phase_b_arms(args.phase_b_summaries)
     phase_b_values: dict[str, torch.Tensor] = {
-        name: granularity[name].float() for name in ("l1", "l2", "l3")
+        "l1": cluster_means[generation_labels],
+        "l2": global_mean.unsqueeze(0).expand(len(rows), -1).contiguous(),
+        "l3": cluster_means[1 - generation_labels],
     }
     for index, vector in enumerate(residual["directions"], start=1):
-        phase_b_values[f"l6_u{index}_pos"] = vector.unsqueeze(0).expand(len(cache["item_ids"]), -1)
-        phase_b_values[f"l6_u{index}_neg"] = -vector.unsqueeze(0).expand(len(cache["item_ids"]), -1)
+        phase_b_values[f"l6_u{index}_pos"] = vector.unsqueeze(0).expand(len(rows), -1)
+        phase_b_values[f"l6_u{index}_neg"] = -vector.unsqueeze(0).expand(len(rows), -1)
     for arm in phase_b_positive:
         values = phase_b_values[arm]
         arms[arm] = {
@@ -329,6 +443,9 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     torch.manual_seed(initialization_seed)
     torch.cuda.manual_seed_all(initialization_seed)
     wrapper, chain, _groups = _build_model(args)
+    args.generation_targets, args.generation_assignments = _prepare_generation_artifacts(
+        args, rows, wrapper=wrapper, tokenizer=tokenizer
+    )
     arms = _directions_for_seed(args, rows)
     cells = []
     for arm, payload in arms.items():
@@ -388,6 +505,7 @@ def parser() -> argparse.ArgumentParser:
     result.add_argument("--phase_a_targets", type=Path, required=True)
     result.add_argument("--phase_b_assignments", type=Path, required=True)
     result.add_argument("--phase_b_residual", type=Path, required=True)
+    result.add_argument("--stage0_initializers", type=Path, required=True)
     result.add_argument("--phase_b_summaries", type=Path, nargs=2, required=True)
     result.add_argument("--output_dir", type=Path, required=True)
     result.add_argument("--private_dir", type=Path, required=True)
