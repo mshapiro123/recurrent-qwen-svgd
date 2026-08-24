@@ -44,5 +44,6 @@ def test_w0_cost_probe_declares_pinned_runtime_and_inputs() -> None:
         "--initializer-seed-1",
         "actual_t2_contract",
         "operating_point_divergence",
+        "manifest byte hash does not match its locked summary",
     ):
         assert marker in source

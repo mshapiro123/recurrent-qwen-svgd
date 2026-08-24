@@ -197,6 +197,13 @@ def main() -> int:
             "initializer_seed_1_sha256": sha256_file(args.initializer_seed_1),
         },
     }
+    manifest_summary = json.loads(args.manifest_summary.read_text(encoding="utf-8"))
+    if manifest_summary.get("manifest", {}).get("sha256") != receipt["inputs"]["manifest_sha256"]:
+        raise RuntimeError("W0 manifest byte hash does not match its locked summary")
+    if manifest_summary.get("probe_batch", {}).get("sha256") != receipt["inputs"]["probe_batch_sha256"]:
+        raise RuntimeError("W0 probe-batch byte hash does not match its locked summary")
+    if manifest_summary.get("execution_schedule") != SEQUENTIAL_EXECUTION_SCHEDULE:
+        raise RuntimeError("W0 manifest evaluator schedule changed")
     atomic_json(args.output, receipt)
 
     load_started = time.perf_counter()
