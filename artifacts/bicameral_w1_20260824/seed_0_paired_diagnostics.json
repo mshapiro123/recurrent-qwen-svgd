@@ -1,0 +1,857 @@
+{
+  "confirm_scored": false,
+  "eval_e_scored": false,
+  "kind": "paper2_bicameral_w1_paired_diagnostics_v1",
+  "optimizer_constructed": false,
+  "optimizer_steps": 0,
+  "seeds": {
+    "0": {
+      "families": {
+        "l0a": {
+          "baseline_margin_quartiles": [
+            {
+              "baseline_margin_max": 2.265625,
+              "baseline_margin_min": -6.0,
+              "mean_delta": 3.132261067919899,
+              "positive_delta_fraction": 1.0,
+              "quartile": 1,
+              "rows": 512
+            },
+            {
+              "baseline_margin_max": 2.9861111640930176,
+              "baseline_margin_min": 2.267857313156128,
+              "mean_delta": 1.5593872563913465,
+              "positive_delta_fraction": 1.0,
+              "quartile": 2,
+              "rows": 512
+            },
+            {
+              "baseline_margin_max": 3.6666667461395264,
+              "baseline_margin_min": 3.0,
+              "mean_delta": 1.4263990307226777,
+              "positive_delta_fraction": 1.0,
+              "quartile": 3,
+              "rows": 512
+            },
+            {
+              "baseline_margin_max": 6.875,
+              "baseline_margin_min": 3.6666667461395264,
+              "mean_delta": 1.439022941980511,
+              "positive_delta_fraction": 0.9921875,
+              "quartile": 4,
+              "rows": 512
+            }
+          ],
+          "versus_random": {
+            "by_battery": {
+              "arc_challenge": {
+                "ci_high": 5.466973621673003,
+                "ci_low": 5.324857414448669,
+                "draws": 10000,
+                "mean": 5.395199619771863,
+                "positive_fraction": 1.0,
+                "rows": 263
+              },
+              "arc_easy": {
+                "ci_high": 5.979166666666667,
+                "ci_low": 4.8125,
+                "draws": 10000,
+                "mean": 5.375,
+                "positive_fraction": 1.0,
+                "rows": 6
+              },
+              "gsm8k": {
+                "ci_high": 1.4735429316776316,
+                "ci_low": 1.4369494591992322,
+                "draws": 10000,
+                "mean": 1.4551064173839383,
+                "positive_fraction": 1.0,
+                "rows": 1732
+              },
+              "mbpp": {
+                "ci_high": 0.5413253648206592,
+                "ci_low": 0.327650394695811,
+                "draws": 10000,
+                "mean": 0.43730090986937287,
+                "positive_fraction": 0.9,
+                "rows": 40
+              },
+              "mmlu": {
+                "ci_high": 5.583333333333333,
+                "ci_low": 5.125,
+                "draws": 10000,
+                "mean": 5.354166666666667,
+                "positive_fraction": 1.0,
+                "rows": 6
+              },
+              "tier1": {
+                "ci_high": 4.625,
+                "ci_low": 4.625,
+                "draws": 10000,
+                "mean": 4.625,
+                "positive_fraction": 1.0,
+                "rows": 1
+              }
+            },
+            "comparator_mean": -0.07639348595330375,
+            "comparator_positive_fraction": 0.2080078125,
+            "own_comparator_row_correlation": 0.1929098451090623,
+            "own_mean": 1.8892675742536085,
+            "own_positive_fraction": 0.998046875,
+            "paired_advantage": {
+              "ci_high": 2.0283790314359975,
+              "ci_low": 1.9041330639156513,
+              "draws": 10000,
+              "mean": 1.9656610602069122,
+              "rows": 2048
+            },
+            "paired_advantage_positive_fraction": 0.998046875,
+            "rows": 2048
+          },
+          "versus_shuffle": {
+            "by_battery": {
+              "arc_challenge": {
+                "ci_high": 5.67680608365019,
+                "ci_low": 5.293482652091255,
+                "draws": 10000,
+                "mean": 5.481939163498099,
+                "positive_fraction": 0.9961977186311787,
+                "rows": 263
+              },
+              "arc_easy": {
+                "ci_high": 6.416666666666667,
+                "ci_low": 4.208333333333333,
+                "draws": 10000,
+                "mean": 5.208333333333333,
+                "positive_fraction": 1.0,
+                "rows": 6
+              },
+              "gsm8k": {
+                "ci_high": 0.816719620518266,
+                "ci_low": 0.7601210315477352,
+                "draws": 10000,
+                "mean": 0.7882145663194238,
+                "positive_fraction": 0.9099307159353349,
+                "rows": 1732
+              },
+              "mbpp": {
+                "ci_high": 0.6086992197483777,
+                "ci_low": 0.38097580458968877,
+                "draws": 10000,
+                "mean": 0.4962692216038704,
+                "positive_fraction": 0.9,
+                "rows": 40
+              },
+              "mmlu": {
+                "ci_high": 7.3125,
+                "ci_low": 5.0625,
+                "draws": 10000,
+                "mean": 5.958333333333333,
+                "positive_fraction": 1.0,
+                "rows": 6
+              },
+              "tier1": {
+                "ci_high": 2.75,
+                "ci_low": 2.75,
+                "draws": 10000,
+                "mean": 2.75,
+                "positive_fraction": 1.0,
+                "rows": 1
+              }
+            },
+            "comparator_mean": 0.47494218473730143,
+            "comparator_positive_fraction": 0.7705078125,
+            "own_comparator_row_correlation": -0.2494234397961018,
+            "own_mean": 1.8892675742536085,
+            "own_positive_fraction": 0.998046875,
+            "paired_advantage": {
+              "ci_high": 1.491806716469,
+              "ci_low": 1.336754738396121,
+              "draws": 10000,
+              "mean": 1.414325389516307,
+              "rows": 2048
+            },
+            "paired_advantage_positive_fraction": 0.92138671875,
+            "rows": 2048
+          }
+        },
+        "l0b": {
+          "baseline_margin_quartiles": [
+            {
+              "baseline_margin_max": 2.265625,
+              "baseline_margin_min": -6.0,
+              "mean_delta": -0.08577480787062086,
+              "positive_delta_fraction": 0.169921875,
+              "quartile": 1,
+              "rows": 512
+            },
+            {
+              "baseline_margin_max": 2.9861111640930176,
+              "baseline_margin_min": 2.267857313156128,
+              "mean_delta": -0.1978338398039341,
+              "positive_delta_fraction": 0.013671875,
+              "quartile": 2,
+              "rows": 512
+            },
+            {
+              "baseline_margin_max": 3.6666667461395264,
+              "baseline_margin_min": 3.0,
+              "mean_delta": -0.21480081835761666,
+              "positive_delta_fraction": 0.0078125,
+              "quartile": 3,
+              "rows": 512
+            },
+            {
+              "baseline_margin_max": 6.875,
+              "baseline_margin_min": 3.6666667461395264,
+              "mean_delta": -0.23874832689762115,
+              "positive_delta_fraction": 0.00390625,
+              "quartile": 4,
+              "rows": 512
+            }
+          ],
+          "versus_random": {
+            "by_battery": {
+              "arc_challenge": {
+                "ci_high": 0.010218631178707225,
+                "ci_low": -0.04895437262357415,
+                "draws": 10000,
+                "mean": -0.019249049429657796,
+                "positive_fraction": 0.3726235741444867,
+                "rows": 263
+              },
+              "arc_easy": {
+                "ci_high": 0.13541666666666666,
+                "ci_low": -0.17708333333333334,
+                "draws": 10000,
+                "mean": -0.010416666666666666,
+                "positive_fraction": 0.5,
+                "rows": 6
+              },
+              "gsm8k": {
+                "ci_high": -0.1181929578978835,
+                "ci_low": -0.12817700382098385,
+                "draws": 10000,
+                "mean": -0.12310476725013372,
+                "positive_fraction": 0.10046189376443418,
+                "rows": 1732
+              },
+              "mbpp": {
+                "ci_high": -0.04963000905700028,
+                "ci_low": -0.10204604908823967,
+                "draws": 10000,
+                "mean": -0.07508684676140547,
+                "positive_fraction": 0.2,
+                "rows": 40
+              },
+              "mmlu": {
+                "ci_high": 0.2708333333333333,
+                "ci_low": -0.1875,
+                "draws": 10000,
+                "mean": 0.041666666666666664,
+                "positive_fraction": 0.5,
+                "rows": 6
+              },
+              "tier1": {
+                "ci_high": 0.125,
+                "ci_low": 0.125,
+                "draws": 10000,
+                "mean": 0.125,
+                "positive_fraction": 1.0,
+                "rows": 1
+              }
+            },
+            "comparator_mean": -0.07639348595330375,
+            "comparator_positive_fraction": 0.2080078125,
+            "own_comparator_row_correlation": 0.4658624992593245,
+            "own_mean": -0.1842894482324482,
+            "own_positive_fraction": 0.048828125,
+            "paired_advantage": {
+              "ci_high": -0.10193262438397141,
+              "ci_low": -0.11382661109682886,
+              "draws": 10000,
+              "mean": -0.10789596227914444,
+              "rows": 2048
+            },
+            "paired_advantage_positive_fraction": 0.14013671875,
+            "rows": 2048
+          },
+          "versus_shuffle": {
+            "by_battery": {
+              "arc_challenge": {
+                "ci_high": 0.0021387832699619773,
+                "ci_low": -0.057747148288973385,
+                "draws": 10000,
+                "mean": -0.028041825095057035,
+                "positive_fraction": 0.3688212927756654,
+                "rows": 263
+              },
+              "arc_easy": {
+                "ci_high": 0.25,
+                "ci_low": -0.16666666666666666,
+                "draws": 10000,
+                "mean": 0.041666666666666664,
+                "positive_fraction": 0.5,
+                "rows": 6
+              },
+              "gsm8k": {
+                "ci_high": 0.014224797234532805,
+                "ci_low": 0.005537867160862436,
+                "draws": 10000,
+                "mean": 0.009874810901304865,
+                "positive_fraction": 0.5894919168591224,
+                "rows": 1732
+              },
+              "mbpp": {
+                "ci_high": -0.033827203735709195,
+                "ci_low": -0.0671725382655859,
+                "draws": 10000,
+                "mean": -0.05000780820846558,
+                "positive_fraction": 0.175,
+                "rows": 40
+              },
+              "mmlu": {
+                "ci_high": 0.125,
+                "ci_low": -0.08333333333333333,
+                "draws": 10000,
+                "mean": 0.020833333333333332,
+                "positive_fraction": 0.3333333333333333,
+                "rows": 6
+              },
+              "tier1": {
+                "ci_high": -0.125,
+                "ci_low": -0.125,
+                "draws": 10000,
+                "mean": -0.125,
+                "positive_fraction": 0.0,
+                "rows": 1
+              }
+            },
+            "comparator_mean": -0.1881848877601442,
+            "comparator_positive_fraction": 0.0966796875,
+            "own_comparator_row_correlation": 0.6546439257954033,
+            "own_mean": -0.1842894482324482,
+            "own_positive_fraction": 0.048828125,
+            "paired_advantage": {
+              "ci_high": 0.009502571126540713,
+              "ci_low": -0.001593572816818778,
+              "draws": 10000,
+              "mean": 0.0038954395276959985,
+              "rows": 2048
+            },
+            "paired_advantage_positive_fraction": 0.5517578125,
+            "rows": 2048
+          }
+        },
+        "l0c": {
+          "baseline_margin_quartiles": [
+            {
+              "baseline_margin_max": 2.265625,
+              "baseline_margin_min": -6.0,
+              "mean_delta": 2.923771765374113,
+              "positive_delta_fraction": 1.0,
+              "quartile": 1,
+              "rows": 512
+            },
+            {
+              "baseline_margin_max": 2.9861111640930176,
+              "baseline_margin_min": 2.267857313156128,
+              "mean_delta": 2.0895393388345838,
+              "positive_delta_fraction": 1.0,
+              "quartile": 2,
+              "rows": 512
+            },
+            {
+              "baseline_margin_max": 3.6666667461395264,
+              "baseline_margin_min": 3.0,
+              "mean_delta": 2.1386645953170955,
+              "positive_delta_fraction": 1.0,
+              "quartile": 3,
+              "rows": 512
+            },
+            {
+              "baseline_margin_max": 6.875,
+              "baseline_margin_min": 3.6666667461395264,
+              "mean_delta": 2.254092280752957,
+              "positive_delta_fraction": 1.0,
+              "quartile": 4,
+              "rows": 512
+            }
+          ],
+          "versus_random": {
+            "by_battery": {
+              "arc_challenge": {
+                "ci_high": 4.349809885931559,
+                "ci_low": 4.104562737642586,
+                "draws": 10000,
+                "mean": 4.2283745247148286,
+                "positive_fraction": 1.0,
+                "rows": 263
+              },
+              "arc_easy": {
+                "ci_high": 5.458333333333333,
+                "ci_low": 4.041666666666667,
+                "draws": 10000,
+                "mean": 4.708333333333333,
+                "positive_fraction": 1.0,
+                "rows": 6
+              },
+              "gsm8k": {
+                "ci_high": 2.1934518334470843,
+                "ci_low": 2.1618808564418113,
+                "draws": 10000,
+                "mean": 2.1778506574674785,
+                "positive_fraction": 1.0,
+                "rows": 1732
+              },
+              "mbpp": {
+                "ci_high": 0.8918454185407608,
+                "ci_low": 0.7275214549899102,
+                "draws": 10000,
+                "mean": 0.8096456600353121,
+                "positive_fraction": 1.0,
+                "rows": 40
+              },
+              "mmlu": {
+                "ci_high": 4.291666666666667,
+                "ci_low": 3.4166666666666665,
+                "draws": 10000,
+                "mean": 3.8333333333333335,
+                "positive_fraction": 1.0,
+                "rows": 6
+              },
+              "tier1": {
+                "ci_high": 4.625,
+                "ci_low": 4.625,
+                "draws": 10000,
+                "mean": 4.625,
+                "positive_fraction": 1.0,
+                "rows": 1
+              }
+            },
+            "comparator_mean": -0.07639348595330375,
+            "comparator_positive_fraction": 0.2080078125,
+            "own_comparator_row_correlation": 0.18753851881095382,
+            "own_mean": 2.3515169950696873,
+            "own_positive_fraction": 1.0,
+            "paired_advantage": {
+              "ci_high": 2.466760302316743,
+              "ci_low": 2.390245170617072,
+              "draws": 10000,
+              "mean": 2.427910481022991,
+              "rows": 2048
+            },
+            "paired_advantage_positive_fraction": 1.0,
+            "rows": 2048
+          },
+          "versus_shuffle": {
+            "by_battery": {
+              "arc_challenge": {
+                "ci_high": 4.571304657794677,
+                "ci_low": 4.176093155893536,
+                "draws": 10000,
+                "mean": 4.3716730038022815,
+                "positive_fraction": 0.9923954372623575,
+                "rows": 263
+              },
+              "arc_easy": {
+                "ci_high": 4.395833333333333,
+                "ci_low": 1.875,
+                "draws": 10000,
+                "mean": 3.3125,
+                "positive_fraction": 0.8333333333333334,
+                "rows": 6
+              },
+              "gsm8k": {
+                "ci_high": 0.9351864883809524,
+                "ci_low": 0.8728142071558339,
+                "draws": 10000,
+                "mean": 0.9033589427107751,
+                "positive_fraction": 0.9861431870669746,
+                "rows": 1732
+              },
+              "mbpp": {
+                "ci_high": 1.0767304800485726,
+                "ci_low": 0.8608860504312907,
+                "draws": 10000,
+                "mean": 0.9707611771766096,
+                "positive_fraction": 1.0,
+                "rows": 40
+              },
+              "mmlu": {
+                "ci_high": 4.541666666666667,
+                "ci_low": 3.4166666666666665,
+                "draws": 10000,
+                "mean": 3.9583333333333335,
+                "positive_fraction": 1.0,
+                "rows": 6
+              },
+              "tier1": {
+                "ci_high": 2.5,
+                "ci_low": 2.5,
+                "draws": 10000,
+                "mean": 2.5,
+                "positive_fraction": 1.0,
+                "rows": 1
+              }
+            },
+            "comparator_mean": 0.9846599951370081,
+            "comparator_positive_fraction": 0.80419921875,
+            "own_comparator_row_correlation": -0.2875851707721527,
+            "own_mean": 2.3515169950696873,
+            "own_positive_fraction": 1.0,
+            "paired_advantage": {
+              "ci_high": 1.4300570768915348,
+              "ci_low": 1.3052464717089607,
+              "draws": 10000,
+              "mean": 1.3668569999326792,
+              "rows": 2048
+            },
+            "paired_advantage_positive_fraction": 0.98681640625,
+            "rows": 2048
+          }
+        },
+        "l0d": {
+          "baseline_margin_quartiles": [
+            {
+              "baseline_margin_max": 2.265625,
+              "baseline_margin_min": -6.0,
+              "mean_delta": -0.02588903217110783,
+              "positive_delta_fraction": 0.25,
+              "quartile": 1,
+              "rows": 512
+            },
+            {
+              "baseline_margin_max": 2.9861111640930176,
+              "baseline_margin_min": 2.267857313156128,
+              "mean_delta": -0.032694922760128975,
+              "positive_delta_fraction": 0.294921875,
+              "quartile": 2,
+              "rows": 512
+            },
+            {
+              "baseline_margin_max": 3.6666667461395264,
+              "baseline_margin_min": 3.0,
+              "mean_delta": -0.02725160587579012,
+              "positive_delta_fraction": 0.314453125,
+              "quartile": 3,
+              "rows": 512
+            },
+            {
+              "baseline_margin_max": 6.875,
+              "baseline_margin_min": 3.6666667461395264,
+              "mean_delta": -0.024715375155210495,
+              "positive_delta_fraction": 0.3515625,
+              "quartile": 4,
+              "rows": 512
+            }
+          ],
+          "versus_random": {
+            "by_battery": {
+              "arc_challenge": {
+                "ci_high": 0.041118108365018925,
+                "ci_low": -0.011169201520912548,
+                "draws": 10000,
+                "mean": 0.014733840304182509,
+                "positive_fraction": 0.43346007604562736,
+                "rows": 263
+              },
+              "arc_easy": {
+                "ci_high": 0.3333333333333333,
+                "ci_low": -0.08333333333333333,
+                "draws": 10000,
+                "mean": 0.125,
+                "positive_fraction": 0.6666666666666666,
+                "rows": 6
+              },
+              "gsm8k": {
+                "ci_high": 0.060099939478445136,
+                "ci_low": 0.04973824928422172,
+                "draws": 10000,
+                "mean": 0.05495730030412762,
+                "positive_fraction": 0.6662817551963048,
+                "rows": 1732
+              },
+              "mbpp": {
+                "ci_high": 0.010354217230342319,
+                "ci_low": -0.026852270178496836,
+                "draws": 10000,
+                "mean": -0.008356602676212788,
+                "positive_fraction": 0.475,
+                "rows": 40
+              },
+              "mmlu": {
+                "ci_high": 0.1875,
+                "ci_low": -0.1875,
+                "draws": 10000,
+                "mean": 0.0,
+                "positive_fraction": 0.5,
+                "rows": 6
+              },
+              "tier1": {
+                "ci_high": 0.375,
+                "ci_low": 0.375,
+                "draws": 10000,
+                "mean": 0.375,
+                "positive_fraction": 1.0,
+                "rows": 1
+              }
+            },
+            "comparator_mean": -0.07639348595330375,
+            "comparator_positive_fraction": 0.2080078125,
+            "own_comparator_row_correlation": 0.41230189129925254,
+            "own_mean": -0.027637733990559354,
+            "own_positive_fraction": 0.302734375,
+            "paired_advantage": {
+              "ci_high": 0.054468203755550344,
+              "ci_low": 0.04298634353526722,
+              "draws": 10000,
+              "mean": 0.0487557519627444,
+              "rows": 2048
+            },
+            "paired_advantage_positive_fraction": 0.63232421875,
+            "rows": 2048
+          },
+          "versus_shuffle": {
+            "by_battery": {
+              "arc_challenge": {
+                "ci_high": 0.02899239543726236,
+                "ci_low": -0.001188212927756654,
+                "draws": 10000,
+                "mean": 0.014020912547528517,
+                "positive_fraction": 0.3269961977186312,
+                "rows": 263
+              },
+              "arc_easy": {
+                "ci_high": 0.20833333333333334,
+                "ci_low": -0.125,
+                "draws": 10000,
+                "mean": 0.052083333333333336,
+                "positive_fraction": 0.5,
+                "rows": 6
+              },
+              "gsm8k": {
+                "ci_high": 0.007461334767538459,
+                "ci_low": 0.0006236557721850779,
+                "draws": 10000,
+                "mean": 0.004044366488555838,
+                "positive_fraction": 0.47113163972286376,
+                "rows": 1732
+              },
+              "mbpp": {
+                "ci_high": 0.010205877497792244,
+                "ci_low": -0.014596299007534981,
+                "draws": 10000,
+                "mean": -0.0027693361043930054,
+                "positive_fraction": 0.425,
+                "rows": 40
+              },
+              "mmlu": {
+                "ci_high": 0.125,
+                "ci_low": -0.16666666666666666,
+                "draws": 10000,
+                "mean": -0.020833333333333332,
+                "positive_fraction": 0.3333333333333333,
+                "rows": 6
+              },
+              "tier1": {
+                "ci_high": -0.125,
+                "ci_low": -0.125,
+                "draws": 10000,
+                "mean": -0.125,
+                "positive_fraction": 0.0,
+                "rows": 1
+              }
+            },
+            "comparator_mean": -0.03283503346028738,
+            "comparator_positive_fraction": 0.2900390625,
+            "own_comparator_row_correlation": 0.642295873018103,
+            "own_mean": -0.027637733990559354,
+            "own_positive_fraction": 0.302734375,
+            "paired_advantage": {
+              "ci_high": 0.008778563553278216,
+              "ci_low": 0.0015815691542229616,
+              "draws": 10000,
+              "mean": 0.005197299469728023,
+              "rows": 2048
+            },
+            "paired_advantage_positive_fraction": 0.451171875,
+            "rows": 2048
+          }
+        },
+        "l0g": {
+          "baseline_margin_quartiles": [
+            {
+              "baseline_margin_max": 2.265625,
+              "baseline_margin_min": -6.0,
+              "mean_delta": -0.10046389656054089,
+              "positive_delta_fraction": 0.1875,
+              "quartile": 1,
+              "rows": 512
+            },
+            {
+              "baseline_margin_max": 2.9861111640930176,
+              "baseline_margin_min": 2.267857313156128,
+              "mean_delta": -0.20687145576812327,
+              "positive_delta_fraction": 0.01171875,
+              "quartile": 2,
+              "rows": 512
+            },
+            {
+              "baseline_margin_max": 3.6666667461395264,
+              "baseline_margin_min": 3.0,
+              "mean_delta": -0.2261390690691769,
+              "positive_delta_fraction": 0.013671875,
+              "quartile": 3,
+              "rows": 512
+            },
+            {
+              "baseline_margin_max": 6.875,
+              "baseline_margin_min": 3.6666667461395264,
+              "mean_delta": -0.2518981173634529,
+              "positive_delta_fraction": 0.0234375,
+              "quartile": 4,
+              "rows": 512
+            }
+          ],
+          "versus_random": {
+            "by_battery": {
+              "arc_challenge": {
+                "ci_high": 0.022338403041825095,
+                "ci_low": -0.045158032319391625,
+                "draws": 10000,
+                "mean": -0.011169201520912548,
+                "positive_fraction": 0.38783269961977185,
+                "rows": 263
+              },
+              "arc_easy": {
+                "ci_high": 0.9270833333333334,
+                "ci_low": -0.20833333333333334,
+                "draws": 10000,
+                "mean": 0.23958333333333334,
+                "positive_fraction": 0.3333333333333333,
+                "rows": 6
+              },
+              "gsm8k": {
+                "ci_high": -0.13546300918723117,
+                "ci_low": -0.14591085416927296,
+                "draws": 10000,
+                "mean": -0.1406781063167761,
+                "positive_fraction": 0.09237875288683603,
+                "rows": 1732
+              },
+              "mbpp": {
+                "ci_high": -0.013256840165704496,
+                "ci_low": -0.0555665182787925,
+                "draws": 10000,
+                "mean": -0.03443501181900501,
+                "positive_fraction": 0.225,
+                "rows": 40
+              },
+              "mmlu": {
+                "ci_high": 0.3541666666666667,
+                "ci_low": -0.22916666666666666,
+                "draws": 10000,
+                "mean": 0.0625,
+                "positive_fraction": 0.5,
+                "rows": 6
+              },
+              "tier1": {
+                "ci_high": 0.5,
+                "ci_low": 0.5,
+                "draws": 10000,
+                "mean": 0.5,
+                "positive_fraction": 1.0,
+                "rows": 1
+              }
+            },
+            "comparator_mean": -0.07639348595330375,
+            "comparator_positive_fraction": 0.2080078125,
+            "own_comparator_row_correlation": 0.427526885599361,
+            "own_mean": -0.1963431346903235,
+            "own_positive_fraction": 0.05908203125,
+            "paired_advantage": {
+              "ci_high": -0.1128083469039666,
+              "ci_low": -0.1267072637710953,
+              "draws": 10000,
+              "mean": -0.11994964873701974,
+              "rows": 2048
+            },
+            "paired_advantage_positive_fraction": 0.13525390625,
+            "rows": 2048
+          },
+          "versus_shuffle": {
+            "by_battery": {
+              "arc_challenge": {
+                "ci_high": 0.003564638783269962,
+                "ci_low": -0.060361216730038025,
+                "draws": 10000,
+                "mean": -0.028517110266159697,
+                "positive_fraction": 0.35361216730038025,
+                "rows": 263
+              },
+              "arc_easy": {
+                "ci_high": 0.625,
+                "ci_low": -0.3333333333333333,
+                "draws": 10000,
+                "mean": 0.10416666666666667,
+                "positive_fraction": 0.3333333333333333,
+                "rows": 6
+              },
+              "gsm8k": {
+                "ci_high": 0.005055687997401982,
+                "ci_low": -0.0029086531322733357,
+                "draws": 10000,
+                "mean": 0.0010421201307111469,
+                "positive_fraction": 0.5121247113163973,
+                "rows": 1732
+              },
+              "mbpp": {
+                "ci_high": -0.01165309563279152,
+                "ci_low": -0.03658288455568254,
+                "draws": 10000,
+                "mean": -0.024265704117715357,
+                "positive_fraction": 0.25,
+                "rows": 40
+              },
+              "mmlu": {
+                "ci_high": 0.125,
+                "ci_low": -0.125,
+                "draws": 10000,
+                "mean": 0.0,
+                "positive_fraction": 0.3333333333333333,
+                "rows": 6
+              },
+              "tier1": {
+                "ci_high": 0.5,
+                "ci_low": 0.5,
+                "draws": 10000,
+                "mean": 0.5,
+                "positive_fraction": 1.0,
+                "rows": 1
+              }
+            },
+            "comparator_mean": -0.1936377264391922,
+            "comparator_positive_fraction": 0.078125,
+            "own_comparator_row_correlation": 0.6630595881464243,
+            "own_mean": -0.1963431346903235,
+            "own_positive_fraction": 0.05908203125,
+            "paired_advantage": {
+              "ci_high": 0.002951233892326854,
+              "ci_low": -0.008293498359853402,
+              "draws": 10000,
+              "mean": -0.0027054082511313027,
+              "rows": 2048
+            },
+            "paired_advantage_positive_fraction": 0.48583984375,
+            "rows": 2048
+          }
+        }
+      },
+      "role": "descriptive_only_does_not_change_registered_winner_rule",
+      "rows": 2048,
+      "seed": 0
+    }
+  },
+  "status": "complete"
+}
