@@ -173,6 +173,7 @@ def extract_student_targets(
     tokenizer: Any,
     rows: Sequence[Mapping[str, Any]],
     batch_size: int,
+    allow_dry_neighbor_fallback: bool = False,
 ) -> dict[str, Any]:
     state_before = _state_digest(_named_trainable_state(wrapper))
     families = {name: [] for name in ("l0a", "l0c", "l0d")}
@@ -228,13 +229,18 @@ def extract_student_targets(
     similarity = normalized @ normalized.T
     similarity.fill_diagonal_(-torch.inf)
     l0g = []
+    realized_neighbor_k = 8
     for index in range(len(rows)):
         candidates = similarity[index].clone()
         candidates[~solved_mask] = -torch.inf
         available = int(torch.isfinite(candidates).sum())
-        if available < 8:
+        if available < 8 and not allow_dry_neighbor_fallback:
             raise RuntimeError(f"W1 neighbor target has only {available} solved candidates")
-        neighbors = candidates.topk(8).indices
+        neighbor_k = min(8, available)
+        if neighbor_k < 1:
+            raise RuntimeError("W1 neighbor target has no solved candidate")
+        realized_neighbor_k = min(realized_neighbor_k, neighbor_k)
+        neighbors = candidates.topk(neighbor_k).indices
         l0g.append(state_matrix[neighbors].mean(dim=0) - state_matrix[index])
     families["l0g"] = l0g
     if _state_digest(_named_trainable_state(wrapper)) != state_before:
@@ -249,6 +255,11 @@ def extract_student_targets(
         "solved_mask": solved_mask,
         "seconds": time.perf_counter() - started,
         "free_run_construction": "single_parallel_greedy_reconstruction_then_second_forward_v1",
+        "neighbor_target": {
+            "registered_k": 8,
+            "realized_k": realized_neighbor_k,
+            "dry_run_fallback": realized_neighbor_k < 8,
+        },
         "optimizer_constructed": False,
         "optimizer_steps": 0,
     }
@@ -407,6 +418,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             tokenizer=tokenizer,
             rows=rows,
             batch_size=args.target_batch_size,
+            allow_dry_neighbor_fallback=args.mode == "dry_run",
         )
         target_path.parent.mkdir(parents=True, exist_ok=True)
         torch.save(targets, target_path)
