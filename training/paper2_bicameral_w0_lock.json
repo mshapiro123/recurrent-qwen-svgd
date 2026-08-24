@@ -1,0 +1,48 @@
+{
+  "kind": "paper2_bicameral_w0_lock_v1",
+  "status": "LOCKED_W0_ONLY",
+  "mark_ratified": true,
+  "training_authorized": false,
+  "gpu_authorized": true,
+  "gpu_scope": "one_short_pinned_forward_only_preflight",
+  "sealed_partitions_authorized": false,
+  "optimizer_steps_allowed": 0,
+  "step1_training_authorized": false,
+  "step2_training_authorized": false,
+  "authority": {
+    "drive_id": "1sDoD6HXM63saL2KrWfL9AmD06S0gMOCH",
+    "filename": "STRATEGY_BICAMERAL_STAGE0_ADJUDICATION_20260824.md",
+    "bytes": 15854,
+    "sha256": "056337f3cef59a190f5511087fa7704eec44b5d837d937b21d1b605e99624d7f"
+  },
+  "execution": {
+    "schedule": "sequential_shared_middle_v1",
+    "batch_concat_prohibited": true,
+    "callosum_gate_a": 1.0,
+    "callosum_gate_b": 1.0,
+    "bank_gate_a": 1.0,
+    "bank_gate_b": 1.0,
+    "cross_read_gates": 0.0,
+    "combiner_mu_initial": 1.0,
+    "combiner_delta_initial": 0.0
+  },
+  "manifest": {
+    "population": "256_preserved_arm6_rows",
+    "row_count": 256,
+    "native_sequence_lengths_required": true,
+    "seed_populations_must_match": true,
+    "dev_461_eval_only": true,
+    "panel_2048_eval_only": true
+  },
+  "preflight": {
+    "t1_exact_identity_required": true,
+    "t2_cold_start_gradient_contract_required": true,
+    "both_seeds_required": true,
+    "branch_divergence_must_be_nonzero": true,
+    "cost_probe_runtime": {
+      "gpu": "NVIDIA A100-SXM4-40GB",
+      "torch_prefix": "2.11.0",
+      "cuda_prefix": "12.8"
+    }
+  }
+}

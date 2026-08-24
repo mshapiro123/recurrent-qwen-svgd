@@ -4,7 +4,13 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from models.bicameral import BicameralCore, MuDeltaCombiner, WHTFrame
+from models.bicameral import (
+    OPERATING_GATE_VALUE,
+    SEQUENTIAL_EXECUTION_SCHEDULE,
+    BicameralCore,
+    MuDeltaCombiner,
+    WHTFrame,
+)
 
 
 class FrozenMiddle(nn.Module):
@@ -39,6 +45,21 @@ def test_t1_all_gates_zero_is_bit_exact() -> None:
     assert torch.equal(branch_a, base)
     assert torch.equal(branch_b, base)
     assert torch.equal(output, base)
+
+
+def test_middle_execution_is_sequential_and_schedule_is_declared() -> None:
+    torch.manual_seed(4)
+    core = BicameralCore(128)
+    hidden = torch.randn((3, 5, 128))
+    calls: list[tuple[int, ...]] = []
+
+    def middle(value: torch.Tensor) -> torch.Tensor:
+        calls.append(tuple(value.shape))
+        return value
+
+    core(hidden, middle)
+    assert calls == [(3, 5, 128), (3, 5, 128)]
+    assert core.execution_schedule == SEQUENTIAL_EXECUTION_SCHEDULE
 
 
 def test_t2_cold_start_gradient_contract() -> None:
@@ -103,3 +124,13 @@ def test_operating_gates_require_measurement_receipt() -> None:
         pass
     else:
         raise AssertionError("unreceipted operating gates were accepted")
+
+
+def test_strategy_operating_gates_are_bound_without_search() -> None:
+    core = BicameralCore(128)
+    core.bind_strategy_operating_gates(source_receipt_sha256="a" * 64)
+    assert float(core.callosum.gate_a.detach()) == OPERATING_GATE_VALUE
+    assert float(core.callosum.gate_b.detach()) == OPERATING_GATE_VALUE
+    assert float(core.bank_a.gate.detach()) == OPERATING_GATE_VALUE
+    assert float(core.bank_b.gate.detach()) == OPERATING_GATE_VALUE
+    assert core.conditioning_receipt_sha256 == "a" * 64

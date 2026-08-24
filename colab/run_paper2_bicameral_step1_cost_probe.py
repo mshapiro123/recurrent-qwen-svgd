@@ -15,14 +15,18 @@ from typing import Any, Callable
 import torch
 from transformers import AutoModelForCausalLM
 
-from models.bicameral import BicameralTaskInferenceGraph
+from models.bicameral import (
+    SEQUENTIAL_EXECUTION_SCHEDULE,
+    BicameralTaskInferenceGraph,
+)
 from models.recurrent_wrapper import LayerSplit, RecurrentQwenForCausalLM
 
 
-KIND = "paper2_bicameral_step1_cost_probe_v1"
+KIND = "paper2_bicameral_w0_preflight_v1"
 PINNED_GPU = "NVIDIA A100-SXM4-40GB"
 PINNED_TORCH_PREFIX = "2.11.0"
 PINNED_CUDA_PREFIX = "12.8"
+MODEL_REVISION = "7ae557604adf67be50417f59c2c2f167def9a775"
 
 
 def sha256_file(path: Path) -> str:
@@ -94,10 +98,82 @@ def make_tokens(batch: int, length: int, vocab_size: int, device: torch.device) 
     return input_ids.to(device), torch.ones((batch, length), dtype=torch.long, device=device)
 
 
+def load_probe_batch(path: Path, device: torch.device, pad_token_id: int) -> tuple[torch.Tensor, torch.Tensor, list[str]]:
+    rows = json.loads(path.read_text(encoding="utf-8"))
+    if not rows or any(not row.get("input_ids") for row in rows):
+        raise RuntimeError("W0 probe batch is empty or malformed")
+    width = max(len(row["input_ids"]) for row in rows)
+    input_ids = torch.full((len(rows), width), pad_token_id, dtype=torch.long)
+    attention_mask = torch.zeros_like(input_ids)
+    for index, row in enumerate(rows):
+        values = torch.tensor(row["input_ids"], dtype=torch.long)
+        input_ids[index, : len(values)] = values
+        attention_mask[index, : len(values)] = 1
+    return input_ids.to(device), attention_mask.to(device), [str(row["item_id"]) for row in rows]
+
+
+def branch_divergence(branch_a: torch.Tensor, branch_b: torch.Tensor) -> dict[str, float]:
+    left = branch_a.float().reshape(-1)
+    right = branch_b.float().reshape(-1)
+    difference = left - right
+    centered_left = left - left.mean()
+    centered_right = right - right.mean()
+    return {
+        "l2_norm": float(torch.linalg.vector_norm(difference).cpu()),
+        "rms": float(difference.square().mean().sqrt().cpu()),
+        "maximum_absolute_difference": float(difference.abs().max().cpu()),
+        "cosine_similarity": float(torch.nn.functional.cosine_similarity(left, right, dim=0).cpu()),
+        "centered_correlation": float(
+            (centered_left * centered_right).sum()
+            / (
+                torch.linalg.vector_norm(centered_left)
+                * torch.linalg.vector_norm(centered_right)
+            ).clamp_min(1e-12)
+        ),
+    }
+
+
+def actual_t2_contract(graph: BicameralTaskInferenceGraph, input_ids: torch.Tensor, attention_mask: torch.Tensor) -> dict[str, Any]:
+    graph.core.zero_gates()
+    for parameter in graph.core.parameters():
+        parameter.grad = None
+    output = graph(input_ids=input_ids[:1], attention_mask=attention_mask[:1])
+    output.logits[:, -1].float().square().mean().backward()
+    alive_names = (
+        "callosum.gate_a",
+        "callosum.gate_b",
+        "bank_a.gate",
+        "bank_b.gate",
+        "combiner.mu",
+    )
+    parameters = dict(graph.core.named_parameters())
+    alive = {
+        name: {
+            "finite": bool(parameters[name].grad is not None and torch.isfinite(parameters[name].grad).all()),
+            "nonzero": bool(parameters[name].grad is not None and torch.count_nonzero(parameters[name].grad)),
+        }
+        for name in alive_names
+    }
+    exactly_zero = {
+        name: bool(parameters[name].grad is not None and torch.count_nonzero(parameters[name].grad) == 0)
+        for name in ("combiner.delta", "bank_a.gains", "bank_b.gains")
+    }
+    for parameter in graph.core.parameters():
+        parameter.grad = None
+    passed = all(item["finite"] and item["nonzero"] for item in alive.values()) and all(exactly_zero.values())
+    return {"pass": passed, "alive": alive, "exactly_zero": exactly_zero}
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--model", default="Qwen/Qwen2.5-0.5B-Instruct")
+    parser.add_argument("--manifest", type=Path, required=True)
+    parser.add_argument("--manifest-summary", type=Path, required=True)
+    parser.add_argument("--probe-batch", type=Path, required=True)
+    parser.add_argument("--initializer-seed-0", type=Path, required=True)
+    parser.add_argument("--initializer-seed-1", type=Path, required=True)
+    parser.add_argument("--authority-sha256", required=True)
     parser.add_argument("--warmup", type=int, default=3)
     parser.add_argument("--repeats", type=int, default=10)
     args = parser.parse_args()
@@ -110,12 +186,23 @@ def main() -> int:
         "sealed_partition_touched": False,
         "runtime": runtime_receipt(),
         "model_id": args.model,
+        "model_revision": MODEL_REVISION,
+        "execution_schedule": SEQUENTIAL_EXECUTION_SCHEDULE,
+        "authority_sha256": args.authority_sha256,
+        "inputs": {
+            "manifest_sha256": sha256_file(args.manifest),
+            "manifest_summary_sha256": sha256_file(args.manifest_summary),
+            "probe_batch_sha256": sha256_file(args.probe_batch),
+            "initializer_seed_0_sha256": sha256_file(args.initializer_seed_0),
+            "initializer_seed_1_sha256": sha256_file(args.initializer_seed_1),
+        },
     }
     atomic_json(args.output, receipt)
 
     load_started = time.perf_counter()
     base = AutoModelForCausalLM.from_pretrained(
         args.model,
+        revision=MODEL_REVISION,
         torch_dtype=torch.bfloat16,
         attn_implementation="sdpa",
         low_cpu_mem_usage=True,
@@ -146,6 +233,30 @@ def main() -> int:
         "compared_values": int(difference.numel()),
     }
 
+    probe_ids, probe_mask, probe_item_ids = load_probe_batch(
+        args.probe_batch, graph.device, int(base.config.pad_token_id or base.config.eos_token_id)
+    )
+    receipt["probe_batch"] = {
+        "rows": len(probe_item_ids),
+        "item_ids": probe_item_ids,
+        "padded_width": int(probe_ids.shape[1]),
+    }
+    receipt["t2_real_substrate"] = actual_t2_contract(graph, probe_ids, probe_mask)
+
+    divergences = {}
+    for seed, initializer in ((0, args.initializer_seed_0), (1, args.initializer_seed_1)):
+        graph.core.zero_gates()
+        graph.core.load_branch_initializers(initializer)
+        graph.core.bind_strategy_operating_gates(source_receipt_sha256=args.authority_sha256)
+        with torch.inference_mode():
+            states = graph.cache_branch_states(input_ids=probe_ids, attention_mask=probe_mask)
+        divergences[str(seed)] = {
+            **branch_divergence(states.branch_a, states.branch_b),
+            "initializer_sha256": sha256_file(initializer),
+            "conditioning_receipt_sha256": graph.core.conditioning_receipt_sha256,
+        }
+    receipt["operating_point_divergence"] = divergences
+
     timings: list[dict[str, Any]] = []
     for batch, length in ((1, 64), (1, 128), (1, 256), (1, 512), (8, 256)):
         input_ids, attention_mask = make_tokens(batch, length, vocab_size, graph.device)
@@ -171,6 +282,33 @@ def main() -> int:
         timings.append(measured)
     receipt["branch_cache_timings"] = timings
 
+    manifest_rows = [
+        json.loads(line)
+        for line in args.manifest.read_text(encoding="utf-8").splitlines()
+        if line
+    ]
+    manifest_lengths = sorted(int(row["native_input_token_length"]) for row in manifest_rows)
+    torch.cuda.reset_peak_memory_stats()
+    manifest_started = time.perf_counter()
+    with torch.inference_mode():
+        for start in range(0, len(manifest_lengths), 8):
+            local = manifest_lengths[start : start + 8]
+            ids, mask = make_tokens(len(local), max(local), vocab_size, graph.device)
+            graph.cache_branch_states(input_ids=ids, attention_mask=mask)
+    torch.cuda.synchronize()
+    manifest_seconds = time.perf_counter() - manifest_started
+    receipt["bound_manifest_cache_measurement"] = {
+        "rows": len(manifest_rows),
+        "batch_size": 8,
+        "minimum_sequence_length": min(manifest_lengths),
+        "maximum_sequence_length": max(manifest_lengths),
+        "mean_sequence_length": statistics.fmean(manifest_lengths),
+        "one_seed_seconds": manifest_seconds,
+        "two_seed_gpu_hours": 2 * manifest_seconds / 3600,
+        "peak_allocated_gib": torch.cuda.max_memory_allocated() / 2**30,
+        "manifest_sha256": sha256_file(args.manifest),
+    }
+
     timing_256 = next(
         item for item in timings if item["batch_size"] == 8 and item["sequence_length"] == 256
     )
@@ -181,7 +319,10 @@ def main() -> int:
         "minutes_per_2048_row_panel": per_row_seconds * 2048 / 60,
         "minutes_per_1000_training_rows": per_row_seconds * 1000 / 60,
         "two_seed_formula_gpu_hours": "2 * seconds_per_row * (training_rows + 461 + 2048) / 3600",
-        "training_row_count_unbound": True,
+        "training_row_count": 256,
+        "projected_two_seed_cache_gpu_hours_for_256_plus_461_plus_2048_rows": (
+            2 * per_row_seconds * (256 + 461 + 2048) / 3600
+        ),
     }
 
     torch.manual_seed(20260823)
@@ -195,7 +336,12 @@ def main() -> int:
     receipt["closed_form_fit_256_rows_ms"] = (time.perf_counter() - fit_start) * 1000
 
     receipt["status"] = "complete"
-    receipt["hard_gate_pass"] = receipt["t1_real_substrate"]["exact_equal"]
+    receipt["hard_gate_pass"] = bool(
+        receipt["t1_real_substrate"]["exact_equal"]
+        and receipt["t2_real_substrate"]["pass"]
+        and all(item["l2_norm"] > 1e-8 for item in divergences.values())
+        and receipt["execution_schedule"] == SEQUENTIAL_EXECUTION_SCHEDULE
+    )
     atomic_json(args.output, receipt)
     print(json.dumps(receipt, indent=2, sort_keys=True))
     return 0 if receipt["hard_gate_pass"] else 3

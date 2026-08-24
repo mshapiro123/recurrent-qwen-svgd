@@ -12,6 +12,8 @@ import torch.nn as nn
 
 
 WHT_BLOCK = 128
+SEQUENTIAL_EXECUTION_SCHEDULE = "sequential_shared_middle_v1"
+OPERATING_GATE_VALUE = 1.0
 
 
 def sequency_wht(width: int = WHT_BLOCK) -> torch.Tensor:
@@ -216,6 +218,7 @@ class BicameralCore(nn.Module):
         )
         self.combiner = MuDeltaCombiner(hidden_size, rms_cap)
         self.conditioning_receipt_sha256: str | None = None
+        self.execution_schedule = SEQUENTIAL_EXECUTION_SCHEDULE
 
     def forward(
         self,
@@ -225,8 +228,10 @@ class BicameralCore(nn.Module):
         branch_a, branch_b = self.callosum(hidden)
         branch_a = self.bank_a(branch_a)
         branch_b = self.bank_b(branch_b)
-        combined = run_middle(torch.cat([branch_a, branch_b], dim=0))
-        branch_a, branch_b = combined.chunk(2, dim=0)
+        # BF16 execution schedule is part of evaluator identity. This must
+        # match the byte-locked reference's two sequential middle calls.
+        branch_a = run_middle(branch_a)
+        branch_b = run_middle(branch_b)
         return self.combiner(branch_a, branch_b), branch_a, branch_b
 
     @torch.no_grad()
@@ -256,6 +261,16 @@ class BicameralCore(nn.Module):
         self.bank_a.gate.fill_(float(bank_a))
         self.bank_b.gate.fill_(float(bank_b))
         self.conditioning_receipt_sha256 = str(source_receipt_sha256)
+
+    @torch.no_grad()
+    def bind_strategy_operating_gates(self, *, source_receipt_sha256: str) -> None:
+        self.set_conditioning_gates(
+            callosum_a=OPERATING_GATE_VALUE,
+            callosum_b=OPERATING_GATE_VALUE,
+            bank_a=OPERATING_GATE_VALUE,
+            bank_b=OPERATING_GATE_VALUE,
+            source_receipt_sha256=source_receipt_sha256,
+        )
 
     def configure_step1_trainable(self) -> list[str]:
         for parameter in self.parameters():
@@ -335,16 +350,6 @@ class BicameralTaskInferenceGraph(nn.Module):
     def device(self) -> torch.device:
         return next(self.wrapper.parameters()).device
 
-    @staticmethod
-    def _duplicate_batch(value: Any, batch_size: int) -> Any:
-        if torch.is_tensor(value) and value.ndim and value.shape[0] == batch_size:
-            return torch.cat([value, value], dim=0)
-        if isinstance(value, tuple):
-            return tuple(BicameralTaskInferenceGraph._duplicate_batch(x, batch_size) for x in value)
-        if isinstance(value, list):
-            return [BicameralTaskInferenceGraph._duplicate_batch(x, batch_size) for x in value]
-        return value
-
     def _run_layers(
         self,
         start: int,
@@ -404,17 +409,15 @@ class BicameralTaskInferenceGraph(nn.Module):
             position_embeddings=position_embeddings,
         )
         if bicameral:
-            batch_size = hidden.shape[0]
-
-            def run_middle(combined: torch.Tensor) -> torch.Tensor:
+            def run_middle(branch: torch.Tensor) -> torch.Tensor:
                 return self._run_layers(
                     self.prelude_end,
                     self.middle_end,
-                    combined,
-                    causal_mask=self._duplicate_batch(causal_mask, batch_size),
-                    position_ids=self._duplicate_batch(position_ids, batch_size),
+                    branch,
+                    causal_mask=causal_mask,
+                    position_ids=position_ids,
                     cache_position=cache_position,
-                    position_embeddings=self._duplicate_batch(position_embeddings, batch_size),
+                    position_embeddings=position_embeddings,
                 )
 
             hidden, branch_a, branch_b = self.core(hidden, run_middle)
