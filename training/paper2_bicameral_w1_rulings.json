@@ -1,0 +1,32 @@
+{
+  "kind": "paper2_bicameral_w1_rulings_v1",
+  "status": "binding",
+  "authority": {
+    "drive_id": "1HIimhh_-2DPMNBK-uydgXzIKF0fy2N5n",
+    "bytes": 8836,
+    "sha256": "7fa09f4b2dc1678f681962a160f754f934783ec3dc05ae98f44dba2c574af726"
+  },
+  "w1_r1": {
+    "injection_position": "terminal_schedule_all_active_token_positions",
+    "seed_0_banked": true,
+    "seed_1_resume_unchanged": true
+  },
+  "w1_r2": {
+    "assignment": "nearest_frozen_stage0_centroid_no_refit",
+    "population_rows": 2048,
+    "minimum_cluster_fraction": 0.05
+  },
+  "w1_r3": {
+    "residual_directions": "per_seed_cross_fitted_rs0a",
+    "score_both_signs": true,
+    "orientation": "nonnegative_inner_product_with_seed_correction_mean"
+  },
+  "w1_r4": {
+    "generative_target": "fixed_per_row_at_every_autoregressive_step",
+    "oracle_tag": "oracle-target-assisted",
+    "population_tag": "population-target"
+  },
+  "optimizer_steps_authorized": 0,
+  "confirm_scored": false,
+  "eval_e_scored": false
+}

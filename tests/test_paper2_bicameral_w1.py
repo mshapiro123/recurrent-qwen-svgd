@@ -3,12 +3,16 @@ from __future__ import annotations
 import torch
 
 from training.paper2_bicameral_w1 import (
+    ORACLE_TARGET_ASSISTED,
+    POPULATION_TARGET,
     bootstrap_mean_ci,
     build_phase_b_granularity_targets,
     deterministic_permutation,
     project_cost_hours,
+    orient_residual_directions,
     resolve_phase_a,
     scale_external_write,
+    validate_cluster_extension,
 )
 
 
@@ -90,3 +94,28 @@ def test_phase_b_granularity_targets_reject_non_k2_labels() -> None:
             assert "k=2" in str(error)
         else:
             raise AssertionError("non-k2 Phase B assignments were accepted")
+
+
+def test_frozen_centroid_extension_gate_and_target_tags() -> None:
+    receipt = validate_cluster_extension(torch.tensor([0] * 100 + [1] * 1900))
+    assert receipt["passed"] is True
+    assert receipt["fractions"] == [0.05, 0.95]
+    assert ORACLE_TARGET_ASSISTED == "oracle-target-assisted"
+    assert POPULATION_TARGET == "population-target"
+
+    try:
+        validate_cluster_extension(torch.tensor([0] * 99 + [1] * 1901))
+    except RuntimeError as error:
+        assert "extension gate failed" in str(error)
+    else:
+        raise AssertionError("degenerate frozen-centroid extension was accepted")
+
+
+def test_l6_orientation_is_nonnegative_against_correction_mean() -> None:
+    directions = torch.tensor([[1.0, 0.0], [-1.0, 1.0], [0.0, 1.0]])
+    oriented, receipt = orient_residual_directions(
+        directions, torch.tensor([1.0, 0.0])
+    )
+    assert torch.equal(oriented, torch.tensor([[1.0, 0.0], [1.0, -1.0], [0.0, 1.0]]))
+    assert receipt["orientation_signs"] == [1, -1, 1]
+    assert all(value >= 0 for value in receipt["oriented_inner_products"])

@@ -16,6 +16,9 @@ STATE_RMS_CAP = 0.550893
 SHUFFLE_SEED = 20260824
 BOOTSTRAP_SEED = 20260825
 BOOTSTRAP_DRAWS = 10_000
+CLUSTER_EXTENSION_MIN_FRACTION = 0.05
+ORACLE_TARGET_ASSISTED = "oracle-target-assisted"
+POPULATION_TARGET = "population-target"
 
 
 def rms(value: torch.Tensor, *, dim: int | tuple[int, ...] = -1) -> torch.Tensor:
@@ -102,6 +105,57 @@ def build_phase_b_granularity_targets(
         "l2": global_mean.to(row_targets.dtype),
         "l3": other_cluster.to(row_targets.dtype),
         "cluster_means": means.to(row_targets.dtype),
+    }
+
+
+def validate_cluster_extension(
+    cluster_assignments: torch.Tensor,
+    *,
+    minimum_fraction: float = CLUSTER_EXTENSION_MIN_FRACTION,
+) -> dict[str, Any]:
+    """Apply the registered frozen-centroid extension degeneracy gate."""
+
+    assignments = torch.as_tensor(cluster_assignments, dtype=torch.long).cpu()
+    if assignments.ndim != 1 or assignments.numel() == 0:
+        raise ValueError("cluster extension assignments must have shape [N]")
+    labels = torch.unique(assignments, sorted=True)
+    if labels.numel() != 2 or not torch.equal(labels, torch.tensor([0, 1])):
+        raise ValueError("cluster extension requires exactly labels {0,1}")
+    counts = torch.bincount(assignments, minlength=2)
+    fractions = counts.double() / assignments.numel()
+    passed = bool(torch.all(fractions >= float(minimum_fraction)))
+    receipt = {
+        "rows": int(assignments.numel()),
+        "counts": [int(value) for value in counts],
+        "fractions": [float(value) for value in fractions],
+        "minimum_fraction": float(minimum_fraction),
+        "passed": passed,
+    }
+    if not passed:
+        raise RuntimeError(f"W1 frozen-centroid extension gate failed: {receipt}")
+    return receipt
+
+
+def orient_residual_directions(
+    directions: torch.Tensor,
+    correction_mean: torch.Tensor,
+) -> tuple[torch.Tensor, dict[str, Any]]:
+    """Orient each L6 eigenvector against the seed-specific correction mean."""
+
+    if directions.ndim != 2 or correction_mean.ndim != 1:
+        raise ValueError("L6 orientation expects [K,D] directions and [D] mean")
+    if directions.shape[1] != correction_mean.shape[0]:
+        raise ValueError("L6 orientation width changed")
+    dots = directions.float() @ correction_mean.float()
+    signs = torch.where(dots < 0, -torch.ones_like(dots), torch.ones_like(dots))
+    oriented = directions.float() * signs[:, None]
+    oriented_dots = oriented @ correction_mean.float()
+    if torch.any(oriented_dots < 0):
+        raise RuntimeError("L6 orientation convention failed")
+    return oriented.to(directions.dtype), {
+        "original_inner_products": [float(value) for value in dots],
+        "orientation_signs": [int(value) for value in signs],
+        "oriented_inner_products": [float(value) for value in oriented_dots],
     }
 
 
