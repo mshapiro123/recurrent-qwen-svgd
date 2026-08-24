@@ -1,0 +1,12 @@
+{
+  "kind": "paper2_bicameral_stage0_result_handoff_receipt_v1",
+  "status": "published",
+  "filename": "PAPER2_BICAMERAL_STAGE0_RESULT_HANDOFF_20260823.md",
+  "drive_id": "1csfyt0xD5HrDbr3_THsgQzMBTFnZ-tQl",
+  "drive_parent_id": "1aSbU2i8JZ37g5bJpyweLuvFaV0y92Qjr",
+  "bytes": 10616,
+  "sha256": "e04e7a68c1ccc9f15e37819d956e0cc562f99d6aff56e25dc79deaac0b766a70",
+  "source_branch": "codex/bicameral-stage0",
+  "source_commit_before_publication_receipt": "bb6533e7",
+  "drive_size_verified": true
+}
