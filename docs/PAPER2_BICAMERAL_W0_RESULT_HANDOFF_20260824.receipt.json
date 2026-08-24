@@ -1,0 +1,12 @@
+{
+  "kind": "paper2_bicameral_w0_handoff_publication_receipt_v1",
+  "status": "published_byte_verified",
+  "filename": "PAPER2_BICAMERAL_W0_RESULT_HANDOFF_20260824.md",
+  "drive_id": "1M4GHkaro9ioNg6LGS1MF7XA9ha3FrpYi",
+  "drive_url": "https://drive.google.com/file/d/1M4GHkaro9ioNg6LGS1MF7XA9ha3FrpYi/view",
+  "parent_folder_id": "1aSbU2i8JZ37g5bJpyweLuvFaV0y92Qjr",
+  "bytes": 8838,
+  "sha256": "b6d57d44fb984b1869f2c76afc0054f094a309a2687232b5b32196bdedb964d6",
+  "download_verification": "connector raw-file bytes matched the local SHA-256",
+  "repo_commit_before_publication_receipt": "c798227f9fddc7bc1d4c6ced4980ca0ba84d2397"
+}
