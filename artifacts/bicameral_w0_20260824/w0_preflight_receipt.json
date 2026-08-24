@@ -1,0 +1,184 @@
+{
+  "authority_sha256": "056337f3cef59a190f5511087fa7704eec44b5d837d937b21d1b605e99624d7f",
+  "bicameral_parameter_count": 2308,
+  "bound_manifest_cache_measurement": {
+    "batch_size": 8,
+    "manifest_sha256": "06b2ab04bde4eb0a66bfb2db21600ef31637940d6d7c84d916e358bade4c7bea",
+    "maximum_sequence_length": 194,
+    "mean_sequence_length": 102.76953125,
+    "minimum_sequence_length": 32,
+    "one_seed_seconds": 1.2529817990000538,
+    "peak_allocated_gib": 1.0964460372924805,
+    "rows": 256,
+    "two_seed_gpu_hours": 0.0006961009994444743
+  },
+  "branch_cache_timings": [
+    {
+      "batch_size": 1,
+      "maximum_ms": 41.87750244140625,
+      "mean_ms": 39.82069778442383,
+      "median_ms": 40.4582405090332,
+      "milliseconds_per_row": 40.4582405090332,
+      "minimum_ms": 37.64633560180664,
+      "peak_allocated_gib": 1.0327157974243164,
+      "peak_reserved_gib": 1.41015625,
+      "repeats": 5,
+      "sequence_length": 64
+    },
+    {
+      "batch_size": 1,
+      "maximum_ms": 39.13420867919922,
+      "mean_ms": 38.81656341552734,
+      "median_ms": 38.79731369018555,
+      "milliseconds_per_row": 38.79731369018555,
+      "minimum_ms": 38.617088317871094,
+      "peak_allocated_gib": 1.03590726852417,
+      "peak_reserved_gib": 1.41015625,
+      "repeats": 5,
+      "sequence_length": 128
+    },
+    {
+      "batch_size": 1,
+      "maximum_ms": 38.69798278808594,
+      "mean_ms": 38.49932708740234,
+      "median_ms": 38.48908615112305,
+      "milliseconds_per_row": 38.48908615112305,
+      "minimum_ms": 38.33651351928711,
+      "peak_allocated_gib": 1.042497158050537,
+      "peak_reserved_gib": 1.41015625,
+      "repeats": 5,
+      "sequence_length": 256
+    },
+    {
+      "batch_size": 1,
+      "maximum_ms": 44.49177551269531,
+      "mean_ms": 40.19118041992188,
+      "median_ms": 39.26732635498047,
+      "milliseconds_per_row": 39.26732635498047,
+      "minimum_ms": 37.72313690185547,
+      "peak_allocated_gib": 1.0507235527038574,
+      "peak_reserved_gib": 1.41015625,
+      "repeats": 5,
+      "sequence_length": 512
+    },
+    {
+      "batch_size": 8,
+      "maximum_ms": 38.61606216430664,
+      "mean_ms": 38.359039306640625,
+      "median_ms": 38.26380920410156,
+      "milliseconds_per_row": 4.782976150512695,
+      "minimum_ms": 38.175743103027344,
+      "peak_allocated_gib": 1.1112914085388184,
+      "peak_reserved_gib": 1.41015625,
+      "repeats": 5,
+      "sequence_length": 256
+    }
+  ],
+  "closed_form_fit_256_rows_ms": 1.1209219999273046,
+  "execution_schedule": "sequential_shared_middle_v1",
+  "hard_gate_pass": true,
+  "inputs": {
+    "initializer_seed_0_sha256": "9da58e15c518d3b1f35aa3459fb443418dc894163004d69d976ec4afd5dde018",
+    "initializer_seed_1_sha256": "2c1671fd2f103af1d408959b6b1cf3a44332bcc05acd836030e34f1c51a954a2",
+    "manifest_sha256": "06b2ab04bde4eb0a66bfb2db21600ef31637940d6d7c84d916e358bade4c7bea",
+    "manifest_summary_sha256": "7a8f92ffdcbf2d145bb09899d1fab0c0e440278435a2b01bed24ffb5821c85b5",
+    "probe_batch_sha256": "fad30fb92e9d212f0afe85a9c0707a90bc8f0498aa1c62886a424c69daa24441"
+  },
+  "kind": "paper2_bicameral_w0_preflight_v1",
+  "model_config_commit": "7ae557604adf67be50417f59c2c2f167def9a775",
+  "model_id": "Qwen/Qwen2.5-0.5B-Instruct",
+  "model_load_seconds": 0.5011522070000183,
+  "model_revision": "7ae557604adf67be50417f59c2c2f167def9a775",
+  "operating_point_divergence": {
+    "0": {
+      "centered_correlation": 0.7445902824401855,
+      "conditioning_receipt_sha256": "056337f3cef59a190f5511087fa7704eec44b5d837d937b21d1b605e99624d7f",
+      "cosine_similarity": 0.744573712348938,
+      "initializer_sha256": "9da58e15c518d3b1f35aa3459fb443418dc894163004d69d976ec4afd5dde018",
+      "l2_norm": 3280.35205078125,
+      "maximum_absolute_difference": 686.0,
+      "rms": 3.002716541290283
+    },
+    "1": {
+      "centered_correlation": 0.7445801496505737,
+      "conditioning_receipt_sha256": "056337f3cef59a190f5511087fa7704eec44b5d837d937b21d1b605e99624d7f",
+      "cosine_similarity": 0.7445635795593262,
+      "initializer_sha256": "2c1671fd2f103af1d408959b6b1cf3a44332bcc05acd836030e34f1c51a954a2",
+      "l2_norm": 3280.495361328125,
+      "maximum_absolute_difference": 686.0,
+      "rms": 3.002847671508789
+    }
+  },
+  "optimizer_constructed": false,
+  "planning_projection_at_batch8_seq256": {
+    "minutes_per_1000_training_rows": 0.07971626917521159,
+    "minutes_per_2048_row_panel": 0.16325891927083333,
+    "minutes_per_461_row_slice": 0.036749200089772546,
+    "projected_two_seed_cache_gpu_hours_for_256_plus_461_plus_2048_rows": 0.007347182808982002,
+    "seconds_per_row": 0.004782976150512696,
+    "training_row_count": 256,
+    "two_seed_formula_gpu_hours": "2 * seconds_per_row * (training_rows + 461 + 2048) / 3600"
+  },
+  "probe_batch": {
+    "item_ids": [
+      "arc_challenge-ACTAAP_2007_7_28",
+      "arc_challenge-ACTAAP_2011_5_9",
+      "arc_easy-NYSEDREGENTS_2014_8_19",
+      "base_capability_division_09",
+      "gsm8k-evaluation-1054",
+      "gsm8k-evaluation-1147",
+      "mbpp-282",
+      "mbpp-287",
+      "mmlu-moral_scenarios-9338"
+    ],
+    "padded_width": 148,
+    "rows": 9
+  },
+  "runtime": {
+    "cuda_version": "12.8",
+    "gpu_name": "NVIDIA A100-SXM4-40GB",
+    "gpu_total_gib": 39.4935302734375,
+    "python_version": "3.13.15",
+    "torch_version": "2.11.0+cu128"
+  },
+  "sealed_partition_touched": false,
+  "status": "complete",
+  "step1_trainable_parameter_count": 256,
+  "t1_real_substrate": {
+    "compared_values": 9723904,
+    "exact_equal": true,
+    "maximum_absolute_logit_difference": 0.0,
+    "nonzero_logit_differences": 0
+  },
+  "t2_real_substrate": {
+    "alive": {
+      "bank_a.gate": {
+        "finite": true,
+        "nonzero": true
+      },
+      "bank_b.gate": {
+        "finite": true,
+        "nonzero": true
+      },
+      "callosum.gate_a": {
+        "finite": true,
+        "nonzero": true
+      },
+      "callosum.gate_b": {
+        "finite": true,
+        "nonzero": true
+      },
+      "combiner.mu": {
+        "finite": true,
+        "nonzero": true
+      }
+    },
+    "exactly_zero": {
+      "bank_a.gains": true,
+      "bank_b.gains": true,
+      "combiner.delta": true
+    },
+    "pass": true
+  },
+  "training_performed": false
+}

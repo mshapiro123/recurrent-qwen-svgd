@@ -1,0 +1,42 @@
+{
+  "artifacts": [
+    {
+      "bytes": 1482,
+      "path": "training/paper2_bicameral_w0_lock.json",
+      "sha256": "ae8ca2c34d41f09cafe2fab942fd9a89f9a94d2354e2805c19bc19ad167cac8e"
+    },
+    {
+      "bytes": 158238,
+      "path": "artifacts/bicameral_w0_20260824/step1_manifest.jsonl",
+      "sha256": "06b2ab04bde4eb0a66bfb2db21600ef31637940d6d7c84d916e358bade4c7bea"
+    },
+    {
+      "bytes": 3100,
+      "path": "artifacts/bicameral_w0_20260824/step1_manifest_summary.json",
+      "sha256": "7a8f92ffdcbf2d145bb09899d1fab0c0e440278435a2b01bed24ffb5821c85b5"
+    },
+    {
+      "bytes": 10279,
+      "path": "artifacts/bicameral_w0_20260824/probe_batch.json",
+      "sha256": "fad30fb92e9d212f0afe85a9c0707a90bc8f0498aa1c62886a424c69daa24441"
+    },
+    {
+      "bytes": 6228,
+      "path": "artifacts/bicameral_w0_20260824/w0_preflight_receipt.json",
+      "sha256": "39fdadf4a6de8f5c1d65cc79e0f530f790e628b8659c979314ea44f29cfe5e95"
+    },
+    {
+      "bytes": 8838,
+      "path": "docs/PAPER2_BICAMERAL_W0_RESULT_HANDOFF_20260824.md",
+      "sha256": "b6d57d44fb984b1869f2c76afc0054f094a309a2687232b5b32196bdedb964d6"
+    }
+  ],
+  "implementation_commit_at_execution": "fd7651bf4a31f1d5f65e0a36715bec3c95fa8b53",
+  "kind": "paper2_bicameral_w0_final_receipts_manifest_v1",
+  "optimizer_constructed": false,
+  "optimizer_steps": 0,
+  "paid_compute_closed": true,
+  "sealed_partitions_touched": false,
+  "status": "complete_w0_pass",
+  "training_performed": false
+}
