@@ -14,6 +14,7 @@ from typing import Any, Iterator, Mapping, Sequence
 
 import torch
 import torch.nn.functional as F
+import numpy as np
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from eval.eval_paper2_stage2b_autopsy import _state_digest
@@ -26,6 +27,7 @@ from training.paper2_bicameral_w1 import (
     summarize_margin_deltas,
 )
 from training.paper2_stage2bs_depth_study import sha256_file
+from training.paper2_stage2bs_depth_study import INITIALIZATION_SEED_BASE
 from training.run_paper2_stage2b_depth import _build_model, _named_trainable_state
 
 
@@ -405,6 +407,11 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         revision="7ae557604adf67be50417f59c2c2f167def9a775",
         cache_dir=args.model_cache,
     )
+    initialization_seed = INITIALIZATION_SEED_BASE + args.seed
+    random.seed(initialization_seed)
+    np.random.seed(initialization_seed)
+    torch.manual_seed(initialization_seed)
+    torch.cuda.manual_seed_all(initialization_seed)
     wrapper, chain, _groups = _build_model(args)
     initial_digest = _state_digest(_named_trainable_state(wrapper))
     target_path = args.private_dir / f"seed_{args.seed}_{args.mode}_student_targets.pt"
@@ -424,24 +431,36 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         torch.save(targets, target_path)
 
     teacher_rows = rows if args.mode == "dry_run" else rows[: args.teacher_rows]
-    student_subset = targets["interface_states"][: len(teacher_rows)]
-    del wrapper
+    del wrapper, _groups
     gc.collect()
     torch.cuda.empty_cache()
-    teacher_target, teacher_receipt = extract_teacher_target(
-        tokenizer=tokenizer,
-        rows=teacher_rows,
-        student_states=student_subset,
-        geometry_path=args.geometry,
-        cache_dir=args.teacher_cache,
-        batch_size=args.teacher_batch_size,
-        device=args.device,
-    )
-    targets["families"]["l0b"] = teacher_target
-    targets["teacher_population_rows"] = len(teacher_rows)
-    targets["teacher_receipt"] = teacher_receipt
-    torch.save(targets, target_path)
+    if (
+        "l0b" in targets["families"]
+        and int(targets.get("teacher_population_rows", -1)) == len(teacher_rows)
+        and isinstance(targets.get("teacher_receipt"), Mapping)
+    ):
+        teacher_receipt = dict(targets["teacher_receipt"])
+        teacher_target = targets["families"]["l0b"]
+    else:
+        student_subset = targets["interface_states"][: len(teacher_rows)]
+        teacher_target, teacher_receipt = extract_teacher_target(
+            tokenizer=tokenizer,
+            rows=teacher_rows,
+            student_states=student_subset,
+            geometry_path=args.geometry,
+            cache_dir=args.teacher_cache,
+            batch_size=args.teacher_batch_size,
+            device=args.device,
+        )
+        targets["families"]["l0b"] = teacher_target
+        targets["teacher_population_rows"] = len(teacher_rows)
+        targets["teacher_receipt"] = teacher_receipt
+        torch.save(targets, target_path)
 
+    random.seed(initialization_seed)
+    np.random.seed(initialization_seed)
+    torch.manual_seed(initialization_seed)
+    torch.cuda.manual_seed_all(initialization_seed)
     wrapper, _chain_again, _groups = _build_model(args)
     if _state_digest(_named_trainable_state(wrapper)) != initial_digest:
         raise RuntimeError("W1 model reconstruction changed the initialization state")
@@ -502,6 +521,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         },
         "checkpoint_chain": chain,
         "initialization_state_digest": initial_digest,
+        "initialization_seed": initialization_seed,
         "target_seconds_per_row": target_seconds_per_row,
         "margin_seconds_per_row": margin_seconds_per_row,
         "cost_projection": cost,
