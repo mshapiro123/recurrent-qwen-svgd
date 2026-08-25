@@ -176,6 +176,89 @@ def discriminative_read(
     }
 
 
+def two_half_discriminative_read(
+    positive: torch.Tensor,
+    positive_halves: torch.Tensor,
+    negative: torch.Tensor,
+    negative_halves: torch.Tensor,
+    *,
+    seed: int,
+    draws: int,
+) -> dict[str, Any]:
+    if min(len(positive), len(negative)) < 4:
+        return {
+            "status": "UNDERPOWERED",
+            "positive_rows": len(positive),
+            "negative_rows": len(negative),
+        }
+    results = []
+    for heldout in (0, 1):
+        train_x = torch.cat(
+            (positive[positive_halves.ne(heldout)], negative[negative_halves.ne(heldout)])
+        ).numpy()
+        train_y = np.concatenate(
+            (
+                np.ones(int(positive_halves.ne(heldout).sum())),
+                np.zeros(int(negative_halves.ne(heldout).sum())),
+            )
+        )
+        test_x = torch.cat(
+            (positive[positive_halves.eq(heldout)], negative[negative_halves.eq(heldout)])
+        ).numpy()
+        test_y = np.concatenate(
+            (
+                np.ones(int(positive_halves.eq(heldout).sum())),
+                np.zeros(int(negative_halves.eq(heldout).sum())),
+            )
+        )
+        if len(np.unique(train_y)) < 2 or len(np.unique(test_y)) < 2:
+            results.append({"heldout_half": heldout, "status": "UNDERPOWERED"})
+            continue
+        model = LogisticRegression(
+            C=1.0, max_iter=2000, solver="liblinear", random_state=seed + heldout
+        )
+        model.fit(train_x, train_y)
+        probability = model.predict_proba(test_x)[:, 1]
+        auc = float(roc_auc_score(test_y, probability))
+        rng = np.random.default_rng(seed + 101 + heldout)
+        positive_indices = np.flatnonzero(test_y == 1)
+        negative_indices = np.flatnonzero(test_y == 0)
+        auc_draws = []
+        for _ in range(draws):
+            sampled = np.concatenate(
+                (
+                    rng.choice(positive_indices, positive_indices.size, replace=True),
+                    rng.choice(negative_indices, negative_indices.size, replace=True),
+                )
+            )
+            auc_draws.append(roc_auc_score(test_y[sampled], probability[sampled]))
+        results.append(
+            {
+                "heldout_half": heldout,
+                "status": "MEASURED",
+                "train_rows": int(len(train_y)),
+                "heldout_rows": int(len(test_y)),
+                "roc_auc": auc,
+                "roc_auc_ci95": [
+                    float(np.quantile(auc_draws, 0.025)),
+                    float(np.quantile(auc_draws, 0.975)),
+                ],
+                "balanced_accuracy": float(
+                    balanced_accuracy_score(test_y, probability >= 0.5)
+                ),
+            }
+        )
+    return {
+        "status": "MEASURED" if all(row["status"] == "MEASURED" for row in results) else "UNDERPOWERED",
+        "positive_rows": int(len(positive)),
+        "negative_rows": int(len(negative)),
+        "halves": results,
+        "both_halves_above_chance": all(
+            row.get("roc_auc_ci95", [0.0])[0] > 0.5 for row in results
+        ),
+    }
+
+
 def strata_masks(
     item_ids: list[str], base: dict[str, bool], seven: dict[str, bool], fourteen: dict[str, bool]
 ) -> dict[str, torch.Tensor]:
@@ -216,6 +299,12 @@ def main() -> int:
         score_map(args.base_scores),
         score_map(args.teacher_7b_scores),
         score_map(args.teacher_14b_scores),
+    )
+    panel_halves = torch.tensor(
+        [
+            deterministic_half(item_id, int(lock["tm1"]["split_seed"]))
+            for item_id in item_ids
+        ]
     )
     prefit = json.loads(args.stitch_prefit.read_text(encoding="utf-8"))
     state_bundle = torch.load(args.stitch_states, map_location="cpu", weights_only=False)
@@ -299,9 +388,11 @@ def main() -> int:
                 discriminative = {}
                 for stratum in ("D_7>0.5", "D_14>0.5", "D_14>7"):
                     positive = battery_masks[battery] & masks[stratum]
-                    discriminative[stratum] = discriminative_read(
-                        residual[positive], residual[dnone],
-                        folds=int(lock["tm2g"]["discriminative_folds"]),
+                    discriminative[stratum] = two_half_discriminative_read(
+                        residual[positive],
+                        panel_halves[positive],
+                        residual[dnone],
+                        panel_halves[dnone],
                         seed=int(lock["tm2g"]["discriminative_seed"]) + teacher_index * 100 + view_index * 10,
                         draws=int(lock["tm2"]["bootstrap_draws"]),
                     )

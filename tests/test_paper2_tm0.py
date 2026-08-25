@@ -12,6 +12,7 @@ from analysis.analyze_paper2_tm0_tm2 import (
     bootstrap_mean_difference,
     remove_common_mode,
     subspace_overlap,
+    two_half_discriminative_read,
 )
 from analysis.paper2_tm0_hermetic_screen import (
     character_shingles,
@@ -144,3 +145,14 @@ def test_tm2_bootstrap_difference_tracks_separated_groups() -> None:
     receipt = bootstrap_mean_difference(positive, negative, draws=200, seed=7)
     assert receipt["estimate"] == pytest.approx(2.0)
     assert receipt["ci95_low"] > 1.5
+
+
+def test_tm2_two_half_discriminator_requires_both_directions() -> None:
+    generator = torch.Generator().manual_seed(53)
+    positive = torch.randn(80, 8, generator=generator) + 2.0
+    negative = torch.randn(80, 8, generator=generator) - 2.0
+    halves = torch.arange(80).remainder(2)
+    receipt = two_half_discriminative_read(
+        positive, halves, negative, halves, seed=11, draws=100
+    )
+    assert receipt["both_halves_above_chance"]
