@@ -92,15 +92,15 @@ Recommended strategy decision: bank W2-prime as a clean architecture-specific ne
 
 ## 9. Receipts and verification
 
-- Final Phase-D summary: 549,319 B, SHA-256 `8a36b286db0c16ead48a4678202d41e41ac6e75966a240c16c75bec2326bdce5`.
-- Receipt manifest: 3,218 B, SHA-256 `4379fb7591d61ccae064fde421ca44774a640c5da20f512f7512839012d73960`.
-- Figure PNG: 206,224 B, SHA-256 `1692ce40646045b7be64259ee672b3f1d6f0335aec1dc225a779de0b0e00fc9b`.
-- Figure SVG: 119,868 B, SHA-256 `3e06c2ad9ceb985e234c5b964589e88c9edebdf2813f59e6c73d42904f964a8c`.
-- Full public/private artifact bundle: 1,207,253 B, SHA-256 `b088a19059c00683a29a7b266aa0348f92b375738529c1013dea1bb9660490f2`.
+- Final Phase-D summary: Drive `1a40vtQRK4g7ehQBItgm2XBA3YN7fELa1`, 549,319 B, SHA-256 `8a36b286db0c16ead48a4678202d41e41ac6e75966a240c16c75bec2326bdce5`.
+- Receipt manifest: Drive `1aGPsrHYrJ_PRt55N2h7KqGKMbq1UAmfb`, 3,218 B, SHA-256 `4379fb7591d61ccae064fde421ca44774a640c5da20f512f7512839012d73960`.
+- Figure PNG: Drive `1cETuaUa-BDYcVQlWQGU9WAOVAM6ju-rB`, 206,224 B, SHA-256 `1692ce40646045b7be64259ee672b3f1d6f0335aec1dc225a779de0b0e00fc9b`.
+- Figure SVG: Drive `1HMdQYJm2HmcNVcsbPSYSik3IFP4DxCNt`, 119,868 B, SHA-256 `3e06c2ad9ceb985e234c5b964589e88c9edebdf2813f59e6c73d42904f964a8c`.
+- Full public/private artifact bundle: Drive `1kEt7j7sUMD_Mz-WNhU8X121EWZ_8aZfc`, 1,207,253 B, SHA-256 `b088a19059c00683a29a7b266aa0348f92b375738529c1013dea1bb9660490f2`.
 - Tests: 20 passed in 5.92 seconds (`test_paper2_bicameral_w2p`, base Bicameral tests, Stage-0 tests).
 - Independent assertions: all summary values finite; key recomputed as `HEMISPHERES-UNINFORMATIVE`; optimizer absent; optimizer steps 0; CONFIRM false; EVAL-E false; Phase G false.
 - Corrected CPU fit elapsed approximately 149 seconds from pre-fit receipt to final summary.
-- GPU spend for D1-D3: zero. Active paid sessions: none.
+- GPU spend for D1-D3: zero. This CPU wave opened no Colab session. A live CLI session enumeration was not refreshed at closeout because local Colab CLI authentication had expired.
 
 Figure: `artifacts/bicameral_w2p_20260825/figures/paper2_bicameral_w2p_phase_d.svg`.
 
