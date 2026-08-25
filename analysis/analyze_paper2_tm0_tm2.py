@@ -32,6 +32,22 @@ VIEWS = ("last_active_token", "active_token_mean")
 TEACHERS = ("teacher_7b", "teacher_14b")
 
 
+def target_entropy_audit(positive_rows: int, negative_rows: int) -> dict[str, float | int | bool]:
+    total = positive_rows + negative_rows
+    fraction = positive_rows / total if total else 0.0
+    entropy = 0.0
+    for probability in (fraction, 1.0 - fraction):
+        if probability > 0.0:
+            entropy -= probability * np.log2(probability)
+    return {
+        "positive_rows": positive_rows,
+        "negative_rows": negative_rows,
+        "positive_fraction": fraction,
+        "binary_entropy_bits": float(entropy),
+        "both_labels_present": positive_rows > 0 and negative_rows > 0,
+    }
+
+
 def full_cache(model_dir: Path, key: str) -> tuple[list[str], torch.Tensor]:
     item_ids: list[str] = []
     tensors: list[torch.Tensor] = []
@@ -149,8 +165,12 @@ def discriminative_read(
 ) -> dict[str, Any]:
     x = torch.cat((positive, negative)).numpy()
     y = np.concatenate((np.ones(len(positive)), np.zeros(len(negative))))
+    entropy = target_entropy_audit(len(positive), len(negative))
     if min(len(positive), len(negative)) < folds:
-        return {"status": "UNDERPOWERED", "positive_rows": len(positive), "negative_rows": len(negative)}
+        return {
+            "status": "UNDERPOWERED",
+            "target_entropy_audit": entropy,
+        }
     splitter = StratifiedKFold(n_splits=folds, shuffle=True, random_state=seed)
     probability = np.empty(len(y), dtype=np.float64)
     for train, test in splitter.split(x, y):
@@ -171,8 +191,7 @@ def discriminative_read(
         auc_draws.append(roc_auc_score(y[sampled], probability[sampled]))
     return {
         "status": "MEASURED",
-        "positive_rows": int(len(positive)),
-        "negative_rows": int(len(negative)),
+        "target_entropy_audit": entropy,
         "balanced_accuracy": balanced,
         "roc_auc": auc,
         "roc_auc_ci95": [float(np.quantile(auc_draws, 0.025)), float(np.quantile(auc_draws, 0.975))],
@@ -188,11 +207,11 @@ def two_half_discriminative_read(
     seed: int,
     draws: int,
 ) -> dict[str, Any]:
+    entropy = target_entropy_audit(len(positive), len(negative))
     if min(len(positive), len(negative)) < 4:
         return {
             "status": "UNDERPOWERED",
-            "positive_rows": len(positive),
-            "negative_rows": len(negative),
+            "target_entropy_audit": entropy,
         }
     results = []
     for heldout in (0, 1):
@@ -253,8 +272,7 @@ def two_half_discriminative_read(
         )
     return {
         "status": "MEASURED" if all(row["status"] == "MEASURED" for row in results) else "UNDERPOWERED",
-        "positive_rows": int(len(positive)),
-        "negative_rows": int(len(negative)),
+        "target_entropy_audit": entropy,
         "halves": results,
         "both_halves_above_chance": all(
             row.get("roc_auc_ci95", [0.0])[0] > 0.5 for row in results
