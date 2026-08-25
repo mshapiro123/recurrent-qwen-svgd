@@ -15,7 +15,13 @@ import torch
 import torch.nn.functional as F
 
 from analysis.analyze_paper2_tm0_tm1_cka import cache_shards
-from training.paper2_tm0 import atomic_json, load_lock, read_jsonl, sha256_file
+from training.paper2_tm0 import (
+    atomic_json,
+    load_lock,
+    read_jsonl,
+    sha256_file,
+    window_boundaries,
+)
 
 
 def full_cache(
@@ -293,16 +299,26 @@ def main() -> int:
         candidates = sorted(
             {max(0, min(layers - 1, selected + offset)) for offset in (-2, 0, 2)}
         )
+        trajectory_boundaries = window_boundaries(
+            selected, layers - 1, int(lock["tm2g"]["windows"])
+        )
+        fitted_layers = sorted(set(candidates + trajectory_boundaries))
         prefit["teachers"][teacher] = {
             "selected_layer_zero_based": selected,
             "selected_layer_one_based": selected + 1,
             "candidate_layers_zero_based": candidates,
             "candidate_layers_one_based": [value + 1 for value in candidates],
+            "trajectory_boundaries_zero_based": trajectory_boundaries,
+            "trajectory_boundaries_one_based": [
+                value + 1 for value in trajectory_boundaries
+            ],
+            "fitted_layers_zero_based": fitted_layers,
+            "fitted_layers_one_based": [value + 1 for value in fitted_layers],
             "selection_rule": "argmax_mean_of_disjoint_subset_mean_pool_curves",
         }
     atomic_json(args.output_dir / "tm1_stitch_prefit.json", prefit)
     for teacher_index, teacher in enumerate(("teacher_7b", "teacher_14b")):
-        candidates = prefit["teachers"][teacher]["candidate_layers_zero_based"]
+        candidates = prefit["teachers"][teacher]["fitted_layers_zero_based"]
         teacher_ids, values = full_cache(
             args.cache_root / teacher, key="layers", layer_indices=candidates
         )
