@@ -1,0 +1,122 @@
+{
+  "kind": "paper2_tm0_lock_v1",
+  "status": "RATIFIED_EXECUTABLE_NO_TRAINING",
+  "authority": {
+    "r2": {
+      "drive_id": "1MVnzhL0oYoxm_B5tFJDzfFNAsKajmIXg",
+      "filename": "STRATEGY_TM0_TRAJECTORY_MEMORY_RECON_CHARTER_20260825.md",
+      "bytes": 20221,
+      "sha256": "3103ca7f81367f3a47cea0ec1b2f92de73ce0eae27240aae46e57eaa044e9460"
+    },
+    "r3": {
+      "drive_id": "1gQHhrUHlRN_l2cf3GfC1_icQnKIU009a",
+      "filename": "STRATEGY_TM0_R3_EXECUTION_ORDER_20260825.md",
+      "bytes": 14769,
+      "sha256": "c93392b544fb25dd4c0cc27dfa754c297e274dfbed052a72e2a808fafbbfe0c2"
+    },
+    "preflight_rulings": {
+      "drive_id": "1w-rRoDDkhUQKvAGkQluqcMMtan-OywRF",
+      "filename": "STRATEGY_TM0_PREFLIGHT_RULINGS_20260825.md",
+      "bytes": 9867,
+      "sha256": "4c1e7b7ab106d338c05a74b6f44ba9bd0600b03e7f0061f22371cba101db261a"
+    }
+  },
+  "scope": {
+    "training_authorized": false,
+    "optimizer_construction_allowed": false,
+    "injection_allowed": false,
+    "learned_projector_allowed": false,
+    "confirm_scored": false,
+    "eval_e_scored": false,
+    "ensemble_read_authorized": false,
+    "step2_authorized": false
+  },
+  "panels": {
+    "source_rows_sha256": "5e32eb1905b05076a59b2c5b315ccf9319c04eda18af450565128fd34c18ffa5",
+    "dev2_manifest_sha256": "6b9ebf40128ed21b0351710e9f828bcacb096512704f02f34274a3b8adcc0adb",
+    "base_rows": 2048,
+    "extension_rows": 4096,
+    "total_rows": 6144,
+    "extension_seed": 20260825,
+    "selection": "all_clean_arc_challenge_train_then_hash_ranked_clean_gsm8k_train",
+    "near_duplicate": {
+      "method": "token_ngram_overlap",
+      "ngram_size": 5,
+      "minimum_ngram_size": 3,
+      "threshold": 0.5
+    },
+    "eval_e_hermetic_screen": {
+      "partition_seed": 20260732,
+      "prior_partition_seed": 20260731,
+      "normalization": "unicode_nfkc_casefold_whitespace_collapse_v1",
+      "exact_hash": "sha256_salt_utf8_normalized_text",
+      "salt_hex": "b9d698936ec1a23e788ff8034cf58bcc75ea97c3316c63a48df1ef5935ebd2a7",
+      "character_shingle_size": 13,
+      "minhash_components": 128,
+      "minhash_seed": 202608257,
+      "lsh_bands": 16,
+      "lsh_rows_per_band": 8,
+      "estimated_jaccard_threshold": 0.8,
+      "no_backfill": true
+    }
+  },
+  "models": {
+    "student": {
+      "id": "Qwen/Qwen2.5-0.5B-Instruct",
+      "revision": "7ae557604adf67be50417f59c2c2f167def9a775",
+      "layers": 24,
+      "width": 896
+    },
+    "teacher_7b": {
+      "id": "Qwen/Qwen2.5-7B-Instruct",
+      "revision": "a09a35458c702b33eeacc393d103063234e8bc28",
+      "layers": 28,
+      "width": 3584
+    },
+    "teacher_14b": {
+      "id": "Qwen/Qwen2.5-14B-Instruct",
+      "revision": "cf98f3b3bbb457ad9e2bb7baf9a0125b6b88caa8",
+      "layers": 48,
+      "width": 5120,
+      "score_cache_sha256": "5e9c0d2cd4e4097dc14aefb1d49c5ff74e86c84f44a38296f10ff60014cbb74e"
+    }
+  },
+  "runtime": {
+    "gpu": "NVIDIA A100-SXM4-40GB",
+    "dtype": "bfloat16",
+    "attention": "sdpa",
+    "execution_schedule": "sequential_unless_exact_batch_invariance_v1",
+    "cache_gpu_hours_cap": 1.5,
+    "dry_run_rows_per_battery": 2
+  },
+  "tm1": {
+    "cka_estimator": "exact_unbiased_hsic_on_frozen_battery_stratified_row_subset_both_poolings",
+    "cka_calibration_rows": 512,
+    "cka_calibration_seeds": [202608250, 202608258],
+    "split_seed": 202608251,
+    "ridge_multipliers": [1e-06, 1e-05, 0.0001, 0.001, 0.01, 0.1, 1.0, 10.0],
+    "neighbor_offsets": [-2, 0, 2],
+    "relative_mse_reduction_gate": 0.2,
+    "random_projection_cosine_gap_gate": 0.1,
+    "both_halves_required": true
+  },
+  "tm2": {
+    "ranks": [8, 32, 128],
+    "low_rank_prediction_rank": 32,
+    "low_rank_prediction_fraction": 0.3,
+    "minimum_stratum_rows": 40,
+    "bootstrap_draws": 2000,
+    "bootstrap_seed": 202608252
+  },
+  "tm2g": {
+    "windows": 3,
+    "q_rows": 128,
+    "q_seed": 202608253,
+    "bivector_features": 512,
+    "bivector_sketch_seed": 202608254,
+    "noise_seed": 202608255,
+    "discriminative_folds": 4,
+    "discriminative_seed": 202608256,
+    "failed_loop_archive_policy": "read_if_present_never_regenerate"
+  }
+}
