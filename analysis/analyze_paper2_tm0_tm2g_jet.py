@@ -421,6 +421,7 @@ def analyze_cells(
     result = {}
     for battery_index, (battery, battery_mask) in enumerate(battery_masks.items()):
         dnone = battery_mask & masks["D_none"]
+        dall = battery_mask & masks["D_all"]
         cells = {}
         for stratum_index, stratum in enumerate(("D_7>0.5", "D_14>0.5", "D_14>7")):
             positive = battery_mask & masks[stratum]
@@ -456,6 +457,16 @@ def analyze_cells(
             pivot_vs_noise = bootstrap_mean_difference(
                 success_pivot, noise_pivot, draws=BOOTSTRAP_DRAWS, seed=seed + 3
             )
+            pivot_vs_dall = (
+                bootstrap_mean_difference(
+                    success_pivot,
+                    profiles["pivot"][dall].numpy(),
+                    draws=BOOTSTRAP_DRAWS,
+                    seed=seed + 4,
+                )
+                if int(dall.sum()) >= 2
+                else None
+            )
             consistency_pass = (
                 consistency_vs_dnone["ci95_low"] > 0.0
                 and consistency_vs_noise["ci95_low"] > 0.0
@@ -465,6 +476,24 @@ def analyze_cells(
                 and pivot_vs_noise["ci95_low"] > 0.0
             )
             final_quarter = max(1, profiles["normalized_dot"].shape[1] // 4)
+            success_late_dot = (
+                profiles["normalized_dot"][positive, -final_quarter:]
+                .mean(dim=1)
+                .numpy()
+            )
+            dnone_late_dot = (
+                profiles["normalized_dot"][dnone, -final_quarter:]
+                .mean(dim=1)
+                .numpy()
+            )
+            late_dot_difference = bootstrap_mean_difference(
+                success_late_dot,
+                dnone_late_dot,
+                draws=BOOTSTRAP_DRAWS,
+                seed=seed + 5,
+            )
+            pivot_depth = profiles["pivot_first_depth_quantile"][positive]
+            finite_pivot_depth = pivot_depth[torch.isfinite(pivot_depth)]
             cells[stratum] = {
                 "status": "MEASURED",
                 "positive_rows": int(positive.sum()),
@@ -480,16 +509,32 @@ def analyze_cells(
                     "success_rate": float(success_pivot.mean()),
                     "dnone_rate": float(dnone_pivot.mean()),
                     "smooth_noise_rate": float(noise_pivot.mean()),
+                    "mean_peak_count": float(
+                        profiles["pivot_count"][positive].mean()
+                    ),
+                    "mean_first_depth_quantile": (
+                        float(finite_pivot_depth.mean())
+                        if len(finite_pivot_depth)
+                        else None
+                    ),
                     "success_minus_dnone": pivot_vs_dnone,
                     "success_minus_smooth_noise": pivot_vs_noise,
+                    "d_all_rows": int(dall.sum()),
+                    "d_all_rate": (
+                        float(profiles["pivot"][dall].mean())
+                        if int(dall.sum())
+                        else None
+                    ),
+                    "success_minus_d_all": pivot_vs_dall,
                 },
                 "late_normalized_velocity_acceleration_dot": {
-                    "success_mean": float(
-                        profiles["normalized_dot"][positive, -final_quarter:].mean()
-                    ),
-                    "dnone_mean": float(
-                        profiles["normalized_dot"][dnone, -final_quarter:].mean()
-                    ),
+                    "success_mean": float(success_late_dot.mean()),
+                    "dnone_mean": float(dnone_late_dot.mean()),
+                    "success_minus_dnone": late_dot_difference,
+                    "prediction_more_negative_pass": late_dot_difference[
+                        "ci95_high"
+                    ]
+                    < 0.0,
                 },
                 "claim_pass": consistency_pass or pivot_pass,
                 "claim_channel": (
@@ -539,6 +584,15 @@ def profile_means(
                 .mean(dim=0)
                 .tolist(),
                 "pivot_rate": float(profiles["pivot"][selected].mean()),
+                "pivot_count_mean": float(
+                    profiles["pivot_count"][selected].mean()
+                ),
+                "late_normalized_dot_mean": float(
+                    profiles["normalized_dot"][
+                        selected,
+                        -max(1, profiles["normalized_dot"].shape[1] // 4) :,
+                    ].mean()
+                ),
             }
     return output
 
@@ -794,6 +848,11 @@ def main() -> int:
             )
             teacher_result["views"][view] = {
                 "frame_receipt": receipt,
+                "calibration": {
+                    "minimum_fraction_rows_with_nonzero_curvature_across_layers": float(
+                        profiles["curvature"].gt(EPSILON).float().mean(dim=0).min()
+                    )
+                },
                 "cells": analyze_cells(
                     profiles,
                     masks,
@@ -836,6 +895,56 @@ def main() -> int:
     else:
         key = "ROTATION-ABSENT"
     summary["decision_key"] = key
+    p4_directional = []
+    p5_directional = []
+    for teacher in TEACHERS:
+        cells = summary["teachers"][teacher]["views"]["active_token_mean"][
+            "cells"
+        ].get("gsm8k", {})
+        for stratum in ("D_7>0.5", "D_14>0.5"):
+            cell = cells.get(stratum, {})
+            if cell.get("status") != "MEASURED":
+                continue
+            p4 = cell["pivot_signature"].get("success_minus_d_all")
+            if p4 is not None:
+                p4_directional.append(p4["estimate"] > 0.0)
+            p5_directional.append(
+                cell["late_normalized_velocity_acceleration_dot"][
+                    "success_minus_dnone"
+                ]["estimate"]
+                < 0.0
+            )
+    summary["prediction_reads"] = {
+        "P_TMg_1": {
+            "status": "CALIBRATION_ONLY_NO_REGISTERED_NUMERIC_THRESHOLD",
+            "minimum_nonzero_curvature_fraction_by_teacher": {
+                teacher: summary["teachers"][teacher]["views"][
+                    "active_token_mean"
+                ]["calibration"][
+                    "minimum_fraction_rows_with_nonzero_curvature_across_layers"
+                ]
+                for teacher in TEACHERS
+            },
+        },
+        "P_TMg_2": {"status": key},
+        "P_TMg_3": {
+            "status": summary["failed_loop_postdiction"].get(
+                "status", "UNSPECIFIED"
+            )
+        },
+        "P_TMg_4": {
+            "directionally_positive_cells": int(sum(p4_directional)),
+            "measured_cells": len(p4_directional),
+            "all_directionally_positive": bool(p4_directional)
+            and all(p4_directional),
+        },
+        "P_TMg_5": {
+            "directionally_more_negative_cells": int(sum(p5_directional)),
+            "measured_cells": len(p5_directional),
+            "all_directionally_more_negative": bool(p5_directional)
+            and all(p5_directional),
+        },
+    }
     atomic_json(args.output_dir / "tm2g_jet_summary.json", summary)
     write_figures(summary, args.output_dir)
     print(json.dumps({"tm2g_jet": key}, indent=2, sort_keys=True))
