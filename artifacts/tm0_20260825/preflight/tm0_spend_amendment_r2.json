@@ -1,0 +1,16 @@
+{
+  "authority": "program_owner_direct_instruction_2026-08-25",
+  "kind": "paper2_tm0_spend_only_amendment_v2",
+  "new_a100_gpu_hours_cap": 4.0,
+  "prior_a100_gpu_hours_cap": 2.5,
+  "reason": "The live batch-8 correctness reader stabilized above the dry-run projection. The program owner stated that GPU cost is secondary to the information and that a two-hour increment is only a few dollars.",
+  "scope": {
+    "batching_changed": false,
+    "data_changed": false,
+    "estimator_changed": false,
+    "scientific_contract_changed": false,
+    "seal_contract_changed": false,
+    "spend_cap_only": true
+  },
+  "status": "RATIFIED_BY_PROGRAM_OWNER"
+}
