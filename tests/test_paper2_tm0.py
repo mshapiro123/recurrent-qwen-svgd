@@ -5,6 +5,7 @@ import torch
 
 from analysis.build_paper2_tm0_manifest import _cka_calibration_rows
 from analysis.analyze_paper2_tm0_tm1_cka import debiased_linear_cka
+from analysis.analyze_paper2_tm0_tm1_stitch import mp_median, rmt_whitener
 from analysis.paper2_tm0_hermetic_screen import (
     character_shingles,
     minhash_signature,
@@ -104,3 +105,12 @@ def test_debiased_linear_cka_identifies_shared_not_permuted_geometry() -> None:
     permuted = debiased_linear_cka(values, mixed[torch.randperm(64, generator=generator)])
     assert shared > 0.6
     assert shared > permuted + 0.5
+
+
+def test_rmt_whitener_is_finite_and_bulk_shrinking() -> None:
+    assert 0.0 < mp_median(0.25) < 2.25
+    samples = torch.randn(256, 16, generator=torch.Generator().manual_seed(23))
+    result = rmt_whitener(samples)
+    assert result["bulk_eigenvalues"] > 0
+    assert torch.isfinite(result["transform"]).all()
+    assert result["transform"].shape == (16, 16)
