@@ -45,7 +45,10 @@ def full_cache(model_dir: Path, key: str) -> tuple[list[str], torch.Tensor]:
 
 def score_map(path: Path) -> dict[str, bool]:
     rows = read_jsonl(path)
-    return {str(row["item_id"]): bool(row["correct"]) for row in rows}
+    result = {str(row["item_id"]): bool(row["correct"]) for row in rows}
+    if len(result) != len(rows):
+        raise RuntimeError(f"duplicate score item ids: {path}")
+    return result
 
 
 def crossfit_stitched(

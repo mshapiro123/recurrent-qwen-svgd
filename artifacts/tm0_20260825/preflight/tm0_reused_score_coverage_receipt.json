@@ -1,0 +1,19 @@
+{
+  "base": {
+    "duplicate_item_ids": 0,
+    "missing_panel_item_ids": 0,
+    "panel_item_ids_covered": 6144,
+    "sha256": "de66ebc9083f82a1e01477bed1d24d01a164a277ed4bd1d6f788765f9efb9b2c"
+  },
+  "confirm_scored": false,
+  "eval_e_scored": false,
+  "kind": "paper2_tm0_reused_score_coverage_v1",
+  "panel_rows": 6144,
+  "teacher_14b": {
+    "duplicate_item_ids": 0,
+    "lock_sha256_match": true,
+    "missing_panel_item_ids": 0,
+    "panel_item_ids_covered": 6144,
+    "sha256": "5e9c0d2cd4e4097dc14aefb1d49c5ff74e86c84f44a38296f10ff60014cbb74e"
+  }
+}
