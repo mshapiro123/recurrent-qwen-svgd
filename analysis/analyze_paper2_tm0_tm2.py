@@ -485,21 +485,34 @@ def main() -> int:
             for battery in analysis_batteries:
                 battery_result: dict[str, Any] = {}
                 teacher_subspaces[teacher][view][battery] = {}
+                raw_subspaces = {}
                 for stratum, stratum_mask in masks.items():
                     selected = battery_masks[battery] & stratum_mask
                     cell, subspace = svd_receipt(residual[selected], [int(v) for v in lock["tm2"]["ranks"]])
+                    raw_cell, raw_subspace = svd_receipt(
+                        total_delta[selected, view_index],
+                        [int(v) for v in lock["tm2"]["ranks"]],
+                    )
+                    cell["raw_before_common_projection"] = raw_cell
                     cell["under_minimum_rows"] = int(selected.sum()) < int(lock["tm2"]["minimum_stratum_rows"])
                     battery_result[stratum] = cell
                     teacher_subspaces[teacher][view][battery][stratum] = subspace
+                    raw_subspaces[stratum] = raw_subspace
                 overlaps = {}
+                raw_overlaps = {}
                 names = list(masks)
                 for left_index, left in enumerate(names):
                     for right in names[left_index + 1 :]:
-                        overlaps[f"{left}__vs__{right}"] = subspace_overlap(
+                        key = f"{left}__vs__{right}"
+                        overlaps[key] = subspace_overlap(
                             teacher_subspaces[teacher][view][battery][left],
                             teacher_subspaces[teacher][view][battery][right],
                         )
+                        raw_overlaps[key] = subspace_overlap(
+                            raw_subspaces[left], raw_subspaces[right]
+                        )
                 battery_result["principal_angles"] = overlaps
+                battery_result["raw_principal_angles"] = raw_overlaps
                 dnone = battery_masks[battery] & masks["D_none"]
                 discriminative = {}
                 for stratum in ("D_7>0.5", "D_14>0.5", "D_14>7"):
