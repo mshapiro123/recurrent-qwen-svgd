@@ -274,6 +274,31 @@ def strata_masks(
     }
 
 
+def classify_direction_cell(cell: dict[str, Any], threshold: float) -> str:
+    success = ("D_7>0.5", "D_14>0.5", "D_14>7")
+    powered = [name for name in success if not cell[name].get("under_minimum_rows", True)]
+    if len(powered) < 2 or cell["D_none"].get("under_minimum_rows", True):
+        return "UNDERPOWERED"
+    low_rank = all(cell[name]["variance_explained"]["32"] >= threshold for name in powered)
+    discriminative = all(
+        cell["discriminative"][name].get("both_halves_above_chance", False)
+        for name in powered
+    )
+    overlaps = cell["principal_angles"]
+    consistent = True
+    for left_index, left in enumerate(powered):
+        for right in powered[left_index + 1 :]:
+            pair = overlaps[f"{left}__vs__{right}"]["mean_squared_cosine"]
+            dnone_left = overlaps[f"{left}__vs__D_none"]["mean_squared_cosine"]
+            dnone_right = overlaps[f"{right}__vs__D_none"]["mean_squared_cosine"]
+            consistent &= pair > max(dnone_left, dnone_right)
+    if low_rank and consistent and discriminative:
+        return "STRUCTURED"
+    if low_rank and cell["D_none"]["variance_explained"]["32"] >= threshold:
+        return "GENERIC"
+    return "DIFFUSE"
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--cache_root", type=Path, required=True)
@@ -294,6 +319,8 @@ def main() -> int:
     batteries = [str(row["battery"]) for row in panel]
     battery_values = sorted(set(batteries))
     battery_masks = {name: torch.tensor([value == name for value in batteries]) for name in battery_values}
+    battery_masks["pooled"] = torch.ones(len(panel), dtype=torch.bool)
+    analysis_batteries = battery_values + ["pooled"]
     masks = strata_masks(
         item_ids,
         score_map(args.base_scores),
@@ -324,6 +351,18 @@ def main() -> int:
         "bivector_sketch": {"features": lock["tm2g"]["bivector_features"], "seed": lock["tm2g"]["bivector_sketch_seed"], "construction": "seeded_rademacher"},
         "noise_null": {"seed": lock["tm2g"]["noise_seed"], "construction": "seeded_gaussian_projected_perpendicular_to_each_state"},
         "common_mode": "unit_global_mean_direction_per_teacher_and_pooling_then_raw_projection",
+        "direction_key_rule": (
+            "within-battery cell is STRUCTURED iff at least two success strata and D_none "
+            "have >=40 rows, each powered success stratum has top32 variance >=0.30, "
+            "each success-pair mean squared principal cosine exceeds both corresponding "
+            "success-vs-D_none values, and both deterministic fit-half discriminator CIs "
+            "exclude AUC 0.5; pooled-only structure is BATTERY-CONFOUNDED; mixed cells split"
+        ),
+        "rotation_key_rule": (
+            "ROTATION-CONSISTENT iff the row-bootstrap 95% lower bounds for success-minus-"
+            "D_none and success-minus-matched-noise are positive for D_7>0.5 and D_14>0.5, "
+            "both pooling views and both teachers, within GSM8K; partial replication splits"
+        ),
         "optimizer_constructed": False,
         "confirm_scored": False,
         "eval_e_scored": False,
@@ -366,7 +405,7 @@ def main() -> int:
             residual, common = remove_common_mode(total_delta[:, view_index])
             view_result: dict[str, Any] = {"common_mode": common, "batteries": {}}
             teacher_subspaces[teacher][view] = {}
-            for battery in battery_values:
+            for battery in analysis_batteries:
                 battery_result: dict[str, Any] = {}
                 teacher_subspaces[teacher][view][battery] = {}
                 for stratum, stratum_mask in masks.items():
@@ -424,7 +463,7 @@ def main() -> int:
             noise_consistency = (noise_matrix[:, :-1] * noise_matrix[:, 1:]).sum(dim=-1).mean(dim=1)
             geometric_x = torch.cat((radial_matrix, consistency[:, None], plane_matrix.mean(dim=1)), dim=1)
             geometric_cells = {}
-            for battery_index, battery in enumerate(battery_values):
+            for battery_index, battery in enumerate(analysis_batteries):
                 cells = {}
                 dnone_mask = battery_masks[battery] & masks["D_none"]
                 for stratum_index, stratum in enumerate(("D_7>0.5", "D_14>0.5", "D_14>7")):
@@ -474,7 +513,7 @@ def main() -> int:
             teacher_result = {}
             for view in VIEWS:
                 cells = {}
-                for battery in battery_values:
+                for battery in analysis_batteries:
                     for stratum in ("D_7>0.5", "D_14>0.5", "D_14>7"):
                         ids = [item_ids[row] for row, keep in enumerate((battery_masks[battery] & masks[stratum]).tolist()) if keep and item_ids[row] in index]
                         if len(ids) < 2:
@@ -501,19 +540,42 @@ def main() -> int:
                     generic_above_noise.append(cell["success_minus_noise"]["ci95_low"] > 0.0)
     if gsm8k_required and all(gsm8k_required):
         rotation_key = "ROTATION-CONSISTENT"
+    elif any(gsm8k_required):
+        rotation_key = "STRATUM-SPLIT"
     elif generic_above_noise and all(generic_above_noise):
         rotation_key = "ROTATION-GENERIC"
     else:
         rotation_key = "ROTATION-ABSENT"
-    low_rank_cells = []
+    direction_cells = {}
     for teacher in TEACHERS:
         for view in VIEWS:
-            for battery in battery_values:
-                for stratum in ("D_7>0.5", "D_14>0.5"):
-                    cell = summary["teachers"][teacher]["views"][view]["batteries"][battery][stratum]
-                    if not cell.get("under_minimum_rows", True):
-                        low_rank_cells.append(cell["variance_explained"][str(lock["tm2"]["low_rank_prediction_rank"])])
-    direction_key = "DIRECTIONS-STRUCTURED" if low_rank_cells and all(value >= float(lock["tm2"]["low_rank_prediction_fraction"]) for value in low_rank_cells) else "DIRECTIONS-DIFFUSE"
+            direction_cells[f"{teacher}:{view}"] = {
+                battery: classify_direction_cell(
+                    summary["teachers"][teacher]["views"][view]["batteries"][battery],
+                    float(lock["tm2"]["low_rank_prediction_fraction"]),
+                )
+                for battery in analysis_batteries
+            }
+    within = [
+        value
+        for cells in direction_cells.values()
+        for battery, value in cells.items()
+        if battery != "pooled" and value != "UNDERPOWERED"
+    ]
+    pooled = [cells["pooled"] for cells in direction_cells.values()]
+    if within and all(value == "STRUCTURED" for value in within):
+        direction_key = "DIRECTIONS-STRUCTURED"
+    elif any(value == "STRUCTURED" for value in pooled) and not any(
+        value == "STRUCTURED" for value in within
+    ):
+        direction_key = "BATTERY-CONFOUNDED"
+    elif within and all(value == "GENERIC" for value in within):
+        direction_key = "DIRECTIONS-GENERIC"
+    elif len(set(within)) > 1:
+        direction_key = "STRATUM-SPLIT"
+    else:
+        direction_key = "DIRECTIONS-DIFFUSE"
+    summary["direction_cell_classification"] = direction_cells
     summary["decision_keys"] = {"tm2": direction_key, "tm2g": rotation_key}
     atomic_json(args.output_dir / "tm2_tm2g_summary.json", summary)
     print(json.dumps(summary["decision_keys"], indent=2, sort_keys=True))

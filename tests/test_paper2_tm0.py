@@ -10,6 +10,7 @@ from analysis.analyze_paper2_tm0_tm1_cka import debiased_linear_cka
 from analysis.analyze_paper2_tm0_tm1_stitch import mp_median, rmt_whitener
 from analysis.analyze_paper2_tm0_tm2 import (
     bootstrap_mean_difference,
+    classify_direction_cell,
     remove_common_mode,
     subspace_overlap,
     two_half_discriminative_read,
@@ -156,3 +157,29 @@ def test_tm2_two_half_discriminator_requires_both_directions() -> None:
         positive, halves, negative, halves, seed=11, draws=100
     )
     assert receipt["both_halves_above_chance"]
+
+
+def test_tm2_direction_cell_requires_structure_not_only_low_rank() -> None:
+    names = ("D_7>0.5", "D_14>0.5", "D_14>7")
+    cell = {
+        name: {
+            "under_minimum_rows": False,
+            "variance_explained": {"32": 0.4},
+        }
+        for name in (*names, "D_none")
+    }
+    cell["discriminative"] = {
+        name: {"both_halves_above_chance": True} for name in names
+    }
+    cell["principal_angles"] = {}
+    for left_index, left in enumerate(names):
+        cell["principal_angles"][f"{left}__vs__D_none"] = {
+            "mean_squared_cosine": 0.1
+        }
+        for right in names[left_index + 1 :]:
+            cell["principal_angles"][f"{left}__vs__{right}"] = {
+                "mean_squared_cosine": 0.3
+            }
+    assert classify_direction_cell(cell, 0.3) == "STRUCTURED"
+    cell["discriminative"]["D_14>7"]["both_halves_above_chance"] = False
+    assert classify_direction_cell(cell, 0.3) == "GENERIC"
