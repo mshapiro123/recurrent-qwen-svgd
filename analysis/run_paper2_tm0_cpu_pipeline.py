@@ -28,6 +28,7 @@ def main() -> int:
     parser.add_argument("--w1_seed0", type=Path, required=True)
     parser.add_argument("--w1_seed1", type=Path, required=True)
     parser.add_argument("--w2p_summary", type=Path, required=True)
+    parser.add_argument("--failed_loop_archive_receipt", type=Path, required=True)
     parser.add_argument("--output_dir", type=Path, required=True)
     args = parser.parse_args()
     args.output_dir.mkdir(parents=True, exist_ok=True)
@@ -101,14 +102,46 @@ def main() -> int:
             str(args.output_dir / "tm0_r1_receipt.json"),
         ]
     )
+    atomic_json(status_path, {**common, "status": "RUNNING_TM2G_J"})
+    run(
+        [
+            sys.executable,
+            "-u",
+            "-m",
+            "analysis.analyze_paper2_tm0_tm2g_jet",
+            "--cache_root",
+            str(args.cache_root),
+            "--panel",
+            str(args.panel),
+            "--cka_summary",
+            str(cka_path),
+            "--base_scores",
+            str(args.base_scores),
+            "--teacher_7b_scores",
+            str(args.teacher_7b_scores),
+            "--teacher_14b_scores",
+            str(args.teacher_14b_scores),
+            "--failed_loop_archive_receipt",
+            str(args.failed_loop_archive_receipt),
+            "--output_dir",
+            str(args.output_dir),
+        ]
+    )
+    jet_path = args.output_dir / "tm2g_jet_summary.json"
+    jet = json.loads(jet_path.read_text(encoding="utf-8"))
     if stitch["gate_key"] == "STITCH-DEAD":
         atomic_json(
             status_path,
             {
                 **common,
-                "status": "STOPPED_STITCH_DEAD",
+                "status": "COMPLETE_STITCH_DEAD_JET_COMPLETE",
                 "cka_sha256": sha256_file(cka_path),
                 "stitch_sha256": sha256_file(stitch_path),
+                "tm2g_jet_sha256": sha256_file(jet_path),
+                "decision_keys": {
+                    "tm1": "STITCH-DEAD",
+                    "tm2g_jet": jet["decision_key"],
+                },
             },
         )
         return 0
@@ -139,6 +172,8 @@ def main() -> int:
             str(args.w1_seed1),
             "--output_dir",
             str(args.output_dir),
+            "--tm2g_mode",
+            "disabled",
         ]
     )
     tm2_path = args.output_dir / "tm2_tm2g_summary.json"
@@ -151,7 +186,12 @@ def main() -> int:
             "cka_sha256": sha256_file(cka_path),
             "stitch_sha256": sha256_file(stitch_path),
             "tm2_sha256": sha256_file(tm2_path),
-            "decision_keys": tm2["decision_keys"],
+            "tm2g_jet_sha256": sha256_file(jet_path),
+            "decision_keys": {
+                "tm1": stitch["gate_key"],
+                "tm2": tm2["decision_keys"]["tm2"],
+                "tm2g_jet": jet["decision_key"],
+            },
         },
     )
     return 0

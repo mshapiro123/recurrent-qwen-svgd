@@ -118,5 +118,25 @@
     "discriminative_folds": 4,
     "discriminative_seed": 202608256,
     "failed_loop_archive_policy": "read_if_present_never_regenerate"
+  },
+  "tm2g_jet_r4": {
+    "authority_drive_id": "1GDZE-YnYU-RNHoBcMWBKcuWXjW3pxyaH",
+    "authority_sha256": "aa354b8bd6735d2780ff7afb25925e9cb08cc325898495f6dd22146dd880080a",
+    "primary_object": "velocity_wedge_acceleration",
+    "secondary_object": "state_wedge_velocity",
+    "frame": "per_model_frozen_sparse_wht_jl_then_rmt_whitening_no_stitch",
+    "wht_block": 128,
+    "output_blocks": 7,
+    "sketch_seed": 202608257,
+    "plane_probes": 256,
+    "plane_probe_seed": 202608258,
+    "smooth_noise_seed": 202608259,
+    "epsilon": 1e-12,
+    "pivot_null_quantile": 0.95,
+    "pivot_preceding_low_layers": 2,
+    "pivot_following_nonincreasing_speed_layers": 3,
+    "primary_pooling": "active_token_mean",
+    "secondary_pooling": "last_active_token",
+    "failed_loop_archive_policy": "read_if_present_never_regenerate"
   }
 }

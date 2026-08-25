@@ -1,0 +1,53 @@
+# STRATEGY AMENDMENT — TM-0 r4: TM-2g-J, the Jet-Geometric Read (RATIFIED, EXECUTABLE)
+
+**Date:** 2026-08-25
+**Status:** RATIFIED BY MARK 2026-08-25 ("yes… I'm ok with gram invariants stitch-free in per-model frames") and EXECUTABLE on receipt. This amendment **replaces the TM-2g section of the r3 execution order** (Drive `1gQHhrUHlRN_l2cf3GfC1_icQnKIU009a`, 14,769 B, SHA `c93392b5…bfc2`); everything else in r2/r3 and the preflight rulings (R-TM0-P1–P3) and BD-1 stands unchanged. **Still no training anywhere: closed-form, whitened, frozen-random mathematics only; same cache; CPU only; zero new GPU.** Must reach the agent before the TM-2g phase runs; the caching session proceeds regardless and is unaffected.
+**Design source:** Mark's jet-bundle note of 2026-08-25 (finite Taylor jets over the depth trajectory), which both simplifies and corrects the r3 read. All identities verified by strategy: κ = ‖v∧a‖/‖v‖³ with ‖v∧a‖² = ‖v‖²‖a‖² − (v·a)² = det G (G the 2×2 Gram of (v,a)); the probe identity b_k = (p_k·v)(q_k·a) − (q_k·v)(p_k·a) = ⟨v∧a, p_k∧q_k⟩; and the estimator fact that for frozen i.i.d. Gaussian probes, E[⟨b⁽ʷ⁾, b⁽ʷ⁺¹⁾⟩] = ⟨B_w, B_{w+1}⟩_F — the probe-vector cosine is an unbiased JL estimator of r3's registered plane-consistency, at O(KD) with variance ∝ 1/K.
+
+---
+
+## Plain-language summary
+
+The r3 geometric read asked whether successful computation turns through consistent latent planes, and proposed measuring that with a sketched rotation object built from the state and its displacement. Mark's jet formulation improves this in three ways at once. First, it measures the turning of the *trajectory itself* — velocity crossed with acceleration — rather than rotation about a reference point, which removes a dependence on where the coordinate origin sits that the r3 design quietly carried. Second, the scalar questions (how fast is the computation moving, is it speeding up or slowing down, how hard is it turning) collapse to three dot products and a 2×2 determinant per layer — no big rotation object at all — and, because those numbers don't change under rotations of the coordinate system, they can be computed in each teacher's own frame with **no cross-model stitching anywhere in the loop**. Third, where the orientation of the turning plane is still wanted, a few hundred frozen random plane-probes recover exactly the consistency statistic the old design measured, more cheaply. The upgraded read also sharpens our post-mortem of the failed recurrent loop into a point prediction: its banked dynamics imply straight-line geometric decay — velocity shrinking, acceleration pointing backwards along it, curvature at the noise floor. Cost of all of this: nothing. Same cache, same CPU phase, less compute than before.
+
+## 1. What r4 replaces, corrects, and keeps
+
+- **Corrected (origin-dependence):** r3's core object was state∧displacement, which measures rotation about the whitened frame's origin (the population mean) — canonical, but still a reference-point choice entangling "turning" with "position relative to the population." **v∧a — translation-invariant, the trajectory's own bending — is now the primary object.** State∧velocity is demoted to a reported secondary diagnostic (mean-relative rotation; free to compute).
+- **Simplified (stitch-free scalars, per Mark's ratification):** the Gram invariants are orthogonal-invariant and dimension-agnostic, so **all scalar jet statistics are computed in each model's own whitened frame — no stitches in the TM-2g-J loop at all.** This removes TM-2g-J from dependence on the G-TM1 stitch gate (it runs even under `STITCH-DEAD`, and is reported either way). Stitches remain exactly where they were always required: TM-1 (the gate), TM-2 (displacement *values* into the student frame for the memory hypothesis). Cross-model *plane* comparison (which would need stitched orientations) is **deferred and named** — not solved by the wayside.
+- **Replaced (estimator):** the k=128 Q-sketch bivector construction is retired. Orientation features come from **K = 256 frozen plane probes** (p_k, q_k i.i.d. Gaussian, registered seed, shared across all analyses): b_k = ⟨v∧a, p_k∧q_k⟩, computed on unit-normalized v̂, â_⊥ (the component of a orthogonal to v, normalized). Consistency between adjacent depths = cosine between probe vectors — the unbiased JL estimate of the r3 Frobenius-cosine statistic.
+- **Upgraded (resolution):** the three coarse depth windows are retired; the cache holds every layer, so the read becomes a **full per-layer jet profile**. Causal finite differences on the whitened per-model pooled states z_l: v_l = z_l − z_{l−1}, a_l = z_l − 2z_{l−1} + z_{l−2}, for l from j\*+2 to the final layer (start layer j\* per teacher from TM-1's CKA read; if TM-1 is stopped by `STITCH-DEAD`, use the CKA argmax anyway — it needs no stitch). Mean-pooled view primary; last-token view reported secondary; the two views never treated as independent (standing law).
+- **Kept unchanged:** within-battery comparative-claims-only law; D_none as the control stratum; both-teacher replication for keys; target-entropy audit before discriminative reads; SL-3 nesting for anything fitted; the r3 keys `ROTATION-CONSISTENT`/`-GENERIC`/`-ABSENT` (now decided by the jet statistics); the W2′ R-1 rider; all seals, D5, and attestation lines.
+
+## 2. TM-2g-J — registered statistics (all per row × layer × teacher, CPU)
+
+1. **The g-profile:** s_l = ‖v_l‖, ‖a_l‖, q_l = v_l·a_l, c_l = √(max(0, ‖v‖²‖a‖² − (v·a)²)), κ_l = c_l/(‖v_l‖³+ε), plus the normalized Gram Ĝ_l = G_l/tr G_l (its eigenvalue ratio is the scale-free "genuinely two-dimensional motion" indicator). *Raw values are calibration-only — depth-heterogeneity of transformer layers injects common-mode "acceleration" (different weights per layer ≠ trajectory bending), and only row-contrasts within battery are quotable; this is the jet-space instance of the standing concentration-trap law.*
+2. **Plane-consistency profile:** cos(b_l, b_{l+1}) over the probe features, per row; per-row mean and profile shape.
+3. **The pivot-signature statistic (Mark's hypothesis, registered):** presence and depth-location of a κ-peak exceeding the null band, preceded by a low-κ stretch and followed by declining ‖v‖ (refine → pivot → converge). Reported as peak count, peak depth quantile, and the joint signature indicator per row.
+4. **Nulls:** (i) D_none rows (empirical control); (ii) a **matched smooth-noise null** — Gaussian random walks with per-layer step norms matched to the data (registered construction in the pre-run receipt) — so no absolute κ or consistency value can pass as a finding.
+5. **Discriminative read:** do the g-profile + consistency features separate success strata from D_none within battery, cross-fitted under SL-3, target-entropy audit first.
+6. **Cross-scale Gram comparison (stitch-free, per Mark's note):** normalized-Ĝ and κ-profile *shapes* compared across 7B vs 14B on shared strata — do stronger teachers show the pivot signature more distinctly on rows the student fails? Scalar profiles only; no cross-model orientation claims (deferred per §1).
+7. **Failed-loop post-diction (sharpened; replaces r3's TM-2g.5, same `ARCHIVE-ABSENT` out):** the banked loop dynamics (m_{k+1} = r·m_k + c, r≈0.44) imply a **point prediction**: geometric decay of ‖v_k‖, q_k = v·a < 0 and monotone (anti-aligned deceleration), κ_k at the smooth-noise floor throughout. Computed on archived per-loop states if they exist.
+
+## 3. Predictions (P-TMg-1–3 stand, re-expressed where needed; new ones registered blind)
+
+- **P-TMg-1 (re-expressed):** raw κ_l is substantial at essentially every layer for every row — the heterogeneity/concentration trap; calibration only.
+- **P-TMg-2 (unchanged, now via jets):** success strata exceed D_none on plane-consistency and/or the pivot signature within GSM8K, both teachers — the decisive call, moderate confidence.
+- **P-TMg-3 (sharpened):** if loop archives exist, the failed loop matches the §2.7 point prediction (decaying ‖v‖, negative monotone v·a, floor-level κ).
+- **P-TMg-4 (new):** the pivot-signature rate is higher in D_{7>0.5} and D_{14>0.5} than in D_all within battery — pivots happen more where the problem is *hard for the student but solvable by the teacher* — low-to-moderate confidence.
+- **P-TMg-5 (new):** late-depth deceleration (q_l < 0 over the final quarter of layers) is more pronounced in success strata than D_none — speculative, low confidence, registered for calibration honesty.
+
+## 4. Deferred register (extends r3 §5; NOTHING here authorized; all trainable items behind desk-gate law + their own charters, training forms behind the Step-2 lock)
+
+**Jet-Geometric Bridge/Controller** (the g_t features feeding a halting/continue gate or bridge module — subsumes r3's geometric halting entry); **learned bivector probes** (trainable p_k, q_k — the frozen-random version above is its null model); **second-order flow/trajectory targets** (jet-matched distillation: match teacher (v, a) statistics rather than states; a = ∂v/∂t + J_v v in the flow form — subsumes r3's geometric distillation entry); **3-jet extension** (det G⁽³⁾ = ‖v∧a∧r‖²; trigger: a 2-jet positive plus evidence the third difference beats its noise floor); **second-order recurrent integration** ("same trajectory in fewer passes"; Step-2-class); **cross-model plane alignment** (orientation comparison across teachers; needs a stitch-consistency treatment that does not exist yet — trigger: `ROTATION-CONSISTENT` plus a TM-1′ commissioning).
+
+## 5. Execution note
+
+Sequencing, caps (BD-1: 4.0 A100-hr tripwire), the hermetic screen, calibration manifests, dry-run receipt, and the one-handoff wave rule are all unchanged from r3 + preflight rulings. The TM-2g-J pre-run receipt (probe seed and count, ε, null construction, finite-difference and start-layer conventions, pooled-view designation) is written before any jet statistic is computed. The result handoff reports TM-1, TM-2, TM-2g-J, and the R-1 rider together.
+
+---
+
+*Signature block*
+
+**Strategy:** r4 issued on Mark's ratification; the origin-dependence correction, stitch-free scalar ruling, JL-probe replacement, full-layer profiles, pivot-signature statistic, and sharpened loop post-diction registered before any geometric statistic exists; identities verified; predictions extended blind.
+**Mark:** ratified, including the stitch-free per-model-frame ruling. Next decision arrives with the TM-0 result handoff.
+**Coding agent:** apply this in place of r3's TM-2g section; pre-run receipt first; surface ambiguity before running, as ever — ten strategy-sourced catches say it's worth your while.

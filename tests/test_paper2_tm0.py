@@ -15,6 +15,11 @@ from analysis.analyze_paper2_tm0_tm2 import (
     subspace_overlap,
     two_half_discriminative_read,
 )
+from analysis.analyze_paper2_tm0_tm2g_jet import (
+    jet_invariants,
+    plane_probe_features,
+    sparse_wht_sketch,
+)
 from analysis.paper2_tm0_hermetic_screen import (
     character_shingles,
     minhash_signature,
@@ -183,3 +188,51 @@ def test_tm2_direction_cell_requires_structure_not_only_low_rank() -> None:
     assert classify_direction_cell(cell, 0.3) == "STRUCTURED"
     cell["discriminative"]["D_14>7"]["both_halves_above_chance"] = False
     assert classify_direction_cell(cell, 0.3) == "GENERIC"
+
+
+def test_tm2g_jet_invariants_match_exact_gram_geometry() -> None:
+    velocity = torch.tensor([[1.0, 0.0], [2.0, 0.0]])
+    acceleration = torch.tensor([[0.0, 2.0], [-3.0, 0.0]])
+    receipt = jet_invariants(velocity, acceleration)
+    assert receipt["wedge_norm"].tolist() == pytest.approx([2.0, 0.0])
+    assert receipt["velocity_acceleration_dot"].tolist() == pytest.approx([0.0, -6.0])
+    assert receipt["curvature"].tolist() == pytest.approx([2.0, 0.0])
+    assert receipt["gram_eigenvalue_ratio"].tolist() == pytest.approx([0.25, 0.0])
+
+
+def test_tm2g_plane_probe_is_unbiased_for_unit_simple_bivectors() -> None:
+    generator = torch.Generator().manual_seed(71)
+    probes = 32768
+    p = torch.randn((probes, 4), generator=generator)
+    q = torch.randn((probes, 4), generator=generator)
+    velocity = torch.tensor([[1.0, 0.0, 0.0, 0.0]])
+    acceleration = torch.tensor([[0.0, 1.0, 0.0, 0.0]])
+    same = plane_probe_features(velocity, acceleration, p, q)
+    orthogonal = plane_probe_features(
+        torch.tensor([[0.0, 0.0, 1.0, 0.0]]),
+        torch.tensor([[0.0, 0.0, 0.0, 1.0]]),
+        p,
+        q,
+    )
+    assert float((same * same).sum()) == pytest.approx(1.0, abs=0.03)
+    assert float((same * orthogonal).sum()) == pytest.approx(0.0, abs=0.03)
+
+
+def test_tm2g_sparse_wht_jl_is_frozen_and_shape_stable() -> None:
+    values = torch.randn(5, 256, generator=torch.Generator().manual_seed(81))
+    first, first_receipt = sparse_wht_sketch(values, seed=91, output_blocks=2)
+    second, second_receipt = sparse_wht_sketch(values, seed=91, output_blocks=2)
+    assert torch.equal(first, second)
+    assert first.shape == (5, 256)
+    assert first_receipt == second_receipt
+
+
+def test_tm0_pipeline_runs_r4_jet_before_stitch_dead_return() -> None:
+    root = Path(__file__).resolve().parents[1]
+    text = (root / "analysis" / "run_paper2_tm0_cpu_pipeline.py").read_text(
+        encoding="utf-8"
+    )
+    jet_position = text.index("analysis.analyze_paper2_tm0_tm2g_jet")
+    stitch_dead_position = text.index('if stitch["gate_key"] == "STITCH-DEAD"')
+    assert jet_position < stitch_dead_position
+    assert '"--tm2g_mode"' in text and '"disabled"' in text

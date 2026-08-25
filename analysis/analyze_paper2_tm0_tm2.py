@@ -320,7 +320,9 @@ def classify_direction_cell(cell: dict[str, Any], threshold: float) -> str:
     return "DIFFUSE"
 
 
-def write_figures(summary: dict[str, Any], output_dir: Path) -> None:
+def write_figures(
+    summary: dict[str, Any], output_dir: Path, *, include_tm2g: bool = True
+) -> None:
     import matplotlib.pyplot as plt
 
     colors = {
@@ -353,6 +355,9 @@ def write_figures(summary: dict[str, Any], output_dir: Path) -> None:
     for suffix in ("png", "svg"):
         figure.savefig(output_dir / f"tm2_displacement_concentration.{suffix}", dpi=180)
     plt.close(figure)
+
+    if not include_tm2g:
+        return
 
     figure, axes = plt.subplots(1, 2, figsize=(12, 4.8), sharey=True)
     for axis, teacher in zip(axes, TEACHERS):
@@ -406,6 +411,9 @@ def main() -> int:
     parser.add_argument("--w1_seed0", type=Path, required=True)
     parser.add_argument("--w1_seed1", type=Path, required=True)
     parser.add_argument("--output_dir", type=Path, required=True)
+    parser.add_argument(
+        "--tm2g_mode", choices=("legacy", "disabled"), default="legacy"
+    )
     args = parser.parse_args()
     args.output_dir.mkdir(parents=True, exist_ok=True)
     lock = load_lock()
@@ -462,7 +470,17 @@ def main() -> int:
         "confirm_scored": False,
         "eval_e_scored": False,
     }
-    atomic_json(args.output_dir / "tm2g_pre_run_receipt.json", pre_run)
+    if args.tm2g_mode == "disabled":
+        for key in ("q", "bivector_sketch", "noise_null", "rotation_key_rule"):
+            pre_run.pop(key, None)
+        pre_run["kind"] = "paper2_tm0_tm2_pre_run_v1"
+        pre_run["tm2g"] = {
+            "status": "SUPERSEDED_BY_TM2G_J_R4",
+            "authority_drive_id": "1GDZE-YnYU-RNHoBcMWBKcuWXjW3pxyaH",
+        }
+        atomic_json(args.output_dir / "tm2_pre_run_receipt.json", pre_run)
+    else:
+        atomic_json(args.output_dir / "tm2g_pre_run_receipt.json", pre_run)
 
     summary: dict[str, Any] = {
         "kind": "paper2_tm0_tm2_tm2g_summary_v1",
@@ -561,6 +579,14 @@ def main() -> int:
                 battery_result["discriminative"] = discriminative
                 view_result["batteries"][battery] = battery_result
 
+            if args.tm2g_mode == "disabled":
+                view_result["tm2g"] = {
+                    "status": "SUPERSEDED_BY_TM2G_J_R4",
+                    "authority_drive_id": "1GDZE-YnYU-RNHoBcMWBKcuWXjW3pxyaH",
+                }
+                teacher_result["views"][view] = view_result
+                continue
+
             q = random_orthoproject(int(lock["tm2g"]["q_rows"]), total_delta.shape[-1], seed=int(lock["tm2g"]["q_seed"]))
             wedge_features = q.shape[0] * (q.shape[0] - 1) // 2
             sketch = rademacher_sketch(wedge_features, int(lock["tm2g"]["bivector_features"]), seed=int(lock["tm2g"]["bivector_sketch_seed"]))
@@ -651,24 +677,27 @@ def main() -> int:
         bridge[str(seed)] = seed_result
     summary["bridge_read"] = bridge
 
-    gsm8k_required = []
-    generic_above_noise = []
-    for teacher in TEACHERS:
-        for view in VIEWS:
-            cells = summary["teachers"][teacher]["views"][view]["tm2g"]["plane_consistency"].get("gsm8k", {})
-            for stratum in ("D_7>0.5", "D_14>0.5"):
-                cell = cells.get(stratum, {})
-                if cell.get("status") == "MEASURED":
-                    gsm8k_required.append(bool(cell.get("claim_pass")))
-                    generic_above_noise.append(cell["success_minus_noise"]["ci95_low"] > 0.0)
-    if gsm8k_required and all(gsm8k_required):
-        rotation_key = "ROTATION-CONSISTENT"
-    elif any(gsm8k_required):
-        rotation_key = "STRATUM-SPLIT"
-    elif generic_above_noise and all(generic_above_noise):
-        rotation_key = "ROTATION-GENERIC"
+    if args.tm2g_mode == "disabled":
+        rotation_key = "SUPERSEDED_BY_TM2G_J_R4"
     else:
-        rotation_key = "ROTATION-ABSENT"
+        gsm8k_required = []
+        generic_above_noise = []
+        for teacher in TEACHERS:
+            for view in VIEWS:
+                cells = summary["teachers"][teacher]["views"][view]["tm2g"]["plane_consistency"].get("gsm8k", {})
+                for stratum in ("D_7>0.5", "D_14>0.5"):
+                    cell = cells.get(stratum, {})
+                    if cell.get("status") == "MEASURED":
+                        gsm8k_required.append(bool(cell.get("claim_pass")))
+                        generic_above_noise.append(cell["success_minus_noise"]["ci95_low"] > 0.0)
+        if gsm8k_required and all(gsm8k_required):
+            rotation_key = "ROTATION-CONSISTENT"
+        elif any(gsm8k_required):
+            rotation_key = "STRATUM-SPLIT"
+        elif generic_above_noise and all(generic_above_noise):
+            rotation_key = "ROTATION-GENERIC"
+        else:
+            rotation_key = "ROTATION-ABSENT"
     direction_cells = {}
     for teacher in TEACHERS:
         for view in VIEWS:
@@ -701,7 +730,7 @@ def main() -> int:
     summary["direction_cell_classification"] = direction_cells
     summary["decision_keys"] = {"tm2": direction_key, "tm2g": rotation_key}
     atomic_json(args.output_dir / "tm2_tm2g_summary.json", summary)
-    write_figures(summary, args.output_dir)
+    write_figures(summary, args.output_dir, include_tm2g=args.tm2g_mode == "legacy")
     print(json.dumps(summary["decision_keys"], indent=2, sort_keys=True))
     return 0
 
