@@ -1,11 +1,18 @@
 import json
 from pathlib import Path
 
+import numpy as np
+import pytest
 import torch
 
 from analysis.build_paper2_tm0_manifest import _cka_calibration_rows
 from analysis.analyze_paper2_tm0_tm1_cka import debiased_linear_cka
 from analysis.analyze_paper2_tm0_tm1_stitch import mp_median, rmt_whitener
+from analysis.analyze_paper2_tm0_tm2 import (
+    bootstrap_mean_difference,
+    remove_common_mode,
+    subspace_overlap,
+)
 from analysis.paper2_tm0_hermetic_screen import (
     character_shingles,
     minhash_signature,
@@ -114,3 +121,26 @@ def test_rmt_whitener_is_finite_and_bulk_shrinking() -> None:
     assert result["bulk_eigenvalues"] > 0
     assert torch.isfinite(result["transform"]).all()
     assert result["transform"].shape == (16, 16)
+
+
+def test_tm2_common_mode_removal_and_subspace_overlap() -> None:
+    generator = torch.Generator().manual_seed(41)
+    shared = torch.randn(16, generator=generator)
+    values = torch.randn(128, 16, generator=generator) + 4.0 * shared
+    residual, receipt = remove_common_mode(values)
+    assert receipt["unit_projection_energy_fraction"] > 0.5
+    direction = torch.nn.functional.normalize(
+        torch.nn.functional.normalize(values, dim=-1).mean(dim=0), dim=0
+    )
+    assert torch.max(torch.abs(residual @ direction)) < 1e-4
+    basis = torch.linalg.qr(torch.randn(16, 4, generator=generator)).Q.T
+    overlap = subspace_overlap(basis, basis)
+    assert overlap["mean_cosine"] > 0.999
+
+
+def test_tm2_bootstrap_difference_tracks_separated_groups() -> None:
+    positive = np.linspace(1.0, 2.0, 64)
+    negative = np.linspace(-1.0, 0.0, 64)
+    receipt = bootstrap_mean_difference(positive, negative, draws=200, seed=7)
+    assert receipt["estimate"] == pytest.approx(2.0)
+    assert receipt["ci95_low"] > 1.5
