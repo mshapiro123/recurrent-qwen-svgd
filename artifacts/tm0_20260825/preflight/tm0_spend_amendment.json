@@ -1,0 +1,16 @@
+{
+  "amended_cache_gpu_hours_cap": 2.5,
+  "authority": "program_owner_user_message_2026-08-25",
+  "authority_text": "I'm not too concerned about the GPU cost relative to the information. 2 hours is only a few dollars.",
+  "estimated_total_a100_hours": 1.900015,
+  "kind": "paper2_tm0_spend_only_amendment_v1",
+  "original_cache_gpu_hours_cap": 1.5,
+  "scope": {
+    "data_changed": false,
+    "estimator_changed": false,
+    "evaluation_reader_changed": false,
+    "scientific_thresholds_changed": false,
+    "spend_cap_only": true
+  },
+  "status": "RATIFIED_BY_PROGRAM_OWNER"
+}

@@ -4,6 +4,7 @@ from pathlib import Path
 import torch
 
 from analysis.build_paper2_tm0_manifest import _cka_calibration_rows
+from analysis.analyze_paper2_tm0_tm1_cka import debiased_linear_cka
 from analysis.paper2_tm0_hermetic_screen import (
     character_shingles,
     minhash_signature,
@@ -93,3 +94,13 @@ def test_registered_geometry_constructions_are_deterministic() -> None:
     assert torch.equal(coordinates, torch.tensor([[1.0, 0.0, 0.0]]))
     folds = deterministic_folds(["x"] * 8 + ["y"] * 8, folds=4, seed=11)
     assert torch.bincount(folds, minlength=4).tolist() == [4, 4, 4, 4]
+
+
+def test_debiased_linear_cka_identifies_shared_not_permuted_geometry() -> None:
+    generator = torch.Generator().manual_seed(17)
+    values = torch.randn(64, 12, generator=generator)
+    mixed = values @ torch.randn(12, 9, generator=generator)
+    shared = debiased_linear_cka(values, mixed)
+    permuted = debiased_linear_cka(values, mixed[torch.randperm(64, generator=generator)])
+    assert shared > 0.6
+    assert shared > permuted + 0.5
