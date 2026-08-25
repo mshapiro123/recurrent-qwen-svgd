@@ -1,0 +1,44 @@
+{
+  "confirm_scored": false,
+  "estimator": "existing_FS1_D1_fit_read_no_refit",
+  "eval_e_scored": false,
+  "interpretation": "WEAK_DEPLOYABLE_SIGNAL_SURVIVES_WITHIN_GSM8K",
+  "kind": "paper2_tm0_w2p_r1_gsm8k_granularity_v1",
+  "optimizer_constructed": false,
+  "optimizer_steps": 0,
+  "seeds": {
+    "0": {
+      "gsm8k": {
+        "ci_high": 0.32883173749950295,
+        "ci_low": 0.25174146364992744,
+        "draws": 5000,
+        "mean": 0.2902363906485132,
+        "rows": 216
+      },
+      "gsm8k_minus_pooled": -0.01576185187352369,
+      "pooled": {
+        "ci_high": 0.33923139728049134,
+        "ci_low": 0.2724781134717887,
+        "draws": 5000,
+        "mean": 0.3059982425220369
+      }
+    },
+    "1": {
+      "gsm8k": {
+        "ci_high": 0.34896111386026146,
+        "ci_low": 0.27612301382318105,
+        "draws": 5000,
+        "mean": 0.31320380323773456,
+        "rows": 216
+      },
+      "gsm8k_minus_pooled": -0.009813205939685266,
+      "pooled": {
+        "ci_high": 0.3567809641519488,
+        "ci_low": 0.29006288980599493,
+        "draws": 5000,
+        "mean": 0.3230170091774198
+      }
+    }
+  },
+  "source_sha256": "8a36b286db0c16ead48a4678202d41e41ac6e75966a240c16c75bec2326bdce5"
+}
