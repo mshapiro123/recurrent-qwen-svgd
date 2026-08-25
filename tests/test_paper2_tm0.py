@@ -5,6 +5,7 @@ import numpy as np
 import pytest
 import torch
 
+from analysis.merge_paper2_tm0_scores import merge_scores
 from analysis.build_paper2_tm0_manifest import _cka_calibration_rows
 from analysis.analyze_paper2_tm0_tm1_cka import debiased_linear_cka
 from analysis.analyze_paper2_tm0_tm1_stitch import mp_median, rmt_whitener
@@ -236,3 +237,34 @@ def test_tm0_pipeline_runs_r4_jet_before_stitch_dead_return() -> None:
     stitch_dead_position = text.index('if stitch["gate_key"] == "STITCH-DEAD"')
     assert jet_position < stitch_dead_position
     assert '"--tm2g_mode"' in text and '"disabled"' in text
+
+
+def test_tm0_transport_merge_requires_exact_overlap_and_full_coverage(
+    tmp_path: Path,
+) -> None:
+    panel = [{"item_id": value} for value in ("a", "b", "c")]
+    first = tmp_path / "first.jsonl"
+    second = tmp_path / "second.jsonl"
+    first.write_text(
+        json.dumps({"item_id": "a", "correct": True})
+        + "\n"
+        + json.dumps({"item_id": "b", "correct": False})
+        + "\n",
+        encoding="utf-8",
+    )
+    second.write_text(
+        json.dumps({"item_id": "b", "correct": False})
+        + "\n"
+        + json.dumps({"item_id": "c", "correct": True})
+        + "\n",
+        encoding="utf-8",
+    )
+    rows, receipt = merge_scores(panel, [first, second])
+    assert [row["item_id"] for row in rows] == ["a", "b", "c"]
+    assert receipt["overlap_rows_exact"] == 1
+    second.write_text(
+        json.dumps({"item_id": "b", "correct": True}) + "\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(RuntimeError, match="disagree"):
+        merge_scores(panel, [first, second])
