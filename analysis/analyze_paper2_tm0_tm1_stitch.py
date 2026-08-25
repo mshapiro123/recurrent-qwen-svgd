@@ -241,6 +241,50 @@ def fit_half(
     return metrics, state
 
 
+def write_figure(summary: dict[str, Any], output_dir: Path) -> None:
+    import matplotlib.pyplot as plt
+
+    figure, axes = plt.subplots(1, 2, figsize=(12, 4.8))
+    colors = {"teacher_7b": "#176B87", "teacher_14b": "#C54F3D"}
+    markers = ("o", "s")
+    for teacher, payload in summary["teachers"].items():
+        layers = sorted(int(value) for value in payload["layers"])
+        for half in (0, 1):
+            rows = [payload["layers"][str(layer)]["halves"][half] for layer in layers]
+            label = f"{teacher.replace('teacher_', '')}, half {half}"
+            axes[0].plot(
+                [layer + 1 for layer in layers],
+                [row["whitened"]["relative_mse_reduction_vs_mean"] for row in rows],
+                marker=markers[half],
+                color=colors[teacher],
+                alpha=0.75,
+                label=label,
+            )
+            axes[1].plot(
+                [layer + 1 for layer in layers],
+                [row["primary_cosine_gap"] for row in rows],
+                marker=markers[half],
+                color=colors[teacher],
+                alpha=0.75,
+                label=label,
+            )
+    axes[0].axhline(0.20, color="#222222", linestyle="--", linewidth=1)
+    axes[1].axhline(0.10, color="#222222", linestyle="--", linewidth=1)
+    axes[0].set_title("Whitened reconstruction advantage")
+    axes[1].set_title("Cosine advantage over random projection")
+    axes[0].set_ylabel("Relative MSE reduction vs mean")
+    axes[1].set_ylabel("Cosine gap")
+    for axis in axes:
+        axis.set_xlabel("Teacher layer")
+        axis.grid(alpha=0.2)
+    axes[1].legend(frameon=False, fontsize=8)
+    figure.suptitle("TM-1 cross-fitted stitch gates")
+    figure.tight_layout()
+    for suffix in ("png", "svg"):
+        figure.savefig(output_dir / f"tm1_stitch_gates.{suffix}", dpi=180)
+    plt.close(figure)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--cache_root", type=Path, required=True)
@@ -387,6 +431,7 @@ def main() -> int:
     torch.save(model_states, args.output_dir / "tm1_stitch_states.pt")
     summary["state_sha256"] = sha256_file(args.output_dir / "tm1_stitch_states.pt")
     atomic_json(args.output_dir / "tm1_stitch_summary.json", summary)
+    write_figure(summary, args.output_dir)
     print(json.dumps(summary, indent=2, sort_keys=True))
     return 0
 
