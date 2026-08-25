@@ -37,10 +37,13 @@ def normalize_text(text: str) -> str:
 
 
 def character_shingles(text: str, width: int) -> set[bytes]:
-    encoded = normalize_text(text).encode("utf-8")
-    if len(encoded) <= width:
-        return {encoded}
-    return {encoded[index : index + width] for index in range(len(encoded) - width + 1)}
+    normalized = normalize_text(text)
+    if len(normalized) <= width:
+        return {normalized.encode("utf-8")}
+    return {
+        normalized[index : index + width].encode("utf-8")
+        for index in range(len(normalized) - width + 1)
+    }
 
 
 def minhash_signature(

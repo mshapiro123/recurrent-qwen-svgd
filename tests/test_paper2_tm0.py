@@ -4,7 +4,11 @@ from pathlib import Path
 import torch
 
 from analysis.build_paper2_tm0_manifest import _cka_calibration_rows
-from analysis.paper2_tm0_hermetic_screen import minhash_signature, normalize_text
+from analysis.paper2_tm0_hermetic_screen import (
+    character_shingles,
+    minhash_signature,
+    normalize_text,
+)
 from analysis.prepare_paper2_tm0_hermetic_screen import prompt_text
 from eval.cache_paper2_tm0 import active_pools
 from training.paper2_tm0 import (
@@ -70,6 +74,10 @@ def test_hermetic_text_contract_is_prompt_only_and_deterministic() -> None:
     assert "Which" in rendered and "Beta" in rendered
     assert "answer" not in rendered.casefold()
     assert normalize_text("  A\u00a0B\nC  ") == "a b c"
+    assert character_shingles("a\u00e9b", 2) == {
+        "a\u00e9".encode("utf-8"),
+        "\u00e9b".encode("utf-8"),
+    }
     first = minhash_signature(rendered, width=3, components=16, seed=4)
     second = minhash_signature(rendered, width=3, components=16, seed=4)
     assert (first == second).all()
