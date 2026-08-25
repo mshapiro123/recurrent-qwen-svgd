@@ -1,0 +1,18 @@
+{
+  "cka_sha256": "a7b7eaa7b575611f90d7b88062989e750578ce697868ba4b2c85ca2bee8e0fca",
+  "confirm_scored": false,
+  "decision_keys": {
+    "tm1": "STITCH-DEAD",
+    "tm2g_jet": "ROTATION-ABSENT"
+  },
+  "eval_e_scored": false,
+  "injection_performed": false,
+  "kind": "paper2_tm0_cpu_pipeline_status_v1",
+  "optimizer_constructed": false,
+  "optimizer_steps": 0,
+  "panel_sha256": "e108b0a92fdc69b9cb27274ac420908b65303213307f9d8dfc1f4ba73d58b5ca",
+  "r1_sha256": "8c9fcb3d4e59178ebee8a894dbdce09c6d1109fd088ffc37973c592fb30cfacd",
+  "status": "COMPLETE_STITCH_DEAD_JET_COMPLETE",
+  "stitch_sha256": "ed5b9e0e660f80901350289ffc9f215a140cc9fc49b4a8cc46d0260598cf2a22",
+  "tm2g_jet_sha256": "1e94db80588687a979d46d3ea1a6a98b2317713fb6ab76537259c2b5ed952582"
+}

@@ -1,0 +1,45 @@
+{
+  "all_json_values_finite": true,
+  "cached_complete_no_model_load": true,
+  "colab_sessions_after_teardown": 0,
+  "confirm_scored": false,
+  "decision_keys": {
+    "tm1": "STITCH-DEAD",
+    "tm2g_jet": "ROTATION-ABSENT"
+  },
+  "eval_e_scored": false,
+  "figures": {
+    "tm1_cka_calibration.png": {
+      "grayscale_stddev": 35.150890797892515,
+      "height": 864,
+      "width": 2160
+    },
+    "tm1_stitch_gates.png": {
+      "grayscale_stddev": 36.63500052021892,
+      "height": 864,
+      "width": 2160
+    },
+    "tm2g_jet_decisive_contrasts.png": {
+      "grayscale_stddev": 46.92187343888774,
+      "height": 864,
+      "width": 1980
+    },
+    "tm2g_jet_profiles.png": {
+      "grayscale_stddev": 36.55268338789874,
+      "height": 1440,
+      "width": 2160
+    }
+  },
+  "injection_performed": false,
+  "kind": "paper2_tm0_result_assertions_v1",
+  "optimizer_steps": 0,
+  "panel_rows": 6144,
+  "score_rows": 6144,
+  "score_sha256": "e884180f8545fd964c444bbad304506216ea124498042dcc074ae13b07f766f9",
+  "status": "PASS",
+  "tests": {
+    "elapsed_seconds": 9.37,
+    "passed": 61
+  },
+  "transport_overlap_rows_exact": 648
+}
