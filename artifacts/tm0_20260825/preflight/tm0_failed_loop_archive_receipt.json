@@ -1,0 +1,16 @@
+{
+  "archive_regenerated": false,
+  "confirm_scored": false,
+  "eval_e_scored": false,
+  "kind": "paper2_tm0_failed_loop_archive_receipt_v1",
+  "matched_per_loop_state_artifacts": 0,
+  "optimizer_constructed": false,
+  "optimizer_steps": 0,
+  "search_patterns": [
+    "loop.*state",
+    "state.*loop",
+    "per_loop"
+  ],
+  "search_root": "artifacts",
+  "status": "ARCHIVE-ABSENT"
+}
