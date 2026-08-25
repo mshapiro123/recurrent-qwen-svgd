@@ -90,6 +90,7 @@ def main() -> int:
     )
     stitch_path = args.output_dir / "tm1_stitch_summary.json"
     stitch = json.loads(stitch_path.read_text(encoding="utf-8"))
+    r1_path = args.output_dir / "tm0_r1_receipt.json"
     run(
         [
             sys.executable,
@@ -99,7 +100,7 @@ def main() -> int:
             "--phase_d_summary",
             str(args.w2p_summary),
             "--output",
-            str(args.output_dir / "tm0_r1_receipt.json"),
+            str(r1_path),
         ]
     )
     atomic_json(status_path, {**common, "status": "RUNNING_TM2G_J"})
@@ -137,6 +138,7 @@ def main() -> int:
                 "status": "COMPLETE_STITCH_DEAD_JET_COMPLETE",
                 "cka_sha256": sha256_file(cka_path),
                 "stitch_sha256": sha256_file(stitch_path),
+                "r1_sha256": sha256_file(r1_path),
                 "tm2g_jet_sha256": sha256_file(jet_path),
                 "decision_keys": {
                     "tm1": "STITCH-DEAD",
@@ -185,6 +187,7 @@ def main() -> int:
             "status": "COMPLETE",
             "cka_sha256": sha256_file(cka_path),
             "stitch_sha256": sha256_file(stitch_path),
+            "r1_sha256": sha256_file(r1_path),
             "tm2_sha256": sha256_file(tm2_path),
             "tm2g_jet_sha256": sha256_file(jet_path),
             "decision_keys": {
