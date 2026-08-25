@@ -6,7 +6,9 @@ from pathlib import Path
 
 import pytest
 import torch
+import torch.nn as nn
 
+from eval.cache_paper2_bicameral_w2p_d4 import state_digest
 from training.paper2_bicameral_w2p import (
     conditional_row_cosine,
     deterministic_derangement,
@@ -108,3 +110,11 @@ def test_d4_target_is_wired_and_forward_only() -> None:
     assert "confirm_scored" in runner
     assert "eval_e_scored" in runner
     assert "--wall_seconds_cap" in Path("eval/cache_paper2_bicameral_w2p_d4.py").read_text()
+
+
+def test_d4_state_digest_accepts_scalar_parameters() -> None:
+    module = nn.Module()
+    module.register_parameter("scalar", nn.Parameter(torch.tensor(1.0)))
+    first = state_digest(module)
+    module.scalar.data.fill_(2.0)
+    assert state_digest(module) != first

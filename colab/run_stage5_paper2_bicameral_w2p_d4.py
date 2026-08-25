@@ -88,7 +88,16 @@ def main() -> int:
             "--wall_seconds_cap",
             "840",
         ]
-        subprocess.run(command, cwd=root, check=True)
+        child_log = output_root / "child.log"
+        with child_log.open("w", encoding="utf-8") as handle:
+            subprocess.run(
+                command,
+                cwd=root,
+                check=True,
+                text=True,
+                stdout=handle,
+                stderr=subprocess.STDOUT,
+            )
         summary = output_root / "cache" / "w2p_d4_summary.json"
         if not summary.is_file():
             raise RuntimeError("D4 cache command returned without its summary")
@@ -101,17 +110,24 @@ def main() -> int:
             elapsed_seconds=time.perf_counter() - started,
             summary={"bytes": summary.stat().st_size, "sha256": sha256_file(summary)},
             archive={"path": str(archive), "bytes": archive.stat().st_size, "sha256": sha256_file(archive)},
+            child_log={"bytes": child_log.stat().st_size, "sha256": sha256_file(child_log)},
         )
         atomic_json(status_path, receipt)
         print(json.dumps(receipt, indent=2, sort_keys=True), flush=True)
         return 0
     except Exception as error:
+        child_log = output_root / "child.log"
         receipt.update(
             status="failed",
             elapsed_seconds=time.perf_counter() - started,
             exception_type=type(error).__name__,
             exception=str(error),
             traceback=traceback.format_exc(),
+            child_log_tail=(
+                child_log.read_text(encoding="utf-8", errors="replace")[-12000:]
+                if child_log.is_file()
+                else ""
+            ),
         )
         atomic_json(status_path, receipt)
         print(json.dumps(receipt, indent=2, sort_keys=True), flush=True)
