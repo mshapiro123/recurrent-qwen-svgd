@@ -1,0 +1,47 @@
+{
+  "authority_sha256": "f89b45ef100fa46536dd93a3ef936aa8c9cfa1fc624b401b4bfc0d2b50bc2aa4",
+  "confirm_scored": false,
+  "eval_e_scored": false,
+  "gpu_seconds_total": 31.71176878899996,
+  "kind": "paper2_bicameral_w2p_d4_summary_v1",
+  "manifest": {
+    "bytes": 158238,
+    "sha256": "06b2ab04bde4eb0a66bfb2db21600ef31637940d6d7c84d916e358bade4c7bea"
+  },
+  "optimizer_constructed": false,
+  "optimizer_steps": 0,
+  "reference_rows_sha256": "5e32eb1905b05076a59b2c5b315ccf9319c04eda18af450565128fd34c18ffa5",
+  "runtime": {
+    "cuda": "12.8",
+    "gpu": "NVIDIA A100-SXM4-40GB",
+    "python": "3.13.15",
+    "torch": "2.11.0+cu128",
+    "total_gib": 39.4935302734375
+  },
+  "seeds": {
+    "0": {
+      "bytes": 11026839,
+      "path": "seed_0_w2p_d4_cache.pt",
+      "seconds": 15.060469417000036,
+      "sha256": "758cfb726dc9e6ad844c6d265dabef618561c045170df6893903778bf18d57c0",
+      "sites_parity": {
+        "base_exact": true,
+        "branch_a_exact": true,
+        "branch_b_exact": true
+      }
+    },
+    "1": {
+      "bytes": 11026839,
+      "path": "seed_1_w2p_d4_cache.pt",
+      "seconds": 14.045377663999943,
+      "sha256": "388e747e7212e518c0c270720d17c2c02a0f46b765ceca4f43320a070bc9bc55",
+      "sites_parity": {
+        "base_exact": true,
+        "branch_a_exact": true,
+        "branch_b_exact": true
+      }
+    }
+  },
+  "status": "complete_forward_only",
+  "wall_seconds_cap": 840.0
+}

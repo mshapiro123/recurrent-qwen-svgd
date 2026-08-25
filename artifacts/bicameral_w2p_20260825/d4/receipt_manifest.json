@@ -1,0 +1,44 @@
+{
+  "kind": "paper2_bicameral_w2p_d4_receipt_manifest_v1",
+  "status": "complete_forward_only",
+  "authority_sha256": "f89b45ef100fa46536dd93a3ef936aa8c9cfa1fc624b401b4bfc0d2b50bc2aa4",
+  "code_commit": "1043cf78e243ac4b4ee8eaf97441aad78a2585a5",
+  "drive_folder": {
+    "id": "1PsJDmBmpS-MNrdUCkKO0caATXr8nb3K0",
+    "url": "https://drive.google.com/drive/folders/1PsJDmBmpS-MNrdUCkKO0caATXr8nb3K0"
+  },
+  "files": {
+    "status.json": {
+      "bytes": 1364,
+      "sha256": "d5e3842be9004edb3e81704f0055ef09e637938851f0b46627b9de179ebdbc43",
+      "drive_id": "1OUiyS8CQJxPOrfLY3SyzJMIoVLu0irwj"
+    },
+    "w2p_d4_summary.json": {
+      "bytes": 1413,
+      "sha256": "22d2147a0d3cf2772ffaf7649f0f443603f5e8b48191c62ab0ea3263edad5dd3",
+      "drive_id": "1ZvdVeCVVnjEVNFlnEIryuhTtCn7Yu6As"
+    },
+    "child.log": {
+      "bytes": 2195,
+      "sha256": "a05d90208faff38a2b6cb77f73e5e2ae1954dac8a559d5d61a795adb1d62a177"
+    },
+    "paper2_bicameral_w2p_d4_bundle.tar.gz": {
+      "bytes": 19864515,
+      "sha256": "3664b8d8371c321fb2654047e5c90843d6e8a410033c2ad1279f165b124698bd",
+      "drive_id": "1i6_ho4VfDxv4tK2iu1KJwG3zMb2x8132"
+    },
+    "seed_0_w2p_d4_cache.pt": {
+      "bytes": 11026839,
+      "sha256": "758cfb726dc9e6ad844c6d265dabef618561c045170df6893903778bf18d57c0"
+    },
+    "seed_1_w2p_d4_cache.pt": {
+      "bytes": 11026839,
+      "sha256": "388e747e7212e518c0c270720d17c2c02a0f46b765ceca4f43320a070bc9bc55"
+    }
+  },
+  "optimizer_constructed": false,
+  "optimizer_steps": 0,
+  "confirm_scored": false,
+  "eval_e_scored": false,
+  "paid_sessions_remaining": 0
+}
