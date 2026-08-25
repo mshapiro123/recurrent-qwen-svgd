@@ -217,14 +217,21 @@ def _prepare_fold_cache(
         y_train = target[train].float()
         block_cache = []
         for block_index, block in enumerate(blocks):
+            x_train = block[train].double()
+            x_mean = x_train.mean(dim=0, keepdim=True)
+            x_centered = x_train - x_mean
+            y_centered = y_train.double() - y_train.double().mean(dim=0, keepdim=True)
+            u, singular, vh = torch.linalg.svd(x_centered, full_matrices=False)
+            ridge_scale = _ridge_scale(x_centered)
             ridge_cache = {}
             for ridge in ridge_options[block_index]:
-                mean, _y_mean, projection, effective = _supervised_projection(
-                    block[train],
-                    y_train,
-                    rank=max(rank_options[block_index]),
-                    ridge_multiplier=ridge,
-                )
+                effective = float(ridge) * ridge_scale
+                denominator = (singular.square() + effective).sqrt().clamp_min(1e-15)
+                cross = (singular / denominator)[:, None] * (u.T @ y_centered)
+                left, _values, _right = torch.linalg.svd(cross, full_matrices=False)
+                width = min(max(rank_options[block_index]), left.shape[1], vh.shape[0])
+                projection = (vh.T @ ((1.0 / denominator)[:, None] * left[:, :width])).float()
+                mean = x_mean.float()
                 ridge_cache[float(ridge)] = {
                     "train": (block[train].float() - mean) @ projection,
                     "evaluate": (block[evaluate].float() - mean) @ projection,

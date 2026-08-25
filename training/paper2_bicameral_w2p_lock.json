@@ -7,6 +7,13 @@
     "bytes": 13699,
     "sha256": "f89b45ef100fa46536dd93a3ef936aa8c9cfa1fc624b401b4bfc0d2b50bc2aa4"
   },
+  "rulings": {
+    "drive_id": "1RQrwGdlmVK_WLqL7zuEm_tsQsHhqZT4S",
+    "filename": "STRATEGY_BICAMERAL_W2P_D4_RULINGS_20260825.md",
+    "bytes": 12618,
+    "sha256": "34352161cb69612bfc996658fab0f2d24eed381cc3895eda99a7c5a3d2e835fd",
+    "bindings": ["R-W2P-1", "R-W2P-2", "R-W2P-3", "SL-3"]
+  },
   "phase_d": {
     "authorized": true,
     "d4_gpu_hours_cap": 0.25,
@@ -16,14 +23,17 @@
     "gold_answer_used": false,
     "teacher_forward_used": false,
     "oracle_routing_used": false,
-    "targets": ["l0a"],
+    "targets": ["l0a", "l0d"],
     "primary_target": "l0a",
     "secondary_target_binding": {
-      "status": "BLOCKED_AUTHORITY_CONFLICT",
+      "status": "RESOLVED_DIAGNOSTIC_ONLY",
       "authority_symbol": "l0c",
       "authority_description": "teacher-forced correction delta",
       "banked_l0c_definition": "margin_gradient",
       "banked_teacher_forced_delta_symbol": "l0d",
+      "resolved_family": "l0d",
+      "resolved_construction": "teacher_forced_state_delta_h_gold_minus_h_free",
+      "gate_eligible": false,
       "silent_choice_prohibited": true
     },
     "rank_grid": [2, 4, 8, 16, 32],
@@ -31,6 +41,9 @@
     "outer_folds": 4,
     "inner_folds": 3,
     "selection_rule": "nested_blockwise_inner_cv_then_joint_refit",
+    "standing_law": "SL-3",
+    "sole_gate_target": "l0a",
+    "retired_keys": ["TARGET-FAMILY-SPLIT"],
     "conditional_cosine_gate": 0.30,
     "hemispheric_relative_risk_reduction_gate": 0.05
   },
@@ -38,6 +51,21 @@
     "status": "BLOCKED_SOURCE_CONFLICT",
     "reason": "banked W3 loop1 and loop4-minus-loop1 tensors were extracted from prompt-plus-gold forced-target sequences and violate the binding deployment-input leak boundary",
     "silent_redefinition_prohibited": true
+  },
+  "fs2_prime": {
+    "status": "REGISTERED_PRE_OUTCOME",
+    "gate_eligible": true,
+    "input_provenance": "student_prompt_only_d4_cache",
+    "base_feature_set": "fs1_md",
+    "feature_blocks": [
+      "interface_mean_m18",
+      "interface_difference_d18",
+      "mean_history_concat_m8_m12_m16_dm8to12_dm12to16_dm16to18",
+      "difference_history_concat_d8_d12_d16_dd8to12_dd12to16_dd16to18"
+    ],
+    "matched_single_stream_control": "base_history_concat_h8_h12_h16_h18_dh8to12_dh12to16_dh16to18",
+    "selection_precedence": "fs1_md_if_double_pass_else_fs2_prime_if_double_pass",
+    "feature_list_frozen_before_fit": true
   },
   "phase_g": {
     "authorized_conditionally": true,

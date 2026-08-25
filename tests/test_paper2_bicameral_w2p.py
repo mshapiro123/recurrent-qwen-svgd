@@ -9,6 +9,11 @@ import torch
 import torch.nn as nn
 
 from eval.cache_paper2_bicameral_w2p_d4 import state_digest
+from analysis.analyze_paper2_bicameral_w2p_phase_d import (
+    FS2_PRIME_CONTROL,
+    FS2_PRIME_FEATURE_BLOCKS,
+    build_registered_feature_sets,
+)
 from training.paper2_bicameral_w2p import (
     conditional_row_cosine,
     deterministic_derangement,
@@ -20,6 +25,7 @@ from training.paper2_bicameral_w2p import (
 
 
 AUTHORITY_SHA256 = "f89b45ef100fa46536dd93a3ef936aa8c9cfa1fc624b401b4bfc0d2b50bc2aa4"
+RULINGS_SHA256 = "34352161cb69612bfc996658fab0f2d24eed381cc3895eda99a7c5a3d2e835fd"
 
 
 def test_charter_and_machine_lock_are_bound() -> None:
@@ -28,11 +34,44 @@ def test_charter_and_machine_lock_are_bound() -> None:
     assert hashlib.sha256(charter.read_bytes()).hexdigest() == AUTHORITY_SHA256
     lock = json.loads(Path("training/paper2_bicameral_w2p_lock.json").read_text())
     assert lock["authority"]["sha256"] == AUTHORITY_SHA256
+    rulings = Path("docs/STRATEGY_BICAMERAL_W2P_D4_RULINGS_20260825.md")
+    assert rulings.stat().st_size == 12618
+    assert hashlib.sha256(rulings.read_bytes()).hexdigest() == RULINGS_SHA256
+    assert lock["rulings"]["sha256"] == RULINGS_SHA256
     assert lock["phase_d"]["input_provenance"] == "student_prompt_only"
-    assert lock["phase_d"]["secondary_target_binding"]["status"] == "BLOCKED_AUTHORITY_CONFLICT"
+    assert lock["phase_d"]["secondary_target_binding"]["status"] == "RESOLVED_DIAGNOSTIC_ONLY"
+    assert lock["phase_d"]["secondary_target_binding"]["resolved_family"] == "l0d"
+    assert lock["phase_d"]["secondary_target_binding"]["gate_eligible"] is False
     assert lock["phase_d"]["selection_rule"] == "nested_blockwise_inner_cv_then_joint_refit"
+    assert lock["phase_d"]["standing_law"] == "SL-3"
     assert lock["fs2"]["status"] == "BLOCKED_SOURCE_CONFLICT"
+    assert lock["fs2_prime"]["feature_blocks"] == list(FS2_PRIME_FEATURE_BLOCKS)
+    assert lock["fs2_prime"]["matched_single_stream_control"] == FS2_PRIME_CONTROL
     assert lock["step2_training_authorized"] is False
+
+
+def test_fs2_prime_uses_only_registered_prompt_trajectory_blocks() -> None:
+    generator = torch.Generator().manual_seed(17)
+    sites = {}
+    for site in (8, 12, 16, 18):
+        sites[site] = {
+            name: torch.randn((5, 7), generator=generator)
+            for name in ("base", "branch_a", "branch_b")
+        }
+    cache = {"sites": sites}
+    features = build_registered_feature_sets(cache)
+    assert [tuple(value.shape) for value in features["fs1_md"]] == [(5, 7), (5, 7)]
+    assert [tuple(value.shape) for value in features["fs2_prime"]] == [
+        (5, 7),
+        (5, 7),
+        (5, 42),
+        (5, 42),
+    ]
+    assert [tuple(value.shape) for value in features["fs0_prime"]] == [(5, 49)]
+    permutation = torch.tensor([1, 2, 3, 4, 0])
+    shuffled = build_registered_feature_sets(cache, branch_b_permutation=permutation)
+    assert torch.equal(shuffled["fs0_prime"][0], features["fs0_prime"][0])
+    assert not torch.equal(shuffled["fs2_prime"][0], features["fs2_prime"][0])
 
 
 def test_leak_boundary_rejects_forced_target_features() -> None:

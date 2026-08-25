@@ -1,0 +1,82 @@
+{
+  "confirm_scored": false,
+  "desk_key": "HEMISPHERES-UNINFORMATIVE",
+  "eval_e_scored": false,
+  "files": [
+    {
+      "bytes": 12618,
+      "path": "docs/STRATEGY_BICAMERAL_W2P_D4_RULINGS_20260825.md",
+      "sha256": "34352161cb69612bfc996658fab0f2d24eed381cc3895eda99a7c5a3d2e835fd"
+    },
+    {
+      "bytes": 3029,
+      "path": "training/paper2_bicameral_w2p_lock.json",
+      "sha256": "bd727b9eba6e524392b33847247c909e7b6514ca57dafdb18caffb6391b0fffc"
+    },
+    {
+      "bytes": 1693,
+      "path": "artifacts/bicameral_w2p_20260825/phase_d/prefit_receipt.json",
+      "sha256": "f96fa283f4b560dd0308ec225a4c163e8c67578c277e1e6f4be229894a6be6d9"
+    },
+    {
+      "bytes": 549319,
+      "path": "artifacts/bicameral_w2p_20260825/phase_d/phase_d_summary.json",
+      "sha256": "8a36b286db0c16ead48a4678202d41e41ac6e75966a240c16c75bec2326bdce5"
+    },
+    {
+      "bytes": 206224,
+      "path": "artifacts/bicameral_w2p_20260825/figures/paper2_bicameral_w2p_phase_d.png",
+      "sha256": "1692ce40646045b7be64259ee672b3f1d6f0335aec1dc225a779de0b0e00fc9b"
+    },
+    {
+      "bytes": 119868,
+      "path": "artifacts/bicameral_w2p_20260825/figures/paper2_bicameral_w2p_phase_d.svg",
+      "sha256": "3e06c2ad9ceb985e234c5b964589e88c9edebdf2813f59e6c73d42904f964a8c"
+    },
+    {
+      "bytes": 53581,
+      "path": "artifacts/bicameral_w2p_20260825/phase_d/models/seed_0_l0a_fs1_md.pt",
+      "sha256": "5e06661c38f087297e61894aa57401a7248131e35583dacd3174bc4ddfa45f41"
+    },
+    {
+      "bytes": 198229,
+      "path": "artifacts/bicameral_w2p_20260825/phase_d/models/seed_0_l0a_fs2_prime.pt",
+      "sha256": "d869c45c72973e9dbd75edf4a4301612593e1cc9613e2259882aecc53a5ff77a"
+    },
+    {
+      "bytes": 53581,
+      "path": "artifacts/bicameral_w2p_20260825/phase_d/models/seed_0_l0d_fs1_md.pt",
+      "sha256": "fa7be152c4dfda633ef85e89ec07b7d79040584f6e98a7bb530066890d98d44f"
+    },
+    {
+      "bytes": 212565,
+      "path": "artifacts/bicameral_w2p_20260825/phase_d/models/seed_0_l0d_fs2_prime.pt",
+      "sha256": "a674922d518efb1c725262401c6de2dda69f4b213255dfdf4ee88b0999a6da81"
+    },
+    {
+      "bytes": 53581,
+      "path": "artifacts/bicameral_w2p_20260825/phase_d/models/seed_1_l0a_fs1_md.pt",
+      "sha256": "c11a875f7fe9856b221c6ddee159901fa2f69d3d15de6973d61ba1fe5117ec68"
+    },
+    {
+      "bytes": 198229,
+      "path": "artifacts/bicameral_w2p_20260825/phase_d/models/seed_1_l0a_fs2_prime.pt",
+      "sha256": "ac472ede2d0c8c752fe058f1d9b218f34ee8dd6e0151507680277fa426f2d709"
+    },
+    {
+      "bytes": 53581,
+      "path": "artifacts/bicameral_w2p_20260825/phase_d/models/seed_1_l0d_fs1_md.pt",
+      "sha256": "2cd12c8bcedfb516d20fe402cffa735645e513a4032c5741a7872cf478ec78e2"
+    },
+    {
+      "bytes": 212565,
+      "path": "artifacts/bicameral_w2p_20260825/phase_d/models/seed_1_l0d_fs2_prime.pt",
+      "sha256": "d83b6b6f2a534fea6d51b4a90b055e3d7826f40c821e29afadfa679996c572f3"
+    }
+  ],
+  "kind": "paper2_bicameral_w2p_phase_d_receipt_manifest_v1",
+  "optimizer_constructed": false,
+  "optimizer_steps": 0,
+  "phase_g_authorized_by_desk_result": false,
+  "status": "complete_cpu_only"
+}

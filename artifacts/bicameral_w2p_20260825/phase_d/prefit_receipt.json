@@ -1,0 +1,49 @@
+{
+  "authority_sha256": "f89b45ef100fa46536dd93a3ef936aa8c9cfa1fc624b401b4bfc0d2b50bc2aa4",
+  "confirm_scored": false,
+  "d2_controls": [
+    "matched_single_stream",
+    "mean_only",
+    "raw_branch_pair"
+  ],
+  "diagnostic_target": "l0d_teacher_forced_state_delta_h_gold_minus_h_free",
+  "eval_e_scored": false,
+  "fs2_prime_feature_blocks": [
+    "interface_mean_m18",
+    "interface_difference_d18",
+    "mean_history_concat_m8_m12_m16_dm8to12_dm12to16_dm16to18",
+    "difference_history_concat_d8_d12_d16_dd8to12_dd12to16_dd16to18"
+  ],
+  "fs2_prime_matched_single_stream_control": "base_history_concat_h8_h12_h16_h18_dh8to12_dh12to16_dh16to18",
+  "fs2_status": "BLOCKED_SOURCE_CONFLICT",
+  "inner_folds": 3,
+  "kind": "paper2_bicameral_w2p_prefit_receipt_v1",
+  "lock_sha256": "bd727b9eba6e524392b33847247c909e7b6514ca57dafdb18caffb6391b0fffc",
+  "optimizer_constructed": false,
+  "optimizer_steps": 0,
+  "outer_folds": 4,
+  "rank_grid": [
+    2,
+    4,
+    8,
+    16,
+    32
+  ],
+  "ridge_multiplier_grid": [
+    1e-06,
+    1e-05,
+    0.0001,
+    0.001,
+    0.01,
+    0.1,
+    1.0
+  ],
+  "rs0a_cluster_rule": "target-family spherical_kmeans k=2 seed 20260819+model_seed restarts=8 iterations=50",
+  "rulings_sha256": "34352161cb69612bfc996658fab0f2d24eed381cc3895eda99a7c5a3d2e835fd",
+  "secondary_read": "R-S0-A opposite-fold within-cluster rank-8 nuisance plus cluster direction",
+  "selection_precedence": "fs1_md_if_double_pass_else_fs2_prime_if_double_pass",
+  "selection_rule": "nested_blockwise_inner_cv_then_joint_refit",
+  "sole_gate_target": "l0a_loss_gradient",
+  "standing_law": "SL-3",
+  "status": "frozen_before_any_fit"
+}
