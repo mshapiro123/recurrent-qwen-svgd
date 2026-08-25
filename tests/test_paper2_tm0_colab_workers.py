@@ -11,6 +11,7 @@ def test_tm0_cache_worker_is_phase_isolated_and_score_blind() -> None:
     assert 'confirm_scored=False' in text
     assert 'eval_e_scored=False' in text
     assert "eval.eval_paper2_phase3_p31_references" not in text
+    assert "except BaseException" not in text
 
 
 def test_tm0_score_worker_is_resumable_and_seal_guarded() -> None:
@@ -21,3 +22,4 @@ def test_tm0_score_worker_is_resumable_and_seal_guarded() -> None:
     assert 'if rows != 6144' in text
     assert 'confirm_scored=False' in text
     assert 'eval_e_scored=False' in text
+    assert "except BaseException" not in text

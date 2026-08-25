@@ -105,8 +105,8 @@ def main() -> int:
 
 if __name__ == "__main__":
     try:
-        raise SystemExit(main())
-    except BaseException as exc:
+        exit_code = main()
+    except Exception as exc:
         write_status(
             "failed",
             exception_type=type(exc).__name__,
@@ -114,3 +114,4 @@ if __name__ == "__main__":
             traceback=traceback.format_exc(),
         )
         raise
+    raise SystemExit(exit_code)
