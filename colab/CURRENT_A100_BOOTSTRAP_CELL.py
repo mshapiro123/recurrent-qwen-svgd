@@ -158,6 +158,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3_short_sha"
 #   "paper2_phase2_arbitration_build" - high-RAM CPU canonicalizer arbitration and loss-free student build.
 #   "paper2_phase2_layer_mode_bound" - high-RAM CPU r2 concat-RRR layer-mode bound.
 #   "paper2_phase2_matched_alpha" - locked A100-80GB DEV-only matched alpha pilots and decision.
+#   "paper2_bicameral_w2p_d4" - W2-prime prompt-only D4 site cache; no optimizer or scoring.
 #   "paper2_phase2_matched_alpha_audit" - read-only L4 terminal-checkpoint and shaper audit.
 #   "paper2_phase2_oracle_selector_headroom" - CPU-only perfect-selector ceiling from banked rows.
 #   "paper2_phase2_a2_localization" - CPU-only helped/harmed localization from banked A2 rows.
@@ -205,6 +206,18 @@ if TARGET == "traced_sft_scale64_benchmark" and os.environ.get(
     TARGET = "traced_sft_direct_preservation_probe"
 
 TARGETS = {
+    "paper2_bicameral_w2p_d4": {
+        "path": "colab/STAGE5_PAPER2_BICAMERAL_W2P_D4_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_BICAMERAL_W2P_D4_VERSION",
+            "paper2_bicameral_w2p_d4_v1",
+            "forward-only prompt cache no optimizer no teacher no sealed evaluation",
+            "tests/test_paper2_bicameral_w2p.py",
+            "eval.cache_paper2_bicameral_w2p_d4",
+            "colab/run_stage5_paper2_bicameral_w2p_d4.py",
+        ],
+        "env": {},
+    },
     "paper2_phase2_oracle_overlap": {
         "path": "colab/STAGE5_PAPER2_PHASE2_ORACLE_OVERLAP_CELL.py",
         "markers": [

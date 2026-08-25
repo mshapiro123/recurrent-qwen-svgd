@@ -308,6 +308,13 @@ class BicameralBranchStates:
     branch_b: torch.Tensor
 
 
+@dataclass
+class BicameralSiteStates:
+    base: dict[int, torch.Tensor]
+    branch_a: dict[int, torch.Tensor]
+    branch_b: dict[int, torch.Tensor]
+
+
 class BicameralTaskInferenceGraph(nn.Module):
     """Qwen layer-6-to-17 substrate adapter for the Bicameral core."""
 
@@ -455,6 +462,73 @@ class BicameralTaskInferenceGraph(nn.Module):
             attention_mask=attention_mask,
         )
         return states
+
+    def cache_site_states(
+        self,
+        *,
+        input_ids: torch.Tensor,
+        attention_mask: torch.Tensor,
+        sites: tuple[int, ...] = (8, 12, 16, 18),
+    ) -> BicameralSiteStates:
+        """Cache prompt states without changing the registered branch schedule.
+
+        Sites are Qwen layer-range endpoints. The final site must be the locked
+        middle endpoint so callers can assert parity with ``cache_branch_states``.
+        """
+
+        ordered = tuple(int(site) for site in sites)
+        if not ordered or ordered != tuple(sorted(set(ordered))):
+            raise ValueError("Bicameral cache sites must be unique and increasing")
+        if ordered[0] <= self.prelude_end or ordered[-1] != self.middle_end:
+            raise ValueError("Bicameral cache sites must lie after the prelude and end at the interface")
+
+        prepared = self.wrapper._prepare_inputs(
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            position_ids=None,
+            past_key_values=None,
+            inputs_embeds=None,
+            cache_position=None,
+        )
+        hidden = prepared["inputs_embeds"]
+        position_ids = prepared["position_ids"]
+        cache_position = prepared["cache_position"]
+        causal_mask = self.wrapper._update_causal_mask(
+            prepared["attention_mask"], hidden, cache_position, None, False
+        )
+        position_embeddings = self.wrapper._rotary_embeddings(hidden, position_ids)
+
+        def run(start: int, end: int, value: torch.Tensor) -> torch.Tensor:
+            return self._run_layers(
+                start,
+                end,
+                value,
+                causal_mask=causal_mask,
+                position_ids=position_ids,
+                cache_position=cache_position,
+                position_embeddings=position_embeddings,
+            )
+
+        prelude = run(0, self.prelude_end, hidden)
+        base = prelude
+        branch_a, branch_b = self.core.callosum(prelude)
+        branch_a = self.core.bank_a(branch_a)
+        branch_b = self.core.bank_b(branch_b)
+        base_sites: dict[int, torch.Tensor] = {}
+        branch_a_sites: dict[int, torch.Tensor] = {}
+        branch_b_sites: dict[int, torch.Tensor] = {}
+        start = self.prelude_end
+        for end in ordered:
+            base = run(start, end, base)
+            # The two branch calls remain sequential. Batch concatenation is
+            # prohibited because it changes the BF16 evaluator identity.
+            branch_a = run(start, end, branch_a)
+            branch_b = run(start, end, branch_b)
+            base_sites[end] = base
+            branch_a_sites[end] = branch_a
+            branch_b_sites[end] = branch_b
+            start = end
+        return BicameralSiteStates(base_sites, branch_a_sites, branch_b_sites)
 
     def _forward(self, *, bicameral: bool, input_ids: torch.Tensor, attention_mask: torch.Tensor) -> BicameralOutput:
         states, context = self._encode_middle(
