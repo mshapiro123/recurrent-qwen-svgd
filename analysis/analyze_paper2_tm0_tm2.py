@@ -299,6 +299,80 @@ def classify_direction_cell(cell: dict[str, Any], threshold: float) -> str:
     return "DIFFUSE"
 
 
+def write_figures(summary: dict[str, Any], output_dir: Path) -> None:
+    import matplotlib.pyplot as plt
+
+    colors = {
+        "D_7>0.5": "#176B87",
+        "D_14>0.5": "#C54F3D",
+        "D_14>7": "#7C5AA6",
+        "D_none": "#777777",
+    }
+    figure, axes = plt.subplots(2, 2, figsize=(12, 8), sharey=True)
+    for row_index, teacher in enumerate(TEACHERS):
+        for column_index, view in enumerate(VIEWS):
+            axis = axes[row_index, column_index]
+            cell = summary["teachers"][teacher]["views"][view]["batteries"].get(
+                "gsm8k", {}
+            )
+            names = [name for name in colors if name in cell]
+            axis.bar(
+                range(len(names)),
+                [cell[name].get("variance_explained", {}).get("32", 0.0) for name in names],
+                color=[colors[name] for name in names],
+            )
+            axis.axhline(0.30, color="#222222", linestyle="--", linewidth=1)
+            axis.set_xticks(range(len(names)), [name.replace("D_", "") for name in names], rotation=20)
+            axis.set_title(f"{teacher.replace('teacher_', '')} · {view.replace('_', ' ')}")
+            axis.grid(axis="y", alpha=0.2)
+    axes[0, 0].set_ylabel("Top-32 variance explained")
+    axes[1, 0].set_ylabel("Top-32 variance explained")
+    figure.suptitle("TM-2 GSM8K displacement concentration")
+    figure.tight_layout()
+    for suffix in ("png", "svg"):
+        figure.savefig(output_dir / f"tm2_displacement_concentration.{suffix}", dpi=180)
+    plt.close(figure)
+
+    figure, axes = plt.subplots(1, 2, figsize=(12, 4.8), sharey=True)
+    for axis, teacher in zip(axes, TEACHERS):
+        position = 0
+        ticks = []
+        labels = []
+        for view in VIEWS:
+            cells = summary["teachers"][teacher]["views"][view]["tm2g"][
+                "plane_consistency"
+            ].get("gsm8k", {})
+            for stratum in ("D_7>0.5", "D_14>0.5", "D_14>7"):
+                cell = cells.get(stratum, {})
+                if cell.get("status") != "MEASURED":
+                    continue
+                estimate = cell["success_minus_dnone"]["estimate"]
+                low = cell["success_minus_dnone"]["ci95_low"]
+                high = cell["success_minus_dnone"]["ci95_high"]
+                axis.errorbar(
+                    position,
+                    estimate,
+                    yerr=[[estimate - low], [high - estimate]],
+                    fmt="o",
+                    color=colors[stratum],
+                    capsize=3,
+                )
+                ticks.append(position)
+                labels.append(f"{view.split('_')[0]}\n{stratum.replace('D_', '')}")
+                position += 1
+            position += 0.5
+        axis.axhline(0.0, color="#222222", linestyle="--", linewidth=1)
+        axis.set_xticks(ticks, labels, rotation=25)
+        axis.set_title(teacher.replace("teacher_", "Qwen2.5 ").upper())
+        axis.grid(axis="y", alpha=0.2)
+    axes[0].set_ylabel("Plane consistency minus D_none (95% row bootstrap CI)")
+    figure.suptitle("TM-2g success-specific rotational consistency")
+    figure.tight_layout()
+    for suffix in ("png", "svg"):
+        figure.savefig(output_dir / f"tm2g_plane_consistency.{suffix}", dpi=180)
+    plt.close(figure)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--cache_root", type=Path, required=True)
@@ -578,6 +652,7 @@ def main() -> int:
     summary["direction_cell_classification"] = direction_cells
     summary["decision_keys"] = {"tm2": direction_key, "tm2g": rotation_key}
     atomic_json(args.output_dir / "tm2_tm2g_summary.json", summary)
+    write_figures(summary, args.output_dir)
     print(json.dumps(summary["decision_keys"], indent=2, sort_keys=True))
     return 0
 
