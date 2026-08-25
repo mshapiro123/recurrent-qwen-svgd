@@ -479,8 +479,23 @@ def main() -> int:
         teacher_result: dict[str, Any] = {"views": {}}
         teacher_subspaces[teacher] = {}
         for view_index, view in enumerate(VIEWS):
+            start_norm = white[boundaries[0]][:, view_index].norm(dim=-1)
+            final_norm = white[boundaries[-1]][:, view_index].norm(dim=-1)
+            trajectory_norm = total_delta[:, view_index].norm(dim=-1)
             residual, common = remove_common_mode(total_delta[:, view_index])
-            view_result: dict[str, Any] = {"common_mode": common, "batteries": {}}
+            view_result: dict[str, Any] = {
+                "common_mode": common,
+                "trajectory_scale_telemetry": {
+                    "start_state_norm_mean": float(start_norm.mean()),
+                    "final_state_norm_mean": float(final_norm.mean()),
+                    "total_displacement_norm_mean": float(trajectory_norm.mean()),
+                    "total_displacement_norm_median": float(trajectory_norm.median()),
+                    "mean_row_displacement_to_start_ratio": float(
+                        (trajectory_norm / start_norm.clamp_min(1e-12)).mean()
+                    ),
+                },
+                "batteries": {},
+            }
             teacher_subspaces[teacher][view] = {}
             for battery in analysis_batteries:
                 battery_result: dict[str, Any] = {}
