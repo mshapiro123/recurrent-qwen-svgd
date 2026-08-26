@@ -116,6 +116,39 @@ def test_structure_initialization_and_exact_d512_parameter_delta() -> None:
     assert paired_parameters - dense_parameters == 299_008
 
 
+def test_parameter_initialization_is_replica_invariant_and_path_namespaced() -> None:
+    torch.manual_seed(1)
+    first = _tiny_block(module_path="model.bicameral_core.identity")
+    torch.manual_seed(9_999_999)
+    second = _tiny_block(module_path="model.bicameral_core.identity")
+
+    assert first.projection_initialization_seeds == second.projection_initialization_seeds
+    for (first_name, first_parameter), (second_name, second_parameter) in zip(
+        first.named_parameters(),
+        second.named_parameters(),
+        strict=True,
+    ):
+        assert first_name == second_name
+        torch.testing.assert_close(first_parameter, second_parameter, rtol=0, atol=0)
+    assert not hasattr(first, "rng_replica")
+    with pytest.raises(TypeError, match="unexpected keyword argument"):
+        _tiny_block(rng_replica=1)
+
+    other_path = _tiny_block(module_path="model.bicameral_core.other")
+    assert first.projection_initialization_seeds != other_path.projection_initialization_seeds
+    first_seeds = dict(first.projection_initialization_seeds)
+    other_seeds = dict(other_path.projection_initialization_seeds)
+    assert all(first_seeds[name] != other_seeds[name] for name in first_seeds)
+    assert any(
+        not torch.equal(first_parameter, other_parameter)
+        for first_parameter, other_parameter in zip(
+            first.parameters(),
+            other_path.parameters(),
+            strict=True,
+        )
+    )
+
+
 def test_each_hemisphere_matches_its_realized_dense_static_kv_block() -> None:
     torch.manual_seed(17)
     paired = _tiny_block().eval()

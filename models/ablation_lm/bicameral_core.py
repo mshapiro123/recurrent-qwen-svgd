@@ -66,7 +66,6 @@ class BicameralTransformerBlock(nn.Module):
         rank: int = 32,
         sigma_delta0: float = 0.02,
         initialization_seed: int = 20_260_826,
-        rng_replica: int = 0,
         module_path: str = "model.bicameral_core.0",
         attention_dropout: float = 0.0,
     ) -> None:
@@ -103,20 +102,21 @@ class BicameralTransformerBlock(nn.Module):
             )
         self.attention_dropout = 0.0
 
-        # The first derivation also validates the base seed, replica, and source
-        # key before any Parameters are allocated.
+        # The first derivation also validates the base seed and source key
+        # before any Parameters are allocated.  Parameter initialization is
+        # deliberately replica-invariant; rank-specificity belongs only to
+        # runtime stochastic streams.
         projection_seeds = {
             name: derive_module_seed(
                 initialization_seed,
                 f"{module_path}.{name}",
-                rng_replica,
+                0,
             )
             % (2**63)
             for name in _PROJECTION_NAMES
         }
         self.module_path = module_path
         self.initialization_seed = initialization_seed
-        self.rng_replica = rng_replica
         self.projection_initialization_seeds = tuple(
             (name, projection_seeds[name]) for name in _PROJECTION_NAMES
         )
