@@ -2,8 +2,8 @@
 
 This module is deliberately infrastructure-only.  It does not fit a tokenizer,
 construct an optimizer, train a model, read a corpus, freeze an artifact, or
-select a vocabulary.  Those actions remain blocked while the proxy topology,
-D-C-1 curriculum shape, and D-C-2 tie rule are unresolved.
+select a vocabulary.  Those actions remain blocked while the exact tokenizer
+implementation, optimizer schedule, and final reporting schemas are unresolved.
 
 Append-only vocabulary continuation preserves the byte meaning of every old
 token ID and the old merge list as an exact prefix.  It does *not* imply that
@@ -37,11 +37,15 @@ GTOK_ENGLISH_SCOPE_SHA256 = (
 GTOK_CURRICULUM_AMENDMENT_SHA256 = (
     "0221545d62f7ed189898abf56f1ca65be6683de4d8a396d80bae4a4a094065b5"
 )
+GTOK_RATIFICATION_SHA256 = (
+    "c5df74297594e75697ffb71d8d05d75efcf94f7857d55ddd357043200efb6d3a"
+)
 GTOK_AUTHORITY_CHAIN = (
     GTOK_HANDOFF_SHA256,
     GTOK_RULINGS_SHA256,
     GTOK_ENGLISH_SCOPE_SHA256,
     GTOK_CURRICULUM_AMENDMENT_SHA256,
+    GTOK_RATIFICATION_SHA256,
 )
 GTOK_BPB_MILESTONE_FRACTIONS = (
     Fraction(1, 4),
@@ -71,9 +75,6 @@ GTOK_ROUND_TRIP_CATEGORIES = (
 GTOK_COMPUTE_SCOPES = ("base_screen", "confirmation", "infrastructure", "pilot")
 GTOK_COMPUTE_STATUSES = ("aborted", "cancelled", "completed", "failed", "preempted")
 UNRESOLVED_GTOK_DECISIONS = (
-    "proxy topology: 4/2/4 versus eight dense blocks",
-    "D-C-1 curriculum shape",
-    "D-C-2 tie rule",
     "literal tokenizer library/version, regex, and reserved-token inventory",
     "numerical AdamW hyperparameters and schedule",
     "undertrained-row norm threshold and remaining reporting schemas",
@@ -958,7 +959,7 @@ def validate_complete_gtok_bpb_receipts(
 
 
 def require_gtok_execution_authority(action: str) -> NoReturn:
-    """Fail closed until topology, D-C-1, and D-C-2 receive binding rulings."""
+    """Fail closed until every remaining implementation choice is ratified."""
 
     if not isinstance(action, str) or not action.strip():
         raise ValueError("blocked action must be named")

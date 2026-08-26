@@ -149,8 +149,10 @@ class TokenizerTargetDecisionContract:
             self.config.d_ff,
         ) != (16, 8, 2_816):
             raise ValueError("target topology must use 16Q/8KV and d_ff=2816")
-        if not isinstance(self.authority, str) or not self.authority.strip():
-            raise ValueError("target topology authority must be a nonempty string")
+        if self.authority != RATIFIED_TARGET_AUTHORITY:
+            raise ValueError(
+                "target topology authority must equal the exact WEFT-1 ratification receipt"
+            )
         if self.budget_semantics not in {"fixed_total", "fixed_non_vocabulary"}:
             raise ValueError("target budget semantics must be ratified")
         if type(self.reference_vocab_size) is not int or self.reference_vocab_size < 1:

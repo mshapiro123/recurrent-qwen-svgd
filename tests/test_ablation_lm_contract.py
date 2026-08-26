@@ -21,6 +21,8 @@ from models.ablation_lm.config import (
     REGISTERED_PROXY_BLOCK_SPLITS,
     REGISTERED_TARGET_BLOCK_SPLITS,
     RATIFIED_TARGET_D_MODEL,
+    RATIFIED_TARGET_AUTHORITY,
+    RATIFIED_TARGET_AUTHORITY_SHA256,
     RATIFIED_TARGET_ROUNDED_UNIQUE_PARAMETERS_BY_CORE,
     TOKENIZER_VOCAB_CANDIDATES,
     AblationLMConfig,
@@ -60,7 +62,7 @@ def _fixed_total_contract() -> TokenizerTargetDecisionContract:
     )
     return TokenizerTargetDecisionContract(
         config=_target_config(),
-        authority="test_common_target_topology_receipt",
+        authority=RATIFIED_TARGET_AUTHORITY,
         budget_semantics="fixed_total",
         fixed_total_parameters=locked_total,
         fixed_total_tolerance_parameters=tolerance,
@@ -264,6 +266,19 @@ def test_tokenizer_freeze_requires_exact_authority_and_budget_semantics() -> Non
             fixed_total_parameters=estimate_dense_unique_parameters(target),
             candidate_topologies=contract.candidate_topologies,
         )
+    assert RATIFIED_TARGET_AUTHORITY_SHA256 == (
+        "c5df74297594e75697ffb71d8d05d75efcf94f7857d55ddd357043200efb6d3a"
+    )
+    assert RATIFIED_TARGET_AUTHORITY.endswith(RATIFIED_TARGET_AUTHORITY_SHA256)
+    with pytest.raises(ValueError, match="exact WEFT-1 ratification receipt"):
+        TokenizerTargetDecisionContract(
+            config=target,
+            authority="weft1_ratification_forged",
+            budget_semantics="fixed_total",
+            fixed_total_parameters=contract.fixed_total_parameters,
+            fixed_total_tolerance_parameters=contract.fixed_total_tolerance_parameters,
+            candidate_topologies=contract.candidate_topologies,
+        )
     assert derived.decision_target.total_unique_parameters == estimate_dense_unique_parameters(
         target
     )
@@ -274,7 +289,7 @@ def test_tokenizer_freeze_requires_exact_authority_and_budget_semantics() -> Non
 
     rung_a = TokenizerTargetDecisionContract(
         config=registered_target_configs()[0],
-        authority="guard_is_not_a_decision_column",
+        authority=RATIFIED_TARGET_AUTHORITY,
         budget_semantics="fixed_non_vocabulary",
     )
     with pytest.raises(ValueError, match="decision contract must use rung B"):
@@ -323,7 +338,7 @@ def test_fixed_non_vocabulary_accounting_reprices_each_candidate_total() -> None
     reference_target = _target_config()
     contract = TokenizerTargetDecisionContract(
         config=reference_target,
-        authority="test_fixed_body_receipt",
+        authority=RATIFIED_TARGET_AUTHORITY,
         budget_semantics="fixed_non_vocabulary",
     )
     small = tokenizer_screen_accounting(
@@ -370,7 +385,7 @@ def test_fixed_total_contract_binds_one_budget_across_every_candidate() -> None:
     with pytest.raises(ValueError, match="every registered tokenizer candidate"):
         TokenizerTargetDecisionContract(
             config=_target_config(16_384),
-            authority="per_candidate_budget_is_not_authority",
+            authority=RATIFIED_TARGET_AUTHORITY,
             budget_semantics="fixed_total",
             fixed_total_parameters=estimate_dense_unique_parameters(_target_config(16_384)),
             candidate_topologies=(_target_config(16_384),),
@@ -379,7 +394,7 @@ def test_fixed_total_contract_binds_one_budget_across_every_candidate() -> None:
     with pytest.raises(ValueError, match="locked common budget"):
         TokenizerTargetDecisionContract(
             config=_target_config(),
-            authority="zero_tolerance_rejects_same_body_vocab_drift",
+            authority=RATIFIED_TARGET_AUTHORITY,
             budget_semantics="fixed_total",
             fixed_total_parameters=estimate_dense_unique_parameters(_target_config()),
             candidate_topologies=tuple(
@@ -392,13 +407,13 @@ def test_target_contract_rejects_bringup_mixed_rungs_and_impossible_capacity() -
     with pytest.raises(ValueError, match="registered 4/6-core"):
         TokenizerTargetDecisionContract(
             config=replace(_target_config(), n_core_blocks=2),
-            authority="bringup_is_not_selection_authority",
+            authority=RATIFIED_TARGET_AUTHORITY,
             budget_semantics="fixed_non_vocabulary",
         )
     with pytest.raises(ValueError, match="reference vocabulary must be a registered"):
         TokenizerTargetDecisionContract(
             config=replace(_target_config(), vocab_size=12_345),
-            authority="unregistered_reference_is_not_selection_authority",
+            authority=RATIFIED_TARGET_AUTHORITY,
             budget_semantics="fixed_non_vocabulary",
             reference_vocab_size=12_345,
         )
@@ -416,7 +431,7 @@ def test_target_contract_rejects_bringup_mixed_rungs_and_impossible_capacity() -
     with pytest.raises(ValueError, match="share one registered target rung"):
         TokenizerTargetDecisionContract(
             config=_target_config(),
-            authority="mixed_rungs_are_not_one_selection_column",
+            authority=RATIFIED_TARGET_AUTHORITY,
             budget_semantics="fixed_total",
             fixed_total_parameters=locked_total,
             fixed_total_tolerance_parameters=tolerance,
@@ -427,7 +442,7 @@ def test_target_contract_rejects_bringup_mixed_rungs_and_impossible_capacity() -
     with pytest.raises(ValueError, match="exact registered target topology"):
         TokenizerTargetDecisionContract(
             config=_target_config(),
-            authority="candidate_geometry_must_not_drift",
+            authority=RATIFIED_TARGET_AUTHORITY,
             budget_semantics="fixed_total",
             fixed_total_parameters=locked_total,
             fixed_total_tolerance_parameters=tolerance,
@@ -437,7 +452,7 @@ def test_target_contract_rejects_bringup_mixed_rungs_and_impossible_capacity() -
     with pytest.raises(ValueError, match="exceed the largest candidate vocabulary"):
         TokenizerTargetDecisionContract(
             config=_target_config(),
-            authority="tolerance_cannot_authorize_impossible_capacity",
+            authority=RATIFIED_TARGET_AUTHORITY,
             budget_semantics="fixed_total",
             fixed_total_parameters=1,
             fixed_total_tolerance_parameters=max(

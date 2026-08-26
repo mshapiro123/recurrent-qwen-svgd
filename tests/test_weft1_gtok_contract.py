@@ -20,6 +20,7 @@ from training.weft1_gtok_contract import (
     GTOK_BPB_MILESTONE_BYTES,
     GTOK_BPB_MILESTONE_FRACTIONS,
     GTOK_CURRICULUM_AMENDMENT_SHA256,
+    GTOK_RATIFICATION_SHA256,
     GTokComputeReceipt,
     GTOK_ENGLISH_SCOPE_SHA256,
     GTOK_HANDOFF_SHA256,
@@ -304,11 +305,15 @@ def test_binding_authority_chain_and_screen_constants_are_exact() -> None:
     assert GTOK_CURRICULUM_AMENDMENT_SHA256 == (
         "0221545d62f7ed189898abf56f1ca65be6683de4d8a396d80bae4a4a094065b5"
     )
+    assert GTOK_RATIFICATION_SHA256 == (
+        "c5df74297594e75697ffb71d8d05d75efcf94f7857d55ddd357043200efb6d3a"
+    )
     assert GTOK_AUTHORITY_CHAIN == (
         GTOK_HANDOFF_SHA256,
         GTOK_RULINGS_SHA256,
         GTOK_ENGLISH_SCOPE_SHA256,
         GTOK_CURRICULUM_AMENDMENT_SHA256,
+        GTOK_RATIFICATION_SHA256,
     )
     assert GTOK_TRAINING_BYTE_BUDGET == 4_000_000_000
     assert GTOK_TRAINING_BYTE_CEILING == 4_000_000_000
@@ -935,10 +940,10 @@ def test_choice_dependent_actions_fail_closed_on_all_open_decisions() -> None:
         require_gtok_execution_authority("fit tokenizer")
 
     message = str(raised.value)
-    assert "4/2/4 versus eight dense blocks" in message
-    assert "D-C-1 curriculum shape" in message
-    assert "D-C-2 tie rule" in message
+    assert "4/2/4 versus eight dense blocks" not in message
+    assert "D-C-1 curriculum shape" not in message
+    assert "D-C-2 tie rule" not in message
     assert "literal tokenizer library/version" in message
     assert "numerical AdamW hyperparameters" in message
     assert "undertrained-row norm threshold" in message
-    assert len(UNRESOLVED_GTOK_DECISIONS) == 6
+    assert len(UNRESOLVED_GTOK_DECISIONS) == 3
