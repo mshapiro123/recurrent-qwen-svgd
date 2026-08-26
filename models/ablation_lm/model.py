@@ -19,7 +19,12 @@ from .jets import (
     plane_probe_features,
     trajectory_jet_metrics,
 )
-from .layers import ModifiedHadamardExpertBank, RMSNorm, TransformerBlock
+from .layers import (
+    ModifiedHadamardExpertBank,
+    ProjectedKeyValue,
+    RMSNorm,
+    TransformerBlock,
+)
 from .memory import ReadOnlyLatentMemory
 from .optim import RANK_ONLY_MUON_PROHIBITED_ATTR, REQUIRE_CLOSED_MUON_ALLOWLIST_ATTR
 from .reentry import AnchoredReentryBridge
@@ -313,6 +318,7 @@ class AblationLM(nn.Module):
         *,
         prelude: torch.Tensor,
         lanes: torch.Tensor | None,
+        core_kv_cache: tuple[ProjectedKeyValue, ...] | None = None,
         step_index: int,
         alpha: float,
         attention_mask: torch.Tensor | None,
@@ -321,6 +327,27 @@ class AblationLM(nn.Module):
         force_math_attention: bool = False,
     ) -> tuple[torch.Tensor, torch.Tensor | None]:
         """Apply one complete recurrent transition at a fixed visit index."""
+
+        if self.config.use_static_kv_core:
+            if core_kv_cache is None:
+                raise ValueError("static core K/V must be projected once by the caller")
+            if len(core_kv_cache) != len(self.core_blocks):
+                raise ValueError("core K/V cache must contain one entry per core block")
+            cache_position_ids = core_kv_cache[0].position_ids
+            if any(
+                entry.position_ids is not cache_position_ids
+                for entry in core_kv_cache[1:]
+            ):
+                raise ValueError("core K/V entries must share one position-ID receipt")
+            if position_ids is None:
+                position_ids = cache_position_ids
+            elif (
+                position_ids is not cache_position_ids
+                and not torch.equal(position_ids, cache_position_ids)
+            ):
+                raise ValueError("core K/V cache position IDs differ from the query")
+        elif core_kv_cache is not None:
+            raise ValueError("a core K/V cache requires use_static_kv_core=True")
 
         if step_index > 0 and self.reentry_bridge is not None:
             hidden = self.reentry_bridge(hidden, prelude, residual_scale=alpha)
@@ -337,9 +364,15 @@ class AblationLM(nn.Module):
             hidden = hidden + alpha * self.loop_embedding.weight[step_index].to(
                 dtype=hidden.dtype
             )
-        for block in self.core_blocks:
+        for block_index, block in enumerate(self.core_blocks):
             hidden = block(
                 hidden,
+                projected_kv=(
+                    core_kv_cache[block_index]
+                    if core_kv_cache is not None
+                    else None
+                ),
+                _trusted_projected_kv=core_kv_cache is not None,
                 attention_mask=attention_mask,
                 position_ids=position_ids,
                 document_ids=document_ids,
@@ -348,13 +381,40 @@ class AblationLM(nn.Module):
             )
         return hidden, lanes
 
+    def _project_core_kv(
+        self,
+        source: torch.Tensor,
+        *,
+        position_ids: torch.Tensor | None,
+    ) -> tuple[ProjectedKeyValue, ...]:
+        """Project one fixed-context K/V entry for every tied core block."""
+
+        if not self.config.use_static_kv_core:
+            raise RuntimeError("static core K/V is structurally disabled")
+        batch, length, _ = source.shape
+        if position_ids is None:
+            position_metadata = torch.arange(length, device=source.device).view(1, -1)
+            position_metadata = position_metadata.expand(batch, -1).clone()
+        else:
+            position_metadata = position_ids.detach().clone()
+        return tuple(
+            block.project_kv(
+                source,
+                position_ids=position_metadata,
+                _position_metadata=position_metadata,
+            )
+            for block in self.core_blocks
+        )
+
     def _visit_jacobian_spectral_norm(
         self,
         hidden: torch.Tensor,
         *,
         prelude: torch.Tensor,
         lanes: torch.Tensor | None,
+        core_kv_cache: tuple[ProjectedKeyValue, ...] | None,
         step_index: int,
+        total_steps: int,
         alpha: float,
         attention_mask: torch.Tensor | None,
         position_ids: torch.Tensor | None,
@@ -396,14 +456,47 @@ class AblationLM(nn.Module):
                 ).reshape(lane_shape)
                 assert base_lanes is not None
                 state_lanes = torch.where(lane_mask, state_lanes, base_lanes)
+            transition_kv_cache = None
+            if self.config.use_static_kv_core:
+                refresh_at_midpoint = (
+                    self.config.static_kv_midpoint_refresh
+                    and total_steps >= 2
+                    and step_index == total_steps // 2
+                )
+                if refresh_at_midpoint:
+                    transition_kv_cache = self._project_core_kv(
+                        state_hidden,
+                        position_ids=position_ids,
+                    )
+                elif core_kv_cache is not None:
+                    transition_kv_cache = tuple(
+                        ProjectedKeyValue(
+                            entry.key.detach(),
+                            entry.value.detach(),
+                            entry.position_ids,
+                            entry.owner_id,
+                        )
+                        for entry in core_kv_cache
+                    )
+                else:
+                    transition_kv_cache = self._project_core_kv(
+                        prelude,
+                        position_ids=position_ids,
+                    )
+            transition_position_ids = (
+                transition_kv_cache[0].position_ids
+                if transition_kv_cache is not None
+                else position_ids
+            )
             next_hidden, next_lanes = self._run_recurrent_visit(
                 state_hidden,
                 prelude=prelude,
                 lanes=state_lanes,
+                core_kv_cache=transition_kv_cache,
                 step_index=step_index,
                 alpha=alpha,
                 attention_mask=attention_mask,
-                position_ids=position_ids,
+                position_ids=transition_position_ids,
                 document_ids=document_ids,
                 force_math_attention=True,
             )
@@ -448,15 +541,36 @@ class AblationLM(nn.Module):
             initial_hidden = torch.where(hidden_mask, initial_hidden, base_prelude)
             hidden = initial_hidden
             lanes = self.scratch.initialize(initial_hidden) if self.scratch is not None else None
+            core_kv_cache = (
+                self._project_core_kv(initial_hidden, position_ids=position_ids)
+                if self.config.use_static_kv_core
+                else None
+            )
+            transition_position_ids = (
+                core_kv_cache[0].position_ids
+                if core_kv_cache is not None
+                else position_ids
+            )
             for step_index in range(steps):
+                if (
+                    self.config.static_kv_midpoint_refresh
+                    and steps >= 2
+                    and step_index == steps // 2
+                ):
+                    core_kv_cache = self._project_core_kv(
+                        hidden,
+                        position_ids=transition_position_ids,
+                    )
+                    transition_position_ids = core_kv_cache[0].position_ids
                 hidden, lanes = self._run_recurrent_visit(
                     hidden,
                     prelude=initial_hidden,
                     lanes=lanes,
+                    core_kv_cache=core_kv_cache,
                     step_index=step_index,
                     alpha=alpha,
                     attention_mask=attention_mask,
-                    position_ids=position_ids,
+                    position_ids=transition_position_ids,
                     document_ids=document_ids,
                     force_math_attention=True,
                 )
@@ -558,9 +672,9 @@ class AblationLM(nn.Module):
     ) -> AblationLMOutput:
         """Run the causal graph.
 
-        KV caching is intentionally gated off in this first build.  Its future
-        implementation must prove cache identity and the no-``T``-multiplier
-        storage contract before it can be enabled.
+        External autoregressive caching remains gated off.  The separate
+        static recurrent-core arm projects K/V from the anchor stream once per
+        cache generation and carries no recurrent-visit (``K``) multiplier.
         """
 
         if use_cache:
@@ -643,11 +757,51 @@ class AblationLM(nn.Module):
 
         prelude = hidden
         lanes = self.scratch.initialize(prelude) if self.scratch is not None else None
+        core_kv_cache = (
+            self._project_core_kv(prelude, position_ids=position_ids)
+            if self.config.use_static_kv_core
+            else None
+        )
+        if core_kv_cache is not None:
+            position_ids = core_kv_cache[0].position_ids
+        core_kv_projection_events = 1 if core_kv_cache is not None else 0
+        static_kv_elements_per_generation = (
+            sum(
+                entry.key.numel() + entry.value.numel()
+                for entry in core_kv_cache
+            )
+            if core_kv_cache is not None
+            else 0
+        )
+        static_kv_bytes_per_generation = (
+            sum(
+                entry.key.numel() * entry.key.element_size()
+                + entry.value.numel() * entry.value.element_size()
+                for entry in core_kv_cache
+            )
+            if core_kv_cache is not None
+            else 0
+        )
+        static_kv_position_metadata_elements = (
+            core_kv_cache[0].position_ids.numel()
+            if core_kv_cache is not None
+            else 0
+        )
+        static_kv_position_metadata_bytes = (
+            core_kv_cache[0].position_ids.numel()
+            * core_kv_cache[0].position_ids.element_size()
+            if core_kv_cache is not None
+            else 0
+        )
+        midpoint_refresh_executed = (
+            self.config.static_kv_midpoint_refresh and steps >= 2
+        )
         loop_rms: list[torch.Tensor] = []
         loop_update_rms: list[torch.Tensor] = []
         trajectory_states: list[torch.Tensor] = [prelude.detach()] if return_diagnostics else []
         gradient_states: list[torch.Tensor] = []
         jacobian_norms: list[torch.Tensor] = []
+        jacobian_cache_semantics: list[tuple[int, str]] = []
         horizon_jacobian_norm: torch.Tensor | None = None
         if jacobian_probe_iterations:
             horizon_jacobian_norm = self._horizon_jacobian_spectral_norm(
@@ -663,12 +817,25 @@ class AblationLM(nn.Module):
         for step_index in range(steps):
             hidden_before_visit = hidden
             if jacobian_probe_iterations:
+                if not self.config.use_static_kv_core:
+                    cache_semantics = "dynamic_kv_total_derivative"
+                elif (
+                    self.config.static_kv_midpoint_refresh
+                    and steps >= 2
+                    and step_index == steps // 2
+                ):
+                    cache_semantics = "refresh_cache_total_derivative"
+                else:
+                    cache_semantics = "fixed_cache_partial_derivative"
+                jacobian_cache_semantics.append((step_index, cache_semantics))
                 jacobian_norms.append(
                     self._visit_jacobian_spectral_norm(
                         hidden,
                         prelude=prelude,
                         lanes=lanes,
+                        core_kv_cache=core_kv_cache,
                         step_index=step_index,
+                        total_steps=steps,
                         alpha=alpha,
                         attention_mask=attention_mask,
                         position_ids=position_ids,
@@ -677,10 +844,22 @@ class AblationLM(nn.Module):
                         iterations=jacobian_probe_iterations,
                     ).detach()
                 )
+            if (
+                self.config.static_kv_midpoint_refresh
+                and steps >= 2
+                and step_index == steps // 2
+            ):
+                core_kv_cache = self._project_core_kv(
+                    hidden,
+                    position_ids=position_ids,
+                )
+                position_ids = core_kv_cache[0].position_ids
+                core_kv_projection_events += 1
             hidden, lanes = self._run_recurrent_visit(
                 hidden,
                 prelude=prelude,
                 lanes=lanes,
+                core_kv_cache=core_kv_cache,
                 step_index=step_index,
                 alpha=alpha,
                 attention_mask=attention_mask,
@@ -739,6 +918,53 @@ class AblationLM(nn.Module):
             diagnostics["recurrence_enabled"] = self.config.use_recurrence
             diagnostics["executed_core_visits"] = steps
             diagnostics["executed_core_block_passes"] = steps * len(self.core_blocks)
+            diagnostics["static_core_kv_enabled"] = self.config.use_static_kv_core
+            diagnostics["main_graph_core_kv_projection_events"] = (
+                core_kv_projection_events
+            )
+            diagnostics["main_graph_core_kv_linear_projection_calls"] = (
+                core_kv_projection_events * len(self.core_blocks) * 2
+            )
+            diagnostics["static_kv_midpoint_refresh_requested"] = (
+                self.config.static_kv_midpoint_refresh
+            )
+            diagnostics["static_kv_midpoint_refresh_executed"] = (
+                midpoint_refresh_executed
+            )
+            diagnostics["static_kv_midpoint_refresh_visit"] = (
+                steps // 2 if midpoint_refresh_executed else None
+            )
+            diagnostics["static_kv_elements_per_generation"] = (
+                static_kv_elements_per_generation
+            )
+            diagnostics["static_kv_bytes_per_generation"] = (
+                static_kv_bytes_per_generation
+            )
+            diagnostics["static_kv_payload_scope"] = (
+                "projected_key_value_only_excludes_shared_position_receipt"
+            )
+            diagnostics["static_kv_position_metadata_elements_per_generation"] = (
+                static_kv_position_metadata_elements
+            )
+            diagnostics["static_kv_position_metadata_bytes_per_generation"] = (
+                static_kv_position_metadata_bytes
+            )
+            diagnostics["static_kv_total_bytes_per_generation"] = (
+                static_kv_bytes_per_generation + static_kv_position_metadata_bytes
+            )
+            diagnostics["static_kv_cumulative_projected_elements"] = (
+                static_kv_elements_per_generation * core_kv_projection_events
+            )
+            diagnostics["static_kv_peak_elements_upper_bound"] = (
+                static_kv_elements_per_generation
+                * core_kv_projection_events
+            )
+            diagnostics["static_kv_peak_total_bytes_upper_bound"] = (
+                static_kv_bytes_per_generation + static_kv_position_metadata_bytes
+            ) * core_kv_projection_events
+            diagnostics["static_kv_receipt_scope"] = (
+                "main_graph_only_excludes_jacobian_instrumentation"
+            )
             diagnostics["loop_rms"] = torch.stack(loop_rms)
             diagnostics["loop_update_rms"] = torch.stack(loop_update_rms)
             diagnostics["trajectory_state_count"] = len(trajectory_states)
@@ -799,6 +1025,9 @@ class AblationLM(nn.Module):
                 )
             if jacobian_norms:
                 diagnostics["loop_jacobian_spectral_norm"] = torch.stack(jacobian_norms)
+                diagnostics["local_jacobian_cache_semantics_by_visit"] = tuple(
+                    jacobian_cache_semantics
+                )
                 diagnostics["joint_state_lane_metric_scale"] = (
                     (self.config.d_model / (2 * self.config.scratch_width)) ** 0.5
                     if lanes is not None

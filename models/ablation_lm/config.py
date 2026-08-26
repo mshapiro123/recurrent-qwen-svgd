@@ -44,6 +44,8 @@ class AblationLMConfig:
     max_recurrent_steps: int = 8
     recurrence_coefficient: float = 1.0
     recurrence_exponent: float = 1.0
+    use_static_kv_core: bool = False
+    static_kv_midpoint_refresh: bool = False
     max_sequence_length: int = 2_048
     rope_theta: float = 500_000.0
     norm_eps: float = 1e-5
@@ -112,6 +114,12 @@ class AblationLMConfig:
             raise ValueError("RoPE requires an even head dimension")
         if self.recurrent_steps > self.max_recurrent_steps:
             raise ValueError("recurrent_steps exceeds max_recurrent_steps")
+        for name, value in {
+            "use_static_kv_core": self.use_static_kv_core,
+            "static_kv_midpoint_refresh": self.static_kv_midpoint_refresh,
+        }.items():
+            if type(value) is not bool:
+                raise TypeError(f"{name} must be an exact bool")
         if not math.isfinite(self.recurrence_coefficient) or self.recurrence_coefficient <= 0:
             raise ValueError("recurrence_coefficient must be finite and positive")
         if self.recurrence_exponent != 1.0:
@@ -150,6 +158,10 @@ class AblationLMConfig:
             raise ValueError("the re-entry bridge requires structural recurrence")
         if self.use_reentry_bridge and self.recurrent_steps < 2:
             raise ValueError("the re-entry bridge requires at least two recurrent visits")
+        if self.use_static_kv_core and not self.use_recurrence:
+            raise ValueError("static core KV requires structural recurrence")
+        if self.static_kv_midpoint_refresh and not self.use_static_kv_core:
+            raise ValueError("midpoint KV refresh requires the static core KV arm")
         if not self.engram_orders or any(
             type(order) is not int or order < 1 for order in self.engram_orders
         ):
@@ -213,6 +225,7 @@ class AblationLMConfig:
             use_front_hadamard_experts=True,
             use_recurrence=True,
             recurrent_steps=4,
+            use_static_kv_core=True,
             use_reentry_bridge=True,
             use_scratch=True,
             use_lane_carrier=True,

@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import copy
 from dataclasses import replace
+from unittest.mock import patch
 
 import pytest
 import torch
@@ -73,6 +75,96 @@ def _manual_dense_forward(model: AblationLM, tokens: torch.Tensor) -> torch.Tens
     return model.lm_head(model.final_norm(hidden))
 
 
+def _manual_static_kv_forward(model: AblationLM, tokens: torch.Tensor) -> torch.Tensor:
+    hidden = model.token_embedding(tokens)
+    positions = torch.arange(tokens.shape[1]).view(1, -1).expand(tokens.shape[0], -1)
+    for block in model.prelude_blocks:
+        hidden = block(hidden, position_ids=positions)
+    anchor = hidden
+    assert model.loop_embedding is not None
+    hidden = hidden + model.loop_embedding.weight[0]
+    for block in model.core_blocks:
+        hidden = block(
+            hidden,
+            projected_kv=block.project_kv(anchor, position_ids=positions),
+            position_ids=positions,
+        )
+    for block in model.coda_blocks:
+        hidden = block(hidden, position_ids=positions)
+    return model.lm_head(model.final_norm(hidden))
+
+
+def _manual_static_visit_logits(
+    model: AblationLM,
+    tokens: torch.Tensor,
+    *,
+    attention_mask: torch.Tensor,
+    document_ids: torch.Tensor,
+) -> tuple[torch.Tensor, list[torch.Tensor]]:
+    effective_documents = model._contiguous_document_segments(
+        tokens,
+        attention_mask,
+        document_ids,
+    )
+    assert effective_documents is not None
+    positions = model._document_position_ids(effective_documents)
+    embedded = model.token_embedding(tokens)
+    hidden = embedded
+    if model.front_hadamard is not None:
+        hidden = model.front_hadamard(hidden)
+    for block_index, block in enumerate(model.prelude_blocks):
+        hidden = block(
+            hidden,
+            attention_mask=attention_mask,
+            position_ids=positions,
+            document_ids=effective_documents,
+        )
+        if block_index == 0 and model.engram is not None:
+            hidden, _engram_audit = model.engram(
+                hidden,
+                tokens,
+                document_ids=effective_documents,
+                enabled=True,
+            )
+    prelude = hidden
+    lanes = model.scratch.initialize(prelude) if model.scratch is not None else None
+    core_kv_cache = model._project_core_kv(prelude, position_ids=positions)
+    alpha = model.config.recurrence_scale(model.config.recurrent_steps)
+    visit_logits: list[torch.Tensor] = []
+    for step_index in range(model.config.recurrent_steps):
+        if (
+            model.config.static_kv_midpoint_refresh
+            and step_index == model.config.recurrent_steps // 2
+        ):
+            core_kv_cache = model._project_core_kv(hidden, position_ids=positions)
+        hidden, lanes = model._run_recurrent_visit(
+            hidden,
+            prelude=prelude,
+            lanes=lanes,
+            core_kv_cache=core_kv_cache,
+            step_index=step_index,
+            alpha=alpha,
+            attention_mask=attention_mask,
+            position_ids=positions,
+            document_ids=effective_documents,
+        )
+        readout_hidden = hidden
+        if model.long_term_memory is not None:
+            readout_hidden, _memory_audit = model.long_term_memory(
+                readout_hidden,
+                record_ids=None,
+            )
+        for block in model.coda_blocks:
+            readout_hidden = block(
+                readout_hidden,
+                attention_mask=attention_mask,
+                position_ids=positions,
+                document_ids=effective_documents,
+            )
+        visit_logits.append(model.lm_head(model.final_norm(readout_hidden)))
+    return embedded, visit_logits
+
+
 def test_t1_disabled_graph_is_exactly_the_dense_transformer() -> None:
     torch.manual_seed(3)
     model = _model(_tiny_config()).eval()
@@ -116,11 +208,406 @@ def test_s0_causality_gradient_is_exactly_zero_for_future_positions() -> None:
     assert torch.count_nonzero(gradient[0, 4:]) == 0
 
 
+def test_t15_model_static_kv_matches_fresh_anchor_projection_at_k1() -> None:
+    torch.manual_seed(6)
+    config = _tiny_config(
+        use_recurrence=True,
+        recurrent_steps=1,
+        use_static_kv_core=True,
+    )
+    model = _model(config).eval()
+    tokens = torch.randint(0, config.vocab_size, (2, 7))
+
+    actual = model(tokens).logits
+    reference = _manual_static_kv_forward(model, tokens)
+
+    torch.testing.assert_close(actual, reference, rtol=0, atol=0)
+
+
+def test_static_kv_removes_the_recurrent_visit_multiplier_from_projection() -> None:
+    torch.manual_seed(7)
+    config = _tiny_config(
+        use_recurrence=True,
+        recurrent_steps=3,
+        use_static_kv_core=True,
+    )
+    model = _model(config).eval()
+    tokens = torch.randint(0, config.vocab_size, (2, 7))
+    projection_calls = 0
+
+    def count_projection(
+        _module: nn.Module,
+        _inputs: tuple[torch.Tensor, ...],
+        _output: torch.Tensor,
+    ) -> None:
+        nonlocal projection_calls
+        projection_calls += 1
+
+    handles = [
+        block.attention.k_proj.register_forward_hook(count_projection)
+        for block in model.core_blocks
+    ]
+    try:
+        output = model(tokens, return_diagnostics=True)
+    finally:
+        for handle in handles:
+            handle.remove()
+
+    assert projection_calls == config.n_core_blocks
+    expected_elements = (
+        tokens.shape[0]
+        * config.n_core_blocks
+        * tokens.shape[1]
+        * 2
+        * config.n_kv_heads
+        * config.head_dim
+    )
+    assert output.diagnostics["main_graph_core_kv_projection_events"] == 1
+    assert output.diagnostics["main_graph_core_kv_linear_projection_calls"] == (
+        2 * config.n_core_blocks
+    )
+    assert output.diagnostics["static_kv_elements_per_generation"] == expected_elements
+    assert output.diagnostics["static_kv_bytes_per_generation"] == 4 * expected_elements
+    position_elements = tokens.numel()
+    assert output.diagnostics[
+        "static_kv_position_metadata_elements_per_generation"
+    ] == position_elements
+    assert output.diagnostics[
+        "static_kv_position_metadata_bytes_per_generation"
+    ] == position_elements * torch.tensor([], dtype=torch.long).element_size()
+    assert output.diagnostics["static_kv_total_bytes_per_generation"] == (
+        4 * expected_elements
+        + position_elements * torch.tensor([], dtype=torch.long).element_size()
+    )
+    assert output.diagnostics["static_kv_cumulative_projected_elements"] == (
+        expected_elements
+    )
+
+
+def test_static_recurrent_visit_fails_closed_without_caller_owned_cache() -> None:
+    config = _tiny_config(
+        use_recurrence=True,
+        use_static_kv_core=True,
+    )
+    model = _model(config).eval()
+    prelude = torch.randn(1, 5, config.d_model)
+
+    with pytest.raises(ValueError, match="projected once by the caller"):
+        model._run_recurrent_visit(
+            prelude,
+            prelude=prelude,
+            lanes=None,
+            step_index=0,
+            alpha=1.0,
+            attention_mask=None,
+            position_ids=None,
+            document_ids=None,
+        )
+
+
+def test_static_recurrent_visit_rejects_trusted_query_position_mismatch() -> None:
+    config = _tiny_config(
+        use_recurrence=True,
+        recurrent_steps=2,
+        use_static_kv_core=True,
+    )
+    model = _model(config).eval()
+    hidden = torch.randn(1, 4, config.d_model)
+    positions = torch.arange(4).view(1, -1)
+    cache = model._project_core_kv(hidden, position_ids=positions)
+
+    with pytest.raises(ValueError, match="position IDs differ"):
+        model._run_recurrent_visit(
+            hidden,
+            prelude=hidden,
+            lanes=None,
+            core_kv_cache=cache,
+            step_index=0,
+            alpha=config.recurrence_scale(),
+            attention_mask=None,
+            position_ids=positions + 1,
+            document_ids=None,
+        )
+
+
+def test_static_kv_position_receipt_is_immutable_against_caller_mutation() -> None:
+    config = _tiny_config(
+        use_recurrence=True,
+        recurrent_steps=2,
+        use_static_kv_core=True,
+    )
+    model = _model(config).eval()
+    hidden = torch.randn(1, 4, config.d_model)
+    positions = torch.arange(4).view(1, -1)
+    original_positions = positions.clone()
+    cache = model._project_core_kv(hidden, position_ids=positions)
+
+    positions.add_(1)
+    torch.testing.assert_close(cache[0].position_ids, original_positions)
+    with pytest.raises(ValueError, match="position IDs differ"):
+        model._run_recurrent_visit(
+            hidden,
+            prelude=hidden,
+            lanes=None,
+            core_kv_cache=cache,
+            step_index=0,
+            alpha=config.recurrence_scale(),
+            attention_mask=None,
+            position_ids=positions,
+            document_ids=None,
+        )
+
+
+def test_t2_static_kv_parameters_receive_live_gradients_at_first_backward() -> None:
+    torch.manual_seed(71)
+    config = _tiny_config(
+        use_recurrence=True,
+        recurrent_steps=3,
+        use_static_kv_core=True,
+    )
+    model = _model(config).train()
+    tokens = torch.randint(0, config.vocab_size, (2, 7))
+
+    output = model(tokens, labels=tokens)
+    assert output.loss is not None
+    output.loss.backward()
+
+    for block in model.core_blocks:
+        for projection in (block.attention.k_proj, block.attention.v_proj):
+            gradient = projection.weight.grad
+            assert gradient is not None
+            assert bool(torch.isfinite(gradient).all())
+            assert torch.count_nonzero(gradient) > 0
+
+
+def test_fork_b_prime_refreshes_static_kv_once_at_the_midpoint() -> None:
+    config = _tiny_config(
+        use_recurrence=True,
+        recurrent_steps=4,
+        use_static_kv_core=True,
+        static_kv_midpoint_refresh=True,
+    )
+    model = _model(config).eval()
+    reference = copy.deepcopy(model)
+    tokens = torch.randint(0, config.vocab_size, (1, 6))
+    attention_mask = torch.ones_like(tokens)
+    document_ids = torch.zeros_like(tokens)
+    k_projection_calls = 0
+    v_projection_calls = 0
+
+    def count_k(
+        _module: nn.Module,
+        _inputs: tuple[torch.Tensor, ...],
+        _output: torch.Tensor,
+    ) -> None:
+        nonlocal k_projection_calls
+        k_projection_calls += 1
+
+    def count_v(
+        _module: nn.Module,
+        _inputs: tuple[torch.Tensor, ...],
+        _output: torch.Tensor,
+    ) -> None:
+        nonlocal v_projection_calls
+        v_projection_calls += 1
+
+    handles = []
+    for block in model.core_blocks:
+        handles.append(block.attention.k_proj.register_forward_hook(count_k))
+        handles.append(block.attention.v_proj.register_forward_hook(count_v))
+    try:
+        with patch.object(
+            model,
+            "_project_core_kv",
+            wraps=model._project_core_kv,
+        ) as project:
+            output = model(
+                tokens,
+                attention_mask=attention_mask,
+                document_ids=document_ids,
+                return_diagnostics=True,
+            )
+            projection_sources = [
+                call.args[0].detach().clone() for call in project.call_args_list
+            ]
+    finally:
+        for handle in handles:
+            handle.remove()
+
+    embedded, reference_visits = _manual_static_visit_logits(
+        reference,
+        tokens,
+        attention_mask=attention_mask,
+        document_ids=document_ids,
+    )
+    del embedded
+    effective_documents = reference._contiguous_document_segments(
+        tokens,
+        attention_mask,
+        document_ids,
+    )
+    assert effective_documents is not None
+    positions = reference._document_position_ids(effective_documents)
+    expected_hidden = reference.token_embedding(tokens)
+    for block in reference.prelude_blocks:
+        expected_hidden = block(
+            expected_hidden,
+            attention_mask=attention_mask,
+            position_ids=positions,
+            document_ids=effective_documents,
+        )
+    expected_prelude = expected_hidden
+    expected_cache = reference._project_core_kv(
+        expected_prelude,
+        position_ids=positions,
+    )
+    alpha = config.recurrence_scale(config.recurrent_steps)
+    for step_index in range(config.recurrent_steps // 2):
+        expected_hidden, _ = reference._run_recurrent_visit(
+            expected_hidden,
+            prelude=expected_prelude,
+            lanes=None,
+            core_kv_cache=expected_cache,
+            step_index=step_index,
+            alpha=alpha,
+            attention_mask=attention_mask,
+            position_ids=positions,
+            document_ids=effective_documents,
+        )
+
+    assert output.diagnostics["main_graph_core_kv_projection_events"] == 2
+    assert output.diagnostics["static_kv_peak_elements_upper_bound"] == (
+        2 * output.diagnostics["static_kv_elements_per_generation"]
+    )
+    assert output.diagnostics["static_kv_midpoint_refresh_requested"] is True
+    assert output.diagnostics["static_kv_midpoint_refresh_executed"] is True
+    assert output.diagnostics["static_kv_midpoint_refresh_visit"] == 2
+    assert "local_jacobian_cache_semantics_by_visit" not in output.diagnostics
+    assert k_projection_calls == 2 * config.n_core_blocks
+    assert v_projection_calls == 2 * config.n_core_blocks
+    assert len(projection_sources) == 2
+    torch.testing.assert_close(projection_sources[0], expected_prelude, rtol=0, atol=0)
+    torch.testing.assert_close(projection_sources[1], expected_hidden, rtol=0, atol=0)
+    torch.testing.assert_close(output.logits, reference_visits[-1], rtol=0, atol=0)
+
+
+def test_fork_b_prime_reports_requested_but_unexecuted_at_k1() -> None:
+    config = _tiny_config(
+        use_recurrence=True,
+        recurrent_steps=1,
+        use_static_kv_core=True,
+        static_kv_midpoint_refresh=True,
+    )
+    output = _model(config).eval()(
+        torch.randint(0, config.vocab_size, (1, 6)),
+        return_diagnostics=True,
+    )
+
+    assert output.diagnostics["static_kv_midpoint_refresh_requested"] is True
+    assert output.diagnostics["static_kv_midpoint_refresh_executed"] is False
+    assert output.diagnostics["static_kv_midpoint_refresh_visit"] is None
+    assert output.diagnostics["main_graph_core_kv_projection_events"] == 1
+
+
+@pytest.mark.parametrize(
+    ("steps", "midpoint_refresh"),
+    ((1, False), (2, False), (3, False), (4, True)),
+)
+def test_t14b_static_kv_is_exactly_causal_at_every_visit_horizon(
+    steps: int,
+    midpoint_refresh: bool,
+) -> None:
+    torch.manual_seed(8 + steps)
+    config = _tiny_config(
+        use_recurrence=True,
+        recurrent_steps=steps,
+        use_static_kv_core=True,
+        static_kv_midpoint_refresh=midpoint_refresh,
+    )
+    model = _model(config).eval()
+    tokens = torch.randint(0, config.vocab_size, (1, 8))
+    captured: list[torch.Tensor] = []
+
+    def retain_embedding_gradient(
+        _module: nn.Module,
+        _inputs: tuple[torch.Tensor, ...],
+        output: torch.Tensor,
+    ) -> None:
+        output.retain_grad()
+        captured.append(output)
+
+    handle = model.token_embedding.register_forward_hook(retain_embedding_gradient)
+    try:
+        logits = model(tokens).logits
+        logits[0, 3, 7].backward()
+    finally:
+        handle.remove()
+
+    assert len(captured) == 1 and captured[0].grad is not None
+    gradient = captured[0].grad
+    assert torch.count_nonzero(gradient[0, :4]) > 0
+    assert torch.count_nonzero(gradient[0, 4:]) == 0
+
+
+@pytest.mark.parametrize("midpoint_refresh", (False, True))
+def test_t14b_static_kv_checks_every_k_with_packing_and_padding(
+    midpoint_refresh: bool,
+) -> None:
+    torch.manual_seed(121)
+    config = _tiny_config(
+        use_recurrence=True,
+        recurrent_steps=4,
+        use_static_kv_core=True,
+        static_kv_midpoint_refresh=midpoint_refresh,
+        use_front_hadamard_experts=True,
+        use_reentry_bridge=True,
+        use_scratch=True,
+        use_lane_carrier=True,
+        use_engram=True,
+        use_long_term_memory=True,
+    )
+    model = _model(config).eval()
+    assert model.front_hadamard is not None
+    assert model.reentry_bridge is not None
+    assert model.scratch is not None and model.scratch.carrier is not None
+    assert model.engram is not None
+    assert model.long_term_memory is not None
+    tokens = torch.tensor([[1, 2, 3, 10, 11, 12, 0, 0]])
+    attention_mask = torch.tensor([[1, 1, 1, 1, 1, 1, 0, 0]])
+    document_ids = torch.tensor([[0, 0, 0, 1, 1, 1, -1, -1]])
+    embedded, visit_logits = _manual_static_visit_logits(
+        model,
+        tokens,
+        attention_mask=attention_mask,
+        document_ids=document_ids,
+    )
+
+    assert len(visit_logits) == config.recurrent_steps
+    for logits in visit_logits:
+        first_document_gradient = torch.autograd.grad(
+            logits[0, 1, 7],
+            embedded,
+            retain_graph=True,
+        )[0]
+        assert torch.count_nonzero(first_document_gradient[0, :2]) > 0
+        assert torch.count_nonzero(first_document_gradient[0, 2:]) == 0
+
+        second_document_gradient = torch.autograd.grad(
+            logits[0, 4, 7],
+            embedded,
+            retain_graph=True,
+        )[0]
+        assert torch.count_nonzero(second_document_gradient[0, :3]) == 0
+        assert torch.count_nonzero(second_document_gradient[0, 3:5]) > 0
+        assert torch.count_nonzero(second_document_gradient[0, 5:]) == 0
+
+
 def test_full_active_graph_is_causal_under_future_token_perturbation() -> None:
     torch.manual_seed(5)
     config = _tiny_config(
         use_recurrence=True,
         recurrent_steps=2,
+        use_static_kv_core=True,
         use_front_hadamard_experts=True,
         use_reentry_bridge=True,
         use_scratch=True,
@@ -547,6 +1034,10 @@ def test_model_level_recurrent_jacobian_probe_is_finite_per_visit() -> None:
     assert estimates.shape == (2,)
     assert bool(torch.isfinite(estimates).all())
     assert bool(estimates.gt(0).all())
+    assert output.diagnostics["local_jacobian_cache_semantics_by_visit"] == (
+        (0, "dynamic_kv_total_derivative"),
+        (1, "dynamic_kv_total_derivative"),
+    )
     horizon = output.diagnostics["horizon_jacobian_spectral_norm"]
     assert horizon.ndim == 0
     assert torch.isfinite(horizon)
@@ -570,6 +1061,25 @@ def test_model_level_recurrent_jacobian_probe_is_finite_per_visit() -> None:
     torch.testing.assert_close(
         output.diagnostics["scratch_delta_rms"],
         changed_padding.diagnostics["scratch_delta_rms"],
+    )
+
+
+def test_static_midpoint_jacobian_receipts_distinguish_partial_and_total_visits() -> None:
+    config = _tiny_config(
+        use_recurrence=True,
+        recurrent_steps=2,
+        use_static_kv_core=True,
+        static_kv_midpoint_refresh=True,
+    )
+    output = _model(config).eval()(
+        torch.tensor([[1, 2, 3, 4]]),
+        return_diagnostics=True,
+        jacobian_probe_iterations=1,
+    )
+
+    assert output.diagnostics["local_jacobian_cache_semantics_by_visit"] == (
+        (0, "fixed_cache_partial_derivative"),
+        (1, "refresh_cache_total_derivative"),
     )
 
 
@@ -610,6 +1120,7 @@ def test_full_active_graph_is_finite_in_bfloat16_with_fp32_loss() -> None:
     config = _tiny_config(
         use_recurrence=True,
         recurrent_steps=2,
+        use_static_kv_core=True,
         use_front_hadamard_experts=True,
         use_reentry_bridge=True,
         use_scratch=True,

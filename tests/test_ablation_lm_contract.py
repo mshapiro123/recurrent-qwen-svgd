@@ -137,6 +137,12 @@ def test_active_layer_scales_and_callosum_cannot_be_initialized_dead() -> None:
         replace(config, recurrence_exponent=0.5)
     with pytest.raises(ValueError, match="requires structural recurrence"):
         replace(config, use_reentry_bridge=True)
+    with pytest.raises(ValueError, match="static core KV requires structural recurrence"):
+        replace(config, use_static_kv_core=True)
+    with pytest.raises(ValueError, match="midpoint KV refresh"):
+        replace(config, static_kv_midpoint_refresh=True)
+    with pytest.raises(TypeError, match="exact bool"):
+        replace(config, use_static_kv_core=1)
     with pytest.raises(ValueError, match="positive suffix"):
         replace(config, engram_orders=(2.5, 3))
     with pytest.raises(ValueError, match="exact integer"):
@@ -152,6 +158,7 @@ def test_full_bringup_profile_enables_recurrence_and_separate_lane_carrier() -> 
 
     assert active.use_recurrence is True
     assert active.recurrent_steps == 4
+    assert active.use_static_kv_core is True
     assert active.use_scratch is True
     assert active.use_lane_carrier is True
 
@@ -239,7 +246,7 @@ def test_tokenizer_screen_separates_proxy_runs_from_target_decision_columns(
         RATIFIED_TARGET_ROUNDED_UNIQUE_PARAMETERS_BY_CORE[6]
     )
     assert screen.decision_target.core_blocks == 6
-    with pytest.raises(RuntimeError, match="joint rung-B decision"):
+    with pytest.raises(RuntimeError, match="resolved G-TOK selector"):
         _ = screen.selection_vocabulary_share
 
 
@@ -262,7 +269,7 @@ def test_tokenizer_freeze_requires_exact_authority_and_budget_semantics() -> Non
     )
     assert derived.decision_target.core_blocks == target.n_core_blocks
     assert derived.decision_target.exact_total is False
-    with pytest.raises(RuntimeError, match="full-model composition"):
+    with pytest.raises(RuntimeError, match="full-model target composition"):
         _ = derived.selection_vocabulary_share
 
     rung_a = TokenizerTargetDecisionContract(
@@ -270,7 +277,7 @@ def test_tokenizer_freeze_requires_exact_authority_and_budget_semantics() -> Non
         authority="guard_is_not_a_decision_column",
         budget_semantics="fixed_non_vocabulary",
     )
-    with pytest.raises(ValueError, match="decision contract must be rung B"):
+    with pytest.raises(ValueError, match="decision contract must use rung B"):
         tokenizer_screen_accounting(proxy, target_contract=rung_a)
 
 
@@ -288,7 +295,7 @@ def test_tokenizer_selection_rederives_rows_and_rejects_public_dataclass_forgery
             budget_semantics="fixed_total",
         ),
     )
-    with pytest.raises(RuntimeError, match="joint rung-B decision"):
+    with pytest.raises(RuntimeError, match="resolved G-TOK selector"):
         _ = forged_without_contract.selection_vocabulary_share
 
     contract = _fixed_total_contract()
@@ -301,14 +308,14 @@ def test_tokenizer_selection_rederives_rows_and_rejects_public_dataclass_forgery
         ),
         target_contract=contract,
     )
-    with pytest.raises(RuntimeError, match="joint rung-B decision"):
+    with pytest.raises(RuntimeError, match="resolved G-TOK selector"):
         _ = direct_forgery.selection_vocabulary_share
 
     forged_proxy = replace(
         valid,
         execution_proxy=replace(valid.execution_proxy, exact_total=False),
     )
-    with pytest.raises(RuntimeError, match="joint rung-B decision"):
+    with pytest.raises(RuntimeError, match="resolved G-TOK selector"):
         _ = forged_proxy.selection_vocabulary_share
 
 

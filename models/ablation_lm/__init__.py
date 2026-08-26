@@ -12,6 +12,15 @@ from .accounting import (
     parameter_accounting,
     tokenizer_screen_accounting,
 )
+from .bicameral import SwapLinear
+from .callosum import (
+    CALLOSUM_RETENTION_TRIPWIRE,
+    EmpiricalCarrierRetentionReceipt,
+    HemisphereGradientCosineReceipt,
+    PerBandBirkhoffCallosum,
+    empirical_disagreement_retention_receipt,
+    hemisphere_gradient_cosine_receipt,
+)
 from .config import (
     RATIFIED_TARGET_AUTHORITY,
     RATIFIED_TARGET_D_MODEL,
@@ -39,10 +48,14 @@ __all__ = [
     "AblationLM",
     "AblationLMConfig",
     "AblationLMOutput",
+    "CALLOSUM_RETENTION_TRIPWIRE",
     "Cl20Rotor",
     "CompositionReceipt",
+    "EmpiricalCarrierRetentionReceipt",
+    "HemisphereGradientCosineReceipt",
     "LaneModeState",
     "ParameterAccounting",
+    "PerBandBirkhoffCallosum",
     "RATIFIED_TARGET_AUTHORITY",
     "RATIFIED_TARGET_D_MODEL",
     "RATIFIED_TARGET_ROUNDED_UNIQUE_PARAMETERS_BY_CORE",
@@ -53,6 +66,7 @@ __all__ = [
     "REGISTERED_PROXY_BLOCK_SPLITS",
     "REGISTERED_TARGET_BLOCK_SPLITS",
     "TOKENIZER_VOCAB_CANDIDATES",
+    "SwapLinear",
     "TokenizerScaleAccounting",
     "TokenizerScreenAccounting",
     "TokenizerTargetDecisionContract",
@@ -63,6 +77,8 @@ __all__ = [
     "cl20_rotate",
     "lanes_to_modes",
     "parameter_accounting",
+    "empirical_disagreement_retention_receipt",
+    "hemisphere_gradient_cosine_receipt",
     "registered_mu_r_configs",
     "registered_proxy_reallocation_configs",
     "registered_target_configs",

@@ -99,8 +99,9 @@ class TokenizerScaleAccounting:
 class TokenizerScreenAccounting:
     """Keep cheap proxy execution separate from target-scale selection math.
 
-    The current object is deliberately non-selecting.  A future joint gate must
-    carry the rung-B decision and rung-A guard together.
+    The current object is deliberately non-selecting.  The target decision is
+    priced on rung B and serves both rungs under R-G4h; exact complete-model
+    composition and a separately ratified selector are still required.
     """
 
     execution_proxy: TokenizerScaleAccounting
@@ -110,8 +111,8 @@ class TokenizerScreenAccounting:
     @property
     def selection_vocabulary_share(self) -> float:
         raise RuntimeError(
-            "LOOM-1 tokenizer selection requires a joint rung-B decision, rung-A guard, "
-            "and full-model composition receipts; S0 dense rows cannot freeze a tokenizer"
+            "LOOM-1 tokenizer selection requires exact full-model target composition "
+            "and a resolved G-TOK selector; S0 dense rows cannot freeze a tokenizer"
         )
 
 
@@ -607,14 +608,14 @@ def tokenizer_screen_accounting(
 
     The provisional decision column is always target rung B and is independent
     of whichever proxy arm executes.  All target rows remain non-selection S0
-    accounting until the complete model body and the separate rung-A guard are
-    represented by a joint gate.
+    accounting until the complete model body and the resolved G-TOK selector
+    are represented by a fail-closed gate.
     """
 
     if target_contract is not None and target_contract.config.n_core_blocks != 6:
         raise ValueError(
-            "the tokenizer decision contract must be rung B; the rung-A guard "
-            "requires the future joint gate"
+            "the tokenizer decision contract must use rung B; one decision "
+            "then serves both target rungs under R-G4h"
         )
     execution_proxy = _proxy_scale_accounting(proxy_config)
     decision_target = (

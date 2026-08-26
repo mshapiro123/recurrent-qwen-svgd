@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+from typing import NamedTuple
 
 import torch
 import torch.nn.functional as F
@@ -93,11 +94,37 @@ class RotaryEmbedding(nn.Module):
             raise ValueError("query and key must align on batch, sequence, and head width")
         if position_ids.shape != (query.shape[0], query.shape[-2]):
             raise ValueError("position_ids must align with query batch and sequence")
-        cosine, sine = self.cos_sin(position_ids, dtype=query.dtype, device=query.device)
-        return (
-            query * cosine + rotate_half(query) * sine,
-            key * cosine + rotate_half(key) * sine,
+        return self.apply_rotary(query, position_ids), self.apply_rotary(
+            key,
+            position_ids,
         )
+
+    def apply_rotary(
+        self,
+        values: torch.Tensor,
+        position_ids: torch.Tensor,
+    ) -> torch.Tensor:
+        """Apply token-position RoPE to an arbitrary attention-head axis."""
+
+        if values.ndim != 4 or values.shape[-1] != self.head_dim:
+            raise ValueError("values must have shape [batch, heads, sequence, head_dim]")
+        if position_ids.shape != (values.shape[0], values.shape[-2]):
+            raise ValueError("position_ids must align with values batch and sequence")
+        cosine, sine = self.cos_sin(
+            position_ids,
+            dtype=values.dtype,
+            device=values.device,
+        )
+        return values * cosine + rotate_half(values) * sine
+
+
+class ProjectedKeyValue(NamedTuple):
+    """Unexpanded grouped keys and values projected from one fixed source."""
+
+    key: torch.Tensor
+    value: torch.Tensor
+    position_ids: torch.Tensor
+    owner_id: int
 
 
 class GroupedQueryAttention(nn.Module):
@@ -110,7 +137,9 @@ class GroupedQueryAttention(nn.Module):
         self.n_kv_heads = config.n_kv_heads
         self.head_dim = config.head_dim
         self.dropout = float(config.attention_dropout)
-        self.q_proj = mark_muon_eligible(nn.Linear(self.d_model, self.n_heads * self.head_dim, bias=False))
+        self.q_proj = mark_muon_eligible(
+            nn.Linear(self.d_model, self.n_heads * self.head_dim, bias=False)
+        )
         self.k_proj = mark_muon_eligible(
             nn.Linear(self.d_model, self.n_kv_heads * self.head_dim, bias=False)
         )
@@ -129,6 +158,89 @@ class GroupedQueryAttention(nn.Module):
     def _split_heads(self, values: torch.Tensor, heads: int) -> torch.Tensor:
         batch, length, _ = values.shape
         return values.view(batch, length, heads, self.head_dim).transpose(1, 2)
+
+    @staticmethod
+    def _validate_position_ids(
+        position_ids: torch.Tensor,
+        *,
+        batch: int,
+        length: int,
+        device: torch.device,
+    ) -> None:
+        if position_ids.shape != (batch, length):
+            raise ValueError("position_ids must match [batch, sequence]")
+        if position_ids.device != device:
+            raise ValueError("position_ids must share the hidden-state device")
+        if position_ids.dtype not in (torch.int32, torch.int64):
+            raise TypeError("position_ids must use an integer dtype")
+
+    def project_kv(
+        self,
+        hidden: torch.Tensor,
+        *,
+        position_ids: torch.Tensor | None = None,
+        _position_metadata: torch.Tensor | None = None,
+    ) -> ProjectedKeyValue:
+        """Project reusable K/V tensors from an explicit anchor sequence."""
+
+        if hidden.ndim != 3 or hidden.shape[-1] != self.d_model:
+            raise ValueError("hidden must have shape [batch, sequence, d_model]")
+        batch, length, _ = hidden.shape
+        if position_ids is None:
+            position_ids = torch.arange(length, device=hidden.device).view(1, -1)
+            position_ids = position_ids.expand(batch, -1)
+        self._validate_position_ids(
+            position_ids,
+            batch=batch,
+            length=length,
+            device=hidden.device,
+        )
+        key = self.key_norm(self._split_heads(self.k_proj(hidden), self.n_kv_heads))
+        key = self.rope.apply_rotary(key, position_ids)
+        value = self._split_heads(self.v_proj(hidden), self.n_kv_heads)
+        if _position_metadata is None:
+            position_metadata = position_ids.detach().clone()
+        else:
+            if _position_metadata is not position_ids:
+                raise ValueError("shared position metadata must be the projected position tensor")
+            position_metadata = _position_metadata
+        return ProjectedKeyValue(
+            key=key,
+            value=value,
+            position_ids=position_metadata,
+            owner_id=id(self),
+        )
+
+    def _validate_projected_kv(
+        self,
+        projected_kv: ProjectedKeyValue,
+        *,
+        batch: int,
+        length: int,
+        device: torch.device,
+        dtype: torch.dtype,
+        position_ids: torch.Tensor,
+        validate_positions: bool,
+    ) -> None:
+        expected = (batch, self.n_kv_heads, length, self.head_dim)
+        if tuple(projected_kv.key.shape) != expected:
+            raise ValueError(f"projected key must have shape {expected}")
+        if tuple(projected_kv.value.shape) != expected:
+            raise ValueError(f"projected value must have shape {expected}")
+        if projected_kv.owner_id != id(self):
+            raise ValueError("projected K/V belong to a different attention block")
+        if projected_kv.key.device != device or projected_kv.value.device != device:
+            raise ValueError("projected K/V must share the query device")
+        if projected_kv.key.dtype != dtype or projected_kv.value.dtype != dtype:
+            raise ValueError("projected K/V must share the query dtype")
+        if projected_kv.position_ids.shape != (batch, length):
+            raise ValueError("projected K/V position IDs have the wrong shape")
+        if projected_kv.position_ids.device != device:
+            raise ValueError("projected K/V position IDs must share the query device")
+        if projected_kv.position_ids.dtype not in (torch.int32, torch.int64):
+            raise TypeError("projected K/V position IDs must use an integer dtype")
+        if validate_positions and not torch.equal(projected_kv.position_ids, position_ids):
+            raise ValueError("projected K/V were encoded with different position IDs")
 
     @staticmethod
     def _causal_padding_mask(
@@ -165,6 +277,8 @@ class GroupedQueryAttention(nn.Module):
         self,
         hidden: torch.Tensor,
         *,
+        projected_kv: ProjectedKeyValue | None = None,
+        _trusted_projected_kv: bool = False,
         attention_mask: torch.Tensor | None = None,
         position_ids: torch.Tensor | None = None,
         document_ids: torch.Tensor | None = None,
@@ -172,16 +286,33 @@ class GroupedQueryAttention(nn.Module):
     ) -> torch.Tensor:
         if hidden.ndim != 3 or hidden.shape[-1] != self.d_model:
             raise ValueError("hidden must have shape [batch, sequence, d_model]")
+        if type(_trusted_projected_kv) is not bool:
+            raise TypeError("_trusted_projected_kv must be an exact bool")
         batch, length, _ = hidden.shape
         if position_ids is None:
             position_ids = torch.arange(length, device=hidden.device).view(1, -1).expand(batch, -1)
-        elif position_ids.shape != (batch, length):
-            raise ValueError("position_ids must match [batch, sequence]")
+        self._validate_position_ids(
+            position_ids,
+            batch=batch,
+            length=length,
+            device=hidden.device,
+        )
 
         query = self.query_norm(self._split_heads(self.q_proj(hidden), self.n_heads))
-        key = self.key_norm(self._split_heads(self.k_proj(hidden), self.n_kv_heads))
-        value = self._split_heads(self.v_proj(hidden), self.n_kv_heads)
-        query, key = self.rope(query, key, position_ids)
+        query = self.rope.apply_rotary(query, position_ids)
+        if projected_kv is None:
+            projected_kv = self.project_kv(hidden, position_ids=position_ids)
+        else:
+            self._validate_projected_kv(
+                projected_kv,
+                batch=batch,
+                length=length,
+                device=hidden.device,
+                dtype=query.dtype,
+                position_ids=position_ids,
+                validate_positions=not _trusted_projected_kv,
+            )
+        key, value, _cache_position_ids, _owner_id = projected_kv
 
         repeat = self.n_heads // self.n_kv_heads
         if repeat > 1:
@@ -271,6 +402,8 @@ class TransformerBlock(nn.Module):
         self,
         hidden: torch.Tensor,
         *,
+        projected_kv: ProjectedKeyValue | None = None,
+        _trusted_projected_kv: bool = False,
         attention_mask: torch.Tensor | None = None,
         position_ids: torch.Tensor | None = None,
         document_ids: torch.Tensor | None = None,
@@ -280,12 +413,29 @@ class TransformerBlock(nn.Module):
         scale = float(residual_scale)
         hidden = hidden + scale * self.attention(
             self.attention_norm(hidden),
+            projected_kv=projected_kv,
+            _trusted_projected_kv=_trusted_projected_kv,
             attention_mask=attention_mask,
             position_ids=position_ids,
             document_ids=document_ids,
             force_math_attention=force_math_attention,
         )
         return hidden + scale * self.feed_forward(self.ffn_norm(hidden))
+
+    def project_kv(
+        self,
+        hidden: torch.Tensor,
+        *,
+        position_ids: torch.Tensor | None = None,
+        _position_metadata: torch.Tensor | None = None,
+    ) -> ProjectedKeyValue:
+        """Project this block's K/V cache from the normalized anchor stream."""
+
+        return self.attention.project_kv(
+            self.attention_norm(hidden),
+            position_ids=position_ids,
+            _position_metadata=_position_metadata,
+        )
 
 
 class ModifiedHadamardExpertBank(nn.Module):

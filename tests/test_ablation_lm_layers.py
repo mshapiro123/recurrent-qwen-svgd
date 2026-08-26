@@ -4,6 +4,7 @@ import copy
 from dataclasses import replace
 import math
 
+import pytest
 import torch
 
 from models.ablation_lm.config import AblationLMConfig
@@ -11,19 +12,77 @@ from models.ablation_lm.hadamard import sequency_permutation, wht
 from models.ablation_lm.layers import (
     GroupedQueryAttention,
     ModifiedHadamardExpertBank,
+    ProjectedKeyValue,
     RotaryEmbedding,
 )
 from models.sidecar_v2 import fast_wht
 
 
-def test_t3_unnormalized_wht_round_trip_uses_one_binary_scale() -> None:
+@pytest.mark.parametrize("width", (8, 512, 1_024))
+def test_t3a_unnormalized_wht_round_trip_uses_one_binary_scale(width: int) -> None:
     generator = torch.Generator().manual_seed(20_260_826)
-    values = torch.randn(7, 512, generator=generator, dtype=torch.float32)
+    values = torch.randn(7, width, generator=generator, dtype=torch.float32)
 
-    stable = wht(wht(values)) * (2.0**-9)
+    stable = wht(wht(values)) * (2.0 ** -(width.bit_length() - 1))
     stable_error = (stable - values).abs().max() / values.norm()
 
     assert stable_error < 1e-5
+
+
+@pytest.mark.parametrize("width", (8, 512, 1_024))
+def test_t3b_wht_satisfies_parseval(width: int) -> None:
+    generator = torch.Generator().manual_seed(31)
+    values = torch.randn(5, width, generator=generator, dtype=torch.float32)
+
+    transformed = wht(values)
+
+    torch.testing.assert_close(
+        transformed.norm(dim=-1) / math.sqrt(width),
+        values.norm(dim=-1),
+        rtol=2e-6,
+        atol=2e-6,
+    )
+
+
+def test_t3c_wht_is_linear_in_fp32() -> None:
+    generator = torch.Generator().manual_seed(32)
+    left = torch.randn(4, 64, generator=generator)
+    right = torch.randn(4, 64, generator=generator)
+    alpha, beta = 0.375, -1.25
+
+    combined = wht(alpha * left + beta * right)
+    separate = alpha * wht(left) + beta * wht(right)
+
+    torch.testing.assert_close(combined, separate, rtol=2e-6, atol=2e-6)
+
+
+@pytest.mark.parametrize("width", (64, 512, 1_024))
+def test_t3d_sampled_wht_basis_is_orthogonal(width: int) -> None:
+    basis_indices = torch.tensor((0, 1, 3, 7, 11, 19, 31))
+    basis = torch.eye(width, dtype=torch.float32).index_select(0, basis_indices)
+    transformed = wht(basis)
+
+    gram = transformed @ transformed.T / width
+
+    torch.testing.assert_close(gram, torch.eye(len(basis_indices)), rtol=0, atol=0)
+
+
+@pytest.mark.parametrize("width", (8, 512, 1_024))
+def test_t3e_binary_inverse_scaling_constant_is_exact(width: int) -> None:
+    exponent = width.bit_length() - 1
+
+    assert (2.0**-exponent) * (2.0**exponent) == 1.0
+
+
+def test_t3f_wht_is_deterministic_and_forces_fp32_under_autocast() -> None:
+    values = torch.randn(3, 64, dtype=torch.bfloat16)
+
+    with torch.autocast(device_type="cpu", dtype=torch.bfloat16):
+        first = wht(values)
+        second = wht(values)
+
+    assert first.dtype is torch.float32
+    assert torch.equal(first, second)
 
 
 def test_t4_sequency_row_k_has_exactly_k_sign_changes() -> None:
@@ -87,6 +146,129 @@ def test_gqa_sdpa_matches_explicit_float32_causal_attention() -> None:
     reference = attention.output_proj(reference)
 
     torch.testing.assert_close(actual, reference, rtol=2e-5, atol=2e-6)
+
+
+def test_t15_projected_kv_matches_same_source_recomputation_in_fp32() -> None:
+    torch.manual_seed(8)
+    config = _attention_config()
+    attention = GroupedQueryAttention(config).eval()
+    hidden = torch.randn(2, 5, config.d_model, dtype=torch.float32)
+    positions = torch.arange(5).view(1, -1).expand(2, -1)
+
+    recomputed = attention(hidden, position_ids=positions)
+    projected_kv = attention.project_kv(hidden, position_ids=positions)
+    cached = attention(
+        hidden,
+        projected_kv=projected_kv,
+        position_ids=positions,
+    )
+
+    torch.testing.assert_close(cached, recomputed, rtol=0, atol=0)
+
+
+def test_t15_projected_kv_matches_recomputation_backward_in_fp32() -> None:
+    torch.manual_seed(81)
+    config = _attention_config()
+    cached_attention = GroupedQueryAttention(config).eval()
+    recomputed_attention = copy.deepcopy(cached_attention)
+    cached_hidden = torch.randn(
+        2,
+        5,
+        config.d_model,
+        dtype=torch.float32,
+        requires_grad=True,
+    )
+    recomputed_hidden = cached_hidden.detach().clone().requires_grad_(True)
+    positions = torch.arange(5).view(1, -1).expand(2, -1)
+
+    projected_kv = cached_attention.project_kv(
+        cached_hidden,
+        position_ids=positions,
+    )
+    cached = cached_attention(
+        cached_hidden,
+        projected_kv=projected_kv,
+        position_ids=positions,
+    )
+    recomputed = recomputed_attention(
+        recomputed_hidden,
+        position_ids=positions,
+    )
+    weights = torch.linspace(0.25, 1.25, cached.numel()).reshape_as(cached)
+    (cached * weights).sum().backward()
+    (recomputed * weights).sum().backward()
+
+    torch.testing.assert_close(cached, recomputed, rtol=0, atol=0)
+    torch.testing.assert_close(cached_hidden.grad, recomputed_hidden.grad)
+    for (cached_name, cached_parameter), (reference_name, reference_parameter) in zip(
+        cached_attention.named_parameters(),
+        recomputed_attention.named_parameters(),
+        strict=True,
+    ):
+        assert cached_name == reference_name
+        assert cached_parameter.grad is not None
+        assert reference_parameter.grad is not None
+        torch.testing.assert_close(cached_parameter.grad, reference_parameter.grad)
+
+
+def test_projected_kv_rejects_wrong_grouped_head_shape() -> None:
+    config = _attention_config()
+    attention = GroupedQueryAttention(config).eval()
+    hidden = torch.randn(2, 5, config.d_model)
+    wrong = ProjectedKeyValue(
+        key=torch.randn(2, config.n_heads, 5, config.head_dim),
+        value=torch.randn(2, config.n_heads, 5, config.head_dim),
+        position_ids=torch.arange(5).view(1, -1).expand(2, -1),
+        owner_id=id(attention),
+    )
+
+    with pytest.raises(ValueError, match="projected key"):
+        attention(hidden, projected_kv=wrong)
+
+
+def test_projected_kv_rejects_position_id_mismatch() -> None:
+    config = _attention_config()
+    attention = GroupedQueryAttention(config).eval()
+    hidden = torch.randn(2, 5, config.d_model)
+    positions = torch.arange(5).view(1, -1).expand(2, -1)
+    projected_kv = attention.project_kv(hidden, position_ids=positions)
+    shifted = positions + 1
+
+    with pytest.raises(ValueError, match="different position IDs"):
+        attention(
+            hidden,
+            projected_kv=projected_kv,
+            position_ids=shifted,
+        )
+
+
+def test_projected_kv_rejects_wrong_owner_and_position_metadata_types() -> None:
+    config = _attention_config()
+    first = GroupedQueryAttention(config).eval()
+    second = GroupedQueryAttention(config).eval()
+    hidden = torch.randn(2, 5, config.d_model)
+    positions = torch.arange(5).view(1, -1).expand(2, -1)
+    projected_kv = first.project_kv(hidden, position_ids=positions)
+
+    with pytest.raises(ValueError, match="different attention block"):
+        second(hidden, projected_kv=projected_kv, position_ids=positions)
+    with pytest.raises(TypeError, match="integer dtype"):
+        first.project_kv(hidden, position_ids=positions.float())
+    with pytest.raises(ValueError, match="hidden-state device"):
+        first.project_kv(hidden, position_ids=positions.to(device="meta"))
+    with pytest.raises(TypeError, match="integer dtype"):
+        first(hidden, position_ids=positions.float())
+
+
+def test_projected_kv_rejects_stale_dtype_after_module_conversion() -> None:
+    config = _attention_config()
+    attention = GroupedQueryAttention(config).eval()
+    hidden = torch.randn(2, 5, config.d_model)
+    projected_kv = attention.project_kv(hidden)
+    attention.to(dtype=torch.bfloat16)
+
+    with pytest.raises(ValueError, match="share the query dtype"):
+        attention(hidden.to(torch.bfloat16), projected_kv=projected_kv)
 
 
 def test_vectorized_hadamard_experts_match_explicit_expert_loop_forward_and_backward() -> None:
