@@ -9,6 +9,7 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
+from .accounting import composition_receipt
 from .config import AblationLMConfig
 from .engram import CausalTokenEngram, TokenEngramConfig
 from .geometry import lanes_to_modes
@@ -278,7 +279,10 @@ class AblationLM(nn.Module):
             raise ValueError("input_ids must be an integer tensor [batch, sequence]")
         if input_ids.shape[1] > self.config.max_sequence_length:
             raise ValueError("input sequence exceeds max_sequence_length")
-        if input_ids.numel() and (int(input_ids.min()) < 0 or int(input_ids.max()) >= self.config.vocab_size):
+        if input_ids.numel() and (
+            int(input_ids.min()) < 0
+            or int(input_ids.max()) >= self.config.vocab_size
+        ):
             raise ValueError("input_ids contain values outside the configured vocabulary")
         for name, values in (("attention_mask", attention_mask), ("document_ids", document_ids)):
             if values is not None and values.shape != input_ids.shape:
@@ -723,7 +727,13 @@ class AblationLM(nn.Module):
                 effective_document_ids,
             )
 
-        diagnostics: dict[str, Any] = {}
+        diagnostics: dict[str, Any] = {
+            "composition_receipt": composition_receipt(
+                self,
+                requested_visits=steps,
+                executed_visits=steps,
+            ).as_dict()
+        }
         if return_diagnostics:
             diagnostics["alpha_t"] = alpha
             diagnostics["recurrence_enabled"] = self.config.use_recurrence

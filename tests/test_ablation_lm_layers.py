@@ -7,12 +7,32 @@ import math
 import torch
 
 from models.ablation_lm.config import AblationLMConfig
+from models.ablation_lm.hadamard import sequency_permutation, wht
 from models.ablation_lm.layers import (
     GroupedQueryAttention,
     ModifiedHadamardExpertBank,
     RotaryEmbedding,
 )
 from models.sidecar_v2 import fast_wht
+
+
+def test_t3_unnormalized_wht_round_trip_uses_one_binary_scale() -> None:
+    generator = torch.Generator().manual_seed(20_260_826)
+    values = torch.randn(7, 512, generator=generator, dtype=torch.float32)
+
+    stable = wht(wht(values)) * (2.0**-9)
+    stable_error = (stable - values).abs().max() / values.norm()
+
+    assert stable_error < 1e-5
+
+
+def test_t4_sequency_row_k_has_exactly_k_sign_changes() -> None:
+    for width in (1, 2, 4, 8, 16, 32):
+        matrix = wht(torch.eye(width, dtype=torch.float32))
+        ordered = matrix[sequency_permutation(width)]
+        sign_changes = ordered[:, 1:].ne(ordered[:, :-1]).sum(dim=-1)
+
+        assert torch.equal(sign_changes, torch.arange(width))
 
 
 def _attention_config() -> AblationLMConfig:

@@ -2,16 +2,18 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
+import math
 
 from torch import nn
 
 from .config import (
     RATIFIED_TARGET_AUTHORITY,
     RATIFIED_TARGET_D_MODEL,
-    RATIFIED_TARGET_PARAMETER_BUDGET,
+    RATIFIED_TARGET_ROUNDED_UNIQUE_PARAMETERS_BY_CORE,
     RATIFIED_TARGET_REFERENCE_VOCAB_SIZE,
     REGISTERED_CORE_BLOCK_COUNTS,
+    REGISTERED_TARGET_BLOCK_SPLITS,
     TOKENIZER_VOCAB_CANDIDATES,
     AblationLMConfig,
 )
@@ -45,6 +47,32 @@ class ParameterAccounting:
 
 
 @dataclass(frozen=True)
+class CompositionReceipt:
+    """Capacity taxonomy bound to requested and actually executed recurrence."""
+
+    requested_visits: int
+    executed_visits: float
+    n_unique: int
+    n_body: int
+    n_fixed: int
+    n_recurrent: int
+    n_sparse_addressed: int
+    vocabulary_parameters: int
+    vocabulary_fraction: float
+    recurrent_fraction: float
+    fixed_to_recurrent: float | None
+    n_active_eval: float | None
+    composition_exact: bool
+    active_eval_exact: bool
+    sidecar_firing_fraction_by_step: tuple[float, ...]
+
+    def as_dict(self) -> dict[str, object]:
+        """Return a JSON-serializable machine receipt."""
+
+        return asdict(self)
+
+
+@dataclass(frozen=True)
 class TokenizerScaleAccounting:
     """Vocabulary cost at one explicitly named execution or decision scale."""
 
@@ -71,8 +99,8 @@ class TokenizerScaleAccounting:
 class TokenizerScreenAccounting:
     """Keep cheap proxy execution separate from target-scale selection math.
 
-    ``selection_vocabulary_share`` deliberately resolves to the decision target;
-    proxy-only rows cannot be consumed by a tokenizer-freeze gate.
+    The current object is deliberately non-selecting.  A future joint gate must
+    carry the rung-B decision and rung-A guard together.
     """
 
     execution_proxy: TokenizerScaleAccounting
@@ -81,24 +109,10 @@ class TokenizerScreenAccounting:
 
     @property
     def selection_vocabulary_share(self) -> float:
-        if self.target_contract is None:
-            raise RuntimeError("an exact target topology contract is required for tokenizer selection")
-        try:
-            proxy_config = self.execution_proxy.topology_config
-            if proxy_config is None:
-                raise ValueError("proxy topology is missing")
-            expected_proxy = _proxy_scale_accounting(proxy_config)
-            expected_target = _target_scale_accounting(
-                proxy_config.vocab_size,
-                self.target_contract,
-            )
-        except ValueError as error:
-            raise RuntimeError(f"invalid tokenizer selection accounting: {error}") from error
-        if self.execution_proxy != expected_proxy:
-            raise RuntimeError("proxy accounting row does not match its topology")
-        if self.decision_target != expected_target:
-            raise RuntimeError("target accounting row does not match its typed contract")
-        return expected_target.vocabulary_share
+        raise RuntimeError(
+            "LOOM-1 tokenizer selection requires a joint rung-B decision, rung-A guard, "
+            "and full-model composition receipts; S0 dense rows cannot freeze a tokenizer"
+        )
 
 
 @dataclass(frozen=True)
@@ -122,6 +136,18 @@ class TokenizerTargetDecisionContract:
             raise ValueError(
                 "target topology must use a registered 4/6-core selection rung"
             )
+        if (
+            self.config.n_prelude_layers,
+            self.config.n_core_blocks,
+            self.config.n_coda_layers,
+        ) not in REGISTERED_TARGET_BLOCK_SPLITS:
+            raise ValueError("target topology must be exactly 9/4/9 or 8/6/8")
+        if (
+            self.config.n_heads,
+            self.config.n_kv_heads,
+            self.config.d_ff,
+        ) != (16, 8, 2_816):
+            raise ValueError("target topology must use 16Q/8KV and d_ff=2816")
         if not isinstance(self.authority, str) or not self.authority.strip():
             raise ValueError("target topology authority must be a nonempty string")
         if self.budget_semantics not in {"fixed_total", "fixed_non_vocabulary"}:
@@ -155,11 +181,33 @@ class TokenizerTargetDecisionContract:
                     f"all fixed-total topologies must use d_model={RATIFIED_TARGET_D_MODEL}"
                 )
             if any(
-                config.n_core_blocks != self.config.n_core_blocks
+                (
+                    config.n_prelude_layers,
+                    config.n_core_blocks,
+                    config.n_coda_layers,
+                )
+                not in REGISTERED_TARGET_BLOCK_SPLITS
+                or (config.n_heads, config.n_kv_heads, config.d_ff) != (16, 8, 2_816)
                 for config in by_vocab.values()
             ):
                 raise ValueError(
-                    "fixed-total candidate topologies must share one registered core rung"
+                    "every fixed-total candidate must use an exact registered target topology"
+                )
+            if any(
+                (
+                    config.n_prelude_layers,
+                    config.n_core_blocks,
+                    config.n_coda_layers,
+                )
+                != (
+                    self.config.n_prelude_layers,
+                    self.config.n_core_blocks,
+                    self.config.n_coda_layers,
+                )
+                for config in by_vocab.values()
+            ):
+                raise ValueError(
+                    "fixed-total candidate topologies must share one registered target rung"
                 )
             if self.reference_vocab_size not in by_vocab:
                 raise ValueError("reference vocabulary must be a registered candidate")
@@ -199,7 +247,11 @@ class TokenizerTargetDecisionContract:
 
 
 def _unique_parameters(module: nn.Module) -> dict[int, nn.Parameter]:
-    return {id(parameter): parameter for parameter in module.parameters() if parameter.requires_grad}
+    return {
+        id(parameter): parameter
+        for parameter in module.parameters()
+        if parameter.requires_grad
+    }
 
 
 def parameter_accounting(model: nn.Module) -> ParameterAccounting:
@@ -255,6 +307,148 @@ def parameter_accounting(model: nn.Module) -> ParameterAccounting:
         long_term,
         long_term_store_elements,
         dense,
+    )
+
+
+def _capacity_root(model: nn.Module) -> nn.Module:
+    candidates = tuple(
+        module
+        for module in model.modules()
+        if all(
+            hasattr(module, name)
+            for name in ("token_embedding", "core_blocks", "prelude_blocks", "coda_blocks")
+        )
+    )
+    if len(candidates) != 1:
+        raise ValueError("composition accounting requires exactly one AblationLM graph")
+    root = candidates[0]
+    outside = set(_unique_parameters(model)) - set(_unique_parameters(root))
+    if outside:
+        raise ValueError("wrapper contains trainable parameters outside the AblationLM graph")
+    return root
+
+
+def _trainable_parameter_ids(module: nn.Module | None) -> set[int]:
+    if module is None:
+        return set()
+    return {id(parameter) for parameter in module.parameters() if parameter.requires_grad}
+
+
+def composition_receipt(
+    model: nn.Module,
+    *,
+    requested_visits: int,
+    executed_visits: float,
+    sidecar_firing_fraction_by_step: tuple[float, ...] = (),
+) -> CompositionReceipt:
+    """Derive the binding LOOM-1 capacity receipt without double-counting ties.
+
+    Dynamic active-equivalent accounting fails visibly when the current legacy
+    recurrent auxiliaries do not fit the final LOOM-1 ``N_fixed + K*N_recurrent``
+    taxonomy.  This prevents a provisional estimate from becoming a receipt.
+    """
+
+    if type(requested_visits) is not int or requested_visits < 1:
+        raise ValueError("requested_visits must be a positive integer")
+    if (
+        not math.isfinite(float(executed_visits))
+        or not 0 < float(executed_visits) <= requested_visits
+    ):
+        raise ValueError("executed_visits must lie in (0, requested_visits]")
+    if not isinstance(sidecar_firing_fraction_by_step, tuple):
+        raise TypeError("sidecar firing fractions must be a tuple")
+    if len(sidecar_firing_fraction_by_step) > requested_visits:
+        raise ValueError("sidecar firing fractions cannot exceed requested visits")
+    if any(
+        not math.isfinite(float(value)) or not 0 <= float(value) <= 1
+        for value in sidecar_firing_fraction_by_step
+    ):
+        raise ValueError("sidecar firing fractions must be finite values in [0, 1]")
+
+    root = _capacity_root(model)
+    sidecar = getattr(root, "sidecar", None)
+    if sidecar is None and sidecar_firing_fraction_by_step:
+        raise ValueError("sidecar firing fractions require a materialized sidecar")
+    inventory = _unique_parameters(root)
+    accounting = parameter_accounting(root)
+    vocabulary_ids = {id(root.token_embedding.weight)}
+    sparse_ids: set[int] = set()
+    for module in root.modules():
+        if isinstance(module, CausalTokenEngram):
+            sparse_ids.update(
+                id(table.weight)
+                for table in module.tables.values()
+                if table.weight.requires_grad
+            )
+
+    recurrent_ids: set[int] = set()
+    config = getattr(root, "config", None)
+    if config is not None and bool(getattr(config, "use_recurrence", False)):
+        for name in (
+            "core_blocks",
+            "loop_embedding",
+            "reentry_bridge",
+            "sidecar",
+            "rotor_a",
+            "rotor_b",
+            "carrier_write_a",
+            "carrier_write_b",
+            "callosum",
+        ):
+            recurrent_ids.update(_trainable_parameter_ids(getattr(root, name, None)))
+        scratch = getattr(root, "scratch", None)
+        recurrent_ids.update(_trainable_parameter_ids(scratch))
+        if scratch is not None:
+            recurrent_ids.difference_update(
+                _trainable_parameter_ids(getattr(scratch, "initializer", None))
+            )
+
+    body_ids = set(inventory) - vocabulary_ids - sparse_ids
+    recurrent_ids &= body_ids
+    n_recurrent = sum(inventory[index].numel() for index in recurrent_ids)
+    n_body = sum(inventory[index].numel() for index in body_ids)
+    n_fixed = n_body - n_recurrent
+    n_sparse = sum(inventory[index].numel() for index in sparse_ids)
+    if n_body != accounting.total - accounting.vocabulary - accounting.engram_tables:
+        raise RuntimeError("composition body partition disagrees with parameter accounting")
+    vocabulary_denominator = accounting.vocabulary + n_body
+    vocabulary_fraction = (
+        accounting.vocabulary / vocabulary_denominator if vocabulary_denominator else 0.0
+    )
+    recurrent_fraction = n_recurrent / n_body if n_body else 0.0
+    fixed_to_recurrent = n_fixed / n_recurrent if n_recurrent else None
+    has_step_indexed_auxiliaries = bool(
+        config is not None
+        and getattr(config, "use_recurrence", False)
+        and any(
+            getattr(root, name, None) is not None
+            for name in ("loop_embedding", "reentry_bridge", "scratch")
+        )
+    )
+    active_eval_exact = not has_step_indexed_auxiliaries
+    n_active_eval = (
+        n_fixed + float(executed_visits) * n_recurrent
+        if active_eval_exact
+        else None
+    )
+    return CompositionReceipt(
+        requested_visits=requested_visits,
+        executed_visits=float(executed_visits),
+        n_unique=accounting.total,
+        n_body=n_body,
+        n_fixed=n_fixed,
+        n_recurrent=n_recurrent,
+        n_sparse_addressed=n_sparse,
+        vocabulary_parameters=accounting.vocabulary,
+        vocabulary_fraction=vocabulary_fraction,
+        recurrent_fraction=recurrent_fraction,
+        fixed_to_recurrent=fixed_to_recurrent,
+        n_active_eval=n_active_eval,
+        composition_exact=active_eval_exact,
+        active_eval_exact=active_eval_exact,
+        sidecar_firing_fraction_by_step=tuple(
+            float(value) for value in sidecar_firing_fraction_by_step
+        ),
     )
 
 
@@ -320,19 +514,26 @@ def _proxy_scale_accounting(config: AblationLMConfig) -> TokenizerScaleAccountin
     )
 
 
-def _approximate_target_scale_accounting(candidate_vocab_size: int) -> TokenizerScaleAccounting:
+def _approximate_target_scale_accounting(
+    candidate_vocab_size: int,
+    core_blocks: int,
+) -> TokenizerScaleAccounting:
+    if core_blocks not in RATIFIED_TARGET_ROUNDED_UNIQUE_PARAMETERS_BY_CORE:
+        raise ValueError("approximate target accounting requires the 4- or 6-core target rung")
+    target_total = RATIFIED_TARGET_ROUNDED_UNIQUE_PARAMETERS_BY_CORE[core_blocks]
+    rung = "A" if core_blocks == 4 else "B"
     return TokenizerScaleAccounting(
-        label="target_reference_d1024_approx_290m_unratified_topology",
+        label=f"target_rung_{rung}_d1024_rounded_unratified_topology",
         vocab_size=candidate_vocab_size,
         d_model=RATIFIED_TARGET_D_MODEL,
-        core_blocks=None,
-        total_unique_parameters=RATIFIED_TARGET_PARAMETER_BUDGET,
+        core_blocks=core_blocks,
+        total_unique_parameters=target_total,
         vocabulary_parameters=candidate_vocab_size * RATIFIED_TARGET_D_MODEL,
         authority=RATIFIED_TARGET_AUTHORITY,
         exact_total=False,
         budget_semantics=None,
         reference_vocab_size=RATIFIED_TARGET_REFERENCE_VOCAB_SIZE,
-        reference_total_unique_parameters=RATIFIED_TARGET_PARAMETER_BUDGET,
+        reference_total_unique_parameters=target_total,
         topology_config=None,
         topology_unique_parameters=None,
     )
@@ -381,14 +582,14 @@ def _target_scale_accounting(
     if target_total <= vocabulary:
         raise ValueError("target total must exceed its vocabulary matrix")
     return TokenizerScaleAccounting(
-        label=f"target_d1024_derived_{contract.budget_semantics}",
+        label=f"target_d1024_s0_dense_nonselection_{contract.budget_semantics}",
         vocab_size=candidate_vocab_size,
         d_model=RATIFIED_TARGET_D_MODEL,
         core_blocks=config.n_core_blocks,
         total_unique_parameters=target_total,
         vocabulary_parameters=vocabulary,
         authority=contract.authority,
-        exact_total=True,
+        exact_total=False,
         budget_semantics=contract.budget_semantics,
         reference_vocab_size=contract.reference_vocab_size,
         reference_total_unique_parameters=reference_total,
@@ -404,16 +605,23 @@ def tokenizer_screen_accounting(
 ) -> TokenizerScreenAccounting:
     """Return separate muProxy execution and target-scale decision columns.
 
-    The relayed R-1 ruling fixes the headline target reference at d=1024 and
-    approximately 290M parameters. Without ``target_contract``, the target row
-    is explicitly approximate and cannot freeze a tokenizer. With a contract,
-    every exact total is derived from its supplied d=1024 dense topology; a
-    caller cannot promote the 290M headline by flipping an ``exact`` boolean.
+    The provisional decision column is always target rung B and is independent
+    of whichever proxy arm executes.  All target rows remain non-selection S0
+    accounting until the complete model body and the separate rung-A guard are
+    represented by a joint gate.
     """
 
+    if target_contract is not None and target_contract.config.n_core_blocks != 6:
+        raise ValueError(
+            "the tokenizer decision contract must be rung B; the rung-A guard "
+            "requires the future joint gate"
+        )
     execution_proxy = _proxy_scale_accounting(proxy_config)
     decision_target = (
-        _approximate_target_scale_accounting(proxy_config.vocab_size)
+        _approximate_target_scale_accounting(
+            proxy_config.vocab_size,
+            6,
+        )
         if target_contract is None
         else _target_scale_accounting(proxy_config.vocab_size, target_contract)
     )

@@ -7,21 +7,28 @@ from dataclasses import dataclass, replace
 
 
 TOKENIZER_VOCAB_CANDIDATES = (16_384, 24_576, 32_768, 49_152)
-REGISTERED_CORE_BLOCK_COUNTS = (4, 6)
+REGISTERED_PROXY_BLOCK_SPLITS = ((4, 2, 4), (3, 4, 3), (2, 6, 2))
+REGISTERED_TARGET_BLOCK_SPLITS = ((9, 4, 9), (8, 6, 8))
+REGISTERED_CORE_BLOCK_COUNTS = tuple(
+    core for _prelude, core, _coda in REGISTERED_TARGET_BLOCK_SPLITS
+)
 RATIFIED_TARGET_D_MODEL = 1_024
-RATIFIED_TARGET_PARAMETER_BUDGET = 290_000_000
+RATIFIED_TARGET_ROUNDED_UNIQUE_PARAMETERS_BY_CORE = {
+    4: 302_900_000,
+    6: 305_800_000,
+}
 RATIFIED_TARGET_REFERENCE_VOCAB_SIZE = 32_768
-RATIFIED_TARGET_AUTHORITY = "strategy_r1_relay_20260826"
+RATIFIED_TARGET_AUTHORITY = "loom1_handoff_498f34b5_20260826"
 
 
 @dataclass(frozen=True)
 class AblationLMConfig:
     """One explicit model graph; innovations are structural on/off switches.
 
-    The defaults describe the inexpensive d=512 two-core-block muProxy graph.
+    The defaults describe the inexpensive d=512 two-core-block bring-up graph.
     They are intentionally neither the ratified d=1024 target scale nor the
-    registered recurrent-scaling sweep, whose core block counts are exposed by
-    :func:`registered_mu_r_configs`.
+    constant-ten-block proxy reallocation sweep exposed by
+    :func:`registered_proxy_reallocation_configs`.
     """
 
     vocab_size: int = 32_768
@@ -37,7 +44,7 @@ class AblationLMConfig:
     max_recurrent_steps: int = 8
     recurrence_coefficient: float = 1.0
     recurrence_exponent: float = 1.0
-    max_sequence_length: int = 4_096
+    max_sequence_length: int = 2_048
     rope_theta: float = 500_000.0
     norm_eps: float = 1e-5
     attention_dropout: float = 0.0
@@ -45,7 +52,7 @@ class AblationLMConfig:
     initialization_seed: int = 20_260_826
 
     use_front_hadamard_experts: bool = False
-    hadamard_experts: int = 4
+    hadamard_experts: int = 8
     hadamard_layer_scale: float = 1e-3
     hadamard_seed: int = 20_260_826
 
@@ -73,7 +80,7 @@ class AblationLMConfig:
     long_term_memory_layer_scale: float = 1e-3
 
     z_loss_coefficient: float = 0.0
-    jet_plane_probe_count: int = 8
+    jet_plane_probe_count: int = 32
     jet_plane_probe_seed: int = 20_260_826
 
     def __post_init__(self) -> None:
@@ -99,6 +106,8 @@ class AblationLMConfig:
             raise ValueError("d_model must be divisible by n_heads")
         if self.n_heads % self.n_kv_heads:
             raise ValueError("n_heads must be divisible by n_kv_heads")
+        if self.n_heads != 2 * self.n_kv_heads:
+            raise ValueError("the ratified GQA topology requires a constant 2:1 Q/KV ratio")
         if self.head_dim % 2:
             raise ValueError("RoPE requires an even head dimension")
         if self.recurrent_steps > self.max_recurrent_steps:
@@ -212,13 +221,62 @@ class AblationLMConfig:
         )
 
 
-def registered_mu_r_configs(base: AblationLMConfig) -> tuple[AblationLMConfig, ...]:
-    """Materialize the registered 4/6-core-block control axis.
+def registered_proxy_reallocation_configs(
+    base: AblationLMConfig,
+) -> tuple[AblationLMConfig, ...]:
+    """Materialize the constant-ten-block proxy reallocation sweep.
 
-    Recurrent step count remains a separate registered axis.  The two-block
-    default is deliberately excluded because it is a bring-up configuration.
+    Outer blocks move into the tied core while total unique decoder blocks stay
+    fixed.  This prevents the recurrence exponent from absorbing a simultaneous
+    capacity change.
     """
 
     if not base.use_recurrence:
-        raise ValueError("the mu-R core-block sweep requires structural recurrence")
-    return tuple(replace(base, n_core_blocks=count) for count in REGISTERED_CORE_BLOCK_COUNTS)
+        raise ValueError("the mu-R reallocation sweep requires structural recurrence")
+    if (base.d_model, base.n_heads, base.n_kv_heads, base.d_ff) != (512, 8, 4, 1_408):
+        raise ValueError("the proxy reallocation sweep requires the ratified d=512 geometry")
+    return tuple(
+        replace(
+            base,
+            n_prelude_layers=prelude,
+            n_core_blocks=core,
+            n_coda_layers=coda,
+        )
+        for prelude, core, coda in REGISTERED_PROXY_BLOCK_SPLITS
+    )
+
+
+def registered_mu_r_configs(base: AblationLMConfig) -> tuple[AblationLMConfig, ...]:
+    """Backward-compatible name for the registered proxy reallocation sweep."""
+
+    return registered_proxy_reallocation_configs(base)
+
+
+def registered_target_configs(
+    base: AblationLMConfig | None = None,
+) -> tuple[AblationLMConfig, ...]:
+    """Materialize target rungs A (9/4/9) and B (8/6/8).
+
+    The two rungs are independent fits.  This helper changes width and the
+    explicitly ratified topology only; structural feature switches remain those
+    of ``base`` so it can also describe the all-OFF Stage-0 reference graph.
+    """
+
+    source = AblationLMConfig() if base is None else base
+    target = replace(
+        source,
+        d_model=1_024,
+        n_heads=16,
+        n_kv_heads=8,
+        d_ff=2_816,
+        scratch_width=256,
+    )
+    return tuple(
+        replace(
+            target,
+            n_prelude_layers=prelude,
+            n_core_blocks=core,
+            n_coda_layers=coda,
+        )
+        for prelude, core, coda in REGISTERED_TARGET_BLOCK_SPLITS
+    )

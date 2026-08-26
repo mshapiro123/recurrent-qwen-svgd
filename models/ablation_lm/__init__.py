@@ -1,10 +1,12 @@
 """Ablation-first recursive language-model substrate."""
 
 from .accounting import (
+    CompositionReceipt,
     ParameterAccounting,
     TokenizerScaleAccounting,
     TokenizerScreenAccounting,
     TokenizerTargetDecisionContract,
+    composition_receipt,
     estimate_dense_unique_parameters,
     lexical_parameter_share,
     parameter_accounting,
@@ -13,12 +15,16 @@ from .accounting import (
 from .config import (
     RATIFIED_TARGET_AUTHORITY,
     RATIFIED_TARGET_D_MODEL,
-    RATIFIED_TARGET_PARAMETER_BUDGET,
+    RATIFIED_TARGET_ROUNDED_UNIQUE_PARAMETERS_BY_CORE,
     RATIFIED_TARGET_REFERENCE_VOCAB_SIZE,
     REGISTERED_CORE_BLOCK_COUNTS,
+    REGISTERED_PROXY_BLOCK_SPLITS,
+    REGISTERED_TARGET_BLOCK_SPLITS,
     TOKENIZER_VOCAB_CANDIDATES,
     AblationLMConfig,
     registered_mu_r_configs,
+    registered_proxy_reallocation_configs,
+    registered_target_configs,
 )
 from .diagnostics import (
     RouterCalibrationDecision,
@@ -26,6 +32,7 @@ from .diagnostics import (
     router_calibration_stability,
 )
 from .geometry import Cl20Rotor, LaneModeState, cl20_rotate, lanes_to_modes
+from .hadamard import orthonormal_wht, sequency_permutation, wht
 from .model import AblationLM, AblationLMOutput
 
 __all__ = [
@@ -33,25 +40,34 @@ __all__ = [
     "AblationLMConfig",
     "AblationLMOutput",
     "Cl20Rotor",
+    "CompositionReceipt",
     "LaneModeState",
     "ParameterAccounting",
     "RATIFIED_TARGET_AUTHORITY",
     "RATIFIED_TARGET_D_MODEL",
-    "RATIFIED_TARGET_PARAMETER_BUDGET",
+    "RATIFIED_TARGET_ROUNDED_UNIQUE_PARAMETERS_BY_CORE",
     "RATIFIED_TARGET_REFERENCE_VOCAB_SIZE",
     "RouterCalibrationDecision",
     "RouterMomentSnapshot",
     "REGISTERED_CORE_BLOCK_COUNTS",
+    "REGISTERED_PROXY_BLOCK_SPLITS",
+    "REGISTERED_TARGET_BLOCK_SPLITS",
     "TOKENIZER_VOCAB_CANDIDATES",
     "TokenizerScaleAccounting",
     "TokenizerScreenAccounting",
     "TokenizerTargetDecisionContract",
+    "composition_receipt",
     "estimate_dense_unique_parameters",
     "lexical_parameter_share",
+    "orthonormal_wht",
     "cl20_rotate",
     "lanes_to_modes",
     "parameter_accounting",
     "registered_mu_r_configs",
+    "registered_proxy_reallocation_configs",
+    "registered_target_configs",
     "router_calibration_stability",
+    "sequency_permutation",
     "tokenizer_screen_accounting",
+    "wht",
 ]

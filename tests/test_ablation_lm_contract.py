@@ -1,12 +1,16 @@
 from __future__ import annotations
 
 from dataclasses import replace
+import json
 
 import pytest
+import torch
+from torch import nn
 
 from models.ablation_lm.accounting import (
     TokenizerScreenAccounting,
     TokenizerTargetDecisionContract,
+    composition_receipt,
     estimate_dense_unique_parameters,
     lexical_parameter_share,
     tokenizer_screen_accounting,
@@ -14,11 +18,14 @@ from models.ablation_lm.accounting import (
 from models.ablation_lm.model import AblationLM
 from models.ablation_lm.config import (
     REGISTERED_CORE_BLOCK_COUNTS,
+    REGISTERED_PROXY_BLOCK_SPLITS,
+    REGISTERED_TARGET_BLOCK_SPLITS,
     RATIFIED_TARGET_D_MODEL,
-    RATIFIED_TARGET_PARAMETER_BUDGET,
+    RATIFIED_TARGET_ROUNDED_UNIQUE_PARAMETERS_BY_CORE,
     TOKENIZER_VOCAB_CANDIDATES,
     AblationLMConfig,
     registered_mu_r_configs,
+    registered_target_configs,
 )
 
 
@@ -41,15 +48,7 @@ def _small_config() -> AblationLMConfig:
 
 
 def _target_config(vocab_size: int = 32_768) -> AblationLMConfig:
-    return replace(
-        AblationLMConfig(),
-        vocab_size=vocab_size,
-        d_model=1_024,
-        n_heads=16,
-        n_kv_heads=4,
-        d_ff=3_072,
-        n_core_blocks=6,
-    )
+    return replace(registered_target_configs()[1], vocab_size=vocab_size)
 
 
 def _fixed_total_contract() -> TokenizerTargetDecisionContract:
@@ -80,15 +79,40 @@ def test_recurrence_default_is_the_one_over_t_boundedness_anchor() -> None:
         config.recurrence_scale(2.5)
 
 
-def test_two_blocks_are_bringup_but_four_and_six_are_registered_controls() -> None:
-    config = _small_config()
+def test_proxy_mu_r_sweep_reallocates_a_constant_ten_blocks() -> None:
+    config = AblationLMConfig()
     with pytest.raises(ValueError, match="structural recurrence"):
         registered_mu_r_configs(config)
     sweep = registered_mu_r_configs(replace(config, use_recurrence=True))
 
     assert config.n_core_blocks == 2
     assert REGISTERED_CORE_BLOCK_COUNTS == (4, 6)
-    assert tuple(item.n_core_blocks for item in sweep) == (4, 6)
+    assert REGISTERED_PROXY_BLOCK_SPLITS == ((4, 2, 4), (3, 4, 3), (2, 6, 2))
+    assert tuple(
+        (item.n_prelude_layers, item.n_core_blocks, item.n_coda_layers)
+        for item in sweep
+    ) == REGISTERED_PROXY_BLOCK_SPLITS
+    assert {
+        item.n_prelude_layers + item.n_core_blocks + item.n_coda_layers
+        for item in sweep
+    } == {10}
+
+
+def test_target_rungs_encode_exact_width_gqa_and_block_mapping() -> None:
+    targets = registered_target_configs()
+
+    assert REGISTERED_TARGET_BLOCK_SPLITS == ((9, 4, 9), (8, 6, 8))
+    assert tuple(
+        (item.n_prelude_layers, item.n_core_blocks, item.n_coda_layers)
+        for item in targets
+    ) == REGISTERED_TARGET_BLOCK_SPLITS
+    assert all(item.d_model == 1_024 for item in targets)
+    assert all((item.n_heads, item.n_kv_heads) == (16, 8) for item in targets)
+    assert all(item.d_ff == 2_816 and item.scratch_width == 256 for item in targets)
+    assert all(
+        item.n_prelude_layers + item.n_core_blocks + item.n_coda_layers == 22
+        for item in targets
+    )
 
 
 def test_tokenizer_screen_includes_both_directions_around_32k() -> None:
@@ -97,8 +121,8 @@ def test_tokenizer_screen_includes_both_directions_around_32k() -> None:
     assert lexical_parameter_share(
         32_768,
         RATIFIED_TARGET_D_MODEL,
-        RATIFIED_TARGET_PARAMETER_BUDGET,
-    ) == pytest.approx(0.11570494)
+        RATIFIED_TARGET_ROUNDED_UNIQUE_PARAMETERS_BY_CORE[6],
+    ) == pytest.approx((32_768 * 1_024) / 305_800_000)
 
 
 def test_active_layer_scales_and_callosum_cannot_be_initialized_dead() -> None:
@@ -141,6 +165,66 @@ def test_proxy_execution_accounting_matches_allocated_dense_model() -> None:
     )
 
 
+def test_composition_receipt_partitions_fixed_and_recurrent_capacity() -> None:
+    baseline = AblationLM(_small_config())
+    baseline_receipt = composition_receipt(
+        baseline,
+        requested_visits=1,
+        executed_visits=1,
+    )
+    assert baseline_receipt.n_unique == sum(
+        parameter.numel() for parameter in baseline.parameters()
+    )
+    assert baseline_receipt.n_recurrent == 0
+    assert baseline_receipt.n_fixed == baseline_receipt.n_body
+    assert baseline_receipt.n_active_eval == baseline_receipt.n_body
+    assert baseline_receipt.composition_exact is True
+    assert baseline_receipt.active_eval_exact is True
+    json.dumps(baseline_receipt.as_dict())
+
+    recurrent = AblationLM(replace(_small_config(), use_recurrence=True))
+    receipt = composition_receipt(
+        recurrent,
+        requested_visits=4,
+        executed_visits=3.5,
+    )
+    assert receipt.n_fixed + receipt.n_recurrent == receipt.n_body
+    assert receipt.n_recurrent > 0
+    assert receipt.n_active_eval is None
+    assert receipt.composition_exact is False
+    assert receipt.active_eval_exact is False
+    with pytest.raises(ValueError, match="materialized sidecar"):
+        composition_receipt(
+            recurrent,
+            requested_visits=4,
+            executed_visits=4,
+            sidecar_firing_fraction_by_step=(0.0, 0.25, 0.5, 0.75),
+        )
+
+    wrapper = nn.Module()
+    wrapper.model = baseline
+    wrapper.extra = nn.Parameter(torch.ones(7))
+    with pytest.raises(ValueError, match="outside the AblationLM"):
+        composition_receipt(wrapper, requested_visits=1, executed_visits=1)
+
+
+def test_diagnostic_forward_emits_the_composition_receipt() -> None:
+    config = replace(_small_config(), vocab_size=64)
+    model = AblationLM(config).eval()
+    inputs = torch.tensor([[1, 2, 3]], dtype=torch.long)
+
+    output = model(inputs, return_diagnostics=True)
+
+    receipt = output.diagnostics["composition_receipt"]
+    assert receipt["requested_visits"] == 1
+    assert receipt["executed_visits"] == 1.0
+    assert receipt["n_unique"] == sum(parameter.numel() for parameter in model.parameters())
+    json.dumps(receipt)
+
+    ordinary = model(inputs)
+    assert ordinary.diagnostics["composition_receipt"] == receipt
+
+
 @pytest.mark.parametrize("vocab_size", TOKENIZER_VOCAB_CANDIDATES)
 def test_tokenizer_screen_separates_proxy_runs_from_target_decision_columns(
     vocab_size: int,
@@ -151,8 +235,11 @@ def test_tokenizer_screen_separates_proxy_runs_from_target_decision_columns(
     assert screen.execution_proxy.d_model == 512
     assert screen.decision_target.d_model == 1_024
     assert screen.decision_target.vocabulary_parameters == vocab_size * 1_024
-    assert screen.decision_target.total_unique_parameters == 290_000_000
-    with pytest.raises(RuntimeError, match="exact target topology"):
+    assert screen.decision_target.total_unique_parameters == (
+        RATIFIED_TARGET_ROUNDED_UNIQUE_PARAMETERS_BY_CORE[6]
+    )
+    assert screen.decision_target.core_blocks == 6
+    with pytest.raises(RuntimeError, match="joint rung-B decision"):
         _ = screen.selection_vocabulary_share
 
 
@@ -174,9 +261,17 @@ def test_tokenizer_freeze_requires_exact_authority_and_budget_semantics() -> Non
         target
     )
     assert derived.decision_target.core_blocks == target.n_core_blocks
-    assert derived.selection_vocabulary_share == pytest.approx(
-        (32_768 * 1_024) / estimate_dense_unique_parameters(target)
+    assert derived.decision_target.exact_total is False
+    with pytest.raises(RuntimeError, match="full-model composition"):
+        _ = derived.selection_vocabulary_share
+
+    rung_a = TokenizerTargetDecisionContract(
+        config=registered_target_configs()[0],
+        authority="guard_is_not_a_decision_column",
+        budget_semantics="fixed_non_vocabulary",
     )
+    with pytest.raises(ValueError, match="decision contract must be rung B"):
+        tokenizer_screen_accounting(proxy, target_contract=rung_a)
 
 
 def test_tokenizer_selection_rederives_rows_and_rejects_public_dataclass_forgery() -> None:
@@ -193,7 +288,7 @@ def test_tokenizer_selection_rederives_rows_and_rejects_public_dataclass_forgery
             budget_semantics="fixed_total",
         ),
     )
-    with pytest.raises(RuntimeError, match="topology contract"):
+    with pytest.raises(RuntimeError, match="joint rung-B decision"):
         _ = forged_without_contract.selection_vocabulary_share
 
     contract = _fixed_total_contract()
@@ -206,27 +301,19 @@ def test_tokenizer_selection_rederives_rows_and_rejects_public_dataclass_forgery
         ),
         target_contract=contract,
     )
-    with pytest.raises(RuntimeError, match="does not match its typed contract"):
+    with pytest.raises(RuntimeError, match="joint rung-B decision"):
         _ = direct_forgery.selection_vocabulary_share
 
     forged_proxy = replace(
         valid,
         execution_proxy=replace(valid.execution_proxy, exact_total=False),
     )
-    with pytest.raises(RuntimeError, match="does not match its topology"):
+    with pytest.raises(RuntimeError, match="joint rung-B decision"):
         _ = forged_proxy.selection_vocabulary_share
 
 
 def test_fixed_non_vocabulary_accounting_reprices_each_candidate_total() -> None:
-    reference_target = replace(
-        AblationLMConfig(),
-        vocab_size=32_768,
-        d_model=1_024,
-        n_heads=16,
-        n_kv_heads=4,
-        d_ff=3_072,
-        n_core_blocks=6,
-    )
+    reference_target = _target_config()
     contract = TokenizerTargetDecisionContract(
         config=reference_target,
         authority="test_fixed_body_receipt",
@@ -245,10 +332,10 @@ def test_fixed_non_vocabulary_accounting_reprices_each_candidate_total() -> None
     body = reference_total - 32_768 * 1_024
     assert small.decision_target.total_unique_parameters == body + 16_384 * 1_024
     assert large.decision_target.total_unique_parameters == body + 49_152 * 1_024
-    assert small.selection_vocabulary_share == pytest.approx(
+    assert small.decision_target.vocabulary_share == pytest.approx(
         (16_384 * 1_024) / (body + 16_384 * 1_024)
     )
-    assert large.selection_vocabulary_share == pytest.approx(
+    assert large.decision_target.vocabulary_share == pytest.approx(
         (49_152 * 1_024) / (body + 49_152 * 1_024)
     )
     with pytest.raises(ValueError, match="registered vocabulary candidate"):
@@ -311,7 +398,7 @@ def test_target_contract_rejects_bringup_mixed_rungs_and_impossible_capacity() -
 
     candidates = tuple(_target_config(vocab_size) for vocab_size in TOKENIZER_VOCAB_CANDIDATES)
     mixed_rungs = (
-        replace(candidates[0], n_core_blocks=4),
+        replace(registered_target_configs()[0], vocab_size=candidates[0].vocab_size),
         *candidates[1:],
     )
     locked_total = estimate_dense_unique_parameters(_target_config())
@@ -319,7 +406,7 @@ def test_target_contract_rejects_bringup_mixed_rungs_and_impossible_capacity() -
         abs(estimate_dense_unique_parameters(config) - locked_total)
         for config in candidates
     )
-    with pytest.raises(ValueError, match="share one registered core rung"):
+    with pytest.raises(ValueError, match="share one registered target rung"):
         TokenizerTargetDecisionContract(
             config=_target_config(),
             authority="mixed_rungs_are_not_one_selection_column",
@@ -327,6 +414,17 @@ def test_target_contract_rejects_bringup_mixed_rungs_and_impossible_capacity() -
             fixed_total_parameters=locked_total,
             fixed_total_tolerance_parameters=tolerance,
             candidate_topologies=mixed_rungs,
+        )
+
+    wrong_geometry = (replace(candidates[0], d_ff=3_008), *candidates[1:])
+    with pytest.raises(ValueError, match="exact registered target topology"):
+        TokenizerTargetDecisionContract(
+            config=_target_config(),
+            authority="candidate_geometry_must_not_drift",
+            budget_semantics="fixed_total",
+            fixed_total_parameters=locked_total,
+            fixed_total_tolerance_parameters=tolerance,
+            candidate_topologies=wrong_geometry,
         )
 
     with pytest.raises(ValueError, match="exceed the largest candidate vocabulary"):

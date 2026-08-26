@@ -89,6 +89,33 @@ def test_t1_disabled_graph_is_exactly_the_dense_transformer() -> None:
         model(tokens, recurrent_steps=2)
 
 
+def test_s0_causality_gradient_is_exactly_zero_for_future_positions() -> None:
+    torch.manual_seed(4)
+    model = _model(_tiny_config()).eval()
+    tokens = torch.randint(0, 64, (1, 8))
+    captured: list[torch.Tensor] = []
+
+    def retain_embedding_gradient(
+        _module: nn.Module,
+        _inputs: tuple[torch.Tensor, ...],
+        output: torch.Tensor,
+    ) -> None:
+        output.retain_grad()
+        captured.append(output)
+
+    handle = model.token_embedding.register_forward_hook(retain_embedding_gradient)
+    try:
+        logits = model(tokens).logits
+        logits[0, 3, 7].backward()
+    finally:
+        handle.remove()
+
+    assert len(captured) == 1 and captured[0].grad is not None
+    gradient = captured[0].grad
+    assert torch.count_nonzero(gradient[0, :4]) > 0
+    assert torch.count_nonzero(gradient[0, 4:]) == 0
+
+
 def test_full_active_graph_is_causal_under_future_token_perturbation() -> None:
     torch.manual_seed(5)
     config = _tiny_config(
@@ -256,8 +283,14 @@ def test_semantic_optimizer_partition_and_parameter_accounting_cover_full_model(
     assert {id(parameter) for parameter in grouped} == {
         id(parameter) for parameter in model.parameters() if parameter.requires_grad
     }
-    assert partition.assignment_for("token_embedding.weight").target is OptimizerTarget.AUXILIARY_ADAMW
-    assert partition.assignment_for("core_blocks.0.attention.q_proj.weight").target is OptimizerTarget.MUON_ELIGIBLE
+    assert (
+        partition.assignment_for("token_embedding.weight").target
+        is OptimizerTarget.AUXILIARY_ADAMW
+    )
+    assert (
+        partition.assignment_for("core_blocks.0.attention.q_proj.weight").target
+        is OptimizerTarget.MUON_ELIGIBLE
+    )
     assert partition.assignment_for("final_norm.weight").role is ParameterRole.NORMALIZATION
     assert partition.assignment_for("engram.query_proj.weight").role is ParameterRole.ENGRAM
     assert accounting.vocabulary == config.vocab_size * config.d_model
@@ -563,7 +596,10 @@ def test_hadamard_router_audit_excludes_padding_tokens() -> None:
     )
     for name, value in output.diagnostics["hadamard_router"].items():
         torch.testing.assert_close(value, changed_padding.diagnostics["hadamard_router"][name])
-    torch.testing.assert_close(output.diagnostics["loop_rms"], changed_padding.diagnostics["loop_rms"])
+    torch.testing.assert_close(
+        output.diagnostics["loop_rms"],
+        changed_padding.diagnostics["loop_rms"],
+    )
     torch.testing.assert_close(
         output.diagnostics["loop_update_rms"],
         changed_padding.diagnostics["loop_update_rms"],
