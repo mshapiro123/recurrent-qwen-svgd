@@ -1,0 +1,463 @@
+from __future__ import annotations
+
+import hashlib
+import subprocess
+import sys
+from collections.abc import Callable
+from dataclasses import replace
+from pathlib import Path
+
+import numpy as np
+import pytest
+import torch
+from torch import nn
+
+from analysis.weft1_jacobian_panel import (
+    DIRECTION_CLASSES,
+    REGISTERED_DEPTHS,
+    StochasticStateSnapshot,
+    build_panel_report,
+    cluster_bootstrap_ci,
+    compare_main_and_norm_tiers,
+    derive_example_probe_seed,
+    draw_example_probe_directions,
+    loop_log_gains,
+    measure_example_depths,
+    operator_norm,
+    p_hat,
+    participation_ratio,
+    rejection_conditions,
+    sigma_slope_hat,
+    theil_sen_slopes,
+)
+from models.ablation_lm.rng import ModuleRNGStream
+
+
+class _TinyTwoBlock(nn.Module):
+    """Eight-dimensional, two-block transition with a known dense Jacobian."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        singular_values = torch.tensor(
+            [4.0, 1.4, 1.2, 1.0, 0.8, 0.6, 0.4, 0.2],
+            dtype=torch.float32,
+        )
+        first = singular_values.sqrt()
+        self.register_buffer("first", torch.diag(first))
+        self.register_buffer("second", torch.diag(first))
+
+    def forward(self, state: torch.Tensor) -> torch.Tensor:
+        return self.second @ (self.first @ state)
+
+
+class _RoutedStochasticTransition(nn.Module):
+    def __init__(self, run_seed: int = 77) -> None:
+        super().__init__()
+        self.router_rng = ModuleRNGStream(run_seed, "model.router.noise")
+
+    def with_aux(self, state: torch.Tensor) -> tuple[torch.Tensor, dict[str, torch.Tensor]]:
+        generator = self.router_rng.next_generator(state.device)
+        noise = torch.randn(
+            state.shape,
+            generator=generator,
+            device=state.device,
+            dtype=torch.float32,
+        )
+        experts = noise.gt(0)
+        gates = noise.abs().gt(0.5)
+        scale = 1.0 + 0.125 * experts.float()
+        return scale * state + 0.01 * noise, {"experts": experts, "gates": gates}
+
+
+class _AnisotropicDepthTransition(nn.Module):
+    def __init__(self) -> None:
+        super().__init__()
+        self.register_buffer(
+            "matrix",
+            torch.diag(torch.tensor([3.0, 1.5, 1.0, 0.5], dtype=torch.float32)),
+        )
+
+    def transition_for_depth(
+        self, depth: int
+    ) -> Callable[[torch.Tensor], tuple[torch.Tensor, dict[str, torch.Tensor]]]:
+        scale = float(depth + 1)
+
+        def transition(
+            state: torch.Tensor,
+        ) -> tuple[torch.Tensor, dict[str, torch.Tensor]]:
+            return scale * (self.matrix @ state), {
+                "experts": torch.tensor([depth % 2], dtype=torch.int64)
+            }
+
+        return transition
+
+
+def _dense_jacobian(model: nn.Module, primal: torch.Tensor) -> torch.Tensor:
+    return torch.autograd.functional.jacobian(model, primal)
+
+
+def test_pt1_golden_theil_sen_slope() -> None:
+    x = torch.log2(torch.tensor(REGISTERED_DEPTHS, dtype=torch.float64))
+    intercept = torch.linspace(-0.7, 0.9, 23, dtype=torch.float64)
+    true_p = 1.137
+    y = intercept[:, None] - true_p * x[None, :]
+
+    slopes = theil_sen_slopes(x, y)
+
+    torch.testing.assert_close(
+        slopes,
+        torch.full_like(slopes, -true_p),
+        rtol=0,
+        atol=1e-12,
+    )
+    assert abs(p_hat(x, y) - true_p) < 1e-6
+
+
+def test_pt2_forward_jvp_matches_dense_jacobian_for_sixteen_directions() -> None:
+    model = _TinyTwoBlock()
+    primal = torch.linspace(-0.4, 0.6, 8, dtype=torch.float32)
+    directions = draw_example_probe_directions(
+        primal,
+        n_probe=16,
+        example_probe_seed=20260826,
+    )
+    snapshot = StochasticStateSnapshot.capture(model)
+
+    log_gains = loop_log_gains(
+        model,
+        primal,
+        directions,
+        stochastic_snapshot=snapshot,
+        has_aux=False,
+    )
+    dense = _dense_jacobian(model, primal)
+    expected = torch.stack([(dense @ direction).norm() for direction in directions])
+    relative = (log_gains.exp() - expected).abs() / expected
+
+    assert relative.max().item() < 1e-5
+
+
+def test_pt3_hutchinson_participation_ratio_matches_dense_svd() -> None:
+    model = _TinyTwoBlock()
+    primal = torch.linspace(-0.4, 0.6, 8, dtype=torch.float32)
+    dense = _dense_jacobian(model, primal)
+    singular_squared = torch.linalg.svdvals(dense).square()
+    truth = singular_squared.sum().square() / singular_squared.square().sum()
+
+    estimate = participation_ratio(
+        model,
+        primal,
+        model=model,
+        n_probe=4096,
+        seed=31,
+    )
+
+    assert abs(estimate - truth.item()) / truth.item() < 0.10
+
+
+def test_pt4_power_iteration_matches_dense_operator_norm() -> None:
+    model = _TinyTwoBlock()
+    primal = torch.linspace(-0.4, 0.6, 8, dtype=torch.float32)
+    dense = _dense_jacobian(model, primal)
+    truth = torch.linalg.svdvals(dense)[0].item()
+
+    estimate = operator_norm(
+        model,
+        primal,
+        model=model,
+        iterations=10,
+        seed=37,
+    )
+
+    assert abs(estimate - truth) / truth < 1e-4
+
+
+def test_pt5_probe_reset_branch_identity_and_rng_isolation() -> None:
+    model = _RoutedStochasticTransition()
+    primal = torch.tensor(
+        [-0.7, -0.2, -0.01, 0.03, 0.2, 0.8],
+        dtype=torch.float32,
+    )
+    one_direction = draw_example_probe_directions(
+        primal,
+        n_probe=1,
+        example_probe_seed=41,
+    )[0]
+    repeated_direction = torch.stack((one_direction, one_direction))
+    snapshot = StochasticStateSnapshot.capture(model)
+    ambient_before = torch.random.get_rng_state().clone()
+
+    gains = loop_log_gains(
+        model.with_aux,
+        primal,
+        repeated_direction,
+        stochastic_snapshot=snapshot,
+        has_aux=True,
+    )
+
+    torch.testing.assert_close(gains[0], gains[1], rtol=0, atol=0)
+    torch.testing.assert_close(torch.random.get_rng_state(), ambient_before, rtol=0, atol=0)
+    assert model.router_rng.draw_index == 0
+    assert snapshot.stream_names == ("router_rng",)
+
+
+def test_pt5_same_run_and_probe_seeds_are_bit_identical_across_processes() -> None:
+    repository = Path(__file__).resolve().parents[1]
+    script = r'''
+import hashlib
+import torch
+from torch import nn
+from analysis.weft1_jacobian_panel import (
+    StochasticStateSnapshot,
+    derive_example_probe_seed,
+    draw_example_probe_directions,
+    loop_log_gains,
+)
+from models.ablation_lm.rng import ModuleRNGStream
+
+class Transition(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.rng = ModuleRNGStream(77, "model.router.noise")
+    def with_aux(self, state):
+        generator = self.rng.next_generator(state.device)
+        noise = torch.randn(state.shape, generator=generator, dtype=torch.float32)
+        experts = noise.gt(0)
+        return (1.0 + 0.125 * experts.float()) * state + 0.01 * noise, experts
+
+model = Transition()
+primal = torch.tensor([-0.7, -0.2, -0.01, 0.03, 0.2, 0.8])
+seed = derive_example_probe_seed(20260826, "sentinel/example-0042")
+directions = draw_example_probe_directions(primal, n_probe=4, example_probe_seed=seed)
+gains = loop_log_gains(
+    model.with_aux,
+    primal,
+    directions,
+    stochastic_snapshot=StochasticStateSnapshot.capture(model),
+    has_aux=True,
+)
+print(hashlib.sha256(gains.numpy().tobytes()).hexdigest())
+'''
+
+    first = subprocess.check_output(
+        [sys.executable, "-c", script], cwd=repository, text=True
+    ).strip()
+    second = subprocess.check_output(
+        [sys.executable, "-c", script], cwd=repository, text=True
+    ).strip()
+
+    assert first == second
+    assert len(first) == hashlib.sha256().digest_size * 2
+
+
+def test_pt5_p5_reuses_one_example_owned_probe_bank_at_every_depth() -> None:
+    model = _AnisotropicDepthTransition()
+    primal = torch.tensor([0.2, -0.1, 0.7, -0.4], dtype=torch.float32)
+
+    measurement = measure_example_depths(
+        model.transition_for_depth,
+        primal,
+        model=model,
+        panel_seed=20260826,
+        example_id="sentinel/example-0017",
+        depths=REGISTERED_DEPTHS,
+        n_probe=4,
+        has_aux=True,
+    )
+
+    # For J_T = scalar(T) * M, reusing v_i makes the centered directional
+    # sampling pattern exactly shared across depths.  Redrawing by depth would
+    # destroy this equality for anisotropic M.
+    centered = measurement.log_gains - measurement.log_gains.mean(dim=1, keepdim=True)
+    torch.testing.assert_close(
+        centered,
+        centered[0].expand_as(centered),
+        rtol=1e-6,
+        atol=1e-6,
+    )
+    assert measurement.depths == REGISTERED_DEPTHS
+    assert measurement.example_probe_seed == derive_example_probe_seed(
+        20260826, "sentinel/example-0017"
+    )
+    assert measurement.fixed_branch_verified is True
+
+
+def test_pt5_rejects_ambient_rng_as_an_unregistered_stochastic_source() -> None:
+    class AmbientTransition(nn.Module):
+        def forward(self, state: torch.Tensor) -> torch.Tensor:
+            return state + 0.01 * torch.randn(state.shape)
+
+    model = AmbientTransition()
+    primal = torch.ones(4)
+    directions = draw_example_probe_directions(
+        primal,
+        n_probe=2,
+        example_probe_seed=3,
+    )
+
+    with pytest.raises(RuntimeError, match="ambient RNG"):
+        loop_log_gains(
+            model,
+            primal,
+            directions,
+            stochastic_snapshot=StochasticStateSnapshot.capture(model),
+            has_aux=False,
+        )
+
+
+def test_pt6_cluster_bootstrap_has_registered_synthetic_coverage() -> None:
+    true_p = 1.0
+    generator = np.random.default_rng(20260826)
+    covered = 0
+    replications = 1000
+    for replication in range(replications):
+        # One slope per example is the cluster passed to the bootstrap.  There
+        # is deliberately no probe or depth axis here.
+        slopes = -true_p + generator.normal(0.0, 0.35, size=48)
+        _estimate, lower, upper = cluster_bootstrap_ci(
+            slopes,
+            replicates=999,
+            seed=17 + replication,
+        )
+        covered += lower <= true_p <= upper
+
+    coverage = covered / replications
+    assert 0.93 <= coverage <= 0.97
+
+
+def test_autocast_is_rejected_and_probe_path_stays_fp32() -> None:
+    model = _TinyTwoBlock()
+    primal = torch.linspace(-0.4, 0.6, 8, dtype=torch.float32)
+    directions = draw_example_probe_directions(
+        primal,
+        n_probe=2,
+        example_probe_seed=11,
+    )
+
+    with torch.autocast(device_type="cpu", dtype=torch.bfloat16):
+        with pytest.raises(RuntimeError, match="outside autocast"):
+            loop_log_gains(
+                model,
+                primal,
+                directions,
+                stochastic_snapshot=StochasticStateSnapshot.capture(model),
+                has_aux=False,
+            )
+
+    observed = loop_log_gains(
+        model,
+        primal.to(torch.bfloat16),
+        directions,
+        stochastic_snapshot=StochasticStateSnapshot.capture(model),
+        has_aux=False,
+    )
+    assert observed.dtype is torch.float32
+
+
+def test_reporting_contract_and_registered_rejection_conditions() -> None:
+    example_count = 32
+    slopes = torch.linspace(-1.2, -0.8, example_count)
+    grid = torch.arange(example_count * 4 * 4, dtype=torch.float32).reshape(
+        example_count, 4, 4
+    )
+    log_gains = 0.001 * grid.sin()
+    directions = {
+        name: tuple(0.1 * (index + 1) for index in range(4))
+        for name in DIRECTION_CLASSES
+    }
+
+    report = build_panel_report(
+        slopes,
+        log_gains,
+        run_seed=73,
+        tier="main",
+        depths=REGISTERED_DEPTHS,
+        c_l_by_depth=(0.2, 0.1, 0.04, 0.03),
+        r_pr_by_depth=(7.0, 6.0, 5.0, 4.0),
+        lambda_sign_by_depth=(1, 1, -1, -1),
+        direction_class_gains=directions,
+        fixed_branch_verified=True,
+        bootstrap_replicates=499,
+        bootstrap_seed=79,
+    )
+    payload = report.to_dict()
+
+    assert payload["p_hat"] == pytest.approx(1.0)
+    assert payload["Sxx"] == pytest.approx(5.0)
+    assert payload["instrument_tier"] == 1
+    assert payload["tier"] == "main"
+    assert payload["n"] == example_count
+    assert payload["n_probe"] == 4
+    assert payload["depths"] == [1, 2, 4, 8]
+    assert payload["conditioning_flag"] is True
+    assert payload["rejection_reasons"] == [
+        "sign_inconsistency",
+        "conditioning_failure",
+    ]
+    assert set(payload["direction_class_gains_by_depth"]) == set(DIRECTION_CLASSES)
+    assert payload["differentiation"] == "forward_mode_jvp"
+    assert payload["jacobian_semantics"] == "fixed_routing_branch"
+    assert payload["routing_flip_derivative_included"] is False
+    assert payload["probe_seed_scope"] == "example"
+
+    with pytest.raises(RuntimeError, match="routing branch evidence"):
+        build_panel_report(
+            slopes,
+            log_gains,
+            run_seed=73,
+            tier="main",
+            depths=REGISTERED_DEPTHS,
+            c_l_by_depth=(0.2, 0.1, 0.08, 0.07),
+            r_pr_by_depth=(7.0, 6.0, 5.0, 4.0),
+            lambda_sign_by_depth=(1, 1, 1, 1),
+            direction_class_gains=directions,
+            fixed_branch_verified=False,
+            bootstrap_replicates=99,
+        )
+
+
+def test_clipped_variance_and_tier_disagreement_are_never_silenced() -> None:
+    sigma, clipped = sigma_slope_hat(torch.ones(8), 1.0, sxx=5.0)
+    assert sigma == 0.0
+    assert clipped is True
+    assert rejection_conditions((1, 1, 1, 1), (0.2, 0.1, 0.08, 0.07)) == ()
+
+    slopes = torch.linspace(-1.1, -0.9, 16)
+    log_gains = torch.arange(16 * 4 * 4, dtype=torch.float32).reshape(16, 4, 4)
+    directions = {name: (0.1, 0.1, 0.1, 0.1) for name in DIRECTION_CLASSES}
+    main = build_panel_report(
+        slopes,
+        log_gains,
+        run_seed=1,
+        tier="main",
+        depths=REGISTERED_DEPTHS,
+        c_l_by_depth=(0.2, 0.2, 0.2, 0.2),
+        r_pr_by_depth=(4.0, 4.0, 4.0, 4.0),
+        lambda_sign_by_depth=(1, 1, 1, 1),
+        direction_class_gains=directions,
+        fixed_branch_verified=True,
+        bootstrap_replicates=99,
+    )
+    norm = replace(main, tier="norm", p_hat=1.5, ci_lo=1.4, ci_hi=1.6)
+    comparison = compare_main_and_norm_tiers(main, norm)
+
+    assert comparison.outcome == "return_to_strategy"
+    assert comparison.main_inside_norm_interval is False
+
+
+@pytest.mark.parametrize(
+    ("panel_seed", "example_id", "error"),
+    [
+        (True, "example", TypeError),
+        (-1, "example", ValueError),
+        (1, "", ValueError),
+        (1, 7, TypeError),
+    ],
+)
+def test_example_probe_seed_derivation_is_fail_closed(
+    panel_seed: object,
+    example_id: object,
+    error: type[Exception],
+) -> None:
+    with pytest.raises(error):
+        derive_example_probe_seed(panel_seed, example_id)  # type: ignore[arg-type]
