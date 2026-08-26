@@ -59,6 +59,7 @@ def _model(config: AblationLMConfig) -> AblationLM:
             provenance_ids=torch.arange(config.long_term_memory_slots),
             layer_scale=config.long_term_memory_layer_scale,
             norm_eps=config.norm_eps,
+            initialization_seed=config.initialization_seed,
         )
     return AblationLM(config, long_term_memory=memory)
 
@@ -511,7 +512,7 @@ def test_fork_b_prime_reports_requested_but_unexecuted_at_k1() -> None:
 
 @pytest.mark.parametrize(
     ("steps", "midpoint_refresh"),
-    ((1, False), (2, False), (3, False), (4, True)),
+    ((1, False), (2, False), (4, True), (8, True)),
 )
 def test_t14b_static_kv_is_exactly_causal_at_every_visit_horizon(
     steps: int,
@@ -521,6 +522,7 @@ def test_t14b_static_kv_is_exactly_causal_at_every_visit_horizon(
     config = _tiny_config(
         use_recurrence=True,
         recurrent_steps=steps,
+        max_recurrent_steps=8,
         use_static_kv_core=True,
         static_kv_midpoint_refresh=midpoint_refresh,
     )
@@ -556,7 +558,8 @@ def test_t14b_static_kv_checks_every_k_with_packing_and_padding(
     torch.manual_seed(121)
     config = _tiny_config(
         use_recurrence=True,
-        recurrent_steps=4,
+        recurrent_steps=8,
+        max_recurrent_steps=8,
         use_static_kv_core=True,
         static_kv_midpoint_refresh=midpoint_refresh,
         use_front_hadamard_experts=True,
@@ -926,6 +929,27 @@ def test_long_term_store_is_frozen_and_excludes_matching_provenance() -> None:
     assert not model.long_term_memory.memory_values.requires_grad
 
 
+def test_long_term_memory_adapter_seed_must_match_model_initialization() -> None:
+    config = _tiny_config(
+        use_long_term_memory=True,
+        long_term_memory_slots=2,
+        long_term_memory_width=8,
+        initialization_seed=111,
+    )
+    memory = ReadOnlyLatentMemory(
+        config.d_model,
+        keys=torch.randn(2, 8),
+        values=torch.randn(2, 8),
+        provenance_ids=torch.arange(2),
+        layer_scale=config.long_term_memory_layer_scale,
+        norm_eps=config.norm_eps,
+        initialization_seed=222,
+    )
+
+    with pytest.raises(ValueError, match="initialization_seed must match"):
+        AblationLM(config, long_term_memory=memory)
+
+
 def test_training_with_long_term_memory_requires_leave_one_out_ids() -> None:
     config = _tiny_config(use_long_term_memory=True)
     model = _model(config).train()
@@ -973,6 +997,7 @@ def test_one_active_checkpoint_keeps_recurrent_k_inference_controllable() -> Non
     config = _tiny_config(
         use_recurrence=True,
         recurrent_steps=1,
+        max_recurrent_steps=8,
         recurrence_coefficient=0.75,
         use_reentry_bridge=True,
     )
@@ -980,7 +1005,7 @@ def test_one_active_checkpoint_keeps_recurrent_k_inference_controllable() -> Non
     assert model.reentry_bridge is not None
     tokens = torch.randint(0, config.vocab_size, (2, 7))
 
-    expected_bridge_visits = {1: 0, 2: 1, 4: 3}
+    expected_bridge_visits = {1: 0, 2: 1, 4: 3, 8: 7}
     outputs = {}
     with patch.object(
         model.reentry_bridge,
@@ -988,7 +1013,7 @@ def test_one_active_checkpoint_keeps_recurrent_k_inference_controllable() -> Non
         wraps=model.reentry_bridge.forward,
     ) as bridge_forward:
         previous_calls = 0
-        for steps in (1, 2, 4):
+        for steps in (1, 2, 4, 8):
             output = model(tokens, recurrent_steps=steps, return_diagnostics=True)
             outputs[steps] = output.logits
             assert model.config.recurrent_steps == 1

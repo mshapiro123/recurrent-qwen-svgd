@@ -10,6 +10,7 @@ from torch import nn
 
 from .layers import RMSNorm
 from .optim import ParameterRole, tag_optimizer_role
+from .rng import construct_with_isolated_rng, derive_module_seed
 
 
 class ReadOnlyLatentMemory(nn.Module):
@@ -31,6 +32,7 @@ class ReadOnlyLatentMemory(nn.Module):
         provenance_ids: torch.Tensor,
         layer_scale: float,
         norm_eps: float,
+        initialization_seed: int = 20_260_826,
     ) -> None:
         super().__init__()
         if keys.ndim != 2 or values.ndim != 2 or keys.shape != values.shape:
@@ -46,9 +48,20 @@ class ReadOnlyLatentMemory(nn.Module):
         self.d_model = int(d_model)
         self.slots = int(keys.shape[0])
         self.memory_width = int(keys.shape[1])
+        if type(initialization_seed) is not int:
+            raise TypeError("initialization_seed must be an exact integer")
+        self.initialization_seed = initialization_seed
         self.hidden_norm = RMSNorm(d_model, norm_eps)
-        self.query = nn.Linear(d_model, self.memory_width, bias=False)
-        self.output = nn.Linear(self.memory_width, d_model, bias=False)
+        self.query = construct_with_isolated_rng(
+            lambda: nn.Linear(d_model, self.memory_width, bias=False),
+            base_seed=initialization_seed,
+            source_key="model.long_term_memory.query.constructor",
+        )
+        self.output = construct_with_isolated_rng(
+            lambda: nn.Linear(self.memory_width, d_model, bias=False),
+            base_seed=initialization_seed,
+            source_key="model.long_term_memory.output.constructor",
+        )
         self.layer_scale = nn.Parameter(torch.full((d_model,), float(layer_scale)))
         tag_optimizer_role(self, "layer_scale", ParameterRole.GATE)
         self.register_buffer("memory_keys", keys.detach().float().clone(), persistent=True)
@@ -59,8 +72,20 @@ class ReadOnlyLatentMemory(nn.Module):
         self.reset_parameters()
 
     def reset_parameters(self) -> None:
-        nn.init.xavier_uniform_(self.query.weight)
-        nn.init.xavier_uniform_(self.output.weight)
+        query_generator = torch.Generator(device="cpu").manual_seed(
+            derive_module_seed(
+                self.initialization_seed,
+                "model.long_term_memory.query.initialization",
+            )
+        )
+        output_generator = torch.Generator(device="cpu").manual_seed(
+            derive_module_seed(
+                self.initialization_seed,
+                "model.long_term_memory.output.initialization",
+            )
+        )
+        nn.init.xavier_uniform_(self.query.weight, generator=query_generator)
+        nn.init.xavier_uniform_(self.output.weight, generator=output_generator)
 
     def forward(
         self,

@@ -55,6 +55,8 @@ class AblationLMConfig:
     attention_dropout: float = 0.0
     tie_embeddings: bool = True
     initialization_seed: int = 20_260_826
+    run_seed: int = 20_260_826
+    rng_replica: int = 0
 
     use_front_hadamard_experts: bool = False
     hadamard_experts: int = 8
@@ -133,8 +135,11 @@ class AblationLMConfig:
             raise ValueError("rope_theta must be finite and greater than one")
         if not math.isfinite(self.norm_eps) or self.norm_eps <= 0:
             raise ValueError("norm_eps must be finite and positive")
-        if not 0 <= self.attention_dropout < 1:
-            raise ValueError("attention_dropout must lie in [0, 1)")
+        if self.attention_dropout != 0.0:
+            raise ValueError(
+                "attention_dropout is ratified at 0.0; nonzero dropout requires a "
+                "generator-aware fused attention kernel before it may be enabled"
+            )
         if not self.tie_embeddings:
             raise ValueError("the substrate contract requires tied input/output embeddings")
         if self.use_front_hadamard_experts and not self._is_power_of_two(self.d_model):
@@ -180,12 +185,17 @@ class AblationLMConfig:
                 raise ValueError(f"{name} must be a positive integer")
         for name, value in {
             "initialization_seed": self.initialization_seed,
+            "run_seed": self.run_seed,
             "hadamard_seed": self.hadamard_seed,
             "engram_hash_seed": self.engram_hash_seed,
             "jet_plane_probe_seed": self.jet_plane_probe_seed,
         }.items():
             if type(value) is not int:
                 raise ValueError(f"{name} must be an exact integer")
+        if type(self.rng_replica) is not int:
+            raise ValueError("rng_replica must be an exact integer")
+        if self.rng_replica < 0:
+            raise ValueError("rng_replica must be non-negative")
         for name, value in {
             "hadamard_layer_scale": self.hadamard_layer_scale,
             "scratch_layer_scale": self.scratch_layer_scale,

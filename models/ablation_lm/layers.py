@@ -18,6 +18,7 @@ from .optim import (
     mark_muon_eligible,
     tag_optimizer_role,
 )
+from .rng import ModuleRNGStream
 
 
 class RMSNorm(nn.Module):
@@ -130,13 +131,24 @@ class ProjectedKeyValue(NamedTuple):
 class GroupedQueryAttention(nn.Module):
     """Bias-free causal GQA using PyTorch scaled-dot-product attention."""
 
-    def __init__(self, config: AblationLMConfig) -> None:
+    def __init__(
+        self,
+        config: AblationLMConfig,
+        *,
+        module_path: str,
+    ) -> None:
         super().__init__()
         self.d_model = config.d_model
         self.n_heads = config.n_heads
         self.n_kv_heads = config.n_kv_heads
         self.head_dim = config.head_dim
         self.dropout = float(config.attention_dropout)
+        self.dropout_rng = ModuleRNGStream(
+            config.run_seed,
+            f"{module_path}.attention.dropout",
+            replica=config.rng_replica,
+            substreams=config.max_recurrent_steps,
+        )
         self.q_proj = mark_muon_eligible(
             nn.Linear(self.d_model, self.n_heads * self.head_dim, bias=False)
         )
@@ -283,11 +295,20 @@ class GroupedQueryAttention(nn.Module):
         position_ids: torch.Tensor | None = None,
         document_ids: torch.Tensor | None = None,
         force_math_attention: bool = False,
+        rng_coordinate: int = 0,
     ) -> torch.Tensor:
         if hidden.ndim != 3 or hidden.shape[-1] != self.d_model:
             raise ValueError("hidden must have shape [batch, sequence, d_model]")
         if type(_trusted_projected_kv) is not bool:
             raise TypeError("_trusted_projected_kv must be an exact bool")
+        if type(rng_coordinate) is not int:
+            raise TypeError("rng_coordinate must be an exact int")
+        if rng_coordinate < 0 or rng_coordinate >= self.dropout_rng.substreams:
+            raise ValueError("rng_coordinate lies outside the configured recurrence cap")
+        if self.dropout != 0.0:
+            raise RuntimeError(
+                "nonzero attention dropout requires a generator-aware fused kernel"
+            )
         batch, length, _ = hidden.shape
         if position_ids is None:
             position_ids = torch.arange(length, device=hidden.device).view(1, -1).expand(batch, -1)
@@ -327,7 +348,8 @@ class GroupedQueryAttention(nn.Module):
                 attention_mask = document_ids.ge(0)
             sdpa_mask = self._causal_padding_mask(attention_mask, length, document_ids)
             is_causal = False
-        if force_math_attention:
+        explicit_attention = force_math_attention
+        if explicit_attention:
             if sdpa_mask is None:
                 positions = torch.arange(length, device=hidden.device)
                 sdpa_mask = (positions[:, None] >= positions[None, :]).view(
@@ -350,7 +372,7 @@ class GroupedQueryAttention(nn.Module):
                 key,
                 value,
                 attn_mask=sdpa_mask,
-                dropout_p=self.dropout if self.training else 0.0,
+                dropout_p=0.0,
                 is_causal=is_causal,
             )
         merged = attended.transpose(1, 2).contiguous().view(batch, length, self.d_model)
@@ -373,10 +395,15 @@ class SwiGLU(nn.Module):
 class TransformerBlock(nn.Module):
     """Plain Pre-RMSNorm Transformer block with an explicit residual scale."""
 
-    def __init__(self, config: AblationLMConfig) -> None:
+    def __init__(
+        self,
+        config: AblationLMConfig,
+        *,
+        module_path: str,
+    ) -> None:
         super().__init__()
         self.attention_norm = RMSNorm(config.d_model, config.norm_eps)
-        self.attention = GroupedQueryAttention(config)
+        self.attention = GroupedQueryAttention(config, module_path=module_path)
         self.ffn_norm = RMSNorm(config.d_model, config.norm_eps)
         self.feed_forward = SwiGLU(config.d_model, config.d_ff)
         self._mark_rank_only_muon_prohibited()
@@ -409,6 +436,7 @@ class TransformerBlock(nn.Module):
         document_ids: torch.Tensor | None = None,
         residual_scale: float = 1.0,
         force_math_attention: bool = False,
+        rng_coordinate: int = 0,
     ) -> torch.Tensor:
         scale = float(residual_scale)
         hidden = hidden + scale * self.attention(
@@ -419,6 +447,7 @@ class TransformerBlock(nn.Module):
             position_ids=position_ids,
             document_ids=document_ids,
             force_math_attention=force_math_attention,
+            rng_coordinate=rng_coordinate,
         )
         return hidden + scale * self.feed_forward(self.ffn_norm(hidden))
 

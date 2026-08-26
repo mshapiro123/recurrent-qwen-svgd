@@ -149,6 +149,12 @@ def test_active_layer_scales_and_callosum_cannot_be_initialized_dead() -> None:
         replace(config, engram_orders=(2.5, 3))
     with pytest.raises(ValueError, match="exact integer"):
         replace(config, engram_hash_seed=17.9)
+    with pytest.raises(ValueError, match="run_seed must be an exact integer"):
+        replace(config, run_seed=True)
+    with pytest.raises(ValueError, match="rng_replica must be an exact integer"):
+        replace(config, rng_replica=1.5)
+    with pytest.raises(ValueError, match="rng_replica must be non-negative"):
+        replace(config, rng_replica=-1)
     with pytest.raises(ValueError, match="0.1 scale bound"):
         replace(config, engram_layer_scale=0.1)
     with pytest.raises(ValueError, match="positive integer"):

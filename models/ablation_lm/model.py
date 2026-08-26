@@ -28,6 +28,7 @@ from .layers import (
 from .memory import ReadOnlyLatentMemory
 from .optim import RANK_ONLY_MUON_PROHIBITED_ATTR, REQUIRE_CLOSED_MUON_ALLOWLIST_ATTR
 from .reentry import AnchoredReentryBridge
+from .rng import ModuleRNGStream, construct_with_isolated_rng, derive_module_seed
 from .scratch import PositionAlignedScratch
 
 
@@ -72,73 +73,128 @@ class AblationLM(nn.Module):
                 raise ValueError("long-term memory record count does not match the config")
             if long_term_memory.memory_width != config.long_term_memory_width:
                 raise ValueError("long-term memory width does not match the config")
-        self.token_embedding = nn.Embedding(config.vocab_size, config.d_model)
+            if long_term_memory.initialization_seed != config.initialization_seed:
+                raise ValueError(
+                    "long-term memory initialization_seed must match the model config"
+                )
+
+        def construct(source_key: str, factory: Any) -> Any:
+            return construct_with_isolated_rng(
+                factory,
+                base_seed=config.initialization_seed,
+                source_key=source_key,
+                replica=0,
+            )
+
+        self.token_embedding = construct(
+            "model.token_embedding.constructor",
+            lambda: nn.Embedding(config.vocab_size, config.d_model),
+        )
         self.front_hadamard = (
-            ModifiedHadamardExpertBank(
-                config.d_model,
-                experts=config.hadamard_experts,
-                layer_scale=config.hadamard_layer_scale,
-                norm_eps=config.norm_eps,
-                seed=config.hadamard_seed,
+            construct(
+                "model.front_hadamard.constructor",
+                lambda: ModifiedHadamardExpertBank(
+                    config.d_model,
+                    experts=config.hadamard_experts,
+                    layer_scale=config.hadamard_layer_scale,
+                    norm_eps=config.norm_eps,
+                    seed=config.hadamard_seed,
+                ),
             )
             if config.use_front_hadamard_experts
             else None
         )
         self.prelude_blocks = nn.ModuleList(
-            TransformerBlock(config) for _ in range(config.n_prelude_layers)
+            construct(
+                f"model.prelude.{index}.constructor",
+                lambda index=index: TransformerBlock(
+                    config,
+                    module_path=f"model.prelude.{index}",
+                ),
+            )
+            for index in range(config.n_prelude_layers)
         )
         self.engram = (
-            CausalTokenEngram(
-                TokenEngramConfig(
-                    hidden_dim=config.d_model,
-                    num_slots=config.engram_table_size,
-                    ngram_orders=config.engram_orders,
-                    num_hash_heads=config.engram_hashes_per_order,
-                    head_dim=config.engram_row_dim,
-                    initial_scale=config.engram_layer_scale,
-                    seed=config.engram_hash_seed,
-                )
+            construct(
+                "model.engram.constructor",
+                lambda: CausalTokenEngram(
+                    TokenEngramConfig(
+                        hidden_dim=config.d_model,
+                        num_slots=config.engram_table_size,
+                        ngram_orders=config.engram_orders,
+                        num_hash_heads=config.engram_hashes_per_order,
+                        head_dim=config.engram_row_dim,
+                        initial_scale=config.engram_layer_scale,
+                        seed=config.engram_hash_seed,
+                    )
+                ),
             )
             if config.use_engram
             else None
         )
         self.core_blocks = nn.ModuleList(
-            TransformerBlock(config) for _ in range(config.n_core_blocks)
+            construct(
+                f"model.core.{index}.constructor",
+                lambda index=index: TransformerBlock(
+                    config,
+                    module_path=f"model.core.{index}",
+                ),
+            )
+            for index in range(config.n_core_blocks)
         )
         self.loop_embedding = (
-            nn.Embedding(config.max_recurrent_steps, config.d_model)
+            construct(
+                "model.loop_embedding.constructor",
+                lambda: nn.Embedding(config.max_recurrent_steps, config.d_model),
+            )
             if config.use_recurrence
             else None
         )
         self.reentry_bridge = (
-            AnchoredReentryBridge(
-                config.d_model,
-                layer_scale=config.bridge_layer_scale,
-                norm_eps=config.norm_eps,
+            construct(
+                "model.reentry_bridge.constructor",
+                lambda: AnchoredReentryBridge(
+                    config.d_model,
+                    layer_scale=config.bridge_layer_scale,
+                    norm_eps=config.norm_eps,
+                ),
             )
             if config.use_reentry_bridge
             else None
         )
         self.scratch = (
-            PositionAlignedScratch(
-                config.d_model,
-                lane_width=config.scratch_width,
-                max_steps=config.max_recurrent_steps,
-                layer_scale=config.scratch_layer_scale,
-                rho_init=config.lane_carrier_rho_init,
-                retention_floor=config.lane_carrier_retention_floor,
-                norm_eps=config.norm_eps,
-                use_carrier=config.use_lane_carrier,
+            construct(
+                "model.scratch.constructor",
+                lambda: PositionAlignedScratch(
+                    config.d_model,
+                    lane_width=config.scratch_width,
+                    max_steps=config.max_recurrent_steps,
+                    layer_scale=config.scratch_layer_scale,
+                    rho_init=config.lane_carrier_rho_init,
+                    retention_floor=config.lane_carrier_retention_floor,
+                    norm_eps=config.norm_eps,
+                    use_carrier=config.use_lane_carrier,
+                ),
             )
             if config.use_scratch
             else None
         )
         self.long_term_memory = long_term_memory
         self.coda_blocks = nn.ModuleList(
-            TransformerBlock(config) for _ in range(config.n_coda_layers)
+            construct(
+                f"model.coda.{index}.constructor",
+                lambda index=index: TransformerBlock(
+                    config,
+                    module_path=f"model.coda.{index}",
+                ),
+            )
+            for index in range(config.n_coda_layers)
         )
         self.final_norm = RMSNorm(config.d_model, config.norm_eps)
-        self.lm_head = nn.Linear(config.d_model, config.vocab_size, bias=False)
+        self.lm_head = construct(
+            "model.lm_head.constructor",
+            lambda: nn.Linear(config.d_model, config.vocab_size, bias=False),
+        )
         self.lm_head.weight = self.token_embedding.weight
         self.reset_parameters()
         self._restore_parameter_contract()
@@ -177,9 +233,11 @@ class AblationLM(nn.Module):
         embedding = state_dict.get("token_embedding.weight")
         head = state_dict.get("lm_head.weight")
         if (embedding is None) != (head is None):
-            raise RuntimeError(
-                "tied token_embedding.weight and lm_head.weight must appear together"
-            )
+            if strict or assign:
+                raise RuntimeError(
+                    "one tied alias may be absent only for strict=False, assign=False "
+                    "shared-tensor loading"
+                )
         if embedding is not None and head is not None:
             if embedding.device.type == "meta" or head.device.type == "meta":
                 raise RuntimeError("cannot validate tied aliases from a meta checkpoint")
@@ -193,12 +251,20 @@ class AblationLM(nn.Module):
             self._restore_parameter_contract()
 
     def reset_parameters(self) -> None:
-        generator = torch.Generator(device="cpu").manual_seed(self.config.initialization_seed)
+        def generator(source_key: str) -> torch.Generator:
+            return torch.Generator(device="cpu").manual_seed(
+                derive_module_seed(
+                    self.config.initialization_seed,
+                    source_key,
+                    0,
+                )
+            )
+
         nn.init.normal_(
             self.token_embedding.weight,
             mean=0.0,
             std=0.02,
-            generator=generator,
+            generator=generator("model.token_embedding.initialization"),
         )
         physical_blocks = (
             self.config.n_prelude_layers
@@ -206,32 +272,41 @@ class AblationLM(nn.Module):
             + self.config.n_coda_layers
         )
         residual_std = 0.02 / (2 * physical_blocks) ** 0.5
-        for block in (*self.prelude_blocks, *self.core_blocks, *self.coda_blocks):
-            ordinary = (
-                block.attention.q_proj,
-                block.attention.k_proj,
-                block.attention.v_proj,
-                block.feed_forward.gate_proj,
-                block.feed_forward.up_proj,
-            )
-            residual_outputs = (
-                block.attention.output_proj,
-                block.feed_forward.down_proj,
-            )
-            for projection in ordinary:
-                nn.init.normal_(
-                    projection.weight,
-                    mean=0.0,
-                    std=0.02,
-                    generator=generator,
+        staged_blocks = (
+            ("prelude", self.prelude_blocks),
+            ("core", self.core_blocks),
+            ("coda", self.coda_blocks),
+        )
+        for stage, blocks in staged_blocks:
+            for index, block in enumerate(blocks):
+                block_generator = generator(
+                    f"model.{stage}.{index}.initialization"
                 )
-            for projection in residual_outputs:
-                nn.init.normal_(
-                    projection.weight,
-                    mean=0.0,
-                    std=residual_std,
-                    generator=generator,
+                ordinary = (
+                    block.attention.q_proj,
+                    block.attention.k_proj,
+                    block.attention.v_proj,
+                    block.feed_forward.gate_proj,
+                    block.feed_forward.up_proj,
                 )
+                residual_outputs = (
+                    block.attention.output_proj,
+                    block.feed_forward.down_proj,
+                )
+                for projection in ordinary:
+                    nn.init.normal_(
+                        projection.weight,
+                        mean=0.0,
+                        std=0.02,
+                        generator=block_generator,
+                    )
+                for projection in residual_outputs:
+                    nn.init.normal_(
+                        projection.weight,
+                        mean=0.0,
+                        std=residual_std,
+                        generator=block_generator,
+                    )
         if self.loop_embedding is not None:
             nn.init.zeros_(self.loop_embedding.weight)
 
@@ -378,6 +453,7 @@ class AblationLM(nn.Module):
                 document_ids=document_ids,
                 residual_scale=alpha,
                 force_math_attention=force_math_attention,
+                rng_coordinate=step_index,
             )
         return hidden, lanes
 
@@ -914,6 +990,13 @@ class AblationLM(nn.Module):
         if return_diagnostics:
             diagnostics["alpha_t"] = alpha
             diagnostics["recurrence_enabled"] = self.config.use_recurrence
+            diagnostics["rng_run_seed"] = self.config.run_seed
+            diagnostics["rng_replica"] = self.config.rng_replica
+            diagnostics["rng_stream_draw_indices_by_name"] = tuple(
+                (name, module.draw_indices)
+                for name, module in self.named_modules()
+                if isinstance(module, ModuleRNGStream)
+            )
             diagnostics["executed_core_visits"] = steps
             diagnostics["executed_core_block_passes"] = steps * len(self.core_blocks)
             diagnostics["reentry_bridge_requested"] = self.config.use_reentry_bridge

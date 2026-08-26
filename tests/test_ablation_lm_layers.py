@@ -128,7 +128,7 @@ def test_rotary_embedding_is_orthogonal_and_has_no_loop_coordinate() -> None:
 def test_gqa_sdpa_matches_explicit_float32_causal_attention() -> None:
     torch.manual_seed(7)
     config = _attention_config()
-    attention = GroupedQueryAttention(config).eval()
+    attention = GroupedQueryAttention(config, module_path="model.test.sdpa").eval()
     hidden = torch.randn(2, 4, config.d_model)
     positions = torch.arange(4).view(1, -1).expand(2, -1)
 
@@ -148,10 +148,29 @@ def test_gqa_sdpa_matches_explicit_float32_causal_attention() -> None:
     torch.testing.assert_close(actual, reference, rtol=2e-5, atol=2e-6)
 
 
+def test_attention_dropout_is_fail_closed_until_a_generator_aware_fused_kernel() -> None:
+    with pytest.raises(ValueError, match="generator-aware fused attention"):
+        replace(_attention_config(), attention_dropout=0.25)
+
+    config = _attention_config()
+    attention = GroupedQueryAttention(
+        config,
+        module_path="model.test_attention",
+    ).train()
+    hidden = torch.randn(2, 5, config.d_model)
+    positions = torch.arange(5).view(1, -1).expand(2, -1)
+
+    attention(hidden, position_ids=positions, rng_coordinate=1)
+    assert attention.dropout_rng.draw_indices == (0,) * config.max_recurrent_steps
+    attention.dropout = 0.25
+    with pytest.raises(RuntimeError, match="generator-aware fused kernel"):
+        attention(hidden, position_ids=positions)
+
+
 def test_t15_projected_kv_matches_same_source_recomputation_in_fp32() -> None:
     torch.manual_seed(8)
     config = _attention_config()
-    attention = GroupedQueryAttention(config).eval()
+    attention = GroupedQueryAttention(config, module_path="model.test.t15_forward").eval()
     hidden = torch.randn(2, 5, config.d_model, dtype=torch.float32)
     positions = torch.arange(5).view(1, -1).expand(2, -1)
 
@@ -169,7 +188,10 @@ def test_t15_projected_kv_matches_same_source_recomputation_in_fp32() -> None:
 def test_t15_projected_kv_matches_recomputation_backward_in_fp32() -> None:
     torch.manual_seed(81)
     config = _attention_config()
-    cached_attention = GroupedQueryAttention(config).eval()
+    cached_attention = GroupedQueryAttention(
+        config,
+        module_path="model.test.t15_backward",
+    ).eval()
     recomputed_attention = copy.deepcopy(cached_attention)
     cached_hidden = torch.randn(
         2,
@@ -213,7 +235,7 @@ def test_t15_projected_kv_matches_recomputation_backward_in_fp32() -> None:
 
 def test_projected_kv_rejects_wrong_grouped_head_shape() -> None:
     config = _attention_config()
-    attention = GroupedQueryAttention(config).eval()
+    attention = GroupedQueryAttention(config, module_path="model.test.bad_shape").eval()
     hidden = torch.randn(2, 5, config.d_model)
     wrong = ProjectedKeyValue(
         key=torch.randn(2, config.n_heads, 5, config.head_dim),
@@ -228,7 +250,10 @@ def test_projected_kv_rejects_wrong_grouped_head_shape() -> None:
 
 def test_projected_kv_rejects_position_id_mismatch() -> None:
     config = _attention_config()
-    attention = GroupedQueryAttention(config).eval()
+    attention = GroupedQueryAttention(
+        config,
+        module_path="model.test.position_mismatch",
+    ).eval()
     hidden = torch.randn(2, 5, config.d_model)
     positions = torch.arange(5).view(1, -1).expand(2, -1)
     projected_kv = attention.project_kv(hidden, position_ids=positions)
@@ -244,8 +269,8 @@ def test_projected_kv_rejects_position_id_mismatch() -> None:
 
 def test_projected_kv_rejects_wrong_owner_and_position_metadata_types() -> None:
     config = _attention_config()
-    first = GroupedQueryAttention(config).eval()
-    second = GroupedQueryAttention(config).eval()
+    first = GroupedQueryAttention(config, module_path="model.test.owner.first").eval()
+    second = GroupedQueryAttention(config, module_path="model.test.owner.second").eval()
     hidden = torch.randn(2, 5, config.d_model)
     positions = torch.arange(5).view(1, -1).expand(2, -1)
     projected_kv = first.project_kv(hidden, position_ids=positions)
@@ -262,7 +287,7 @@ def test_projected_kv_rejects_wrong_owner_and_position_metadata_types() -> None:
 
 def test_projected_kv_rejects_stale_dtype_after_module_conversion() -> None:
     config = _attention_config()
-    attention = GroupedQueryAttention(config).eval()
+    attention = GroupedQueryAttention(config, module_path="model.test.stale_dtype").eval()
     hidden = torch.randn(2, 5, config.d_model)
     projected_kv = attention.project_kv(hidden)
     attention.to(dtype=torch.bfloat16)

@@ -223,6 +223,7 @@ def test_legacy_splitter_still_accepts_the_existing_recurrent_qwen_wrapper() -> 
 
 def test_meta_assign_load_restores_tied_identity_and_optimizer_safety() -> None:
     model = _tiny_ablation_lm()
+    assert all(isinstance(value, torch.Tensor) for value in model.state_dict().values())
     checkpoint = {
         name: value.detach().clone()
         for name, value in model.state_dict().items()
@@ -261,7 +262,7 @@ def test_meta_assign_load_restores_tied_identity_and_optimizer_safety() -> None:
     )
 
     vocabulary_before = model.token_embedding.weight.detach().clone()
-    with pytest.raises(RuntimeError, match="must appear together"):
+    with pytest.raises(RuntimeError, match="strict=False, assign=False"):
         model.load_state_dict(
             {"lm_head.weight": torch.zeros_like(vocabulary_before)},
             strict=False,
@@ -269,3 +270,37 @@ def test_meta_assign_load_restores_tied_identity_and_optimizer_safety() -> None:
         )
     torch.testing.assert_close(model.token_embedding.weight, vocabulary_before)
     assert model.token_embedding.weight is model.lm_head.weight
+
+
+def test_safetensors_shared_model_roundtrip_preserves_rng_state_and_tying(
+    tmp_path,
+) -> None:
+    safetensors = pytest.importorskip("safetensors.torch")
+    source = _tiny_ablation_lm()
+    source.core_blocks[0].attention.dropout_rng.next_generator(
+        torch.device("cpu"),
+        coordinate=0,
+    )
+    checkpoint_path = tmp_path / "weft1-tiny.safetensors"
+
+    safetensors.save_model(source, checkpoint_path)
+    restored = _tiny_ablation_lm()
+    missing, unexpected = safetensors.load_model(
+        restored,
+        checkpoint_path,
+        strict=True,
+    )
+
+    assert missing == set()
+    assert unexpected == []
+    assert restored.token_embedding.weight is restored.lm_head.weight
+    assert (
+        restored.core_blocks[0].attention.dropout_rng.draw_indices
+        == source.core_blocks[0].attention.dropout_rng.draw_indices
+    )
+    for source_parameter, restored_parameter in zip(
+        source.parameters(),
+        restored.parameters(),
+        strict=True,
+    ):
+        torch.testing.assert_close(source_parameter, restored_parameter, rtol=0, atol=0)
