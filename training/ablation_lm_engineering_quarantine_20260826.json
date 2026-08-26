@@ -5,7 +5,7 @@
   "review_due_on": "2026-09-02",
   "review_trigger": "Review before the next repository-wide engineering receipt or on the due date, whichever comes first.",
   "scope": "ablation_lm_engineering_gate_only",
-  "base_commit": "85bb8eae5cb70f7660b817af0b21b09b090782ef",
+  "base_commit": "a032809cce3c9c2a01c96ea9f48782918b5f97b8",
   "repo_wide_green_claim_permitted": false,
   "build_and_unit_test_work_authorized": true,
   "tokenizer_fit_or_freeze_authorized": false,
@@ -16,11 +16,11 @@
   "sealed_files_touched": [],
   "full_suite_expected_exit_code": 1,
   "last_observed_full_suite": {
-    "passed": 3089,
+    "passed": 3300,
     "failed": 3,
     "warnings": 19,
-    "duration_seconds": 59.82,
-    "observed_at": "2026-08-26T10:03:26-04:00"
+    "duration_seconds": 106.38,
+    "observed_at": "2026-08-26T18:59:23-04:00"
   },
   "transport_repair": {
     "core_autocrlf_observed": true,
@@ -30,7 +30,7 @@
     "working_payloads_equal_head_blobs": true,
     "registered_hashes_changed": false,
     "governing_content_changed": false,
-    "evidence_receipt": "docs/ABLATION_LM_CORRECTIVE_ENGINEERING_RECEIPT_20260826.md"
+    "evidence_receipt": "docs/CODING_TO_STRATEGY_WEFT1_BUILD_RECEIPT_20260826.md"
   },
   "expected_failures": [
     {
