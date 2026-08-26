@@ -296,6 +296,39 @@ def test_dropout_free_model_exposes_coordinate_stream_receipts_without_draws() -
     assert deep_receipt["coda_blocks.0.attention.dropout_rng"] == (0, 0, 0, 0)
 
 
+def test_attention_dropout_draw_cannot_shift_another_module_stream() -> None:
+    """Prove namespace isolation, not a nonzero-dropout forward-path receipt.
+
+    Attention dropout remains structurally zero until a generator-aware kernel
+    exists.  This test covers the O-9 stream contract that such a kernel must
+    consume; it must not be cited as evidence that the deferred arm executes.
+    """
+
+    config = _tiny_model_config(use_scratch=False)
+    treatment = AblationLM(config)
+    control = AblationLM(config)
+    treatment_dropout = treatment.core_blocks[0].attention.dropout_rng
+    treatment_other = treatment.coda_blocks[0].attention.dropout_rng
+    control_other = control.coda_blocks[0].attention.dropout_rng
+
+    torch.rand(
+        19,
+        generator=treatment_dropout.next_generator(CPU, coordinate=0),
+    )
+    treatment_draw = torch.rand(
+        19,
+        generator=treatment_other.next_generator(CPU, coordinate=0),
+    )
+    control_draw = torch.rand(
+        19,
+        generator=control_other.next_generator(CPU, coordinate=0),
+    )
+
+    torch.testing.assert_close(treatment_draw, control_draw, rtol=0, atol=0)
+    assert treatment_dropout.draw_indices == (1, 0, 0, 0)
+    assert treatment_other.draw_indices == control_other.draw_indices == (1, 0, 0, 0)
+
+
 def test_long_term_memory_initialization_is_namespaced_and_rng_inert() -> None:
     keys = torch.arange(24, dtype=torch.float32).reshape(4, 6)
     values = keys.flip(0)

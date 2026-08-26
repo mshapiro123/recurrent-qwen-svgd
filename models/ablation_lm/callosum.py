@@ -37,6 +37,27 @@ class EmpiricalCarrierRetentionReceipt:
     floor: float
 
 
+@dataclass(frozen=True)
+class DeltaModePredictionReceipt:
+    """Per-band callosum-only test of the closed-form disagreement law.
+
+    The amplitude multiplier is ``(1 - 2 rho_b)**K``.  Squared energy has the
+    distinct multiplier ``(1 - 2 rho_b)**(2K)``; both are named explicitly so
+    the word "energy" cannot silently stand in for an amplitude norm.
+    """
+
+    rho: torch.Tensor
+    disagreement_eigenvalue: torch.Tensor
+    expected_amplitude_retention: torch.Tensor
+    observed_amplitude_retention: torch.Tensor
+    expected_energy_retention: torch.Tensor
+    observed_energy_retention: torch.Tensor
+    amplitude_absolute_error: torch.Tensor
+    energy_absolute_error: torch.Tensor
+    steps: int
+    scope: str = "callosum_only_excludes_intervening_core_dynamics"
+
+
 def _robust_normalized_vector(
     values: torch.Tensor,
     *,
@@ -412,3 +433,87 @@ class PerBandBirkhoffCallosum(nn.Module):
             )
         finally:
             self._restore_parameter_contract()
+
+
+def delta_mode_prediction_receipt(
+    callosum: PerBandBirkhoffCallosum,
+    initial_lanes: torch.Tensor,
+    final_lanes: torch.Tensor,
+    *,
+    steps: int,
+) -> DeltaModePredictionReceipt:
+    """Compare a pure callosum carry with its exact per-band prediction.
+
+    ``final_lanes`` must be obtained by applying only ``callosum`` for the
+    declared number of steps.  Core blocks create new disagreement, so this
+    receipt deliberately makes no claim about an entire recurrent transition.
+    """
+
+    if not isinstance(callosum, PerBandBirkhoffCallosum):
+        raise TypeError("callosum must be a PerBandBirkhoffCallosum")
+    if not isinstance(initial_lanes, torch.Tensor) or not isinstance(
+        final_lanes, torch.Tensor
+    ):
+        raise TypeError("delta-mode receipt inputs must be tensors")
+    if initial_lanes.shape != final_lanes.shape:
+        raise ValueError("delta-mode receipt inputs must have identical shapes")
+    if initial_lanes.device != final_lanes.device:
+        raise ValueError("delta-mode receipt inputs must share a device")
+    if initial_lanes.dtype != final_lanes.dtype:
+        raise TypeError("delta-mode receipt inputs must share a dtype")
+    if type(steps) is not int or steps < 1:
+        raise ValueError("delta-mode receipt steps must be a positive exact integer")
+
+    def band_energy(lanes: torch.Tensor) -> torch.Tensor:
+        coefficients = callosum.sequency_coefficients(lanes.detach()).reshape(
+            *lanes.shape[:-1], callosum.num_bands, callosum.band_width
+        )
+        lane_a, lane_b = coefficients.unbind(dim=-3)
+        delta = (lane_a - lane_b) / 2.0
+        by_band = delta.movedim(-2, 0).reshape(callosum.num_bands, -1)
+        energy = by_band.square().mean(dim=-1)
+        if not bool(torch.isfinite(energy).all()):
+            raise ValueError("delta-mode band energy must be finite")
+        return energy
+
+    with torch.no_grad():
+        initial_energy = band_energy(initial_lanes)
+        final_energy = band_energy(final_lanes)
+        if bool(initial_energy.le(0).any()):
+            raise ValueError(
+                "every measured callosum band needs nonzero initial disagreement"
+            )
+        observed_energy = final_energy / initial_energy
+        if not bool(torch.isfinite(observed_energy).all()):
+            raise ValueError("observed delta-mode energy retention must be finite")
+        observed_amplitude = observed_energy.sqrt()
+        eigenvalue = callosum.disagreement_eigenvalues().detach().float()
+        rho = callosum.band_rho().detach().float()
+        expected_amplitude = eigenvalue.pow(steps)
+        expected_energy = eigenvalue.pow(2 * steps)
+        amplitude_error = (observed_amplitude - expected_amplitude).abs()
+        energy_error = (observed_energy - expected_energy).abs()
+        named_values = {
+            "rho": rho,
+            "disagreement eigenvalue": eigenvalue,
+            "expected amplitude retention": expected_amplitude,
+            "observed amplitude retention": observed_amplitude,
+            "expected energy retention": expected_energy,
+            "observed energy retention": observed_energy,
+            "amplitude absolute error": amplitude_error,
+            "energy absolute error": energy_error,
+        }
+        for name, value in named_values.items():
+            if not bool(torch.isfinite(value).all()):
+                raise ValueError(f"delta-mode {name} must be finite")
+    return DeltaModePredictionReceipt(
+        rho=rho,
+        disagreement_eigenvalue=eigenvalue,
+        expected_amplitude_retention=expected_amplitude,
+        observed_amplitude_retention=observed_amplitude,
+        expected_energy_retention=expected_energy,
+        observed_energy_retention=observed_energy,
+        amplitude_absolute_error=amplitude_error,
+        energy_absolute_error=energy_error,
+        steps=steps,
+    )

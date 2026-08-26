@@ -13,11 +13,14 @@ from .accounting import (
     tokenizer_screen_accounting,
 )
 from .bicameral import SwapLinear
+from .bicameral_core import BicameralProjectedKeyValue, BicameralTransformerBlock
 from .callosum import (
     CALLOSUM_RETENTION_TRIPWIRE,
+    DeltaModePredictionReceipt,
     EmpiricalCarrierRetentionReceipt,
     HemisphereGradientCosineReceipt,
     PerBandBirkhoffCallosum,
+    delta_mode_prediction_receipt,
     empirical_disagreement_retention_receipt,
     hemisphere_gradient_cosine_receipt,
 )
@@ -53,6 +56,15 @@ from .observatory import (
     T14bReceipt,
     measure_t14b_future_gradients,
 )
+from .observatory_events import (
+    EVENT_KIND,
+    INSTRUMENT_REGISTRY,
+    InstrumentSpec,
+    InstrumentTier,
+    ObservatoryEvent,
+    PrecisionRecord,
+    emit_observatory_event,
+)
 from .rng import (
     ModuleRNGStream,
     construct_with_isolated_rng,
@@ -64,17 +76,26 @@ __all__ = [
     "AblationLM",
     "AblationLMConfig",
     "AblationLMOutput",
+    "BicameralProjectedKeyValue",
+    "BicameralTransformerBlock",
     "CALLOSUM_RETENTION_TRIPWIRE",
     "Cl20Rotor",
     "CompositionReceipt",
+    "DeltaModePredictionReceipt",
     "EmpiricalCarrierRetentionReceipt",
+    "EVENT_KIND",
     "HemisphereGradientCosineReceipt",
+    "INSTRUMENT_REGISTRY",
+    "InstrumentSpec",
+    "InstrumentTier",
     "LaneModeState",
     "ModuleRNGStream",
     "ObservatoryBlocked",
+    "ObservatoryEvent",
     "ObservatoryGuard",
     "ParameterAccounting",
     "PerBandBirkhoffCallosum",
+    "PrecisionRecord",
     "RATIFIED_TARGET_AUTHORITY",
     "RATIFIED_TARGET_AUTHORITY_SHA256",
     "RATIFIED_TARGET_D_MODEL",
@@ -97,7 +118,9 @@ __all__ = [
     "composition_receipt",
     "construct_with_isolated_rng",
     "derive_module_seed",
+    "delta_mode_prediction_receipt",
     "estimate_dense_unique_parameters",
+    "emit_observatory_event",
     "lexical_parameter_share",
     "measure_t14b_future_gradients",
     "orthonormal_wht",

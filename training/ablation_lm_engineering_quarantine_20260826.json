@@ -2,6 +2,8 @@
   "kind": "ablation_lm_engineering_quarantine_v1",
   "date": "2026-08-26",
   "status": "exact_node_quarantine_build_only",
+  "review_due_on": "2026-09-02",
+  "review_trigger": "Review before the next repository-wide engineering receipt or on the due date, whichever comes first.",
   "scope": "ablation_lm_engineering_gate_only",
   "base_commit": "85bb8eae5cb70f7660b817af0b21b09b090782ef",
   "repo_wide_green_claim_permitted": false,

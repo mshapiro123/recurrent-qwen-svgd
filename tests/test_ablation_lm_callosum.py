@@ -8,6 +8,7 @@ from torch import nn
 
 from models.ablation_lm.callosum import (
     PerBandBirkhoffCallosum,
+    delta_mode_prediction_receipt,
     empirical_disagreement_retention_receipt,
     hemisphere_gradient_cosine_receipt,
 )
@@ -84,7 +85,7 @@ def test_t16_birkhoff_spectral_bound_and_closed_form_damping() -> None:
         eigenvalues[:, None] * disagreement,
     )
 
-    lanes = torch.randn(2, 3, 2, 32)
+    lanes = torch.randn(2, 3, 2, 32, requires_grad=True)
     initial_mu, initial_delta = _band_modes(callosum, lanes)
     steps = 5
     carried = lanes
@@ -100,6 +101,42 @@ def test_t16_birkhoff_spectral_bound_and_closed_form_damping() -> None:
         rtol=3e-4,
         atol=3e-5,
     )
+
+    receipt = delta_mode_prediction_receipt(
+        callosum,
+        lanes,
+        carried,
+        steps=steps,
+    )
+    torch.testing.assert_close(
+        receipt.observed_amplitude_retention,
+        receipt.expected_amplitude_retention,
+        rtol=4e-4,
+        atol=4e-5,
+    )
+    torch.testing.assert_close(
+        receipt.observed_energy_retention,
+        receipt.expected_energy_retention,
+        rtol=8e-4,
+        atol=8e-5,
+    )
+    torch.testing.assert_close(
+        receipt.expected_energy_retention,
+        receipt.expected_amplitude_retention.square(),
+    )
+    receipt_tensors = (
+        receipt.rho,
+        receipt.disagreement_eigenvalue,
+        receipt.expected_amplitude_retention,
+        receipt.observed_amplitude_retention,
+        receipt.expected_energy_retention,
+        receipt.observed_energy_retention,
+        receipt.amplitude_absolute_error,
+        receipt.energy_absolute_error,
+    )
+    assert all(not value.requires_grad for value in receipt_tensors)
+    assert all(bool(torch.isfinite(value).all()) for value in receipt_tensors)
+    assert receipt.scope == "callosum_only_excludes_intervening_core_dynamics"
 
 
 def test_sequency_bands_transform_in_fp32_and_restore_input_dtype() -> None:
@@ -129,6 +166,21 @@ def test_sequency_bands_transform_in_fp32_and_restore_input_dtype() -> None:
     converted(torch.randn(2, 2, 16, dtype=torch.bfloat16)).float().sum().backward()
     assert converted.raw_rho.grad is not None
     assert converted.raw_rho.grad.dtype is torch.float32
+
+
+def test_delta_mode_receipt_rejects_nonfinite_retention_ratio() -> None:
+    torch.manual_seed(123)
+    callosum = PerBandBirkhoffCallosum(8, num_bands=2, rho_init=0.1)
+    tiny_initial = torch.randn(2, 3, 2, 8) * 1e-20
+    order_one_final = torch.randn(2, 3, 2, 8)
+
+    with pytest.raises(ValueError, match="energy retention must be finite"):
+        delta_mode_prediction_receipt(
+            callosum,
+            tiny_initial,
+            order_one_final,
+            steps=1,
+        )
 
 
 def test_fp32_gate_contract_survives_direct_and_recursive_assign_loading() -> None:

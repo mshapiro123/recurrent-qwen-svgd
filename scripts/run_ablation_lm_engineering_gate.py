@@ -12,6 +12,7 @@ import os
 import re
 import subprocess
 import sys
+from datetime import date
 from pathlib import Path
 
 
@@ -25,14 +26,41 @@ SUMMARY_COUNT = re.compile(
 )
 
 
-def _load_gate_contract() -> tuple[set[str], int]:
-    receipt = json.loads(RECEIPT.read_text(encoding="utf-8"))
+def _load_gate_contract(
+    receipt_path: Path = RECEIPT,
+    *,
+    today: date | None = None,
+) -> tuple[set[str], int]:
+    """Load an active, unexpired exact-node quarantine contract."""
+
+    receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
     if receipt.get("status") != "exact_node_quarantine_build_only":
         raise RuntimeError("ablation engineering quarantine is not active")
     if receipt.get("scope") != "ablation_lm_engineering_gate_only":
         raise RuntimeError("ablation engineering quarantine scope differs")
     if receipt.get("training_authorized") is not False:
         raise RuntimeError("engineering quarantine may not authorize training")
+    review_due_raw = receipt.get("review_due_on")
+    if type(review_due_raw) is not str:
+        raise RuntimeError("engineering quarantine requires an ISO review_due_on date")
+    try:
+        review_due = date.fromisoformat(review_due_raw)
+    except ValueError as error:
+        raise RuntimeError(
+            "engineering quarantine review_due_on must be an ISO YYYY-MM-DD date"
+        ) from error
+    if review_due.isoformat() != review_due_raw:
+        raise RuntimeError(
+            "engineering quarantine review_due_on must use canonical ISO YYYY-MM-DD"
+        )
+    review_day = date.today() if today is None else today
+    if type(review_day) is not date:
+        raise TypeError("today must be an exact datetime.date")
+    if review_day >= review_due:
+        raise RuntimeError(
+            "engineering quarantine review is stale as of "
+            f"{review_due.isoformat()}"
+        )
     expected = [row["node_id"] for row in receipt["expected_failures"]]
     if not expected or len(expected) != len(set(expected)):
         raise RuntimeError("expected failure node IDs must be nonempty and unique")
