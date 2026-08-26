@@ -39,6 +39,8 @@ PILOT_EXAMPLES = 32
 FULL_BOOTSTRAP_REPLICATES = 10_000
 INSTRUMENT_TIER = 1
 CONDITIONING_FLOOR = 0.05
+PANEL_PROVENANCE_SEMANTICS = "sentinel-cohort-transition-contract/v1"
+NORM_RANK_REPORTING_STATUS = "blocked_pending_shared_subsample_schema"
 DIRECTION_CLASSES = (
     "sidecar_write_directions",
     "staged_state_residual_directions",
@@ -62,6 +64,13 @@ def _validate_seed(value: int, *, name: str) -> None:
     _validate_exact_int(value, name=name)
     if value > _MAX_SEED:
         raise ValueError(f"{name} must fit a non-negative signed int64 value")
+
+
+def _validate_sha256(value: str, *, name: str) -> None:
+    if type(value) is not str:
+        raise TypeError(f"{name} must be an exact string")
+    if len(value) != 64 or any(character not in "0123456789abcdef" for character in value):
+        raise ValueError(f"{name} must be a lowercase 64-character SHA-256 digest")
 
 
 def _encode_seed_field(value: int | str) -> bytes:
@@ -406,7 +415,13 @@ def loop_log_gains(
                     raise RuntimeError(
                         "expert selection or hard-gate decisions changed across probes"
                     )
-            log_gains.append(torch.log(directional.norm().clamp_min(1e-30)))
+            # Unit normalisation in FP32 is not bit-exact.  The estimand is the
+            # gain ratio, so retain the measured input norm instead of silently
+            # replacing it by one.  For an identity transition both log terms
+            # are computed from the same FP32 value and subtract to exact zero.
+            log_output_norm = torch.log(directional.norm().clamp_min(1e-30))
+            log_input_norm = torch.log(direction.norm().clamp_min(1e-30))
+            log_gains.append(log_output_norm - log_input_norm)
     finally:
         stochastic_snapshot.reset()
     return torch.stack(log_gains)
@@ -800,7 +815,9 @@ def rejection_conditions(
     if any(not math.isfinite(value) or value < 0 for value in conditioning):
         raise ValueError("cL values must be finite and non-negative")
     reasons: list[str] = []
-    if 0 in signs or len(set(signs)) != 1:
+    if 0 in signs:
+        reasons.append("zero_lambda")
+    if len(set(signs)) != 1:
         reasons.append("sign_inconsistency")
     if any(value < CONDITIONING_FLOOR for value in conditioning):
         reasons.append("conditioning_failure")
@@ -809,10 +826,11 @@ def rejection_conditions(
 
 @dataclass(frozen=True)
 class JacobianPanelReport:
-    """JSON-ready registered reporting contract for one seed and tier."""
+    """JSON-ready registered main-tier reporting contract for one seed."""
 
     run_seed: int
     tier: TierName
+    provenance_sha256: str
     p_hat: float
     ci_lo: float
     ci_hi: float
@@ -830,15 +848,24 @@ class JacobianPanelReport:
     sxx: float
     direction_class_gains: tuple[tuple[str, tuple[float, ...]], ...]
     fixed_branch_verified: bool
+    admissible_panel_result: bool
+    admissibility_blockers: tuple[str, ...]
+    bootstrap_replicates: int
+    bootstrap_seed: int
     instrument_tier: int = INSTRUMENT_TIER
     differentiation: str = "forward_mode_jvp"
     jacobian_semantics: str = "fixed_routing_branch"
     probe_seed_scope: str = "example"
+    provenance_semantics: str = PANEL_PROVENANCE_SEMANTICS
+    reporting_status: str = "registered_main_pending_evidence_linkage"
+    branch_evidence_status: str = "unlinked_caller_assertion"
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "run_seed": self.run_seed,
             "tier": self.tier,
+            "provenance_sha256": self.provenance_sha256,
+            "provenance_semantics": self.provenance_semantics,
             "p_hat": self.p_hat,
             "ci_lo": self.ci_lo,
             "ci_hi": self.ci_hi,
@@ -852,6 +879,10 @@ class JacobianPanelReport:
             ),
             "conditioning_flag": self.conditioning_flag,
             "rejection_reasons": list(self.rejection_reasons),
+            "admissible_panel_result": self.admissible_panel_result,
+            "admissibility_blockers": list(self.admissibility_blockers),
+            "bootstrap_replicates": self.bootstrap_replicates,
+            "bootstrap_seed": self.bootstrap_seed,
             "n": self.n,
             "n_probe": self.n_probe,
             "depths": list(self.depths),
@@ -866,6 +897,8 @@ class JacobianPanelReport:
             "jacobian_semantics": self.jacobian_semantics,
             "routing_flip_derivative_included": False,
             "probe_seed_scope": self.probe_seed_scope,
+            "reporting_status": self.reporting_status,
+            "branch_evidence_status": self.branch_evidence_status,
         }
 
 
@@ -875,6 +908,7 @@ def build_panel_report(
     *,
     run_seed: int,
     tier: TierName,
+    provenance_sha256: str,
     depths: Sequence[int],
     c_l_by_depth: Sequence[float],
     r_pr_by_depth: Sequence[float],
@@ -884,11 +918,27 @@ def build_panel_report(
     bootstrap_replicates: int = FULL_BOOTSTRAP_REPLICATES,
     bootstrap_seed: int = 0,
 ) -> JacobianPanelReport:
-    """Assemble and validate the complete registered receipt payload."""
+    """Assemble the registered 512 x 4 main-tier receipt payload.
+
+    Norm and rank both use the same 64-example subsample but the governing
+    handoff does not yet define whether they share one receipt or how the rank
+    diagnostic is attached to the norm exponent.  This builder therefore
+    rejects both labels rather than inventing that schema.  The independently
+    valid :func:`operator_norm` and :func:`participation_ratio` primitives
+    remain available for tests and eventual adjudicated assembly.
+    """
 
     _validate_seed(run_seed, name="run_seed")
+    _validate_sha256(provenance_sha256, name="provenance_sha256")
+    if bootstrap_replicates != FULL_BOOTSTRAP_REPLICATES:
+        raise ValueError("registered main reports require exactly 10,000 bootstrap replicates")
     if tier not in {"main", "norm", "rank"}:
         raise ValueError("tier must be main, norm, or rank")
+    if tier != "main":
+        raise RuntimeError(
+            "norm/rank report assembly is blocked pending the shared-subsample schema; "
+            "operator_norm and participation_ratio primitives remain available"
+        )
     if type(fixed_branch_verified) is not bool:
         raise TypeError("fixed_branch_verified must be an exact bool")
     if not fixed_branch_verified:
@@ -897,6 +947,10 @@ def build_panel_report(
         raise ValueError("slopes must be a one-dimensional example vector")
     if type(log_gains) is not torch.Tensor or log_gains.ndim != 3:
         raise ValueError("log_gains must be [example, depth, probe]")
+    if slopes.numel() != MAIN_PANEL_EXAMPLES:
+        raise ValueError("registered main reports require exactly n=512 examples")
+    if log_gains.shape[-1] != MAIN_PANEL_PROBES:
+        raise ValueError("registered main reports require exactly n_probe=4")
     depth_tuple = tuple(depths)
     if depth_tuple != REGISTERED_DEPTHS:
         raise ValueError("WEFT-1 panel reports require depths (1, 2, 4, 8) exactly")
@@ -933,6 +987,7 @@ def build_panel_report(
     return JacobianPanelReport(
         run_seed=run_seed,
         tier=tier,
+        provenance_sha256=provenance_sha256,
         p_hat=estimate,
         ci_lo=ci_lo,
         ci_hi=ci_hi,
@@ -950,6 +1005,13 @@ def build_panel_report(
         sxx=sxx,
         direction_class_gains=tuple(direction_rows),
         fixed_branch_verified=fixed_branch_verified,
+        # ``fixed_branch_verified`` is still supplied by the caller rather than
+        # linked to issued per-example measurement evidence.  Preserve the
+        # assertion, but do not let it make a production fit admissible.
+        admissible_panel_result=False,
+        admissibility_blockers=("branch_evidence_unlinked",),
+        bootstrap_replicates=bootstrap_replicates,
+        bootstrap_seed=bootstrap_seed,
         differentiation=(
             "forward_mode_jvp"
             if tier == "main"
@@ -959,28 +1021,172 @@ def build_panel_report(
 
 
 @dataclass(frozen=True)
+class JacobianPilotDiagnostics:
+    """Model-form diagnostics from n=32; never an admissible panel result."""
+
+    run_seed: int
+    provenance_sha256: str
+    p_diagnostic: float
+    sigma_slope_hat: float
+    sigma_slope_clipped: bool
+    sigma_w_hat: float
+    c_l_by_depth: tuple[float, ...]
+    lambda_sign_by_depth: tuple[int, ...]
+    conditioning_flag: bool
+    rejection_reasons: tuple[str, ...]
+    depths: tuple[int, ...]
+    sxx: float
+    fixed_branch_verified: bool
+    n: int = PILOT_EXAMPLES
+    n_probe: int = MAIN_PANEL_PROBES
+    admissible_panel_result: bool = False
+    reporting_status: str = "pilot_diagnostic_only"
+    provenance_semantics: str = PANEL_PROVENANCE_SEMANTICS
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "run_seed": self.run_seed,
+            "provenance_sha256": self.provenance_sha256,
+            "provenance_semantics": self.provenance_semantics,
+            "p_diagnostic": self.p_diagnostic,
+            "sigma_slope_hat": self.sigma_slope_hat,
+            "sigma_slope_clipped": self.sigma_slope_clipped,
+            "sigma_w_hat": self.sigma_w_hat,
+            "cL_by_depth": dict(zip(self.depths, self.c_l_by_depth, strict=True)),
+            "sign_lambda_T_by_depth": dict(
+                zip(self.depths, self.lambda_sign_by_depth, strict=True)
+            ),
+            "conditioning_flag": self.conditioning_flag,
+            "rejection_reasons": list(self.rejection_reasons),
+            "n": self.n,
+            "n_probe": self.n_probe,
+            "depths": list(self.depths),
+            "Sxx": self.sxx,
+            "fixed_branch_verified": self.fixed_branch_verified,
+            "admissible_panel_result": False,
+            "reporting_status": self.reporting_status,
+        }
+
+
+def build_pilot_diagnostics(
+    slopes: torch.Tensor,
+    log_gains: torch.Tensor,
+    *,
+    run_seed: int,
+    provenance_sha256: str,
+    depths: Sequence[int],
+    c_l_by_depth: Sequence[float],
+    lambda_sign_by_depth: Sequence[int],
+    fixed_branch_verified: bool,
+) -> JacobianPilotDiagnostics:
+    """Build the registered n=32 model-form check without emitting a panel fit."""
+
+    _validate_seed(run_seed, name="run_seed")
+    _validate_sha256(provenance_sha256, name="provenance_sha256")
+    if type(fixed_branch_verified) is not bool:
+        raise TypeError("fixed_branch_verified must be an exact bool")
+    if not fixed_branch_verified:
+        raise RuntimeError("pilot diagnostics require bit-identical routing branch evidence")
+    if type(slopes) is not torch.Tensor or slopes.ndim != 1:
+        raise ValueError("pilot slopes must be a one-dimensional example vector")
+    if slopes.numel() != PILOT_EXAMPLES:
+        raise ValueError("pilot diagnostics require exactly n=32 examples")
+    if type(log_gains) is not torch.Tensor or log_gains.ndim != 3:
+        raise ValueError("pilot log_gains must be [example, depth, probe]")
+    if log_gains.shape[-1] != MAIN_PANEL_PROBES:
+        raise ValueError("pilot diagnostics require exactly n_probe=4")
+    depth_tuple = tuple(depths)
+    if depth_tuple != REGISTERED_DEPTHS:
+        raise ValueError("WEFT-1 pilot diagnostics require depths (1, 2, 4, 8) exactly")
+    if log_gains.shape[:2] != (PILOT_EXAMPLES, len(depth_tuple)):
+        raise ValueError("pilot log-gain panel must align with examples and depths")
+    c_l = tuple(float(value) for value in c_l_by_depth)
+    signs = tuple(lambda_sign_by_depth)
+    if len(c_l) != len(depth_tuple) or len(signs) != len(depth_tuple):
+        raise ValueError("pilot sign and cL vectors must align with depths")
+    reasons = rejection_conditions(signs, c_l)
+    sigma_w = pooled_sigma_w(log_gains)
+    sxx = design_sxx(depth_tuple)
+    sigma_slope, clipped = sigma_slope_hat(slopes, sigma_w, sxx=sxx)
+    # This diagnostic is intentionally not named p_hat and carries no CI.
+    p_diagnostic = -_median(slopes.float()).item()
+    return JacobianPilotDiagnostics(
+        run_seed=run_seed,
+        provenance_sha256=provenance_sha256,
+        p_diagnostic=p_diagnostic,
+        sigma_slope_hat=sigma_slope,
+        sigma_slope_clipped=clipped,
+        sigma_w_hat=sigma_w,
+        c_l_by_depth=c_l,
+        lambda_sign_by_depth=signs,
+        conditioning_flag="conditioning_failure" in reasons,
+        rejection_reasons=reasons,
+        depths=depth_tuple,
+        sxx=sxx,
+        fixed_branch_verified=fixed_branch_verified,
+    )
+
+
+@dataclass(frozen=True)
 class TierComparison:
     outcome: Literal["norm_invariance_confirmed", "return_to_strategy"]
     main_inside_norm_interval: bool
     norm_inside_main_interval: bool
+    comparison_reasons: tuple[str, ...]
 
 
 def compare_main_and_norm_tiers(
     main: JacobianPanelReport,
     norm: JacobianPanelReport,
 ) -> TierComparison:
-    """Apply P-4 without averaging or selecting between disagreeing tiers."""
+    """Apply P-4 only to admissible, provenance-matched tier receipts."""
 
     if main.tier != "main" or norm.tier != "norm":
         raise ValueError("tier comparison requires main and norm reports")
-    main_inside = norm.ci_lo <= main.p_hat <= norm.ci_hi
-    norm_inside = main.ci_lo <= norm.p_hat <= main.ci_hi
-    outcome: Literal["norm_invariance_confirmed", "return_to_strategy"]
-    if main_inside and norm_inside:
-        outcome = "norm_invariance_confirmed"
-    else:
-        outcome = "return_to_strategy"
-    return TierComparison(outcome, main_inside, norm_inside)
+    # There is intentionally no current path to norm-invariance confirmation:
+    # the shared n=64 norm/rank receipt and its evidence token are unresolved.
+    # An adjudication must replace this blocker and introduce that typed
+    # evidence; relabeling a main dataclass cannot bypass it.
+    reasons: list[str] = ["norm_rank_schema_unresolved"]
+    if main.run_seed != norm.run_seed:
+        reasons.append("run_seed_mismatch")
+    if main.depths != norm.depths:
+        reasons.append("depth_mismatch")
+    if main.provenance_sha256 != norm.provenance_sha256:
+        reasons.append("provenance_mismatch")
+    semantics_match = (
+        main.provenance_semantics == norm.provenance_semantics
+        and main.jacobian_semantics == norm.jacobian_semantics
+        and main.probe_seed_scope == norm.probe_seed_scope
+        and main.instrument_tier == norm.instrument_tier
+        and main.fixed_branch_verified
+        and norm.fixed_branch_verified
+    )
+    if not semantics_match:
+        reasons.append("provenance_semantics_mismatch")
+    if main.rejection_reasons or not main.admissible_panel_result:
+        reasons.append("main_rejected")
+    if norm.rejection_reasons or not norm.admissible_panel_result:
+        reasons.append("norm_rejected")
+    intervals_valid = all(
+        math.isfinite(value)
+        for value in (
+            main.p_hat,
+            main.ci_lo,
+            main.ci_hi,
+            norm.p_hat,
+            norm.ci_lo,
+            norm.ci_hi,
+        )
+    ) and main.ci_lo <= main.ci_hi and norm.ci_lo <= norm.ci_hi
+    if not intervals_valid:
+        reasons.append("invalid_interval")
+    return TierComparison(
+        outcome="return_to_strategy",
+        main_inside_norm_interval=False,
+        norm_inside_main_interval=False,
+        comparison_reasons=tuple(reasons),
+    )
 
 
 __all__ = [
@@ -989,17 +1195,21 @@ __all__ = [
     "ExampleDepthMeasurement",
     "FULL_BOOTSTRAP_REPLICATES",
     "INSTRUMENT_TIER",
+    "JacobianPilotDiagnostics",
     "JacobianPanelReport",
     "MAIN_PANEL_EXAMPLES",
     "MAIN_PANEL_PROBES",
     "NORM_PANEL_EXAMPLES",
     "NORM_POWER_ITERATIONS",
+    "NORM_RANK_REPORTING_STATUS",
+    "PANEL_PROVENANCE_SEMANTICS",
     "PILOT_EXAMPLES",
     "RANK_PANEL_EXAMPLES",
     "RANK_PANEL_PROBES",
     "REGISTERED_DEPTHS",
     "StochasticStateSnapshot",
     "TierComparison",
+    "build_pilot_diagnostics",
     "build_panel_report",
     "cluster_bootstrap_ci",
     "compare_main_and_norm_tiers",
