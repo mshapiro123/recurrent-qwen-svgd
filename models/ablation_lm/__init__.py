@@ -44,6 +44,7 @@ from .diagnostics import (
 from .geometry import Cl20Rotor, LaneModeState, cl20_rotate, lanes_to_modes
 from .hadamard import orthonormal_wht, sequency_permutation, wht
 from .model import AblationLM, AblationLMOutput
+from .observatory import ObservatoryBlocked, ObservatoryGuard, T14bReceipt
 
 __all__ = [
     "AblationLM",
@@ -55,6 +56,8 @@ __all__ = [
     "EmpiricalCarrierRetentionReceipt",
     "HemisphereGradientCosineReceipt",
     "LaneModeState",
+    "ObservatoryBlocked",
+    "ObservatoryGuard",
     "ParameterAccounting",
     "PerBandBirkhoffCallosum",
     "RATIFIED_TARGET_AUTHORITY",
@@ -69,6 +72,7 @@ __all__ = [
     "REGISTERED_TARGET_BLOCK_SPLITS",
     "TOKENIZER_VOCAB_CANDIDATES",
     "SwapLinear",
+    "T14bReceipt",
     "TokenizerScaleAccounting",
     "TokenizerScreenAccounting",
     "TokenizerTargetDecisionContract",
