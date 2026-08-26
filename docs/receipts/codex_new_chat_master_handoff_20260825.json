@@ -1,0 +1,20 @@
+{
+  "kind": "codex_new_chat_master_handoff_publication_receipt",
+  "date": "2026-08-25",
+  "repository": "mshapiro123/recurrent-qwen-svgd",
+  "branch": "codex/bicameral-stage0",
+  "source_commit_before_handoff": "4e215a0d7238d3452d06f565684ba4cbedd64cc7",
+  "local_path": "docs/CODEX_NEW_CHAT_MASTER_HANDOFF_20260825.md",
+  "file_name": "CODEX_NEW_CHAT_MASTER_HANDOFF_20260825.md",
+  "file_size_bytes": 34684,
+  "sha256": "4e1c49463c53119f387370514e4215352346b75f0aa331b7af104ec4b1f12844",
+  "drive_file_id": "1C-mvWhp4gDz2ll-Tyb0jYNYXp0uFHMfH",
+  "drive_parent_folder_id": "1aSbU2i8JZ37g5bJpyweLuvFaV0y92Qjr",
+  "drive_url": "https://drive.google.com/file/d/1C-mvWhp4gDz2ll-Tyb0jYNYXp0uFHMfH/view?usp=drivesdk",
+  "verification": {
+    "method": "google_drive_fetch_download_raw_file_base64_sha256",
+    "downloaded_size_bytes": 34684,
+    "downloaded_sha256": "4e1c49463c53119f387370514e4215352346b75f0aa331b7af104ec4b1f12844",
+    "byte_identity_verified": true
+  }
+}
