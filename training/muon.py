@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+import re
 from collections.abc import Iterable
 from typing import Any
 
@@ -123,11 +124,37 @@ class OptimizerBundle:
 def split_muon_and_adamw_params(
     named_parameters: Iterable[tuple[str, torch.nn.Parameter]],
 ) -> tuple[list[torch.nn.Parameter], list[torch.nn.Parameter]]:
-    """Split trainables into matrix-like Muon params and AdamW fallback params."""
+    """Split generic trainables, rejecting AblationLM canonical parameter paths.
 
+    Callers must preserve fully qualified names. Renamed or stripped parameter
+    streams cannot carry model identity and are unsupported by this legacy API.
+    """
+
+    rows = list(named_parameters)
+    prohibited_attr = "_ablation_lm_rank_only_muon_prohibited"
+    names = {name for name, _param in rows}
+    ablation_signature = (
+        any(name.endswith("token_embedding.weight") for name in names)
+        and any(name.endswith("final_norm.weight") for name in names)
+        and any(
+            re.search(
+                r"(?:^|\.)(?:prelude_blocks|core_blocks|coda_blocks)\.\d+\."
+                r"attention\.q_proj\.weight$",
+                name,
+            )
+            for name in names
+        )
+    )
+    if ablation_signature or any(
+        bool(getattr(param, prohibited_attr, False)) for _name, param in rows
+    ):
+        raise RuntimeError(
+            "rank-only Muon splitting is prohibited for AblationLM; "
+            "use models.ablation_lm.optim.partition_optimizer_parameters"
+        )
     muon_params: list[torch.nn.Parameter] = []
     adamw_params: list[torch.nn.Parameter] = []
-    for _name, param in named_parameters:
+    for _name, param in rows:
         if not param.requires_grad:
             continue
         if param.ndim >= 2:

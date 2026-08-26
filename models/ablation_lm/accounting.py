@@ -6,7 +6,15 @@ from dataclasses import dataclass
 
 from torch import nn
 
-from .config import AblationLMConfig
+from .config import (
+    RATIFIED_TARGET_AUTHORITY,
+    RATIFIED_TARGET_D_MODEL,
+    RATIFIED_TARGET_PARAMETER_BUDGET,
+    RATIFIED_TARGET_REFERENCE_VOCAB_SIZE,
+    REGISTERED_CORE_BLOCK_COUNTS,
+    TOKENIZER_VOCAB_CANDIDATES,
+    AblationLMConfig,
+)
 from .engram import CausalTokenEngram
 from .memory import ReadOnlyLatentMemory
 
@@ -37,18 +45,157 @@ class ParameterAccounting:
 
 
 @dataclass(frozen=True)
-class TokenizerTargetAccounting:
-    """Vocabulary cost at one intended model geometry."""
+class TokenizerScaleAccounting:
+    """Vocabulary cost at one explicitly named execution or decision scale."""
 
+    label: str
     vocab_size: int
     d_model: int
-    core_blocks: int
     total_unique_parameters: int
     vocabulary_parameters: int
+    core_blocks: int | None
+    authority: str | None
+    exact_total: bool
+    budget_semantics: str | None
+    reference_vocab_size: int | None
+    reference_total_unique_parameters: int | None
+    topology_config: AblationLMConfig | None
+    topology_unique_parameters: int | None
 
     @property
     def vocabulary_share(self) -> float:
         return self.vocabulary_parameters / self.total_unique_parameters
+
+
+@dataclass(frozen=True)
+class TokenizerScreenAccounting:
+    """Keep cheap proxy execution separate from target-scale selection math.
+
+    ``selection_vocabulary_share`` deliberately resolves to the decision target;
+    proxy-only rows cannot be consumed by a tokenizer-freeze gate.
+    """
+
+    execution_proxy: TokenizerScaleAccounting
+    decision_target: TokenizerScaleAccounting
+    target_contract: TokenizerTargetDecisionContract | None
+
+    @property
+    def selection_vocabulary_share(self) -> float:
+        if self.target_contract is None:
+            raise RuntimeError("an exact target topology contract is required for tokenizer selection")
+        try:
+            proxy_config = self.execution_proxy.topology_config
+            if proxy_config is None:
+                raise ValueError("proxy topology is missing")
+            expected_proxy = _proxy_scale_accounting(proxy_config)
+            expected_target = _target_scale_accounting(
+                proxy_config.vocab_size,
+                self.target_contract,
+            )
+        except ValueError as error:
+            raise RuntimeError(f"invalid tokenizer selection accounting: {error}") from error
+        if self.execution_proxy != expected_proxy:
+            raise RuntimeError("proxy accounting row does not match its topology")
+        if self.decision_target != expected_target:
+            raise RuntimeError("target accounting row does not match its typed contract")
+        return expected_target.vocabulary_share
+
+
+@dataclass(frozen=True)
+class TokenizerTargetDecisionContract:
+    """Written authority plus a topology from which target totals are derived."""
+
+    config: AblationLMConfig
+    authority: str
+    budget_semantics: str
+    reference_vocab_size: int = RATIFIED_TARGET_REFERENCE_VOCAB_SIZE
+    fixed_total_parameters: int | None = None
+    fixed_total_tolerance_parameters: int = 0
+    candidate_topologies: tuple[AblationLMConfig, ...] = ()
+
+    def __post_init__(self) -> None:
+        if self.config.d_model != RATIFIED_TARGET_D_MODEL:
+            raise ValueError(
+                f"target topology must use d_model={RATIFIED_TARGET_D_MODEL}"
+            )
+        if self.config.n_core_blocks not in REGISTERED_CORE_BLOCK_COUNTS:
+            raise ValueError(
+                "target topology must use a registered 4/6-core selection rung"
+            )
+        if not isinstance(self.authority, str) or not self.authority.strip():
+            raise ValueError("target topology authority must be a nonempty string")
+        if self.budget_semantics not in {"fixed_total", "fixed_non_vocabulary"}:
+            raise ValueError("target budget semantics must be ratified")
+        if type(self.reference_vocab_size) is not int or self.reference_vocab_size < 1:
+            raise ValueError("target reference vocabulary size must be a positive integer")
+        if self.reference_vocab_size not in TOKENIZER_VOCAB_CANDIDATES:
+            raise ValueError("target reference vocabulary must be a registered candidate")
+        if (
+            type(self.fixed_total_tolerance_parameters) is not int
+            or self.fixed_total_tolerance_parameters < 0
+        ):
+            raise ValueError("fixed-total tolerance must be a non-negative integer")
+        if not isinstance(self.candidate_topologies, tuple) or any(
+            not isinstance(config, AblationLMConfig)
+            for config in self.candidate_topologies
+        ):
+            raise TypeError("candidate topologies must be a tuple of AblationLMConfig values")
+        if self.budget_semantics == "fixed_total":
+            if type(self.fixed_total_parameters) is not int or self.fixed_total_parameters < 1:
+                raise ValueError("fixed-total semantics require a positive locked total")
+            by_vocab = {config.vocab_size: config for config in self.candidate_topologies}
+            if len(by_vocab) != len(self.candidate_topologies):
+                raise ValueError("fixed-total candidate topologies must have unique vocabularies")
+            if set(by_vocab) != set(TOKENIZER_VOCAB_CANDIDATES):
+                raise ValueError(
+                    "fixed-total authority must bind every registered tokenizer candidate"
+                )
+            if any(config.d_model != RATIFIED_TARGET_D_MODEL for config in by_vocab.values()):
+                raise ValueError(
+                    f"all fixed-total topologies must use d_model={RATIFIED_TARGET_D_MODEL}"
+                )
+            if any(
+                config.n_core_blocks != self.config.n_core_blocks
+                for config in by_vocab.values()
+            ):
+                raise ValueError(
+                    "fixed-total candidate topologies must share one registered core rung"
+                )
+            if self.reference_vocab_size not in by_vocab:
+                raise ValueError("reference vocabulary must be a registered candidate")
+            if self.config != by_vocab[self.reference_vocab_size]:
+                raise ValueError(
+                    "fixed-total reference config must equal its candidate topology"
+                )
+            largest_vocabulary = (
+                max(TOKENIZER_VOCAB_CANDIDATES) * RATIFIED_TARGET_D_MODEL
+            )
+            if self.fixed_total_parameters <= largest_vocabulary:
+                raise ValueError(
+                    "fixed-total budget must exceed the largest candidate vocabulary matrix"
+                )
+            for candidate_config in by_vocab.values():
+                topology_total = estimate_dense_unique_parameters(candidate_config)
+                if (
+                    abs(topology_total - self.fixed_total_parameters)
+                    > self.fixed_total_tolerance_parameters
+                ):
+                    raise ValueError(
+                        "fixed-total candidate topology differs from the locked common budget"
+                    )
+        elif self.fixed_total_parameters is not None:
+            raise ValueError("fixed-total parameters apply only to fixed-total semantics")
+        elif self.candidate_topologies:
+            raise ValueError(
+                "candidate topologies apply only to fixed-total semantics"
+            )
+        if (
+            self.budget_semantics == "fixed_non_vocabulary"
+            and self.config.vocab_size != self.reference_vocab_size
+        ):
+            raise ValueError(
+                "fixed-non-vocabulary topology must use the reference vocabulary size"
+            )
 
 
 def _unique_parameters(module: nn.Module) -> dict[int, nn.Parameter]:
@@ -60,9 +207,16 @@ def parameter_accounting(model: nn.Module) -> ParameterAccounting:
 
     all_parameters = _unique_parameters(model)
     vocabulary_ids: set[int] = set()
-    embedding = getattr(model, "token_embedding", None)
-    if isinstance(embedding, nn.Embedding) and embedding.weight.requires_grad:
-        vocabulary_ids.add(id(embedding.weight))
+    for module_name, module in model.named_modules(remove_duplicate=False):
+        if (
+            module_name.rsplit(".", 1)[-1] == "token_embedding"
+            and isinstance(module, nn.Embedding)
+            and module.weight.requires_grad
+        ):
+            parameter_id = id(module.weight)
+            if parameter_id not in all_parameters:
+                raise RuntimeError("token embedding is missing from the trainable inventory")
+            vocabulary_ids.add(parameter_id)
 
     engram_ids: set[int] = set()
     engram_interface_ids: set[int] = set()
@@ -144,15 +298,127 @@ def estimate_dense_unique_parameters(config: AblationLMConfig) -> int:
     )
 
 
-def tokenizer_target_accounting(config: AblationLMConfig) -> TokenizerTargetAccounting:
-    """Return target-ratio accounting for one candidate tokenizer/model pair."""
-
+def _proxy_scale_accounting(config: AblationLMConfig) -> TokenizerScaleAccounting:
+    if config.d_model != 512:
+        raise ValueError("tokenizer execution accounting requires the d=512 muProxy graph")
     total = estimate_dense_unique_parameters(config)
     vocabulary = config.vocab_size * config.d_model
-    return TokenizerTargetAccounting(
+    return TokenizerScaleAccounting(
+        label="muProxy_d512",
         vocab_size=config.vocab_size,
         d_model=config.d_model,
         core_blocks=config.n_core_blocks,
         total_unique_parameters=total,
         vocabulary_parameters=vocabulary,
+        authority=None,
+        exact_total=True,
+        budget_semantics="materialized_proxy",
+        reference_vocab_size=config.vocab_size,
+        reference_total_unique_parameters=total,
+        topology_config=config,
+        topology_unique_parameters=total,
+    )
+
+
+def _approximate_target_scale_accounting(candidate_vocab_size: int) -> TokenizerScaleAccounting:
+    return TokenizerScaleAccounting(
+        label="target_reference_d1024_approx_290m_unratified_topology",
+        vocab_size=candidate_vocab_size,
+        d_model=RATIFIED_TARGET_D_MODEL,
+        core_blocks=None,
+        total_unique_parameters=RATIFIED_TARGET_PARAMETER_BUDGET,
+        vocabulary_parameters=candidate_vocab_size * RATIFIED_TARGET_D_MODEL,
+        authority=RATIFIED_TARGET_AUTHORITY,
+        exact_total=False,
+        budget_semantics=None,
+        reference_vocab_size=RATIFIED_TARGET_REFERENCE_VOCAB_SIZE,
+        reference_total_unique_parameters=RATIFIED_TARGET_PARAMETER_BUDGET,
+        topology_config=None,
+        topology_unique_parameters=None,
+    )
+
+
+def _target_scale_accounting(
+    candidate_vocab_size: int,
+    contract: TokenizerTargetDecisionContract,
+) -> TokenizerScaleAccounting:
+    if candidate_vocab_size not in TOKENIZER_VOCAB_CANDIDATES:
+        raise ValueError("tokenizer selection requires a registered vocabulary candidate")
+    if contract.budget_semantics == "fixed_total":
+        matching = tuple(
+            config
+            for config in contract.candidate_topologies
+            if config.vocab_size == candidate_vocab_size
+        )
+        if len(matching) != 1:
+            raise ValueError(
+                "fixed-total authority does not bind exactly one candidate topology"
+            )
+        config = matching[0]
+    else:
+        config = contract.config
+    topology_total = estimate_dense_unique_parameters(config)
+    vocabulary = candidate_vocab_size * RATIFIED_TARGET_D_MODEL
+    target_total = topology_total
+    reference_total = topology_total
+    if contract.budget_semantics == "fixed_total":
+        assert contract.fixed_total_parameters is not None
+        if (
+            abs(topology_total - contract.fixed_total_parameters)
+            > contract.fixed_total_tolerance_parameters
+        ):
+            raise ValueError("fixed-total target topology differs from the locked common budget")
+        target_total = contract.fixed_total_parameters
+        reference_total = contract.fixed_total_parameters
+    else:
+        non_vocabulary = (
+            topology_total
+            - contract.reference_vocab_size * RATIFIED_TARGET_D_MODEL
+        )
+        if non_vocabulary <= 0:
+            raise ValueError("target reference total must exceed its vocabulary matrix")
+        target_total = non_vocabulary + vocabulary
+    if target_total <= vocabulary:
+        raise ValueError("target total must exceed its vocabulary matrix")
+    return TokenizerScaleAccounting(
+        label=f"target_d1024_derived_{contract.budget_semantics}",
+        vocab_size=candidate_vocab_size,
+        d_model=RATIFIED_TARGET_D_MODEL,
+        core_blocks=config.n_core_blocks,
+        total_unique_parameters=target_total,
+        vocabulary_parameters=vocabulary,
+        authority=contract.authority,
+        exact_total=True,
+        budget_semantics=contract.budget_semantics,
+        reference_vocab_size=contract.reference_vocab_size,
+        reference_total_unique_parameters=reference_total,
+        topology_config=config,
+        topology_unique_parameters=topology_total,
+    )
+
+
+def tokenizer_screen_accounting(
+    proxy_config: AblationLMConfig,
+    *,
+    target_contract: TokenizerTargetDecisionContract | None = None,
+) -> TokenizerScreenAccounting:
+    """Return separate muProxy execution and target-scale decision columns.
+
+    The relayed R-1 ruling fixes the headline target reference at d=1024 and
+    approximately 290M parameters. Without ``target_contract``, the target row
+    is explicitly approximate and cannot freeze a tokenizer. With a contract,
+    every exact total is derived from its supplied d=1024 dense topology; a
+    caller cannot promote the 290M headline by flipping an ``exact`` boolean.
+    """
+
+    execution_proxy = _proxy_scale_accounting(proxy_config)
+    decision_target = (
+        _approximate_target_scale_accounting(proxy_config.vocab_size)
+        if target_contract is None
+        else _target_scale_accounting(proxy_config.vocab_size, target_contract)
+    )
+    return TokenizerScreenAccounting(
+        execution_proxy=execution_proxy,
+        decision_target=decision_target,
+        target_contract=target_contract,
     )

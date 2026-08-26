@@ -3,7 +3,8 @@
 This module deliberately does not construct optimizers.  It produces an
 auditable partition that a training layer can later use to construct a Muon
 optimizer for ordinary dense hidden matrices and an auxiliary AdamW optimizer
-for every other parameter family.
+for every other parameter family. Coupled ``mu/delta`` or factored mode paths
+must remain together on AdamW until a mode-wise Muon derivation is registered.
 
 Muon eligibility is opt-in and semantic; tensor rank alone is never enough.
 In particular, embeddings, normalization parameters, gates, Engram state, and
@@ -14,6 +15,7 @@ optimizer ablation promotes them.
 from __future__ import annotations
 
 import math
+import re
 from dataclasses import dataclass
 from enum import Enum
 from typing import Final
@@ -27,6 +29,25 @@ FULL_MATRIX_MUON_GEOMETRY: Final[str] = "full_matrix"
 MODE_WISE_MUON_SUPPORTED: Final[bool] = False
 """There is intentionally no mode-wise or tensor-slice Muon arm."""
 
+LEGACY_RANK_ONLY_MUON_SPLITTER_SUPPORTED: Final[bool] = False
+"""``training/muon.py`` must not partition an ``AblationLM`` by tensor rank."""
+
+REQUIRE_CLOSED_MUON_ALLOWLIST_ATTR: Final[str] = (
+    "_ablation_lm_require_closed_muon_allowlist"
+)
+"""Model marker that makes the semantic partition enforce the closed allowlist."""
+
+RANK_ONLY_MUON_PROHIBITED_ATTR: Final[str] = (
+    "_ablation_lm_rank_only_muon_prohibited"
+)
+"""Parameter marker consumed by the legacy rank-only splitter's fail-closed guard."""
+
+_ABLATION_LM_MUON_NAME_PATTERN: Final[re.Pattern[str]] = re.compile(
+    r"^(?:prelude_blocks|core_blocks|coda_blocks)\.\d+\."
+    r"(?:attention\.(?:q_proj|k_proj|v_proj|output_proj)|"
+    r"feed_forward\.(?:gate_proj|up_proj|down_proj))\.weight$"
+)
+
 
 class ParameterRole(str, Enum):
     """Semantic role of a trainable parameter."""
@@ -36,6 +57,7 @@ class ParameterRole(str, Enum):
     NORMALIZATION = "normalization"
     GATE = "gate"
     ENGRAM = "engram"
+    COUPLED_MODE = "coupled_mode"
     NOVEL_MODULE = "novel_module"
     BIAS = "bias"
     AUXILIARY = "auxiliary"
@@ -123,10 +145,11 @@ _ROLE_PRECEDENCE: Final[dict[ParameterRole, int]] = {
     ParameterRole.NORMALIZATION: 1,
     ParameterRole.GATE: 2,
     ParameterRole.ENGRAM: 3,
-    ParameterRole.NOVEL_MODULE: 4,
-    ParameterRole.BIAS: 5,
-    ParameterRole.AUXILIARY: 6,
-    ParameterRole.DENSE_HIDDEN_WEIGHT: 7,
+    ParameterRole.COUPLED_MODE: 4,
+    ParameterRole.NOVEL_MODULE: 5,
+    ParameterRole.BIAS: 6,
+    ParameterRole.AUXILIARY: 7,
+    ParameterRole.DENSE_HIDDEN_WEIGHT: 8,
 }
 
 
@@ -186,6 +209,23 @@ def mark_muon_eligible(
         ParameterRole.DENSE_HIDDEN_WEIGHT,
         post_muon_multiplier=post_muon_multiplier,
     )
+    if linear.bias is not None:
+        tag_optimizer_role(linear, "bias", ParameterRole.BIAS)
+    return linear
+
+
+def mark_coupled_mode_adamw(linear: nn.Linear) -> nn.Linear:
+    """Keep a dense member of a coupled mode/factor system on AdamW.
+
+    A matrix can look ordinary in isolation while its scientific meaning is
+    tied to a low-rank or differently parameterized companion. Marking every
+    member explicitly prevents the ``mu`` path from drifting into Muon while a
+    ``delta`` factorization remains on AdamW.
+    """
+
+    if not isinstance(linear, nn.Linear):
+        raise TypeError("mark_coupled_mode_adamw expects an nn.Linear module")
+    tag_optimizer_role(linear, "weight", ParameterRole.COUPLED_MODE)
     if linear.bias is not None:
         tag_optimizer_role(linear, "bias", ParameterRole.BIAS)
     return linear
@@ -254,6 +294,49 @@ def _role_for_owner(module: nn.Module, local_name: str, parameter: nn.Parameter)
 
 def _resolved_role(tags: list[_RoleTag]) -> ParameterRole:
     return min((tag.role for tag in tags), key=_ROLE_PRECEDENCE.__getitem__)
+
+
+def _enforce_ablation_lm_muon_allowlist(
+    assignments: tuple[ParameterAssignment, ...],
+    model_prefixes: tuple[str, ...],
+) -> None:
+    """Require the exact Transformer-only Muon inventory for ``AblationLM``.
+
+    This closes the opt-in tagging gap: adding ``mark_muon_eligible`` to a new
+    module cannot silently create a new optimizer hypothesis, and removing a
+    tag from an ordinary Transformer matrix cannot silently alter the control.
+    """
+
+    def allowed_alias(alias: str) -> bool:
+        for prefix in model_prefixes:
+            if prefix:
+                prefix_with_separator = f"{prefix}."
+                if not alias.startswith(prefix_with_separator):
+                    continue
+                relative_name = alias[len(prefix_with_separator) :]
+            else:
+                relative_name = alias
+            if _ABLATION_LM_MUON_NAME_PATTERN.fullmatch(relative_name):
+                return True
+        return False
+
+    expected = {
+        assignment.canonical_name
+        for assignment in assignments
+        if any(allowed_alias(alias) for alias in assignment.aliases)
+    }
+    actual = {
+        assignment.canonical_name
+        for assignment in assignments
+        if assignment.target is OptimizerTarget.MUON_ELIGIBLE
+    }
+    if actual != expected:
+        unexpected = tuple(sorted(actual - expected))
+        missing = tuple(sorted(expected - actual))
+        raise RuntimeError(
+            "AblationLM closed Muon allowlist differs: "
+            f"unexpected={unexpected!r}, missing={missing!r}"
+        )
 
 
 def partition_optimizer_parameters(model: nn.Module) -> OptimizerPartition:
@@ -342,19 +425,34 @@ def partition_optimizer_parameters(model: nn.Module) -> OptimizerPartition:
         post_muon_multiplier=None,
         update_geometry=None,
     )
-    return OptimizerPartition(tuple(assignments), muon_groups, auxiliary_group)
+    partition = OptimizerPartition(tuple(assignments), muon_groups, auxiliary_group)
+    closed_model_prefixes = tuple(
+        module_name
+        for module_name, module in model.named_modules(remove_duplicate=False)
+        if bool(getattr(module, REQUIRE_CLOSED_MUON_ALLOWLIST_ATTR, False))
+    )
+    if closed_model_prefixes:
+        _enforce_ablation_lm_muon_allowlist(
+            partition.assignments,
+            closed_model_prefixes,
+        )
+    return partition
 
 
 __all__ = [
     "DenseHiddenLinear",
     "FULL_MATRIX_MUON_GEOMETRY",
+    "LEGACY_RANK_ONLY_MUON_SPLITTER_SUPPORTED",
     "MODE_WISE_MUON_SUPPORTED",
     "OptimizerGroupSpec",
     "OptimizerPartition",
     "OptimizerTarget",
     "ParameterAssignment",
     "ParameterRole",
+    "REQUIRE_CLOSED_MUON_ALLOWLIST_ATTR",
+    "RANK_ONLY_MUON_PROHIBITED_ATTR",
     "mark_muon_eligible",
+    "mark_coupled_mode_adamw",
     "partition_optimizer_parameters",
     "tag_optimizer_role",
 ]

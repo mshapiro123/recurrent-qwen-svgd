@@ -8,15 +8,20 @@ from dataclasses import dataclass, replace
 
 TOKENIZER_VOCAB_CANDIDATES = (16_384, 24_576, 32_768, 49_152)
 REGISTERED_CORE_BLOCK_COUNTS = (4, 6)
+RATIFIED_TARGET_D_MODEL = 1_024
+RATIFIED_TARGET_PARAMETER_BUDGET = 290_000_000
+RATIFIED_TARGET_REFERENCE_VOCAB_SIZE = 32_768
+RATIFIED_TARGET_AUTHORITY = "strategy_r1_relay_20260826"
 
 
 @dataclass(frozen=True)
 class AblationLMConfig:
     """One explicit model graph; innovations are structural on/off switches.
 
-    The defaults describe the inexpensive two-core-block bring-up graph.  They
-    are intentionally not the registered recurrent-scaling sweep, whose core
-    block counts are exposed by :func:`registered_mu_r_configs`.
+    The defaults describe the inexpensive d=512 two-core-block muProxy graph.
+    They are intentionally neither the ratified d=1024 target scale nor the
+    registered recurrent-scaling sweep, whose core block counts are exposed by
+    :func:`registered_mu_r_configs`.
     """
 
     vocab_size: int = 32_768
@@ -51,7 +56,8 @@ class AblationLMConfig:
     scratch_lanes: int = 2
     scratch_width: int = 128
     scratch_layer_scale: float = 1e-3
-    lane_carrier_rho_init: float = 0.01
+    lane_carrier_rho_init: float = 0.005
+    lane_carrier_retention_floor: float = 0.9
 
     use_engram: bool = False
     engram_orders: tuple[int, ...] = (2, 3)
@@ -66,6 +72,10 @@ class AblationLMConfig:
     long_term_memory_width: int = 128
     long_term_memory_layer_scale: float = 1e-3
 
+    z_loss_coefficient: float = 0.0
+    jet_plane_probe_count: int = 8
+    jet_plane_probe_seed: int = 20_260_826
+
     def __post_init__(self) -> None:
         positive_ints = {
             "vocab_size": self.vocab_size,
@@ -78,6 +88,7 @@ class AblationLMConfig:
             "recurrent_steps": self.recurrent_steps,
             "max_recurrent_steps": self.max_recurrent_steps,
             "max_sequence_length": self.max_sequence_length,
+            "jet_plane_probe_count": self.jet_plane_probe_count,
         }
         for name, value in positive_ints.items():
             if type(value) is not int or value < 1:
@@ -114,8 +125,16 @@ class AblationLMConfig:
             raise ValueError("the initial bicameral contract requires exactly two scratch lanes")
         if type(self.scratch_width) is not int or self.scratch_width < 1:
             raise ValueError("scratch_width must be positive")
-        if not 0 < self.lane_carrier_rho_init < 0.5:
-            raise ValueError("lane_carrier_rho_init must lie strictly between 0 and 0.5")
+        if not 0 < self.lane_carrier_retention_floor < 1:
+            raise ValueError("lane_carrier_retention_floor must lie strictly between zero and one")
+        rho_cap = (1.0 - self.lane_carrier_retention_floor ** (1 / self.max_recurrent_steps)) / 2
+        if self.lane_carrier_rho_init <= 0:
+            raise ValueError("lane_carrier_rho_init must be strictly positive")
+        if self.lane_carrier_rho_init >= rho_cap:
+            raise ValueError(
+                "lane_carrier_rho_init must lie below the horizon retention cap "
+                f"{rho_cap:.8f}"
+            )
         if self.use_lane_carrier and not self.use_scratch:
             raise ValueError("the lane carrier requires the position-aligned scratch arm")
         if self.use_reentry_bridge and not self.use_recurrence:
@@ -141,6 +160,7 @@ class AblationLMConfig:
             "initialization_seed": self.initialization_seed,
             "hadamard_seed": self.hadamard_seed,
             "engram_hash_seed": self.engram_hash_seed,
+            "jet_plane_probe_seed": self.jet_plane_probe_seed,
         }.items():
             if type(value) is not int:
                 raise ValueError(f"{name} must be an exact integer")
@@ -155,6 +175,8 @@ class AblationLMConfig:
                 raise ValueError(f"{name} must be finite and strictly positive for an active arm")
         if self.engram_layer_scale >= 0.1:
             raise ValueError("engram_layer_scale must be smaller than the 0.1 scale bound")
+        if not math.isfinite(self.z_loss_coefficient) or self.z_loss_coefficient < 0:
+            raise ValueError("z_loss_coefficient must be finite and non-negative")
 
     @property
     def head_dim(self) -> int:

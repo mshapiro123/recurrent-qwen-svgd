@@ -33,9 +33,9 @@ No research pillar may be smuggled into the dense baseline as a “minor impleme
 
 ## 3. Dense decoder substrate
 
-### 3.1 Initial target geometry
+### 3.1 μProxy engineering geometry and target authority
 
-The first target geometry is deliberately small and transparent:
+The first executable geometry is deliberately small and transparent. It is **μProxy**, not the target:
 
 | Field | Contract value |
 |---|---:|
@@ -47,7 +47,7 @@ The first target geometry is deliberately small and transparent:
 | Shared recurrent-core blocks | 4 and 6 are the registered scale candidates |
 | Engineering bring-up | 2 shared core blocks only; never a scientific winner |
 | Prelude / Coda | 2 / 2 unique blocks in the initial allocation |
-| Initial context | 4,096 tokens at target geometry; shorter sequences are legal only for unit/smoke tests |
+| Initial context | 4,096 tokens at μProxy; shorter sequences are legal only for unit/smoke tests |
 | RoPE | full-head rotary embedding, base `theta = 500,000`; token coordinate only |
 | Attention | full causal GQA through `scaled_dot_product_attention` |
 | Dropout | 0 in the first controlled comparison |
@@ -55,6 +55,8 @@ The first target geometry is deliberately small and transparent:
 | Embedding policy | input/output weights tied |
 
 “Two,” “four,” and “six” in this contract refer to the number of shared recurrent-core blocks, matching the proposed `T=4` arithmetic: the two-block bring-up executes eight core block-passes. With the initial two-block Prelude and two-block Coda, total unique decoder blocks are respectively 6, 8, and 10. Every receipt reports both unique blocks and executed block-passes; neither may be shortened to an ambiguous “depth.” The two-core-block model exists to make failures cheap: forward/reference equality, masks, cache behavior, gradients, checkpoint replay, and module nulls. Neither tokenizer selection nor architectural promotion may use its task loss as evidence. The first registered core-depth screen is the 4-versus-6 comparison, with its training budget, seeds, selection tolerance, and compute accounting frozen before either result is read.
+
+The relayed R-1 strategy ruling binds the tokenizer decision reference to `d_model = 1024` and approximately 290M unique parameters. At 32K this headline embedding term is 33,554,432 parameters, approximately **11.57%**, not the μProxy shares of 41.55% and 36.25%. The exact target topology, exact denominator, and whether vocabulary size displaces other capacity (`fixed_total`) or adds to a fixed non-vocabulary body (`fixed_non_vocabulary`) remain unresolved. Therefore the target reference corrects the direction of the screen but **cannot yet authorize a tokenizer freeze**. The code cannot promote this headline with an `exact=True` assertion: a validated row is rederived at consumption from a typed authority carrying a materializable `d=1024` topology. Fixed-total semantics bind all four registered vocabulary candidates on one registered 4- or 6-core rung to one common budget and tolerance, and the budget must exceed the largest vocabulary matrix; fixed-non-vocabulary semantics derive the body from one reference-vocabulary topology and reject unregistered candidates. Each contract is deliberately a per-rung decision column. One frozen tokenizer for the sweep still requires separately ratified 4- and 6-core rulings; that two-rung freeze gate is not implemented, so no current row can authorize fitting or freezing.
 
 ### 3.2 Block equations
 
@@ -67,7 +69,7 @@ x_{l+1}   = u_l + SwiGLU_l(RMSNorm(u_l)).
 
 Attention uses separately instantiated `q_proj`, `k_proj`, `v_proj`, and `o_proj` parameters. Packing them is prohibited in the reference implementation because it obscures parameter ownership, ablation boundaries, and any later optimizer grouping. The same separation applies to SwiGLU gate, up, and down projections.
 
-All RMSNorm gains start at one and use FP32 reduction with `eps = 1e-5`. A final RMSNorm precedes tied unembedding. No logit soft cap or auxiliary z-loss is active in the reference; either requires a separate numerical contract.
+All RMSNorm gains start at one and use FP32 reduction with `eps = 1e-5`. A final RMSNorm precedes tied unembedding. No logit soft cap is active. The code supports a separately registered z-loss coefficient, zero by default; zero is a structural off path with no extra full-vocabulary `logsumexp`. When nonzero, z-loss uses exactly the same valid next-token mask as cross-entropy and is reported as a separate component.
 
 ### 3.3 Initialization and residual contract
 
@@ -89,9 +91,11 @@ Required properties are:
 - no evaluation or sealed text participates in fitting or in the selection screen; and
 - whitespace, code, mathematics, non-Latin text, and pathological byte strings receive separate fertility reports.
 
-### 4.2 Target-ratio screen
+### 4.2 Proxy execution, target decision
 
-Vocabulary is selected on a frozen raw-text audit corpus by a predeclared Pareto/utility rule, not by familiarity with 32K and not by one proxy parameter calculation. For every candidate `V`, record at both the intended 4-core-block and 6-core-block geometries:
+Vocabulary is selected on a frozen raw-text audit corpus by a predeclared Pareto/utility rule, not by familiarity with 32K and not by one proxy parameter calculation. Tokenizer fitting, fertility, token counts, context coverage, and cheap LM comparisons may execute at μProxy. Selection uses separately labeled `d=1024` target columns. Target memory and latency are either measured on an untrained materialized target graph or labeled projections; proxy measurements may never be relabeled as target measurements.
+
+For every candidate `V`, record at both the μProxy 4/6-core execution geometries and the ratified target decision geometry:
 
 ```text
 N_V       = total encoded token count on the frozen raw-text corpus
@@ -102,9 +106,9 @@ M_V       = measured peak training memory
 L_V       = measured training and decode latency at the intended batch/sequence regime.
 ```
 
-The utility must compare raw-text BPB and context coverage against vocabulary parameter share, memory, and latency. The quantitative indifference tolerances and weighting rule are a **gate to lock before the screen**; this contract does not invent them. Select the smallest Pareto-admissible vocabulary within those locked tolerances. If the Pareto set or the 4-core-block and 6-core-block rulings disagree, return the complete table for a design ruling; do not select the most flattering row.
+The utility must compare raw-text BPB and context coverage against **target-scale** vocabulary parameter share, memory, and latency. The quantitative indifference tolerances and weighting rule are a **gate to lock before the screen**; this contract does not invent them. Select the smallest Pareto-admissible vocabulary within those locked tolerances. If the Pareto set or the target 4-core-block and 6-core-block rulings disagree, return the complete table for a design ruling; do not select the most flattering row.
 
-It is explicitly invalid to choose a vocabulary solely because `V * 512` looks like an acceptable embedding share. That is a useful accounting term, not the target-ratio decision. Report token count and BPB in raw-text units so vocabulary candidates remain comparable.
+It is explicitly invalid to choose a vocabulary solely because `V * 512` looks like an acceptable embedding share. That is a μProxy execution term, not the decision. The accounting API returns separate `execution_proxy` and `decision_target` objects; an approximate denominator, missing authority, or unresolved budget semantics throws at the freeze boundary. Report token count and BPB in raw-text units so vocabulary candidates remain comparable.
 
 ### 4.3 What Engram may and may not repair
 
@@ -187,7 +191,15 @@ d = (h - s) / sqrt(2),            eigenvalue lambda_- = 1 - 2 rho in [-1, 1].
 
 Equivalently, `P = Q diag(1, lambda_-) Q^T`. This exact eigenbasis parameterization replaces iterative Sinkhorn for two lanes. It preserves the common mode, contracts or sign-flips only the difference mode, is closed under products, and satisfies `||P||_2 <= 1`. Identity is `rho = 0` / `lambda_- = 1`; averaging is `rho = 1/2`; swapping is `rho = 1`.
 
-The full mathematical family permits `0 <= rho <= 1`. The first trainable carrier is restricted to `0 < rho < 1/2`: it is static, identity-favoring, and damps disagreement without a sign flip. Averaging and swapping remain exact intervention endpoints, not initial trainable states. A state-dependent `rho(X)` is a later arm because its Jacobian contains the extra term `(dP/dX)X`; Birkhoff membership alone then does not bound the full recurrence.
+The full mathematical family permits `0 <= rho <= 1`. The first trainable carrier is restricted to a smaller horizon-safe interval. For maximum legal horizon `K_max` and registered retention floor `r_min = 0.9`, parameterize
+
+```text
+rho_max = (1 - r_min^(1/K_max)) / 2,
+rho     = rho_max sigmoid(raw_rho),
+r_K     = (1 - 2 rho)^K >= r_min for every K <= K_max.
+```
+
+This makes the carrier's minimum singular-value retention a structural guarantee, not an initialization anecdote. The code reports `rho` and `r_K` on every diagnostic forward. Averaging and swapping remain exact intervention endpoints, not trainable states. A state-dependent `rho(X)` is a later arm because its Jacobian contains the extra term `(dP/dX)X`; Birkhoff membership alone then does not bound the full recurrence.
 
 ### 8.2 Directionality is not Birkhoff mixing
 
@@ -216,7 +228,7 @@ Required controls are: Engram off; address-shuffled values with identical table 
 
 For `d_model = 512`, use the normalized Walsh-Hadamard transform `Q = H/sqrt(512)` as a fixed orthogonal basis. A modified expert consists of learned diagonal modulation and permutation around `Q`/`Q^T`, with a causal per-token router and an output gate before block one. The first research lock must bind expert count, active experts, router regularizer, and exact formula; no MoE choice is implied by this architecture contract.
 
-Required tests are dense-matrix forward and backward equivalence, `Q^TQ = I`, norm preservation, deterministic routing, load telemetry, and exact zero-gate identity. The scientific controls are a parameter-matched dense upfront adapter and a compute-matched dense FFN. The banked result that a Hadamard diagonal bank captured only a minority of a prior correction field is a boundary, not a prohibition: this pillar is an efficient lexical/feature expert hypothesis, not a claim that it spans oracle corrections.
+Required tests are dense-matrix forward and backward equivalence, `Q^TQ = I`, norm preservation, deterministic routing, load/entropy telemetry, and exact zero-gate identity. Router logit moments `(m,s)` are trajectory statistics: no routing calibration may freeze from step zero. Two adjacent nonzero training windows must pass a predeclared stability tolerance before freeze eligibility. The scientific controls are a parameter-matched dense upfront adapter and a compute-matched dense FFN. The banked result that a Hadamard diagonal bank captured only a minority of a prior correction field is a boundary, not a prohibition: this pillar is an efficient lexical/feature expert hypothesis, not a claim that it spans oracle corrections.
 
 ### P3. Recurrent reasoning plus the causal scratch lane and bridge
 
@@ -236,9 +248,9 @@ Only after the regular Engram and read-only memory pass may latent keys/values o
 
 ### P6. Clifford primitives
 
-Clifford algebra enters as a low-dimensional, typed computation primitive, not as a replacement for the 512-dimensional hidden space. The first candidate uses a fixed small algebra and an explicit multiplication table, projects selected channels into multivector coefficients, applies the geometric product and named grade projections, then maps back through a gated residual. Full `Cl(512)` construction is prohibited because coefficient count is exponential.
+Clifford algebra enters as a low-dimensional, typed computation primitive, not as a replacement for the hidden space. The Birkhoff carrier's `mu=(h+s)/2`, `delta=(h-s)/2` representation is named **lane-mode coordinates** and is not a Clifford layer.
 
-The design lock must state signature, grades retained, coefficient dimension, multiplication convention, and parameter-matched bilinear/dense controls. The two-lane code uses the split-Clifford idempotent convention `mu=(h+s)/2`, `delta=(h-s)/2`, so `h=mu+delta` and `s=mu-delta`; Section 8's `/sqrt(2)` coordinates remain the orthonormal spectral convention. Consequently `||h||^2+||s||^2 = 2(||mu||^2+||delta||^2)`, which is tested rather than conflated with Parseval equality. FP64 tests must verify basis squares, anticommutation, multiplication-table signs, grade projection, associativity where the chosen implementation should preserve it, and autograd against finite differences. A shuffled-sign multiplication table is a useful structural null. No optimization benefit may be claimed from the algebra without measured conditioning, gradient, and efficiency evidence.
+The first Clifford primitive is an explicitly Euclidean `Cl(2,0)` plane rotor with bivector `B^2=-1`; its sandwich action must pass T5, `abs(||R(theta)x||/||x|| - 1) < 1e-6` in FP64. Rotor angles are either scalar or exactly match the vector batch shape; implicit outer-product broadcasting is rejected. Hyperbolic `Cl(1,0)` exponentials/boosts are absent and prohibited in the recurrent carrier unless a successor contract prices their `exp(K theta)` growth. Any later geometric-product arm must state signature, grades, coefficient dimension, multiplication convention, and parameter-matched bilinear/dense controls. Full `Cl(d_model)` construction remains prohibited because coefficient count is exponential. No optimization benefit may be claimed without measured conditioning, gradient, and efficiency evidence.
 
 ### P7. Jets: diagnostics first, controller later
 
@@ -250,7 +262,7 @@ a_k = v_k - v_{k-1}
 ||v_k wedge a_k||^2 = ||v_k||^2 ||a_k||^2 - <v_k,a_k>^2.
 ```
 
-Record step norm, turning cosine, wedge/Gram invariant, local JVP gain, and full-horizon gain by layer, token type, and outcome. Use basis-invariant quantities for cross-seed comparisons. The banked TM-0 active-token-mean jet estimator returned `ROTATION-ABSENT`; therefore no turning-plane router or jet-conditioned gate is in the initial architecture. Such a controller requires a fresh preregistered estimator, independent population, smooth-noise and no-rotation nulls, and an ordinary MLP controller matched for parameters and inputs.
+Diagnostic capture retains `z_0` plus every post-visit state, so velocity and acceleration jointly use `z_k`, `z_{k-1}`, and `z_{k-2}`. Record valid-token hidden RMS, composite update RMS, scratch `mu/delta` RMS, turning cosine, wedge/Gram invariant, curvature, Gram eigenvalue ratio, and seeded plane probes. A stationary or colinear jet has Gram eigenvalue ratio zero; epsilon regularizes only the denominator and cannot manufacture rank. Local JVP gain uses a declared joint hidden/scratch metric that dimension-balances the lane subspace; full-horizon gain is hidden-to-hidden. Both project input and output onto valid token positions, and the manual attention diagnostic makes fully masked query rows softmax/JVP safe. Hidden-state adjoint cosines after backward are valid-token-only and labeled separately from shared-parameter per-visit contribution cosines; the latter require functionalized parameter probes and are not yet claimed. Use basis-invariant quantities for cross-seed comparisons. The banked TM-0 active-token-mean jet estimator returned `ROTATION-ABSENT`; therefore no turning-plane router or jet-conditioned gate is in the initial architecture. Such a controller requires a fresh preregistered estimator, independent population, smooth-noise and no-rotation nulls, and an ordinary MLP controller matched for parameters and inputs.
 
 ## 10. Connection and layer-structure formalism
 
@@ -305,6 +317,8 @@ The open desk item is **mode-wise Muon in the two-lane eigenbasis**. It must ans
 
 Under an exact polar map, `polar(cG) = polar(G)` for positive scalar `c`; practical Newton-Schulz is only an approximation. Scaling a gradient slice inside a packed matrix is therefore not a reliable slice-local Muon learning rate. Mode-specific updates require separate tensors/groups or explicit multipliers **after** Muon normalization. The same caution applies, with different mechanics, to persistent positive gradient scaling under Adam-family moment normalization.
 
+Until that derivation exists, every member of a coupled `mu/delta` or dense/factored mode system stays in the **same AdamW partition**, even when one member looks like an ordinary dense matrix in isolation. The substrate marks these tensors `COUPLED_MODE`. A closed allowlist is found through wrapper descendants, admits only ordinary Transformer attention and SwiGLU matrices, and fails on both an added eligible tensor and a missing expected tensor. The legacy `training/muon.py` rank/shape splitter fails closed for full and filtered `AblationLM` inventories through explicit parameter provenance plus a conservative multi-landmark signature. Deepcopy, device transforms, and root `assign=True` loads restore the provenance; stripped or renamed streams are unsupported. A regression keeps the existing recurrent-Qwen Muon path admissible. Meta materialization and assign-load also restore the tied token-embedding/language-head `Parameter` identity and reject checkpoints whose two aliases disagree.
+
 Only after the desk math, tensor-layout audit, FP64 SVD-polar reference tests, and microbenchmarks pass may Muon be proposed as a separately registered optimizer experiment. It is not added to the 4/6 architecture sweep and may not be selected because it wins one architecture's pilot.
 
 ## 13. Hard pre-optimizer gates
@@ -327,21 +341,26 @@ Do not construct an optimizer until every applicable gate is green:
 14. exact parameter inventory, optimizer allowlist, and tied-embedding pointer identity; and
 15. deterministic checkpoint/RNG replay before any long run.
 
+Additional research-arm gates are: carrier minimum-retention `r_K >= 0.9` over every legal horizon; nonzero-window router `(m,s)` calibration stability; masked z-loss identity at coefficient zero; `T+1` trajectory-state capture; finite local joint hidden/scratch Jacobian estimates; and per-visit hidden-state adjoint cosine receipts.
+
 Any failed identity, causality, nonfinite, parameter-ownership, or replay check is a red engineering result. It cannot be averaged away across seeds.
+
+The full repository suite is also a hard baseline gate. Known failures may be listed only in a machine-readable quarantine with one reason and resolution owner per exact node ID; the quarantine runner fails on any added, removed, or renamed failure. A sealed-byte mismatch is investigated against the Git blob before any artifact edit. The current build-only disposition is recorded in `docs/ABLATION_LM_CORRECTIVE_ENGINEERING_RECEIPT_20260826.md` and `training/ablation_lm_engineering_quarantine_20260826.json`. Training remains blocked while the standing full-suite gate is red or the quarantine receipt is unresolved.
 
 ## 14. Build and evidence order
 
-1. Freeze the tokenizer audit corpus and lock the target-ratio utility tolerances.
-2. Fit and screen 16K/24K/32K/48K tokenizers; freeze one serialized tokenizer.
-3. Implement the two-block dense bring-up and pass all fixed-substrate gates.
-4. Materialize both 4-core-block and 6-core-block target models, reporting 8 and 10 total unique blocks under the initial 2/Core/2 allocation; register their training comparison before any result.
-5. Bring up P1 and P2 independently behind exact gates.
-6. Bring up recurrent scaling, then the corrected causal scratch lane and bridge.
-7. Add the exact two-lane carrier; then directional callosal writers one at a time.
-8. Add read-only long-term memory; latent Engram follows only on evidence.
-9. Run Clifford primitives as a typed low-dimensional arm and jets as diagnostics.
-10. Compose only banked pillars under the ablation sequence in Section 11.
-11. Keep the mode-wise Muon question on the desk until its separate mechanical gate is complete.
+1. Ratify exact d=1024 target topologies and denominators for both registered 4/6-core rungs, the fixed-total versus fixed-body semantics, and the two-rung tokenizer decision rule.
+2. Freeze the tokenizer audit corpus and lock the target-ratio utility tolerances.
+3. Fit and screen 16K/24K/32K/48K tokenizers at μProxy; decide from target columns and freeze one serialized tokenizer only if the target-accounting gate passes.
+4. Implement the two-block dense bring-up and pass all fixed-substrate gates.
+5. Materialize both 4-core-block and 6-core-block target models, reporting unique blocks and executed passes; register their training comparison before any result.
+6. Bring up P1 and P2 independently behind exact gates.
+7. Bring up recurrent scaling, then the corrected causal scratch lane and bridge.
+8. Add the exact two-lane carrier; then directional callosal writers one at a time.
+9. Add read-only long-term memory; latent Engram follows only on evidence.
+10. Run Euclidean Clifford primitives as a typed low-dimensional arm and jets as diagnostics.
+11. Compose only banked pillars under the ablation sequence in Section 11.
+12. Keep the mode-wise Muon question on the desk until its separate mechanical gate is complete.
 
 ## 15. Research anchors and inherited boundaries
 
@@ -351,4 +370,4 @@ Local empirical boundaries remain binding: regular n-gram lookup is only an Engr
 
 ---
 
-**Contract line:** 32K is provisional; 16K/24K/32K/48K are all screened under a target-geometry utility locked before results. Two shared core blocks are engineering only; four and six shared core blocks are the first registered core-depth candidates. The dense causal substrate is fixed, every innovation enters behind a named null and positive control, two-lane carry uses its exact Birkhoff eigenbasis, recurrence uses `alpha_T = c/T`, and mode-wise Muon remains an open desk item rather than an arm.
+**Contract line:** 32K is provisional; 16K/24K/32K/48K execute cheaply at μProxy but are selected only from ratified d=1024 target columns. The exact approximately-290M denominator semantics still block tokenizer freeze. Two shared core blocks are engineering only; four and six shared core blocks are the first registered core-depth candidates. The dense causal substrate is fixed, every innovation enters behind a named null and positive control, two-lane carry has a structural `r_K >= 0.9` horizon bound, the first Clifford rotor is Euclidean `Cl(2,0)`, recurrence uses `alpha_T = c/T`, coupled modes remain together on AdamW, and mode-wise Muon remains an open desk item rather than an arm.

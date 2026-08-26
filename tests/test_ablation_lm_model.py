@@ -4,6 +4,7 @@ from dataclasses import replace
 
 import pytest
 import torch
+from torch import nn
 
 from models.ablation_lm import AblationLM, AblationLMConfig, parameter_accounting
 from models.ablation_lm.memory import ReadOnlyLatentMemory
@@ -196,6 +197,7 @@ def test_active_modules_and_inner_branches_are_gradient_live() -> None:
         labels=tokens,
         memory_record_ids=record_ids,
         return_diagnostics=True,
+        capture_loop_gradients=True,
     )
     assert output.loss is not None
     output.loss.backward()
@@ -223,6 +225,24 @@ def test_active_modules_and_inner_branches_are_gradient_live() -> None:
     assert output.diagnostics["executed_core_visits"] == 2
     assert output.diagnostics["executed_core_block_passes"] == 4
     assert output.diagnostics["loop_rms"].shape == (2,)
+    assert output.diagnostics["loop_update_rms"].shape == (2,)
+    assert output.diagnostics["trajectory_state_count"] == 3
+    assert "trajectory_jets" in output.diagnostics
+    assert output.diagnostics["trajectory_jets"]["velocity_rms"].shape[0] == 2
+    assert output.diagnostics["trajectory_jets"]["plane_probes"].shape[-1] == (
+        config.jet_plane_probe_count
+    )
+    gradient_metrics = output.diagnostics["loop_gradient_probe"].metrics()
+    assert gradient_metrics.gradient_rms.shape == (2,)
+    assert gradient_metrics.adjacent_cosines.shape == (1,)
+    assert output.diagnostics["lane_carrier_minimum_retention"].item() >= 0.9
+    assert set(output.diagnostics["hadamard_router"]) == {
+        "m",
+        "s",
+        "load",
+        "load_std",
+        "routing_entropy",
+    }
 
 
 def test_semantic_optimizer_partition_and_parameter_accounting_cover_full_model() -> None:
@@ -260,6 +280,34 @@ def test_semantic_optimizer_partition_and_parameter_accounting_cover_full_model(
     assert accounting.long_term_memory_store_elements == (
         2 * config.long_term_memory_slots * config.long_term_memory_width
     )
+
+
+def test_all_coupled_scratch_mode_matrices_stay_together_on_adamw() -> None:
+    model = _model(_tiny_config(use_scratch=True, use_lane_carrier=True))
+    partition = partition_optimizer_parameters(model)
+    names = (
+        "scratch.initializer.weight",
+        "scratch.context_projection.weight",
+        "scratch.update_in.weight",
+        "scratch.update_out.weight",
+        "scratch.readout.weight",
+    )
+
+    for name in names:
+        assignment = partition.assignment_for(name)
+        assert assignment.role is ParameterRole.COUPLED_MODE
+        assert assignment.target is OptimizerTarget.AUXILIARY_ADAMW
+
+
+def test_parameter_accounting_is_invariant_to_a_transparent_model_wrapper() -> None:
+    class _Wrapper(nn.Module):
+        def __init__(self, model: AblationLM) -> None:
+            super().__init__()
+            self.model = model
+
+    model = _model(_tiny_config(use_engram=True, use_long_term_memory=True))
+
+    assert parameter_accounting(_Wrapper(model)) == parameter_accounting(model)
 
 
 def test_scratch_and_birkhoff_carrier_are_independent_structural_arms() -> None:
@@ -398,6 +446,128 @@ def test_forward_rejects_silent_label_and_recurrence_coercions() -> None:
         model(tokens, labels=tokens.float())
     with pytest.raises(ValueError, match="valid vocabulary"):
         model(tokens, labels=torch.tensor([[1, 2, 64]]))
+
+
+def test_z_loss_uses_the_same_valid_next_token_mask_as_cross_entropy() -> None:
+    model = _model(_tiny_config(z_loss_coefficient=0.1))
+    logits = torch.randn(1, 5, 64, requires_grad=True)
+    labels = torch.tensor([[9, 8, 1, 2, 3]])
+    mask = torch.tensor([[0, 0, 1, 1, 1]])
+
+    total, cross_entropy, z_loss = model._language_model_loss_components(
+        logits,
+        labels,
+        mask,
+        None,
+    )
+    valid_log_partition = torch.logsumexp(logits[:, 2:4].float(), dim=-1)
+
+    torch.testing.assert_close(z_loss, 0.1 * valid_log_partition.square().mean())
+    torch.testing.assert_close(total, cross_entropy + z_loss)
+
+
+def test_zero_z_loss_coefficient_is_structural_cross_entropy_identity(monkeypatch) -> None:
+    model = _model(_tiny_config(z_loss_coefficient=0.0))
+    logits = torch.randn(1, 4, 64)
+    labels = torch.tensor([[1, 2, 3, 4]])
+
+    def forbidden_logsumexp(*_args, **_kwargs):
+        raise AssertionError("zero z-loss must not execute logsumexp")
+
+    monkeypatch.setattr(torch, "logsumexp", forbidden_logsumexp)
+    total, cross_entropy, z_loss = model._language_model_loss_components(
+        logits,
+        labels,
+        None,
+        None,
+    )
+
+    torch.testing.assert_close(total, cross_entropy, rtol=0, atol=0)
+    assert z_loss.item() == 0.0
+
+
+def test_model_level_recurrent_jacobian_probe_is_finite_per_visit() -> None:
+    config = _tiny_config(
+        use_recurrence=True,
+        recurrent_steps=2,
+        use_scratch=True,
+        use_lane_carrier=True,
+    )
+    model = _model(config).eval()
+    tokens = torch.tensor([[1, 2, 3, 4]])
+    mask = torch.tensor([[1, 1, 0, 0]])
+
+    output = model(
+        tokens,
+        attention_mask=mask,
+        return_diagnostics=True,
+        jacobian_probe_iterations=2,
+    )
+    changed_padding = model(
+        torch.tensor([[1, 2, 55, 56]]),
+        attention_mask=mask,
+        return_diagnostics=True,
+        jacobian_probe_iterations=2,
+    )
+
+    estimates = output.diagnostics["loop_jacobian_spectral_norm"]
+    assert estimates.shape == (2,)
+    assert bool(torch.isfinite(estimates).all())
+    assert bool(estimates.gt(0).all())
+    horizon = output.diagnostics["horizon_jacobian_spectral_norm"]
+    assert horizon.ndim == 0
+    assert torch.isfinite(horizon)
+    assert horizon.item() > 0
+    assert horizon.item() < 10
+    assert output.diagnostics["joint_state_lane_metric_scale"] == pytest.approx(
+        (config.d_model / (2 * config.scratch_width)) ** 0.5
+    )
+    torch.testing.assert_close(
+        estimates,
+        changed_padding.diagnostics["loop_jacobian_spectral_norm"],
+    )
+    torch.testing.assert_close(
+        horizon,
+        changed_padding.diagnostics["horizon_jacobian_spectral_norm"],
+    )
+    torch.testing.assert_close(
+        output.diagnostics["scratch_mu_rms"],
+        changed_padding.diagnostics["scratch_mu_rms"],
+    )
+    torch.testing.assert_close(
+        output.diagnostics["scratch_delta_rms"],
+        changed_padding.diagnostics["scratch_delta_rms"],
+    )
+
+
+def test_hadamard_router_audit_excludes_padding_tokens() -> None:
+    model = _model(_tiny_config(use_front_hadamard_experts=True)).eval()
+    tokens = torch.tensor([[1, 2, 3, 4]])
+    mask = torch.tensor([[1, 1, 0, 0]])
+
+    output = model(tokens, attention_mask=mask, return_diagnostics=True)
+    changed_padding = model(
+        torch.tensor([[1, 2, 55, 56]]),
+        attention_mask=mask,
+        return_diagnostics=True,
+    )
+    assert model.front_hadamard is not None
+    embeddings = model.token_embedding(tokens)
+    logits = model.front_hadamard.router(model.front_hadamard.norm(embeddings)).float()
+    valid_logits = logits[mask.bool()]
+
+    torch.testing.assert_close(output.diagnostics["hadamard_router"]["m"], valid_logits.mean())
+    torch.testing.assert_close(
+        output.diagnostics["hadamard_router"]["s"],
+        valid_logits.std(unbiased=False),
+    )
+    for name, value in output.diagnostics["hadamard_router"].items():
+        torch.testing.assert_close(value, changed_padding.diagnostics["hadamard_router"][name])
+    torch.testing.assert_close(output.diagnostics["loop_rms"], changed_padding.diagnostics["loop_rms"])
+    torch.testing.assert_close(
+        output.diagnostics["loop_update_rms"],
+        changed_padding.diagnostics["loop_update_rms"],
+    )
 
 
 def test_full_active_graph_is_finite_in_bfloat16_with_fp32_loss() -> None:

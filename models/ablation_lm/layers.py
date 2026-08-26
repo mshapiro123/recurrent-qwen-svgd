@@ -11,7 +11,12 @@ from torch import nn
 from models.sidecar_v2 import fast_wht
 
 from .config import AblationLMConfig
-from .optim import ParameterRole, mark_muon_eligible, tag_optimizer_role
+from .optim import (
+    RANK_ONLY_MUON_PROHIBITED_ATTR,
+    ParameterRole,
+    mark_muon_eligible,
+    tag_optimizer_role,
+)
 
 
 class RMSNorm(nn.Module):
@@ -163,6 +168,7 @@ class GroupedQueryAttention(nn.Module):
         attention_mask: torch.Tensor | None = None,
         position_ids: torch.Tensor | None = None,
         document_ids: torch.Tensor | None = None,
+        force_math_attention: bool = False,
     ) -> torch.Tensor:
         if hidden.ndim != 3 or hidden.shape[-1] != self.d_model:
             raise ValueError("hidden must have shape [batch, sequence, d_model]")
@@ -190,14 +196,32 @@ class GroupedQueryAttention(nn.Module):
                 attention_mask = document_ids.ge(0)
             sdpa_mask = self._causal_padding_mask(attention_mask, length, document_ids)
             is_causal = False
-        attended = F.scaled_dot_product_attention(
-            query,
-            key,
-            value,
-            attn_mask=sdpa_mask,
-            dropout_p=self.dropout if self.training else 0.0,
-            is_causal=is_causal,
-        )
+        if force_math_attention:
+            if sdpa_mask is None:
+                positions = torch.arange(length, device=hidden.device)
+                sdpa_mask = (positions[:, None] >= positions[None, :]).view(
+                    1, 1, length, length
+                )
+            scores = torch.matmul(query, key.transpose(-2, -1)) / math.sqrt(self.head_dim)
+            scores = scores.masked_fill(~sdpa_mask, float("-inf"))
+            row_has_key = sdpa_mask.any(dim=-1, keepdim=True)
+            scores = torch.where(row_has_key, scores, torch.zeros_like(scores))
+            probabilities = torch.softmax(scores.float(), dim=-1).to(dtype=query.dtype)
+            probabilities = torch.where(
+                row_has_key,
+                probabilities,
+                torch.zeros_like(probabilities),
+            )
+            attended = probabilities @ value
+        else:
+            attended = F.scaled_dot_product_attention(
+                query,
+                key,
+                value,
+                attn_mask=sdpa_mask,
+                dropout_p=self.dropout if self.training else 0.0,
+                is_causal=is_causal,
+            )
         merged = attended.transpose(1, 2).contiguous().view(batch, length, self.d_model)
         return self.output_proj(merged)
 
@@ -224,6 +248,24 @@ class TransformerBlock(nn.Module):
         self.attention = GroupedQueryAttention(config)
         self.ffn_norm = RMSNorm(config.d_model, config.norm_eps)
         self.feed_forward = SwiGLU(config.d_model, config.d_ff)
+        self._mark_rank_only_muon_prohibited()
+
+    def _mark_rank_only_muon_prohibited(self) -> None:
+        for parameter in self.parameters():
+            setattr(parameter, RANK_ONLY_MUON_PROHIBITED_ATTR, True)
+
+    def __setstate__(self, state: dict[str, object]) -> None:
+        """Restore safety provenance after ``Parameter`` deepcopy."""
+
+        super().__setstate__(state)
+        self._mark_rank_only_muon_prohibited()
+
+    def _apply(self, fn, recurse: bool = True) -> "TransformerBlock":
+        """Restore safety provenance after a device or dtype transform."""
+
+        super()._apply(fn, recurse=recurse)
+        self._mark_rank_only_muon_prohibited()
+        return self
 
     def forward(
         self,
@@ -233,6 +275,7 @@ class TransformerBlock(nn.Module):
         position_ids: torch.Tensor | None = None,
         document_ids: torch.Tensor | None = None,
         residual_scale: float = 1.0,
+        force_math_attention: bool = False,
     ) -> torch.Tensor:
         scale = float(residual_scale)
         hidden = hidden + scale * self.attention(
@@ -240,6 +283,7 @@ class TransformerBlock(nn.Module):
             attention_mask=attention_mask,
             position_ids=position_ids,
             document_ids=document_ids,
+            force_math_attention=force_math_attention,
         )
         return hidden + scale * self.feed_forward(self.ffn_norm(hidden))
 
@@ -287,9 +331,27 @@ class ModifiedHadamardExpertBank(nn.Module):
         with torch.no_grad():
             self.expert_gains.normal_(mean=1.0, std=0.02)
 
-    def forward(self, hidden: torch.Tensor) -> torch.Tensor:
+    def forward(
+        self,
+        hidden: torch.Tensor,
+        *,
+        return_audit: bool = False,
+        audit_mask: torch.Tensor | None = None,
+    ) -> torch.Tensor | tuple[torch.Tensor, dict[str, torch.Tensor]]:
+        if audit_mask is not None:
+            if not return_audit:
+                raise ValueError("audit_mask requires return_audit=True")
+            if audit_mask.shape != hidden.shape[:-1]:
+                raise ValueError("audit_mask must align with hidden batch and sequence axes")
+            if audit_mask.device != hidden.device:
+                raise ValueError("audit_mask must be on the same device as hidden")
+            audit_mask = audit_mask.bool()
+            if not bool(audit_mask.any()):
+                raise ValueError("router audit requires at least one valid token")
         normalized = self.norm(hidden)
-        routing = torch.softmax(self.router(normalized).float(), dim=-1).to(dtype=hidden.dtype)
+        router_logits = self.router(normalized).float()
+        routing_float = torch.softmax(router_logits, dim=-1)
+        routing = routing_float.to(dtype=hidden.dtype)
         coefficients = fast_wht(normalized)
         expanded = coefficients.unsqueeze(-2).expand(*coefficients.shape[:-1], self.experts, -1)
         indices = self.permutations.view(
@@ -303,4 +365,21 @@ class ModifiedHadamardExpertBank(nn.Module):
         )
         expert_updates = fast_wht(filtered)
         update = (routing.unsqueeze(-1) * expert_updates).sum(dim=-2)
-        return hidden + self.layer_scale.to(dtype=hidden.dtype) * update
+        output = hidden + self.layer_scale.to(dtype=hidden.dtype) * update
+        if not return_audit:
+            return output
+        audited_logits = router_logits if audit_mask is None else router_logits[audit_mask]
+        audited_routing = routing_float if audit_mask is None else routing_float[audit_mask]
+        reduction_dims = tuple(range(audited_routing.ndim - 1))
+        load = audited_routing.mean(dim=reduction_dims)
+        entropy = -(
+            audited_routing * audited_routing.clamp_min(1e-12).log()
+        ).sum(dim=-1).mean()
+        audit = {
+            "m": audited_logits.mean().detach(),
+            "s": audited_logits.std(unbiased=False).detach(),
+            "load": load.detach(),
+            "load_std": load.std(unbiased=False).detach(),
+            "routing_entropy": entropy.detach(),
+        }
+        return output, audit

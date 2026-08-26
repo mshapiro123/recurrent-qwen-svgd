@@ -8,9 +8,9 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
-from .geometry import lanes_to_split_clifford
+from .geometry import lanes_to_modes
 from .layers import RMSNorm
-from .optim import ParameterRole, tag_optimizer_role
+from .optim import ParameterRole, mark_coupled_mode_adamw, tag_optimizer_role
 
 
 class TwoLaneBirkhoffMixer(nn.Module):
@@ -21,17 +21,37 @@ class TwoLaneBirkhoffMixer(nn.Module):
     disagreement decay without sign flips while retaining spectral norm one.
     """
 
-    def __init__(self, rho_init: float = 0.01) -> None:
+    def __init__(
+        self,
+        rho_init: float = 0.005,
+        *,
+        max_steps: int = 8,
+        retention_floor: float = 0.9,
+    ) -> None:
         super().__init__()
-        if not 0 < float(rho_init) < 0.5:
-            raise ValueError("rho_init must lie strictly between 0 and 0.5")
-        probability = 2.0 * float(rho_init)
+        if type(max_steps) is not int or max_steps < 1:
+            raise ValueError("max_steps must be a positive integer")
+        if not 0 < float(retention_floor) < 1:
+            raise ValueError("retention_floor must lie strictly between zero and one")
+        self.max_steps = max_steps
+        self.retention_floor = float(retention_floor)
+        self.rho_cap = (1.0 - self.retention_floor ** (1 / max_steps)) / 2
+        if not 0 < float(rho_init) < self.rho_cap:
+            raise ValueError(f"rho_init must lie below the retention cap {self.rho_cap:.8f}")
+        probability = float(rho_init) / self.rho_cap
         raw = math.log(probability / (1.0 - probability))
         self.raw_rho = nn.Parameter(torch.tensor(raw, dtype=torch.float32))
         tag_optimizer_role(self, "raw_rho", ParameterRole.GATE)
 
     def rho(self) -> torch.Tensor:
-        return 0.5 * torch.sigmoid(self.raw_rho)
+        return self.rho_cap * torch.sigmoid(self.raw_rho)
+
+    def minimum_retention(self, steps: int) -> torch.Tensor:
+        """Exact minimum singular-value retention after ``steps`` carries."""
+
+        if type(steps) is not int or steps < 1 or steps > self.max_steps:
+            raise ValueError("steps must lie within the carrier horizon")
+        return (1.0 - 2.0 * self.rho()).pow(steps)
 
     def matrix(self) -> torch.Tensor:
         rho = self.rho()
@@ -56,6 +76,7 @@ class PositionAlignedScratch(nn.Module):
         max_steps: int,
         layer_scale: float,
         rho_init: float,
+        retention_floor: float,
         norm_eps: float,
         use_carrier: bool,
     ) -> None:
@@ -65,15 +86,33 @@ class PositionAlignedScratch(nn.Module):
         self.max_steps = int(max_steps)
         self.hidden_norm = RMSNorm(d_model, norm_eps)
         self.lane_norm = RMSNorm(lane_width, norm_eps)
-        self.initializer = nn.Linear(d_model, 2 * lane_width, bias=False)
-        self.context_projection = nn.Linear(d_model, lane_width, bias=False)
+        self.initializer = mark_coupled_mode_adamw(
+            nn.Linear(d_model, 2 * lane_width, bias=False)
+        )
+        self.context_projection = mark_coupled_mode_adamw(
+            nn.Linear(d_model, lane_width, bias=False)
+        )
         self.step_embedding = nn.Embedding(max_steps, lane_width)
-        self.update_in = nn.Linear(2 * lane_width, 2 * lane_width, bias=False)
-        self.update_out = nn.Linear(2 * lane_width, lane_width, bias=False)
-        self.readout = nn.Linear(2 * lane_width, d_model, bias=False)
+        self.update_in = mark_coupled_mode_adamw(
+            nn.Linear(2 * lane_width, 2 * lane_width, bias=False)
+        )
+        self.update_out = mark_coupled_mode_adamw(
+            nn.Linear(2 * lane_width, lane_width, bias=False)
+        )
+        self.readout = mark_coupled_mode_adamw(
+            nn.Linear(2 * lane_width, d_model, bias=False)
+        )
         self.layer_scale = nn.Parameter(torch.full((d_model,), float(layer_scale)))
         tag_optimizer_role(self, "layer_scale", ParameterRole.GATE)
-        self.carrier = TwoLaneBirkhoffMixer(rho_init) if use_carrier else None
+        self.carrier = (
+            TwoLaneBirkhoffMixer(
+                rho_init,
+                max_steps=max_steps,
+                retention_floor=retention_floor,
+            )
+            if use_carrier
+            else None
+        )
         self.reset_parameters()
 
     def reset_parameters(self) -> None:
@@ -100,7 +139,7 @@ class PositionAlignedScratch(nn.Module):
         residual_scale: float,
     ) -> torch.Tensor:
         self._validate_alignment(hidden, lanes)
-        coordinates = lanes_to_split_clifford(lanes)
+        coordinates = lanes_to_modes(lanes)
         bridge_input = torch.cat((coordinates.mu, coordinates.delta), dim=-1)
         update = self.readout(bridge_input)
         scale = float(residual_scale) * self.layer_scale.to(dtype=hidden.dtype)

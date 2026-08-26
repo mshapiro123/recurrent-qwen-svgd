@@ -1,0 +1,69 @@
+{
+  "kind": "ablation_lm_engineering_quarantine_v1",
+  "date": "2026-08-26",
+  "status": "exact_node_quarantine_build_only",
+  "scope": "ablation_lm_engineering_gate_only",
+  "base_commit": "85bb8eae5cb70f7660b817af0b21b09b090782ef",
+  "repo_wide_green_claim_permitted": false,
+  "build_and_unit_test_work_authorized": true,
+  "tokenizer_fit_or_freeze_authorized": false,
+  "optimizer_construction_authorized": false,
+  "training_authorized": false,
+  "evaluation_panel_contact_authorized": false,
+  "sealed_partition_contact_authorized": false,
+  "sealed_files_touched": [],
+  "full_suite_expected_exit_code": 1,
+  "last_observed_full_suite": {
+    "passed": 3089,
+    "failed": 3,
+    "warnings": 19,
+    "duration_seconds": 59.82,
+    "observed_at": "2026-08-26T10:03:26-04:00"
+  },
+  "transport_repair": {
+    "core_autocrlf_observed": true,
+    "affected_paths_pinned_to_lf": 25,
+    "formerly_failing_exact_nodes_cleared": 10,
+    "method": "materialize exact HEAD blobs and add path-specific text eol=lf attributes",
+    "working_payloads_equal_head_blobs": true,
+    "registered_hashes_changed": false,
+    "governing_content_changed": false,
+    "evidence_receipt": "docs/ABLATION_LM_CORRECTIVE_ENGINEERING_RECEIPT_20260826.md"
+  },
+  "expected_failures": [
+    {
+      "node_id": "tests/test_paper2_claim_evidence_ledger.py::test_paper2_claim_evidence_paths_exist",
+      "cause": "Two legacy Paper 2 evidence-ledger output paths are absent and gitignored; one aggregate exists in an archive under a different path and one banked analysis hash has no archived file.",
+      "resolution_owner": "paper2_claim_evidence_ledger",
+      "scope_stop": "Paper and publication evidence audit remains red; no repo-wide green claim.",
+      "unblock_condition": "Restore the exact receipted outputs under written evidence-governance authority or amend the ledger through its governed process.",
+      "sealed_failure": false
+    },
+    {
+      "node_id": "tests/test_stage5_notebooks.py::test_current_bootstrap_target_markers_exist_in_launcher_files",
+      "cause": "The current bootstrap registry requires paper2_stage2b_autopsy_v2 while the target launcher identifies paper2_stage2b_autopsy_v3.",
+      "resolution_owner": "stage5_bootstrap_registry",
+      "scope_stop": "The Stage 2B autopsy bootstrap target remains stopped fail-safe.",
+      "unblock_condition": "Ratify one target version and synchronize the registry and launcher markers.",
+      "sealed_failure": false
+    },
+    {
+      "node_id": "tests/test_stage5_notebooks.py::test_current_a100_bootstrap_plain_cell_matches_markdown_code",
+      "cause": "The Python bootstrap is a strict superset of the Markdown mirror by five targets; common target configurations do not differ.",
+      "resolution_owner": "stage5_bootstrap_mirror",
+      "scope_stop": "The Markdown bootstrap must not be published, pasted, or described as current.",
+      "unblock_condition": "Regenerate or ratify the Markdown mirror from the current Python bootstrap and pass exact equality.",
+      "sealed_failure": false
+    }
+  ],
+  "d5_stop_authority": [
+    "docs/STRATEGY_2BS_RECON_ADJ_DEPTH_STUDY_20260822.md",
+    "docs/STRATEGY_2BS_DEPTH_STUDY_HANDOFF_20260822.md",
+    "docs/STRATEGY_2BS_FINAL_CELL_AUTHORIZATION_20260823.md",
+    "docs/STRATEGY_BICAMERAL_W2P_D4_RULINGS_20260825.md",
+    "docs/CODING_TO_STRATEGY_TM0_RESULT_HANDOFF_20260825.md",
+    "training/paper2_bicameral_w2p_lock.json",
+    "training/paper2_stage2bs_depth_study_lock.json"
+  ],
+  "new_lineage_stop_authority": "docs/ABLATION_LM_SUBSTRATE_CONTRACT_20260826.md"
+}
