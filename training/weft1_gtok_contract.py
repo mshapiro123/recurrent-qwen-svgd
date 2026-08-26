@@ -23,6 +23,8 @@ from numbers import Real
 import re
 from typing import Any, NoReturn
 
+from models.ablation_lm.config import AblationLMConfig
+
 
 GTOK_TRAINING_BYTE_BUDGET = 4_000_000_000
 GTOK_TRAINING_BYTE_CEILING = 4_000_000_000
@@ -151,6 +153,127 @@ def authority_bound_sha256(schema: str, value: Any) -> str:
             "schema": schema,
         }
     )
+
+
+@dataclass(frozen=True)
+class GTokProxyTopologyReceipt:
+    """Exact S0 body shared by every G-TOK vocabulary arm.
+
+    Vocabulary size and seed identities are bound separately by
+    :class:`GTokRunReceipt`.  The two middle blocks execute once as ordinary
+    dense blocks, while the recurrent loop and every current optional module
+    are structurally absent.
+    """
+
+    d_model: int = 512
+    n_heads: int = 8
+    n_kv_heads: int = 4
+    d_ff: int = 1_408
+    n_prelude_layers: int = 4
+    n_core_blocks: int = 2
+    n_coda_layers: int = 4
+    max_sequence_length: int = 2_048
+    rope_theta: float = 500_000.0
+    norm_eps: float = 1e-5
+    attention_dropout: float = 0.0
+    tie_embeddings: bool = True
+    recurrent_steps: int = 1
+    max_recurrent_steps: int = 8
+    recurrence_coefficient: float = 1.0
+    recurrence_exponent: float = 1.0
+    use_recurrence: bool = False
+    use_static_kv_core: bool = False
+    static_kv_midpoint_refresh: bool = False
+    use_front_hadamard_experts: bool = False
+    use_reentry_bridge: bool = False
+    use_scratch: bool = False
+    use_lane_carrier: bool = False
+    use_engram: bool = False
+    use_long_term_memory: bool = False
+    z_loss_coefficient: float = 0.0
+    vocabulary_binding: str = "gtok_run_arm"
+
+    def __post_init__(self) -> None:
+        expected = {
+            "d_model": 512,
+            "n_heads": 8,
+            "n_kv_heads": 4,
+            "d_ff": 1_408,
+            "n_prelude_layers": 4,
+            "n_core_blocks": 2,
+            "n_coda_layers": 4,
+            "max_sequence_length": 2_048,
+            "rope_theta": 500_000.0,
+            "norm_eps": 1e-5,
+            "attention_dropout": 0.0,
+            "tie_embeddings": True,
+            "recurrent_steps": 1,
+            "max_recurrent_steps": 8,
+            "recurrence_coefficient": 1.0,
+            "recurrence_exponent": 1.0,
+            "use_recurrence": False,
+            "use_static_kv_core": False,
+            "static_kv_midpoint_refresh": False,
+            "use_front_hadamard_experts": False,
+            "use_reentry_bridge": False,
+            "use_scratch": False,
+            "use_lane_carrier": False,
+            "use_engram": False,
+            "use_long_term_memory": False,
+            "z_loss_coefficient": 0.0,
+            "vocabulary_binding": "gtok_run_arm",
+        }
+        for name, expected_value in expected.items():
+            actual = getattr(self, name)
+            if type(actual) is not type(expected_value) or actual != expected_value:
+                raise ValueError(
+                    "G-TOK proxy topology must equal the exact ratified 4/2/4 S0 graph"
+                )
+
+    @classmethod
+    def from_config(cls, config: AblationLMConfig) -> "GTokProxyTopologyReceipt":
+        """Validate one vocabulary-arm config and return its shared body receipt."""
+
+        if not isinstance(config, AblationLMConfig):
+            raise TypeError("G-TOK proxy topology requires an AblationLMConfig")
+        if config.vocab_size not in GTOK_VOCABULARY_ARMS:
+            raise ValueError("G-TOK proxy config uses an unregistered vocabulary arm")
+        return cls(
+            d_model=config.d_model,
+            n_heads=config.n_heads,
+            n_kv_heads=config.n_kv_heads,
+            d_ff=config.d_ff,
+            n_prelude_layers=config.n_prelude_layers,
+            n_core_blocks=config.n_core_blocks,
+            n_coda_layers=config.n_coda_layers,
+            max_sequence_length=config.max_sequence_length,
+            rope_theta=float(config.rope_theta),
+            norm_eps=float(config.norm_eps),
+            attention_dropout=float(config.attention_dropout),
+            tie_embeddings=config.tie_embeddings,
+            recurrent_steps=config.recurrent_steps,
+            max_recurrent_steps=config.max_recurrent_steps,
+            recurrence_coefficient=float(config.recurrence_coefficient),
+            recurrence_exponent=float(config.recurrence_exponent),
+            use_recurrence=config.use_recurrence,
+            use_static_kv_core=config.use_static_kv_core,
+            static_kv_midpoint_refresh=config.static_kv_midpoint_refresh,
+            use_front_hadamard_experts=config.use_front_hadamard_experts,
+            use_reentry_bridge=config.use_reentry_bridge,
+            use_scratch=config.use_scratch,
+            use_lane_carrier=config.use_lane_carrier,
+            use_engram=config.use_engram,
+            use_long_term_memory=config.use_long_term_memory,
+            z_loss_coefficient=float(config.z_loss_coefficient),
+        )
+
+    @property
+    def receipt_sha256(self) -> str:
+        return authority_bound_sha256("weft1_gtok_proxy_topology_v1", self)
+
+
+GTOK_PROXY_TOPOLOGY = GTokProxyTopologyReceipt()
+GTOK_PROXY_TOPOLOGY_SHA256 = GTOK_PROXY_TOPOLOGY.receipt_sha256
 
 
 def sha256_bytes(value: bytes) -> str:
@@ -703,6 +826,10 @@ class GTokRunReceipt:
         _require_sha256(self.training_corpus_sha256, "training_corpus_sha256")
         _require_sha256(self.tokenizer_artifact_sha256, "tokenizer_artifact_sha256")
         _require_sha256(self.model_topology_sha256, "model_topology_sha256")
+        if self.model_topology_sha256 != GTOK_PROXY_TOPOLOGY_SHA256:
+            raise ValueError(
+                "run topology must equal the exact ratified G-TOK 4/2/4 S0 receipt"
+            )
         _require_sha256(
             self.initialization_recipe_sha256,
             "initialization_recipe_sha256",
@@ -1227,6 +1354,8 @@ __all__ = [
     "GTOK_COMPUTE_STATUSES",
     "GTOK_ENGLISH_SCOPE_SHA256",
     "GTOK_HANDOFF_SHA256",
+    "GTOK_PROXY_TOPOLOGY",
+    "GTOK_PROXY_TOPOLOGY_SHA256",
     "GTOK_ROUND_TRIP_CATEGORIES",
     "GTOK_RULINGS_SHA256",
     "GTOK_SEED_COUNT",
@@ -1238,6 +1367,7 @@ __all__ = [
     "GTokComputeEventReceipt",
     "GTokComputeReceipt",
     "GTokExecutionBlocked",
+    "GTokProxyTopologyReceipt",
     "GTokRunReceipt",
     "StratumNllReceipt",
     "TokenizerArtifactSnapshot",

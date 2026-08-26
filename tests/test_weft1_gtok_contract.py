@@ -6,6 +6,7 @@ import math
 
 import pytest
 
+from models.ablation_lm.config import AblationLMConfig
 from training.weft1_gtok_contract import (
     AppendOnlyExtensionBasisReceipt,
     AppendOnlyCorpusExtensionReceipt,
@@ -24,6 +25,8 @@ from training.weft1_gtok_contract import (
     GTokComputeReceipt,
     GTOK_ENGLISH_SCOPE_SHA256,
     GTOK_HANDOFF_SHA256,
+    GTOK_PROXY_TOPOLOGY,
+    GTOK_PROXY_TOPOLOGY_SHA256,
     GTOK_ROUND_TRIP_CATEGORIES,
     GTOK_RULINGS_SHA256,
     GTOK_SEED_COUNT,
@@ -33,6 +36,7 @@ from training.weft1_gtok_contract import (
     GTOK_VOCABULARY_ARMS,
     GTokComputeEventReceipt,
     GTokExecutionBlocked,
+    GTokProxyTopologyReceipt,
     GTokRunReceipt,
     StratumNllReceipt,
     TokenizerArtifactSnapshot,
@@ -51,6 +55,15 @@ from training.weft1_gtok_contract import (
 
 def _hash(label: str) -> str:
     return sha256_bytes(label.encode("utf-8"))
+
+
+def _gtok_proxy_config(vocab_size: int = 32_768) -> AblationLMConfig:
+    return AblationLMConfig(
+        vocab_size=vocab_size,
+        n_prelude_layers=4,
+        n_core_blocks=2,
+        n_coda_layers=4,
+    )
 
 
 def _optimizer(*, learning_rate: float = 3e-4) -> FlatAdamWRecipe:
@@ -99,7 +112,7 @@ def _runs(*, optimizer: FlatAdamWRecipe | None = None) -> tuple[GTokRunReceipt, 
             corpus_manifest_sha256=manifest.manifest_sha256,
             training_corpus_sha256=manifest.training_corpus_sha256,
             tokenizer_artifact_sha256=_hash(f"tokenizer-{vocab_size}"),
-            model_topology_sha256=_hash("proxy-model-topology"),
+            model_topology_sha256=GTOK_PROXY_TOPOLOGY_SHA256,
             initialization_recipe_sha256=_hash("initialization-recipe"),
             initialization_seed=10_000 + seed,
             shared_initial_state_sha256=_hash(f"shared-initial-state-{seed}"),
@@ -332,6 +345,75 @@ def test_binding_authority_chain_and_screen_constants_are_exact() -> None:
     assert validate_a100_hour_tripwire(12.0) == 12.0
     with pytest.raises(RuntimeError, match="12 A100-hour"):
         validate_a100_hour_tripwire(12.000_001)
+
+
+def test_gtok_proxy_topology_is_exact_authority_bound_and_vocab_independent() -> None:
+    assert GTOK_PROXY_TOPOLOGY_SHA256 == (
+        "b7feb601cb71fc216d6198b57fdb0a345c601184210402be0407915473bf5bac"
+    )
+    assert GTOK_PROXY_TOPOLOGY.receipt_sha256 == authority_bound_sha256(
+        "weft1_gtok_proxy_topology_v1",
+        GTOK_PROXY_TOPOLOGY,
+    )
+    assert GTOK_PROXY_TOPOLOGY.receipt_sha256 != canonical_sha256(GTOK_PROXY_TOPOLOGY)
+    assert (
+        GTOK_PROXY_TOPOLOGY.n_prelude_layers,
+        GTOK_PROXY_TOPOLOGY.n_core_blocks,
+        GTOK_PROXY_TOPOLOGY.n_coda_layers,
+    ) == (4, 2, 4)
+    assert GTOK_PROXY_TOPOLOGY.vocabulary_binding == "gtok_run_arm"
+    assert all(
+        getattr(GTOK_PROXY_TOPOLOGY, name) is False
+        for name in (
+            "use_recurrence",
+            "use_static_kv_core",
+            "static_kv_midpoint_refresh",
+            "use_front_hadamard_experts",
+            "use_reentry_bridge",
+            "use_scratch",
+            "use_lane_carrier",
+            "use_engram",
+            "use_long_term_memory",
+        )
+    )
+    for vocab_size in GTOK_VOCABULARY_ARMS:
+        assert GTokProxyTopologyReceipt.from_config(
+            _gtok_proxy_config(vocab_size)
+        ) == GTOK_PROXY_TOPOLOGY
+
+
+@pytest.mark.parametrize(
+    "changes",
+    (
+        {"n_prelude_layers": 3, "n_core_blocks": 4, "n_coda_layers": 3},
+        {"use_front_hadamard_experts": True},
+        {"use_recurrence": True},
+        {"use_recurrence": True, "use_static_kv_core": True},
+        {
+            "use_recurrence": True,
+            "use_static_kv_core": True,
+            "static_kv_midpoint_refresh": True,
+        },
+        {"use_recurrence": True, "use_reentry_bridge": True},
+        {"use_scratch": True},
+        {"use_scratch": True, "use_lane_carrier": True},
+        {"use_engram": True},
+        {"use_long_term_memory": True},
+        {"z_loss_coefficient": 1e-4},
+    ),
+)
+def test_gtok_proxy_topology_rejects_graph_drift(changes: dict[str, object]) -> None:
+    with pytest.raises(ValueError, match="exact ratified 4/2/4 S0 graph"):
+        GTokProxyTopologyReceipt.from_config(replace(_gtok_proxy_config(), **changes))
+
+
+def test_gtok_runs_reject_a_common_but_wrong_topology_hash() -> None:
+    with pytest.raises(ValueError, match="exact ratified G-TOK 4/2/4 S0 receipt"):
+        replace(_runs()[0], model_topology_sha256=_hash("wrong-common-topology"))
+    with pytest.raises(ValueError, match="exact ratified 4/2/4 S0 graph"):
+        GTokProxyTopologyReceipt(use_recurrence=0)  # type: ignore[arg-type]
+    with pytest.raises(ValueError, match="exact ratified 4/2/4 S0 graph"):
+        GTokProxyTopologyReceipt(attention_dropout=0.1)
 
 
 def test_bpb_uses_raw_bytes_and_pools_nll_before_division() -> None:
