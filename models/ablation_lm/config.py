@@ -159,8 +159,6 @@ class AblationLMConfig:
             raise ValueError("the lane carrier requires the position-aligned scratch arm")
         if self.use_reentry_bridge and not self.use_recurrence:
             raise ValueError("the re-entry bridge requires structural recurrence")
-        if self.use_reentry_bridge and self.recurrent_steps < 2:
-            raise ValueError("the re-entry bridge requires at least two recurrent visits")
         if self.use_static_kv_core and not self.use_recurrence:
             raise ValueError("static core KV requires structural recurrence")
         if self.static_kv_midpoint_refresh and not self.use_static_kv_core:

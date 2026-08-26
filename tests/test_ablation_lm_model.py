@@ -968,6 +968,57 @@ def test_forward_rejects_silent_label_and_recurrence_coercions() -> None:
         model(tokens, labels=torch.tensor([[1, 2, 64]]))
 
 
+def test_one_active_checkpoint_keeps_recurrent_k_inference_controllable() -> None:
+    torch.manual_seed(122)
+    config = _tiny_config(
+        use_recurrence=True,
+        recurrent_steps=1,
+        recurrence_coefficient=0.75,
+        use_reentry_bridge=True,
+    )
+    model = _model(config).eval()
+    assert model.reentry_bridge is not None
+    tokens = torch.randint(0, config.vocab_size, (2, 7))
+
+    expected_bridge_visits = {1: 0, 2: 1, 4: 3}
+    outputs = {}
+    with patch.object(
+        model.reentry_bridge,
+        "forward",
+        wraps=model.reentry_bridge.forward,
+    ) as bridge_forward:
+        previous_calls = 0
+        for steps in (1, 2, 4):
+            output = model(tokens, recurrent_steps=steps, return_diagnostics=True)
+            outputs[steps] = output.logits
+            assert model.config.recurrent_steps == 1
+            assert output.diagnostics["alpha_t"] == pytest.approx(0.75 / steps)
+            receipt = output.diagnostics["composition_receipt"]
+            assert receipt["requested_visits"] == steps
+            assert receipt["executed_visits"] == steps
+            assert output.diagnostics["reentry_bridge_requested"] is True
+            assert (
+                output.diagnostics["reentry_bridge_executed_visits"]
+                == expected_bridge_visits[steps]
+            )
+            assert bridge_forward.call_count - previous_calls == expected_bridge_visits[steps]
+            previous_calls = bridge_forward.call_count
+
+    with patch.object(model, "reentry_bridge", None):
+        bypassed = model(tokens, recurrent_steps=1, return_diagnostics=True)
+        assert bypassed.diagnostics["reentry_bridge_executed_visits"] == 0
+    torch.testing.assert_close(outputs[1], bypassed.logits, rtol=0, atol=0)
+    assert model.reentry_bridge is not None
+    assert model.config.recurrent_steps == 1
+
+    with pytest.raises(ValueError, match="configured recurrence cap"):
+        model(tokens, recurrent_steps=0)
+    with pytest.raises(ValueError, match="configured recurrence cap"):
+        model(tokens, recurrent_steps=config.max_recurrent_steps + 1)
+    with pytest.raises(TypeError, match="recurrent_steps"):
+        model(tokens, recurrent_steps=2.0)
+
+
 def test_z_loss_uses_the_same_valid_next_token_mask_as_cross_entropy() -> None:
     model = _model(_tiny_config(z_loss_coefficient=0.1))
     logits = torch.randn(1, 5, 64, requires_grad=True)

@@ -717,8 +717,6 @@ class AblationLM(nn.Module):
         if self.config.use_recurrence:
             steps = self.config.recurrent_steps if recurrent_steps is None else recurrent_steps
             alpha = self.config.recurrence_scale(steps)
-            if self.reentry_bridge is not None and steps < 2:
-                raise ValueError("the active re-entry bridge requires at least two visits")
         else:
             if recurrent_steps not in (None, 1):
                 raise ValueError("recurrent_steps override requires structural recurrence")
@@ -918,6 +916,10 @@ class AblationLM(nn.Module):
             diagnostics["recurrence_enabled"] = self.config.use_recurrence
             diagnostics["executed_core_visits"] = steps
             diagnostics["executed_core_block_passes"] = steps * len(self.core_blocks)
+            diagnostics["reentry_bridge_requested"] = self.config.use_reentry_bridge
+            diagnostics["reentry_bridge_executed_visits"] = (
+                max(steps - 1, 0) if self.reentry_bridge is not None else 0
+            )
             diagnostics["static_core_kv_enabled"] = self.config.use_static_kv_core
             diagnostics["main_graph_core_kv_projection_events"] = (
                 core_kv_projection_events
