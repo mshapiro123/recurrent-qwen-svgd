@@ -44,7 +44,21 @@ from .diagnostics import (
 from .geometry import Cl20Rotor, LaneModeState, cl20_rotate, lanes_to_modes
 from .hadamard import orthonormal_wht, sequency_permutation, wht
 from .model import AblationLM, AblationLMOutput
-from .observatory import ObservatoryBlocked, ObservatoryGuard, T14bReceipt
+from .observatory import (
+    ObservatoryBlocked,
+    ObservatoryGuard,
+    T14B_MEASUREMENT_ALGORITHM_SHA256,
+    T14B_REGISTERED_K_VALUES,
+    T14bGradientEvidence,
+    T14bReceipt,
+    measure_t14b_future_gradients,
+)
+from .rng import (
+    ModuleRNGStream,
+    construct_with_isolated_rng,
+    derive_module_seed,
+    isolated_module_rng,
+)
 
 __all__ = [
     "AblationLM",
@@ -56,6 +70,7 @@ __all__ = [
     "EmpiricalCarrierRetentionReceipt",
     "HemisphereGradientCosineReceipt",
     "LaneModeState",
+    "ModuleRNGStream",
     "ObservatoryBlocked",
     "ObservatoryGuard",
     "ParameterAccounting",
@@ -72,19 +87,26 @@ __all__ = [
     "REGISTERED_TARGET_BLOCK_SPLITS",
     "TOKENIZER_VOCAB_CANDIDATES",
     "SwapLinear",
+    "T14B_MEASUREMENT_ALGORITHM_SHA256",
+    "T14B_REGISTERED_K_VALUES",
     "T14bReceipt",
+    "T14bGradientEvidence",
     "TokenizerScaleAccounting",
     "TokenizerScreenAccounting",
     "TokenizerTargetDecisionContract",
     "composition_receipt",
+    "construct_with_isolated_rng",
+    "derive_module_seed",
     "estimate_dense_unique_parameters",
     "lexical_parameter_share",
+    "measure_t14b_future_gradients",
     "orthonormal_wht",
     "cl20_rotate",
     "lanes_to_modes",
     "parameter_accounting",
     "empirical_disagreement_retention_receipt",
     "hemisphere_gradient_cosine_receipt",
+    "isolated_module_rng",
     "registered_mu_r_configs",
     "registered_proxy_reallocation_configs",
     "registered_target_configs",
