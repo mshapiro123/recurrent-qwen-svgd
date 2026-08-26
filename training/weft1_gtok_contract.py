@@ -1,4 +1,4 @@
-"""Choice-independent contracts for the LOOM-1 G-TOK screen.
+"""Choice-independent contracts for the WEFT-1 G-TOK screen.
 
 This module is deliberately infrastructure-only.  It does not fit a tokenizer,
 construct an optimizer, train a model, read a corpus, freeze an artifact, or
@@ -365,7 +365,7 @@ class CorpusAuditManifestReceipt:
 
     @property
     def manifest_sha256(self) -> str:
-        return authority_bound_sha256("loom1_gtok_corpus_audit_v1", self)
+        return authority_bound_sha256("weft1_gtok_corpus_audit_v1", self)
 
 
 def _validate_named_values(
@@ -426,7 +426,7 @@ class FlatAdamWRecipe:
 
     @property
     def recipe_sha256(self) -> str:
-        return authority_bound_sha256("loom1_gtok_flat_adamw_v1", self)
+        return authority_bound_sha256("weft1_gtok_flat_adamw_v1", self)
 
 
 def assert_identical_flat_adamw(recipes: tuple[FlatAdamWRecipe, ...]) -> FlatAdamWRecipe:
@@ -586,7 +586,7 @@ class BaseTokenizerContractReceipt:
 
     @property
     def contract_sha256(self) -> str:
-        return authority_bound_sha256("loom1_gtok_base_tokenizer_v1", self)
+        return authority_bound_sha256("weft1_gtok_base_tokenizer_v1", self)
 
 
 @dataclass(frozen=True)
@@ -635,7 +635,7 @@ class GTokComputeEventReceipt:
 
     @property
     def receipt_sha256(self) -> str:
-        return authority_bound_sha256("loom1_gtok_compute_event_v1", self)
+        return authority_bound_sha256("weft1_gtok_compute_event_v1", self)
 
 
 @dataclass(frozen=True)
@@ -666,7 +666,7 @@ class GTokComputeReceipt:
 
     @property
     def receipt_sha256(self) -> str:
-        return authority_bound_sha256("loom1_gtok_compute_ledger_v1", self)
+        return authority_bound_sha256("weft1_gtok_compute_ledger_v1", self)
 
 
 @dataclass(frozen=True)
@@ -744,7 +744,7 @@ class GTokRunReceipt:
 
     @property
     def receipt_sha256(self) -> str:
-        return authority_bound_sha256("loom1_gtok_run_v1", self)
+        return authority_bound_sha256("weft1_gtok_run_v1", self)
 
 
 @dataclass(frozen=True)
@@ -936,7 +936,7 @@ def validate_complete_gtok_bpb_receipts(
 
     ordered_runs = tuple(sorted(runs, key=lambda run: (run.vocab_size, run.seed)))
     return ValidatedGTokBpbMatrix(
-        schema="loom1_gtok_bpb_matrix_v1",
+        schema="weft1_gtok_bpb_matrix_v1",
         authority_chain=GTOK_AUTHORITY_CHAIN,
         vocab_sizes=GTOK_VOCABULARY_ARMS,
         seeds=seeds,
@@ -1060,7 +1060,7 @@ class TokenizerArtifactSnapshot:
     @property
     def token_id_manifest_sha256(self) -> str:
         return authority_bound_sha256(
-            "loom1_token_id_meanings_v1",
+            "weft1_token_id_meanings_v1",
             {
                 "bytes": self.id_to_token_bytes_sha256,
                 "metadata": self.id_to_token_metadata_sha256,
@@ -1115,7 +1115,7 @@ class AppendOnlyCorpusExtensionReceipt:
 
     @property
     def receipt_sha256(self) -> str:
-        return authority_bound_sha256("loom1_append_only_corpus_extension_v1", self)
+        return authority_bound_sha256("weft1_append_only_corpus_extension_v1", self)
 
 
 @dataclass(frozen=True)

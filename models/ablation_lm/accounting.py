@@ -111,7 +111,7 @@ class TokenizerScreenAccounting:
     @property
     def selection_vocabulary_share(self) -> float:
         raise RuntimeError(
-            "LOOM-1 tokenizer selection requires exact full-model target composition "
+            "WEFT-1 tokenizer selection requires exact full-model target composition "
             "and a resolved G-TOK selector; S0 dense rows cannot freeze a tokenizer"
         )
 
@@ -342,10 +342,10 @@ def composition_receipt(
     executed_visits: float,
     sidecar_firing_fraction_by_step: tuple[float, ...] = (),
 ) -> CompositionReceipt:
-    """Derive the binding LOOM-1 capacity receipt without double-counting ties.
+    """Derive the binding WEFT-1 capacity receipt without double-counting ties.
 
     Dynamic active-equivalent accounting fails visibly when the current legacy
-    recurrent auxiliaries do not fit the final LOOM-1 ``N_fixed + K*N_recurrent``
+    recurrent auxiliaries do not fit the final WEFT-1 ``N_fixed + K*N_recurrent``
     taxonomy.  This prevents a provisional estimate from becoming a receipt.
     """
 

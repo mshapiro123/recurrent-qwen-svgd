@@ -6,7 +6,7 @@ import math
 
 import pytest
 
-from training.loom1_gtok_contract import (
+from training.weft1_gtok_contract import (
     AppendOnlyExtensionBasisReceipt,
     AppendOnlyCorpusExtensionReceipt,
     BaseTokenizerContractReceipt,
@@ -358,7 +358,7 @@ def test_complete_receipts_require_every_arm_seed_and_milestone() -> None:
     runs = _runs()
     matrix = _validate_bpb(runs)
 
-    assert matrix.schema == "loom1_gtok_bpb_matrix_v1"
+    assert matrix.schema == "weft1_gtok_bpb_matrix_v1"
     assert matrix.authority_chain == GTOK_AUTHORITY_CHAIN
     assert matrix.vocab_sizes == GTOK_VOCABULARY_ARMS
     assert matrix.seeds == (101, 202)
@@ -626,7 +626,7 @@ def test_receipt_hashes_are_authority_and_schema_bound() -> None:
 
     assert manifest.manifest_sha256 != canonical_sha256(manifest)
     assert manifest.manifest_sha256 == authority_bound_sha256(
-        "loom1_gtok_corpus_audit_v1",
+        "weft1_gtok_corpus_audit_v1",
         manifest,
     )
     assert manifest.manifest_sha256 != authority_bound_sha256(
@@ -634,15 +634,15 @@ def test_receipt_hashes_are_authority_and_schema_bound() -> None:
         manifest,
     )
     assert compute.events[0].receipt_sha256 == authority_bound_sha256(
-        "loom1_gtok_compute_event_v1",
+        "weft1_gtok_compute_event_v1",
         compute.events[0],
     )
     assert compute.receipt_sha256 == authority_bound_sha256(
-        "loom1_gtok_compute_ledger_v1",
+        "weft1_gtok_compute_ledger_v1",
         compute,
     )
     assert runs[0].receipt_sha256 == authority_bound_sha256(
-        "loom1_gtok_run_v1",
+        "weft1_gtok_run_v1",
         runs[0],
     )
     assert matrix.receipt_sha256 == authority_bound_sha256(matrix.schema, matrix)
@@ -693,7 +693,7 @@ def test_corpus_manifest_enforces_c1_c2_c3_without_reading_data() -> None:
 
     assert len(manifest.manifest_sha256) == 64
     assert manifest.manifest_sha256 == authority_bound_sha256(
-        "loom1_gtok_corpus_audit_v1",
+        "weft1_gtok_corpus_audit_v1",
         manifest,
     )
     assert tuple(item.name for item in manifest.strata) == GTOK_STRATA
