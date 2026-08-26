@@ -336,3 +336,27 @@ def test_zero_dropout_and_full_width_contracts_are_structural() -> None:
             projected_kv=cache,
             attention_mask=torch.ones(2, 4, dtype=torch.long),
         )
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "error"),
+    [
+        ("rope_theta", True, TypeError),
+        ("rope_theta", "500000", TypeError),
+        ("rope_theta", 1.0, ValueError),
+        ("rope_theta", float("inf"), ValueError),
+        ("rope_theta", float("nan"), ValueError),
+        ("norm_eps", False, TypeError),
+        ("norm_eps", "1e-5", TypeError),
+        ("norm_eps", 0.0, ValueError),
+        ("norm_eps", -1e-5, ValueError),
+        ("norm_eps", float("nan"), ValueError),
+    ],
+)
+def test_rope_and_norm_scalars_fail_closed(
+    field: str,
+    value: object,
+    error: type[Exception],
+) -> None:
+    with pytest.raises(error):
+        _tiny_block(**{field: value})

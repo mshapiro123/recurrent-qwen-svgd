@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
+from numbers import Real
 
 import torch
 import torch.nn.functional as F
@@ -21,6 +22,16 @@ def _positive_integer(value: int, *, name: str) -> int:
     if type(value) is not int or value < 1:
         raise ValueError(f"{name} must be a positive integer")
     return value
+
+
+def _finite_real_above(value: float, *, name: str, floor: float) -> float:
+    if isinstance(value, bool) or not isinstance(value, Real):
+        raise TypeError(f"{name} must be a real scalar")
+    converted = float(value)
+    if not math.isfinite(converted) or converted <= floor:
+        qualifier = "one" if floor == 1.0 else "zero"
+        raise ValueError(f"{name} must be finite and greater than {qualifier}")
+    return converted
 
 
 @dataclass(frozen=True)
@@ -77,6 +88,16 @@ class BicameralTransformerBlock(nn.Module):
         self.max_sequence_length = _positive_integer(
             max_sequence_length,
             name="max_sequence_length",
+        )
+        rope_theta = _finite_real_above(
+            rope_theta,
+            name="rope_theta",
+            floor=1.0,
+        )
+        norm_eps = _finite_real_above(
+            norm_eps,
+            name="norm_eps",
+            floor=0.0,
         )
         self.rank = _positive_integer(rank, name="rank")
         if self.d_model % self.n_heads:
