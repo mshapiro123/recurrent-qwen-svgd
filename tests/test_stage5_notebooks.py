@@ -4237,7 +4237,7 @@ def test_paper2_recirculation_phase_a_target_is_wired_and_guarded() -> None:
         assert "locked score-only Phase-A heatmap refinement and battery no optimizer" in text
         assert "NVIDIA A100-SXM4-40GB" in text
         assert "tests/test_paper2_recirculation.py" in text
-        assert "colab/run_stage5_paper2_recirculation_phase_a.py" in text
+        assert "colab.run_stage5_paper2_recirculation_phase_a" in text
         assert "runtime.unassign" in text
 
     assert "recirculation_phase_a_transport=cli_archives_no_drive_mount" in cell

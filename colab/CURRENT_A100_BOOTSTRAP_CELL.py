@@ -216,7 +216,7 @@ TARGETS = {
             "locked score-only Phase-A heatmap refinement and battery no optimizer",
             "NVIDIA A100-SXM4-40GB",
             "tests/test_paper2_recirculation.py",
-            "colab/run_stage5_paper2_recirculation_phase_a.py",
+            "colab.run_stage5_paper2_recirculation_phase_a",
             "recirculation_phase_a_transport=cli_archives_no_drive_mount",
             "runtime.unassign",
         ],

@@ -81,7 +81,10 @@ run(
     cwd=ROOT,
 )
 run([sys.executable, "-m", "pytest", "-q", *TESTS], cwd=ROOT)
-run([sys.executable, "-u", "colab/run_stage5_paper2_recirculation_phase_a.py"], cwd=ROOT)
+run(
+    [sys.executable, "-u", "-m", "colab.run_stage5_paper2_recirculation_phase_a"],
+    cwd=ROOT,
+)
 
 print("paper2_recirculation_phase_a_complete=true", flush=True)
 if os.environ.get("RECIRCULATION_KEEP_RUNTIME", "0").strip().lower() not in {
