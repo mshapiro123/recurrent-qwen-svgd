@@ -1,0 +1,38 @@
+{
+  "artifacts": [
+    {
+      "bytes": 10694,
+      "drive_id": "18CiskWPvjxWOaAdi-GmPaKrMxewSwVXm",
+      "filename": "CODING_TO_STRATEGY_RECIRCULATION_PHASE0_RESULT_HANDOFF_20260827.md",
+      "sha256": "6e8f628b7b735b2ed1b9a80992fe79da0764cb632518988a7e538888ac22d154",
+      "url": "https://drive.google.com/file/d/18CiskWPvjxWOaAdi-GmPaKrMxewSwVXm/view"
+    },
+    {
+      "bytes": 4112,
+      "drive_id": "1Mv3aiGWW1dKRH4YBNt0FJ7mv9zwgtC2I",
+      "filename": "PAPER2_RECIRCULATION_PHASE0_RESULT_HANDOFF_20260827.receipt.json",
+      "sha256": "bb74bc7f175d79564c797fccd477bc13e12abd10408a389a67d3d37e7055aade",
+      "url": "https://drive.google.com/file/d/1Mv3aiGWW1dKRH4YBNt0FJ7mv9zwgtC2I/view"
+    },
+    {
+      "bytes": 4138,
+      "drive_id": "1-acrf95DP9cflWIY-ofs6LD_i7J4pMh2",
+      "filename": "PAPER2_RECIRCULATION_PHASE0_CHURN_DESK_RIDER_20260827.json",
+      "sha256": "cc6bcef4d5fcfe241a496257aece6a6a660f47d700dabd0b67c1153b69fa11b3",
+      "url": "https://drive.google.com/file/d/1-acrf95DP9cflWIY-ofs6LD_i7J4pMh2/view"
+    },
+    {
+      "bytes": 602548,
+      "drive_id": "1y5lc8P2WkXvUzgMm2MtnKfLs0h5MyuXF",
+      "filename": "PAPER2_RECIRCULATION_PHASE0_COMPLETION_ARCHIVE_20260827.tar.gz",
+      "sha256": "268ea5089e3143553a1b2ae149dc6c2eec6f3656be5cea3cc2133bec167ab3f3",
+      "url": "https://drive.google.com/file/d/1y5lc8P2WkXvUzgMm2MtnKfLs0h5MyuXF/view"
+    }
+  ],
+  "date": "2026-08-27",
+  "download_verification": "all Drive raw-file bytes matched local SHA-256 values",
+  "kind": "paper2_recirculation_phase0_result_publication_receipt_v1",
+  "parent_folder_id": "1aSbU2i8JZ37g5bJpyweLuvFaV0y92Qjr",
+  "repo_commit_before_publication_receipt": "dee0184c98e7bf8a25818e37c097098445ea7ec0",
+  "status": "published_byte_verified"
+}
