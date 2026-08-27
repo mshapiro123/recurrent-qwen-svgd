@@ -4184,7 +4184,7 @@ def test_paper2_recirculation_phase0_target_is_wired_and_guarded() -> None:
     for text in (bootstrap, bootstrap_md):
         assert '"paper2_recirculation_phase0"' in text
         assert "colab/STAGE5_PAPER2_RECIRCULATION_PHASE0_CELL.py" in text
-        assert "paper2_recirculation_phase0_v1" in text
+        assert "paper2_recirculation_phase0_v2_cli_transport" in text
         assert "score-only serial first-pass-readout recirculation Phase 0 no optimizer" in text
         assert "NVIDIA A100-SXM4-40GB" in text
         assert "google/gemma-3-1b-pt" in text
@@ -4193,6 +4193,7 @@ def test_paper2_recirculation_phase0_target_is_wired_and_guarded() -> None:
         assert "runtime.unassign" in text
 
     assert "HF_TOKEN is required" in cell
+    assert "recirculation_transport=cli_download_then_local_rclone" in cell
     assert "transformers==5.14.1" in cell
     assert "datasets==5.0.0" in cell
     assert "phase0_pass_awaiting_relay" in runner

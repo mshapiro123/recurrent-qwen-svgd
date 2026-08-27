@@ -14,7 +14,7 @@ import torch
 from google.colab import drive, runtime, userdata
 
 
-STAGE5_PAPER2_RECIRCULATION_PHASE0_VERSION = "paper2_recirculation_phase0_v1"
+STAGE5_PAPER2_RECIRCULATION_PHASE0_VERSION = "paper2_recirculation_phase0_v2_cli_transport"
 MODE = "score-only serial first-pass-readout recirculation Phase 0 no optimizer"
 REPO = "mshapiro123/recurrent-qwen-svgd"
 REF = os.environ["STAGE5_BOOTSTRAP_REF"]
@@ -34,15 +34,22 @@ def run(command: list[str], *, cwd: Path | None = None) -> None:
     subprocess.run(command, cwd=cwd, check=True)
 
 
-for attempt in range(2):
-    try:
-        drive.mount("/content/drive", force_remount=bool(attempt))
-        break
-    except ValueError:
-        if attempt:
-            raise
-        print("Drive mount failed once; retrying with force_remount=True.", flush=True)
-        time.sleep(2)
+if os.environ.get("RECIRCULATION_SKIP_DRIVE_MOUNT", "0").strip().lower() in {
+    "1",
+    "true",
+    "yes",
+}:
+    print("recirculation_transport=cli_download_then_local_rclone", flush=True)
+else:
+    for attempt in range(2):
+        try:
+            drive.mount("/content/drive", force_remount=bool(attempt))
+            break
+        except ValueError:
+            if attempt:
+                raise
+            print("Drive mount failed once; retrying with force_remount=True.", flush=True)
+            time.sleep(2)
 
 run(["nvidia-smi"])
 name = torch.cuda.get_device_name(0) if torch.cuda.is_available() else ""

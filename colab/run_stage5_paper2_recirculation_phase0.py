@@ -8,6 +8,7 @@ import os
 import shutil
 import subprocess
 import sys
+import tarfile
 import time
 import traceback
 from pathlib import Path
@@ -73,6 +74,29 @@ def file_receipts(root: Path) -> dict[str, dict[str, Any]]:
         for path in sorted(root.rglob("*"))
         if path.is_file()
     }
+
+
+def archive_artifacts(root: Path) -> dict[str, Any]:
+    export_path = Path(
+        os.environ.get(
+            "RECIRCULATION_EXPORT_PATH",
+            "/content/recirculation-phase0-artifacts.tar.gz",
+        )
+    )
+    with tarfile.open(export_path, "w:gz") as archive:
+        archive.add(root, arcname=STAGE)
+    receipt = {
+        "path": str(export_path),
+        "bytes": export_path.stat().st_size,
+        "sha256": sha256_file(export_path),
+    }
+    print(
+        "recirculation_export "
+        f"path={receipt['path']} bytes={receipt['bytes']} "
+        f"sha256={receipt['sha256']}",
+        flush=True,
+    )
+    return receipt
 
 
 def main() -> int:
@@ -208,6 +232,7 @@ def main() -> int:
             ).strip(),
         )
         atomic_json(status_path, status)
+        archive_artifacts(drive_root)
         print(json.dumps(status, indent=2, sort_keys=True), flush=True)
         return 0
     except Exception as error:
@@ -224,6 +249,10 @@ def main() -> int:
             ),
         )
         atomic_json(status_path, status)
+        try:
+            archive_artifacts(drive_root)
+        except Exception as archive_error:
+            print(f"recirculation_export_failed={archive_error}", flush=True)
         print(json.dumps(status, indent=2, sort_keys=True), flush=True)
         return 1
 
