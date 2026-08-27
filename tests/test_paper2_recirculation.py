@@ -21,6 +21,7 @@ from eval.eval_paper2_recirculation_phase0 import (
 )
 from eval.eval_paper2_recirculation_phase_a import (
     CellSpec,
+    canonical_lf_receipt,
     coarse_pairs,
     coarse_specs,
     expected_total_seconds,
@@ -379,6 +380,12 @@ def test_phase_a_grid_and_refinement_counts_are_locked() -> None:
     assert expected_total_seconds(lock, 111) == pytest.approx(
         lock["phase0"]["projected_total_seconds"], abs=1e-9
     )
+    root = Path(__file__).resolve().parents[1]
+    summary = lock["phase0"]["public_summary"]
+    assert canonical_lf_receipt(root / summary["path"]) == {
+        "bytes": summary["canonical_lf_bytes"],
+        "sha256": summary["canonical_lf_sha256"],
+    }
 
 
 def test_phase_a_selector_prefers_a_connected_region_over_an_isolated_peak() -> None:

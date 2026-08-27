@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import csv
 import gc
+import hashlib
 import itertools
 import json
 import math
@@ -662,6 +663,16 @@ def _verify_authorities(lock: Mapping[str, Any], repo_root: Path) -> None:
             raise RuntimeError(f"Phase-A authority identity changed: {authority['filename']}")
 
 
+def canonical_lf_receipt(path: Path) -> dict[str, Any]:
+    normalized = path.read_bytes().replace(b"\r\n", b"\n")
+    if b"\r" in normalized:
+        raise RuntimeError(f"unauthorized carriage return in {path}")
+    return {
+        "bytes": len(normalized),
+        "sha256": hashlib.sha256(normalized).hexdigest(),
+    }
+
+
 def _status_elapsed(status: Mapping[str, Any]) -> float:
     return float(status.get("phase_a_elapsed_seconds", 0.0))
 
@@ -686,11 +697,11 @@ def main() -> int:
         raise RuntimeError("recirculation Phase-A lock is over-authorized")
     _verify_authorities(lock, args.repo_root)
     public_summary_path = args.repo_root / lock["phase0"]["public_summary"]["path"]
-    if file_receipt(public_summary_path) != {
-        "bytes": int(lock["phase0"]["public_summary"]["bytes"]),
-        "sha256": str(lock["phase0"]["public_summary"]["sha256"]),
+    if canonical_lf_receipt(public_summary_path) != {
+        "bytes": int(lock["phase0"]["public_summary"]["canonical_lf_bytes"]),
+        "sha256": str(lock["phase0"]["public_summary"]["canonical_lf_sha256"]),
     }:
-        raise RuntimeError("banked Phase-0 public summary identity changed")
+        raise RuntimeError("banked Phase-0 public summary canonical identity changed")
 
     receipts_dir = args.artifact_root / "receipts" / "phase_a"
     private_dir = args.artifact_root / "private" / "phase_a"
