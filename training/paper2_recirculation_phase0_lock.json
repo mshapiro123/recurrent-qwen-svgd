@@ -1,0 +1,76 @@
+{
+  "kind": "paper2_recirculation_phase0_lock_v1",
+  "status": "LOCKED_PHASE0_AND_PHASE_A",
+  "mark_relayed": true,
+  "optimizer_constructed": false,
+  "optimizer_steps_allowed": 0,
+  "phase_b_training_authorized": false,
+  "confirm_scored": false,
+  "eval_e_scored": false,
+  "authorities": [
+    {
+      "drive_id": "1vBn5JpoGl2cz7WyqGJobJlPkpHmEad3I",
+      "filename": "STRATEGY_RECIRCULATION_PROBE_HANDOFF_20260823.md",
+      "bytes": 20116,
+      "sha256": "c0e358bf21cc0d330871ac5e58264d03ac4e22c0b078096ca0b93576e6b64db1"
+    },
+    {
+      "drive_id": "1uAjmvAinYaNezVXq1IGp_TPZvHicjBwl",
+      "filename": "STRATEGY_RECIRCULATION_SEMANTICS_RULING_20260827.md",
+      "bytes": 15353,
+      "sha256": "794548b168d3423ea2aaebec08317384e47e3635e6a4d18ba73137e8b162a553"
+    }
+  ],
+  "runtime": {
+    "accelerator": "NVIDIA A100-SXM4-40GB",
+    "dtype": "bfloat16",
+    "attention_backend": "sdpa",
+    "torch_prefix": "2.11.0+cu128",
+    "transformers": "5.14.1",
+    "datasets": "5.0.0",
+    "cost_ceiling_a100_hours": 8.0
+  },
+  "models": {
+    "qwen": {
+      "id": "Qwen/Qwen2.5-0.5B-Instruct",
+      "revision": "7ae557604adf67be50417f59c2c2f167def9a775",
+      "source_layer": 16,
+      "destination_layer": 8,
+      "alpha": 0.1
+    },
+    "gemma_anchor": {
+      "id": "google/gemma-3-1b-pt",
+      "revision": "fcf18a2a879aab110ca39f8bffbccd5d49d8eb29",
+      "source_layer": 11,
+      "destination_layer": 4,
+      "alpha": 0.15
+    }
+  },
+  "corpus": {
+    "id": "ccdv/arxiv-summarization",
+    "revision": "240aaf1a969b3f8cd0ade6986bfad0cd730ee288",
+    "split": "train",
+    "text_field": "article",
+    "window_tokens": 1024,
+    "maximum_windows_per_document": 2,
+    "gemma_anchor_windows": 128,
+    "qwen_timing_windows": 32,
+    "battery_overlap_ngram": 13
+  },
+  "gates": {
+    "identity": "bit_exact_first_pass_logits_and_all_committed_kv",
+    "battery_anchor_correct": 162,
+    "battery_anchor_rows": 461,
+    "gemma_anchor": "perplexity_direction_strictly_decreases",
+    "timing_projection_max_a100_hours": 8.0
+  },
+  "semantics": {
+    "readout": "first_iteration_only",
+    "tap": "post_block_hidden_states_index_equals_paper_layer",
+    "kv_owner_shallow": "scored_stack",
+    "kv_owner_deep": "recirculated_stack",
+    "serial_reference": true,
+    "batch_across_sequences_only": true,
+    "final_position_recirculation": "uniformly_skipped_for_fixed_sequence_scoring"
+  }
+}

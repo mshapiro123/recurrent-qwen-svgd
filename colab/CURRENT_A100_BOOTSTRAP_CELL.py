@@ -161,6 +161,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3_short_sha"
 #   "paper2_bicameral_w2p_d4" - W2-prime prompt-only D4 site cache; no optimizer or scoring.
 #   "paper2_phase2_matched_alpha_audit" - read-only L4 terminal-checkpoint and shaper audit.
 #   "paper2_phase2_oracle_selector_headroom" - CPU-only perfect-selector ceiling from banked rows.
+#   "paper2_recirculation_phase0" - paper-native first-pass-readout identity, Gemma anchor, battery anchor, and cost gate.
 #   "paper2_phase2_a2_localization" - CPU-only helped/harmed localization from banked A2 rows.
 #   "paper2_phase2_staged_a1" - locked A100-40GB+ state-construction stage; stops before A2.
 #   "paper2_phase2_a1_matched_estimator_audit" - read-only L4 audit of the A1 stop population mismatch.
@@ -206,6 +207,20 @@ if TARGET == "traced_sft_scale64_benchmark" and os.environ.get(
     TARGET = "traced_sft_direct_preservation_probe"
 
 TARGETS = {
+    "paper2_recirculation_phase0": {
+        "path": "colab/STAGE5_PAPER2_RECIRCULATION_PHASE0_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_RECIRCULATION_PHASE0_VERSION",
+            "paper2_recirculation_phase0_v1",
+            "score-only serial first-pass-readout recirculation Phase 0 no optimizer",
+            "NVIDIA A100-SXM4-40GB",
+            "google/gemma-3-1b-pt",
+            "tests/test_paper2_recirculation.py",
+            "colab/run_stage5_paper2_recirculation_phase0.py",
+            "runtime.unassign",
+        ],
+        "env": {},
+    },
     "paper2_bicameral_w2p_d4": {
         "path": "colab/STAGE5_PAPER2_BICAMERAL_W2P_D4_CELL.py",
         "markers": [
@@ -4480,7 +4495,7 @@ TARGETS = {
         "path": "colab/STAGE5_PAPER2_STAGE2B_AUTOPSY_CELL.py",
         "markers": [
             "STAGE5_PAPER2_STAGE2B_AUTOPSY_VERSION",
-            "paper2_stage2b_autopsy_v2",
+            "paper2_stage2b_autopsy_v3",
             "signed score-only lock no optimizer no training",
             "CONFIRM and EVAL-E remain sealed",
             "zero-write full-logit identity precedes diagnostic cells",

@@ -4161,6 +4161,49 @@ def test_stage2bs_depth_study_target_is_wired_and_score_only() -> None:
     assert "optimizer.step" not in evaluator
 
 
+def test_paper2_recirculation_phase0_target_is_wired_and_guarded() -> None:
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(
+        encoding="utf-8"
+    )
+    bootstrap_md = fenced_python_block("colab/CURRENT_A100_BOOTSTRAP_CELL.md")
+    cell = (ROOT / "colab/STAGE5_PAPER2_RECIRCULATION_PHASE0_CELL.py").read_text(
+        encoding="utf-8"
+    )
+    cell_md = fenced_python_block("colab/STAGE5_PAPER2_RECIRCULATION_PHASE0_CELL.md")
+    runner = (ROOT / "colab/run_stage5_paper2_recirculation_phase0.py").read_text(
+        encoding="utf-8"
+    )
+    evaluator = (ROOT / "eval/eval_paper2_recirculation_phase0.py").read_text(
+        encoding="utf-8"
+    )
+    lock = (ROOT / "training/paper2_recirculation_phase0_lock.json").read_text(
+        encoding="utf-8"
+    )
+
+    assert cell == cell_md
+    for text in (bootstrap, bootstrap_md):
+        assert '"paper2_recirculation_phase0"' in text
+        assert "colab/STAGE5_PAPER2_RECIRCULATION_PHASE0_CELL.py" in text
+        assert "paper2_recirculation_phase0_v1" in text
+        assert "score-only serial first-pass-readout recirculation Phase 0 no optimizer" in text
+        assert "NVIDIA A100-SXM4-40GB" in text
+        assert "google/gemma-3-1b-pt" in text
+        assert "tests/test_paper2_recirculation.py" in text
+        assert "colab/run_stage5_paper2_recirculation_phase0.py" in text
+        assert "runtime.unassign" in text
+
+    assert "HF_TOKEN is required" in cell
+    assert "transformers==5.14.1" in cell
+    assert "datasets==5.0.0" in cell
+    assert "phase0_pass_awaiting_relay" in runner
+    assert "cost_ceiling_stop" in evaluator
+    assert "battery_anchor_correct" in evaluator
+    assert "first_iteration_only" in lock
+    assert '"phase_b_training_authorized": false' in lock
+    assert "torch.optim" not in evaluator
+    assert "optimizer.step" not in evaluator
+
+
 
 def test_gradient_path_audit_target_is_wired_and_guarded() -> None:
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")
