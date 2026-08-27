@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
@@ -339,8 +340,6 @@ def test_phase0_publication_force_adds_only_lightweight_receipts(
 
 def _phase_a_lock() -> dict:
     root = Path(__file__).resolve().parents[1]
-    import json
-
     return json.loads(
         (root / "training/paper2_recirculation_phase_a_lock.json").read_text(
             encoding="utf-8"
@@ -386,6 +385,10 @@ def test_phase_a_grid_and_refinement_counts_are_locked() -> None:
         "bytes": summary["canonical_lf_bytes"],
         "sha256": summary["canonical_lf_sha256"],
     }
+    phase0 = json.loads((root / summary["path"]).read_text(encoding="utf-8"))
+    assert lock["phase0"]["corpus_token_windows"] == phase0["private_receipts"][
+        "corpus_token_windows.pt"
+    ]
 
 
 def test_phase_a_selector_prefers_a_connected_region_over_an_isolated_peak() -> None:
