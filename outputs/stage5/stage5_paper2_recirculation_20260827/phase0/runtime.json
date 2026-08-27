@@ -1,0 +1,10 @@
+{
+  "attention_backend": "sdpa",
+  "cuda": "12.8",
+  "datasets": "5.0.0",
+  "dtype": "bfloat16",
+  "gpu": "NVIDIA A100-SXM4-40GB",
+  "gpu_memory_mib": 40441,
+  "torch": "2.11.0+cu128",
+  "transformers": "5.14.1"
+}

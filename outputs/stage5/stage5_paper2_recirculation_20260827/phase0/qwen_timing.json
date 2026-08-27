@@ -1,0 +1,27 @@
+{
+  "cell": {
+    "alpha": 0.1,
+    "destination": 8,
+    "source": 16
+  },
+  "intact": {
+    "elapsed_seconds": 31.591686019999997,
+    "label": "qwen_intact_32k",
+    "mean_nll": 2.6329798767177475,
+    "perplexity": 13.915173684494556,
+    "predicted_tokens": 32736,
+    "window_tokens": 1024,
+    "windows": 32
+  },
+  "kind": "paper2_recirculation_qwen_timing_v1",
+  "perplexity_reduction_percent": 0.3680746288147661,
+  "recirculated": {
+    "elapsed_seconds": 63.515999336999926,
+    "label": "qwen_16_8_0p10_32k",
+    "mean_nll": 2.62929233981484,
+    "perplexity": 13.863955460606423,
+    "predicted_tokens": 32736,
+    "window_tokens": 1024,
+    "windows": 32
+  }
+}

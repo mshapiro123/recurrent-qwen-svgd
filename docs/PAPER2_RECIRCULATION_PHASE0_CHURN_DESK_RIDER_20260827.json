@@ -1,0 +1,145 @@
+{
+  "bounded_interpretation": [
+    "Flips are task-concentrated: 25 of 28 are GSM8K, three are MBPP, and none are Tier-1.",
+    "Generation length does not separate flipped from stable rows on this capped panel: both medians are 256 tokens and GSM8K means are similar.",
+    "Minimum answer-token margins are lower among flipped rows, including within GSM8K, but the statistic is zero-inflated; this supports boundary sensitivity and is not a causal attribution."
+  ],
+  "date": "2026-08-27",
+  "groups": {
+    "flipped": {
+      "answer_token_margin_minimum": {
+        "maximum": 0.125,
+        "mean": 0.022321428571428572,
+        "median": 0.0,
+        "minimum": 0.0,
+        "n": 28,
+        "q25_linear": 0.0,
+        "q75_linear": 0.0
+      },
+      "answer_token_margin_minimum_zero": 23,
+      "battery_counts": {
+        "gsm8k": 25,
+        "mbpp": 3
+      },
+      "generated_tokens": {
+        "maximum": 256.0,
+        "mean": 215.25,
+        "median": 256.0,
+        "minimum": 7.0,
+        "n": 28,
+        "q25_linear": 187.5,
+        "q75_linear": 256.0
+      },
+      "generated_tokens_at_least_200": 20,
+      "generated_tokens_equal_256": 15,
+      "rows": 28
+    },
+    "gained": {
+      "answer_token_margin_minimum": {
+        "maximum": 0.125,
+        "mean": 0.009615384615384616,
+        "median": 0.0,
+        "minimum": 0.0,
+        "n": 13,
+        "q25_linear": 0.0,
+        "q75_linear": 0.0
+      },
+      "answer_token_margin_minimum_zero": 12,
+      "battery_counts": {
+        "gsm8k": 12,
+        "mbpp": 1
+      },
+      "generated_tokens": {
+        "maximum": 256.0,
+        "mean": 233.6153846153846,
+        "median": 256.0,
+        "minimum": 107.0,
+        "n": 13,
+        "q25_linear": 237.0,
+        "q75_linear": 256.0
+      },
+      "generated_tokens_at_least_200": 11,
+      "generated_tokens_equal_256": 7,
+      "rows": 13
+    },
+    "lost": {
+      "answer_token_margin_minimum": {
+        "maximum": 0.125,
+        "mean": 0.03333333333333333,
+        "median": 0.0,
+        "minimum": 0.0,
+        "n": 15,
+        "q25_linear": 0.0,
+        "q75_linear": 0.0625
+      },
+      "answer_token_margin_minimum_zero": 11,
+      "battery_counts": {
+        "gsm8k": 13,
+        "mbpp": 2
+      },
+      "generated_tokens": {
+        "maximum": 256.0,
+        "mean": 199.33333333333334,
+        "median": 256.0,
+        "minimum": 7.0,
+        "n": 15,
+        "q25_linear": 178.0,
+        "q75_linear": 256.0
+      },
+      "generated_tokens_at_least_200": 9,
+      "generated_tokens_equal_256": 8,
+      "rows": 15
+    },
+    "stable": {
+      "answer_token_margin_minimum": {
+        "maximum": 6.0,
+        "mean": 0.23008083140877597,
+        "median": 0.0,
+        "minimum": 0.0,
+        "n": 433,
+        "q25_linear": 0.0,
+        "q75_linear": 0.125
+      },
+      "answer_token_margin_minimum_zero": 300,
+      "battery_counts": {
+        "gsm8k": 344,
+        "mbpp": 64,
+        "tier1": 25
+      },
+      "generated_tokens": {
+        "maximum": 384.0,
+        "mean": 211.8960739030023,
+        "median": 256.0,
+        "minimum": 2.0,
+        "n": 433,
+        "q25_linear": 193.0,
+        "q75_linear": 256.0
+      },
+      "generated_tokens_at_least_200": 317,
+      "generated_tokens_equal_256": 212,
+      "rows": 433
+    }
+  },
+  "gsm8k_only": {
+    "flipped_mean_generated_tokens": 231.4,
+    "flipped_mean_minimum_margin": 0.015,
+    "flipped_rows": 25,
+    "stable_mean_generated_tokens": 235.6860465116279,
+    "stable_mean_minimum_margin": 0.030523255813953487,
+    "stable_rows": 344
+  },
+  "kind": "paper2_recirculation_phase0_churn_desk_rider_v1",
+  "quantile_method": "linear interpolation at (n-1)*p",
+  "sources": {
+    "paper_native_rows": {
+      "bytes": 1748126,
+      "sha256": "79fb3b1a28780b24b2a8db0a99f701f8ab86af707086de778f975696e072e41e"
+    },
+    "prior_k1_analysis": {
+      "bytes": 16593,
+      "path": "outputs/stage5/stage5_paper2_stage2bs_depth_study_20260822/analysis/preflight_stop_analysis.json",
+      "sha256": "327a72de707d8328d054c4b121beea92dee8e58484a4160844a883bce4b032e6"
+    }
+  },
+  "status": "descriptive_non_gating"
+}

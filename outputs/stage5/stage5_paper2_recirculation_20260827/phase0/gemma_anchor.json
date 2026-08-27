@@ -1,0 +1,28 @@
+{
+  "cell": {
+    "alpha": 0.15,
+    "destination": 4,
+    "source": 11
+  },
+  "intact": {
+    "elapsed_seconds": 216.97425887600002,
+    "label": "gemma_intact_128k",
+    "mean_nll": 3.0437297912520282,
+    "perplexity": 20.983361019386518,
+    "predicted_tokens": 130944,
+    "window_tokens": 1024,
+    "windows": 128
+  },
+  "kind": "paper2_recirculation_gemma_anchor_v1",
+  "passed_directional_gate": true,
+  "perplexity_reduction_percent": 8.268031253323329,
+  "recirculated": {
+    "elapsed_seconds": 454.36701304500014,
+    "label": "gemma_11_4_0p15_128k",
+    "mean_nll": 2.957430546963087,
+    "perplexity": 19.248450172305976,
+    "predicted_tokens": 130944,
+    "window_tokens": 1024,
+    "windows": 128
+  }
+}

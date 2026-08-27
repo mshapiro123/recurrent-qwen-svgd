@@ -1,0 +1,36 @@
+{
+  "authority": {
+    "bytes": 9536,
+    "drive_id": "1gOT00J5xOeUA4jBmUr4BQMeIrgQWXOgk",
+    "filename": "STRATEGY_RECIRCULATION_COMPARATOR_RULING_20260827.md",
+    "sha256": "f4127faf06b026885613329bfee28d324f970c43e0aae9e61739eff20b8f9785"
+  },
+  "comparator": 160,
+  "correct": 160,
+  "elapsed_seconds": 1705.1757169150003,
+  "generation_replayed": false,
+  "kind": "paper2_recirculation_battery_anchor_v2_adjudicated",
+  "passed": true,
+  "prior_comparator": {
+    "correct": 162,
+    "evaluator": "Stage2BScheduleGraph_K1"
+  },
+  "registered_bars": {
+    "additive_delta": 20,
+    "additive_threshold": 180,
+    "neutral_lower_delta": -9,
+    "neutral_lower_threshold": 151
+  },
+  "row_receipt": {
+    "bytes": 1748126,
+    "sha256": "79fb3b1a28780b24b2a8db0a99f701f8ab86af707086de778f975696e072e41e"
+  },
+  "rows": 461,
+  "source_v1_expected_correct": 162,
+  "source_v1_passed": false,
+  "source_v1_receipt": {
+    "bytes": 302,
+    "sha256": "254789f708c88c41d042774130e5d2cbf60fd5887da0b72f05fdf12e670903c0"
+  },
+  "status": "passed_by_strategy_adjudication"
+}

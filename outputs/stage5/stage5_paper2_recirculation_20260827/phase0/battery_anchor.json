@@ -1,0 +1,12 @@
+{
+  "correct": 160,
+  "elapsed_seconds": 1705.1757169150003,
+  "expected_correct": 162,
+  "kind": "paper2_recirculation_battery_anchor_v1",
+  "passed": false,
+  "row_receipt": {
+    "bytes": 1748126,
+    "sha256": "79fb3b1a28780b24b2a8db0a99f701f8ab86af707086de778f975696e072e41e"
+  },
+  "rows": 461
+}

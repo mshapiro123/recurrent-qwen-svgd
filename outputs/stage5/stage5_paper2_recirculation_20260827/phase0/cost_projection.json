@@ -1,0 +1,16 @@
+{
+  "assumption": "destination_cost_scales_with_1_plus_L_minus_d_over_L_and_A3_uses_worst_destination",
+  "battery_cells": 2,
+  "ceiling_a100_hours": 8.0,
+  "coarse_cells": 96,
+  "coarse_pairs": 32,
+  "kind": "paper2_recirculation_cost_projection_v1",
+  "phase0_elapsed_seconds": 2497.6458720730006,
+  "projected_a2_seconds": 6173.755135556393,
+  "projected_a3_battery_seconds": 3921.9041489045003,
+  "projected_a3_perplexity_seconds": 949.5641900881487,
+  "projected_total_a100_hours": 3.7619081518394566,
+  "projected_total_seconds": 13542.869346622043,
+  "refinement_perplexity_cells": 13,
+  "within_ceiling": true
+}
