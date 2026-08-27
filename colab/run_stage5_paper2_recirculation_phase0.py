@@ -20,7 +20,12 @@ STAGE = "stage5_paper2_recirculation_20260827"
 PANEL = Path(
     "outputs/stage5/stage5_paper2_phase3_p34_lock_20260812/panel/p34_task_panel.jsonl"
 )
-PANEL_SHA256 = "2e7e1d2be75ef8b7a536fe9a5554b3bf7883d54b1472e5b76ef50380c8270642"
+PANEL_LOCKED_CRLF_SHA256 = (
+    "2e7e1d2be75ef8b7a536fe9a5554b3bf7883d54b1472e5b76ef50380c8270642"
+)
+PANEL_CANONICAL_LF_SHA256 = (
+    "c0e15a890b598544059ac337cc475123f97c05e3c1626febcdee1c6d8fe02615"
+)
 
 
 def sha256_file(path: Path) -> str:
@@ -29,6 +34,14 @@ def sha256_file(path: Path) -> str:
         for block in iter(lambda: handle.read(1024 * 1024), b""):
             digest.update(block)
     return digest.hexdigest()
+
+
+def canonical_lf_sha256(path: Path) -> str:
+    """Hash text bytes after the only authorized transport normalization."""
+    normalized = path.read_bytes().replace(b"\r\n", b"\n")
+    if b"\r" in normalized:
+        raise RuntimeError("frozen DEV panel contains an unauthorized carriage return")
+    return hashlib.sha256(normalized).hexdigest()
 
 
 def atomic_json(path: Path, payload: dict[str, Any]) -> None:
@@ -134,7 +147,11 @@ def main() -> int:
     atomic_json(status_path, status)
     try:
         panel = root / PANEL
-        if not panel.is_file() or sha256_file(panel) != PANEL_SHA256:
+        if not panel.is_file():
+            raise RuntimeError("frozen 1,024-row DEV panel identity changed")
+        panel_transport_sha256 = sha256_file(panel)
+        panel_canonical_lf_sha256 = canonical_lf_sha256(panel)
+        if panel_canonical_lf_sha256 != PANEL_CANONICAL_LF_SHA256:
             raise RuntimeError("frozen 1,024-row DEV panel identity changed")
         lock = root / "training" / "paper2_recirculation_phase0_lock.json"
         lock_payload = json.loads(lock.read_text(encoding="utf-8"))
@@ -148,7 +165,9 @@ def main() -> int:
         model_cache.mkdir(parents=True, exist_ok=True)
         status.update(
             status="running_phase0",
-            panel_sha256=PANEL_SHA256,
+            panel_sha256=PANEL_LOCKED_CRLF_SHA256,
+            panel_transport_sha256=panel_transport_sha256,
+            panel_canonical_lf_sha256=panel_canonical_lf_sha256,
             lock_sha256=sha256_file(lock),
             scratch=str(scratch_root),
         )

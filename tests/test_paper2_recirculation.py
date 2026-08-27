@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from pathlib import Path
+
+import pytest
 import torch
 from transformers import (
     Gemma3ForCausalLM,
@@ -9,6 +12,11 @@ from transformers import (
 )
 
 from eval.eval_paper2_recirculation_phase0 import projection_receipt
+from colab.run_stage5_paper2_recirculation_phase0 import (
+    PANEL,
+    PANEL_CANONICAL_LF_SHA256,
+    canonical_lf_sha256,
+)
 from models.recirculation import (
     PaperNativeRecirculationEvaluator,
     RecirculationConfig,
@@ -153,3 +161,22 @@ def test_cost_projection_prices_the_complete_registered_phase_a() -> None:
     assert receipt["battery_cells"] == 2
     assert receipt["projected_total_seconds"] > 100.0
     assert receipt["ceiling_a100_hours"] == 8.0
+
+
+def test_frozen_panel_hash_is_line_ending_portable() -> None:
+    root = Path(__file__).resolve().parents[1]
+    assert canonical_lf_sha256(root / PANEL) == PANEL_CANONICAL_LF_SHA256
+
+
+def test_canonical_panel_hash_accepts_only_crlf_to_lf_transport(
+    tmp_path,
+) -> None:
+    lf = tmp_path / "lf.jsonl"
+    crlf = tmp_path / "crlf.jsonl"
+    invalid = tmp_path / "invalid.jsonl"
+    lf.write_bytes(b'{"row":1}\n{"row":2}\n')
+    crlf.write_bytes(b'{"row":1}\r\n{"row":2}\r\n')
+    invalid.write_bytes(b'{"row":1}\r{"row":2}\n')
+    assert canonical_lf_sha256(lf) == canonical_lf_sha256(crlf)
+    with pytest.raises(RuntimeError, match="unauthorized carriage return"):
+        canonical_lf_sha256(invalid)
