@@ -23,6 +23,7 @@ from colab.run_stage5_paper2_recirculation_phase0 import (
     PANEL,
     PANEL_CANONICAL_LF_SHA256,
     canonical_lf_sha256,
+    force_add_public_receipts,
 )
 from models.recirculation import (
     PaperNativeRecirculationEvaluator,
@@ -255,3 +256,32 @@ def test_battery_adjudication_preserves_v1_and_reuses_exact_rows(tmp_path) -> No
         adjudicate_battery_anchor(
             lock=lock, v1_path=v1_path, rows_path=rows_path, v2_path=v2_path
         )
+
+
+def test_phase0_publication_force_adds_only_lightweight_receipts(
+    tmp_path, monkeypatch
+) -> None:
+    root = tmp_path / "repo"
+    public_dir = root / "outputs" / "stage5" / "phase0"
+    public_dir.mkdir(parents=True)
+    summary = public_dir / "summary.json"
+    status = public_dir / "status.json"
+    checkpoint = public_dir / "checkpoint.pt"
+    summary.write_text("{}\n", encoding="utf-8")
+    status.write_text("{}\n", encoding="utf-8")
+    checkpoint.write_bytes(b"not-for-git")
+    commands: list[tuple[list[str], Path]] = []
+
+    def capture(command: list[str], *, cwd: Path) -> None:
+        commands.append((command, cwd))
+
+    monkeypatch.setattr(
+        "colab.run_stage5_paper2_recirculation_phase0.run", capture
+    )
+    paths = force_add_public_receipts(root=root, public_dir=public_dir)
+
+    assert paths == [status, summary]
+    assert commands == [
+        (["git", "add", "-f", str(status.relative_to(root))], root),
+        (["git", "add", "-f", str(summary.relative_to(root))], root),
+    ]

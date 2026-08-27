@@ -14,6 +14,8 @@ import traceback
 from pathlib import Path
 from typing import Any
 
+from colab.stage5_publish_utils import publishable_artifact_paths
+
 
 KIND = "paper2_recirculation_phase0_runner_v1"
 STAGE = "stage5_paper2_recirculation_20260827"
@@ -87,6 +89,16 @@ def file_receipts(root: Path) -> dict[str, dict[str, Any]]:
         for path in sorted(root.rglob("*"))
         if path.is_file()
     }
+
+
+def force_add_public_receipts(*, root: Path, public_dir: Path) -> list[Path]:
+    """Stage only lightweight receipts from the broadly ignored outputs tree."""
+    paths = publishable_artifact_paths(public_dir)
+    if not paths:
+        raise RuntimeError(f"no publishable Phase 0 receipts found under {public_dir}")
+    for path in paths:
+        run(["git", "add", "-f", str(path.relative_to(root))], cwd=root)
+    return paths
 
 
 def archive_artifacts(root: Path) -> dict[str, Any]:
@@ -230,7 +242,7 @@ def main() -> int:
         push_ref = os.environ.get(
             "RECIRCULATION_PUSH_REF", "codex/bicameral-stage0"
         )
-        run(["git", "add", str(public_dir.relative_to(root))], cwd=root)
+        force_add_public_receipts(root=root, public_dir=public_dir)
         result = subprocess.run(
             ["git", "diff", "--cached", "--quiet"], cwd=root, check=False
         )
