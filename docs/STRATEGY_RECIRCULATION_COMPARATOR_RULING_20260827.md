@@ -24,6 +24,9 @@ the model: the two evaluators schedule their arithmetic differently, and in BF16
 rounding enough to flip a handful of borderline questions each way (15 lost, 13 gained, 147
 shared — net −2, well inside our established ±6–9 cross-runtime noise floor, with the same
 signature we've measured before: long math generations flip, short factual questions don't).
+This class of variance is now bound as standing doctrine in §5A below, for the paper and for
+all future interpretation.
+
 The rule we've enforced all program: comparisons are only valid between runs that share an
 evaluator. So the recirculation experiment's baseline is 160, measured by its own evaluator —
 not 162 imported from a different one. The success bars were always defined relative to
@@ -114,6 +117,51 @@ margin distribution of the 28 flipped rows if margins were captured, or failing 
 generation-length distribution of flipped vs stable rows. Purpose: extend the R-1 churn
 characterization with one more free datapoint. This is a reporting rider only — it gates
 nothing and must not delay the relay.
+
+## 5A. Standing doctrine — BF16 determinism and instrument variance (binding; for publication)
+
+Ratified at Mark's direction as a named, program-wide statement. The individual pieces have
+governed us since R-1; this section binds them together so the paper and every future ruling
+can cite one place.
+
+**What is deterministic and what is not.** A single evaluator is bit-deterministic: same
+code, same runtime pin, same hardware, same batching → bit-identical logits and labels on
+every re-run (the α=0 identity gate demonstrates this at machine precision). Determinism is
+therefore a property of the full tuple (code, kernel schedule, hardware, precision, batching,
+cache ownership) — not of the model. Change any element of the tuple and bitwise agreement is
+forfeit, even with weights frozen and temperature zero.
+
+**Why BF16 amplifies this.** BF16 carries a 7-bit mantissa (~2–3 significant decimal
+digits). Floating-point summation is non-associative, so two evaluators that reduce the same
+numbers in a different order produce logit perturbations on the order of the mantissa's last
+bits. Those perturbations are far too small to move a confident token, but a token whose
+top-two logit margin is near zero can flip. In autoregressive generation one flipped token
+rewrites the entire suffix, so the error mechanism is margin-concentrated and
+cascade-amplified: long chain-of-thought generations (GSM8K) churn, short low-entropy reads
+(Tier-1) do not. This is exactly the signature measured in R-1 (~40 labels cross-runtime) and
+again here (28 labels cross-schedule, net −2). FP32 would shrink the perturbations by ~2^16
+in mantissa resolution but would not eliminate the mechanism — it narrows the flip band, at
+roughly 2× memory and substantial throughput cost on A100 tensor cores.
+
+**Interpretation rules (binding).**
+
+1. An accuracy is only defined as a pair **(score, evaluator)**. A bare score is not a
+   result and may not be compared to anything.
+2. Any cross-evaluator or cross-runtime delta within the **±6–9 row floor** is instrument
+   noise, never evidence of model change — in either direction. This is why the effect floor
+   sits at **+20**: it clears the noise band with margin.
+3. Bitwise identity gates (like the α=0 gate) are the only accepted proof that two graphs
+   are the same computation. Score agreement is not proof, and score disagreement inside the
+   floor is not disproof.
+4. **Escalation path:** if a registered decision ever lands inside the ambiguity band
+   (between the noise floor and the effect floor), the remedy is more rows or an FP32
+   re-score of the disputed slice — never a re-roll of the same cell hoping for a friendlier
+   draw.
+5. **For publication:** Paper Two reports the churn characterization (flip counts, net
+   drift, margin/length signature) as the instrument's resolution, alongside every headline
+   number, so readers can see which claimed effects clear it. Nondeterminism across
+   evaluators is presented as a property of BF16 serving stacks generally, not of this
+   architecture.
 
 ## 6. Scoreboard entry (strategy's own ledger)
 

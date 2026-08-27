@@ -19,11 +19,23 @@ from eval.eval_paper2_recirculation_phase0 import (
     write_json,
     write_jsonl,
 )
+from eval.eval_paper2_recirculation_phase_a import (
+    CellSpec,
+    coarse_pairs,
+    coarse_specs,
+    expected_total_seconds,
+    rank_unique_configurations,
+    refinement_specs,
+    select_contiguous_region,
+)
 from colab.run_stage5_paper2_recirculation_phase0 import (
     PANEL,
     PANEL_CANONICAL_LF_SHA256,
     canonical_lf_sha256,
     force_add_public_receipts,
+)
+from colab.run_stage5_paper2_recirculation_phase_a import (
+    force_add_public_receipts as force_add_phase_a_public_receipts,
 )
 from models.recirculation import (
     PaperNativeRecirculationEvaluator,
@@ -138,6 +150,43 @@ def test_nonzero_recirculation_changes_only_later_scored_positions() -> None:
     differences = (intact_logits - recirculated_logits).abs().amax(dim=-1)
     assert differences[0, 0].item() == 0.0
     assert bool((differences[0, 1:] > 0).all())
+
+
+def test_identity_normalization_is_a_distinct_registered_nonzero_arm() -> None:
+    input_ids, attention_mask = _tokens()
+    model = _qwen()
+    matched = PaperNativeRecirculationEvaluator(
+        model,
+        RecirculationConfig(
+            source_layer=4,
+            destination_layer=2,
+            alpha=0.2,
+            normalization_mode="norm_matched",
+        ),
+    )
+    identity = PaperNativeRecirculationEvaluator(
+        model,
+        RecirculationConfig(
+            source_layer=4,
+            destination_layer=2,
+            alpha=0.2,
+            normalization_mode="identity",
+        ),
+    )
+    matched_logits, _ = matched.forward_sequence(
+        input_ids=input_ids, attention_mask=attention_mask
+    )
+    identity_logits, _ = identity.forward_sequence(
+        input_ids=input_ids, attention_mask=attention_mask
+    )
+    assert not torch.equal(matched_logits[:, 1:], identity_logits[:, 1:])
+    with pytest.raises(ValueError, match="normalization_mode"):
+        RecirculationConfig(
+            source_layer=4,
+            destination_layer=2,
+            alpha=0.2,
+            normalization_mode="unknown",
+        ).validate(4)
 
 
 def test_prefill_and_incremental_advance_use_future_cache_only() -> None:
@@ -284,4 +333,113 @@ def test_phase0_publication_force_adds_only_lightweight_receipts(
     assert commands == [
         (["git", "add", "-f", str(status.relative_to(root))], root),
         (["git", "add", "-f", str(summary.relative_to(root))], root),
+    ]
+
+
+def _phase_a_lock() -> dict:
+    root = Path(__file__).resolve().parents[1]
+    import json
+
+    return json.loads(
+        (root / "training/paper2_recirculation_phase_a_lock.json").read_text(
+            encoding="utf-8"
+        )
+    )
+
+
+def _coarse_row(spec: CellSpec, score: float, index: int) -> dict:
+    return {
+        "run_index": index,
+        "stage": "coarse",
+        "config": {
+            "source_layer": spec.source_layer,
+            "destination_layer": spec.destination_layer,
+            "alpha": spec.alpha,
+            "beta_mode": spec.beta_mode,
+            "ramp_tokens": spec.ramp_tokens,
+            "normalization_mode": spec.normalization_mode,
+        },
+        "recirculated": {"mean_nll": 2.0 - score / 100.0},
+        "perplexity_reduction_percent": score,
+    }
+
+
+def test_phase_a_grid_and_refinement_counts_are_locked() -> None:
+    lock = _phase_a_lock()
+    pairs = coarse_pairs(lock)
+    specs = coarse_specs(lock)
+    assert len(pairs) == 32
+    assert len(specs) == 96
+    assert len({spec.key() for spec in specs}) == 96
+
+    rows = [_coarse_row(spec, 0.0, index) for index, spec in enumerate(specs, 1)]
+    selection = select_contiguous_region(rows, lock)
+    assert len(selection["selected_pairs"]) == 3
+    assert len(refinement_specs(rows, selection, lock)) == 13
+    assert expected_total_seconds(lock, 111) == pytest.approx(
+        lock["phase0"]["projected_total_seconds"], abs=1e-9
+    )
+
+
+def test_phase_a_selector_prefers_a_connected_region_over_an_isolated_peak() -> None:
+    lock = _phase_a_lock()
+    rows = []
+    connected = {(4, 10): 2.0, (4, 12): 1.9, (6, 12): 1.8}
+    isolated = {(14, 18): 5.0}
+    for index, spec in enumerate(coarse_specs(lock), 1):
+        pair = (spec.destination_layer, spec.source_layer)
+        score = connected.get(pair, isolated.get(pair, 0.0))
+        rows.append(_coarse_row(spec, score, index))
+    selected = select_contiguous_region(rows, lock)
+    observed = {
+        (row["destination_layer"], row["source_layer"])
+        for row in selected["selected_pairs"]
+    }
+    assert observed == set(connected)
+    assert (
+        selected["best_pair"]["destination_layer"],
+        selected["best_pair"]["source_layer"],
+    ) == (14, 18)
+
+
+def test_phase_a_ranking_deduplicates_exact_cells_and_rejects_drift() -> None:
+    spec = CellSpec(source_layer=12, destination_layer=4, alpha=0.1)
+    first = _coarse_row(spec, 1.0, 1)
+    duplicate = _coarse_row(spec, 1.0, 2)
+    duplicate["recirculated"]["mean_nll"] = first["recirculated"]["mean_nll"]
+    assert len(rank_unique_configurations([first, duplicate])) == 1
+    duplicate["recirculated"]["mean_nll"] += 1e-6
+    with pytest.raises(RuntimeError, match="duplicate deterministic cell changed"):
+        rank_unique_configurations([first, duplicate])
+
+
+def test_phase_a_publication_allows_figures_but_excludes_checkpoints(
+    tmp_path, monkeypatch
+) -> None:
+    root = tmp_path / "repo"
+    public_dir = root / "outputs" / "stage5" / "phase_a"
+    public_dir.mkdir(parents=True)
+    files = [
+        public_dir / "summary.json",
+        public_dir / "heatmap.png",
+        public_dir / "heatmap.svg",
+    ]
+    for path in files:
+        path.write_bytes(b"receipt")
+    checkpoint = public_dir / "checkpoint.pt"
+    checkpoint.write_bytes(b"not-for-git")
+    commands: list[tuple[list[str], Path]] = []
+
+    def capture(command: list[str], *, cwd: Path) -> None:
+        commands.append((command, cwd))
+
+    monkeypatch.setattr(
+        "colab.run_stage5_paper2_recirculation_phase_a.run", capture
+    )
+    paths = force_add_phase_a_public_receipts(root=root, public_dir=public_dir)
+    assert paths == sorted(files)
+    assert checkpoint not in paths
+    assert commands == [
+        (["git", "add", "-f", str(path.relative_to(root))], root)
+        for path in sorted(files)
     ]

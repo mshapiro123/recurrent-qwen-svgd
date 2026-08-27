@@ -159,6 +159,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3_short_sha"
 #   "paper2_phase2_arbitration_build" - high-RAM CPU canonicalizer arbitration and loss-free student build.
 #   "paper2_phase2_layer_mode_bound" - high-RAM CPU r2 concat-RRR layer-mode bound.
 #   "paper2_phase2_matched_alpha" - locked A100-80GB DEV-only matched alpha pilots and decision.
+#   "paper2_bicameral_w2p_d4" - W2-prime prompt-only D4 site cache; no optimizer or scoring.
 #   "paper2_phase2_matched_alpha_audit" - read-only L4 terminal-checkpoint and shaper audit.
 #   "paper2_phase2_oracle_selector_headroom" - CPU-only perfect-selector ceiling from banked rows.
 #   "paper2_recirculation_phase0" - paper-native first-pass-readout identity, Gemma anchor, battery anchor, and cost gate.
@@ -184,6 +185,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3_short_sha"
 #   "paper2_phase2_e1_confirmation" - locked read-once EVAL-D confirmation; A100-80GB.
 #   "paper2_d0_prelock_publish_resume" - publish completed Drive-backed D0 lock receipts without inference.
 #   "paper2_d0_prelock" - authorized density probe, corpus freeze, and preregistration lock only.
+#   "paper2_recirculation_phase_a" - locked A100-40GB score-only recirculation sweep.
 TARGET = os.environ.get("STAGE5_CURRENT_A100_TARGET", "preflight")
 SOURCE_SUMMARY_OVERRIDE = os.environ.get("STAGE5_CURRENT_A100_SOURCE_SUMMARY", "").strip()
 PREFER_LOCAL_HEAD = os.environ.get("STAGE5_BOOTSTRAP_PREFER_LOCAL_HEAD", "0").strip().lower() in {
@@ -207,6 +209,20 @@ if TARGET == "traced_sft_scale64_benchmark" and os.environ.get(
     TARGET = "traced_sft_direct_preservation_probe"
 
 TARGETS = {
+    "paper2_recirculation_phase_a": {
+        "path": "colab/STAGE5_PAPER2_RECIRCULATION_PHASE_A_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_RECIRCULATION_PHASE_A_VERSION",
+            "paper2_recirculation_phase_a_v1_cli_transport",
+            "locked score-only Phase-A heatmap refinement and battery no optimizer",
+            "NVIDIA A100-SXM4-40GB",
+            "tests/test_paper2_recirculation.py",
+            "colab/run_stage5_paper2_recirculation_phase_a.py",
+            "recirculation_phase_a_transport=cli_archives_no_drive_mount",
+            "runtime.unassign",
+        ],
+        "env": {},
+    },
     "paper2_recirculation_phase0": {
         "path": "colab/STAGE5_PAPER2_RECIRCULATION_PHASE0_CELL.py",
         "markers": [
@@ -219,6 +235,18 @@ TARGETS = {
             "colab/run_stage5_paper2_recirculation_phase0.py",
             "recirculation_transport=cli_download_then_local_rclone",
             "runtime.unassign",
+        ],
+        "env": {},
+    },
+    "paper2_bicameral_w2p_d4": {
+        "path": "colab/STAGE5_PAPER2_BICAMERAL_W2P_D4_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_BICAMERAL_W2P_D4_VERSION",
+            "paper2_bicameral_w2p_d4_v1",
+            "forward-only prompt cache no optimizer no teacher no sealed evaluation",
+            "tests/test_paper2_bicameral_w2p.py",
+            "eval.cache_paper2_bicameral_w2p_d4",
+            "colab/run_stage5_paper2_bicameral_w2p_d4.py",
         ],
         "env": {},
     },
@@ -4530,6 +4558,61 @@ TARGETS = {
             "colab.run_stage5_paper2_stage2bs_reconciliation",
         ],
         "env": {},
+    },
+    "paper2_stage2bs_depth_preflight": {
+        "path": "colab/STAGE5_PAPER2_STAGE2BS_DEPTH_STUDY_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_STAGE2BS_DEPTH_STUDY_VERSION",
+            "paper2_stage2bs_depth_study_v3",
+            "banked native curves 162 10 2 2 and 162 9 5 1",
+            "cascade direct discriminator stops before either branch",
+            "provenance-tagged schedules no hybrid K curves",
+            "DEV-2 margins mandatory only on the final deciding cell",
+            "score-only no optimizer no training CONFIRM and EVAL-E sealed",
+            "colab.run_stage5_paper2_stage2bs_depth_study",
+        ],
+        "env": {"STAGE2BS_DEPTH_MODE": "preflight"},
+    },
+    "paper2_stage2bs_depth_study": {
+        "path": "colab/STAGE5_PAPER2_STAGE2BS_DEPTH_STUDY_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_STAGE2BS_DEPTH_STUDY_VERSION",
+            "paper2_stage2bs_depth_study_v3",
+            "banked native curves 162 10 2 2 and 162 9 5 1",
+            "cascade direct discriminator stops before either branch",
+            "provenance-tagged schedules no hybrid K curves",
+            "DEV-2 margins mandatory only on the final deciding cell",
+            "score-only no optimizer no training CONFIRM and EVAL-E sealed",
+            "colab.run_stage5_paper2_stage2bs_depth_study",
+        ],
+        "env": {"STAGE2BS_DEPTH_MODE": "run"},
+    },
+    "paper2_stage2bs_cascade_direct": {
+        "path": "colab/STAGE5_PAPER2_STAGE2BS_DEPTH_STUDY_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_STAGE2BS_DEPTH_STUDY_VERSION",
+            "paper2_stage2bs_depth_study_v3",
+            "banked native curves 162 10 2 2 and 162 9 5 1",
+            "cascade direct discriminator stops before either branch",
+            "provenance-tagged schedules no hybrid K curves",
+            "DEV-2 margins mandatory only on the final deciding cell",
+            "score-only no optimizer no training CONFIRM and EVAL-E sealed",
+            "colab.run_stage5_paper2_stage2bs_depth_study",
+        ],
+        "env": {"STAGE2BS_DEPTH_MODE": "cascade_direct"},
+    },
+    "paper2_stage2bs_cascade_final": {
+        "path": "colab/STAGE5_PAPER2_STAGE2BS_DEPTH_STUDY_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_STAGE2BS_DEPTH_STUDY_VERSION",
+            "paper2_stage2bs_depth_study_v3",
+            "banked native curves 162 10 2 2 and 162 9 5 1",
+            "final per-loop no-reentry cell dual accumulated and deployed write telemetry",
+            "DEV-2 margins mandatory only on the final deciding cell",
+            "score-only no optimizer no training CONFIRM and EVAL-E sealed",
+            "colab.run_stage5_paper2_stage2bs_depth_study",
+        ],
+        "env": {"STAGE2BS_DEPTH_MODE": "cascade_final"},
     },
     "paper2_phase3_kp1_t1": {
         "path": "colab/STAGE5_PAPER2_PHASE3_KP1_T1_CELL.py",

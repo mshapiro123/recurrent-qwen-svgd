@@ -184,6 +184,7 @@ BOOTSTRAP_VERSION = "sha_resolved_nested_fetch_v3_short_sha"
 #   "paper2_phase2_e1_confirmation" - locked read-once EVAL-D confirmation; A100-80GB.
 #   "paper2_d0_prelock_publish_resume" - publish completed Drive-backed D0 lock receipts without inference.
 #   "paper2_d0_prelock" - authorized density probe, corpus freeze, and preregistration lock only.
+#   "paper2_recirculation_phase_a" - locked A100-40GB score-only recirculation sweep.
 TARGET = os.environ.get("STAGE5_CURRENT_A100_TARGET", "preflight")
 SOURCE_SUMMARY_OVERRIDE = os.environ.get("STAGE5_CURRENT_A100_SOURCE_SUMMARY", "").strip()
 PREFER_LOCAL_HEAD = os.environ.get("STAGE5_BOOTSTRAP_PREFER_LOCAL_HEAD", "0").strip().lower() in {
@@ -207,6 +208,20 @@ if TARGET == "traced_sft_scale64_benchmark" and os.environ.get(
     TARGET = "traced_sft_direct_preservation_probe"
 
 TARGETS = {
+    "paper2_recirculation_phase_a": {
+        "path": "colab/STAGE5_PAPER2_RECIRCULATION_PHASE_A_CELL.py",
+        "markers": [
+            "STAGE5_PAPER2_RECIRCULATION_PHASE_A_VERSION",
+            "paper2_recirculation_phase_a_v1_cli_transport",
+            "locked score-only Phase-A heatmap refinement and battery no optimizer",
+            "NVIDIA A100-SXM4-40GB",
+            "tests/test_paper2_recirculation.py",
+            "colab/run_stage5_paper2_recirculation_phase_a.py",
+            "recirculation_phase_a_transport=cli_archives_no_drive_mount",
+            "runtime.unassign",
+        ],
+        "env": {},
+    },
     "paper2_recirculation_phase0": {
         "path": "colab/STAGE5_PAPER2_RECIRCULATION_PHASE0_CELL.py",
         "markers": [

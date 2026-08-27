@@ -4210,6 +4210,61 @@ def test_paper2_recirculation_phase0_target_is_wired_and_guarded() -> None:
     assert "optimizer.step" not in evaluator
 
 
+def test_paper2_recirculation_phase_a_target_is_wired_and_guarded() -> None:
+    bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(
+        encoding="utf-8"
+    )
+    bootstrap_md = fenced_python_block("colab/CURRENT_A100_BOOTSTRAP_CELL.md")
+    cell = (ROOT / "colab/STAGE5_PAPER2_RECIRCULATION_PHASE_A_CELL.py").read_text(
+        encoding="utf-8"
+    )
+    cell_md = fenced_python_block("colab/STAGE5_PAPER2_RECIRCULATION_PHASE_A_CELL.md")
+    runner = (ROOT / "colab/run_stage5_paper2_recirculation_phase_a.py").read_text(
+        encoding="utf-8"
+    )
+    evaluator = (ROOT / "eval/eval_paper2_recirculation_phase_a.py").read_text(
+        encoding="utf-8"
+    )
+    lock = (ROOT / "training/paper2_recirculation_phase_a_lock.json").read_text(
+        encoding="utf-8"
+    )
+
+    assert cell == cell_md
+    for text in (bootstrap, bootstrap_md):
+        assert '"paper2_recirculation_phase_a"' in text
+        assert "colab/STAGE5_PAPER2_RECIRCULATION_PHASE_A_CELL.py" in text
+        assert "paper2_recirculation_phase_a_v1_cli_transport" in text
+        assert "locked score-only Phase-A heatmap refinement and battery no optimizer" in text
+        assert "NVIDIA A100-SXM4-40GB" in text
+        assert "tests/test_paper2_recirculation.py" in text
+        assert "colab/run_stage5_paper2_recirculation_phase_a.py" in text
+        assert "runtime.unassign" in text
+
+    assert "recirculation_phase_a_transport=cli_archives_no_drive_mount" in cell
+    assert "RECIRCULATION_PHASE0_ARCHIVE" in cell
+    assert "transformers==5.14.1" in cell
+    assert "datasets==5.0.0" in cell
+    assert "matplotlib==3.10.0" in cell
+    assert "phase_a_complete_awaiting_strategy_adjudication" in runner
+    assert "overrun_stop_awaiting_relay" in runner
+    assert "failed_after_scientific_completion" in runner
+    assert "progress_archive" in evaluator
+    assert "select_contiguous_region" in evaluator
+    assert "strategy_key_resolved" in evaluator
+    assert '"expected_cells": 96' in lock
+    assert '"expected_nll_cells": 13' in lock
+    assert '"battery_cells": 2' in lock
+    assert '"battery_baseline_correct": 160' in lock
+    assert '"battery_additive_threshold": 180' in lock
+    assert '"battery_neutral_lower_threshold": 151' in lock
+    assert '"overrun_multiplier": 1.25' in lock
+    assert '"phase_a_authorized": true' in lock
+    assert '"phase_b_training_authorized": false' in lock
+    assert '"optimizer_steps_allowed": 0' in lock
+    assert "torch.optim" not in evaluator
+    assert "optimizer.step" not in evaluator
+
+
 
 def test_gradient_path_audit_target_is_wired_and_guarded() -> None:
     bootstrap = (ROOT / "colab/CURRENT_A100_BOOTSTRAP_CELL.py").read_text(encoding="utf-8")

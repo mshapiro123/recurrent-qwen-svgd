@@ -24,6 +24,7 @@ class RecirculationConfig:
     alpha: float
     beta_mode: str = "convex"
     ramp_tokens: int | None = None
+    normalization_mode: str = "norm_matched"
 
     def validate(self, num_layers: int) -> None:
         if not 1 <= self.destination_layer < self.source_layer <= num_layers:
@@ -36,6 +37,10 @@ class RecirculationConfig:
             raise ValueError("beta_mode must be 'convex' or 'additive'")
         if self.ramp_tokens is not None and int(self.ramp_tokens) <= 0:
             raise ValueError("ramp_tokens must be positive when supplied")
+        if self.normalization_mode not in {"norm_matched", "identity"}:
+            raise ValueError(
+                "normalization_mode must be 'norm_matched' or 'identity'"
+            )
 
 
 @dataclass
@@ -515,12 +520,19 @@ class PaperNativeRecirculationEvaluator(nn.Module):
             if applied_alpha == 0.0:
                 mixed = destination
             else:
-                source_norm = source.float().norm(dim=-1, keepdim=True).clamp_min(1e-12)
-                destination_norm = destination.float().norm(dim=-1, keepdim=True)
-                matched = source.float() * (destination_norm / source_norm)
+                if self.config.normalization_mode == "norm_matched":
+                    source_norm = source.float().norm(
+                        dim=-1, keepdim=True
+                    ).clamp_min(1e-12)
+                    destination_norm = destination.float().norm(
+                        dim=-1, keepdim=True
+                    )
+                    injected = source.float() * (destination_norm / source_norm)
+                else:
+                    injected = source.float()
                 beta = 1.0 - applied_alpha if self.config.beta_mode == "convex" else 1.0
                 mixed = (
-                    beta * destination.float() + applied_alpha * matched
+                    beta * destination.float() + applied_alpha * injected
                 ).to(destination.dtype)
             committed = self._run_upper_layers(
                 hidden_states=mixed,
