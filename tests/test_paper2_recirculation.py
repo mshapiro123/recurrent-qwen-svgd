@@ -11,7 +11,14 @@ from transformers import (
     Qwen2ForCausalLM,
 )
 
-from eval.eval_paper2_recirculation_phase0 import projection_receipt
+from eval.eval_paper2_recirculation_phase0 import (
+    adjudicate_battery_anchor,
+    file_receipt,
+    projection_receipt,
+    sha256_file,
+    write_json,
+    write_jsonl,
+)
 from colab.run_stage5_paper2_recirculation_phase0 import (
     PANEL,
     PANEL_CANONICAL_LF_SHA256,
@@ -180,3 +187,71 @@ def test_canonical_panel_hash_accepts_only_crlf_to_lf_transport(
     assert canonical_lf_sha256(lf) == canonical_lf_sha256(crlf)
     with pytest.raises(RuntimeError, match="unauthorized carriage return"):
         canonical_lf_sha256(invalid)
+
+
+def test_battery_adjudication_preserves_v1_and_reuses_exact_rows(tmp_path) -> None:
+    rows_path = tmp_path / "rows.jsonl"
+    v1_path = tmp_path / "battery_anchor.json"
+    v2_path = tmp_path / "battery_anchor_v2_adjudicated.json"
+    write_jsonl(
+        rows_path,
+        [
+            {"item_id": "a", "augmented_correct": True},
+            {"item_id": "b", "augmented_correct": False},
+        ],
+    )
+    write_json(
+        v1_path,
+        {
+            "kind": "paper2_recirculation_battery_anchor_v1",
+            "rows": 2,
+            "correct": 1,
+            "expected_correct": 2,
+            "elapsed_seconds": 12.5,
+            "row_receipt": file_receipt(rows_path),
+            "passed": False,
+        },
+    )
+    authority = {
+        "drive_id": "ruling",
+        "filename": "ruling.md",
+        "bytes": 10,
+        "sha256": "authority-sha",
+    }
+    lock = {
+        "authorities": [authority],
+        "gates": {
+            "battery_anchor_rows": 2,
+            "battery_additive_delta": 20,
+            "battery_additive_threshold": 21,
+            "battery_neutral_lower_delta": -9,
+            "battery_neutral_lower_threshold": -8,
+        },
+        "comparator_adjudication": {
+            "authority_filename": "ruling.md",
+            "authority_sha256": "authority-sha",
+            "paper_native_correct": 1,
+            "prior_correct": 2,
+            "prior_evaluator": "prior",
+            "row_receipt": file_receipt(rows_path),
+        },
+    }
+    v1_sha = sha256_file(v1_path)
+    receipt = adjudicate_battery_anchor(
+        lock=lock, v1_path=v1_path, rows_path=rows_path, v2_path=v2_path
+    )
+    assert sha256_file(v1_path) == v1_sha
+    assert receipt["passed"] is True
+    assert receipt["generation_replayed"] is False
+    assert receipt["correct"] == 1
+    assert receipt["source_v1_passed"] is False
+    assert receipt["authority"] == authority
+    assert adjudicate_battery_anchor(
+        lock=lock, v1_path=v1_path, rows_path=rows_path, v2_path=v2_path
+    ) == receipt
+
+    rows_path.write_text('{"item_id":"changed","augmented_correct":true}\n')
+    with pytest.raises(RuntimeError, match="row receipt identity changed"):
+        adjudicate_battery_anchor(
+            lock=lock, v1_path=v1_path, rows_path=rows_path, v2_path=v2_path
+        )

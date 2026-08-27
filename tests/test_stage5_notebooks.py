@@ -4200,6 +4200,11 @@ def test_paper2_recirculation_phase0_target_is_wired_and_guarded() -> None:
     assert "cost_ceiling_stop" in evaluator
     assert "battery_anchor_correct" in evaluator
     assert "first_iteration_only" in lock
+    assert '"battery_anchor_correct": 160' in lock
+    assert '"battery_additive_threshold": 180' in lock
+    assert '"battery_neutral_lower_threshold": 151' in lock
+    assert '"phase_a_authorized": false' in lock
+    assert '"regenerate_anchor": false' in lock
     assert '"phase_b_training_authorized": false' in lock
     assert "torch.optim" not in evaluator
     assert "optimizer.step" not in evaluator

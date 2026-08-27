@@ -29,7 +29,7 @@ from models.recirculation import (
 
 
 KIND = "paper2_recirculation_phase0_v1"
-LOCK_KIND = "paper2_recirculation_phase0_lock_v1"
+LOCK_KIND = "paper2_recirculation_phase0_lock_v2"
 
 
 def sha256_file(path: Path) -> str:
@@ -60,6 +60,79 @@ def write_jsonl(path: Path, rows: Iterable[Mapping[str, Any]]) -> None:
 
 def read_jsonl(path: Path) -> list[dict[str, Any]]:
     return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line]
+
+
+def file_receipt(path: Path) -> dict[str, Any]:
+    return {"bytes": path.stat().st_size, "sha256": sha256_file(path)}
+
+
+def adjudicate_battery_anchor(
+    *,
+    lock: Mapping[str, Any],
+    v1_path: Path,
+    rows_path: Path,
+    v2_path: Path,
+) -> dict[str, Any]:
+    """Bind the retained alpha-zero rows to the comparator ruling without replay."""
+    adjudication = lock["comparator_adjudication"]
+    rows_receipt = file_receipt(rows_path)
+    if rows_receipt != dict(adjudication["row_receipt"]):
+        raise RuntimeError("ratified battery row receipt identity changed")
+    v1 = json.loads(v1_path.read_text(encoding="utf-8"))
+    if v1.get("row_receipt") != rows_receipt:
+        raise RuntimeError("v1 battery receipt no longer owns the retained rows")
+    rows = read_jsonl(rows_path)
+    observed_correct = sum(bool(row["augmented_correct"]) for row in rows)
+    expected_rows = int(lock["gates"]["battery_anchor_rows"])
+    expected_correct = int(adjudication["paper_native_correct"])
+    if len(rows) != expected_rows or observed_correct != expected_correct:
+        raise RuntimeError(
+            "ratified paper-native comparator changed: "
+            f"rows={len(rows)} correct={observed_correct}"
+        )
+    authority = next(
+        (
+            item
+            for item in lock["authorities"]
+            if item["filename"] == adjudication["authority_filename"]
+        ),
+        None,
+    )
+    if authority is None or authority["sha256"] != adjudication["authority_sha256"]:
+        raise RuntimeError("comparator adjudication authority is missing or changed")
+    receipt = {
+        "kind": "paper2_recirculation_battery_anchor_v2_adjudicated",
+        "status": "passed_by_strategy_adjudication",
+        "rows": len(rows),
+        "correct": observed_correct,
+        "comparator": expected_correct,
+        "row_receipt": rows_receipt,
+        "source_v1_receipt": file_receipt(v1_path),
+        "source_v1_passed": bool(v1.get("passed", False)),
+        "source_v1_expected_correct": int(v1["expected_correct"]),
+        "generation_replayed": False,
+        "elapsed_seconds": float(v1["elapsed_seconds"]),
+        "registered_bars": {
+            "additive_delta": int(lock["gates"]["battery_additive_delta"]),
+            "additive_threshold": int(lock["gates"]["battery_additive_threshold"]),
+            "neutral_lower_delta": int(lock["gates"]["battery_neutral_lower_delta"]),
+            "neutral_lower_threshold": int(
+                lock["gates"]["battery_neutral_lower_threshold"]
+            ),
+        },
+        "prior_comparator": {
+            "correct": int(adjudication["prior_correct"]),
+            "evaluator": adjudication["prior_evaluator"],
+        },
+        "authority": dict(authority),
+        "passed": True,
+    }
+    if v2_path.is_file():
+        if json.loads(v2_path.read_text(encoding="utf-8")) != receipt:
+            raise RuntimeError("durable v2 battery adjudication receipt changed")
+    else:
+        write_json(v2_path, receipt)
+    return receipt
 
 
 def _string_leaves(value: Any) -> Iterable[str]:
@@ -393,6 +466,7 @@ def main() -> int:
         "optimizer_steps": 0,
         "confirm_scored": False,
         "eval_e_scored": False,
+        "phase_a_authorized": False,
         "runtime": runtime,
         "corpus": corpus,
     }
@@ -422,16 +496,23 @@ def main() -> int:
     write_json(args.output_dir / "graph_receipt.json", graph)
 
     battery_path = args.output_dir / "battery_anchor.json"
+    battery_v2_path = args.output_dir / "battery_anchor_v2_adjudicated.json"
     battery_rows_path = args.private_dir / "battery_anchor_rows.jsonl"
     battery_resumed = battery_path.is_file() and battery_rows_path.is_file()
+    if not battery_resumed and not bool(
+        lock["comparator_adjudication"]["regenerate_anchor"]
+    ):
+        raise RuntimeError(
+            "ratified comparator rows are missing; regeneration is prohibited"
+        )
     if battery_resumed:
-        battery = json.loads(battery_path.read_text(encoding="utf-8"))
-        if battery.get("row_receipt") != {
+        battery_v1 = json.loads(battery_path.read_text(encoding="utf-8"))
+        if battery_v1.get("row_receipt") != {
             "bytes": battery_rows_path.stat().st_size,
             "sha256": sha256_file(battery_rows_path),
         }:
             raise RuntimeError("durable battery row receipt identity changed")
-        battery_elapsed = float(battery["elapsed_seconds"])
+        battery_elapsed = float(battery_v1["elapsed_seconds"])
         battery_graph = None
         print("recirculation_resume stage=battery_anchor", flush=True)
     else:
@@ -452,7 +533,7 @@ def main() -> int:
         )
         battery_elapsed = time.perf_counter() - battery_started
         write_jsonl(battery_rows_path, battery_rows)
-        battery = {
+        battery_v1 = {
             "kind": "paper2_recirculation_battery_anchor_v1",
             "rows": len(battery_rows),
             "correct": sum(bool(row["augmented_correct"]) for row in battery_rows),
@@ -463,13 +544,19 @@ def main() -> int:
                 "sha256": sha256_file(battery_rows_path),
             },
         }
-        battery["passed"] = (
-            battery["rows"] == int(lock["gates"]["battery_anchor_rows"])
-            and battery["correct"] == battery["expected_correct"]
+        battery_v1["passed"] = (
+            battery_v1["rows"] == int(lock["gates"]["battery_anchor_rows"])
+            and battery_v1["correct"] == battery_v1["expected_correct"]
         )
-        write_json(battery_path, battery)
+        write_json(battery_path, battery_v1)
+    battery = adjudicate_battery_anchor(
+        lock=lock,
+        v1_path=battery_path,
+        rows_path=battery_rows_path,
+        v2_path=battery_v2_path,
+    )
     if not battery["passed"]:
-        raise RuntimeError(f"banked 162/461 battery anchor changed: {battery}")
+        raise RuntimeError(f"paper-native battery comparator changed: {battery}")
 
     qwen_timing_path = args.output_dir / "qwen_timing.json"
     qwen_timing_resumed = qwen_timing_path.is_file()
@@ -592,6 +679,7 @@ def main() -> int:
         graph_receipt_sha256=sha256_file(args.output_dir / "graph_receipt.json"),
         identity_qwen=identity,
         identity_gemma=gemma_identity,
+        battery_anchor_v1=battery_v1,
         battery_anchor=battery,
         qwen_timing=qwen_timing,
         gemma_anchor=gemma_anchor,

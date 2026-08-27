@@ -142,6 +142,7 @@ def main() -> int:
         "optimizer_steps": 0,
         "confirm_scored": False,
         "eval_e_scored": False,
+        "phase_a_authorized": False,
         "phase_b_training_authorized": False,
     }
     atomic_json(status_path, status)
@@ -214,6 +215,7 @@ def main() -> int:
             "runtime": phase0_status["runtime"],
             "identity_qwen": phase0_status["identity_qwen"],
             "identity_gemma": phase0_status["identity_gemma"],
+            "battery_anchor_v1": phase0_status["battery_anchor_v1"],
             "battery_anchor": phase0_status["battery_anchor"],
             "qwen_timing": phase0_status["qwen_timing"],
             "gemma_anchor": phase0_status["gemma_anchor"],
