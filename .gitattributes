@@ -6,6 +6,7 @@ artifacts/bicameral_w1_20260824/generation/*.jsonl text eol=lf
 .gitignore text eol=lf
 docs/WORKTREE_CLEANUP_RECEIPT_20260826.md text eol=lf
 docs/STRATEGY_RECIRCULATION_PROBE_HANDOFF_20260823.md text eol=lf
+docs/CODING_TO_STRATEGY_RECIRCULATION_P0_SEMANTICS_CLARIFICATION_REQUEST_20260826.md text eol=lf
 
 # Governing documents with tests over raw bytes must materialize exactly as LF.
 docs/COMPOSITE_TRAINING_DESIGN_20260729.md text eol=lf
