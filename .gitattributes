@@ -1,7 +1,11 @@
+.gitattributes text eol=lf
 artifacts/bicameral_w0_20260824/*.json text eol=lf
 artifacts/bicameral_w0_20260824/*.jsonl text eol=lf
 artifacts/bicameral_w1_20260824/generation/*.json text eol=lf
 artifacts/bicameral_w1_20260824/generation/*.jsonl text eol=lf
+.gitignore text eol=lf
+docs/WORKTREE_CLEANUP_RECEIPT_20260826.md text eol=lf
+docs/STRATEGY_RECIRCULATION_PROBE_HANDOFF_20260823.md text eol=lf
 
 # Governing documents with tests over raw bytes must materialize exactly as LF.
 docs/COMPOSITE_TRAINING_DESIGN_20260729.md text eol=lf
