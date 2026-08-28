@@ -21,12 +21,17 @@ from training.weft1_gtok_contract import (
     GTOK_BPB_MILESTONE_BYTES,
     GTOK_BPB_MILESTONE_FRACTIONS,
     GTOK_CURRICULUM_AMENDMENT_SHA256,
+    GTOK_CURRICULUM_DATA_SHA256,
+    GTOK_CURRICULUM_DECISIONS_SHA256,
     GTOK_RATIFICATION_SHA256,
     GTokComputeReceipt,
     GTOK_ENGLISH_SCOPE_SHA256,
+    GTOK_EXECUTION_AUTHORITY_CHAIN,
+    GTOK_EXECUTION_HANDOFF_SHA256,
     GTOK_HANDOFF_SHA256,
     GTOK_PROXY_TOPOLOGY,
     GTOK_PROXY_TOPOLOGY_SHA256,
+    GTOK_QWEN_ADJUDICATION_SHA256,
     GTOK_ROUND_TRIP_CATEGORIES,
     GTOK_RULINGS_SHA256,
     GTOK_SEED_COUNT,
@@ -45,6 +50,7 @@ from training.weft1_gtok_contract import (
     bits_per_byte,
     authority_bound_sha256,
     canonical_sha256,
+    execution_authority_bound_sha256,
     require_gtok_execution_authority,
     sha256_bytes,
     validate_append_only_tokenizer_extension,
@@ -321,12 +327,38 @@ def test_binding_authority_chain_and_screen_constants_are_exact() -> None:
     assert GTOK_RATIFICATION_SHA256 == (
         "c5df74297594e75697ffb71d8d05d75efcf94f7857d55ddd357043200efb6d3a"
     )
+    assert GTOK_CURRICULUM_DATA_SHA256 == (
+        "14f0ba5d32898d69413839b8e342cc74b858eef90e65079175e37968052dea22"
+    )
+    assert GTOK_QWEN_ADJUDICATION_SHA256 == (
+        "6c2568d5ba7f8295c65493b863d0530e71ee78e2290455307b00bdcdee480a1f"
+    )
+    assert GTOK_CURRICULUM_DECISIONS_SHA256 == (
+        "61fc7727e456d822f43613db602c0251344b64ea92c7b256af5f1fe560cd8b6d"
+    )
+    assert GTOK_EXECUTION_HANDOFF_SHA256 == (
+        "2aecb64711a2bf2776c8d1940350bc5d42b335f60eb774ac1e941f470b9cf74c"
+    )
     assert GTOK_AUTHORITY_CHAIN == (
         GTOK_HANDOFF_SHA256,
         GTOK_RULINGS_SHA256,
         GTOK_ENGLISH_SCOPE_SHA256,
         GTOK_CURRICULUM_AMENDMENT_SHA256,
         GTOK_RATIFICATION_SHA256,
+    )
+    assert GTOK_EXECUTION_AUTHORITY_CHAIN == (
+        GTOK_HANDOFF_SHA256,
+        GTOK_RATIFICATION_SHA256,
+        GTOK_RULINGS_SHA256,
+        GTOK_ENGLISH_SCOPE_SHA256,
+        GTOK_CURRICULUM_AMENDMENT_SHA256,
+        GTOK_CURRICULUM_DATA_SHA256,
+        GTOK_QWEN_ADJUDICATION_SHA256,
+        GTOK_CURRICULUM_DECISIONS_SHA256,
+        GTOK_EXECUTION_HANDOFF_SHA256,
+    )
+    assert execution_authority_bound_sha256("fixture", {"value": 1}) != (
+        authority_bound_sha256("fixture", {"value": 1})
     )
     assert GTOK_TRAINING_BYTE_BUDGET == 4_000_000_000
     assert GTOK_TRAINING_BYTE_CEILING == 4_000_000_000
@@ -1022,10 +1054,11 @@ def test_choice_dependent_actions_fail_closed_on_all_open_decisions() -> None:
         require_gtok_execution_authority("fit tokenizer")
 
     message = str(raised.value)
-    assert "4/2/4 versus eight dense blocks" not in message
+    assert "eight dense blocks in the execution handoff versus ten" in message
     assert "D-C-1 curriculum shape" not in message
     assert "D-C-2 tie rule" not in message
     assert "literal tokenizer library/version" in message
     assert "numerical AdamW hyperparameters" in message
     assert "undertrained-row norm threshold" in message
-    assert len(UNRESOLVED_GTOK_DECISIONS) == 3
+    assert "held-out denominator" in message
+    assert len(UNRESOLVED_GTOK_DECISIONS) == 9

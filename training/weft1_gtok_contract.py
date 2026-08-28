@@ -2,8 +2,9 @@
 
 This module is deliberately infrastructure-only.  It does not fit a tokenizer,
 construct an optimizer, train a model, read a corpus, freeze an artifact, or
-select a vocabulary.  Those actions remain blocked while the exact tokenizer
-implementation, optimizer schedule, and final reporting schemas are unresolved.
+select a vocabulary.  The 2026-08-28 execution handoff authorizes the bounded
+run axis, but execution still fails closed while literal protocol bindings and
+two reported authority conflicts remain unresolved.
 
 Append-only vocabulary continuation preserves the byte meaning of every old
 token ID and the old merge list as an exact prefix.  It does *not* imply that
@@ -42,12 +43,37 @@ GTOK_CURRICULUM_AMENDMENT_SHA256 = (
 GTOK_RATIFICATION_SHA256 = (
     "c5df74297594e75697ffb71d8d05d75efcf94f7857d55ddd357043200efb6d3a"
 )
+# Later authorities are kept separate from ``GTOK_AUTHORITY_CHAIN`` so the
+# hashes of already-banked design receipts do not change retroactively.
+GTOK_CURRICULUM_DATA_SHA256 = (
+    "14f0ba5d32898d69413839b8e342cc74b858eef90e65079175e37968052dea22"
+)
+GTOK_QWEN_ADJUDICATION_SHA256 = (
+    "6c2568d5ba7f8295c65493b863d0530e71ee78e2290455307b00bdcdee480a1f"
+)
+GTOK_CURRICULUM_DECISIONS_SHA256 = (
+    "61fc7727e456d822f43613db602c0251344b64ea92c7b256af5f1fe560cd8b6d"
+)
+GTOK_EXECUTION_HANDOFF_SHA256 = (
+    "2aecb64711a2bf2776c8d1940350bc5d42b335f60eb774ac1e941f470b9cf74c"
+)
 GTOK_AUTHORITY_CHAIN = (
     GTOK_HANDOFF_SHA256,
     GTOK_RULINGS_SHA256,
     GTOK_ENGLISH_SCOPE_SHA256,
     GTOK_CURRICULUM_AMENDMENT_SHA256,
     GTOK_RATIFICATION_SHA256,
+)
+GTOK_EXECUTION_AUTHORITY_CHAIN = (
+    GTOK_HANDOFF_SHA256,
+    GTOK_RATIFICATION_SHA256,
+    GTOK_RULINGS_SHA256,
+    GTOK_ENGLISH_SCOPE_SHA256,
+    GTOK_CURRICULUM_AMENDMENT_SHA256,
+    GTOK_CURRICULUM_DATA_SHA256,
+    GTOK_QWEN_ADJUDICATION_SHA256,
+    GTOK_CURRICULUM_DECISIONS_SHA256,
+    GTOK_EXECUTION_HANDOFF_SHA256,
 )
 GTOK_BPB_MILESTONE_FRACTIONS = (
     Fraction(1, 4),
@@ -77,8 +103,14 @@ GTOK_ROUND_TRIP_CATEGORIES = (
 GTOK_COMPUTE_SCOPES = ("base_screen", "confirmation", "infrastructure", "pilot")
 GTOK_COMPUTE_STATUSES = ("aborted", "cancelled", "completed", "failed", "preempted")
 UNRESOLVED_GTOK_DECISIONS = (
+    "4/2/4 proxy semantics: eight dense blocks in the execution handoff versus ten in the build contract",
+    "corpus source topology: the named Dolma 3 endpoint does not contain four of the six named source families",
+    "exact source revisions, source routes, quality selectors, and deterministic tie-breaks",
+    "language-ID implementation/version and exact threshold",
+    "whitespace normalization, MinHash/LSH parameters, shard serialization, and manifest hash scope",
+    "held-out denominator, whole-document rounding, tolerance semantics, and 4B screen-corpus join",
     "literal tokenizer library/version, regex, and reserved-token inventory",
-    "numerical AdamW hyperparameters and schedule",
+    "numerical AdamW hyperparameters, schedule, and exact seed identities",
     "undertrained-row norm threshold and remaining reporting schemas",
 )
 
@@ -149,6 +181,20 @@ def authority_bound_sha256(schema: str, value: Any) -> str:
     return canonical_sha256(
         {
             "authority_chain": GTOK_AUTHORITY_CHAIN,
+            "payload": value,
+            "schema": schema,
+        }
+    )
+
+
+def execution_authority_bound_sha256(schema: str, value: Any) -> str:
+    """Hash a new execution receipt without rewriting banked design receipts."""
+
+    if not isinstance(schema, str) or not schema.strip():
+        raise ValueError("receipt schema must be a nonempty string")
+    return canonical_sha256(
+        {
+            "authority_chain": GTOK_EXECUTION_AUTHORITY_CHAIN,
             "payload": value,
             "schema": schema,
         }
@@ -1086,12 +1132,15 @@ def validate_complete_gtok_bpb_receipts(
 
 
 def require_gtok_execution_authority(action: str) -> NoReturn:
-    """Fail closed until every remaining implementation choice is ratified."""
+    """Fail closed until every literal binding and authority conflict is resolved."""
 
     if not isinstance(action, str) or not action.strip():
         raise ValueError("blocked action must be named")
     unresolved = "; ".join(UNRESOLVED_GTOK_DECISIONS)
-    raise GTokExecutionBlocked(f"{action} is blocked by unresolved G-TOK decisions: {unresolved}")
+    raise GTokExecutionBlocked(
+        f"{action} is inside the authorized run-axis envelope but blocked by "
+        f"unresolved G-TOK bindings or authority conflicts: {unresolved}"
+    )
 
 
 @dataclass(frozen=True)
@@ -1350,12 +1399,17 @@ __all__ = [
     "GTOK_BPB_MILESTONE_FRACTIONS",
     "GTOK_AUTHORITY_CHAIN",
     "GTOK_CURRICULUM_AMENDMENT_SHA256",
+    "GTOK_CURRICULUM_DATA_SHA256",
+    "GTOK_CURRICULUM_DECISIONS_SHA256",
     "GTOK_COMPUTE_SCOPES",
     "GTOK_COMPUTE_STATUSES",
     "GTOK_ENGLISH_SCOPE_SHA256",
+    "GTOK_EXECUTION_AUTHORITY_CHAIN",
+    "GTOK_EXECUTION_HANDOFF_SHA256",
     "GTOK_HANDOFF_SHA256",
     "GTOK_PROXY_TOPOLOGY",
     "GTOK_PROXY_TOPOLOGY_SHA256",
+    "GTOK_QWEN_ADJUDICATION_SHA256",
     "GTOK_ROUND_TRIP_CATEGORIES",
     "GTOK_RULINGS_SHA256",
     "GTOK_SEED_COUNT",
@@ -1378,6 +1432,7 @@ __all__ = [
     "bits_per_byte",
     "canonical_json_bytes",
     "canonical_sha256",
+    "execution_authority_bound_sha256",
     "require_gtok_execution_authority",
     "sha256_bytes",
     "validate_a100_hour_tripwire",

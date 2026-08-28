@@ -15,6 +15,9 @@ checkpoints/
 data/
 wandb/
 
+# Local execution transcripts retained outside Git; do not delete during cleanup.
+/.runlogs/
+
 # Frozen local experiment evidence. Tracked members remain tracked.
 # Disposition and retained hashes: docs/WORKTREE_CLEANUP_RECEIPT_20260826.md
 /artifacts/bicameral_w1_20260824/
