@@ -1,0 +1,46 @@
+{
+  "kind": "paper2_recirculation_phase_a_desk_rider_publication_receipt_v1",
+  "status": "published_and_raw_bytes_verified",
+  "branch": "codex/bicameral-stage0",
+  "result_commit": "5b2050995d20a626845fd1b6bc6fb9af0072b1e3",
+  "authority": {
+    "drive_id": "1zkmRbv1qmsT4GihAv6mnVj9BNiO80O6o",
+    "bytes": 12476,
+    "sha256": "c4157a6d71cf22a183292b24d811ed22319d511a4a79438c27f5b2d98d8feb72"
+  },
+  "uploads": {
+    "handoff": {
+      "drive_id": "1TbSmoXOx1Rei6kDMyZpY5Y5eRQZ86nA9",
+      "filename": "CODING_TO_STRATEGY_RECIRCULATION_PHASE_A_DESK_RIDER_HANDOFF_20260828.md",
+      "bytes": 11963,
+      "sha256": "7cd514d8674acc1d78af600bb8f760fc26c01c5b935f2940ec3819cd4d334f90",
+      "raw_download_verified": true
+    },
+    "aggregate_summary": {
+      "drive_id": "1ccsOZ6lWSeFhV5tUMeT4KnrpN15UMnVv",
+      "filename": "paper2_recirculation_phase_a_desk_rider_summary_20260828.json",
+      "bytes": 46488,
+      "sha256": "f899e540388b98e04ea8d120617d5ab968f5e2bf78f770eecfe27677c412822f",
+      "raw_download_verified": true
+    },
+    "private_receipt_archive": {
+      "drive_id": "18ZhqlGzKxpgHYjIbm5XkAi_Mfne2l8Rz",
+      "filename": "paper2_recirculation_phase_a_desk_rider_artifacts_20260828.tar.gz",
+      "bytes": 58036,
+      "sha256": "b5257c1a97ca82c72836ae91892705911b5253cc46c80f8d81c40dbe397e8d10",
+      "raw_download_verified": true
+    }
+  },
+  "verification": {
+    "tests_passed": 23,
+    "ruff_available": false,
+    "git_diff_check_passed": true,
+    "gpu_used": false,
+    "model_loaded": false,
+    "optimizer_steps": 0,
+    "new_generation": false,
+    "confirm_scored": false,
+    "eval_e_scored": false,
+    "phase_b_authorized": false
+  }
+}
