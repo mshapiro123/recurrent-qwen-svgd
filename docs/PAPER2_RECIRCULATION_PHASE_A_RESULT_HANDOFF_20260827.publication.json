@@ -1,0 +1,31 @@
+{
+  "artifacts": [
+    {
+      "bytes": 14595,
+      "drive_id": "1zHGfi84q6-bcbppTXyr8GN8E4RXNrka7",
+      "filename": "CODING_TO_STRATEGY_RECIRCULATION_PHASE_A_RESULT_HANDOFF_20260827.md",
+      "sha256": "77196781ca1f5b7c590139596739ba710afcf22f9124dfefba5dd8a1490dd4ab",
+      "url": "https://drive.google.com/file/d/1zHGfi84q6-bcbppTXyr8GN8E4RXNrka7/view"
+    },
+    {
+      "bytes": 6659,
+      "drive_id": "1LeQLk8OrFx01fi_xuFWUHmR4cWuU5RJF",
+      "filename": "PAPER2_RECIRCULATION_PHASE_A_RESULT_HANDOFF_20260827.receipt.json",
+      "sha256": "6895f22c1108e922850b42b7be2d9ec428e83ca4ae508ab0adcaf89d9e427e35",
+      "url": "https://drive.google.com/file/d/1LeQLk8OrFx01fi_xuFWUHmR4cWuU5RJF/view"
+    },
+    {
+      "bytes": 620397,
+      "drive_id": "1QZJeeddYAF0_sY3O9tGpvxj6Y53uDECQ",
+      "filename": "PAPER2_RECIRCULATION_PHASE_A_COMPLETION_ARCHIVE_20260827.tar.gz",
+      "sha256": "273997d71be5d6f7fae9f799ac328f5a1db083cbf22504c1a26bd0fa7ccd8b3f",
+      "url": "https://drive.google.com/file/d/1QZJeeddYAF0_sY3O9tGpvxj6Y53uDECQ/view"
+    }
+  ],
+  "date": "2026-08-27",
+  "download_verification": "all Drive raw-file bytes matched local SHA-256 values",
+  "kind": "paper2_recirculation_phase_a_result_publication_receipt_v1",
+  "parent_folder_id": "1aSbU2i8JZ37g5bJpyweLuvFaV0y92Qjr",
+  "repo_commit_before_publication_receipt": "0d9ce75d05ace966471eb7ced5e2a154675995b4",
+  "status": "published_byte_verified"
+}
