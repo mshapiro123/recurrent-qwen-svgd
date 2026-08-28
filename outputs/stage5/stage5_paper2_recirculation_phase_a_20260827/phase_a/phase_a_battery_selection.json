@@ -1,0 +1,32 @@
+{
+  "kind": "paper2_recirculation_phase_a_battery_selection_v1",
+  "rule": "two_unique_configurations_with_lowest_mean_nll_after_all_registered_nll_cells",
+  "selected": [
+    {
+      "config": {
+        "alpha": 0.2,
+        "beta_mode": "additive",
+        "destination_layer": 4,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 16
+      },
+      "mean_nll": 2.6062418151344606,
+      "perplexity_reduction_percent": 2.638376437825126,
+      "rank": 1
+    },
+    {
+      "config": {
+        "alpha": 0.2,
+        "beta_mode": "convex",
+        "destination_layer": 4,
+        "normalization_mode": "identity",
+        "ramp_tokens": null,
+        "source_layer": 16
+      },
+      "mean_nll": 2.610438520840769,
+      "perplexity_reduction_percent": 2.228919773042791,
+      "rank": 2
+    }
+  ]
+}

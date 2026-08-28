@@ -1,0 +1,47 @@
+{
+  "baseline_correct": 160,
+  "config": {
+    "alpha": 0.2,
+    "beta_mode": "additive",
+    "destination_layer": 4,
+    "normalization_mode": "norm_matched",
+    "ramp_tokens": null,
+    "source_layer": 16
+  },
+  "correct": 96,
+  "delta_rows": -64,
+  "elapsed_seconds": 1812.641141653,
+  "evaluator": "paper_native_serial_first_iteration_readout_v1",
+  "fixes": 21,
+  "kind": "paper2_recirculation_phase_a_battery_cell_v1",
+  "per_battery": {
+    "gsm8k": {
+      "baseline_correct": 107,
+      "current_correct": 44,
+      "fixes": 18,
+      "regressions": 81,
+      "rows": 369
+    },
+    "mbpp": {
+      "baseline_correct": 33,
+      "current_correct": 30,
+      "fixes": 1,
+      "regressions": 4,
+      "rows": 67
+    },
+    "tier1": {
+      "baseline_correct": 20,
+      "current_correct": 22,
+      "fixes": 2,
+      "regressions": 0,
+      "rows": 25
+    }
+  },
+  "regressions": 85,
+  "row_receipt": {
+    "bytes": 1044007,
+    "sha256": "9a06aa04ff67837c65009eb94e31224bb3e6cc25926317c6246eb2e60afa3b3d"
+  },
+  "rows": 461,
+  "weights_frozen": true
+}

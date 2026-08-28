@@ -1,0 +1,34 @@
+{
+  "best_pair": {
+    "destination_layer": 4,
+    "pair_score_percent": 1.14100287884049,
+    "source_layer": 16,
+    "source_offset": 12
+  },
+  "candidate_regions": 126,
+  "configured_before_first_phase_a_score": true,
+  "coordinate": "destination_and_source_offset",
+  "kind": "paper2_recirculation_phase_a_region_selection_v1",
+  "selected_pairs": [
+    {
+      "destination_layer": 4,
+      "pair_score_percent": 1.14100287884049,
+      "source_layer": 16,
+      "source_offset": 12
+    },
+    {
+      "destination_layer": 6,
+      "pair_score_percent": 0.3707036078211403,
+      "source_layer": 16,
+      "source_offset": 10
+    },
+    {
+      "destination_layer": 6,
+      "pair_score_percent": 0.540042581433703,
+      "source_layer": 18,
+      "source_offset": 12
+    }
+  ],
+  "selected_region_mean_percent": 0.6839163560317778,
+  "selected_region_minimum_percent": 0.3707036078211403
+}

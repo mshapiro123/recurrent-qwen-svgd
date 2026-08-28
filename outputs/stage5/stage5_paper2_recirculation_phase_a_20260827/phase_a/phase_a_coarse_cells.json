@@ -1,0 +1,3269 @@
+{
+  "cells": [
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.05,
+        "beta_mode": "convex",
+        "destination_layer": 2,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 6
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": 0.35733068800611073,
+      "recirculated": {
+        "elapsed_seconds": 71.27439191400026,
+        "label": "phase_a_001_coarse_d02_s06_a0p05_convex_rnone_norm_matched",
+        "mean_nll": 2.629400170327165,
+        "perplexity": 13.865450498630507,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 1,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.1,
+        "beta_mode": "convex",
+        "destination_layer": 2,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 6
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": 0.6389761708252429,
+      "recirculated": {
+        "elapsed_seconds": 70.63359587900004,
+        "label": "phase_a_002_coarse_d02_s06_a0p10_convex_rnone_norm_matched",
+        "mean_nll": 2.626569613100613,
+        "perplexity": 13.826259040521691,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 2,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.16,
+        "beta_mode": "convex",
+        "destination_layer": 2,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 6
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": 0.7951793334977585,
+      "recirculated": {
+        "elapsed_seconds": 70.3981011840001,
+        "label": "phase_a_003_coarse_d02_s06_a0p16_convex_rnone_norm_matched",
+        "mean_nll": 2.6249962992682137,
+        "perplexity": 13.804523099135137,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 3,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.05,
+        "beta_mode": "convex",
+        "destination_layer": 2,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 8
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": 0.09921652715839305,
+      "recirculated": {
+        "elapsed_seconds": 70.43865637299996,
+        "label": "phase_a_004_coarse_d02_s08_a0p05_convex_rnone_norm_matched",
+        "mean_nll": 2.6319872189243982,
+        "perplexity": 13.901367532416742,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 4,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.1,
+        "beta_mode": "convex",
+        "destination_layer": 2,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 8
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": 0.09239275734689473,
+      "recirculated": {
+        "elapsed_seconds": 70.55750300999989,
+        "label": "phase_a_005_coarse_d02_s08_a0p10_convex_rnone_norm_matched",
+        "mean_nll": 2.6320555220601145,
+        "perplexity": 13.902317071837842,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 5,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.16,
+        "beta_mode": "convex",
+        "destination_layer": 2,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 8
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": -0.13123814465592187,
+      "recirculated": {
+        "elapsed_seconds": 70.50495724499979,
+        "label": "phase_a_006_coarse_d02_s08_a0p16_convex_rnone_norm_matched",
+        "mean_nll": 2.634291397744493,
+        "perplexity": 13.933435700263736,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 6,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.05,
+        "beta_mode": "convex",
+        "destination_layer": 2,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 10
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": 0.21343912877274404,
+      "recirculated": {
+        "elapsed_seconds": 70.59091675799982,
+        "label": "phase_a_007_coarse_d02_s10_a0p05_convex_rnone_norm_matched",
+        "mean_nll": 2.630843204370575,
+        "perplexity": 13.885473259015157,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 7,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.1,
+        "beta_mode": "convex",
+        "destination_layer": 2,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 10
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": 0.23292826243673947,
+      "recirculated": {
+        "elapsed_seconds": 70.40077033399984,
+        "label": "phase_a_008_coarse_d02_s10_a0p10_convex_rnone_norm_matched",
+        "mean_nll": 2.630647877094683,
+        "perplexity": 13.882761312216209,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 8,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.16,
+        "beta_mode": "convex",
+        "destination_layer": 2,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 10
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": 0.031016382600141622,
+      "recirculated": {
+        "elapsed_seconds": 70.57112503500002,
+        "label": "phase_a_009_coarse_d02_s10_a0p16_convex_rnone_norm_matched",
+        "mean_nll": 2.632669664780998,
+        "perplexity": 13.9108577009851,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 9,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.05,
+        "beta_mode": "convex",
+        "destination_layer": 2,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 12
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": 0.11079356922467486,
+      "recirculated": {
+        "elapsed_seconds": 70.65517554400003,
+        "label": "phase_a_010_coarse_d02_s12_a0p05_convex_rnone_norm_matched",
+        "mean_nll": 2.6318713268110363,
+        "perplexity": 13.899756566905692,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 10,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.1,
+        "beta_mode": "convex",
+        "destination_layer": 2,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 12
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": 0.00956817940466181,
+      "recirculated": {
+        "elapsed_seconds": 70.55495823599995,
+        "label": "phase_a_011_coarse_d02_s12_a0p10_convex_rnone_norm_matched",
+        "mean_nll": 2.632884190345906,
+        "perplexity": 13.913842255711954,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 11,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.16,
+        "beta_mode": "convex",
+        "destination_layer": 2,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 12
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": -0.30411275317628644,
+      "recirculated": {
+        "elapsed_seconds": 70.44820434400026,
+        "label": "phase_a_012_coarse_d02_s12_a0p16_convex_rnone_norm_matched",
+        "mean_nll": 2.636016389375092,
+        "perplexity": 13.957491502295735,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 12,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.05,
+        "beta_mode": "convex",
+        "destination_layer": 2,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 14
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": 0.10817820129395672,
+      "recirculated": {
+        "elapsed_seconds": 70.53620082999987,
+        "label": "phase_a_013_coarse_d02_s14_a0p05_convex_rnone_norm_matched",
+        "mean_nll": 2.6318975091563175,
+        "perplexity": 13.90012049989574,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 13,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.1,
+        "beta_mode": "convex",
+        "destination_layer": 2,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 14
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": 0.048212353886185944,
+      "recirculated": {
+        "elapsed_seconds": 70.43741037399968,
+        "label": "phase_a_014_coarse_d02_s14_a0p10_convex_rnone_norm_matched",
+        "mean_nll": 2.6324976369199633,
+        "perplexity": 13.90846485171391,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 14,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.16,
+        "beta_mode": "convex",
+        "destination_layer": 2,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 14
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": -0.39477667186652404,
+      "recirculated": {
+        "elapsed_seconds": 70.60500078900031,
+        "label": "phase_a_015_coarse_d02_s14_a0p16_convex_rnone_norm_matched",
+        "mean_nll": 2.636919871453316,
+        "perplexity": 13.97010754405065,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 15,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.05,
+        "beta_mode": "convex",
+        "destination_layer": 4,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 8
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": -0.08189395128870267,
+      "recirculated": {
+        "elapsed_seconds": 67.21846946899996,
+        "label": "phase_a_016_coarse_d04_s08_a0p05_convex_rnone_norm_matched",
+        "mean_nll": 2.6337984810826365,
+        "perplexity": 13.926569370053475,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 16,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.1,
+        "beta_mode": "convex",
+        "destination_layer": 4,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 8
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": -0.17855985744011504,
+      "recirculated": {
+        "elapsed_seconds": 67.17898648600021,
+        "label": "phase_a_017_coarse_d04_s08_a0p10_convex_rnone_norm_matched",
+        "mean_nll": 2.634763883006188,
+        "perplexity": 13.940020598788134,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 17,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.16,
+        "beta_mode": "convex",
+        "destination_layer": 4,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 8
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": -0.5351504047028676,
+      "recirculated": {
+        "elapsed_seconds": 67.3136054229999,
+        "label": "phase_a_018_coarse_d04_s08_a0p16_convex_rnone_norm_matched",
+        "mean_nll": 2.638317112349345,
+        "perplexity": 13.989640792782236,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 18,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.05,
+        "beta_mode": "convex",
+        "destination_layer": 4,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 10
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": 0.20326036522657304,
+      "recirculated": {
+        "elapsed_seconds": 67.23560315999976,
+        "label": "phase_a_019_coarse_d04_s10_a0p05_convex_rnone_norm_matched",
+        "mean_nll": 2.630945204523185,
+        "perplexity": 13.88688965164154,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 19,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.1,
+        "beta_mode": "convex",
+        "destination_layer": 4,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 10
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": 0.33907814540258047,
+      "recirculated": {
+        "elapsed_seconds": 67.35144529499985,
+        "label": "phase_a_020_coarse_d04_s10_a0p10_convex_rnone_norm_matched",
+        "mean_nll": 2.629583333536094,
+        "perplexity": 13.867990371635624,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 20,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.16,
+        "beta_mode": "convex",
+        "destination_layer": 4,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 10
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": 0.27922260763206136,
+      "recirculated": {
+        "elapsed_seconds": 67.15423433299975,
+        "label": "phase_a_021_coarse_d04_s10_a0p16_convex_rnone_norm_matched",
+        "mean_nll": 2.630183745106411,
+        "perplexity": 13.87631937367618,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 21,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.05,
+        "beta_mode": "convex",
+        "destination_layer": 4,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 12
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": 0.11635604292419328,
+      "recirculated": {
+        "elapsed_seconds": 67.31673319499987,
+        "label": "phase_a_022_coarse_d04_s12_a0p05_convex_rnone_norm_matched",
+        "mean_nll": 2.6318156388265064,
+        "perplexity": 13.89898253902925,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 22,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.1,
+        "beta_mode": "convex",
+        "destination_layer": 4,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 12
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": 0.16225291340385778,
+      "recirculated": {
+        "elapsed_seconds": 67.28059367100013,
+        "label": "phase_a_023_coarse_d04_s12_a0p10_convex_rnone_norm_matched",
+        "mean_nll": 2.6313560298577547,
+        "perplexity": 13.892595909786257,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 23,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.16,
+        "beta_mode": "convex",
+        "destination_layer": 4,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 12
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": -0.06961638432430615,
+      "recirculated": {
+        "elapsed_seconds": 67.69819182699985,
+        "label": "phase_a_024_coarse_d04_s12_a0p16_convex_rnone_norm_matched",
+        "mean_nll": 2.6336757983513475,
+        "perplexity": 13.924860925286149,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 24,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.05,
+        "beta_mode": "convex",
+        "destination_layer": 4,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 14
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": 0.19317194931609483,
+      "recirculated": {
+        "elapsed_seconds": 67.99875127699988,
+        "label": "phase_a_025_coarse_d04_s14_a0p05_convex_rnone_norm_matched",
+        "mean_nll": 2.631046289048237,
+        "perplexity": 13.888293472237498,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 25,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.1,
+        "beta_mode": "convex",
+        "destination_layer": 4,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 14
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": 0.28319528467257055,
+      "recirculated": {
+        "elapsed_seconds": 67.76799566999989,
+        "label": "phase_a_026_coarse_d04_s14_a0p10_convex_rnone_norm_matched",
+        "mean_nll": 2.630143906305729,
+        "perplexity": 13.87576656876607,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 26,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.16,
+        "beta_mode": "convex",
+        "destination_layer": 4,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 14
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": 0.1993184274098579,
+      "recirculated": {
+        "elapsed_seconds": 67.6690231529999,
+        "label": "phase_a_027_coarse_d04_s14_a0p16_convex_rnone_norm_matched",
+        "mean_nll": 2.630984703408425,
+        "perplexity": 13.887438179135271,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 27,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.05,
+        "beta_mode": "convex",
+        "destination_layer": 4,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 16
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": 0.5055341897975844,
+      "recirculated": {
+        "elapsed_seconds": 67.47121575200026,
+        "label": "phase_a_028_coarse_d04_s16_a0p05_convex_rnone_norm_matched",
+        "mean_nll": 2.627911713349388,
+        "perplexity": 13.84482772394972,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 28,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.1,
+        "beta_mode": "convex",
+        "destination_layer": 4,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 16
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": 0.9320897284145231,
+      "recirculated": {
+        "elapsed_seconds": 67.93979780699965,
+        "label": "phase_a_029_coarse_d04_s16_a0p10_convex_rnone_norm_matched",
+        "mean_nll": 2.6236152680388645,
+        "perplexity": 13.785471779890342,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 29,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.16,
+        "beta_mode": "convex",
+        "destination_layer": 4,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 16
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": 1.14100287884049,
+      "recirculated": {
+        "elapsed_seconds": 67.92074905200025,
+        "label": "phase_a_030_coarse_d04_s16_a0p16_convex_rnone_norm_matched",
+        "mean_nll": 2.621504254122051,
+        "perplexity": 13.75640115215882,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 30,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.05,
+        "beta_mode": "convex",
+        "destination_layer": 6,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 10
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": -0.13498809010289592,
+      "recirculated": {
+        "elapsed_seconds": 64.68440847600004,
+        "label": "phase_a_031_coarse_d06_s10_a0p05_convex_rnone_norm_matched",
+        "mean_nll": 2.6343288473486317,
+        "perplexity": 13.933957511685756,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 31,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.1,
+        "beta_mode": "convex",
+        "destination_layer": 6,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 10
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": -0.2791399624546413,
+      "recirculated": {
+        "elapsed_seconds": 64.42170012499992,
+        "label": "phase_a_032_coarse_d06_s10_a0p10_convex_rnone_norm_matched",
+        "mean_nll": 2.6357673876213306,
+        "perplexity": 13.954016495092953,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 32,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.16,
+        "beta_mode": "convex",
+        "destination_layer": 6,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 10
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": -0.511361627316434,
+      "recirculated": {
+        "elapsed_seconds": 64.49824216900015,
+        "label": "phase_a_033_coarse_d06_s10_a0p16_convex_rnone_norm_matched",
+        "mean_nll": 2.6380804628570758,
+        "perplexity": 13.986330543091496,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 33,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.05,
+        "beta_mode": "convex",
+        "destination_layer": 6,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 12
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": -0.13441732010502855,
+      "recirculated": {
+        "elapsed_seconds": 64.58534959100007,
+        "label": "phase_a_034_coarse_d06_s12_a0p05_convex_rnone_norm_matched",
+        "mean_nll": 2.634323147326737,
+        "perplexity": 13.933878088049214,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 34,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.1,
+        "beta_mode": "convex",
+        "destination_layer": 6,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 12
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": -0.3349811278024247,
+      "recirculated": {
+        "elapsed_seconds": 64.53431388299987,
+        "label": "phase_a_035_coarse_d06_s12_a0p10_convex_rnone_norm_matched",
+        "mean_nll": 2.6363240898762514,
+        "perplexity": 13.961786890238542,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 35,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.16,
+        "beta_mode": "convex",
+        "destination_layer": 6,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 12
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": -0.5937625733527122,
+      "recirculated": {
+        "elapsed_seconds": 64.52546160200018,
+        "label": "phase_a_036_coarse_d06_s12_a0p16_convex_rnone_norm_matched",
+        "mean_nll": 2.6388999442201206,
+        "perplexity": 13.99779677785011,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 36,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.05,
+        "beta_mode": "convex",
+        "destination_layer": 6,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 14
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": -0.044159263132060846,
+      "recirculated": {
+        "elapsed_seconds": 64.56031903100029,
+        "label": "phase_a_037_coarse_d06_s14_a0p05_convex_rnone_norm_matched",
+        "mean_nll": 2.6334213718757367,
+        "perplexity": 13.921318522657176,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 37,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.1,
+        "beta_mode": "convex",
+        "destination_layer": 6,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 14
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": -0.102199528705446,
+      "recirculated": {
+        "elapsed_seconds": 64.29733207699974,
+        "label": "phase_a_038_coarse_d06_s14_a0p10_convex_rnone_norm_matched",
+        "mean_nll": 2.634001350123162,
+        "perplexity": 13.929394926418654,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 38,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.16,
+        "beta_mode": "convex",
+        "destination_layer": 6,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 14
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": -0.26599205196399056,
+      "recirculated": {
+        "elapsed_seconds": 64.29154052000013,
+        "label": "phase_a_039_coarse_d06_s14_a0p16_convex_rnone_norm_matched",
+        "mean_nll": 2.6356362659094503,
+        "perplexity": 13.952186940512297,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 39,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.05,
+        "beta_mode": "convex",
+        "destination_layer": 6,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 16
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": 0.1634687293053647,
+      "recirculated": {
+        "elapsed_seconds": 64.27831613799981,
+        "label": "phase_a_040_coarse_d06_s16_a0p05_convex_rnone_norm_matched",
+        "mean_nll": 2.6313438518655614,
+        "perplexity": 13.892426726891879,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 40,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.1,
+        "beta_mode": "convex",
+        "destination_layer": 6,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 16
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": 0.30363361924674676,
+      "recirculated": {
+        "elapsed_seconds": 64.10923401300033,
+        "label": "phase_a_041_coarse_d06_s16_a0p10_convex_rnone_norm_matched",
+        "mean_nll": 2.6299389215042397,
+        "perplexity": 13.872922539011855,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 41,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.16,
+        "beta_mode": "convex",
+        "destination_layer": 6,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 16
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": 0.3707036078211403,
+      "recirculated": {
+        "elapsed_seconds": 64.23658617799992,
+        "label": "phase_a_042_coarse_d06_s16_a0p16_convex_rnone_norm_matched",
+        "mean_nll": 2.629265952553101,
+        "perplexity": 13.863589633611557,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 42,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.05,
+        "beta_mode": "convex",
+        "destination_layer": 6,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 18
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": 0.1685510973489461,
+      "recirculated": {
+        "elapsed_seconds": 64.27084476600021,
+        "label": "phase_a_043_coarse_d06_s18_a0p05_convex_rnone_norm_matched",
+        "mean_nll": 2.6312929436724675,
+        "perplexity": 13.891719506551329,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 43,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.1,
+        "beta_mode": "convex",
+        "destination_layer": 6,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 18
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": 0.3980818903565236,
+      "recirculated": {
+        "elapsed_seconds": 64.16632158399989,
+        "label": "phase_a_044_coarse_d06_s18_a0p10_convex_rnone_norm_matched",
+        "mean_nll": 2.628991113263724,
+        "perplexity": 13.859779898044927,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 44,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.16,
+        "beta_mode": "convex",
+        "destination_layer": 6,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 18
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": 0.540042581433703,
+      "recirculated": {
+        "elapsed_seconds": 64.15587128100015,
+        "label": "phase_a_045_coarse_d06_s18_a0p16_convex_rnone_norm_matched",
+        "mean_nll": 2.6275648158899383,
+        "perplexity": 13.840025821317829,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 45,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.05,
+        "beta_mode": "convex",
+        "destination_layer": 8,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 12
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": 0.07193349795669013,
+      "recirculated": {
+        "elapsed_seconds": 61.034511115999976,
+        "label": "phase_a_046_coarse_d08_s12_a0p05_convex_rnone_norm_matched",
+        "mean_nll": 2.6322602828926356,
+        "perplexity": 13.90516401331655,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 46,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.1,
+        "beta_mode": "convex",
+        "destination_layer": 8,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 12
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": 0.14745490423971633,
+      "recirculated": {
+        "elapsed_seconds": 61.05819528499978,
+        "label": "phase_a_047_coarse_d08_s12_a0p10_convex_rnone_norm_matched",
+        "mean_nll": 2.6315042394580264,
+        "perplexity": 13.894655078463295,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 47,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.16,
+        "beta_mode": "convex",
+        "destination_layer": 8,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 12
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": 0.18741162306005812,
+      "recirculated": {
+        "elapsed_seconds": 60.81918518400016,
+        "label": "phase_a_048_coarse_d08_s12_a0p16_convex_rnone_norm_matched",
+        "mean_nll": 2.6311040021340752,
+        "perplexity": 13.889095031640819,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 48,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.05,
+        "beta_mode": "convex",
+        "destination_layer": 8,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 14
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": 0.1315114840655972,
+      "recirculated": {
+        "elapsed_seconds": 61.08771417200023,
+        "label": "phase_a_049_coarse_d08_s14_a0p05_convex_rnone_norm_matched",
+        "mean_nll": 2.6316638963546453,
+        "perplexity": 13.896873633071772,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 49,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.1,
+        "beta_mode": "convex",
+        "destination_layer": 8,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 14
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": 0.17603269698350868,
+      "recirculated": {
+        "elapsed_seconds": 61.16898931500009,
+        "label": "phase_a_050_coarse_d08_s14_a0p10_convex_rnone_norm_matched",
+        "mean_nll": 2.6312179985517163,
+        "perplexity": 13.890678428967801,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 50,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.16,
+        "beta_mode": "convex",
+        "destination_layer": 8,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 14
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": 0.13523303360235647,
+      "recirculated": {
+        "elapsed_seconds": 61.11934983399988,
+        "label": "phase_a_051_coarse_d08_s14_a0p16_convex_rnone_norm_matched",
+        "mean_nll": 2.6316266311578387,
+        "perplexity": 13.896355772989978,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 51,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.05,
+        "beta_mode": "convex",
+        "destination_layer": 8,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 16
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": 0.1998665678749496,
+      "recirculated": {
+        "elapsed_seconds": 61.27570235599978,
+        "label": "phase_a_052_coarse_d08_s16_a0p05_convex_rnone_norm_matched",
+        "mean_nll": 2.6309792110414216,
+        "perplexity": 13.887361904437519,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 52,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.1,
+        "beta_mode": "convex",
+        "destination_layer": 8,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 16
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": 0.3680746288147661,
+      "recirculated": {
+        "elapsed_seconds": 61.07311895299972,
+        "label": "phase_a_053_coarse_d08_s16_a0p10_convex_rnone_norm_matched",
+        "mean_nll": 2.62929233981484,
+        "perplexity": 13.863955460606423,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 53,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.16,
+        "beta_mode": "convex",
+        "destination_layer": 8,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 16
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": 0.36024995138628035,
+      "recirculated": {
+        "elapsed_seconds": 61.20851904900019,
+        "label": "phase_a_054_coarse_d08_s16_a0p16_convex_rnone_norm_matched",
+        "mean_nll": 2.629370872575866,
+        "perplexity": 13.865044278060848,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 54,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.05,
+        "beta_mode": "convex",
+        "destination_layer": 8,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 18
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": 0.15362877090388669,
+      "recirculated": {
+        "elapsed_seconds": 60.983554539000124,
+        "label": "phase_a_055_coarse_d08_s18_a0p05_convex_rnone_norm_matched",
+        "mean_nll": 2.6314424077087133,
+        "perplexity": 13.893795974193926,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 55,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.1,
+        "beta_mode": "convex",
+        "destination_layer": 8,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 18
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": 0.2003509637026148,
+      "recirculated": {
+        "elapsed_seconds": 61.21252048899987,
+        "label": "phase_a_056_coarse_d08_s18_a0p10_convex_rnone_norm_matched",
+        "mean_nll": 2.630974357370524,
+        "perplexity": 13.887294499916779,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 56,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.16,
+        "beta_mode": "convex",
+        "destination_layer": 8,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 18
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": 0.13502540911424926,
+      "recirculated": {
+        "elapsed_seconds": 61.264171042999806,
+        "label": "phase_a_057_coarse_d08_s18_a0p16_convex_rnone_norm_matched",
+        "mean_nll": 2.6316287102121296,
+        "perplexity": 13.89638466429811,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 57,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.05,
+        "beta_mode": "convex",
+        "destination_layer": 8,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 20
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": -0.016096728568251298,
+      "recirculated": {
+        "elapsed_seconds": 61.37724905499999,
+        "label": "phase_a_058_coarse_d08_s20_a0p05_convex_rnone_norm_matched",
+        "mean_nll": 2.6331408310495865,
+        "perplexity": 13.91741357223235,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 58,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.1,
+        "beta_mode": "convex",
+        "destination_layer": 8,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 20
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": -0.1879625224088991,
+      "recirculated": {
+        "elapsed_seconds": 61.37261010600014,
+        "label": "phase_a_059_coarse_d08_s20_a0p10_convex_rnone_norm_matched",
+        "mean_nll": 2.6348577376567954,
+        "perplexity": 13.941328995949512,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 59,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.16,
+        "beta_mode": "convex",
+        "destination_layer": 8,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 20
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": -0.5928118391302075,
+      "recirculated": {
+        "elapsed_seconds": 61.164531702000204,
+        "label": "phase_a_060_coarse_d08_s20_a0p16_convex_rnone_norm_matched",
+        "mean_nll": 2.6388904929510657,
+        "perplexity": 13.997664481531771,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 60,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.05,
+        "beta_mode": "convex",
+        "destination_layer": 10,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 14
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": -0.07034215744857131,
+      "recirculated": {
+        "elapsed_seconds": 57.99406623499999,
+        "label": "phase_a_061_coarse_d10_s14_a0p05_convex_rnone_norm_matched",
+        "mean_nll": 2.6336830510072344,
+        "perplexity": 13.924961917876946,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 61,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.1,
+        "beta_mode": "convex",
+        "destination_layer": 10,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 14
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": -0.23130797507542394,
+      "recirculated": {
+        "elapsed_seconds": 58.074817915000494,
+        "label": "phase_a_062_coarse_d10_s14_a0p10_convex_rnone_norm_matched",
+        "mean_nll": 2.6352902854176445,
+        "perplexity": 13.947360590972389,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 62,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.16,
+        "beta_mode": "convex",
+        "destination_layer": 10,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 14
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": -0.407269544635152,
+      "recirculated": {
+        "elapsed_seconds": 57.78284862599958,
+        "label": "phase_a_063_coarse_d10_s14_a0p16_convex_rnone_norm_matched",
+        "mean_nll": 2.637044301189169,
+        "perplexity": 13.971845948994588,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 63,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.05,
+        "beta_mode": "convex",
+        "destination_layer": 10,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 16
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": 0.003425728475337386,
+      "recirculated": {
+        "elapsed_seconds": 57.97244230300021,
+        "label": "phase_a_064_coarse_d10_s16_a0p05_convex_rnone_norm_matched",
+        "mean_nll": 2.6329456188462,
+        "perplexity": 13.914696988427254,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 64,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.1,
+        "beta_mode": "convex",
+        "destination_layer": 10,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 16
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": -0.11684872888553102,
+      "recirculated": {
+        "elapsed_seconds": 58.107074536000255,
+        "label": "phase_a_065_coarse_d10_s16_a0p10_convex_rnone_norm_matched",
+        "mean_nll": 2.634147681856668,
+        "perplexity": 13.931433388067102,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 65,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.16,
+        "beta_mode": "convex",
+        "destination_layer": 10,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 16
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": -0.4051992380283758,
+      "recirculated": {
+        "elapsed_seconds": 57.97447914999975,
+        "label": "phase_a_066_coarse_d10_s16_a0p16_convex_rnone_norm_matched",
+        "mean_nll": 2.637023681885802,
+        "perplexity": 13.971557862234453,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 66,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.05,
+        "beta_mode": "convex",
+        "destination_layer": 10,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 18
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": -0.043806059577814395,
+      "recirculated": {
+        "elapsed_seconds": 57.98536950700054,
+        "label": "phase_a_067_coarse_d10_s18_a0p05_convex_rnone_norm_matched",
+        "mean_nll": 2.6334178413929945,
+        "perplexity": 13.921269373769142,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 67,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.1,
+        "beta_mode": "convex",
+        "destination_layer": 10,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 18
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": -0.16006142860994244,
+      "recirculated": {
+        "elapsed_seconds": 58.086995241000295,
+        "label": "phase_a_068_coarse_d10_s18_a0p10_convex_rnone_norm_matched",
+        "mean_nll": 2.634579211386068,
+        "perplexity": 13.937446510287513,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 68,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.16,
+        "beta_mode": "convex",
+        "destination_layer": 10,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 18
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": -0.3597186895374918,
+      "recirculated": {
+        "elapsed_seconds": 57.707843307000076,
+        "label": "phase_a_069_coarse_d10_s18_a0p16_convex_rnone_norm_matched",
+        "mean_nll": 2.6365706092101737,
+        "perplexity": 13.965229164919286,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 69,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.05,
+        "beta_mode": "convex",
+        "destination_layer": 10,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 20
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": -0.07792001365522266,
+      "recirculated": {
+        "elapsed_seconds": 58.004547010999886,
+        "label": "phase_a_070_coarse_d10_s20_a0p05_convex_rnone_norm_matched",
+        "mean_nll": 2.633758773435479,
+        "perplexity": 13.926016389729662,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 70,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.1,
+        "beta_mode": "convex",
+        "destination_layer": 10,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 20
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": -0.1705493212631478,
+      "recirculated": {
+        "elapsed_seconds": 57.906600340000296,
+        "label": "phase_a_071_coarse_d10_s20_a0p10_convex_rnone_norm_matched",
+        "mean_nll": 2.634683917228311,
+        "perplexity": 13.93890591876605,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 71,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.16,
+        "beta_mode": "convex",
+        "destination_layer": 10,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 20
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": -0.5273684611964353,
+      "recirculated": {
+        "elapsed_seconds": 57.6611911279997,
+        "label": "phase_a_072_coarse_d10_s20_a0p16_convex_rnone_norm_matched",
+        "mean_nll": 2.638239704152589,
+        "perplexity": 13.988557921827287,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 72,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.05,
+        "beta_mode": "convex",
+        "destination_layer": 10,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 22
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": -0.4845643636950067,
+      "recirculated": {
+        "elapsed_seconds": 58.15027900200005,
+        "label": "phase_a_073_coarse_d10_s22_a0p05_convex_rnone_norm_matched",
+        "mean_nll": 2.637813818011932,
+        "perplexity": 13.982601657315882,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 73,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.1,
+        "beta_mode": "convex",
+        "destination_layer": 10,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 22
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": -1.5697904170284585,
+      "recirculated": {
+        "elapsed_seconds": 57.62623374499998,
+        "label": "phase_a_074_coarse_d10_s22_a0p10_convex_rnone_norm_matched",
+        "mean_nll": 2.6485558432451324,
+        "perplexity": 14.133612747506618,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 74,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.16,
+        "beta_mode": "convex",
+        "destination_layer": 10,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 22
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": -4.0451196510275444,
+      "recirculated": {
+        "elapsed_seconds": 57.696021616999985,
+        "label": "phase_a_075_coarse_d10_s22_a0p16_convex_rnone_norm_matched",
+        "mean_nll": 2.672634338586794,
+        "perplexity": 14.47805910968066,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 75,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.05,
+        "beta_mode": "convex",
+        "destination_layer": 12,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 16
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": -0.09615909496676359,
+      "recirculated": {
+        "elapsed_seconds": 54.57726342799998,
+        "label": "phase_a_076_coarse_d12_s16_a0p05_convex_rnone_norm_matched",
+        "mean_nll": 2.633941005635005,
+        "perplexity": 13.92855438957262,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 76,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.1,
+        "beta_mode": "convex",
+        "destination_layer": 12,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 16
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": -0.241182783791784,
+      "recirculated": {
+        "elapsed_seconds": 54.59721871599993,
+        "label": "phase_a_077_coarse_d12_s16_a0p10_convex_rnone_norm_matched",
+        "mean_nll": 2.6353888007669273,
+        "perplexity": 13.948734687756282,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 77,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.16,
+        "beta_mode": "convex",
+        "destination_layer": 12,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 16
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": -0.5290194154630096,
+      "recirculated": {
+        "elapsed_seconds": 54.61397691700006,
+        "label": "phase_a_078_coarse_d12_s16_a0p16_convex_rnone_norm_matched",
+        "mean_nll": 2.6382561269510294,
+        "perplexity": 13.988787654980932,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 78,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.05,
+        "beta_mode": "convex",
+        "destination_layer": 12,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 18
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": -0.08967581699339988,
+      "recirculated": {
+        "elapsed_seconds": 55.834941469,
+        "label": "phase_a_079_coarse_d12_s18_a0p05_convex_rnone_norm_matched",
+        "mean_nll": 2.633876233040296,
+        "perplexity": 13.927652230182177,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 79,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.1,
+        "beta_mode": "convex",
+        "destination_layer": 12,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 18
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": -0.18232246125132426,
+      "recirculated": {
+        "elapsed_seconds": 54.842711398000006,
+        "label": "phase_a_080_coarse_d12_s18_a0p10_convex_rnone_norm_matched",
+        "mean_nll": 2.6348014412737313,
+        "perplexity": 13.940544171643523,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 80,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.16,
+        "beta_mode": "convex",
+        "destination_layer": 12,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 18
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": -0.48106353732963997,
+      "recirculated": {
+        "elapsed_seconds": 54.283191011999975,
+        "label": "phase_a_081_coarse_d12_s18_a0p16_convex_rnone_norm_matched",
+        "mean_nll": 2.6377789779609015,
+        "perplexity": 13.982114511246749,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 81,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.05,
+        "beta_mode": "convex",
+        "destination_layer": 12,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 20
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": -0.07982287232050694,
+      "recirculated": {
+        "elapsed_seconds": 54.907039162000046,
+        "label": "phase_a_082_coarse_d12_s20_a0p05_convex_rnone_norm_matched",
+        "mean_nll": 2.6337777870258394,
+        "perplexity": 13.926281175817907,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 82,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.1,
+        "beta_mode": "convex",
+        "destination_layer": 12,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 20
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": -0.19698489884158119,
+      "recirculated": {
+        "elapsed_seconds": 55.03946273700001,
+        "label": "phase_a_083_coarse_d12_s20_a0p10_convex_rnone_norm_matched",
+        "mean_nll": 2.634947788097758,
+        "perplexity": 13.942584475300588,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 83,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.16,
+        "beta_mode": "convex",
+        "destination_layer": 12,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 20
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": -0.6653876949238705,
+      "recirculated": {
+        "elapsed_seconds": 54.94862470400005,
+        "label": "phase_a_084_coarse_d12_s20_a0p16_convex_rnone_norm_matched",
+        "mean_nll": 2.639611714338394,
+        "perplexity": 14.007763537918468,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 84,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.05,
+        "beta_mode": "convex",
+        "destination_layer": 12,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 22
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": -0.3636577316598935,
+      "recirculated": {
+        "elapsed_seconds": 54.866742241,
+        "label": "phase_a_085_coarse_d12_s22_a0p05_convex_rnone_norm_matched",
+        "mean_nll": 2.636609857674335,
+        "perplexity": 13.965777289472124,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 85,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.1,
+        "beta_mode": "convex",
+        "destination_layer": 12,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 22
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": -1.2252906841010256,
+      "recirculated": {
+        "elapsed_seconds": 55.07706620099998,
+        "label": "phase_a_086_coarse_d12_s22_a0p10_convex_rnone_norm_matched",
+        "mean_nll": 2.6451583243068946,
+        "perplexity": 14.085675011327146,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 86,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.16,
+        "beta_mode": "convex",
+        "destination_layer": 12,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 22
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": -2.884641081438569,
+      "recirculated": {
+        "elapsed_seconds": 55.227066282999886,
+        "label": "phase_a_087_coarse_d12_s22_a0p16_convex_rnone_norm_matched",
+        "mean_nll": 2.661418061801765,
+        "perplexity": 14.316576501151015,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 87,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.05,
+        "beta_mode": "convex",
+        "destination_layer": 14,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 18
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": -0.15140321823808572,
+      "recirculated": {
+        "elapsed_seconds": 51.5181696090001,
+        "label": "phase_a_088_coarse_d14_s18_a0p05_convex_rnone_norm_matched",
+        "mean_nll": 2.6344927639089604,
+        "perplexity": 13.9362417052763,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 88,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.1,
+        "beta_mode": "convex",
+        "destination_layer": 14,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 18
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": -0.3074358294953021,
+      "recirculated": {
+        "elapsed_seconds": 51.500420394,
+        "label": "phase_a_089_coarse_d14_s18_a0p10_convex_rnone_norm_matched",
+        "mean_nll": 2.636049518836908,
+        "perplexity": 13.957953914137194,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 89,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.16,
+        "beta_mode": "convex",
+        "destination_layer": 14,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 18
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": -0.5746903110397136,
+      "recirculated": {
+        "elapsed_seconds": 51.448662211000055,
+        "label": "phase_a_090_coarse_d14_s18_a0p16_convex_rnone_norm_matched",
+        "mean_nll": 2.638710329376474,
+        "perplexity": 13.995142839423695,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 90,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.05,
+        "beta_mode": "convex",
+        "destination_layer": 14,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 20
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": -0.1494994887403239,
+      "recirculated": {
+        "elapsed_seconds": 51.53708796799992,
+        "label": "phase_a_091_coarse_d14_s20_a0p05_convex_rnone_norm_matched",
+        "mean_nll": 2.634473755212823,
+        "perplexity": 13.935976798010204,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 91,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.1,
+        "beta_mode": "convex",
+        "destination_layer": 14,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 20
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": -0.36538847972803284,
+      "recirculated": {
+        "elapsed_seconds": 51.41155241399997,
+        "label": "phase_a_092_coarse_d14_s20_a0p10_convex_rnone_norm_matched",
+        "mean_nll": 2.6366271022943923,
+        "perplexity": 13.966018126071846,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 92,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.16,
+        "beta_mode": "convex",
+        "destination_layer": 14,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 20
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": -0.8119504011684817,
+      "recirculated": {
+        "elapsed_seconds": 51.43941212899995,
+        "label": "phase_a_093_coarse_d14_s20_a0p16_convex_rnone_norm_matched",
+        "mean_nll": 2.641066594906916,
+        "perplexity": 14.028157993049101,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 93,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.05,
+        "beta_mode": "convex",
+        "destination_layer": 14,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 22
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": -0.31307135593593166,
+      "recirculated": {
+        "elapsed_seconds": 51.201142177000065,
+        "label": "phase_a_094_coarse_d14_s22_a0p05_convex_rnone_norm_matched",
+        "mean_nll": 2.6361056997978793,
+        "perplexity": 13.958738107429443,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 94,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.1,
+        "beta_mode": "convex",
+        "destination_layer": 14,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 22
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": -1.0109257479429192,
+      "recirculated": {
+        "elapsed_seconds": 51.48365713999988,
+        "label": "phase_a_095_coarse_d14_s22_a0p10_convex_rnone_norm_matched",
+        "mean_nll": 2.643038377442551,
+        "perplexity": 14.05584575814209,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 95,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    },
+    {
+      "baseline": {
+        "mean_nll": 2.6329798767177475,
+        "perplexity": 13.915173684494556,
+        "predicted_tokens": 32736,
+        "source": "banked_phase0_same_corpus_same_evaluator",
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "config": {
+        "alpha": 0.16,
+        "beta_mode": "convex",
+        "destination_layer": 14,
+        "normalization_mode": "norm_matched",
+        "ramp_tokens": null,
+        "source_layer": 22
+      },
+      "evaluator": "paper_native_serial_first_iteration_readout_v1",
+      "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+      "perplexity_reduction_percent": -2.2711839310290305,
+      "recirculated": {
+        "elapsed_seconds": 51.36018786300019,
+        "label": "phase_a_096_coarse_d14_s22_a0p16_convex_rnone_norm_matched",
+        "mean_nll": 2.6554376420037835,
+        "perplexity": 14.231212873191577,
+        "predicted_tokens": 32736,
+        "window_tokens": 1024,
+        "windows": 32
+      },
+      "run_index": 96,
+      "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+      "stage": "coarse",
+      "weights_frozen": true
+    }
+  ],
+  "kind": "paper2_recirculation_phase_a_coarse_table_v1"
+}

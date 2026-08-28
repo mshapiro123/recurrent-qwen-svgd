@@ -1,0 +1,30 @@
+{
+  "by_alpha": [
+    {
+      "alpha": 0.05,
+      "components": [],
+      "largest_component_cells": 0,
+      "materiality_floor_percent": 1.0
+    },
+    {
+      "alpha": 0.1,
+      "components": [],
+      "largest_component_cells": 0,
+      "materiality_floor_percent": 1.0
+    },
+    {
+      "alpha": 0.16,
+      "components": [
+        [
+          {
+            "destination_layer": 4,
+            "source_layer": 16
+          }
+        ]
+      ],
+      "largest_component_cells": 1,
+      "materiality_floor_percent": 1.0
+    }
+  ],
+  "kind": "paper2_recirculation_phase_a_components_v1"
+}
