@@ -1,0 +1,314 @@
+{
+  "confirm_scored": false,
+  "cost": {
+    "actual_to_expected_multiplier": 1.7017673640304136,
+    "actual_total_a100_hours": 1.9958447024672226,
+    "completed_measurements": 24,
+    "cost_ceiling_a100_hours": 8.0,
+    "expected_total_a100_hours_at_checkpoint": 1.1728070150201524,
+    "phase_a_elapsed_seconds": 4687.395056809
+  },
+  "eval_e_scored": false,
+  "kind": "paper2_recirculation_phase_a_public_summary_v1",
+  "optimizer_constructed": false,
+  "optimizer_steps": 0,
+  "phase_a": null,
+  "phase_b_training_authorized": false,
+  "private_receipts": {},
+  "public_receipts": {
+    "cells/001_coarse_d02_s06_a0p05_convex_rnone_norm_matched.json": {
+      "bytes": 989,
+      "sha256": "397a7cb56d84f326b4e4f8bfad477d2df9b099757c149962c75bf76eba54f256"
+    },
+    "cells/002_coarse_d02_s06_a0p10_convex_rnone_norm_matched.json": {
+      "bytes": 987,
+      "sha256": "ccab6db783875a0128a007ef710716911719108f7bf0593e88405cd43a1bd2dd"
+    },
+    "cells/003_coarse_d02_s06_a0p16_convex_rnone_norm_matched.json": {
+      "bytes": 988,
+      "sha256": "37e632ffb5801fc58a22f840d2fd1ddfc91849da53c1c5b2680856037b0d794e"
+    },
+    "cells/004_coarse_d02_s08_a0p05_convex_rnone_norm_matched.json": {
+      "bytes": 990,
+      "sha256": "48ea6a21283464b149c97febd010074317131a10790503c5ceed55d3449d4465"
+    },
+    "cells/005_coarse_d02_s08_a0p10_convex_rnone_norm_matched.json": {
+      "bytes": 989,
+      "sha256": "f4cb9a4afc49a1cdd9faf8afc0b709a68534e01e1a4901edaa8b06b1a6429bb5"
+    },
+    "cells/006_coarse_d02_s08_a0p16_convex_rnone_norm_matched.json": {
+      "bytes": 990,
+      "sha256": "e32d1c1b9980306fe42f8dbbd4a63221159b05a0fee4a4e0ea4cd4f599c0c9ad"
+    },
+    "cells/007_coarse_d02_s10_a0p05_convex_rnone_norm_matched.json": {
+      "bytes": 990,
+      "sha256": "d17eaa15fed8da5714246522b2bcd6bf92b262050209d7826105bd663eb56546"
+    },
+    "cells/008_coarse_d02_s10_a0p10_convex_rnone_norm_matched.json": {
+      "bytes": 989,
+      "sha256": "51fcc33a7fc8e5f8a3ebc1ca27c3eec669cfa737dc5fcb9e89f40517060d0226"
+    },
+    "cells/009_coarse_d02_s10_a0p16_convex_rnone_norm_matched.json": {
+      "bytes": 989,
+      "sha256": "04f7625cf46b4401c197f3a35909e81ffd06ce403618e7e493528e4b12b14855"
+    },
+    "cells/010_coarse_d02_s12_a0p05_convex_rnone_norm_matched.json": {
+      "bytes": 992,
+      "sha256": "f9bbe297e689f8386c66b607b71b83ce3418ebdb0e547c0866caa986c057afc4"
+    },
+    "cells/011_coarse_d02_s12_a0p10_convex_rnone_norm_matched.json": {
+      "bytes": 990,
+      "sha256": "05d708b727d4abdc940b1e75bdc13a13b1f6dfd894df7cc676024adab533aceb"
+    },
+    "cells/012_coarse_d02_s12_a0p16_convex_rnone_norm_matched.json": {
+      "bytes": 992,
+      "sha256": "958faee9beb6080152252c8d7f84fce44e2a05f812935d67b0305ca14032339c"
+    },
+    "cells/013_coarse_d02_s14_a0p05_convex_rnone_norm_matched.json": {
+      "bytes": 991,
+      "sha256": "237b7feb68f45d99fbc416b040f7bfc387a68657592c25f2d186cffc358a4bbb"
+    },
+    "cells/014_coarse_d02_s14_a0p10_convex_rnone_norm_matched.json": {
+      "bytes": 991,
+      "sha256": "2bf3c95ca541e8615fa19511a6c0014ca7dfd4204e663d011884493836aef3b7"
+    },
+    "cells/015_coarse_d02_s14_a0p16_convex_rnone_norm_matched.json": {
+      "bytes": 991,
+      "sha256": "d7165e53e45b82d6231149b5c85422595712a8dd0d21d8085ef840df58f979ad"
+    },
+    "cells/016_coarse_d04_s08_a0p05_convex_rnone_norm_matched.json": {
+      "bytes": 992,
+      "sha256": "b1d51b6c22fa1bcd07082a6c574226bdb54e07671feeaf1e1d8a76e877dab4ff"
+    },
+    "cells/017_coarse_d04_s08_a0p10_convex_rnone_norm_matched.json": {
+      "bytes": 990,
+      "sha256": "459df3d3abc302b7a1b6f3c441831f3d246065d000d610758ee9d31cc2e3818a"
+    },
+    "cells/018_coarse_d04_s08_a0p16_convex_rnone_norm_matched.json": {
+      "bytes": 989,
+      "sha256": "a50d8b69edf63396222f779280248ba4bf2c0c952b17228921ff2bbce32637b6"
+    },
+    "cells/019_coarse_d04_s10_a0p05_convex_rnone_norm_matched.json": {
+      "bytes": 990,
+      "sha256": "73f2b7bb04417dd318d8e60a5dfcaa358e137827c5ed878a6900e7c8310e9660"
+    },
+    "cells/020_coarse_d04_s10_a0p10_convex_rnone_norm_matched.json": {
+      "bytes": 990,
+      "sha256": "d5908b67c526562e148ca201eda19fc43245bccc98b537988c58edfafc2f1722"
+    },
+    "cells/021_coarse_d04_s10_a0p16_convex_rnone_norm_matched.json": {
+      "bytes": 990,
+      "sha256": "065a60df10b8657bcf553230745876bcbf5635953541eb46d9a6821c98a4e985"
+    },
+    "cells/022_coarse_d04_s12_a0p05_convex_rnone_norm_matched.json": {
+      "bytes": 991,
+      "sha256": "8a0ef17e848c38fda418d04ce949f0b2e74263db25c17cb91e2fbd7751523f74"
+    },
+    "cells/023_coarse_d04_s12_a0p10_convex_rnone_norm_matched.json": {
+      "bytes": 991,
+      "sha256": "943780ac818015c9bc2e0f5fe9d9d9a9184d3456ca8e62606d0f5d121f8d5da4"
+    },
+    "cells/024_coarse_d04_s12_a0p16_convex_rnone_norm_matched.json": {
+      "bytes": 993,
+      "sha256": "bcd73566d69b775e809d1a076f908115e4562bdbe940d9006d3dd78dcdd34f65"
+    },
+    "cells/025_coarse_d04_s14_a0p05_convex_rnone_norm_matched.json": {
+      "bytes": 991,
+      "sha256": "8b7a8abb634d89690ff36b5e13de87d2210503f7fdcfe6d6765865d121565e90"
+    },
+    "cells/026_coarse_d04_s14_a0p10_convex_rnone_norm_matched.json": {
+      "bytes": 989,
+      "sha256": "579009420c3d62b255434985d71e3f1259213744f7cfc882e0699b62e8962cbe"
+    },
+    "cells/027_coarse_d04_s14_a0p16_convex_rnone_norm_matched.json": {
+      "bytes": 989,
+      "sha256": "1e83a61fd2b0ec84978559576c2f1704b0d01fa2433c275129750a8050f9c66c"
+    },
+    "cells/028_coarse_d04_s16_a0p05_convex_rnone_norm_matched.json": {
+      "bytes": 989,
+      "sha256": "712f8fa7b51a06a86a4080567c75a14ba7f4e9298a6fb295a9711620cf91a3b2"
+    },
+    "cells/029_coarse_d04_s16_a0p10_convex_rnone_norm_matched.json": {
+      "bytes": 990,
+      "sha256": "a5dd7a8de63f9262901c60773d9d3b68cf23ab4167d16922d51e67464ce29a4f"
+    },
+    "cells/030_coarse_d04_s16_a0p16_convex_rnone_norm_matched.json": {
+      "bytes": 987,
+      "sha256": "8a0e57497d4f4d9e9a11237d32faf4198ead8af3ac351d67f969fa1b7827ed02"
+    },
+    "cells/031_coarse_d06_s10_a0p05_convex_rnone_norm_matched.json": {
+      "bytes": 993,
+      "sha256": "25de0d2afb68d4a708119ecc6dd56fc9875dca50afa922718a96acb1684135b5"
+    },
+    "cells/032_coarse_d06_s10_a0p10_convex_rnone_norm_matched.json": {
+      "bytes": 991,
+      "sha256": "9034054747b8f109ebf0d674fcbb555ac0e72dfb9df518d9285d14306ea8f688"
+    },
+    "cells/033_coarse_d06_s10_a0p16_convex_rnone_norm_matched.json": {
+      "bytes": 991,
+      "sha256": "d1f229f2b48fbb9069b00e7dbfdd0b939ed20cc95f59993ac2c2c4c35203e23a"
+    },
+    "cells/034_coarse_d06_s12_a0p05_convex_rnone_norm_matched.json": {
+      "bytes": 992,
+      "sha256": "84adef17c589898b3d0148b5e5efc0a8e6d712e74bcce81a9b920bed37c5d4d8"
+    },
+    "cells/035_coarse_d06_s12_a0p10_convex_rnone_norm_matched.json": {
+      "bytes": 991,
+      "sha256": "527f36949b1d9412d2a83a2854437fcf136b73cd2dda353bea4521104649363b"
+    },
+    "cells/036_coarse_d06_s12_a0p16_convex_rnone_norm_matched.json": {
+      "bytes": 991,
+      "sha256": "7b714da8bb7ce2ee671847235b5ca2ec7598b862f208f0afe55065d935267d20"
+    },
+    "cells/037_coarse_d06_s14_a0p05_convex_rnone_norm_matched.json": {
+      "bytes": 994,
+      "sha256": "9f9a75bf389f77e21d2e47a245e226bf19cc6c4433c39542af3bb0c807ba6ca1"
+    },
+    "cells/038_coarse_d06_s14_a0p10_convex_rnone_norm_matched.json": {
+      "bytes": 989,
+      "sha256": "8eb611a079b0c84e19461720cda3310f059c5115c6d9188d4fc95a6821e45d90"
+    },
+    "cells/039_coarse_d06_s14_a0p16_convex_rnone_norm_matched.json": {
+      "bytes": 993,
+      "sha256": "da87bc52eecae49baa486ecbe06bdb04bd3dcd1872caf98594d9d7ee98908a13"
+    },
+    "cells/040_coarse_d06_s16_a0p05_convex_rnone_norm_matched.json": {
+      "bytes": 991,
+      "sha256": "c901a40eabc810f60b3f9fd32d5ff2f1c432693ad39822929fc6dedecd23a506"
+    },
+    "cells/041_coarse_d06_s16_a0p10_convex_rnone_norm_matched.json": {
+      "bytes": 991,
+      "sha256": "101ab611f278fb1f150e5f3e8eab83fd12755cf06f369c91df9ea2d2881992a7"
+    },
+    "cells/042_coarse_d06_s16_a0p16_convex_rnone_norm_matched.json": {
+      "bytes": 990,
+      "sha256": "778d796817f899f63367ebd98ea3c91e9386b08d42b4ee9cff7384b40f770fd3"
+    },
+    "cells/043_coarse_d06_s18_a0p05_convex_rnone_norm_matched.json": {
+      "bytes": 991,
+      "sha256": "8a50b9fb525b0a8a4276cbc87f5d9945e71eae5774c923d182d52a48855fcc35"
+    },
+    "cells/044_coarse_d06_s18_a0p10_convex_rnone_norm_matched.json": {
+      "bytes": 989,
+      "sha256": "7f724efd8205172050fbf6daedec098465aaafe94d253b31eecc256ef989ab99"
+    },
+    "cells/045_coarse_d06_s18_a0p16_convex_rnone_norm_matched.json": {
+      "bytes": 990,
+      "sha256": "0a7b820353c6bf5f08248b60c0a652e7027c0aa386db1c1c17443a557b024b77"
+    },
+    "cells/046_coarse_d08_s12_a0p05_convex_rnone_norm_matched.json": {
+      "bytes": 992,
+      "sha256": "a2fc5821c941706fe4e1901127ef4c5f9d0b887ad119f8ee452cfbf445073751"
+    },
+    "cells/047_coarse_d08_s12_a0p10_convex_rnone_norm_matched.json": {
+      "bytes": 991,
+      "sha256": "8a4713cadbdfba7c5bf5f65bb01d600b8b2b2fb7df8e252b565e68ee009772c8"
+    },
+    "cells/048_coarse_d08_s12_a0p16_convex_rnone_norm_matched.json": {
+      "bytes": 992,
+      "sha256": "428770f75994934ae6ee2b7944138482cf9703fcde5b7fd4d2eeb87f42685511"
+    },
+    "cells/049_coarse_d08_s14_a0p05_convex_rnone_norm_matched.json": {
+      "bytes": 991,
+      "sha256": "3a0026f91805a59fef2895ca44ff5ba2227c25853157ef95e396b58c589a787f"
+    },
+    "cells/050_coarse_d08_s14_a0p10_convex_rnone_norm_matched.json": {
+      "bytes": 991,
+      "sha256": "c8a1d55e6a40c411c13fcb1916254cd3e1e9f82bcf8864f8b11f7c3064a41504"
+    },
+    "cells/051_coarse_d08_s14_a0p16_convex_rnone_norm_matched.json": {
+      "bytes": 992,
+      "sha256": "09cec2d4ba373db19d3c799f2ff91e693bbb415d946b7d7b9339c326c8729740"
+    },
+    "cells/052_coarse_d08_s16_a0p05_convex_rnone_norm_matched.json": {
+      "bytes": 991,
+      "sha256": "0f9d22b4cc4ea5d3626c77ef6479018b10601f5900f255ec7fb11a7a36ee4b24"
+    },
+    "cells/053_coarse_d08_s16_a0p10_convex_rnone_norm_matched.json": {
+      "bytes": 988,
+      "sha256": "71b228ec487d0c2f002a191406b0f90eaffb0458a0a4fea149851e91b95a5344"
+    },
+    "cells/054_coarse_d08_s16_a0p16_convex_rnone_norm_matched.json": {
+      "bytes": 991,
+      "sha256": "6127660b6da9ca8aa0855c0849a7210b27f8b410295558b1efd0b348e9fd1ead"
+    },
+    "cells/055_coarse_d08_s18_a0p05_convex_rnone_norm_matched.json": {
+      "bytes": 993,
+      "sha256": "592b508a94e4d3599988920ebf7a489531166e29223bd2b95312b4a49e316670"
+    },
+    "cells/056_coarse_d08_s18_a0p10_convex_rnone_norm_matched.json": {
+      "bytes": 989,
+      "sha256": "208fb2b1aaa71a77de306fe0767bfbffb716d9cf236823cd5b90692534c5737e"
+    },
+    "cells/057_coarse_d08_s18_a0p16_convex_rnone_norm_matched.json": {
+      "bytes": 992,
+      "sha256": "f9f64e140228d3d92fba9686b476a66b417539c28f772920e0bed2629ced476e"
+    },
+    "cells/058_coarse_d08_s20_a0p05_convex_rnone_norm_matched.json": {
+      "bytes": 993,
+      "sha256": "0ed0221291d5cba86dbc07134367255d9c14e3235061052485e84f1facd59f82"
+    },
+    "cells/059_coarse_d08_s20_a0p10_convex_rnone_norm_matched.json": {
+      "bytes": 991,
+      "sha256": "7b79cbf57622dd7722a24aad0ce0cf6affca9de246fd0ecfbf55be81aa856f2d"
+    },
+    "cells/060_coarse_d08_s20_a0p16_convex_rnone_norm_matched.json": {
+      "bytes": 993,
+      "sha256": "4823a1ec990a55a283d775c3ce748b640d04b2ecd980ae577e608ca2f679903b"
+    },
+    "cells/061_coarse_d10_s14_a0p05_convex_rnone_norm_matched.json": {
+      "bytes": 994,
+      "sha256": "6d78a548ae4ef2d26bb27ae5e44a535bd0debb7497ea8fe74441ad6c12c43409"
+    },
+    "cells/062_coarse_d10_s14_a0p10_convex_rnone_norm_matched.json": {
+      "bytes": 994,
+      "sha256": "0342b3e38f4c737dd3fc7b31499e07b1a3ecca0cf7dcc2019c1d01313a9bbc27"
+    },
+    "cells/063_coarse_d10_s14_a0p16_convex_rnone_norm_matched.json": {
+      "bytes": 991,
+      "sha256": "4e05408bf94d9e77fcc84c6067e84663bd1b269ee3cc897fbd0a6819b23e1d33"
+    },
+    "cells/064_coarse_d10_s16_a0p05_convex_rnone_norm_matched.json": {
+      "bytes": 991,
+      "sha256": "869940a96e0d7e6e0d6a54a98ee45be19c794f5eb9558a808dce92df9c5db3ca"
+    },
+    "cells/065_coarse_d10_s16_a0p10_convex_rnone_norm_matched.json": {
+      "bytes": 993,
+      "sha256": "a26fe21a745894a54dc04b6a91dcd102ee5f7ae188b5ed6bc4ba27ba9bdfd8a8"
+    },
+    "cells/066_coarse_d10_s16_a0p16_convex_rnone_norm_matched.json": {
+      "bytes": 992,
+      "sha256": "3544e48b0742b31b357428ea522a0005fbb912f707ab613ae3b92d966bf7675f"
+    },
+    "cells/067_coarse_d10_s18_a0p05_convex_rnone_norm_matched.json": {
+      "bytes": 995,
+      "sha256": "44fe9687c5ea968ebc7f1bc307ca1f1500524efc9500fe0b8f5e4c0cc3f56968"
+    },
+    "cells/068_coarse_d10_s18_a0p10_convex_rnone_norm_matched.json": {
+      "bytes": 993,
+      "sha256": "a81cd227c6b969c40fc286926538467bdc07d7668e785c6796c044e002075078"
+    },
+    "cells/069_coarse_d10_s18_a0p16_convex_rnone_norm_matched.json": {
+      "bytes": 994,
+      "sha256": "f010b57c5542c38a96511cdf491389af46773de8cafb6ec6303564567e0e0558"
+    },
+    "cells/070_coarse_d10_s20_a0p05_convex_rnone_norm_matched.json": {
+      "bytes": 994,
+      "sha256": "fa3425e577fc0d6f6aa62a5114ec7782103fff7fbd02c62fe85dd1712bfc9750"
+    },
+    "cells/071_coarse_d10_s20_a0p10_convex_rnone_norm_matched.json": {
+      "bytes": 991,
+      "sha256": "72f638a0a6708532c2368a6cfdd77a24d7c8b17b7607ef940cda1df7dbdd0a46"
+    },
+    "cells/072_coarse_d10_s20_a0p16_convex_rnone_norm_matched.json": {
+      "bytes": 991,
+      "sha256": "963750231346dbc80119ba8a58d9426baaf36d5818a50d15f14329c2456f9636"
+    },
+    "identity_recheck.json": {
+      "bytes": 283,
+      "sha256": "7821becfa8662fcfb2495ca7566bb05c1f2826e7a40e2ba417f43a9eb5abc797"
+    }
+  },
+  "status": "overrun_stop_awaiting_relay",
+  "strategy_key_resolved": false
+}

@@ -1,0 +1,11 @@
+{
+  "bit_exact": true,
+  "committed_cache": {
+    "bit_exact": true,
+    "maximum_absolute_difference": 0.0,
+    "mismatched_tensors": []
+  },
+  "kind": "paper_native_recirculation_identity_v1",
+  "scored_logits_bit_exact": true,
+  "scored_logits_maximum_absolute_difference": 0.0
+}

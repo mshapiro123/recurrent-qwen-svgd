@@ -1,0 +1,34 @@
+{
+  "baseline": {
+    "mean_nll": 2.6329798767177475,
+    "perplexity": 13.915173684494556,
+    "predicted_tokens": 32736,
+    "source": "banked_phase0_same_corpus_same_evaluator",
+    "window_tokens": 1024,
+    "windows": 32
+  },
+  "config": {
+    "alpha": 0.16,
+    "beta_mode": "convex",
+    "destination_layer": 8,
+    "normalization_mode": "norm_matched",
+    "ramp_tokens": null,
+    "source_layer": 16
+  },
+  "evaluator": "paper_native_serial_first_iteration_readout_v1",
+  "kind": "paper2_recirculation_phase_a_nll_cell_v1",
+  "perplexity_reduction_percent": 0.36024995138628035,
+  "recirculated": {
+    "elapsed_seconds": 61.20851904900019,
+    "label": "phase_a_054_coarse_d08_s16_a0p16_convex_rnone_norm_matched",
+    "mean_nll": 2.629370872575866,
+    "perplexity": 13.865044278060848,
+    "predicted_tokens": 32736,
+    "window_tokens": 1024,
+    "windows": 32
+  },
+  "run_index": 54,
+  "runtime": "A100-SXM4-40GB_bfloat16_sdpa",
+  "stage": "coarse",
+  "weights_frozen": true
+}
