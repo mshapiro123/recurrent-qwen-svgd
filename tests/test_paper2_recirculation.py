@@ -23,6 +23,7 @@ from eval.eval_paper2_recirculation_phase0 import (
 from eval.eval_paper2_recirculation_phase_a import (
     CellSpec,
     canonical_lf_receipt,
+    checkpoint_overrun,
     coarse_pairs,
     coarse_specs,
     expected_total_seconds,
@@ -389,6 +390,31 @@ def test_phase_a_grid_and_refinement_counts_are_locked() -> None:
     assert lock["phase0"]["corpus_token_windows"] == phase0["private_receipts"][
         "corpus_token_windows.pt"
     ]
+
+
+def test_phase_a_resume_does_not_recheck_banked_overrun_checkpoints() -> None:
+    arguments = {
+        "resume_completed": 72,
+        "actual_total_seconds": 7200.0,
+        "checkpoint_set": {24, 48, 72, 96},
+        "overrun_multiplier": 1.25,
+        "cost_ceiling_seconds": 8.0 * 3600.0,
+    }
+    assert not checkpoint_overrun(
+        completed=24,
+        expected_total_seconds_at_checkpoint=3600.0,
+        **arguments,
+    )
+    assert checkpoint_overrun(
+        completed=96,
+        expected_total_seconds_at_checkpoint=3600.0,
+        **arguments,
+    )
+    assert checkpoint_overrun(
+        completed=24,
+        expected_total_seconds_at_checkpoint=3600.0,
+        **{**arguments, "actual_total_seconds": 8.0 * 3600.0 + 1.0},
+    )
 
 
 def test_phase_a_selector_prefers_a_connected_region_over_an_isolated_peak() -> None:

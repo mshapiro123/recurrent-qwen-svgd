@@ -399,6 +399,26 @@ def expected_total_seconds(lock: Mapping[str, Any], completed: int) -> float:
     return phase0 + sum(planned[:completed])
 
 
+def checkpoint_overrun(
+    *,
+    completed: int,
+    resume_completed: int,
+    actual_total_seconds: float,
+    expected_total_seconds_at_checkpoint: float,
+    checkpoint_set: set[int],
+    overrun_multiplier: float,
+    cost_ceiling_seconds: float,
+) -> bool:
+    if actual_total_seconds > cost_ceiling_seconds:
+        return True
+    return (
+        completed > resume_completed
+        and completed in checkpoint_set
+        and actual_total_seconds / expected_total_seconds_at_checkpoint
+        > overrun_multiplier
+    )
+
+
 def _receipt_path(root: Path, *, index: int, stage: str, spec: CellSpec) -> Path:
     return root / "cells" / f"{index:03d}_{stage}_{spec.slug()}.json"
 
@@ -711,6 +731,7 @@ def main() -> int:
     existing_status = (
         json.loads(status_path.read_text(encoding="utf-8")) if status_path.is_file() else {}
     )
+    resume_completed = int(existing_status.get("completed_measurements", 0))
     prior_elapsed = _status_elapsed(existing_status)
     session_started = time.perf_counter()
     runtime = validate_runtime(lock)
@@ -755,7 +776,7 @@ def main() -> int:
         "optimizer_steps": 0,
         "confirm_scored": False,
         "eval_e_scored": False,
-        "completed_measurements": int(existing_status.get("completed_measurements", 0)),
+        "completed_measurements": resume_completed,
         "phase_a_elapsed_seconds": prior_elapsed,
     }
     write_json(status_path, status)
@@ -790,10 +811,16 @@ def main() -> int:
         expected = expected_total_seconds(lock, completed)
         actual_total = float(lock["phase0"]["phase0_elapsed_seconds"]) + elapsed
         multiplier = actual_total / expected if expected else 0.0
-        overrun = (
-            completed in checkpoint_set
-            and multiplier > float(lock["gates"]["overrun_multiplier"])
-        ) or actual_total > float(lock["runtime"]["cost_ceiling_a100_hours"]) * 3600.0
+        overrun = checkpoint_overrun(
+            completed=completed,
+            resume_completed=resume_completed,
+            actual_total_seconds=actual_total,
+            expected_total_seconds_at_checkpoint=expected,
+            checkpoint_set=checkpoint_set,
+            overrun_multiplier=float(lock["gates"]["overrun_multiplier"]),
+            cost_ceiling_seconds=float(lock["runtime"]["cost_ceiling_a100_hours"])
+            * 3600.0,
+        )
         status.update(
             status=("overrun_stop_awaiting_relay" if overrun else outcome),
             completed_measurements=completed,
