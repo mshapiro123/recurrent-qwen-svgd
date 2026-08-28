@@ -1,0 +1,221 @@
+{
+  "archive": {
+    "bytes": 620397,
+    "filename": "recirculation-phase-a-artifacts.tar.gz",
+    "sha256": "273997d71be5d6f7fae9f799ac328f5a1db083cbf22504c1a26bd0fa7ccd8b3f"
+  },
+  "authorities": [
+    {
+      "bytes": 20116,
+      "drive_id": "1vBn5JpoGl2cz7WyqGJobJlPkpHmEad3I",
+      "filename": "STRATEGY_RECIRCULATION_PROBE_HANDOFF_20260823.md",
+      "sha256": "c0e358bf21cc0d330871ac5e58264d03ac4e22c0b078096ca0b93576e6b64db1"
+    },
+    {
+      "bytes": 15353,
+      "drive_id": "1uAjmvAinYaNezVXq1IGp_TPZvHicjBwl",
+      "filename": "STRATEGY_RECIRCULATION_SEMANTICS_RULING_20260827.md",
+      "sha256": "794548b168d3423ea2aaebec08317384e47e3635e6a4d18ba73137e8b162a553"
+    },
+    {
+      "bytes": 12733,
+      "drive_id": "1zuedpHN5LBJq2RJfTB3fH3J0srwcrBrR",
+      "filename": "STRATEGY_RECIRCULATION_COMPARATOR_RULING_20260827.md",
+      "sha256": "e3d60feed134a46ca0ee968b8886cb7784c2aed05d4d805e8aa3b5d94407dbfd"
+    },
+    {
+      "bytes": 9078,
+      "drive_id": "1bPp69nGPIB-RPchXcSILfcM2Ptrugj9t",
+      "filename": "STRATEGY_RECIRCULATION_PHASE_A_AUTHORIZATION_20260827.md",
+      "sha256": "14342d76432c37e7c1f144fdd760525e993138b65d9c780b9fd87bd11342f794"
+    }
+  ],
+  "battery": {
+    "baseline_correct": 160,
+    "neutral_lower_threshold": 151,
+    "rank_1": {
+      "config": {
+        "alpha": 0.2,
+        "beta_mode": "additive",
+        "destination_layer": 4,
+        "normalization_mode": "norm_matched",
+        "source_layer": 16
+      },
+      "correct": 96,
+      "delta_rows": -64,
+      "fixes": 21,
+      "per_battery": {
+        "gsm8k": {
+          "baseline_correct": 107,
+          "correct": 44,
+          "fixes": 18,
+          "regressions": 81,
+          "rows": 369
+        },
+        "mbpp": {
+          "baseline_correct": 33,
+          "correct": 30,
+          "fixes": 1,
+          "regressions": 4,
+          "rows": 67
+        },
+        "tier1": {
+          "baseline_correct": 20,
+          "correct": 22,
+          "fixes": 2,
+          "regressions": 0,
+          "rows": 25
+        }
+      },
+      "regressions": 85,
+      "row_receipt": {
+        "bytes": 1044007,
+        "sha256": "9a06aa04ff67837c65009eb94e31224bb3e6cc25926317c6246eb2e60afa3b3d"
+      }
+    },
+    "rank_2": {
+      "config": {
+        "alpha": 0.2,
+        "beta_mode": "convex",
+        "destination_layer": 4,
+        "normalization_mode": "identity",
+        "source_layer": 16
+      },
+      "correct": 108,
+      "delta_rows": -52,
+      "fixes": 23,
+      "per_battery": {
+        "gsm8k": {
+          "baseline_correct": 107,
+          "correct": 59,
+          "fixes": 20,
+          "regressions": 68,
+          "rows": 369
+        },
+        "mbpp": {
+          "baseline_correct": 33,
+          "correct": 27,
+          "fixes": 1,
+          "regressions": 7,
+          "rows": 67
+        },
+        "tier1": {
+          "baseline_correct": 20,
+          "correct": 22,
+          "fixes": 2,
+          "regressions": 0,
+          "rows": 25
+        }
+      },
+      "regressions": 75,
+      "row_receipt": {
+        "bytes": 1258532,
+        "sha256": "cd3ffbb7aec104200efbfb482c0da600985f572db74c111be585f8e66a670ebe"
+      }
+    },
+    "rows": 461,
+    "writeback_telemetry": {
+      "position_gate_mean_max": 1.0,
+      "position_gate_mean_min": 1.0,
+      "realized_writeback_ratio_mean_max": 0.2001953125,
+      "realized_writeback_ratio_mean_min": 0.2001953125
+    }
+  },
+  "coarse_sweep": {
+    "cells": 96,
+    "largest_qualifying_component_cells": 1,
+    "materiality_floor_percent": 1.0,
+    "qualifying_component_minimum_cells": 3,
+    "selected_region_mean_percent": 0.6839163560317778,
+    "selected_region_minimum_percent": 0.3707036078211403,
+    "top_cell": {
+      "alpha": 0.16,
+      "destination_layer": 4,
+      "perplexity_reduction_percent": 1.14100287884049,
+      "source_layer": 16
+    }
+  },
+  "cost": {
+    "active_session_count": 6,
+    "actual_to_expected_multiplier": 0.9653156344153018,
+    "assigned_a100_hours": 4.422350382,
+    "ceiling_a100_hours": 8.0,
+    "completed_scientific_a100_hours": 3.6314287542050003,
+    "expected_a100_hours": 3.7619081518394566,
+    "overhead_and_discarded_a100_hours": 0.7909216277949998
+  },
+  "date": "2026-08-27",
+  "handoff": {
+    "bytes": 14595,
+    "filename": "CODING_TO_STRATEGY_RECIRCULATION_PHASE_A_RESULT_HANDOFF_20260827.md",
+    "sha256": "77196781ca1f5b7c590139596739ba710afcf22f9124dfefba5dd8a1490dd4ab"
+  },
+  "identity_recheck": {
+    "bit_exact": true,
+    "committed_cache_maximum_absolute_difference": 0.0,
+    "mismatched_committed_cache_tensors": [],
+    "scored_logits_maximum_absolute_difference": 0.0
+  },
+  "kind": "paper2_recirculation_phase_a_result_handoff_receipt_v1",
+  "lock": {
+    "bytes": 5579,
+    "sha256": "087804f0ce7ddb9ed7ac0371e970b208a552bb296dd4ebd521059f0d3540524a"
+  },
+  "measurements": {
+    "battery_cells": 2,
+    "completed": 111,
+    "coarse_cells": 96,
+    "refinement_cells": 13
+  },
+  "published_commit": "5c8a2aa9479190828bce7660cf33b70c189e13a8",
+  "refinement": {
+    "baseline_mean_nll": 2.6329798767177475,
+    "baseline_perplexity": 13.915173684494556,
+    "best_config": {
+      "alpha": 0.2,
+      "beta_mode": "additive",
+      "destination_layer": 4,
+      "normalization_mode": "norm_matched",
+      "source_layer": 16
+    },
+    "best_mean_nll": 2.6062418151344606,
+    "best_perplexity": 13.5480390207204,
+    "best_perplexity_reduction_percent": 2.638376437825126,
+    "cells": 13
+  },
+  "runtime": {
+    "attention_backend": "sdpa",
+    "cuda": "12.8",
+    "datasets": "5.0.0",
+    "dtype": "bfloat16",
+    "evaluator": "paper_native_serial_first_iteration_readout_v1",
+    "gpu": "NVIDIA A100-SXM4-40GB",
+    "gpu_memory_mib": 40441,
+    "torch": "2.11.0+cu128",
+    "transformers": "5.14.1"
+  },
+  "safety": {
+    "active_colab_sessions_after_closeout": 0,
+    "confirm_scored": false,
+    "eval_e_scored": false,
+    "optimizer_constructed": false,
+    "optimizer_steps": 0,
+    "phase_b_training_authorized": false,
+    "weights_frozen": true
+  },
+  "status": "phase_a_complete_awaiting_strategy_adjudication",
+  "strategy": {
+    "coding_resolved_key": false,
+    "key_resolution_reason": "mixed_pattern_no_three_cell_coarse_region_tuned_cells_above_floor_both_batteries_below_neutral",
+    "strategy_only_keys": [
+      "AFFORDANCE-PRESENT",
+      "AFFORDANCE-PRESENT-BATTERY-ADDITIVE",
+      "PERPLEXITY-ONLY-WITH-BATTERY-HARM",
+      "ABSENT"
+    ]
+  },
+  "tests": {
+    "command": "py -3.11 -m pytest -q tests/test_paper2_recirculation.py tests/test_stage5_notebooks.py::test_paper2_recirculation_phase_a_target_is_wired_and_guarded",
+    "result": "17 passed"
+  }
+}
