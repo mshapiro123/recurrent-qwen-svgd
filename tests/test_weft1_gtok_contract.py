@@ -16,6 +16,7 @@ from training.weft1_gtok_contract import (
     CorpusAuditManifestReceipt,
     CorpusStratumByteStats,
     FlatAdamWRecipe,
+    GTOK_AMENDMENT_A1_SHA256,
     GTOK_A100_HOUR_TRIPWIRE,
     GTOK_AUTHORITY_CHAIN,
     GTOK_BPB_MILESTONE_BYTES,
@@ -27,6 +28,7 @@ from training.weft1_gtok_contract import (
     GTokComputeReceipt,
     GTOK_ENGLISH_SCOPE_SHA256,
     GTOK_EXECUTION_AUTHORITY_CHAIN,
+    GTOK_EXECUTION_AUTHORITY_CHAIN_V2,
     GTOK_EXECUTION_HANDOFF_SHA256,
     GTOK_HANDOFF_SHA256,
     GTOK_PROXY_TOPOLOGY,
@@ -339,6 +341,9 @@ def test_binding_authority_chain_and_screen_constants_are_exact() -> None:
     assert GTOK_EXECUTION_HANDOFF_SHA256 == (
         "2aecb64711a2bf2776c8d1940350bc5d42b335f60eb774ac1e941f470b9cf74c"
     )
+    assert GTOK_AMENDMENT_A1_SHA256 == (
+        "e996f89fee81871a6432d90fabbaa0dc470b8f7643bc65756966e27883af3267"
+    )
     assert GTOK_AUTHORITY_CHAIN == (
         GTOK_HANDOFF_SHA256,
         GTOK_RULINGS_SHA256,
@@ -356,6 +361,10 @@ def test_binding_authority_chain_and_screen_constants_are_exact() -> None:
         GTOK_QWEN_ADJUDICATION_SHA256,
         GTOK_CURRICULUM_DECISIONS_SHA256,
         GTOK_EXECUTION_HANDOFF_SHA256,
+    )
+    assert GTOK_EXECUTION_AUTHORITY_CHAIN_V2 == (
+        *GTOK_EXECUTION_AUTHORITY_CHAIN,
+        GTOK_AMENDMENT_A1_SHA256,
     )
     assert execution_authority_bound_sha256("fixture", {"value": 1}) != (
         authority_bound_sha256("fixture", {"value": 1})
@@ -1054,11 +1063,14 @@ def test_choice_dependent_actions_fail_closed_on_all_open_decisions() -> None:
         require_gtok_execution_authority("fit tokenizer")
 
     message = str(raised.value)
-    assert "eight dense blocks in the execution handoff versus ten" in message
+    assert "eight dense blocks in the execution handoff versus ten" not in message
     assert "D-C-1 curriculum shape" not in message
     assert "D-C-2 tie rule" not in message
-    assert "literal tokenizer library/version" in message
-    assert "numerical AdamW hyperparameters" in message
+    assert "tokenizers version" in message
+    assert "numerical AdamW hyperparameters" not in message
     assert "undertrained-row norm threshold" in message
-    assert "held-out denominator" in message
-    assert len(UNRESOLVED_GTOK_DECISIONS) == 9
+    assert "held-out denominator" not in message
+    assert "MinHash hash family" in message
+    assert "run termination" in message
+    assert "pre-dispatch" in message
+    assert len(UNRESOLVED_GTOK_DECISIONS) == 10

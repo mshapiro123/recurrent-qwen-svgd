@@ -17,7 +17,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-RECEIPT = ROOT / "training" / "ablation_lm_engineering_quarantine_20260826.json"
+RECEIPT = ROOT / "training" / "ablation_lm_engineering_quarantine_20260828.json"
 FAILED_NODE = re.compile(r"^FAILED\s+(\S+)", re.MULTILINE)
 
 

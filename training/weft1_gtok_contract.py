@@ -1,10 +1,11 @@
 """Choice-independent contracts for the WEFT-1 G-TOK screen.
 
-This module is deliberately infrastructure-only.  It does not fit a tokenizer,
+This module is deliberately contract-only.  It does not fit a tokenizer,
 construct an optimizer, train a model, read a corpus, freeze an artifact, or
-select a vocabulary.  The 2026-08-28 execution handoff authorizes the bounded
-run axis, but execution still fails closed while literal protocol bindings and
-two reported authority conflicts remain unresolved.
+select a vocabulary.  Amendment A1 authorizes the bounded run axis and settles
+the block count, byte targets, optimizer values, high-level tokenizer recipe,
+dedup dimensions, and RNG namespaces.  Execution still fails closed wherever
+the amendment does not identify a reproducible literal implementation.
 
 Append-only vocabulary continuation preserves the byte meaning of every old
 token ID and the old merge list as an exact prefix.  It does *not* imply that
@@ -32,6 +33,8 @@ GTOK_TRAINING_BYTE_CEILING = 4_000_000_000
 GTOK_A100_HOUR_TRIPWIRE = 12.0
 GTOK_VOCABULARY_ARMS = (16_384, 24_576, 32_768, 49_152)
 GTOK_SEED_COUNT = 2
+GTOK_HELDOUT_BYTE_TARGET = 80_000_000
+GTOK_PROJECTED_A100_HOURS = 6.5
 GTOK_HANDOFF_SHA256 = "498f34b5966f0879c7f0a15ca8be02a603558781c35f59f03fb29cc9edd3eb02"
 GTOK_RULINGS_SHA256 = "167fc17da1ac71a8263f5e190dc07dcd681ed82c64123a3394dc2b47e42cf0d2"
 GTOK_ENGLISH_SCOPE_SHA256 = (
@@ -57,6 +60,9 @@ GTOK_CURRICULUM_DECISIONS_SHA256 = (
 GTOK_EXECUTION_HANDOFF_SHA256 = (
     "2aecb64711a2bf2776c8d1940350bc5d42b335f60eb774ac1e941f470b9cf74c"
 )
+GTOK_AMENDMENT_A1_SHA256 = (
+    "e996f89fee81871a6432d90fabbaa0dc470b8f7643bc65756966e27883af3267"
+)
 GTOK_AUTHORITY_CHAIN = (
     GTOK_HANDOFF_SHA256,
     GTOK_RULINGS_SHA256,
@@ -75,6 +81,13 @@ GTOK_EXECUTION_AUTHORITY_CHAIN = (
     GTOK_CURRICULUM_DECISIONS_SHA256,
     GTOK_EXECUTION_HANDOFF_SHA256,
 )
+# A1 explicitly amends forward without re-keying any banked execution receipt.
+# New v2 artifacts use this chain and a separate hash domain; the v1 chain and
+# ``execution_authority_bound_sha256`` above remain byte-for-byte stable.
+GTOK_EXECUTION_AUTHORITY_CHAIN_V2 = (
+    *GTOK_EXECUTION_AUTHORITY_CHAIN,
+    GTOK_AMENDMENT_A1_SHA256,
+)
 GTOK_BPB_MILESTONE_FRACTIONS = (
     Fraction(1, 4),
     Fraction(1, 2),
@@ -91,6 +104,33 @@ GTOK_STRATUM_SHARES = (
     Fraction(15, 100),
     Fraction(15, 100),
 )
+GTOK_SCREEN_TRAIN_STRATUM_TARGETS = tuple(
+    (name, GTOK_TRAINING_BYTE_BUDGET * share.numerator // share.denominator)
+    for name, share in zip(GTOK_STRATA, GTOK_STRATUM_SHARES, strict=True)
+)
+GTOK_SCREEN_HELDOUT_STRATUM_TARGETS = tuple(
+    (name, GTOK_HELDOUT_BYTE_TARGET * share.numerator // share.denominator)
+    for name, share in zip(GTOK_STRATA, GTOK_STRATUM_SHARES, strict=True)
+)
+GTOK_STRATUM_TOLERANCE = Fraction(5, 1_000)
+GTOK_PRETOKENIZER_REGEX = (
+    r"(?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\r\n\p{L}\p{N}]?\p{L}+|\p{N}| "
+    r"?[^\s\p{L}\p{N}]+[\r\n]*|\s*[\r\n]+|\s+(?!\S)|\s+"
+)
+GTOK_TOKENIZER_LIBRARY = "tokenizers"
+GTOK_TOKENIZER_FAMILY = "byte_level_bpe"
+GTOK_TOKENIZER_MIN_FREQUENCY = 2
+GTOK_PIPELINE_RNG_NAMES = (
+    "corpus.dedup",
+    "corpus.shuffle",
+    "corpus.split",
+    "corpus.topup",
+    "gtok.bpe",
+)
+GTOK_RUN_RNG_NAME_TEMPLATES = (
+    "gtok.data.{arm}.{seed}",
+    "gtok.init.{arm}.{seed}",
+)
 GTOK_ROUND_TRIP_CATEGORIES = (
     "accented_latin",
     "cjk",
@@ -103,15 +143,16 @@ GTOK_ROUND_TRIP_CATEGORIES = (
 GTOK_COMPUTE_SCOPES = ("base_screen", "confirmation", "infrastructure", "pilot")
 GTOK_COMPUTE_STATUSES = ("aborted", "cancelled", "completed", "failed", "preempted")
 UNRESOLVED_GTOK_DECISIONS = (
-    "4/2/4 proxy semantics: eight dense blocks in the execution handoff versus ten in the build contract",
-    "corpus source topology: the named Dolma 3 endpoint does not contain four of the six named source families",
-    "exact source revisions, source routes, quality selectors, and deterministic tie-breaks",
-    "language-ID implementation/version and exact threshold",
-    "whitespace normalization, MinHash/LSH parameters, shard serialization, and manifest hash scope",
-    "held-out denominator, whole-document rounding, tolerance semantics, and 4B screen-corpus join",
-    "literal tokenizer library/version, regex, and reserved-token inventory",
-    "numerical AdamW hyperparameters, schedule, and exact seed identities",
-    "undertrained-row norm threshold and remaining reporting schemas",
+    "per-family source-route admissibility and quality-selection tie-breaks",
+    "run termination and BPB milestone semantics when document-floor T is below four billion bytes",
+    "language-ID package/model/version, exact threshold, and boundary tie behavior",
+    "literal NFC whitespace-collapse algorithm and Unicode version",
+    "production MinHash hash family/seed/framing, short-document rule, and candidate ordering",
+    "shard serialization/compression/framing and manifest self-hash exclusion rules",
+    "tokenizers version, ordered reserved-token strings/IDs, decoder/post-processor, and BPE tie behavior",
+    "the two run-seed values and a realizable role for gtok.bpe in a deterministic trainer with no seed argument",
+    "undertrained-row norm threshold, packing/final-batch/scheduler-step semantics, and measurement/runtime receipt schemas",
+    "pre-dispatch and in-flight enforcement of the cumulative 12 A100-hour tripwire",
 )
 
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
@@ -195,6 +236,22 @@ def execution_authority_bound_sha256(schema: str, value: Any) -> str:
     return canonical_sha256(
         {
             "authority_chain": GTOK_EXECUTION_AUTHORITY_CHAIN,
+            "payload": value,
+            "schema": schema,
+        }
+    )
+
+
+def execution_authority_v2_bound_sha256(schema: str, value: Any) -> str:
+    """Hash an A1-era v2 receipt without changing any banked v1 digest."""
+
+    if not isinstance(schema, str) or not schema.strip():
+        raise ValueError("receipt schema must be a nonempty string")
+    if not schema.endswith("_v2"):
+        raise ValueError("A1 execution receipts require an explicit v2 schema")
+    return canonical_sha256(
+        {
+            "authority_chain": GTOK_EXECUTION_AUTHORITY_CHAIN_V2,
             "payload": value,
             "schema": schema,
         }
@@ -317,8 +374,16 @@ class GTokProxyTopologyReceipt:
     def receipt_sha256(self) -> str:
         return authority_bound_sha256("weft1_gtok_proxy_topology_v1", self)
 
+    @property
+    def executing_block_count(self) -> int:
+        """Count dense blocks; structural-OFF never removes the core blocks."""
+
+        return self.n_prelude_layers + self.n_core_blocks + self.n_coda_layers
+
 
 GTOK_PROXY_TOPOLOGY = GTokProxyTopologyReceipt()
+if GTOK_PROXY_TOPOLOGY.executing_block_count != 10:  # pragma: no cover - import invariant
+    raise RuntimeError("the ratified G-TOK 4/2/4 proxy must execute ten dense blocks")
 GTOK_PROXY_TOPOLOGY_SHA256 = GTOK_PROXY_TOPOLOGY.receipt_sha256
 
 
@@ -597,6 +662,30 @@ class FlatAdamWRecipe:
     @property
     def recipe_sha256(self) -> str:
         return authority_bound_sha256("weft1_gtok_flat_adamw_v1", self)
+
+
+def a1_flat_adamw_recipe() -> FlatAdamWRecipe:
+    """Return Amendment A1's exact flat, screen-only optimizer recipe."""
+
+    return FlatAdamWRecipe(
+        hyperparameters=(
+            ("betas", (0.9, 0.95)),
+            ("eps", 1e-8),
+            ("gradient_clip_norm", 1.0),
+            ("learning_rate", 3e-4),
+            ("weight_decay", 0.1),
+        ),
+        schedule=(
+            ("batch_sequence_length", 2_048),
+            ("batch_sequences", 256),
+            ("compute_dtype", "bfloat16"),
+            ("decay", "cosine"),
+            ("final_learning_rate_fraction", Fraction(1, 10)),
+            ("loss_reduction_dtype", "float32"),
+            ("master_weight_dtype", "float32"),
+            ("warmup_fraction", Fraction(1, 100)),
+        ),
+    )
 
 
 def assert_identical_flat_adamw(recipes: tuple[FlatAdamWRecipe, ...]) -> FlatAdamWRecipe:
@@ -1394,6 +1483,7 @@ __all__ = [
     "CorpusAuditManifestReceipt",
     "CorpusStratumByteStats",
     "FlatAdamWRecipe",
+    "GTOK_AMENDMENT_A1_SHA256",
     "GTOK_A100_HOUR_TRIPWIRE",
     "GTOK_BPB_MILESTONE_BYTES",
     "GTOK_BPB_MILESTONE_FRACTIONS",
@@ -1405,16 +1495,28 @@ __all__ = [
     "GTOK_COMPUTE_STATUSES",
     "GTOK_ENGLISH_SCOPE_SHA256",
     "GTOK_EXECUTION_AUTHORITY_CHAIN",
+    "GTOK_EXECUTION_AUTHORITY_CHAIN_V2",
     "GTOK_EXECUTION_HANDOFF_SHA256",
     "GTOK_HANDOFF_SHA256",
+    "GTOK_HELDOUT_BYTE_TARGET",
+    "GTOK_PIPELINE_RNG_NAMES",
+    "GTOK_PRETOKENIZER_REGEX",
+    "GTOK_PROJECTED_A100_HOURS",
     "GTOK_PROXY_TOPOLOGY",
     "GTOK_PROXY_TOPOLOGY_SHA256",
     "GTOK_QWEN_ADJUDICATION_SHA256",
     "GTOK_ROUND_TRIP_CATEGORIES",
+    "GTOK_RUN_RNG_NAME_TEMPLATES",
     "GTOK_RULINGS_SHA256",
     "GTOK_SEED_COUNT",
+    "GTOK_SCREEN_HELDOUT_STRATUM_TARGETS",
+    "GTOK_SCREEN_TRAIN_STRATUM_TARGETS",
     "GTOK_STRATA",
     "GTOK_STRATUM_SHARES",
+    "GTOK_STRATUM_TOLERANCE",
+    "GTOK_TOKENIZER_FAMILY",
+    "GTOK_TOKENIZER_LIBRARY",
+    "GTOK_TOKENIZER_MIN_FREQUENCY",
     "GTOK_TRAINING_BYTE_BUDGET",
     "GTOK_TRAINING_BYTE_CEILING",
     "GTOK_VOCABULARY_ARMS",
@@ -1428,11 +1530,13 @@ __all__ = [
     "UNRESOLVED_GTOK_DECISIONS",
     "ValidatedGTokBpbMatrix",
     "assert_identical_flat_adamw",
+    "a1_flat_adamw_recipe",
     "authority_bound_sha256",
     "bits_per_byte",
     "canonical_json_bytes",
     "canonical_sha256",
     "execution_authority_bound_sha256",
+    "execution_authority_v2_bound_sha256",
     "require_gtok_execution_authority",
     "sha256_bytes",
     "validate_a100_hour_tripwire",

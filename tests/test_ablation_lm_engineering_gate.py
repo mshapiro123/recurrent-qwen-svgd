@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, timedelta
 import json
 
 import pytest
@@ -20,20 +20,24 @@ def _write_receipt(tmp_path, payload: dict[str, object]):
 
 def test_quarantine_review_date_is_live_only_before_due_date(tmp_path) -> None:
     payload = _receipt_payload()
-    payload["review_due_on"] = "2026-09-02"
+    expected_due = payload["review_due_on"]
+    expected_nodes = {row["node_id"] for row in payload["expected_failures"]}
     receipt_path = _write_receipt(tmp_path, payload)
 
     expected, expected_passed = _load_gate_contract(
         receipt_path,
-        today=date(2026, 9, 1),
+        today=date.fromisoformat(expected_due) - timedelta(days=1),
     )
 
-    assert len(expected) == 3
+    assert expected == expected_nodes
     assert expected_passed == payload["last_observed_full_suite"]["passed"]
-    with pytest.raises(RuntimeError, match="review is stale as of 2026-09-02"):
-        _load_gate_contract(receipt_path, today=date(2026, 9, 2))
-    with pytest.raises(RuntimeError, match="review is stale as of 2026-09-02"):
-        _load_gate_contract(receipt_path, today=date(2026, 9, 3))
+    with pytest.raises(RuntimeError, match=f"review is stale as of {expected_due}"):
+        _load_gate_contract(receipt_path, today=date.fromisoformat(expected_due))
+    with pytest.raises(RuntimeError, match=f"review is stale as of {expected_due}"):
+        _load_gate_contract(
+            receipt_path,
+            today=date.fromisoformat(expected_due) + timedelta(days=1),
+        )
 
 
 @pytest.mark.parametrize("value", [None, "2026-9-2", "09/02/2026", "tomorrow"])
