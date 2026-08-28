@@ -140,7 +140,14 @@
     "runtime_change_action": "hard_stop"
   },
   "interpretation": {
-    "resolved_in_flight": false,
+    "resolved_in_flight": true,
+    "assigned_key": "TOKEN-AFFORDANCE-TUNED-ISOLATED / TRAJECTORY-DESTRUCTIVE",
+    "adjudication_drive_id": "1zkmRbv1qmsT4GihAv6mnVj9BNiO80O6o",
+    "adjudication_bytes": 12476,
+    "adjudication_sha256": "c4157a6d71cf22a183292b24d811ed22319d511a4a79438c27f5b2d98d8feb72",
+    "static_score_only_tuning_terminal": true,
+    "desk_rider_authorized": true,
+    "phase_b_training_authorized": false,
     "strategy_only_keys": [
       "AFFORDANCE-PRESENT",
       "AFFORDANCE-PRESENT-BATTERY-ADDITIVE",

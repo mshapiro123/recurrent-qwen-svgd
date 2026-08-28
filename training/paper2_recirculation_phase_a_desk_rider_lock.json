@@ -1,0 +1,68 @@
+{
+  "kind": "paper2_recirculation_phase_a_desk_rider_lock_v1",
+  "status": "LOCKED_CPU_ONLY_RECEIPT_ANALYSIS",
+  "authority": {
+    "drive_id": "1zkmRbv1qmsT4GihAv6mnVj9BNiO80O6o",
+    "filename": "STRATEGY_RECIRCULATION_PHASE_A_ADJUDICATION_20260828.md",
+    "bytes": 12476,
+    "sha256": "c4157a6d71cf22a183292b24d811ed22319d511a4a79438c27f5b2d98d8feb72"
+  },
+  "phase_a_key": "TOKEN-AFFORDANCE-TUNED-ISOLATED / TRAJECTORY-DESTRUCTIVE",
+  "sources": {
+    "baseline": {
+      "bytes": 1748126,
+      "sha256": "79fb3b1a28780b24b2a8db0a99f701f8ab86af707086de778f975696e072e41e",
+      "rows": 461
+    },
+    "rank_1_additive_norm_matched": {
+      "bytes": 1044007,
+      "sha256": "9a06aa04ff67837c65009eb94e31224bb3e6cc25926317c6246eb2e60afa3b3d",
+      "rows": 461
+    },
+    "rank_2_convex_identity": {
+      "bytes": 1258532,
+      "sha256": "cd3ffbb7aec104200efbfb482c0da600985f572db74c111be585f8e66a670ebe",
+      "rows": 461
+    }
+  },
+  "estimator": {
+    "population_identity": "same_item_ids_same_order_same_battery_same_reader",
+    "primary_battery": "gsm8k",
+    "first_divergence": "zero_based_longest_common_prefix_length; unequal exact prefixes diverge at the shorter length",
+    "reported_position": "one_based_first_divergent_generated_token",
+    "absolute_early_positions": 8,
+    "normalized_early_fraction": 0.1,
+    "normalized_late_fraction": 0.5,
+    "length_bins_inclusive": [[1, 32], [33, 64], [65, 128], [129, 192], [193, 256]],
+    "length_conditioning_scope": ["all_batteries", "battery_strata", "gsm8k_primary"],
+    "low_margin_reference": "pooled_baseline_gsm8k_generated_position_top1_margin",
+    "low_margin_quantile": 0.25,
+    "margin_semantics": "top1_minus_runner_up_at_the_generated_position_not_gold_token_margin",
+    "token_class_priority": ["numeric_operator", "operator", "numeric", "whitespace", "special", "punctuation", "lexical", "sequence_end"],
+    "overlap": "exact_item_id_intersection_union_and_jaccard",
+    "descriptive_extension_after_primary_receipt": {
+      "primary_summary_bytes": 23725,
+      "primary_summary_sha256": "ee89609070d4aac92950e4176958834ddef97490ff4a3815c68c556196f89ec2",
+      "views": ["top_first_token_transition_pairs", "arm_to_baseline_generation_length_ratio"],
+      "reason": "Explain the registered first-position onset mass; descriptive only and cannot assign the Phase-B branch."
+    },
+    "branch_assignment": "strategy_only"
+  },
+  "model": {
+    "tokenizer_id": "Qwen/Qwen2.5-0.5B-Instruct",
+    "revision": "7ae557604adf67be50417f59c2c2f167def9a775",
+    "local_files_only": true,
+    "weights_loaded": false
+  },
+  "prohibitions": {
+    "gpu": true,
+    "model_load": true,
+    "optimizer": true,
+    "training": true,
+    "new_generation": true,
+    "confirm_scoring": true,
+    "eval_e_scoring": true,
+    "phase_b_training": true,
+    "static_score_only_cells": true
+  }
+}
