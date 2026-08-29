@@ -321,6 +321,56 @@ def test_installed_distribution_inventory_rejects_mutation_and_extra_distributio
         )
 
 
+def test_installed_distribution_inventory_accepts_owned_vendored_record(
+    tmp_path: Path,
+) -> None:
+    lock_bytes = (
+        f"setuptools==84.0.0 \\\n    --hash=sha256:{'1' * 64}\n"
+    ).encode("ascii")
+    prefix = tmp_path / "runtime"
+    site_root = prefix / "lib" / "python3.11" / "site-packages"
+    _write_installed_distribution(
+        site_root, "setuptools", "84.0.0", b"setuptools = 1\n"
+    )
+    _write_installed_distribution(site_root, "pip", "24.0", b"pip = 1\n")
+    vendored_record = (
+        site_root
+        / "setuptools"
+        / "_vendor"
+        / "example-1.0.dist-info"
+        / "RECORD"
+    )
+    vendored_record.parent.mkdir(parents=True)
+    vendored_bytes = b"vendored.py,,\n"
+    vendored_record.write_bytes(vendored_bytes)
+    top_record = site_root / "setuptools-84.0.0.dist-info" / "RECORD"
+    with top_record.open("a", encoding="utf-8", newline="") as handle:
+        handle.write(
+            f"{vendored_record.relative_to(site_root).as_posix()},"
+            f"sha256={_record_hash(vendored_bytes)},{len(vendored_bytes)}\n"
+        )
+
+    inventory = installed_distribution_inventory_v3(
+        lock_bytes,
+        installation_prefix=prefix,
+        distributions=metadata.distributions(path=[str(site_root)]),
+    )
+    setuptools_row = next(
+        row
+        for row in inventory["distributions"]
+        if row["distribution"] == "setuptools"
+    )
+    assert setuptools_row["record_path"].endswith(
+        "setuptools-84.0.0.dist-info/RECORD"
+    )
+    vendored_row = next(
+        row
+        for row in inventory["files"]
+        if row["relative_path"].endswith("example-1.0.dist-info/RECORD")
+    )
+    assert vendored_row["owners"] == ["setuptools"]
+
+
 def test_source_cache_verification_is_root_independent_and_fail_closed(
     tmp_path: Path,
 ) -> None:

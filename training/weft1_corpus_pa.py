@@ -747,8 +747,13 @@ def installed_distribution_inventory_v3(
             initial_files[relative_path] = (byte_count, digest)
             owners.setdefault(relative_path, set()).add(name)
             pure_path = PurePosixPath(package_name)
-            if pure_path.name == "RECORD" and pure_path.parent.name.endswith(
-                ".dist-info"
+            # Modern wheels can vendor complete nested ``*.dist-info`` trees
+            # (setuptools 84 does this).  Those nested RECORD files are owned
+            # payload, not the installed distribution's own metadata root.
+            if (
+                len(pure_path.parts) == 2
+                and pure_path.name == "RECORD"
+                and pure_path.parent.name.endswith(".dist-info")
             ):
                 record_paths.append(relative_path)
         if len(record_paths) != 1:
