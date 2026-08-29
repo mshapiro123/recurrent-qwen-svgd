@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 from fractions import Fraction
+import base64
 import hashlib
+from importlib import metadata
 import json
 import os
 from pathlib import Path
@@ -32,6 +34,8 @@ from training.weft1_corpus_pa import (
     RuntimeExpectationV3,
     SourceAssetExpectationV3,
     attest_runtime_v3,
+    installed_distribution_inventory_v3,
+    parse_hash_locked_requirements_v3,
     run_fixture_replay,
     typed_replay_receipt_from_mapping,
     verify_source_cache_assets,
@@ -43,6 +47,41 @@ def _hash(value: bytes | str) -> str:
     if isinstance(value, str):
         value = value.encode("utf-8")
     return hashlib.sha256(value).hexdigest()
+
+
+def _record_hash(value: bytes) -> str:
+    return base64.urlsafe_b64encode(hashlib.sha256(value).digest()).rstrip(b"=").decode(
+        "ascii"
+    )
+
+
+def _write_installed_distribution(
+    site_root: Path, name: str, version: str, payload: bytes
+) -> Path:
+    import_name = name.replace("-", "_")
+    module_path = site_root / f"{import_name}.py"
+    module_path.parent.mkdir(parents=True, exist_ok=True)
+    module_path.write_bytes(payload)
+    metadata_path = site_root / f"{import_name}-{version}.dist-info"
+    metadata_path.mkdir()
+    metadata_bytes = f"Metadata-Version: 2.1\nName: {name}\nVersion: {version}\n".encode(
+        "utf-8"
+    )
+    (metadata_path / "METADATA").write_bytes(metadata_bytes)
+    record_path = metadata_path / "RECORD"
+    record_path.write_text(
+        "\n".join(
+            (
+                f"{module_path.relative_to(site_root).as_posix()},sha256={_record_hash(payload)},{len(payload)}",
+                f"{(metadata_path / 'METADATA').relative_to(site_root).as_posix()},sha256={_record_hash(metadata_bytes)},{len(metadata_bytes)}",
+                f"{record_path.relative_to(site_root).as_posix()},,",
+            )
+        )
+        + "\n",
+        encoding="utf-8",
+        newline="",
+    )
+    return module_path
 
 
 def _document(record_id: str, text: str) -> StableDocumentV3:
@@ -83,11 +122,57 @@ def test_runtime_attestation_hashes_exact_lock_executable_and_environment(
     tmp_path: Path,
 ) -> None:
     lock = tmp_path / "requirements.lock"
-    lock_bytes = b"alpha==1.2.3\nBravo_Package==9.8.7\n"
+    alpha_hash = "1" * 64
+    bravo_hash = "2" * 64
+    lock_bytes = (
+        f"alpha==1.2.3 \\\n    --hash=sha256:{alpha_hash}\n"
+        f"Bravo_Package==9.8.7 \\\n    --hash=sha256:{bravo_hash}\n"
+    ).encode("ascii")
     lock.write_bytes(lock_bytes)
+    prefix = tmp_path / "runtime"
+    site_root = prefix / "lib" / "python3.11" / "site-packages"
+    _write_installed_distribution(site_root, "alpha", "1.2.3", b"alpha = 1\n")
+    _write_installed_distribution(
+        site_root, "bravo-package", "9.8.7", b"bravo = 1\n"
+    )
+    _write_installed_distribution(site_root, "pip", "24.0", b"pip = 1\n")
+    inventory = installed_distribution_inventory_v3(
+        lock_bytes,
+        installation_prefix=prefix,
+        distributions=metadata.distributions(path=[str(site_root)]),
+    )
     executable = tmp_path / "python-copy"
     executable.write_bytes(b"exact executable bytes")
-    versions = {"alpha": "1.2.3", "Bravo_Package": "9.8.7"}
+    linkage_core = {
+        "executable": {
+            "bytes": len(executable.read_bytes()),
+            "path": str(executable.resolve()),
+            "sha256": _hash(executable.read_bytes()),
+        },
+        "libpython_library": {
+            "bytes": 1,
+            "path": str((tmp_path / "libpython.so").resolve()),
+            "sha256": "3" * 64,
+        },
+        "schema": production.RUNTIME_LINKAGE_SCHEMA_V3,
+        "sqlite_extension": {
+            "bytes": 1,
+            "path": str((tmp_path / "_sqlite3.so").resolve()),
+            "sha256": "4" * 64,
+        },
+        "sqlite_library": {
+            "bytes": 1,
+            "path": str((tmp_path / "libsqlite3.so").resolve()),
+            "sha256": "5" * 64,
+        },
+    }
+    linkage = {
+        **linkage_core,
+        "linkage_identity_sha256": production.execution_authority_v3_bound_sha256(
+            production.RUNTIME_LINKAGE_SCHEMA_V3, linkage_core
+        ),
+    }
+    versions = {"alpha": "1.2.3", "bravo-package": "9.8.7"}
     expectation = RuntimeExpectationV3(
         python_version=platform.python_version(),
         unicode_data_version=unicodedata.unidata_version,
@@ -103,13 +188,62 @@ def test_runtime_attestation_hashes_exact_lock_executable_and_environment(
         expectation=expectation,
         executable=executable,
         version_lookup=versions.__getitem__,
+        inventory_builder=lambda _lock_bytes: inventory,
+        linkage_builder=lambda _executable: linkage,
     )
     first = attestation.process_attestation(tmp_path / "first")
     second = attestation.process_attestation(tmp_path / "second")
     assert attestation.executable_sha256 == _hash(b"exact executable bytes")
     assert attestation.dependency_lock_sha256 == _hash(lock_bytes)
+    assert attestation.environment_payload["distributions"] == (
+        {
+            "artifact_sha256s": (alpha_hash,),
+            "distribution": "alpha",
+            "version": "1.2.3",
+        },
+        {
+            "artifact_sha256s": (bravo_hash,),
+            "distribution": "bravo-package",
+            "version": "9.8.7",
+        },
+    )
+    assert attestation.environment_payload["installed_distribution_inventory"] == (
+        inventory
+    )
     assert first.compatibility_identity_sha256 == second.compatibility_identity_sha256
     assert first.output_root != second.output_root
+
+    tampered_linkage = json.loads(json.dumps(linkage))
+    tampered_linkage["sqlite_library"]["sha256"] = "9" * 64
+    with pytest.raises(CorpusProductionError, match="identity drifted"):
+        production.validate_runtime_linkage_inventory_v3(tampered_linkage)
+
+    changed_core = {
+        **linkage_core,
+        "sqlite_library": {
+            **linkage_core["sqlite_library"],
+            "sha256": "9" * 64,
+        },
+    }
+    changed_linkage = {
+        **changed_core,
+        "linkage_identity_sha256": production.execution_authority_v3_bound_sha256(
+            production.RUNTIME_LINKAGE_SCHEMA_V3, changed_core
+        ),
+    }
+    changed_attestation = attest_runtime_v3(
+        requirements_lock=lock,
+        expected_lock_sha256=_hash(lock_bytes),
+        expectation=expectation,
+        executable=executable,
+        version_lookup=versions.__getitem__,
+        inventory_builder=lambda _lock_bytes: inventory,
+        linkage_builder=lambda _executable: changed_linkage,
+    )
+    assert (
+        changed_attestation.environment_identity_sha256
+        != attestation.environment_identity_sha256
+    )
 
     with pytest.raises(CorpusProductionError, match="version mismatch"):
         attest_runtime_v3(
@@ -118,6 +252,8 @@ def test_runtime_attestation_hashes_exact_lock_executable_and_environment(
             expectation=expectation,
             executable=executable,
             version_lookup=lambda name: "wrong" if name == "alpha" else "9.8.7",
+            inventory_builder=lambda _lock_bytes: inventory,
+            linkage_builder=lambda _executable: linkage,
         )
     with pytest.raises(CorpusProductionError, match="lock SHA-256"):
         attest_runtime_v3(
@@ -126,6 +262,62 @@ def test_runtime_attestation_hashes_exact_lock_executable_and_environment(
             expectation=expectation,
             executable=executable,
             version_lookup=versions.__getitem__,
+            inventory_builder=lambda _lock_bytes: inventory,
+            linkage_builder=lambda _executable: linkage,
+        )
+
+
+def test_hash_locked_requirement_parser_rejects_unhashed_or_reordered_closure() -> None:
+    with pytest.raises(CorpusProductionError, match="lacks hashes"):
+        parse_hash_locked_requirements_v3(b"alpha==1.0\n")
+    with pytest.raises(CorpusProductionError, match="repeats a distribution"):
+        parse_hash_locked_requirements_v3(
+            (
+                "alpha==1.0 \\\n    --hash=sha256:" + "1" * 64 + "\n"
+                "alpha==1.0 \\\n    --hash=sha256:" + "2" * 64 + "\n"
+            ).encode("ascii")
+        )
+
+
+def test_installed_distribution_inventory_rejects_mutation_and_extra_distribution(
+    tmp_path: Path,
+) -> None:
+    alpha_hash = "1" * 64
+    lock_bytes = (
+        f"alpha==1.0 \\\n    --hash=sha256:{alpha_hash}\n"
+    ).encode("ascii")
+    prefix = tmp_path / "runtime"
+    site_root = prefix / "lib" / "python3.11" / "site-packages"
+    alpha_path = _write_installed_distribution(
+        site_root, "alpha", "1.0", b"alpha = 1\n"
+    )
+    _write_installed_distribution(site_root, "pip", "24.0", b"pip = 1\n")
+
+    first = installed_distribution_inventory_v3(
+        lock_bytes,
+        installation_prefix=prefix,
+        distributions=metadata.distributions(path=[str(site_root)]),
+    )
+    assert [row["distribution"] for row in first["distributions"]] == [
+        "alpha",
+        "pip",
+    ]
+
+    alpha_path.write_bytes(b"alpha = 2\n")
+    with pytest.raises(CorpusProductionError, match="RECORD hash mismatch"):
+        installed_distribution_inventory_v3(
+            lock_bytes,
+            installation_prefix=prefix,
+            distributions=metadata.distributions(path=[str(site_root)]),
+        )
+
+    alpha_path.write_bytes(b"alpha = 1\n")
+    _write_installed_distribution(site_root, "echo", "1.0", b"echo = 1\n")
+    with pytest.raises(CorpusProductionError, match="unexpected installed distributions"):
+        installed_distribution_inventory_v3(
+            lock_bytes,
+            installation_prefix=prefix,
+            distributions=metadata.distributions(path=[str(site_root)]),
         )
 
 

@@ -387,6 +387,13 @@ def test_full_pa_executes_only_the_fixed_production_parent_wrapper(
         d2_dedup_replay_verified: bool = True
         network_isolation_kind: str = "linux_unshare_net_v1"
         production_profile_verified: bool = True
+        durable_output_parent: str = "durable"
+        durable_post_write_rehash_verified: bool = True
+        global_execution_provenance_identity_sha256: str = "b" * 64
+        global_execution_provenance_sha256: str = "c" * 64
+        runtime_build_receipt_identity_sha256: str = "d" * 64
+        runtime_build_receipt_sha256: str = "e" * 64
+        production_storage_identity_sha256: str = "f" * 64
         receipt_sha256: str = "a" * 64
 
     captured: dict[str, object] = {}
@@ -397,6 +404,11 @@ def test_full_pa_executes_only_the_fixed_production_parent_wrapper(
 
     monkeypatch.setattr(
         cli, "verify_production_materialization_replays_v3", fake_parent
+    )
+    monkeypatch.setattr(
+        cli,
+        "attest_production_storage_v3",
+        lambda **_kwargs: {"storage_identity_sha256": "f" * 64},
     )
     named = {
         name: tmp_path / name
@@ -409,6 +421,8 @@ def test_full_pa_executes_only_the_fixed_production_parent_wrapper(
             "model.bin",
         )
     }
+    local_work_parent = tmp_path / "local-work"
+    local_work_parent.mkdir()
     evidence = cli.run_full_pa_replays(
         authority_path=named["authority.md"],
         enumeration_receipt_path=named["enumeration.json"],
@@ -416,7 +430,11 @@ def test_full_pa_executes_only_the_fixed_production_parent_wrapper(
         source_cache_manifest_path=named["source-manifest.json"],
         source_cache=named["cache"],
         fasttext_model_path=named["model.bin"],
-        output_parent=tmp_path / "production-output",
+        runtime_build_receipt_path=tmp_path / "runtime-receipt.json",
+        durable_mount_root=tmp_path / "drive-mount",
+        durable_storage_marker_path=tmp_path / "drive-marker.json",
+        durable_output_parent=tmp_path / "production-output",
+        local_work_parent=local_work_parent,
     )
     assert evidence["status"] == "PASS"
     assert evidence["authoritative"] is True
@@ -442,6 +460,7 @@ def test_full_pa_receipt_cannot_mutate_governed_replay_tree_after_pass(
 
     monkeypatch.setattr(cli, "run_full_pa_replays", forbidden_run)
     output_parent = tmp_path / "production-output"
+    local_work_parent = tmp_path / "local-work"
     args = cli.build_parser().parse_args(
         [
             "full-pa",
@@ -457,15 +476,49 @@ def test_full_pa_receipt_cannot_mutate_governed_replay_tree_after_pass(
             str(tmp_path / "source-manifest.json"),
             "--fasttext-model",
             str(tmp_path / "model.bin"),
-            "--output-parent",
+            "--runtime-build-receipt",
+            str(tmp_path / "runtime-receipt.json"),
+            "--durable-mount-root",
+            str(tmp_path / "drive-mount"),
+            "--durable-storage-marker",
+            str(tmp_path / "drive-marker.json"),
+            "--durable-output-parent",
             str(output_parent),
+            "--local-work-parent",
+            str(local_work_parent),
             "--receipt-out",
-            str(output_parent / "parent-receipt.json"),
+            str(output_parent / "production-replay-a" / "parent-receipt.json"),
         ]
     )
-    with pytest.raises(cli.PreflightError, match="outside the governed replay tree"):
+    with pytest.raises(cli.PreflightError, match="sibling of the two replay roots"):
         cli._dispatch(args)
     assert called is False
+
+
+def test_full_pa_requires_distinct_explicit_durable_and_local_roots(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(
+        cli,
+        "verify_production_materialization_replays_v3",
+        lambda **_kwargs: (_ for _ in ()).throw(
+            AssertionError("overlapping roots reached the replay wrapper")
+        ),
+    )
+    with pytest.raises(cli.PreflightError, match="non-overlapping"):
+        cli.run_full_pa_replays(
+            authority_path=tmp_path / "authority.md",
+            enumeration_receipt_path=tmp_path / "enumeration.json",
+            cache_download_receipt_path=tmp_path / "download.json",
+            source_cache_manifest_path=tmp_path / "source-manifest.json",
+            source_cache=tmp_path / "cache",
+            fasttext_model_path=tmp_path / "model.bin",
+            runtime_build_receipt_path=tmp_path / "runtime-receipt.json",
+            durable_mount_root=tmp_path / "drive-mount",
+            durable_storage_marker_path=tmp_path / "drive-marker.json",
+            durable_output_parent=tmp_path / "durable-output",
+            local_work_parent=tmp_path,
+        )
 
 
 def test_cli_prints_one_canonical_receipt_and_never_reads_credentials(
@@ -515,3 +568,41 @@ def test_cli_failure_is_canonical_and_fail_closed() -> None:
     assert completed.stderr == cli.canonical_json_bytes(parsed)
     assert parsed["receipt"]["status"] == "FAIL"
     assert parsed["receipt"]["evidence"]["failed_closed"] is True
+
+
+def test_registration_cli_calls_governed_colab_drive_registrar(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    captured: dict[str, object] = {}
+
+    def register(**kwargs: object) -> dict[str, object]:
+        captured.update(kwargs)
+        return {"marker_sha256": "a" * 64, "provider": "google_colab_drive_v1"}
+
+    monkeypatch.setattr(cli, "register_colab_drive_storage_v3", register)
+    args = cli.build_parser().parse_args(
+        [
+            "register-durable-storage",
+            "--durable-mount-root",
+            str(tmp_path / "drive"),
+            "--durable-storage-root",
+            str(tmp_path / "drive" / "MyDrive" / "weft1"),
+            "--marker-out",
+            str(tmp_path / "drive" / "MyDrive" / "weft1" / "marker.json"),
+        ]
+    )
+    receipt = cli._dispatch(args)
+    assert receipt["receipt"]["status"] == "PASS"
+    assert captured["durable_mount_root"] == tmp_path / "drive"
+
+
+def test_receipt_publication_is_fresh_atomic_and_physically_replayed(
+    tmp_path: Path,
+) -> None:
+    output = tmp_path / "receipts" / "receipt.json"
+    value = {"schema": "fixture", "value": 1}
+    cli._emit(value, output)
+    assert output.read_bytes() == cli.canonical_json_bytes(value)
+    assert not list(output.parent.glob(".receipt.json.partial-*"))
+    with pytest.raises(cli.PreflightError, match="already exists"):
+        cli._emit(value, output)

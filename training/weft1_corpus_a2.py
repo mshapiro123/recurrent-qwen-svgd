@@ -25,7 +25,6 @@ import unicodedata
 
 import numpy as np
 
-from models.ablation_lm.rng import derive_module_seed
 from training.weft1_gtok_a1_contract import SOURCE_FAMILIES
 from training.weft1_gtok_contract import (
     GTOK_EXECUTION_AUTHORITY_CHAIN_V2,
@@ -33,6 +32,7 @@ from training.weft1_gtok_contract import (
     canonical_json_bytes,
     canonical_sha256,
 )
+from training.weft1_seed import derive_module_seed
 
 
 GTOK_AMENDMENT_A2_SHA256 = (

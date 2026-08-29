@@ -17,6 +17,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+import errno
 from fractions import Fraction
 import hashlib
 import json
@@ -48,9 +49,21 @@ CHILD_RECEIPT_SCHEMA_V3 = "weft1_corpus_parent_replay_child_receipt_v3"
 DEDUP_EVIDENCE_SCHEMA_V3 = "weft1_corpus_parent_dedup_evidence_v3"
 PARENT_RECEIPT_SCHEMA_V3 = "weft1_corpus_parent_replay_verification_v3"
 CHILD_RECEIPT_FILENAME = "child-receipt.json"
+GLOBAL_EXECUTION_PROVENANCE_SCHEMA_V3 = (
+    "weft1_corpus_global_execution_provenance_v3"
+)
+GLOBAL_EXECUTION_PROVENANCE_RELATIVE_PATH_V3 = (
+    "artifacts/global-execution-provenance.json"
+)
+RUNTIME_BUILD_RECEIPT_SCHEMA_V1 = "weft1_pa_runtime_build_receipt_v1"
+RUNTIME_BUILD_RECEIPT_RELATIVE_PATH_V1 = "artifacts/runtime-build-receipt.json"
 NETWORK_PROBE_RESULT = "python_socket_connect_blocked"
 OUTPUT_FILE_ROLES = frozenset({"auxiliary", "content", "dedup_evidence"})
+POST_WRITE_FILE_ROLES_V3 = OUTPUT_FILE_ROLES.union({"receipt"})
 DEDUP_LEDGER_IDENTITY_DOMAIN_V3 = b"weft1_corpus_dedup_decision_ledger_v3"
+PRODUCTION_STORAGE_IDENTITY_SCHEMA_V3 = "weft1_colab_drive_storage_identity_v3"
+WORKER_ENVIRONMENT_POLICY_SCHEMA_V3 = "weft1_isolated_worker_environment_v3"
+_LINUX_MOUNTINFO_PATH_V3 = Path("/proc/self/mountinfo")
 LINUX_UNSHARE_PATH_V1 = Path("/usr/bin/unshare")
 LINUX_UNSHARE_SHA256_V1 = (
     "72a34e6ba98a59f1da0c7b4d8c9722b746b5ade54e4d7e8de8e519c2993858ad"
@@ -59,6 +72,7 @@ REPOSITORY_ROOT_V3 = Path(__file__).resolve().parents[1]
 PRODUCTION_WORKER_PATH_V3 = (
     REPOSITORY_ROOT_V3 / "scripts" / "run_weft1_corpus_materialize_a2.py"
 )
+RUNTIME_BUILDER_PATH_V1 = REPOSITORY_ROOT_V3 / "scripts" / "build_weft1_pa_runtime.py"
 PRODUCTION_BINDINGS_PATH_V3 = (
     REPOSITORY_ROOT_V3
     / "training"
@@ -92,10 +106,28 @@ _LOGICAL_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._/-]{0,255}$")
 _RESERVED_ENVIRONMENT_KEYS = frozenset(
     {
         "PYTHONPATH",
+        "PYTHONHOME",
+        "PYTHONBREAKPOINT",
+        "PYTHONHASHSEED",
+        "PYTHONINSPECT",
+        "PYTHONIOENCODING",
+        "PYTHONMALLOC",
+        "PYTHONNOUSERSITE",
+        "PYTHONSAFEPATH",
+        "PYTHONSTARTUP",
+        "PYTHONDONTWRITEBYTECODE",
+        "PYTHONUTF8",
+        "PYTHONUSERBASE",
+        "PYTHONWARNINGS",
+        "SQLITE_TMPDIR",
+        "TEMP",
+        "TMP",
+        "TMPDIR",
         "WEFT1_NETWORK_DISABLED",
         "WEFT1_NETWORK_GUARD_ACTIVE",
         "WEFT1_NETWORK_GUARD_SHA256",
         "WEFT1_REPLAY_INPUT_IDENTITY_SHA256",
+        "WEFT1_REPLAY_LOCAL_WORK_PARENT",
         "WEFT1_REPLAY_OUTPUT_ROOT",
         "WEFT1_REPLAY_RECEIPT_PATH",
         "WEFT1_REPLAY_RUN_ID",
@@ -116,6 +148,9 @@ _PROXY_ENVIRONMENT_KEYS = (
 )
 _RESERVED_ENVIRONMENT_KEYS = _RESERVED_ENVIRONMENT_KEYS.union(
     _PROXY_ENVIRONMENT_KEYS
+)
+_RESERVED_ENVIRONMENT_KEYS_UPPER = frozenset(
+    key.upper() for key in _RESERVED_ENVIRONMENT_KEYS
 )
 
 _NETWORK_GUARD_SOURCE = b'''\
@@ -138,6 +173,34 @@ if hasattr(socket.socket, "sendmsg"):
     socket.socket.sendmsg = _weft1_network_refused
 os.environ["WEFT1_NETWORK_GUARD_ACTIVE"] = "1"
 '''
+
+_ISOLATED_WORKER_BOOTSTRAP_SOURCE_V3 = r'''\
+import hashlib
+import os
+from pathlib import Path
+import runpy
+import sys
+
+guard_path = Path(sys.argv[1])
+import_root = Path(sys.argv[2])
+worker_path = Path(sys.argv[3])
+guard_bytes = guard_path.read_bytes()
+if hashlib.sha256(guard_bytes).hexdigest() != os.environ["WEFT1_NETWORK_GUARD_SHA256"]:
+    raise RuntimeError("WEFT-1 network guard changed before isolated bootstrap")
+guard_globals = {"__file__": str(guard_path), "__name__": "sitecustomize"}
+exec(compile(guard_bytes, str(guard_path), "exec"), guard_globals, guard_globals)
+sys.path.insert(0, str(import_root))
+sys.argv = [str(worker_path), *sys.argv[4:]]
+runpy.run_path(str(worker_path), run_name="__main__")
+'''
+
+_WORKER_ENVIRONMENT_POLICY_V3: dict[str, object] = {
+    "bootstrap": "python_-I_-B_inline_guard_then_runpy_v3",
+    "inherited_python_environment": False,
+    "pythonpath": "snapshotted_repository_root_only",
+    "schema": WORKER_ENVIRONMENT_POLICY_SCHEMA_V3,
+    "user_site_enabled": False,
+}
 
 
 class ParentReplayError(RuntimeError):
@@ -225,9 +288,32 @@ def _json_object_no_duplicates(
 
 
 def _read_canonical_json_object(path: Path) -> tuple[Mapping[str, Any], str]:
-    if path.is_symlink() or not path.is_file():
-        raise ParentReplayError("child receipt must be a regular non-symlink file")
-    raw = path.read_bytes()
+    try:
+        lexical = assert_no_symlink_ancestors(Path(path))
+        with lexical.open("rb") as handle:
+            before = os.fstat(handle.fileno())
+            if not stat.S_ISREG(before.st_mode):
+                raise ParentReplayError(
+                    "child receipt must be a regular non-symlink file"
+                )
+            raw = handle.read()
+            after = os.fstat(handle.fileno())
+        with lexical.open("rb") as handle:
+            confirmed = handle.read()
+            confirmation = os.fstat(handle.fileno())
+    except (OSError, StrictPathError) as error:
+        raise ParentReplayError(
+            "child receipt must be a readable governed regular file"
+        ) from error
+    if (
+        raw != confirmed
+        or before.st_size != len(raw)
+        or after.st_size != len(raw)
+        or confirmation.st_size != len(confirmed)
+        or (before.st_dev, before.st_ino) != (after.st_dev, after.st_ino)
+        or (before.st_dev, before.st_ino) != (confirmation.st_dev, confirmation.st_ino)
+    ):
+        raise ParentReplayError("child receipt changed during its physical read")
     try:
         decoded = raw.decode("utf-8", errors="strict")
         parsed = json.loads(
@@ -513,6 +599,734 @@ def _logical_file_rows(
     return tuple(rows)
 
 
+def _json_normalized(value: object) -> object:
+    """Round-trip through the governed JSON codec to remove tuple/list ambiguity."""
+
+    return json.loads(_canonical_json_line(value))
+
+
+def _validate_locked_distribution_rows_v3(
+    value: object, *, name: str
+) -> list[dict[str, object]]:
+    if not isinstance(value, list) or not value:
+        raise ParentReplayError(f"{name} must be a nonempty JSON array")
+    rows: list[dict[str, object]] = []
+    for index, raw_row in enumerate(value):
+        row = _require_exact_mapping(raw_row, f"{name}[{index}]")
+        if set(row) != {"artifact_sha256s", "distribution", "version"}:
+            raise ParentReplayError(f"{name} fields drifted")
+        distribution = row.get("distribution")
+        version = row.get("version")
+        hashes = row.get("artifact_sha256s")
+        if (
+            not isinstance(distribution, str)
+            or not distribution
+            or distribution != distribution.casefold().replace("_", "-")
+            or not isinstance(version, str)
+            or not version
+            or any(character.isspace() for character in version)
+            or not isinstance(hashes, list)
+            or not hashes
+        ):
+            raise ParentReplayError(f"{name} contains an invalid lock row")
+        validated_hashes = [
+            _require_sha256(item, f"{name}[{index}] artifact SHA-256")
+            for item in hashes
+        ]
+        if validated_hashes != sorted(validated_hashes) or len(
+            validated_hashes
+        ) != len(set(validated_hashes)):
+            raise ParentReplayError(f"{name} hashes are not canonical")
+        rows.append(
+            {
+                "artifact_sha256s": validated_hashes,
+                "distribution": distribution,
+                "version": version,
+            }
+        )
+    distributions = [str(row["distribution"]) for row in rows]
+    if distributions != sorted(distributions) or len(distributions) != len(
+        set(distributions)
+    ):
+        raise ParentReplayError(f"{name} order or uniqueness drifted")
+    return rows
+
+
+def _validate_selected_wheel_rows_v1(
+    value: object,
+    *,
+    locked_distributions: Sequence[Mapping[str, object]],
+    name: str,
+) -> list[dict[str, object]]:
+    if not isinstance(value, list) or not value:
+        raise ParentReplayError(f"{name} must be a nonempty JSON array")
+    locked_by_name = {
+        str(row["distribution"]): row for row in locked_distributions
+    }
+    rows: list[dict[str, object]] = []
+    selected_names: list[str] = []
+    for index, raw_row in enumerate(value):
+        row = _require_exact_mapping(raw_row, f"{name}[{index}]")
+        if set(row) != {"bytes", "filename", "sha256"}:
+            raise ParentReplayError(f"{name} fields drifted")
+        filename = row.get("filename")
+        byte_count = row.get("bytes")
+        if (
+            not isinstance(filename, str)
+            or not filename.endswith(".whl")
+            or Path(filename).name != filename
+            or type(byte_count) is not int
+            or byte_count < 1
+        ):
+            raise ParentReplayError(f"{name} contains an invalid wheel row")
+        wheel_parts = filename[:-4].split("-")
+        if len(wheel_parts) not in {5, 6}:
+            raise ParentReplayError(f"{name} contains an invalid wheel filename")
+        distribution = wheel_parts[0].casefold().replace("_", "-")
+        version = wheel_parts[1]
+        locked = locked_by_name.get(distribution)
+        digest = _require_sha256(row.get("sha256"), f"{name}[{index}] SHA-256")
+        if (
+            locked is None
+            or version != locked.get("version")
+            or digest not in locked.get("artifact_sha256s", [])
+        ):
+            raise ParentReplayError(
+                f"{name} wheel is outside the hash-locked distribution closure"
+            )
+        selected_names.append(distribution)
+        rows.append(
+            {"bytes": byte_count, "filename": filename, "sha256": digest}
+        )
+    filenames = [str(row["filename"]) for row in rows]
+    if (
+        filenames != sorted(filenames)
+        or len(filenames) != len(set(filenames))
+        or len(selected_names) != len(set(selected_names))
+        or set(selected_names) != set(locked_by_name)
+    ):
+        raise ParentReplayError(f"{name} order or lock coverage drifted")
+    return rows
+
+
+def _load_runtime_build_receipt_v1(
+    path: Path,
+    *,
+    runtime_attestation: object,
+    expected_builder_sha256: str,
+    expected_runtime_contract_sha256: str,
+    expected_python_executable: Path,
+) -> tuple[dict[str, object], str]:
+    """Validate a fresh builder receipt against this exact runtime and lock."""
+
+    receipt, physical_sha256 = _read_canonical_json_object(path)
+    if set(receipt) != {
+        "authoritative",
+        "evidence",
+        "receipt_identity_sha256",
+        "schema",
+        "status",
+    }:
+        raise ParentReplayError("runtime build receipt fields drifted")
+    if (
+        receipt.get("schema") != RUNTIME_BUILD_RECEIPT_SCHEMA_V1
+        or receipt.get("status") != "PASS"
+        or receipt.get("authoritative") is not True
+    ):
+        raise ParentReplayError("runtime build receipt is not an authoritative PASS")
+    try:
+        from scripts.build_weft1_pa_runtime import (
+            RuntimeBuildError,
+            verify_build_receipt_payload,
+        )
+
+        builder_verified_identity = verify_build_receipt_payload(receipt)
+    except (ImportError, RuntimeBuildError, TypeError, ValueError) as error:
+        raise ParentReplayError(
+            f"runtime build receipt failed the pinned builder verifier: {error}"
+        ) from error
+    evidence = _require_exact_mapping(
+        receipt.get("evidence"), "runtime build receipt evidence"
+    )
+    if set(evidence) != {
+        "artifacts",
+        "build_dependency_versions",
+        "builder_sha256",
+        "cpython_site_packages_readme_removal",
+        "host",
+        "installed_distribution_inventory",
+        "jobs",
+        "locked_distributions",
+        "prefix",
+        "recipe",
+        "recipe_identity_sha256",
+        "requirements_lock",
+        "repository_runtime_attestation",
+        "runtime_contract_sha256",
+        "runtime_probe",
+        "sources",
+        "trusted_installer_chain",
+        "wheelhouse",
+        "wheelhouse_identity_sha256",
+    }:
+        raise ParentReplayError("runtime build receipt evidence fields drifted")
+    claimed_identity = _require_sha256(
+        receipt.get("receipt_identity_sha256"), "runtime build receipt identity"
+    )
+    if claimed_identity != _sha256_bytes(
+        _canonical_json_line(
+            {"domain": RUNTIME_BUILD_RECEIPT_SCHEMA_V1, "evidence": evidence}
+        )
+    ):
+        raise ParentReplayError("runtime build receipt identity drifted")
+    if builder_verified_identity != claimed_identity:
+        raise ParentReplayError("runtime builder verifier returned a different identity")
+
+    environment_payload = _json_normalized(
+        getattr(runtime_attestation, "environment_payload")
+    )
+    environment_identity = _require_sha256(
+        getattr(runtime_attestation, "environment_identity_sha256"),
+        "current runtime environment identity",
+    )
+    executable_sha256 = _require_sha256(
+        getattr(runtime_attestation, "executable_sha256"),
+        "current runtime executable SHA-256",
+    )
+    lock_sha256 = _require_sha256(
+        getattr(runtime_attestation, "dependency_lock_sha256"),
+        "current runtime dependency lock SHA-256",
+    )
+    repository_attestation = _require_exact_mapping(
+        evidence.get("repository_runtime_attestation"),
+        "runtime build repository attestation",
+    )
+    if set(repository_attestation) != {
+        "dependency_lock_sha256",
+        "environment_identity_sha256",
+        "environment_payload",
+        "executable_sha256",
+    } or dict(repository_attestation) != {
+        "dependency_lock_sha256": lock_sha256,
+        "environment_identity_sha256": environment_identity,
+        "environment_payload": environment_payload,
+        "executable_sha256": executable_sha256,
+    }:
+        raise ParentReplayError("runtime build receipt does not attest this runtime")
+    try:
+        from training.weft1_corpus_pa import (
+            validate_installed_distribution_inventory_v3,
+        )
+
+        installed_inventory = validate_installed_distribution_inventory_v3(
+            evidence.get("installed_distribution_inventory")
+        )
+    except (RuntimeError, TypeError, ValueError) as error:
+        raise ParentReplayError(
+            f"runtime build installed distribution inventory is invalid: {error}"
+        ) from error
+    current_installed_inventory = _require_exact_mapping(
+        _require_exact_mapping(
+            environment_payload, "current runtime environment payload"
+        ).get("installed_distribution_inventory"),
+        "current installed distribution inventory",
+    )
+    if installed_inventory != dict(current_installed_inventory):
+        raise ParentReplayError(
+            "runtime build receipt installed distribution bytes drifted"
+        )
+    requirements_lock = _require_exact_mapping(
+        evidence.get("requirements_lock"), "runtime build requirements lock"
+    )
+    if (
+        set(requirements_lock)
+        != {"bytes", "filename", "sha256", "source_filename"}
+        or requirements_lock.get("sha256") != lock_sha256
+        or type(requirements_lock.get("bytes")) is not int
+        or int(requirements_lock["bytes"]) < 1
+        or any(
+            not isinstance(requirements_lock.get(key), str)
+            or not requirements_lock.get(key)
+            for key in ("filename", "source_filename")
+        )
+    ):
+        raise ParentReplayError("runtime build receipt lock snapshot drifted")
+    if (
+        evidence.get("builder_sha256")
+        != _require_sha256(expected_builder_sha256, "runtime builder SHA-256")
+        or evidence.get("runtime_contract_sha256")
+        != _require_sha256(
+            expected_runtime_contract_sha256, "runtime contract SHA-256"
+        )
+    ):
+        raise ParentReplayError("runtime build receipt builder or contract drifted")
+    jobs = evidence.get("jobs")
+    if type(jobs) is not int or jobs < 1 or jobs > 256:
+        raise ParentReplayError("runtime build receipt jobs value is invalid")
+    recipe = evidence.get("recipe")
+    recipe_identity = _require_sha256(
+        evidence.get("recipe_identity_sha256"), "runtime recipe identity"
+    )
+    if recipe_identity != _sha256_bytes(_canonical_json_line(recipe)):
+        raise ParentReplayError("runtime build receipt recipe identity drifted")
+
+    artifacts = _require_exact_mapping(
+        evidence.get("artifacts"), "runtime build artifact hashes"
+    )
+    if set(artifacts) != {
+        "build_log_sha256",
+        "cpython_executable_sha256",
+        "libpython_library_sha256",
+        "sqlite3_extension_sha256",
+        "sqlite3_library_sha256",
+    }:
+        raise ParentReplayError("runtime build artifact fields drifted")
+    for key in artifacts:
+        _require_sha256(artifacts.get(key), f"runtime build artifact {key}")
+    if artifacts.get("cpython_executable_sha256") != executable_sha256:
+        raise ParentReplayError("runtime build receipt selected a different executable")
+    current_executable = _resolve_python_executable(expected_python_executable)
+    prefix_value = evidence.get("prefix")
+    if not isinstance(prefix_value, str) or not prefix_value:
+        raise ParentReplayError("runtime build receipt prefix is invalid")
+    try:
+        prefix = Path(prefix_value).resolve(strict=True)
+    except OSError as error:
+        raise ParentReplayError("runtime build receipt prefix is absent") from error
+    if (
+        not prefix.is_dir()
+        or prefix not in current_executable.parents
+        or _sha256_file(current_executable) != executable_sha256
+    ):
+        raise ParentReplayError("runtime build receipt prefix differs from this runtime")
+
+    runtime_probe = _require_exact_mapping(
+        evidence.get("runtime_probe"), "runtime build probe"
+    )
+    required_probe = {
+        "extra_distributions",
+        "cpython_executable_ldd",
+        "cpython_executable_search_paths",
+        "libpython_library_path",
+        "libpython_library_sha256",
+        "libzstd_version",
+        "locked_distributions",
+        "missing_distributions",
+        "python_version",
+        "python_prefix",
+        "sqlite3_extension_search_paths",
+        "sqlite_extension_ldd",
+        "sqlite_extension_path",
+        "sqlite_extension_sha256",
+        "sqlite_library_path",
+        "sqlite_library_sha256",
+        "sqlite_source_id",
+        "sqlite_version",
+        "unicode_data_version",
+        "wrong_distributions",
+        "zstandard_package_version",
+    }
+    if set(runtime_probe) != required_probe:
+        raise ParentReplayError("runtime build probe fields drifted")
+    sqlite_extension_value = runtime_probe.get("sqlite_extension_path")
+    if not isinstance(sqlite_extension_value, str) or not sqlite_extension_value:
+        raise ParentReplayError("runtime build probe SQLite extension path is invalid")
+    try:
+        sqlite_extension = Path(sqlite_extension_value).resolve(strict=True)
+    except OSError as error:
+        raise ParentReplayError("runtime build probe SQLite extension is absent") from error
+    if (
+        not sqlite_extension.is_file()
+        or prefix not in sqlite_extension.parents
+        or _sha256_file(sqlite_extension) != artifacts.get("sqlite3_extension_sha256")
+    ):
+        raise ParentReplayError("runtime build SQLite extension differs from this runtime")
+    sqlite_ldd = runtime_probe.get("sqlite_extension_ldd")
+    if (
+        not isinstance(sqlite_ldd, list)
+        or not sqlite_ldd
+        or any(not isinstance(line, str) or not line for line in sqlite_ldd)
+    ):
+        raise ParentReplayError("runtime build SQLite link evidence is incomplete")
+    for key in ("extra_distributions", "missing_distributions", "wrong_distributions"):
+        if runtime_probe.get(key) != []:
+            raise ParentReplayError("runtime build probe reports distribution drift")
+    runtime_versions = _require_exact_mapping(
+        _require_exact_mapping(
+            environment_payload, "current runtime environment payload"
+        ).get("runtime_versions"),
+        "current runtime versions",
+    )
+    expected_probe_versions = {
+        "libzstd_version": runtime_versions.get("libzstd_version"),
+        "python_version": runtime_versions.get("python_version"),
+        "sqlite_source_id": runtime_versions.get("sqlite_source_id"),
+        "sqlite_version": runtime_versions.get("sqlite_version"),
+        "unicode_data_version": runtime_versions.get("unicode_data_version"),
+        "zstandard_package_version": runtime_versions.get(
+            "zstandard_package_version"
+        ),
+    }
+    if any(runtime_probe.get(key) != value for key, value in expected_probe_versions.items()):
+        raise ParentReplayError("runtime build probe version differs from attestation")
+    runtime_linkage = _require_exact_mapping(
+        _require_exact_mapping(
+            environment_payload, "current runtime environment payload"
+        ).get("runtime_linkage"),
+        "current runtime linkage",
+    )
+    linkage_checks = (
+        ("executable", "cpython_executable_sha256", None),
+        (
+            "libpython_library",
+            "libpython_library_sha256",
+            "libpython_library_path",
+        ),
+        ("sqlite_extension", "sqlite3_extension_sha256", "sqlite_extension_path"),
+        ("sqlite_library", "sqlite3_library_sha256", "sqlite_library_path"),
+    )
+    for linkage_name, artifact_name, probe_path_name in linkage_checks:
+        row = _require_exact_mapping(
+            runtime_linkage.get(linkage_name), f"runtime linkage {linkage_name}"
+        )
+        if row.get("sha256") != artifacts.get(artifact_name) or (
+            probe_path_name is not None
+            and row.get("path") != runtime_probe.get(probe_path_name)
+        ):
+            raise ParentReplayError(
+                f"runtime build {linkage_name} differs from the live runtime"
+            )
+
+    locked_rows = _validate_locked_distribution_rows_v3(
+        _require_exact_mapping(
+            environment_payload, "current runtime environment payload"
+        ).get("distributions"),
+        name="runtime hash-locked distributions",
+    )
+    expected_locked_pairs = [
+        [row["distribution"], row["version"]] for row in locked_rows
+    ]
+    raw_locked_distributions = evidence.get("locked_distributions")
+    if not isinstance(raw_locked_distributions, list):
+        raise ParentReplayError("runtime build receipt lacks locked distributions")
+    normalized_receipt_pairs: list[list[str]] = []
+    for raw_pair in raw_locked_distributions:
+        if (
+            not isinstance(raw_pair, list)
+            or len(raw_pair) != 2
+            or any(not isinstance(item, str) or not item for item in raw_pair)
+        ):
+            raise ParentReplayError(
+                "runtime build receipt has an invalid locked distribution"
+            )
+        normalized_receipt_pairs.append(
+            [raw_pair[0].casefold().replace("_", "-"), raw_pair[1]]
+        )
+    if normalized_receipt_pairs != expected_locked_pairs:
+        raise ParentReplayError("runtime build receipt lock closure drifted")
+    if runtime_probe.get("locked_distributions") != expected_locked_pairs:
+        raise ParentReplayError("runtime build probe lock closure drifted")
+    selected_wheels = _validate_selected_wheel_rows_v1(
+        evidence.get("wheelhouse"),
+        locked_distributions=locked_rows,
+        name="runtime build selected wheels",
+    )
+    if evidence.get("wheelhouse_identity_sha256") != _sha256_bytes(
+        _canonical_json_line(selected_wheels)
+    ):
+        raise ParentReplayError("runtime build wheelhouse identity drifted")
+    return (
+        {
+            "receipt_identity_sha256": claimed_identity,
+            "receipt_sha256": physical_sha256,
+            "selected_wheels": selected_wheels,
+        },
+        physical_sha256,
+    )
+
+
+def _build_global_execution_provenance_v3(
+    *,
+    environment_payload: Mapping[str, object],
+    environment_identity_sha256: str,
+    python_executable_sha256: str,
+    dependency_lock_sha256: str,
+    pipeline_components: Sequence[Mapping[str, object]],
+    runtime_build_receipt_identity_sha256: str,
+    runtime_build_receipt_sha256: str,
+    selected_wheels: Sequence[Mapping[str, object]],
+    production_storage_identity: Mapping[str, object],
+) -> dict[str, object]:
+    """Build the deterministic environment/code payload copied into each replay."""
+
+    normalized_environment = _json_normalized(dict(environment_payload))
+    normalized_components = _json_normalized(list(pipeline_components))
+    if not isinstance(normalized_environment, Mapping) or not isinstance(
+        normalized_components, list
+    ):
+        raise ParentReplayError("global execution provenance normalization failed")
+    locked_distributions = _validate_locked_distribution_rows_v3(
+        normalized_environment.get("distributions"),
+        name="global hash-locked distributions",
+    )
+    normalized_wheels = _validate_selected_wheel_rows_v1(
+        _json_normalized(list(selected_wheels)),
+        locked_distributions=locked_distributions,
+        name="global selected wheels",
+    )
+    storage_identity = validate_production_storage_identity_v3(
+        _json_normalized(dict(production_storage_identity))
+    )
+    pipeline_code_identity = execution_authority_v3_bound_sha256(
+        "weft1_corpus_pipeline_components_v3", normalized_components
+    )
+    code_snapshot_identity = execution_authority_v3_bound_sha256(
+        "weft1_corpus_code_snapshot_v3", normalized_components
+    )
+    core: dict[str, object] = {
+        "a2_authority_sha256": PRODUCTION_AUTHORITY_SHA256_V3,
+        "a2_bindings_sha256": PRODUCTION_BINDINGS_SHA256_V3,
+        "dependency_lock_sha256": _require_sha256(
+            dependency_lock_sha256, "dependency lock SHA-256"
+        ),
+        "code_snapshot_identity_sha256": code_snapshot_identity,
+        "hash_locked_distributions": locked_distributions,
+        "environment_identity_sha256": _require_sha256(
+            environment_identity_sha256, "environment identity SHA-256"
+        ),
+        "environment_payload": dict(normalized_environment),
+        "pipeline_code_identity_sha256": pipeline_code_identity,
+        "pipeline_code_version": PRODUCTION_MATERIALIZER_ALGORITHM_VERSION_V3,
+        "pipeline_components": normalized_components,
+        "python_executable_sha256": _require_sha256(
+            python_executable_sha256, "Python executable SHA-256"
+        ),
+        "production_storage_identity": storage_identity,
+        "runtime_build_receipt_identity_sha256": _require_sha256(
+            runtime_build_receipt_identity_sha256,
+            "runtime build receipt identity SHA-256",
+        ),
+        "runtime_build_receipt_sha256": _require_sha256(
+            runtime_build_receipt_sha256, "runtime build receipt physical SHA-256"
+        ),
+        "selected_wheels": normalized_wheels,
+        "schema": GLOBAL_EXECUTION_PROVENANCE_SCHEMA_V3,
+        "worker_environment_policy": dict(_WORKER_ENVIRONMENT_POLICY_V3),
+    }
+    core["provenance_identity_sha256"] = execution_authority_v3_bound_sha256(
+        GLOBAL_EXECUTION_PROVENANCE_SCHEMA_V3, core
+    )
+    return _validate_global_execution_provenance_v3(core)
+
+
+def validate_global_execution_provenance_v3(
+    value: object,
+) -> dict[str, object]:
+    provenance = _require_exact_mapping(value, "global execution provenance")
+    expected_keys = {
+        "a2_authority_sha256",
+        "a2_bindings_sha256",
+        "code_snapshot_identity_sha256",
+        "dependency_lock_sha256",
+        "environment_identity_sha256",
+        "environment_payload",
+        "hash_locked_distributions",
+        "pipeline_code_identity_sha256",
+        "pipeline_code_version",
+        "pipeline_components",
+        "provenance_identity_sha256",
+        "python_executable_sha256",
+        "production_storage_identity",
+        "runtime_build_receipt_identity_sha256",
+        "runtime_build_receipt_sha256",
+        "selected_wheels",
+        "schema",
+        "worker_environment_policy",
+    }
+    if set(provenance) != expected_keys:
+        raise ParentReplayError("global execution provenance fields drifted")
+    _reject_noncanonical_json_values(provenance, "global execution provenance")
+    if provenance.get("schema") != GLOBAL_EXECUTION_PROVENANCE_SCHEMA_V3:
+        raise ParentReplayError("global execution provenance schema drifted")
+    validate_production_storage_identity_v3(
+        provenance.get("production_storage_identity")
+    )
+    if provenance.get("worker_environment_policy") != _WORKER_ENVIRONMENT_POLICY_V3:
+        raise ParentReplayError("global execution worker environment policy drifted")
+    if (
+        _require_sha256(
+            provenance.get("a2_authority_sha256"), "provenance A2 authority"
+        )
+        != PRODUCTION_AUTHORITY_SHA256_V3
+        or _require_sha256(
+            provenance.get("a2_bindings_sha256"), "provenance A2 bindings"
+        )
+        != PRODUCTION_BINDINGS_SHA256_V3
+    ):
+        raise ParentReplayError("global execution provenance authority drifted")
+    for name in (
+        "dependency_lock_sha256",
+        "code_snapshot_identity_sha256",
+        "environment_identity_sha256",
+        "pipeline_code_identity_sha256",
+        "provenance_identity_sha256",
+        "python_executable_sha256",
+        "runtime_build_receipt_identity_sha256",
+        "runtime_build_receipt_sha256",
+    ):
+        _require_sha256(provenance.get(name), name)
+    environment = _require_exact_mapping(
+        provenance.get("environment_payload"), "provenance environment payload"
+    )
+    required_environment_keys = {
+        "dependency_lock_sha256",
+        "distributions",
+        "python_executable_sha256",
+        "runtime_linkage",
+        "runtime_versions",
+    }
+    if not required_environment_keys <= set(environment):
+        raise ParentReplayError("global execution provenance environment is incomplete")
+    try:
+        from training.weft1_corpus_pa import validate_runtime_linkage_inventory_v3
+
+        linkage = validate_runtime_linkage_inventory_v3(
+            environment.get("runtime_linkage")
+        )
+    except (ImportError, RuntimeError, TypeError, ValueError) as error:
+        raise ParentReplayError(
+            f"global execution runtime linkage is invalid: {error}"
+        ) from error
+    executable_linkage = linkage.get("executable")
+    if not isinstance(executable_linkage, Mapping) or (
+        executable_linkage.get("sha256")
+        != provenance.get("python_executable_sha256")
+    ):
+        raise ParentReplayError(
+            "global execution runtime linkage differs from its executable"
+        )
+    locked_distributions = _validate_locked_distribution_rows_v3(
+        environment.get("distributions"), name="provenance hash-locked distributions"
+    )
+    runtime_versions = _require_exact_mapping(
+        environment.get("runtime_versions"), "provenance runtime versions"
+    )
+    if set(runtime_versions) != {
+        "libzstd_version",
+        "python_version",
+        "sqlite_source_id",
+        "sqlite_version",
+        "unicode_data_version",
+        "zstandard_package_version",
+    } or any(
+        not isinstance(value, str) or not value
+        for value in runtime_versions.values()
+    ):
+        raise ParentReplayError("global execution runtime versions are incomplete")
+    if (
+        environment.get("dependency_lock_sha256")
+        != provenance.get("dependency_lock_sha256")
+        or environment.get("python_executable_sha256")
+        != provenance.get("python_executable_sha256")
+        or execution_authority_v3_bound_sha256(
+            "weft1_corpus_execution_environment_v3", environment
+        )
+        != provenance.get("environment_identity_sha256")
+    ):
+        raise ParentReplayError("global execution environment identity drifted")
+    if provenance.get("hash_locked_distributions") != locked_distributions:
+        raise ParentReplayError("global execution lock closure drifted")
+    if (
+        type(provenance.get("pipeline_code_version")) is not int
+        or provenance.get("pipeline_code_version")
+        != PRODUCTION_MATERIALIZER_ALGORITHM_VERSION_V3
+    ):
+        raise ParentReplayError("global execution pipeline code version drifted")
+    _validate_selected_wheel_rows_v1(
+        provenance.get("selected_wheels"),
+        locked_distributions=locked_distributions,
+        name="provenance selected wheels",
+    )
+    raw_components = provenance.get("pipeline_components")
+    if not isinstance(raw_components, list) or not raw_components:
+        raise ParentReplayError("global execution provenance lacks pipeline components")
+    components: list[dict[str, object]] = []
+    for index, raw_component in enumerate(raw_components):
+        component = _require_exact_mapping(
+            raw_component, f"pipeline_components[{index}]"
+        )
+        if set(component) != {"bytes", "logical_name", "sha256"}:
+            raise ParentReplayError("pipeline component fields drifted")
+        logical_name = component.get("logical_name")
+        if (
+            not isinstance(logical_name, str)
+            or _LOGICAL_NAME.fullmatch(logical_name) is None
+        ):
+            raise ParentReplayError("pipeline component logical name is invalid")
+        byte_count = component.get("bytes")
+        if type(byte_count) is not int or byte_count < 1:
+            raise ParentReplayError("pipeline component byte count is invalid")
+        _require_sha256(component.get("sha256"), "pipeline component SHA-256")
+        components.append(dict(component))
+    names = [str(component["logical_name"]) for component in components]
+    if names != sorted(names) or len(names) != len(set(names)):
+        raise ParentReplayError("pipeline component order or uniqueness drifted")
+    if execution_authority_v3_bound_sha256(
+        "weft1_corpus_pipeline_components_v3", components
+    ) != provenance.get("pipeline_code_identity_sha256"):
+        raise ParentReplayError("pipeline code identity drifted")
+    if execution_authority_v3_bound_sha256(
+        "weft1_corpus_code_snapshot_v3", components
+    ) != provenance.get("code_snapshot_identity_sha256"):
+        raise ParentReplayError("code snapshot identity drifted")
+    core = dict(provenance)
+    claimed_identity = core.pop("provenance_identity_sha256")
+    if execution_authority_v3_bound_sha256(
+        GLOBAL_EXECUTION_PROVENANCE_SCHEMA_V3, core
+    ) != claimed_identity:
+        raise ParentReplayError("global execution provenance identity drifted")
+    return dict(provenance)
+
+
+_validate_global_execution_provenance_v3 = validate_global_execution_provenance_v3
+
+
+def _write_fresh_canonical_json_v3(path: Path, value: Mapping[str, object]) -> str:
+    payload = _canonical_json_line(value)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        with path.open("xb") as handle:
+            handle.write(payload)
+            handle.flush()
+            os.fsync(handle.fileno())
+    except OSError as error:
+        raise ParentReplayError(f"cannot write governed provenance: {error}") from error
+    return _sha256_bytes(payload)
+
+
+def _fsync_directory_if_supported_v3(path: Path) -> str:
+    if os.name != "posix":
+        return "not_applicable_non_posix"
+    try:
+        directory_fd = os.open(path, os.O_RDONLY)
+        try:
+            os.fsync(directory_fd)
+        finally:
+            os.close(directory_fd)
+    except OSError as error:
+        unsupported = {
+            errno.EINVAL,
+            errno.ENOTSUP,
+            getattr(errno, "EOPNOTSUPP", errno.ENOTSUP),
+        }
+        if error.errno in unsupported:
+            return f"unsupported_errno_{error.errno}"
+        raise ParentReplayError(
+            f"durable directory fsync failed unexpectedly: {error}"
+        ) from error
+    return "supported"
+
+
 def _snapshot_governed_file_v3(
     source: Path,
     destination: Path,
@@ -551,6 +1365,57 @@ def _snapshot_governed_file_v3(
     except (OSError, StrictPathError) as error:
         raise ParentReplayError(f"cannot snapshot {name}: {error}") from error
     return lexical_destination.resolve(strict=True)
+
+
+def _snapshot_production_code_v3(
+    compatibility_files: Mapping[str, Path],
+    *,
+    code_root: Path,
+) -> dict[str, Path]:
+    """Materialize the exact import tree consumed by the isolated workers."""
+
+    snapshots: dict[str, Path] = {}
+    for logical_name, source in sorted(compatibility_files.items()):
+        resolved_source = Path(source).resolve(strict=True)
+        try:
+            relative = resolved_source.relative_to(REPOSITORY_ROOT_V3)
+        except ValueError:
+            if logical_name != "worker":
+                raise ParentReplayError(
+                    f"production code component {logical_name} is outside the repository"
+                )
+            relative = Path("scripts") / "run_weft1_corpus_materialize_a2.py"
+        snapshots[logical_name] = _snapshot_governed_file_v3(
+            resolved_source,
+            code_root / relative,
+            name=f"production code component {logical_name}",
+        )
+    original_rows = _logical_file_rows(
+        compatibility_files, name="production compatibility source files"
+    )
+    snapshot_rows = _logical_file_rows(
+        snapshots, name="production compatibility snapshots"
+    )
+    if snapshot_rows != original_rows:
+        raise ParentReplayError("production code snapshot differs from its source inventory")
+    return snapshots
+
+
+def _validate_exact_code_snapshot_tree_v3(
+    code_root: Path,
+    compatibility_files: Mapping[str, Path],
+) -> None:
+    expected = {Path(path).resolve(strict=True) for path in compatibility_files.values()}
+    observed: set[Path] = set()
+    for path in code_root.rglob("*"):
+        if path.is_symlink():
+            raise ParentReplayError("production code snapshot gained a symlink")
+        if path.is_file():
+            observed.add(path.resolve(strict=True))
+        elif not path.is_dir():
+            raise ParentReplayError("production code snapshot gained a special file")
+    if observed != expected:
+        raise ParentReplayError("production code snapshot tree gained or lost files")
 
 
 def _resolve_python_executable(value: Path) -> Path:
@@ -645,36 +1510,413 @@ def _resolved_fresh_roots(first: Path, second: Path) -> tuple[Path, Path]:
     return roots
 
 
+def _resolved_storage_parent_v3(path: Path, *, name: str) -> Path:
+    try:
+        lexical = assert_no_symlink_ancestors(Path(path))
+        resolved = lexical.resolve(strict=True)
+    except (OSError, StrictPathError) as error:
+        raise ParentReplayError(f"{name} must be an existing non-symlink directory") from error
+    if lexical.is_symlink() or not resolved.is_dir():
+        raise ParentReplayError(f"{name} must be an existing non-symlink directory")
+    return resolved
+
+
+def _mountinfo_unescape_v3(value: str) -> str:
+    """Decode only the octal escapes defined by proc(5) mountinfo."""
+
+    escapes = {"040": " ", "011": "\t", "012": "\n", "134": "\\"}
+
+    def replace(match: re.Match[str]) -> str:
+        encoded = match.group(1)
+        if encoded not in escapes:
+            raise ParentReplayError("mountinfo contains an unsupported escape")
+        return escapes[encoded]
+
+    return re.sub(r"\\([0-7]{3})", replace, value)
+
+
+def _linux_mount_rows_v3() -> tuple[dict[str, object], ...]:
+    if sys.platform != "linux":
+        raise ParentReplayError(
+            "production durability attestation requires Linux mountinfo"
+        )
+    try:
+        raw = _LINUX_MOUNTINFO_PATH_V3.read_bytes()
+        text = raw.decode("utf-8", errors="strict")
+    except (OSError, UnicodeError) as error:
+        raise ParentReplayError("Linux mountinfo could not be read exactly") from error
+    rows: list[dict[str, object]] = []
+    for line_number, line in enumerate(text.splitlines(), start=1):
+        fields = line.split(" ")
+        try:
+            separator = fields.index("-")
+        except ValueError as error:
+            raise ParentReplayError(
+                f"mountinfo line {line_number} lacks its field separator"
+            ) from error
+        if separator < 6 or len(fields) < separator + 4:
+            raise ParentReplayError(f"mountinfo line {line_number} is incomplete")
+        try:
+            mount_id = int(fields[0])
+            parent_mount_id = int(fields[1])
+        except ValueError as error:
+            raise ParentReplayError(
+                f"mountinfo line {line_number} has invalid numeric IDs"
+            ) from error
+        mount_point = _mountinfo_unescape_v3(fields[4])
+        mount_root = _mountinfo_unescape_v3(fields[3])
+        mount_source = _mountinfo_unescape_v3(fields[separator + 2])
+        filesystem_type = fields[separator + 1]
+        if not mount_point.startswith("/") or not mount_root.startswith("/"):
+            raise ParentReplayError("mountinfo contains a non-absolute mount path")
+        rows.append(
+            {
+                "filesystem_type": filesystem_type,
+                "major_minor": fields[2],
+                "mount_id": mount_id,
+                "mount_point": mount_point,
+                "mount_root": mount_root,
+                "mount_source": mount_source,
+                "parent_mount_id": parent_mount_id,
+            }
+        )
+    if not rows:
+        raise ParentReplayError("Linux mountinfo is empty")
+    return tuple(rows)
+
+
+def _observed_mount_identity_v3(path: Path) -> dict[str, object]:
+    resolved = path.resolve(strict=True)
+    candidates: list[tuple[int, Mapping[str, object]]] = []
+    for row in _linux_mount_rows_v3():
+        mount_point = Path(str(row["mount_point"]))
+        if resolved == mount_point or mount_point in resolved.parents:
+            candidates.append((len(mount_point.parts), row))
+    if not candidates:
+        raise ParentReplayError(f"no mountinfo row contains {resolved}")
+    row = dict(max(candidates, key=lambda item: item[0])[1])
+    try:
+        row["st_dev"] = resolved.stat().st_dev
+    except OSError as error:
+        raise ParentReplayError("mounted path device identity could not be read") from error
+    return row
+
+
+def _load_durable_storage_marker_v3(
+    marker_path: Path,
+) -> tuple[dict[str, object], str, Path]:
+    marker, physical_sha256 = _read_canonical_json_object(Path(marker_path))
+    expected_keys = {
+        "durable_storage_root",
+        "filesystem_type_prefix",
+        "marker_identity_sha256",
+        "mount_source",
+        "provider",
+        "schema",
+    }
+    if set(marker) != expected_keys:
+        raise ParentReplayError("durable storage marker fields drifted")
+    if (
+        marker.get("schema") != "weft1_durable_storage_marker_v3"
+        or marker.get("provider") != "google_colab_drive_v1"
+        or marker.get("filesystem_type_prefix") != "fuse.drive"
+        or not isinstance(marker.get("mount_source"), str)
+        or not marker.get("mount_source")
+    ):
+        raise ParentReplayError("durable storage marker is not a Colab Drive registration")
+    core = {key: marker[key] for key in sorted(expected_keys - {"marker_identity_sha256"})}
+    expected_identity = execution_authority_v3_bound_sha256(
+        "weft1_durable_storage_marker_v3", core
+    )
+    if marker.get("marker_identity_sha256") != expected_identity:
+        raise ParentReplayError("durable storage marker identity drifted")
+    try:
+        marker_lexical = assert_no_symlink_ancestors(Path(marker_path))
+        marker_resolved = marker_lexical.resolve(strict=True)
+        storage_root = assert_no_symlink_ancestors(
+            Path(str(marker["durable_storage_root"]))
+        ).resolve(strict=True)
+    except (OSError, StrictPathError) as error:
+        raise ParentReplayError("durable storage marker path is not governed") from error
+    if (
+        not marker_resolved.is_file()
+        or marker_resolved.parent != storage_root
+        or not storage_root.is_dir()
+    ):
+        raise ParentReplayError(
+            "durable storage marker must be a regular file directly in its registered root"
+        )
+    return dict(marker), physical_sha256, storage_root
+
+
+def register_colab_drive_storage_v3(
+    *,
+    durable_mount_root: Path,
+    durable_storage_root: Path,
+    marker_path: Path,
+) -> dict[str, object]:
+    """Create the one fresh canonical marker consumed by production P-A."""
+
+    mount_root = _resolved_storage_parent_v3(
+        durable_mount_root, name="registered durable mount root"
+    )
+    storage_root = _resolved_storage_parent_v3(
+        durable_storage_root, name="registered durable storage root"
+    )
+    try:
+        marker_lexical = assert_no_symlink_ancestors(Path(marker_path))
+    except StrictPathError as error:
+        raise ParentReplayError("durable storage marker path is not governed") from error
+    if marker_lexical.parent.resolve(strict=True) != storage_root:
+        raise ParentReplayError(
+            "durable storage marker must be directly inside the registered storage root"
+        )
+    if marker_lexical.exists() or marker_lexical.is_symlink():
+        raise ParentReplayError("durable storage marker output must be fresh")
+    if not (mount_root == storage_root or mount_root in storage_root.parents):
+        raise ParentReplayError("registered storage root is outside its mount root")
+    mount_identity = _observed_mount_identity_v3(storage_root)
+    if (
+        mount_identity != _observed_mount_identity_v3(mount_root)
+        or not str(mount_identity["filesystem_type"]).startswith("fuse.drive")
+        or Path(str(mount_identity["mount_point"])) != mount_root
+    ):
+        raise ParentReplayError("registered storage is not on a Colab Drive mount")
+    core: dict[str, object] = {
+        "durable_storage_root": str(storage_root),
+        "filesystem_type_prefix": "fuse.drive",
+        "mount_source": str(mount_identity["mount_source"]),
+        "provider": "google_colab_drive_v1",
+        "schema": "weft1_durable_storage_marker_v3",
+    }
+    core["marker_identity_sha256"] = execution_authority_v3_bound_sha256(
+        "weft1_durable_storage_marker_v3", core
+    )
+    _write_fresh_canonical_json_v3(marker_lexical, core)
+    directory_fsync = _fsync_directory_if_supported_v3(storage_root)
+    marker, physical_sha256, observed_root = _load_durable_storage_marker_v3(
+        marker_lexical
+    )
+    if marker != core or observed_root != storage_root:
+        raise ParentReplayError("durable storage marker failed its physical replay")
+    return {
+        "directory_fsync": directory_fsync,
+        "marker_identity_sha256": marker["marker_identity_sha256"],
+        "marker_path": str(marker_lexical.resolve(strict=True)),
+        "marker_sha256": physical_sha256,
+        "mount_identity": mount_identity,
+        "provider": "google_colab_drive_v1",
+    }
+
+
+def validate_production_storage_identity_v3(value: object) -> dict[str, object]:
+    identity = _require_exact_mapping(value, "production storage identity")
+    expected_keys = {
+        "durable_marker_sha256",
+        "durable_mount",
+        "durable_mount_root",
+        "durable_storage_root",
+        "local_mount",
+        "provider",
+        "schema",
+        "storage_identity_sha256",
+    }
+    if set(identity) != expected_keys:
+        raise ParentReplayError("production storage identity fields drifted")
+    if (
+        identity.get("schema") != PRODUCTION_STORAGE_IDENTITY_SCHEMA_V3
+        or identity.get("provider") != "google_colab_drive_v1"
+    ):
+        raise ParentReplayError("production storage provider drifted")
+    _require_sha256(identity.get("durable_marker_sha256"), "durable marker SHA-256")
+    for name in ("durable_mount", "local_mount"):
+        row = _require_exact_mapping(identity.get(name), name)
+        if set(row) != {
+            "filesystem_type",
+            "major_minor",
+            "mount_id",
+            "mount_point",
+            "mount_root",
+            "mount_source",
+            "parent_mount_id",
+            "st_dev",
+        }:
+            raise ParentReplayError(f"{name} fields drifted")
+        if any(
+            not isinstance(row.get(key), str) or not row.get(key)
+            for key in (
+                "filesystem_type",
+                "major_minor",
+                "mount_point",
+                "mount_root",
+                "mount_source",
+            )
+        ) or any(
+            type(row.get(key)) is not int or int(row[key]) < 0
+            for key in ("mount_id", "parent_mount_id", "st_dev")
+        ):
+            raise ParentReplayError(f"{name} contains invalid mount identity values")
+    for name in ("durable_mount_root", "durable_storage_root"):
+        if not isinstance(identity.get(name), str) or not Path(str(identity[name])).is_absolute():
+            raise ParentReplayError(f"{name} is not an absolute path")
+    core = {key: identity[key] for key in sorted(expected_keys - {"storage_identity_sha256"})}
+    expected_identity = execution_authority_v3_bound_sha256(
+        PRODUCTION_STORAGE_IDENTITY_SCHEMA_V3, core
+    )
+    if identity.get("storage_identity_sha256") != expected_identity:
+        raise ParentReplayError("production storage identity hash drifted")
+    return dict(identity)
+
+
+def attest_production_storage_v3(
+    *,
+    durable_mount_root: Path,
+    durable_storage_marker_path: Path,
+    durable_output_parent: Path,
+    local_work_parent: Path,
+) -> dict[str, object]:
+    """Bind an observed Colab Drive mount and a distinct ephemeral work mount."""
+
+    durable_mount_root_resolved = _resolved_storage_parent_v3(
+        durable_mount_root, name="registered durable mount root"
+    )
+    durable = _resolved_storage_parent_v3(
+        durable_output_parent, name="durable output parent"
+    )
+    local = _resolved_storage_parent_v3(local_work_parent, name="local work parent")
+    marker, marker_sha256, storage_root = _load_durable_storage_marker_v3(
+        durable_storage_marker_path
+    )
+    if not (
+        durable_mount_root_resolved == storage_root
+        or durable_mount_root_resolved in storage_root.parents
+    ):
+        raise ParentReplayError("registered durable storage is outside its mount root")
+    if not (storage_root == durable or storage_root in durable.parents):
+        raise ParentReplayError("durable output parent is outside registered storage")
+    if (
+        durable == local
+        or durable in local.parents
+        or local in durable.parents
+        or storage_root == local
+        or storage_root in local.parents
+        or local in storage_root.parents
+    ):
+        raise ParentReplayError("durable and local storage roots overlap")
+    durable_mount = _observed_mount_identity_v3(durable)
+    registered_mount = _observed_mount_identity_v3(durable_mount_root_resolved)
+    local_mount = _observed_mount_identity_v3(local)
+    if durable_mount != registered_mount:
+        raise ParentReplayError("durable output is not on the registered mount row")
+    filesystem_type = str(durable_mount["filesystem_type"])
+    if (
+        not filesystem_type.startswith("fuse.drive")
+        or marker.get("filesystem_type_prefix") != "fuse.drive"
+        or marker.get("mount_source") != durable_mount.get("mount_source")
+        or Path(str(durable_mount["mount_point"])) != durable_mount_root_resolved
+    ):
+        raise ParentReplayError("registered mount is not the declared Colab Drive mount")
+    if (
+        durable_mount["mount_id"] == local_mount["mount_id"]
+        or durable_mount["st_dev"] == local_mount["st_dev"]
+        or (
+            durable_mount["filesystem_type"],
+            durable_mount["mount_source"],
+            durable_mount["mount_root"],
+        )
+        == (
+            local_mount["filesystem_type"],
+            local_mount["mount_source"],
+            local_mount["mount_root"],
+        )
+    ):
+        raise ParentReplayError("local work storage shares the durable backing")
+    core: dict[str, object] = {
+        "durable_marker_sha256": marker_sha256,
+        "durable_mount": durable_mount,
+        "durable_mount_root": str(durable_mount_root_resolved),
+        "durable_storage_root": str(storage_root),
+        "local_mount": local_mount,
+        "provider": "google_colab_drive_v1",
+        "schema": PRODUCTION_STORAGE_IDENTITY_SCHEMA_V3,
+    }
+    core["storage_identity_sha256"] = execution_authority_v3_bound_sha256(
+        PRODUCTION_STORAGE_IDENTITY_SCHEMA_V3, core
+    )
+    return validate_production_storage_identity_v3(core)
+
+
+def _validate_production_storage_roots_v3(
+    *,
+    roots: Sequence[Path],
+    durable_mount_root: Path,
+    durable_storage_marker_path: Path,
+    durable_output_parent: Path,
+    local_work_parent: Path,
+) -> tuple[Path, Path, dict[str, object]]:
+    durable = _resolved_storage_parent_v3(
+        durable_output_parent, name="durable output parent"
+    )
+    local = _resolved_storage_parent_v3(local_work_parent, name="local work parent")
+    if (
+        durable == local
+        or durable in local.parents
+        or local in durable.parents
+        or any(root.parent != durable for root in roots)
+    ):
+        raise ParentReplayError(
+            "durable output and local work roots must be explicit, distinct, and non-overlapping"
+        )
+    storage_identity = attest_production_storage_v3(
+        durable_mount_root=durable_mount_root,
+        durable_storage_marker_path=durable_storage_marker_path,
+        durable_output_parent=durable,
+        local_work_parent=local,
+    )
+    return durable, local, storage_identity
+
+
 def _offline_environment(
     *,
     guard_directory: Path,
     guard_sha256: str,
     run_id: str,
     output_root: Path,
+    local_work_parent: Path | None,
     input_identity_sha256: str,
     worker_compatibility_sha256: str,
+    worker_import_root: Path,
     extra_environment: Mapping[str, str] | None,
 ) -> dict[str, str]:
-    environment = os.environ.copy()
-    for key in _PROXY_ENVIRONMENT_KEYS:
-        environment.pop(key, None)
+    # Do not inherit Python startup paths or user-site controls.  The production
+    # launcher uses ``-I`` and inserts only the hash-bound repository snapshot.
+    environment: dict[str, str] = {
+        "LANG": "C.UTF-8",
+        "LC_ALL": "C.UTF-8",
+        "PATH": os.defpath,
+        "TZ": "UTC",
+    }
+    for key in ("SYSTEMROOT", "WINDIR"):
+        value = os.environ.get(key)
+        if value:
+            environment[key] = value
     if extra_environment is not None:
         for key, value in extra_environment.items():
-            if key in _RESERVED_ENVIRONMENT_KEYS:
-                raise ParentReplayError(f"extra environment may not override {key}")
             if not isinstance(key, str) or not isinstance(value, str):
                 raise ParentReplayError("extra environment must map strings to strings")
+            if key.upper() in _RESERVED_ENVIRONMENT_KEYS_UPPER:
+                raise ParentReplayError(f"extra environment may not override {key}")
             environment[key] = value
-    inherited_pythonpath = environment.get("PYTHONPATH")
-    pythonpath_parts = [str(guard_directory)]
-    if inherited_pythonpath:
-        pythonpath_parts.append(inherited_pythonpath)
     environment.update(
         {
             "HF_DATASETS_OFFLINE": "1",
             "HF_HUB_OFFLINE": "1",
-            "PIP_NO_INDEX": "1",
-            "PYTHONPATH": os.pathsep.join(pythonpath_parts),
+        "PIP_NO_INDEX": "1",
+        "PYTHONHASHSEED": "0",
+        "PYTHONNOUSERSITE": "1",
+            "PYTHONPATH": str(Path(worker_import_root).resolve(strict=True)),
+            "PYTHONSAFEPATH": "1",
+            "PYTHONDONTWRITEBYTECODE": "1",
             "TOKENIZERS_PARALLELISM": "false",
             "TRANSFORMERS_OFFLINE": "1",
             "WEFT1_NETWORK_DISABLED": "1",
@@ -691,6 +1933,12 @@ def _offline_environment(
             ),
         }
     )
+    if local_work_parent is not None:
+        environment["WEFT1_REPLAY_LOCAL_WORK_PARENT"] = str(local_work_parent)
+        for key in ("SQLITE_TMPDIR", "TEMP", "TMP", "TMPDIR"):
+            environment[key] = str(local_work_parent)
+    else:
+        environment.pop("WEFT1_REPLAY_LOCAL_WORK_PARENT", None)
     return environment
 
 
@@ -736,6 +1984,7 @@ class _VerifiedChildReplayV3:
     run_id: str
     actual_process_id: int
     output_root: str
+    child_receipt_bytes: int
     child_receipt_sha256: str
     stdout_sha256: str
     stderr_sha256: str
@@ -1083,6 +2332,7 @@ def _validate_child_receipt(
         run_id=expected_run_id,
         actual_process_id=actual_process_id,
         output_root=str(output_root),
+        child_receipt_bytes=len(_canonical_json_line(receipt)),
         child_receipt_sha256=receipt_sha256,
         stdout_sha256=_sha256_bytes(stdout),
         stderr_sha256=_sha256_bytes(stderr),
@@ -1095,10 +2345,32 @@ def _validate_child_receipt(
     )
 
 
+def _final_child_receipt_row_v3(
+    child: _VerifiedChildReplayV3,
+) -> dict[str, object]:
+    """Re-open the physical child receipt at the final mint boundary."""
+
+    receipt_path = Path(child.output_root) / CHILD_RECEIPT_FILENAME
+    receipt, physical_sha256 = _read_canonical_json_object(receipt_path)
+    physical_bytes = len(_canonical_json_line(receipt))
+    if (
+        physical_sha256 != child.child_receipt_sha256
+        or physical_bytes != child.child_receipt_bytes
+    ):
+        raise ParentReplayError("child receipt changed before parent minting")
+    return {
+        "bytes": physical_bytes,
+        "path": CHILD_RECEIPT_FILENAME,
+        "role": "receipt",
+        "sha256": physical_sha256,
+    }
+
+
 def _validate_production_child_profile_v3(
     child: _VerifiedChildReplayV3,
     *,
     expected_environment_identity_sha256: str,
+    expected_global_execution_provenance: Mapping[str, object],
 ) -> None:
     """Compose a production child claim with parent-rehashed manifests.
 
@@ -1114,7 +2386,12 @@ def _validate_production_child_profile_v3(
         "content_identity_sha256",
         "d1_ready_manifest_sha256",
         "environment_identity_sha256",
+        "global_execution_provenance_identity_sha256",
+        "global_execution_provenance_sha256",
         "materializer_algorithm_version",
+        "pipeline_code_identity_sha256",
+        "runtime_build_receipt_identity_sha256",
+        "runtime_build_receipt_sha256",
         "source_identity_sha256",
         "tokenizer_fit_input_receipt_sha256",
     }
@@ -1143,6 +2420,33 @@ def _validate_production_child_profile_v3(
         raise ParentReplayError(
             "production child runtime identity differs from parent attestation"
         )
+    expected_provenance = _validate_global_execution_provenance_v3(
+        expected_global_execution_provenance
+    )
+    expected_provenance_identity = _require_sha256(
+        expected_provenance.get("provenance_identity_sha256"),
+        "expected global provenance identity",
+    )
+    expected_provenance_sha256 = _sha256_bytes(
+        _canonical_json_line(expected_provenance)
+    )
+    pipeline_code_identity = _require_sha256(
+        metadata.get("pipeline_code_identity_sha256"),
+        "production pipeline code identity",
+    )
+    if (
+        metadata.get("global_execution_provenance_identity_sha256")
+        != expected_provenance_identity
+        or metadata.get("global_execution_provenance_sha256")
+        != expected_provenance_sha256
+        or pipeline_code_identity
+        != expected_provenance.get("pipeline_code_identity_sha256")
+        or metadata.get("runtime_build_receipt_identity_sha256")
+        != expected_provenance.get("runtime_build_receipt_identity_sha256")
+        or metadata.get("runtime_build_receipt_sha256")
+        != expected_provenance.get("runtime_build_receipt_sha256")
+    ):
+        raise ParentReplayError("production child global provenance differs")
     if (
         metadata.get("materializer_algorithm_version")
         != PRODUCTION_MATERIALIZER_ALGORITHM_VERSION_V3
@@ -1151,7 +2455,12 @@ def _validate_production_child_profile_v3(
 
     output_root = Path(child.output_root)
     rows_by_path = {str(row["path"]): row for row in child.output_file_rows}
-    for required_path in ("content-manifest.json", "d1-ready-manifest.json"):
+    for required_path in (
+        "content-manifest.json",
+        "d1-ready-manifest.json",
+        GLOBAL_EXECUTION_PROVENANCE_RELATIVE_PATH_V3,
+        RUNTIME_BUILD_RECEIPT_RELATIVE_PATH_V1,
+    ):
         row = rows_by_path.get(required_path)
         if row is None or row.get("role") != "content":
             raise ParentReplayError(
@@ -1164,6 +2473,12 @@ def _validate_production_child_profile_v3(
     d1, observed_d1_physical_sha256 = _read_canonical_json_object(
         output_root / "d1-ready-manifest.json"
     )
+    provenance, observed_provenance_sha256 = _read_canonical_json_object(
+        output_root / GLOBAL_EXECUTION_PROVENANCE_RELATIVE_PATH_V3
+    )
+    runtime_receipt, observed_runtime_receipt_sha256 = _read_canonical_json_object(
+        output_root / RUNTIME_BUILD_RECEIPT_RELATIVE_PATH_V1
+    )
     if rows_by_path["content-manifest.json"]["sha256"] != content_physical_sha256:
         raise ParentReplayError("content manifest differs from parent inventory")
     if (
@@ -1172,12 +2487,46 @@ def _validate_production_child_profile_v3(
         or observed_d1_physical_sha256 != d1_physical_sha256
     ):
         raise ParentReplayError("D1-ready manifest differs from child metadata")
+    if (
+        rows_by_path[GLOBAL_EXECUTION_PROVENANCE_RELATIVE_PATH_V3]["sha256"]
+        != observed_provenance_sha256
+        or observed_provenance_sha256 != expected_provenance_sha256
+        or dict(provenance) != expected_provenance
+    ):
+        raise ParentReplayError(
+            "global execution provenance differs from parent inventory"
+        )
+    if (
+        rows_by_path[RUNTIME_BUILD_RECEIPT_RELATIVE_PATH_V1]["sha256"]
+        != observed_runtime_receipt_sha256
+        or observed_runtime_receipt_sha256
+        != expected_provenance.get("runtime_build_receipt_sha256")
+        or runtime_receipt.get("schema") != RUNTIME_BUILD_RECEIPT_SCHEMA_V1
+        or runtime_receipt.get("status") != "PASS"
+        or runtime_receipt.get("authoritative") is not True
+        or runtime_receipt.get("receipt_identity_sha256")
+        != expected_provenance.get("runtime_build_receipt_identity_sha256")
+    ):
+        raise ParentReplayError(
+            "durable runtime build receipt differs from global provenance"
+        )
 
     content_payload = dict(content)
     observed_content_identity = content_payload.pop("content_identity_sha256", None)
     recomputed_content_identity = execution_authority_v3_bound_sha256(
         "weft1_corpus_materialized_content_v3", content_payload
     )
+    global_section = _require_exact_mapping(
+        content.get("global"), "production content manifest global section"
+    )
+    if set(global_section) != {
+        "execution_provenance",
+        "execution_provenance_path",
+        "execution_provenance_sha256",
+        "runtime_build_receipt_path",
+        "runtime_build_receipt_sha256",
+    }:
+        raise ParentReplayError("production manifest global fields drifted")
     if (
         observed_content_identity != content_identity
         or recomputed_content_identity != content_identity
@@ -1187,6 +2536,15 @@ def _validate_production_child_profile_v3(
         or content.get("source_identity_sha256") != source_identity
         or content.get("tokenizer_fit_input_receipt_sha256")
         != tokenizer_fit_identity
+        or global_section.get("execution_provenance") != expected_provenance
+        or global_section.get("execution_provenance_path")
+        != GLOBAL_EXECUTION_PROVENANCE_RELATIVE_PATH_V3
+        or global_section.get("execution_provenance_sha256")
+        != expected_provenance_sha256
+        or global_section.get("runtime_build_receipt_path")
+        != RUNTIME_BUILD_RECEIPT_RELATIVE_PATH_V1
+        or global_section.get("runtime_build_receipt_sha256")
+        != observed_runtime_receipt_sha256
     ):
         raise ParentReplayError(
             "production content manifest does not compose with child metadata"
@@ -1256,6 +2614,17 @@ class ParentReplayVerificationV3:
     network_isolation_executable_sha256: str | None
     network_isolation_authoritative: bool
     production_profile_verified: bool
+    durable_output_parent: str | None
+    local_work_parent: str | None
+    durable_post_write_rehash_verified: bool
+    durable_output_rehashes: tuple[dict[str, object], ...]
+    environment_identity_sha256: str | None
+    pipeline_code_identity_sha256: str | None
+    global_execution_provenance_identity_sha256: str | None
+    global_execution_provenance_sha256: str | None
+    runtime_build_receipt_identity_sha256: str | None
+    runtime_build_receipt_sha256: str | None
+    production_storage_identity_sha256: str | None
     output_file_projection_sha256: str
     content_projection_sha256: str
     dedup_projection_sha256: str | None
@@ -1322,6 +2691,8 @@ class ParentReplayVerificationV3:
             raise ValueError("network isolation authority must be boolean")
         if type(self.production_profile_verified) is not bool:
             raise ValueError("production replay profile status must be boolean")
+        if type(self.durable_post_write_rehash_verified) is not bool:
+            raise ValueError("durable post-write rehash status must be boolean")
         if self.network_isolation_authoritative:
             if self.network_isolation_kind != "linux_unshare_net_v1":
                 raise ValueError("authoritative replay requires Linux unshare isolation")
@@ -1337,6 +2708,7 @@ class ParentReplayVerificationV3:
         if self.authoritative != (
             self.network_isolation_authoritative
             and self.production_profile_verified
+            and self.durable_post_write_rehash_verified
             and self.dedup_projection_sha256 is not None
         ):
             raise ValueError("replay authority exceeds observed isolation/evidence")
@@ -1344,6 +2716,117 @@ class ParentReplayVerificationV3:
             _require_sha256(self.dedup_projection_sha256, "dedup_projection_sha256")
         elif self.dedup_projection_sha256 is not None:
             raise ValueError("incomplete replay may not carry a D2 projection")
+        provenance_hash_names = (
+            "environment_identity_sha256",
+            "pipeline_code_identity_sha256",
+            "global_execution_provenance_identity_sha256",
+            "global_execution_provenance_sha256",
+            "runtime_build_receipt_identity_sha256",
+            "runtime_build_receipt_sha256",
+            "production_storage_identity_sha256",
+        )
+        if self.production_profile_verified:
+            if (
+                not self.durable_post_write_rehash_verified
+                or not isinstance(self.durable_output_parent, str)
+                or not isinstance(self.local_work_parent, str)
+                or len(self.durable_output_rehashes) != 2
+            ):
+                raise ValueError("production replay lacks durable storage evidence")
+            durable_parent = Path(self.durable_output_parent)
+            local_parent = Path(self.local_work_parent)
+            if (
+                not durable_parent.is_absolute()
+                or not local_parent.is_absolute()
+                or durable_parent == local_parent
+                or durable_parent in local_parent.parents
+                or local_parent in durable_parent.parents
+                or any(Path(root).parent != durable_parent for root in roots)
+            ):
+                raise ValueError("production durable/local roots are not disjoint")
+            for name in provenance_hash_names:
+                _require_sha256(getattr(self, name), name)
+            expected_roots = [self.first_output_root, self.second_output_root]
+            observed_roots: list[str] = []
+            for index, raw_rehash in enumerate(self.durable_output_rehashes):
+                if not isinstance(raw_rehash, Mapping) or set(raw_rehash) != {
+                    "file_inventory",
+                    "file_inventory_identity_sha256",
+                    "output_root",
+                    "post_write_rehash_verified",
+                }:
+                    raise ValueError("durable output rehash fields drifted")
+                output_root = raw_rehash.get("output_root")
+                file_inventory = raw_rehash.get("file_inventory")
+                if (
+                    raw_rehash.get("post_write_rehash_verified") is not True
+                    or not isinstance(output_root, str)
+                    or not isinstance(file_inventory, list)
+                    or not file_inventory
+                ):
+                    raise ValueError("durable output rehash evidence is incomplete")
+                seen_paths: set[str] = set()
+                normalized_rows: list[dict[str, object]] = []
+                for raw_row in file_inventory:
+                    if not isinstance(raw_row, Mapping) or set(raw_row) != {
+                        "bytes",
+                        "path",
+                        "role",
+                        "sha256",
+                    }:
+                        raise ValueError("durable output inventory row fields drifted")
+                    relative = _canonical_relative_path(raw_row.get("path"))
+                    if relative in seen_paths:
+                        raise ValueError("durable output inventory repeats a path")
+                    seen_paths.add(relative)
+                    if raw_row.get("role") not in POST_WRITE_FILE_ROLES_V3:
+                        raise ValueError("durable output inventory role drifted")
+                    if (
+                        type(raw_row.get("bytes")) is not int
+                        or int(raw_row["bytes"]) < 0
+                    ):
+                        raise ValueError("durable output inventory byte count drifted")
+                    _require_sha256(
+                        raw_row.get("sha256"), "durable inventory SHA-256"
+                    )
+                    normalized_rows.append(dict(raw_row))
+                if normalized_rows != sorted(
+                    normalized_rows, key=lambda row: str(row["path"])
+                ):
+                    raise ValueError("durable output inventory is not path-sorted")
+                receipt_rows = [
+                    row
+                    for row in normalized_rows
+                    if row["path"] == CHILD_RECEIPT_FILENAME
+                    and row["role"] == "receipt"
+                ]
+                expected_receipt_sha256 = (
+                    self.first_child_receipt_sha256
+                    if index == 0
+                    else self.second_child_receipt_sha256
+                )
+                if (
+                    len(receipt_rows) != 1
+                    or receipt_rows[0]["sha256"] != expected_receipt_sha256
+                ):
+                    raise ValueError("durable output inventory lacks its child receipt")
+                identity = execution_authority_v3_bound_sha256(
+                    "weft1_corpus_durable_post_write_inventory_v3",
+                    {"file_inventory": file_inventory, "output_root": output_root},
+                )
+                if raw_rehash.get("file_inventory_identity_sha256") != identity:
+                    raise ValueError("durable output rehash identity drifted")
+                observed_roots.append(output_root)
+            if observed_roots != expected_roots:
+                raise ValueError("durable output rehash roots drifted")
+        elif (
+            self.durable_post_write_rehash_verified
+            or self.durable_output_parent is not None
+            or self.local_work_parent is not None
+            or self.durable_output_rehashes
+            or any(getattr(self, name) is not None for name in provenance_hash_names)
+        ):
+            raise ValueError("diagnostic replay may not carry production durability claims")
 
     @property
     def receipt_sha256(self) -> str:
@@ -1361,6 +2844,10 @@ def _mint_parent_verification_v3(
     network_guard_sha256: str,
     network_isolation_executable_sha256: str | None,
     production_profile_verified: bool,
+    durable_output_parent: Path | None,
+    local_work_parent: Path | None,
+    expected_global_execution_provenance: Mapping[str, object] | None,
+    durable_post_write_inventories: Sequence[Sequence[Mapping[str, object]]],
 ) -> ParentReplayVerificationV3:
     network_isolation_authoritative = (
         network_isolation_executable_sha256 is not None
@@ -1371,6 +2858,71 @@ def _mint_parent_verification_v3(
         and network_isolation_authoritative
         and production_profile_verified
     )
+    if production_profile_verified:
+        if (
+            durable_output_parent is None
+            or local_work_parent is None
+            or expected_global_execution_provenance is None
+            or len(durable_post_write_inventories) != 2
+        ):
+            raise ParentReplayError("production minting lacks durability provenance")
+        provenance = _validate_global_execution_provenance_v3(
+            expected_global_execution_provenance
+        )
+        durable_output_rehashes = tuple(
+            {
+                "file_inventory": [dict(row) for row in inventory],
+                "file_inventory_identity_sha256": execution_authority_v3_bound_sha256(
+                    "weft1_corpus_durable_post_write_inventory_v3",
+                    {
+                        "file_inventory": [dict(row) for row in inventory],
+                        "output_root": child.output_root,
+                    },
+                ),
+                "output_root": child.output_root,
+                "post_write_rehash_verified": True,
+            }
+            for child, inventory in zip(
+                (first, second), durable_post_write_inventories, strict=True
+            )
+        )
+        durable_parent_value: str | None = str(durable_output_parent)
+        local_parent_value: str | None = str(local_work_parent)
+        environment_identity: str | None = str(
+            provenance["environment_identity_sha256"]
+        )
+        pipeline_identity: str | None = str(
+            provenance["pipeline_code_identity_sha256"]
+        )
+        provenance_identity: str | None = str(
+            provenance["provenance_identity_sha256"]
+        )
+        provenance_sha256: str | None = _sha256_bytes(
+            _canonical_json_line(provenance)
+        )
+        runtime_receipt_identity: str | None = str(
+            provenance["runtime_build_receipt_identity_sha256"]
+        )
+        runtime_receipt_sha256: str | None = str(
+            provenance["runtime_build_receipt_sha256"]
+        )
+        storage_identity_sha256: str | None = str(
+            _require_exact_mapping(
+                provenance["production_storage_identity"],
+                "production storage identity",
+            )["storage_identity_sha256"]
+        )
+    else:
+        durable_output_rehashes = ()
+        durable_parent_value = None
+        local_parent_value = None
+        environment_identity = None
+        pipeline_identity = None
+        provenance_identity = None
+        provenance_sha256 = None
+        runtime_receipt_identity = None
+        runtime_receipt_sha256 = None
+        storage_identity_sha256 = None
     evidence_payload = {
         "authoritative": authoritative,
         "content_projection_sha256": first.content_projection_sha256,
@@ -1390,6 +2942,17 @@ def _mint_parent_verification_v3(
             else "python_socket_guard_only"
         ),
         "production_profile_verified": production_profile_verified,
+        "durable_output_parent": durable_parent_value,
+        "local_work_parent": local_parent_value,
+        "durable_post_write_rehash_verified": production_profile_verified,
+        "durable_output_rehashes": durable_output_rehashes,
+        "environment_identity_sha256": environment_identity,
+        "pipeline_code_identity_sha256": pipeline_identity,
+        "global_execution_provenance_identity_sha256": provenance_identity,
+        "global_execution_provenance_sha256": provenance_sha256,
+        "runtime_build_receipt_identity_sha256": runtime_receipt_identity,
+        "runtime_build_receipt_sha256": runtime_receipt_sha256,
+        "production_storage_identity_sha256": storage_identity_sha256,
         "output_file_projection_sha256": first.output_file_projection_sha256,
         "second_child_receipt_sha256": second.child_receipt_sha256,
         "second_process_id": second.actual_process_id,
@@ -1422,6 +2985,17 @@ def _mint_parent_verification_v3(
         ),
         "network_isolation_authoritative": network_isolation_authoritative,
         "production_profile_verified": production_profile_verified,
+        "durable_output_parent": durable_parent_value,
+        "local_work_parent": local_parent_value,
+        "durable_post_write_rehash_verified": production_profile_verified,
+        "durable_output_rehashes": durable_output_rehashes,
+        "environment_identity_sha256": environment_identity,
+        "pipeline_code_identity_sha256": pipeline_identity,
+        "global_execution_provenance_identity_sha256": provenance_identity,
+        "global_execution_provenance_sha256": provenance_sha256,
+        "runtime_build_receipt_identity_sha256": runtime_receipt_identity,
+        "runtime_build_receipt_sha256": runtime_receipt_sha256,
+        "production_storage_identity_sha256": storage_identity_sha256,
         "output_file_projection_sha256": first.output_file_projection_sha256,
         "content_projection_sha256": first.content_projection_sha256,
         "dedup_projection_sha256": first.dedup_projection_sha256,
@@ -1451,6 +3025,11 @@ def _verify_parent_replays_v3_impl(
     extra_environment: Mapping[str, str] | None = None,
     network_namespace_executable: Path | None = None,
     production_profile_sentinel: object | None = None,
+    durable_mount_root: Path | None = None,
+    durable_storage_marker_path: Path | None = None,
+    durable_output_parent: Path | None = None,
+    local_work_parent: Path | None = None,
+    expected_global_execution_provenance: Mapping[str, object] | None = None,
 ) -> ParentReplayVerificationV3:
     """Launch and independently verify two offline replay workers.
 
@@ -1503,6 +3082,48 @@ def _verify_parent_replays_v3_impl(
     if run_ids[0] == run_ids[1]:
         raise ParentReplayError("replay run IDs must be distinct")
     roots = _resolved_fresh_roots(first_output_root, second_output_root)
+    if production_profile_verified:
+        if (
+            durable_output_parent is None
+            or durable_mount_root is None
+            or durable_storage_marker_path is None
+            or local_work_parent is None
+            or expected_global_execution_provenance is None
+        ):
+            raise ParentReplayError(
+                "production replay requires explicit durable output, local work, and provenance inputs"
+            )
+        durable_parent, local_parent, storage_identity = (
+            _validate_production_storage_roots_v3(
+            roots=roots,
+            durable_mount_root=durable_mount_root,
+            durable_storage_marker_path=durable_storage_marker_path,
+            durable_output_parent=durable_output_parent,
+            local_work_parent=local_work_parent,
+            )
+        )
+        expected_provenance = _validate_global_execution_provenance_v3(
+            expected_global_execution_provenance
+        )
+        if expected_provenance.get("production_storage_identity") != storage_identity:
+            raise ParentReplayError(
+                "production storage identity differs from global provenance"
+            )
+    else:
+        if (
+            durable_output_parent is not None
+            or durable_mount_root is not None
+            or durable_storage_marker_path is not None
+            or local_work_parent is not None
+            or expected_global_execution_provenance is not None
+        ):
+            raise ParentReplayError(
+                "diagnostic replay may not assert production durability provenance"
+            )
+        durable_parent = None
+        local_parent = None
+        storage_identity = None
+        expected_provenance = None
 
     input_rows = _logical_file_rows(input_files, name="input_files")
     compatibility_rows = _logical_file_rows(
@@ -1536,6 +3157,22 @@ def _verify_parent_replays_v3_impl(
         expected_environment_identity_sha256 = (
             runtime.environment_identity_sha256
         )
+        assert expected_provenance is not None
+        if (
+            expected_provenance.get("environment_identity_sha256")
+            != runtime.environment_identity_sha256
+            or expected_provenance.get("python_executable_sha256")
+            != runtime.executable_sha256
+            or expected_provenance.get("dependency_lock_sha256")
+            != runtime.dependency_lock_sha256
+            or expected_provenance.get("environment_payload")
+            != _json_normalized(runtime.environment_payload)
+            or expected_provenance.get("pipeline_components")
+            != _json_normalized(list(compatibility_rows))
+        ):
+            raise ParentReplayError(
+                "production global provenance differs from parent runtime attestation"
+            )
     network_isolation_executable_sha256 = (
         None if unshare_executable is None else _sha256_file(unshare_executable)
     )
@@ -1543,6 +3180,9 @@ def _verify_parent_replays_v3_impl(
         "weft1_corpus_parent_replay_worker_compatibility_v3",
         {
             "arguments": arguments,
+            "isolated_bootstrap_sha256": _sha256_bytes(
+                _ISOLATED_WORKER_BOOTSTRAP_SOURCE_V3.encode("utf-8")
+            ),
             "compatibility_files": compatibility_rows,
             "python_executable_sha256": executable_sha256,
             "network_isolation_executable_sha256": (
@@ -1553,12 +3193,16 @@ def _verify_parent_replays_v3_impl(
                 if unshare_executable is not None
                 else "python_socket_guard_only"
             ),
+            "worker_environment_policy": _WORKER_ENVIRONMENT_POLICY_V3,
         },
     )
     guard_sha256 = _sha256_bytes(_NETWORK_GUARD_SOURCE)
 
     children: list[_VerifiedChildReplayV3] = []
-    with tempfile.TemporaryDirectory(prefix="weft1-replay-network-guard-") as raw_guard:
+    with tempfile.TemporaryDirectory(
+        prefix="weft1-replay-network-guard-",
+        dir=None if local_parent is None else local_parent,
+    ) as raw_guard:
         guard_directory = Path(raw_guard).resolve(strict=True)
         guard_path = guard_directory / "sitecustomize.py"
         guard_path.write_bytes(_NETWORK_GUARD_SOURCE)
@@ -1566,13 +3210,50 @@ def _verify_parent_replays_v3_impl(
             raise ParentReplayError("network guard failed its parent-side byte check")
 
         for run_id, output_root in zip(run_ids, roots, strict=True):
+            if production_profile_verified:
+                _validate_exact_code_snapshot_tree_v3(cwd, compatibility_files)
+                try:
+                    runtime_now = attest_runtime_v3(
+                        requirements_lock=Path(input_files["dependency_lock"]),
+                        executable=executable,
+                    )
+                except (OSError, RuntimeError, TypeError, ValueError) as error:
+                    raise ParentReplayError(
+                        f"production runtime changed before worker launch: {error}"
+                    ) from error
+                assert expected_provenance is not None
+                if (
+                    runtime_now.environment_identity_sha256
+                    != expected_provenance.get("environment_identity_sha256")
+                    or _json_normalized(runtime_now.environment_payload)
+                    != expected_provenance.get("environment_payload")
+                ):
+                    raise ParentReplayError(
+                        "production installed runtime changed before worker launch"
+                    )
+                assert durable_mount_root is not None
+                assert durable_storage_marker_path is not None
+                assert durable_parent is not None
+                assert local_parent is not None
+                observed_storage = attest_production_storage_v3(
+                    durable_mount_root=durable_mount_root,
+                    durable_storage_marker_path=durable_storage_marker_path,
+                    durable_output_parent=durable_parent,
+                    local_work_parent=local_parent,
+                )
+                if observed_storage != storage_identity:
+                    raise ParentReplayError(
+                        "production storage identity changed before a worker launch"
+                    )
             environment = _offline_environment(
                 guard_directory=guard_directory,
                 guard_sha256=guard_sha256,
                 run_id=run_id,
                 output_root=output_root,
+                local_work_parent=local_parent,
                 input_identity_sha256=input_identity_sha256,
                 worker_compatibility_sha256=worker_compatibility_sha256,
+                worker_import_root=cwd,
                 extra_environment=extra_environment,
             )
             actual_pid, stdout, stderr = _run_worker(
@@ -1582,10 +3263,25 @@ def _verify_parent_replays_v3_impl(
                         "--net",
                         "--",
                         str(executable),
+                        "-I",
+                        "-B",
+                        "-c",
+                        _ISOLATED_WORKER_BOOTSTRAP_SOURCE_V3,
+                        str(guard_path),
+                        str(cwd),
                         *arguments,
                     )
                     if unshare_executable is not None
-                    else (str(executable), *arguments)
+                    else (
+                        str(executable),
+                        "-I",
+                        "-B",
+                        "-c",
+                        _ISOLATED_WORKER_BOOTSTRAP_SOURCE_V3,
+                        str(guard_path),
+                        str(cwd),
+                        *arguments,
+                    )
                 ),
                 cwd=cwd,
                 environment=environment,
@@ -1612,6 +3308,7 @@ def _verify_parent_replays_v3_impl(
                     expected_environment_identity_sha256=(
                         expected_environment_identity_sha256
                     ),
+                    expected_global_execution_provenance=expected_provenance,
                 )
             children.append(child)
 
@@ -1634,6 +3331,41 @@ def _verify_parent_replays_v3_impl(
         compatibility_files, name="compatibility_files"
     ):
         raise ParentReplayError("worker compatibility files changed during execution")
+    if production_profile_verified:
+        _validate_exact_code_snapshot_tree_v3(cwd, compatibility_files)
+        try:
+            runtime_now = attest_runtime_v3(
+                requirements_lock=Path(input_files["dependency_lock"]),
+                executable=executable,
+            )
+        except (OSError, RuntimeError, TypeError, ValueError) as error:
+            raise ParentReplayError(
+                f"production runtime changed before parent minting: {error}"
+            ) from error
+        assert expected_provenance is not None
+        if (
+            runtime_now.environment_identity_sha256
+            != expected_provenance.get("environment_identity_sha256")
+            or _json_normalized(runtime_now.environment_payload)
+            != expected_provenance.get("environment_payload")
+        ):
+            raise ParentReplayError(
+                "production installed runtime changed before parent minting"
+            )
+        assert durable_mount_root is not None
+        assert durable_storage_marker_path is not None
+        assert durable_parent is not None
+        assert local_parent is not None
+        if attest_production_storage_v3(
+            durable_mount_root=durable_mount_root,
+            durable_storage_marker_path=durable_storage_marker_path,
+            durable_output_parent=durable_parent,
+            local_work_parent=local_parent,
+        ) != storage_identity:
+            raise ParentReplayError(
+                "production storage identity changed before parent minting"
+            )
+    durable_post_write_inventories: list[tuple[dict[str, object], ...]] = []
     for child in (first, second):
         final_rows = _validate_file_inventory(
             output_root=Path(child.output_root),
@@ -1641,6 +3373,16 @@ def _verify_parent_replays_v3_impl(
         )
         if final_rows != child.output_file_rows:
             raise ParentReplayError("replay outputs changed before parent minting")
+        receipt_row = _final_child_receipt_row_v3(child)
+        if production_profile_verified:
+            durable_post_write_inventories.append(
+                tuple(
+                    sorted(
+                        (*final_rows, receipt_row),
+                        key=lambda row: str(row["path"]),
+                    )
+                )
+            )
     return _mint_parent_verification_v3(
         first=first,
         second=second,
@@ -1651,6 +3393,10 @@ def _verify_parent_replays_v3_impl(
             network_isolation_executable_sha256
         ),
         production_profile_verified=production_profile_verified,
+        durable_output_parent=durable_parent,
+        local_work_parent=local_parent,
+        expected_global_execution_provenance=expected_provenance,
+        durable_post_write_inventories=tuple(durable_post_write_inventories),
     )
 
 
@@ -1703,6 +3449,11 @@ def verify_production_materialization_replays_v3(
     source_manifest_path: Path,
     cache_root: Path,
     fasttext_model_path: Path,
+    runtime_build_receipt_path: Path,
+    durable_mount_root: Path,
+    durable_storage_marker_path: Path,
+    durable_output_parent: Path,
+    local_work_parent: Path,
     first_output_root: Path,
     second_output_root: Path,
     first_run_id: str = "production-replay-a",
@@ -1719,7 +3470,10 @@ def verify_production_materialization_replays_v3(
     """
 
     from training.weft1_corpus_a2 import A2_LANGUAGE_ID_BINDING
-    from training.weft1_corpus_pa import DEFAULT_REQUIREMENTS_LOCK_SHA256
+    from training.weft1_corpus_pa import (
+        DEFAULT_REQUIREMENTS_LOCK_SHA256,
+        attest_runtime_v3,
+    )
     from training.weft1_corpus_sources_a2 import (
         SOURCE_ROUTE_MANIFEST_PATH,
         SOURCE_ROUTE_MANIFEST_SHA256,
@@ -1731,6 +3485,15 @@ def verify_production_materialization_replays_v3(
         raise ParentReplayError(
             "production replay must use the currently attested Python interpreter"
         )
+
+    roots = _resolved_fresh_roots(first_output_root, second_output_root)
+    durable_parent, local_parent, storage_identity = _validate_production_storage_roots_v3(
+        roots=roots,
+        durable_mount_root=durable_mount_root,
+        durable_storage_marker_path=durable_storage_marker_path,
+        durable_output_parent=durable_output_parent,
+        local_work_parent=local_work_parent,
+    )
 
     fixed_files = {
         "bindings": PRODUCTION_BINDINGS_PATH_V3,
@@ -1762,14 +3525,17 @@ def verify_production_materialization_replays_v3(
     compatibility_files = {
         "corpus_contracts": REPOSITORY_ROOT_V3 / "training" / "weft1_corpus_a2.py",
         "enumeration": REPOSITORY_ROOT_V3 / "training" / "weft1_corpus_enumeration_a2.py",
+        "full_pa_cli": REPOSITORY_ROOT_V3 / "scripts" / "run_weft1_corpus_pa.py",
         "gtok_a1_contract": REPOSITORY_ROOT_V3 / "training" / "weft1_gtok_a1_contract.py",
         "gtok_contract": REPOSITORY_ROOT_V3 / "training" / "weft1_gtok_contract.py",
         "materializer": REPOSITORY_ROOT_V3 / "training" / "weft1_corpus_materialize_a2.py",
         "models_init": REPOSITORY_ROOT_V3 / "models" / "__init__.py",
         "parent_replay": Path(__file__).resolve(strict=True),
         "production_io": REPOSITORY_ROOT_V3 / "training" / "weft1_corpus_pa.py",
+        "runtime_builder": RUNTIME_BUILDER_PATH_V1,
         "source_io": REPOSITORY_ROOT_V3 / "training" / "weft1_corpus_source_io_a2.py",
         "source_routes": REPOSITORY_ROOT_V3 / "training" / "weft1_corpus_sources_a2.py",
+        "seed_derivation": REPOSITORY_ROOT_V3 / "training" / "weft1_seed.py",
         "streaming_dedup": REPOSITORY_ROOT_V3 / "training" / "weft1_corpus_streaming_a2.py",
         "strict_io": REPOSITORY_ROOT_V3 / "training" / "weft1_strict_io.py",
         "tokenizer": REPOSITORY_ROOT_V3 / "training" / "weft1_gtok_tokenizer_a2.py",
@@ -1784,8 +3550,38 @@ def verify_production_materialization_replays_v3(
         }
     )
 
-    with tempfile.TemporaryDirectory(prefix="weft1-production-inputs-") as raw_snapshot:
+    try:
+        runtime_attestation = attest_runtime_v3(
+            requirements_lock=PRODUCTION_DEPENDENCY_LOCK_PATH_V3,
+            executable=_resolve_python_executable(python_executable),
+        )
+    except (OSError, RuntimeError, TypeError, ValueError) as error:
+        raise ParentReplayError(
+            f"production runtime attestation failed before input snapshot: {error}"
+        ) from error
+    compatibility_rows = _logical_file_rows(
+        compatibility_files, name="production_compatibility_files"
+    )
+    compatibility_hashes = {
+        str(row["logical_name"]): str(row["sha256"])
+        for row in compatibility_rows
+    }
+
+    with tempfile.TemporaryDirectory(
+        prefix="weft1-production-inputs-", dir=local_parent
+    ) as raw_snapshot:
         snapshot_root = Path(raw_snapshot).resolve(strict=True)
+        code_root = snapshot_root / "code"
+        snapshot_compatibility_files = _snapshot_production_code_v3(
+            compatibility_files, code_root=code_root
+        )
+        snapshot_compatibility_rows = _logical_file_rows(
+            snapshot_compatibility_files,
+            name="production compatibility snapshots",
+        )
+        if snapshot_compatibility_rows != compatibility_rows:
+            raise ParentReplayError("production code snapshot identity drifted")
+        snapshot_worker = snapshot_compatibility_files["worker"]
         snapshots = {
             "authority": _snapshot_governed_file_v3(
                 Path(authority_path), snapshot_root / "authority.md", name="A2 authority"
@@ -1825,7 +3621,46 @@ def verify_production_materialization_replays_v3(
                 snapshot_root / "source-manifest.json",
                 name="source manifest",
             ),
+            "runtime_build_receipt": _snapshot_governed_file_v3(
+                Path(runtime_build_receipt_path),
+                snapshot_root / "runtime-build-receipt.json",
+                name="runtime build receipt",
+            ),
         }
+        runtime_receipt, runtime_receipt_physical_sha256 = (
+            _load_runtime_build_receipt_v1(
+                snapshots["runtime_build_receipt"],
+                runtime_attestation=runtime_attestation,
+                expected_builder_sha256=compatibility_hashes["runtime_builder"],
+                expected_runtime_contract_sha256=compatibility_hashes[
+                    "production_io"
+                ],
+                expected_python_executable=_resolve_python_executable(
+                    python_executable
+                ),
+            )
+        )
+        global_provenance = _build_global_execution_provenance_v3(
+            environment_payload=runtime_attestation.environment_payload,
+            environment_identity_sha256=(
+                runtime_attestation.environment_identity_sha256
+            ),
+            python_executable_sha256=runtime_attestation.executable_sha256,
+            dependency_lock_sha256=runtime_attestation.dependency_lock_sha256,
+            pipeline_components=snapshot_compatibility_rows,
+            runtime_build_receipt_identity_sha256=str(
+                runtime_receipt["receipt_identity_sha256"]
+            ),
+            runtime_build_receipt_sha256=runtime_receipt_physical_sha256,
+            selected_wheels=runtime_receipt["selected_wheels"],
+            production_storage_identity=storage_identity,
+        )
+        snapshots["execution_provenance"] = snapshot_root / (
+            "global-execution-provenance.json"
+        )
+        _write_fresh_canonical_json_v3(
+            snapshots["execution_provenance"], global_provenance
+        )
         observed_inputs = _logical_file_rows(
             {
                 "authority": snapshots["authority"],
@@ -1848,7 +3683,7 @@ def verify_production_materialization_replays_v3(
             raise ParentReplayError("FastText model differs from the A2 binding")
 
         arguments = (
-            str(worker),
+            str(snapshot_worker),
             "--enumeration-receipt",
             str(snapshots["enumeration"]),
             "--cache-download-receipt",
@@ -1861,6 +3696,10 @@ def verify_production_materialization_replays_v3(
             str(snapshots["fasttext_model"]),
             "--route-manifest",
             str(snapshots["route_manifest"]),
+            "--execution-provenance",
+            str(snapshots["execution_provenance"]),
+            "--runtime-build-receipt",
+            str(snapshots["runtime_build_receipt"]),
         )
         input_files = {
             "a2_authority": snapshots["authority"],
@@ -1870,7 +3709,9 @@ def verify_production_materialization_replays_v3(
             "enumeration_receipt": snapshots["enumeration"],
             "fasttext_model": snapshots["fasttext_model"],
             "route_manifest": snapshots["route_manifest"],
+            "runtime_build_receipt": snapshots["runtime_build_receipt"],
             "source_manifest": snapshots["source_manifest"],
+            "global_execution_provenance": snapshots["execution_provenance"],
         }
         return _verify_parent_replays_v3_impl(
             python_executable=python_executable,
@@ -1878,14 +3719,19 @@ def verify_production_materialization_replays_v3(
             first_output_root=first_output_root,
             second_output_root=second_output_root,
             input_files=input_files,
-            compatibility_files=compatibility_files,
-            worker_cwd=REPOSITORY_ROOT_V3,
+            compatibility_files=snapshot_compatibility_files,
+            worker_cwd=code_root,
             first_run_id=first_run_id,
             second_run_id=second_run_id,
             timeout_seconds=timeout_seconds,
             extra_environment=None,
             network_namespace_executable=LINUX_UNSHARE_PATH_V1,
             production_profile_sentinel=_PRODUCTION_PROFILE_SENTINEL,
+            durable_mount_root=durable_mount_root,
+            durable_storage_marker_path=durable_storage_marker_path,
+            durable_output_parent=durable_parent,
+            local_work_parent=local_parent,
+            expected_global_execution_provenance=global_provenance,
         )
 
 
@@ -1894,12 +3740,21 @@ __all__ = [
     "CHILD_RECEIPT_SCHEMA_V3",
     "DEDUP_EVIDENCE_SCHEMA_V3",
     "DEDUP_LEDGER_IDENTITY_DOMAIN_V3",
+    "GLOBAL_EXECUTION_PROVENANCE_RELATIVE_PATH_V3",
+    "GLOBAL_EXECUTION_PROVENANCE_SCHEMA_V3",
     "LINUX_UNSHARE_PATH_V1",
     "LINUX_UNSHARE_SHA256_V1",
     "NETWORK_PROBE_RESULT",
     "PARENT_RECEIPT_SCHEMA_V3",
+    "PRODUCTION_STORAGE_IDENTITY_SCHEMA_V3",
+    "RUNTIME_BUILD_RECEIPT_SCHEMA_V1",
+    "RUNTIME_BUILD_RECEIPT_RELATIVE_PATH_V1",
     "ParentReplayError",
     "ParentReplayVerificationV3",
+    "attest_production_storage_v3",
+    "register_colab_drive_storage_v3",
+    "validate_global_execution_provenance_v3",
+    "validate_production_storage_identity_v3",
     "verify_production_materialization_replays_v3",
     "verify_parent_replays_v3",
 ]

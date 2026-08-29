@@ -83,7 +83,12 @@ from training.weft1_corpus_replay_a2 import DEDUP_LEDGER_IDENTITY_DOMAIN_V3
 from training.weft1_corpus_replay_a2 import (
     CHILD_RECEIPT_FILENAME,
     CHILD_RECEIPT_SCHEMA_V3,
+    GLOBAL_EXECUTION_PROVENANCE_RELATIVE_PATH_V3,
     NETWORK_PROBE_RESULT,
+    ParentReplayError,
+    RUNTIME_BUILD_RECEIPT_RELATIVE_PATH_V1,
+    RUNTIME_BUILD_RECEIPT_SCHEMA_V1,
+    validate_global_execution_provenance_v3,
 )
 from training.weft1_strict_io import (
     assert_no_symlink_ancestors,
@@ -102,7 +107,7 @@ from training.weft1_gtok_contract import (
     GTOK_VOCABULARY_ARMS,
     canonical_json_bytes,
 )
-from models.ablation_lm.rng import derive_module_seed
+from training.weft1_seed import derive_module_seed
 
 
 PRODUCTION_MODE = "PRODUCTION"
@@ -595,8 +600,42 @@ def _write_canonical_json(path: Path, value: object) -> None:
     if path.exists() or partial.exists():
         raise CorpusMaterializationError(f"refusing to overwrite {path.name}")
     payload = canonical_json_bytes(value) + b"\n"
-    partial.write_bytes(payload)
+    with partial.open("xb") as handle:
+        handle.write(payload)
+        handle.flush()
+        os.fsync(handle.fileno())
     partial.replace(path)
+
+
+def _validated_runtime_build_receipt_v1(
+    value: object,
+    *,
+    global_execution_provenance: Mapping[str, object],
+) -> dict[str, object]:
+    if not isinstance(value, Mapping) or set(value) != {
+        "authoritative",
+        "evidence",
+        "receipt_identity_sha256",
+        "schema",
+        "status",
+    }:
+        raise CorpusMaterializationError("runtime build receipt fields drifted")
+    payload = canonical_json_bytes(value) + b"\n"
+    if (
+        value.get("authoritative") is not True
+        or value.get("schema") != RUNTIME_BUILD_RECEIPT_SCHEMA_V1
+        or value.get("status") != "PASS"
+        or value.get("receipt_identity_sha256")
+        != global_execution_provenance.get(
+            "runtime_build_receipt_identity_sha256"
+        )
+        or hashlib.sha256(payload).hexdigest()
+        != global_execution_provenance.get("runtime_build_receipt_sha256")
+    ):
+        raise CorpusMaterializationError(
+            "runtime build receipt differs from global execution provenance"
+        )
+    return dict(value)
 
 
 def framed_jsonl_identity_sha256_v3(path: Path, *, domain: bytes) -> str:
@@ -1114,6 +1153,8 @@ class _Materializer:
         language_classifier: LanguageClassifierV3,
         output_root: Path,
         work_root: Path,
+        global_execution_provenance: Mapping[str, object] | None,
+        runtime_build_receipt: Mapping[str, object] | None,
     ) -> None:
         if inputs.mode != plan.mode:
             raise ValueError("input and plan modes differ")
@@ -1126,6 +1167,30 @@ class _Materializer:
                 raise CorpusMaterializationError(
                     "production P-A requires the verified FastText language adapter"
                 )
+            try:
+                self.global_execution_provenance = (
+                    validate_global_execution_provenance_v3(
+                        global_execution_provenance
+                    )
+                )
+            except ParentReplayError as error:
+                raise CorpusMaterializationError(
+                    f"production P-A execution provenance is invalid: {error}"
+                ) from error
+            self.runtime_build_receipt = _validated_runtime_build_receipt_v1(
+                runtime_build_receipt,
+                global_execution_provenance=self.global_execution_provenance,
+            )
+        elif (
+            global_execution_provenance is not None
+            or runtime_build_receipt is not None
+        ):
+            raise CorpusMaterializationError(
+                "fixture materialization may not carry production execution provenance"
+            )
+        else:
+            self.global_execution_provenance = None
+            self.runtime_build_receipt = None
         self.inputs = inputs
         self.plan = plan
         self.classifier = language_classifier
@@ -2711,6 +2776,41 @@ class _Materializer:
                     "zstd_binding_sha256": A2_ZSTD_CODEC_BINDING.receipt_sha256,
                 },
             )
+            global_section: dict[str, object] | None = None
+            if self.plan.mode == PRODUCTION_MODE:
+                assert self.global_execution_provenance is not None
+                assert self.runtime_build_receipt is not None
+                runtime_receipt_path = (
+                    self.output_root / RUNTIME_BUILD_RECEIPT_RELATIVE_PATH_V1
+                )
+                _write_canonical_json(
+                    runtime_receipt_path, self.runtime_build_receipt
+                )
+                runtime_receipt_sha256 = sha256_file(runtime_receipt_path)
+                if runtime_receipt_sha256 != self.global_execution_provenance.get(
+                    "runtime_build_receipt_sha256"
+                ):
+                    raise CorpusMaterializationError(
+                        "durable runtime build receipt changed during write"
+                    )
+                provenance_path = (
+                    self.output_root
+                    / GLOBAL_EXECUTION_PROVENANCE_RELATIVE_PATH_V3
+                )
+                _write_canonical_json(
+                    provenance_path, self.global_execution_provenance
+                )
+                global_section = {
+                    "execution_provenance": self.global_execution_provenance,
+                    "execution_provenance_path": (
+                        GLOBAL_EXECUTION_PROVENANCE_RELATIVE_PATH_V3
+                    ),
+                    "execution_provenance_sha256": sha256_file(provenance_path),
+                    "runtime_build_receipt_path": (
+                        RUNTIME_BUILD_RECEIPT_RELATIVE_PATH_V1
+                    ),
+                    "runtime_build_receipt_sha256": runtime_receipt_sha256,
+                }
             content_manifest = {
                 "algorithm_identity_sha256": algorithm_identity,
                 "authority_chain": GTOK_EXECUTION_AUTHORITY_CHAIN_V3,
@@ -2792,6 +2892,8 @@ class _Materializer:
                 ),
                 "split_ledger_sha256": split_ledger_sha256,
             }
+            if global_section is not None:
+                content_manifest["global"] = global_section
             content_identity_sha256 = execution_authority_v3_bound_sha256(
                 "weft1_corpus_materialized_content_v3", content_manifest
             )
@@ -2982,6 +3084,8 @@ def materialize_corpus_pa_v3(
     language_classifier: LanguageClassifierV3,
     output_root: Path,
     work_root: Path,
+    global_execution_provenance: Mapping[str, object] | None = None,
+    runtime_build_receipt: Mapping[str, object] | None = None,
 ) -> MaterializationResultV3:
     """Materialize P-A offline; never freeze P-B or mint D1-D6/G-TOK gates."""
 
@@ -2995,6 +3099,8 @@ def materialize_corpus_pa_v3(
         language_classifier=language_classifier,
         output_root=Path(output_root),
         work_root=Path(work_root),
+        global_execution_provenance=global_execution_provenance,
+        runtime_build_receipt=runtime_build_receipt,
     ).run()
 
 
@@ -3050,6 +3156,50 @@ def _write_production_replay_child_receipt_v3(
         raise CorpusMaterializationError("materialization output is incomplete")
     content = load_canonical_json_object(output_root / "content-manifest.json")
     d1 = load_canonical_json_object(output_root / "d1-ready-manifest.json")
+    global_section = content.get("global")
+    if not isinstance(global_section, Mapping) or set(global_section) != {
+        "execution_provenance",
+        "execution_provenance_path",
+        "execution_provenance_sha256",
+        "runtime_build_receipt_path",
+        "runtime_build_receipt_sha256",
+    }:
+        raise CorpusMaterializationError(
+            "production content manifest lacks exact global provenance"
+        )
+    try:
+        global_execution_provenance = validate_global_execution_provenance_v3(
+            global_section.get("execution_provenance")
+        )
+    except ParentReplayError as error:
+        raise CorpusMaterializationError(
+            f"production content manifest provenance is invalid: {error}"
+        ) from error
+    provenance_path = (
+        output_root / GLOBAL_EXECUTION_PROVENANCE_RELATIVE_PATH_V3
+    )
+    persisted_provenance = load_canonical_json_object(provenance_path)
+    provenance_physical_sha256 = sha256_file(provenance_path)
+    runtime_receipt_path = output_root / RUNTIME_BUILD_RECEIPT_RELATIVE_PATH_V1
+    runtime_receipt_physical_sha256 = sha256_file(runtime_receipt_path)
+    if (
+        global_section.get("execution_provenance_path")
+        != GLOBAL_EXECUTION_PROVENANCE_RELATIVE_PATH_V3
+        or global_section.get("execution_provenance_sha256")
+        != provenance_physical_sha256
+        or persisted_provenance != global_execution_provenance
+        or global_execution_provenance.get("environment_identity_sha256")
+        != environment_identity
+        or global_section.get("runtime_build_receipt_path")
+        != RUNTIME_BUILD_RECEIPT_RELATIVE_PATH_V1
+        or global_section.get("runtime_build_receipt_sha256")
+        != runtime_receipt_physical_sha256
+        or runtime_receipt_physical_sha256
+        != global_execution_provenance.get("runtime_build_receipt_sha256")
+    ):
+        raise CorpusMaterializationError(
+            "production global provenance artifact and manifest differ"
+        )
     descriptor = load_canonical_json_object(
         output_root / "artifacts" / "d2-evidence-descriptor.json"
     )
@@ -3138,7 +3288,22 @@ def _write_production_replay_child_receipt_v3(
             "content_identity_sha256": result.content_identity_sha256,
             "d1_ready_manifest_sha256": result.d1_ready_manifest_sha256,
             "environment_identity_sha256": environment_identity,
+            "global_execution_provenance_identity_sha256": (
+                global_execution_provenance["provenance_identity_sha256"]
+            ),
+            "global_execution_provenance_sha256": (
+                provenance_physical_sha256
+            ),
             "materializer_algorithm_version": MATERIALIZER_ALGORITHM_VERSION,
+            "pipeline_code_identity_sha256": global_execution_provenance[
+                "pipeline_code_identity_sha256"
+            ],
+            "runtime_build_receipt_identity_sha256": (
+                global_execution_provenance[
+                    "runtime_build_receipt_identity_sha256"
+                ]
+            ),
+            "runtime_build_receipt_sha256": runtime_receipt_physical_sha256,
             "source_identity_sha256": result.source_identity_sha256,
             "tokenizer_fit_input_receipt_sha256": content.get(
                 "tokenizer_fit_input_receipt_sha256"
@@ -3175,6 +3340,8 @@ def run_production_materialization_worker_v3(
     cache_root: Path,
     fasttext_model_path: Path,
     route_manifest_path: Path,
+    execution_provenance_path: Path,
+    runtime_build_receipt_path: Path,
 ) -> str:
     """Offline production child: load receipts, reparse cache, materialize, report.
 
@@ -3190,6 +3357,8 @@ def run_production_materialization_worker_v3(
         cache_root,
         fasttext_model_path,
         route_manifest_path,
+        execution_provenance_path,
+        runtime_build_receipt_path,
     )
     if any(not isinstance(path, Path) for path in paths):
         raise TypeError("production worker inputs must be pathlib.Path values")
@@ -3230,6 +3399,32 @@ def run_production_materialization_worker_v3(
     # bytes and later claim the parent's execution identity.
     runtime_attestation = attest_runtime_v3()
 
+    try:
+        global_execution_provenance = validate_global_execution_provenance_v3(
+            load_canonical_json_object(execution_provenance_path)
+        )
+    except (ParentReplayError, StrictPathError, ValueError) as error:
+        raise CorpusMaterializationError(
+            f"production execution provenance failed validation: {error}"
+        ) from error
+    if (
+        global_execution_provenance.get("environment_identity_sha256")
+        != runtime_attestation.environment_identity_sha256
+        or global_execution_provenance.get("environment_payload")
+        != json.loads(canonical_json_bytes(runtime_attestation.environment_payload))
+        or global_execution_provenance.get("python_executable_sha256")
+        != runtime_attestation.executable_sha256
+        or global_execution_provenance.get("dependency_lock_sha256")
+        != runtime_attestation.dependency_lock_sha256
+    ):
+        raise CorpusMaterializationError(
+            "production execution provenance differs from child runtime attestation"
+        )
+    runtime_build_receipt = _validated_runtime_build_receipt_v1(
+        load_canonical_json_object(runtime_build_receipt_path),
+        global_execution_provenance=global_execution_provenance,
+    )
+
     enumeration = load_upstream_enumeration_receipt_v3(
         enumeration_receipt_path,
         route_manifest_path=route_manifest_path,
@@ -3250,9 +3445,25 @@ def run_production_materialization_worker_v3(
     )
     classifier = FastTextLanguageIdAdapterV3(fasttext_model_path)
     output_parent = assert_no_symlink_ancestors(output_root.parent).resolve(strict=True)
+    raw_local_work_parent = os.environ.get("WEFT1_REPLAY_LOCAL_WORK_PARENT")
+    if not raw_local_work_parent:
+        raise CorpusMaterializationError(
+            "production worker lacks an explicit local work parent"
+        )
+    local_work_parent = assert_no_symlink_ancestors(
+        Path(raw_local_work_parent)
+    ).resolve(strict=True)
+    if not local_work_parent.is_dir() or (
+        local_work_parent == output_parent
+        or local_work_parent in output_parent.parents
+        or output_parent in local_work_parent.parents
+    ):
+        raise CorpusMaterializationError(
+            "production local work and durable output parents must be disjoint"
+        )
     with tempfile.TemporaryDirectory(
         prefix=f".{output_root.name}-work-",
-        dir=output_parent,
+        dir=local_work_parent,
     ) as raw_temporary:
         temporary = Path(raw_temporary)
         assert_no_symlink_ancestors(temporary)
@@ -3262,6 +3473,8 @@ def run_production_materialization_worker_v3(
             language_classifier=classifier,
             output_root=output_root,
             work_root=temporary / "spool",
+            global_execution_provenance=global_execution_provenance,
+            runtime_build_receipt=runtime_build_receipt,
         )
         return _write_production_replay_child_receipt_v3(
             result,

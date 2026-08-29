@@ -16,7 +16,6 @@ new mask during the backward recomputation instead of replaying the old one.
 from __future__ import annotations
 
 import hashlib
-import re
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from typing import TypeVar
@@ -24,63 +23,24 @@ from typing import TypeVar
 import torch
 from torch import nn
 
-
-_SOURCE_KEY_PATTERN = re.compile(
-    r"[a-z][a-z0-9_]*(?:\.(?:[a-z][a-z0-9_]*|[0-9]+))*"
+from training.weft1_seed import (
+    _encode_field,
+    _validate_base_seed,
+    _validate_replica,
+    _validate_source_key,
+    derive_module_seed as _derive_module_seed,
 )
-_SEED_DOMAIN = b"WEFT-1/module-rng/seed/v1\x00"
+
 _DRAW_DOMAIN = b"WEFT-1/module-rng/draw/v2\x00"
 _CHECKPOINT_IDENTITY_DOMAIN = b"WEFT-1/module-rng/checkpoint-identity/v1\x00"
 _MAX_COUNTER = torch.iinfo(torch.int64).max
 _FactoryResult = TypeVar("_FactoryResult")
 
 
-def _validate_base_seed(base_seed: int) -> None:
-    if type(base_seed) is not int:
-        raise TypeError("base_seed must be an exact integer")
-
-
-def _validate_source_key(source_key: str) -> None:
-    if type(source_key) is not str:
-        raise TypeError("source_key must be an exact string")
-    if _SOURCE_KEY_PATTERN.fullmatch(source_key) is None:
-        raise ValueError(
-            "source_key must be canonical lowercase dotted module coordinates; "
-            "segments may be identifiers or non-negative decimal indices"
-        )
-
-
-def _validate_replica(replica: int) -> None:
-    if type(replica) is not int:
-        raise TypeError("replica must be an exact integer")
-    if replica < 0:
-        raise ValueError("replica must be non-negative")
-
-
-def _encode_field(value: int | str) -> bytes:
-    raw = str(value).encode("utf-8")
-    return len(raw).to_bytes(8, byteorder="big", signed=False) + raw
-
-
 def derive_module_seed(base_seed: int, source_key: str, replica: int = 0) -> int:
-    """Return the stable 64-bit seed for one canonical random source.
+    """Compatibility wrapper for the torch-free WEFT-1 seed contract."""
 
-    The length-prefixed encoding prevents boundary ambiguities such as a key
-    suffix being mistaken for part of the replica.  The exact signed decimal
-    spelling of ``base_seed`` participates in the hash; no Python hash or
-    process-global salt is involved.
-    """
-
-    _validate_base_seed(base_seed)
-    _validate_source_key(source_key)
-    _validate_replica(replica)
-    payload = (
-        _SEED_DOMAIN
-        + _encode_field(base_seed)
-        + _encode_field(source_key)
-        + _encode_field(replica)
-    )
-    return int.from_bytes(hashlib.sha256(payload).digest()[:8], byteorder="big")
+    return _derive_module_seed(base_seed, source_key, replica)
 
 
 def _derive_draw_seed(module_seed: int, coordinate: int, draw_index: int) -> int:

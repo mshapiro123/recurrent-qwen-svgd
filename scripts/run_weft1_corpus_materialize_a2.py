@@ -30,6 +30,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--cache-root", required=True, type=Path)
     parser.add_argument("--fasttext-model", required=True, type=Path)
     parser.add_argument("--route-manifest", required=True, type=Path)
+    parser.add_argument("--execution-provenance", required=True, type=Path)
+    parser.add_argument("--runtime-build-receipt", required=True, type=Path)
     return parser
 
 
@@ -42,6 +44,8 @@ def main() -> int:
         cache_root=arguments.cache_root,
         fasttext_model_path=arguments.fasttext_model,
         route_manifest_path=arguments.route_manifest,
+        execution_provenance_path=arguments.execution_provenance,
+        runtime_build_receipt_path=arguments.runtime_build_receipt,
     )
     return 0
 

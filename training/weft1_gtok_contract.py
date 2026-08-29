@@ -23,9 +23,10 @@ import json
 import math
 from numbers import Real
 import re
-from typing import Any, NoReturn
+from typing import TYPE_CHECKING, Any, NoReturn
 
-from models.ablation_lm.config import AblationLMConfig
+if TYPE_CHECKING:
+    from models.ablation_lm.config import AblationLMConfig
 
 
 GTOK_TRAINING_BYTE_BUDGET = 4_000_000_000
@@ -336,6 +337,10 @@ class GTokProxyTopologyReceipt:
     @classmethod
     def from_config(cls, config: AblationLMConfig) -> "GTokProxyTopologyReceipt":
         """Validate one vocabulary-arm config and return its shared body receipt."""
+
+        # Import the training-only model type at the training-only call site.
+        # Corpus P-A consumes this contract module but never constructs a model.
+        from models.ablation_lm.config import AblationLMConfig
 
         if not isinstance(config, AblationLMConfig):
             raise TypeError("G-TOK proxy topology requires an AblationLMConfig")

@@ -12,6 +12,7 @@ from __future__ import annotations
 
 from collections import Counter
 from collections.abc import Callable, Iterable, Mapping, Sequence
+import base64
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from fractions import Fraction
@@ -22,10 +23,12 @@ import locale
 import os
 from pathlib import Path, PurePosixPath
 import platform
+import re
 import socket
 import sqlite3
 import stat
 import sys
+import sysconfig
 import tempfile
 from typing import Any, Protocol
 import unicodedata
@@ -61,6 +64,15 @@ DEFAULT_REQUIREMENTS_LOCK_SHA256 = (
     "bccb8e5b58b5e8fa9eee367fe9c26f59053fff5b7fadf81f23f96b83d1531860"
 )
 DEFAULT_SHARD_TARGET_BYTES = 512_000_000
+DEFAULT_SQLITE_SOURCE_ID = (
+    "2024-01-30 16:01:20 "
+    "e876e51a0ed5c5b3126f52e532044363a014bc594cfefa87ffb5b82257cc467a"
+)
+INSTALLED_DISTRIBUTION_INVENTORY_SCHEMA_V3 = (
+    "weft1_installed_distribution_inventory_v3"
+)
+RUNTIME_LINKAGE_SCHEMA_V3 = "weft1_runtime_linkage_v3"
+_BOOTSTRAP_DISTRIBUTIONS = frozenset({"pip"})
 _HASH_CHUNK_BYTES = 8 * 1024 * 1024
 _DETERMINISM_ENVIRONMENT_KEYS = (
     "CUBLAS_WORKSPACE_CONFIG",
@@ -72,6 +84,10 @@ _DETERMINISM_ENVIRONMENT_KEYS = (
     "TOKENIZERS_PARALLELISM",
     "TZ",
 )
+_LOCK_REQUIREMENT = re.compile(
+    r"^([A-Za-z0-9_.-]+)==([^\s\\]+)(?:\s+\\)?$"
+)
+_LOCK_HASH = re.compile(r"^--hash=sha256:([0-9a-f]{64})(?:\s+\\)?$")
 
 
 class CorpusProductionError(RuntimeError):
@@ -240,26 +256,719 @@ def verify_source_cache_assets(
     return SourceCacheVerificationV3(tuple(verified))
 
 
-def _parse_requirements_lock(lock_bytes: bytes) -> tuple[tuple[str, str], ...]:
+@dataclass(frozen=True)
+class HashLockedDistributionV3:
+    """One resolved distribution plus every authority-allowed archive hash."""
+
+    distribution: str
+    version: str
+    artifact_sha256s: tuple[str, ...]
+
+    def __post_init__(self) -> None:
+        normalized = self.distribution.casefold().replace("_", "-")
+        if (
+            not normalized
+            or normalized != self.distribution
+            or any(character not in "abcdefghijklmnopqrstuvwxyz0123456789.-" for character in normalized)
+        ):
+            raise ValueError("hash-locked distribution name is not canonical")
+        if not self.version or any(character.isspace() for character in self.version):
+            raise ValueError("hash-locked distribution version is invalid")
+        if (
+            not self.artifact_sha256s
+            or self.artifact_sha256s != tuple(sorted(self.artifact_sha256s))
+            or len(self.artifact_sha256s) != len(set(self.artifact_sha256s))
+            or any(
+                len(value) != 64
+                or any(character not in "0123456789abcdef" for character in value)
+                for value in self.artifact_sha256s
+            )
+        ):
+            raise ValueError("hash-locked distribution hashes are invalid")
+
+
+def parse_hash_locked_requirements_v3(
+    lock_bytes: bytes,
+) -> tuple[HashLockedDistributionV3, ...]:
+    """Parse the exact uv hash-lock closure and reject every unhashed row."""
+
     try:
         text = lock_bytes.decode("utf-8", errors="strict")
     except UnicodeDecodeError as error:
         raise CorpusProductionError("dependency lock is not strict UTF-8") from error
-    packages: list[tuple[str, str]] = []
-    for line in text.splitlines():
-        if not line or line[0].isspace() or line.startswith("#") or "==" not in line:
+
+    packages: list[HashLockedDistributionV3] = []
+    active_name: str | None = None
+    active_version: str | None = None
+    active_hashes: list[str] = []
+
+    def finish_active() -> None:
+        nonlocal active_name, active_version, active_hashes
+        if active_name is None or active_version is None:
+            return
+        if not active_hashes:
+            raise CorpusProductionError(
+                f"dependency lock distribution lacks hashes: {active_name}"
+            )
+        try:
+            packages.append(
+                HashLockedDistributionV3(
+                    distribution=active_name,
+                    version=active_version,
+                    artifact_sha256s=tuple(sorted(active_hashes)),
+                )
+            )
+        except ValueError as error:
+            raise CorpusProductionError(str(error)) from error
+        active_name = None
+        active_version = None
+        active_hashes = []
+
+    for line_number, line in enumerate(text.splitlines(), start=1):
+        if not line or line.startswith("#"):
             continue
-        name, remainder = line.split("==", 1)
-        version = remainder.split(None, 1)[0].rstrip("\\")
-        if not name or not version:
-            raise CorpusProductionError("dependency lock contains an invalid pin")
-        packages.append((name, version))
+        if not line[0].isspace():
+            finish_active()
+            match = _LOCK_REQUIREMENT.fullmatch(line)
+            if match is None:
+                raise CorpusProductionError(
+                    f"dependency lock row {line_number} is not an exact pin"
+                )
+            active_name = match.group(1).casefold().replace("_", "-")
+            active_version = match.group(2)
+            continue
+        if active_name is None:
+            raise CorpusProductionError(
+                f"dependency lock row {line_number} has no distribution"
+            )
+        hash_match = _LOCK_HASH.fullmatch(line.strip())
+        if hash_match is None:
+            raise CorpusProductionError(
+                f"dependency lock row {line_number} is not a SHA-256 hash"
+            )
+        active_hashes.append(hash_match.group(1))
+    finish_active()
+
     if not packages:
         raise CorpusProductionError("dependency lock contains no exact pins")
-    normalized = tuple(name.casefold().replace("_", "-") for name, _ in packages)
-    if len(normalized) != len(set(normalized)):
+    names = tuple(item.distribution for item in packages)
+    if names != tuple(sorted(names)) or len(names) != len(set(names)):
         raise CorpusProductionError("dependency lock repeats a distribution")
     return tuple(packages)
+
+
+def _runtime_canonical_json_line(value: object) -> bytes:
+    return (
+        json.dumps(
+            value,
+            ensure_ascii=False,
+            allow_nan=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+        + "\n"
+    ).encode("utf-8")
+
+
+def _installed_inventory_identity_sha256_v3(value: Mapping[str, object]) -> str:
+    return hashlib.sha256(
+        _runtime_canonical_json_line(
+            {
+                "domain": INSTALLED_DISTRIBUTION_INVENTORY_SCHEMA_V3,
+                "inventory": value,
+            }
+        )
+    ).hexdigest()
+
+
+def _canonical_installed_distribution_name(value: object) -> str:
+    if not isinstance(value, str) or not value:
+        raise CorpusProductionError("installed distribution lacks a canonical name")
+    normalized = re.sub(r"[-_.]+", "-", value).casefold()
+    if (
+        not normalized
+        or any(
+            character not in "abcdefghijklmnopqrstuvwxyz0123456789-"
+            for character in normalized
+        )
+    ):
+        raise CorpusProductionError("installed distribution name is not canonical")
+    return normalized
+
+
+def _stable_installed_file_identity(path: Path) -> tuple[int, str, str]:
+    """Hash one path through a stable regular-file handle.
+
+    The before/after identity checks make an in-place write or pathname swap a
+    failed attestation rather than an inventory of mixed file generations.
+    """
+
+    try:
+        lexical = assert_no_symlink_ancestors(Path(path))
+        before_path = lexical.lstat()
+    except (OSError, RuntimeError) as error:
+        raise CorpusProductionError("installed file cannot be inspected safely") from error
+    if stat.S_ISLNK(before_path.st_mode) or not stat.S_ISREG(before_path.st_mode):
+        raise CorpusProductionError("installed artifact is not a regular non-symlink file")
+    digest = hashlib.sha256()
+    byte_count = 0
+    try:
+        with lexical.open("rb") as handle:
+            before_handle = os.fstat(handle.fileno())
+            if not stat.S_ISREG(before_handle.st_mode):
+                raise CorpusProductionError("installed artifact handle is not regular")
+            if (
+                before_handle.st_dev != before_path.st_dev
+                or before_handle.st_ino != before_path.st_ino
+            ):
+                raise CorpusProductionError("installed artifact changed before hashing")
+            for chunk in iter(lambda: handle.read(_HASH_CHUNK_BYTES), b""):
+                byte_count += len(chunk)
+                digest.update(chunk)
+            after_handle = os.fstat(handle.fileno())
+        after_path = lexical.lstat()
+    except CorpusProductionError:
+        raise
+    except OSError as error:
+        raise CorpusProductionError("installed artifact cannot be hashed") from error
+    before_identity = (
+        before_handle.st_dev,
+        before_handle.st_ino,
+        before_handle.st_size,
+        before_handle.st_mtime_ns,
+    )
+    if (
+        before_identity
+        != (
+            after_handle.st_dev,
+            after_handle.st_ino,
+            after_handle.st_size,
+            after_handle.st_mtime_ns,
+        )
+        or before_identity
+        != (
+            after_path.st_dev,
+            after_path.st_ino,
+            after_path.st_size,
+            after_path.st_mtime_ns,
+        )
+        or byte_count != before_handle.st_size
+    ):
+        raise CorpusProductionError("installed artifact changed while being hashed")
+    raw_digest = digest.digest()
+    return (
+        byte_count,
+        raw_digest.hex(),
+        base64.urlsafe_b64encode(raw_digest).rstrip(b"=").decode("ascii"),
+    )
+
+
+def validate_installed_distribution_inventory_v3(
+    value: object,
+) -> dict[str, object]:
+    """Validate the canonical installed-file inventory without reading disk."""
+
+    if not isinstance(value, Mapping) or set(value) != {
+        "bootstrap_distributions",
+        "distributions",
+        "files",
+        "installation_prefix",
+        "inventory_identity_sha256",
+        "schema",
+        "site_roots",
+    }:
+        raise CorpusProductionError("installed-distribution inventory fields drifted")
+    if value.get("schema") != INSTALLED_DISTRIBUTION_INVENTORY_SCHEMA_V3:
+        raise CorpusProductionError("installed-distribution inventory schema drifted")
+    prefix = value.get("installation_prefix")
+    if not isinstance(prefix, str) or not prefix:
+        raise CorpusProductionError("installed-distribution inventory prefix is invalid")
+
+    raw_distributions = value.get("distributions")
+    if not isinstance(raw_distributions, (list, tuple)) or not raw_distributions:
+        raise CorpusProductionError("installed-distribution inventory is empty")
+    distributions: list[dict[str, object]] = []
+    for index, raw_row in enumerate(raw_distributions):
+        if not isinstance(raw_row, Mapping) or set(raw_row) != {
+            "distribution",
+            "file_count",
+            "record_path",
+            "record_sha256",
+            "source",
+            "version",
+        }:
+            raise CorpusProductionError(
+                f"installed distribution row {index} fields drifted"
+            )
+        name = _canonical_installed_distribution_name(raw_row.get("distribution"))
+        version = raw_row.get("version")
+        record_path = raw_row.get("record_path")
+        file_count = raw_row.get("file_count")
+        source = raw_row.get("source")
+        record_sha256 = raw_row.get("record_sha256")
+        if (
+            not isinstance(version, str)
+            or not version
+            or not isinstance(record_path, str)
+            or not record_path
+            or PurePosixPath(record_path).is_absolute()
+            or ".." in PurePosixPath(record_path).parts
+            or type(file_count) is not int
+            or file_count < 1
+            or source not in {"cpython_ensurepip", "hash_locked_wheel"}
+            or not isinstance(record_sha256, str)
+            or len(record_sha256) != 64
+            or any(character not in "0123456789abcdef" for character in record_sha256)
+        ):
+            raise CorpusProductionError("installed distribution row is invalid")
+        distributions.append(
+            {
+                "distribution": name,
+                "file_count": file_count,
+                "record_path": record_path,
+                "record_sha256": record_sha256,
+                "source": source,
+                "version": version,
+            }
+        )
+    distribution_names = [str(row["distribution"]) for row in distributions]
+    if distribution_names != sorted(distribution_names) or len(
+        distribution_names
+    ) != len(set(distribution_names)):
+        raise CorpusProductionError("installed distribution order or uniqueness drifted")
+
+    raw_files = value.get("files")
+    if not isinstance(raw_files, (list, tuple)) or not raw_files:
+        raise CorpusProductionError("installed-distribution file inventory is empty")
+    files: list[dict[str, object]] = []
+    known_names = set(distribution_names)
+    for index, raw_row in enumerate(raw_files):
+        if not isinstance(raw_row, Mapping) or set(raw_row) != {
+            "bytes",
+            "owners",
+            "relative_path",
+            "sha256",
+        }:
+            raise CorpusProductionError(f"installed file row {index} fields drifted")
+        relative_path = raw_row.get("relative_path")
+        byte_count = raw_row.get("bytes")
+        sha256 = raw_row.get("sha256")
+        owners = raw_row.get("owners")
+        if (
+            not isinstance(relative_path, str)
+            or not relative_path
+            or PurePosixPath(relative_path).is_absolute()
+            or ".." in PurePosixPath(relative_path).parts
+            or type(byte_count) is not int
+            or byte_count < 0
+            or not isinstance(sha256, str)
+            or len(sha256) != 64
+            or any(character not in "0123456789abcdef" for character in sha256)
+            or not isinstance(owners, (list, tuple))
+            or not owners
+            or list(owners) != sorted(owners)
+            or len(owners) != len(set(owners))
+            or any(owner not in known_names for owner in owners)
+        ):
+            raise CorpusProductionError("installed file row is invalid")
+        files.append(
+            {
+                "bytes": byte_count,
+                "owners": list(owners),
+                "relative_path": relative_path,
+                "sha256": sha256,
+            }
+        )
+    file_paths = [str(row["relative_path"]) for row in files]
+    if file_paths != sorted(file_paths) or len(file_paths) != len(set(file_paths)):
+        raise CorpusProductionError("installed file order or uniqueness drifted")
+    files_by_path = {str(row["relative_path"]): row for row in files}
+    for row in distributions:
+        record = files_by_path.get(str(row["record_path"]))
+        if (
+            record is None
+            or row["distribution"] not in record["owners"]
+            or row["record_sha256"] != record["sha256"]
+        ):
+            raise CorpusProductionError("distribution RECORD is not file-inventory bound")
+
+    bootstrap = value.get("bootstrap_distributions")
+    if not isinstance(bootstrap, (list, tuple)):
+        raise CorpusProductionError("bootstrap distribution inventory is invalid")
+    expected_bootstrap = [
+        {
+            "distribution": row["distribution"],
+            "version": row["version"],
+        }
+        for row in distributions
+        if row["source"] == "cpython_ensurepip"
+    ]
+    if list(bootstrap) != expected_bootstrap:
+        raise CorpusProductionError("bootstrap distribution inventory drifted")
+
+    site_roots = value.get("site_roots")
+    if (
+        not isinstance(site_roots, (list, tuple))
+        or not site_roots
+        or any(
+            not isinstance(item, str)
+            or not item
+            or PurePosixPath(item).is_absolute()
+            or ".." in PurePosixPath(item).parts
+            for item in site_roots
+        )
+        or list(site_roots) != sorted(site_roots)
+        or len(site_roots) != len(set(site_roots))
+    ):
+        raise CorpusProductionError("installed site-root inventory drifted")
+
+    normalized = {
+        "bootstrap_distributions": expected_bootstrap,
+        "distributions": distributions,
+        "files": files,
+        "installation_prefix": prefix,
+        "schema": INSTALLED_DISTRIBUTION_INVENTORY_SCHEMA_V3,
+        "site_roots": list(site_roots),
+    }
+    claimed_identity = value.get("inventory_identity_sha256")
+    if (
+        not isinstance(claimed_identity, str)
+        or claimed_identity != _installed_inventory_identity_sha256_v3(normalized)
+    ):
+        raise CorpusProductionError("installed-distribution inventory identity drifted")
+    return {**normalized, "inventory_identity_sha256": claimed_identity}
+
+
+def installed_distribution_inventory_v3(
+    lock_bytes: bytes,
+    *,
+    installation_prefix: Path | None = None,
+    distributions: Iterable[metadata.Distribution] | None = None,
+) -> dict[str, object]:
+    """Recompute the complete installed wheel/RECORD tree for this runtime.
+
+    All distributions must be exactly the hash-lock closure plus CPython's
+    bootstrap ``pip``.  Every RECORD-listed file is hashed, every RECORD hash
+    and size claim is checked, and every file below the observed site-package
+    roots must have at least one RECORD owner.
+    """
+
+    locked = parse_hash_locked_requirements_v3(lock_bytes)
+    locked_versions = {row.distribution: row.version for row in locked}
+    expected_names = set(locked_versions) | set(_BOOTSTRAP_DISTRIBUTIONS)
+    prefix = Path(sys.prefix if installation_prefix is None else installation_prefix)
+    try:
+        prefix = assert_no_symlink_ancestors(prefix).resolve(strict=True)
+    except (OSError, RuntimeError) as error:
+        raise CorpusProductionError("installed-distribution prefix is unsafe") from error
+    if not prefix.is_dir():
+        raise CorpusProductionError("installed-distribution prefix is not a directory")
+
+    observed: dict[str, metadata.Distribution] = {}
+    source = metadata.distributions() if distributions is None else distributions
+    for distribution in source:
+        name = _canonical_installed_distribution_name(
+            distribution.metadata.get("Name")
+        )
+        if name in observed:
+            raise CorpusProductionError(f"installed distribution is repeated: {name}")
+        observed[name] = distribution
+    unexpected = sorted(set(observed) - expected_names)
+    missing = sorted(expected_names - set(observed))
+    if unexpected:
+        raise CorpusProductionError(
+            "unexpected installed distributions: " + ", ".join(unexpected)
+        )
+    if missing:
+        raise CorpusProductionError(
+            "pinned distributions are absent: " + ", ".join(missing)
+        )
+
+    initial_files: dict[str, tuple[int, str]] = {}
+    owners: dict[str, set[str]] = {}
+    distribution_rows: list[dict[str, object]] = []
+    site_roots: set[str] = set()
+    for name in sorted(observed):
+        distribution = observed[name]
+        version = distribution.version
+        if not isinstance(version, str) or not version:
+            raise CorpusProductionError(f"installed distribution version is absent: {name}")
+        if name in locked_versions and version != locked_versions[name]:
+            raise CorpusProductionError(
+                f"distribution version mismatch for {name}: "
+                f"expected {locked_versions[name]}, observed {version}"
+            )
+        try:
+            site_root = assert_no_symlink_ancestors(
+                Path(distribution.locate_file(""))
+            ).resolve(strict=True)
+            site_relative = site_root.relative_to(prefix).as_posix()
+        except (OSError, RuntimeError, ValueError) as error:
+            raise CorpusProductionError(
+                f"installed distribution root escapes the runtime prefix: {name}"
+            ) from error
+        if not site_relative or site_relative == ".":
+            raise CorpusProductionError("distribution site root may not equal the prefix")
+        site_roots.add(site_relative)
+        package_files = distribution.files
+        if not package_files:
+            raise CorpusProductionError(f"installed distribution lacks RECORD files: {name}")
+        seen_package_paths: set[str] = set()
+        record_paths: list[str] = []
+        for package_path in package_files:
+            package_name = str(package_path).replace("\\", "/")
+            if package_name in seen_package_paths:
+                raise CorpusProductionError(f"distribution RECORD repeats a path: {name}")
+            seen_package_paths.add(package_name)
+            try:
+                lexical = assert_no_symlink_ancestors(
+                    Path(distribution.locate_file(package_path))
+                )
+                resolved = lexical.resolve(strict=True)
+                relative_path = resolved.relative_to(prefix).as_posix()
+            except (OSError, RuntimeError, ValueError) as error:
+                raise CorpusProductionError(
+                    f"distribution RECORD path escapes the runtime prefix: {name}"
+                ) from error
+            byte_count, digest, record_digest = _stable_installed_file_identity(
+                resolved
+            )
+            declared_size = package_path.size
+            declared_hash = package_path.hash
+            if declared_size is not None and int(declared_size) != byte_count:
+                raise CorpusProductionError(f"distribution RECORD size mismatch: {name}")
+            if declared_hash is not None and (
+                declared_hash.mode != "sha256" or declared_hash.value != record_digest
+            ):
+                raise CorpusProductionError(f"distribution RECORD hash mismatch: {name}")
+            prior = initial_files.get(relative_path)
+            if prior is not None and prior != (byte_count, digest):
+                raise CorpusProductionError("overlapping distributions disagree on file bytes")
+            initial_files[relative_path] = (byte_count, digest)
+            owners.setdefault(relative_path, set()).add(name)
+            pure_path = PurePosixPath(package_name)
+            if pure_path.name == "RECORD" and pure_path.parent.name.endswith(
+                ".dist-info"
+            ):
+                record_paths.append(relative_path)
+        if len(record_paths) != 1:
+            raise CorpusProductionError(f"distribution must contain one RECORD: {name}")
+        record_path = record_paths[0]
+        distribution_rows.append(
+            {
+                "distribution": name,
+                "file_count": len(seen_package_paths),
+                "record_path": record_path,
+                "record_sha256": initial_files[record_path][1],
+                "source": (
+                    "cpython_ensurepip"
+                    if name in _BOOTSTRAP_DISTRIBUTIONS
+                    else "hash_locked_wheel"
+                ),
+                "version": version,
+            }
+        )
+
+    # A rogue module can shadow a locked package without adding dist-info.
+    # Require every regular file under each package root to have a RECORD owner.
+    for relative_root in sorted(site_roots):
+        root = prefix.joinpath(*PurePosixPath(relative_root).parts)
+        for path in sorted(root.rglob("*"), key=lambda item: item.as_posix()):
+            try:
+                metadata_row = path.lstat()
+            except OSError as error:
+                raise CorpusProductionError("installed tree cannot be enumerated") from error
+            if stat.S_ISDIR(metadata_row.st_mode):
+                continue
+            if stat.S_ISLNK(metadata_row.st_mode) or not stat.S_ISREG(
+                metadata_row.st_mode
+            ):
+                raise CorpusProductionError(
+                    "installed tree contains a link or special artifact"
+                )
+            relative_path = path.relative_to(prefix).as_posix()
+            if relative_path not in owners:
+                raise CorpusProductionError(
+                    f"installed tree contains an unowned file: {relative_path}"
+                )
+
+    file_rows: list[dict[str, object]] = []
+    for relative_path in sorted(initial_files):
+        path = prefix.joinpath(*PurePosixPath(relative_path).parts)
+        byte_count, digest, _ = _stable_installed_file_identity(path)
+        if (byte_count, digest) != initial_files[relative_path]:
+            raise CorpusProductionError("installed artifact changed during inventory")
+        file_rows.append(
+            {
+                "bytes": byte_count,
+                "owners": sorted(owners[relative_path]),
+                "relative_path": relative_path,
+                "sha256": digest,
+            }
+        )
+
+    core: dict[str, object] = {
+        "bootstrap_distributions": [
+            {
+                "distribution": row["distribution"],
+                "version": row["version"],
+            }
+            for row in distribution_rows
+            if row["source"] == "cpython_ensurepip"
+        ],
+        "distributions": distribution_rows,
+        "files": file_rows,
+        "installation_prefix": str(prefix),
+        "schema": INSTALLED_DISTRIBUTION_INVENTORY_SCHEMA_V3,
+        "site_roots": sorted(site_roots),
+    }
+    inventory = {
+        **core,
+        "inventory_identity_sha256": _installed_inventory_identity_sha256_v3(core),
+    }
+    return validate_installed_distribution_inventory_v3(inventory)
+
+
+def _runtime_artifact_row_v3(path: Path, *, prefix: Path) -> dict[str, object]:
+    try:
+        lexical = assert_no_symlink_ancestors(Path(path))
+        resolved = lexical.resolve(strict=True)
+        resolved.relative_to(prefix)
+    except (OSError, RuntimeError, ValueError) as error:
+        raise CorpusProductionError(
+            "runtime linkage artifact escapes the governed prefix"
+        ) from error
+    byte_count, digest, _ = _stable_installed_file_identity(resolved)
+    return {"bytes": byte_count, "path": str(resolved), "sha256": digest}
+
+
+def validate_runtime_linkage_inventory_v3(value: object) -> dict[str, object]:
+    if not isinstance(value, Mapping) or set(value) != {
+        "executable",
+        "libpython_library",
+        "linkage_identity_sha256",
+        "schema",
+        "sqlite_extension",
+        "sqlite_library",
+    }:
+        raise CorpusProductionError("runtime linkage inventory fields drifted")
+    if value.get("schema") != RUNTIME_LINKAGE_SCHEMA_V3:
+        raise CorpusProductionError("runtime linkage inventory schema drifted")
+    rows: dict[str, dict[str, object]] = {}
+    for name in (
+        "executable",
+        "libpython_library",
+        "sqlite_extension",
+        "sqlite_library",
+    ):
+        raw = value.get(name)
+        if not isinstance(raw, Mapping) or set(raw) != {"bytes", "path", "sha256"}:
+            raise CorpusProductionError("runtime linkage artifact fields drifted")
+        path = raw.get("path")
+        byte_count = raw.get("bytes")
+        sha256 = raw.get("sha256")
+        if (
+            not isinstance(path, str)
+            or not Path(path).is_absolute()
+            or type(byte_count) is not int
+            or byte_count < 1
+            or not isinstance(sha256, str)
+            or len(sha256) != 64
+            or any(character not in "0123456789abcdef" for character in sha256)
+        ):
+            raise CorpusProductionError("runtime linkage artifact row is invalid")
+        rows[name] = {"bytes": byte_count, "path": path, "sha256": sha256}
+    core: dict[str, object] = {
+        "executable": rows["executable"],
+        "libpython_library": rows["libpython_library"],
+        "schema": RUNTIME_LINKAGE_SCHEMA_V3,
+        "sqlite_extension": rows["sqlite_extension"],
+        "sqlite_library": rows["sqlite_library"],
+    }
+    identity = value.get("linkage_identity_sha256")
+    if identity != execution_authority_v3_bound_sha256(
+        RUNTIME_LINKAGE_SCHEMA_V3, core
+    ):
+        raise CorpusProductionError("runtime linkage inventory identity drifted")
+    return {**core, "linkage_identity_sha256": identity}
+
+
+def runtime_linkage_inventory_v3(
+    executable: Path | None = None,
+    *,
+    maps_path: Path = Path("/proc/self/maps"),
+    installation_prefix: Path | None = None,
+) -> dict[str, object]:
+    """Bind the exact extension and loaded shared-library bytes on Linux."""
+
+    prefix = Path(sys.prefix if installation_prefix is None else installation_prefix)
+    try:
+        prefix = assert_no_symlink_ancestors(prefix).resolve(strict=True)
+    except (OSError, RuntimeError) as error:
+        raise CorpusProductionError("runtime linkage prefix is unsafe") from error
+    executable_path = Path(sys.executable if executable is None else executable)
+    try:
+        executable_path = assert_no_symlink_ancestors(executable_path).resolve(strict=True)
+        executable_path.relative_to(prefix)
+    except (OSError, RuntimeError, ValueError) as error:
+        raise CorpusProductionError(
+            "runtime executable escapes the governed prefix"
+        ) from error
+
+    try:
+        import _sqlite3
+
+        sqlite_extension_path = Path(_sqlite3.__file__)
+    except (ImportError, TypeError) as error:
+        raise CorpusProductionError("runtime SQLite extension is unavailable") from error
+
+    try:
+        maps_bytes = Path(maps_path).read_bytes()
+        maps_text = maps_bytes.decode("utf-8", errors="strict")
+    except (OSError, UnicodeDecodeError) as error:
+        raise CorpusProductionError("runtime process maps are unavailable") from error
+    mapped: dict[str, set[Path]] = {"libpython": set(), "libsqlite3": set()}
+    for line in maps_text.splitlines():
+        fields = line.split(maxsplit=5)
+        if len(fields) != 6 or not fields[5].startswith("/"):
+            continue
+        raw_path = fields[5]
+        if raw_path.endswith(" (deleted)"):
+            raise CorpusProductionError("runtime linkage contains a deleted mapping")
+        basename = PurePosixPath(raw_path).name
+        key: str | None = None
+        if basename.startswith("libpython3.11.so"):
+            key = "libpython"
+        elif basename.startswith("libsqlite3.so"):
+            key = "libsqlite3"
+        if key is not None:
+            try:
+                mapped[key].add(Path(raw_path).resolve(strict=True))
+            except OSError as error:
+                raise CorpusProductionError(
+                    "runtime mapped library is absent"
+                ) from error
+    if any(len(paths) != 1 for paths in mapped.values()):
+        raise CorpusProductionError(
+            "runtime linkage must contain exactly one libpython and libsqlite3"
+        )
+    libpython_path = next(iter(mapped["libpython"]))
+    sqlite_library_path = next(iter(mapped["libsqlite3"]))
+    core: dict[str, object] = {
+        "executable": _runtime_artifact_row_v3(executable_path, prefix=prefix),
+        "libpython_library": _runtime_artifact_row_v3(libpython_path, prefix=prefix),
+        "schema": RUNTIME_LINKAGE_SCHEMA_V3,
+        "sqlite_extension": _runtime_artifact_row_v3(
+            sqlite_extension_path, prefix=prefix
+        ),
+        "sqlite_library": _runtime_artifact_row_v3(
+            sqlite_library_path, prefix=prefix
+        ),
+    }
+    core["linkage_identity_sha256"] = execution_authority_v3_bound_sha256(
+        RUNTIME_LINKAGE_SCHEMA_V3, core
+    )
+    return validate_runtime_linkage_inventory_v3(core)
 
 
 @dataclass(frozen=True)
@@ -267,6 +976,7 @@ class RuntimeExpectationV3:
     python_version: str = "3.11.9"
     unicode_data_version: str = "14.0.0"
     sqlite_version: str = "3.45.1"
+    sqlite_source_id: str = DEFAULT_SQLITE_SOURCE_ID
     zstandard_package_version: str = "0.25.0"
     libzstd_version: str = "1.5.7"
     required_environment: tuple[tuple[str, str], ...] = (
@@ -298,6 +1008,8 @@ def attest_runtime_v3(
     expectation: RuntimeExpectationV3 = RuntimeExpectationV3(),
     executable: Path | None = None,
     version_lookup: Callable[[str], str] = metadata.version,
+    inventory_builder: Callable[[bytes], Mapping[str, object]] | None = None,
+    linkage_builder: Callable[[Path], Mapping[str, object]] | None = None,
 ) -> RuntimeAttestationV3:
     """Fail closed unless every pinned runtime component matches exactly."""
 
@@ -308,10 +1020,15 @@ def attest_runtime_v3(
     if actual_lock_sha256 != expected_lock_sha256:
         raise CorpusProductionError("dependency-lock SHA-256 differs from authority")
 
+    with sqlite3.connect(":memory:") as sqlite_probe:
+        sqlite_source_id = sqlite_probe.execute(
+            "SELECT sqlite_source_id()"
+        ).fetchone()[0]
     exact_observations = {
         "python_version": platform.python_version(),
         "unicode_data_version": unicodedata.unidata_version,
         "sqlite_version": sqlite3.sqlite_version,
+        "sqlite_source_id": sqlite_source_id,
         "zstandard_package_version": zstandard.__version__,
         "libzstd_version": ".".join(str(value) for value in zstandard.ZSTD_VERSION),
     }
@@ -319,6 +1036,7 @@ def attest_runtime_v3(
         "python_version": expectation.python_version,
         "unicode_data_version": expectation.unicode_data_version,
         "sqlite_version": expectation.sqlite_version,
+        "sqlite_source_id": expectation.sqlite_source_id,
         "zstandard_package_version": expectation.zstandard_package_version,
         "libzstd_version": expectation.libzstd_version,
     }
@@ -328,20 +1046,57 @@ def attest_runtime_v3(
             f"expected={expected_observations!r} actual={exact_observations!r}"
         )
 
-    observed_distributions: list[tuple[str, str]] = []
-    for name, expected_version in _parse_requirements_lock(lock_bytes):
+    locked_distributions = parse_hash_locked_requirements_v3(lock_bytes)
+    observed_distributions: list[dict[str, object]] = []
+    for locked in locked_distributions:
         try:
-            actual_version = version_lookup(name)
+            actual_version = version_lookup(locked.distribution)
         except metadata.PackageNotFoundError as error:
             raise CorpusProductionError(
-                f"pinned distribution is absent: {name}"
+                f"pinned distribution is absent: {locked.distribution}"
             ) from error
-        if actual_version != expected_version:
+        if actual_version != locked.version:
             raise CorpusProductionError(
-                f"distribution version mismatch for {name}: "
-                f"expected {expected_version}, observed {actual_version}"
+                f"distribution version mismatch for {locked.distribution}: "
+                f"expected {locked.version}, observed {actual_version}"
             )
-        observed_distributions.append((name, actual_version))
+        observed_distributions.append(
+            {
+                "artifact_sha256s": locked.artifact_sha256s,
+                "distribution": locked.distribution,
+                "version": actual_version,
+            }
+        )
+
+    try:
+        installed_inventory = validate_installed_distribution_inventory_v3(
+            (
+                installed_distribution_inventory_v3(lock_bytes)
+                if inventory_builder is None
+                else inventory_builder(lock_bytes)
+            )
+        )
+    except (OSError, RuntimeError, TypeError, ValueError) as error:
+        if isinstance(error, CorpusProductionError):
+            raise
+        raise CorpusProductionError(
+            "installed-distribution integrity attestation failed"
+        ) from error
+    installed_rows = installed_inventory["distributions"]
+    if not isinstance(installed_rows, list):
+        raise CorpusProductionError("installed distribution inventory is malformed")
+    installed_locked = [
+        (str(row["distribution"]), str(row["version"]))
+        for row in installed_rows
+        if row["source"] == "hash_locked_wheel"
+    ]
+    expected_locked = [
+        (row.distribution, row.version) for row in locked_distributions
+    ]
+    if installed_locked != expected_locked:
+        raise CorpusProductionError(
+            "installed-distribution inventory differs from the lock closure"
+        )
 
     for key, expected_value in expectation.required_environment:
         if os.environ.get(key) != expected_value:
@@ -351,9 +1106,25 @@ def attest_runtime_v3(
 
     executable_path = Path(sys.executable if executable is None else executable)
     executable_sha256 = sha256_file(executable_path.resolve(strict=True))
+    try:
+        runtime_linkage = validate_runtime_linkage_inventory_v3(
+            runtime_linkage_inventory_v3(executable_path)
+            if linkage_builder is None
+            else linkage_builder(executable_path)
+        )
+    except (OSError, RuntimeError, TypeError, ValueError) as error:
+        if isinstance(error, CorpusProductionError):
+            raise
+        raise CorpusProductionError("runtime linkage attestation failed") from error
+    executable_linkage = runtime_linkage.get("executable")
+    if not isinstance(executable_linkage, Mapping) or (
+        executable_linkage.get("sha256") != executable_sha256
+    ):
+        raise CorpusProductionError("runtime linkage attestation is not executable-bound")
     environment_payload: dict[str, object] = {
         "byteorder": sys.byteorder,
         "cache_tag": sys.implementation.cache_tag,
+        "dependency_lock_sha256": actual_lock_sha256,
         "distributions": tuple(observed_distributions),
         "environment": tuple(
             (key, os.environ.get(key, "<unset>"))
@@ -361,13 +1132,16 @@ def attest_runtime_v3(
         ),
         "filesystem_encoding": sys.getfilesystemencoding(),
         "implementation": platform.python_implementation(),
+        "installed_distribution_inventory": installed_inventory,
         "locale": locale.setlocale(locale.LC_ALL, None),
         "machine": platform.machine(),
         "maxunicode": sys.maxunicode,
         "platform_release": platform.release(),
         "platform_system": platform.system(),
         "preferred_encoding": locale.getpreferredencoding(False),
+        "python_executable_sha256": executable_sha256,
         "runtime_versions": exact_observations,
+        "runtime_linkage": runtime_linkage,
     }
     environment_identity = execution_authority_v3_bound_sha256(
         "weft1_corpus_execution_environment_v3", environment_payload
@@ -1027,19 +1801,28 @@ __all__ = [
     "DEFAULT_REQUIREMENTS_LOCK",
     "DEFAULT_REQUIREMENTS_LOCK_SHA256",
     "DEFAULT_SHARD_TARGET_BYTES",
+    "DEFAULT_SQLITE_SOURCE_ID",
     "FastTextLanguageIdAdapterV3",
+    "HashLockedDistributionV3",
     "RawDocumentV3",
     "RuntimeAttestationV3",
     "RuntimeExpectationV3",
+    "INSTALLED_DISTRIBUTION_INVENTORY_SCHEMA_V3",
+    "RUNTIME_LINKAGE_SCHEMA_V3",
     "ShardWriteResultV3",
     "SourceAssetExpectationV3",
     "SourceCacheVerificationV3",
     "VerifiedSourceAssetV3",
     "attest_runtime_v3",
     "classify_fasttext_backend_v3",
+    "installed_distribution_inventory_v3",
+    "parse_hash_locked_requirements_v3",
+    "runtime_linkage_inventory_v3",
     "run_fixture_replay",
     "sha256_file",
     "typed_replay_receipt_from_mapping",
+    "validate_installed_distribution_inventory_v3",
+    "validate_runtime_linkage_inventory_v3",
     "verify_source_cache_assets",
     "write_jsonl_zstd_shards_v3",
 ]

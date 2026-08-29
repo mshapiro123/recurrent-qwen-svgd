@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import hashlib
 import inspect
+import json
+import os
 from pathlib import Path
 import sys
 from types import SimpleNamespace
@@ -24,6 +26,191 @@ from training.weft1_corpus_replay_a2 import (
 
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def _sha_text(value: str) -> str:
+    return hashlib.sha256(value.encode("utf-8")).hexdigest()
+
+
+def _runtime_build_receipt() -> dict[str, object]:
+    return {
+        "authoritative": True,
+        "evidence": {},
+        "receipt_identity_sha256": _sha_text("runtime-receipt-identity"),
+        "schema": replay.RUNTIME_BUILD_RECEIPT_SCHEMA_V1,
+        "status": "PASS",
+    }
+
+
+def _storage_identity() -> dict[str, object]:
+    durable_mount = {
+        "filesystem_type": "fuse.drive",
+        "major_minor": "0:99",
+        "mount_id": 99,
+        "mount_point": str(ROOT),
+        "mount_root": "/",
+        "mount_source": "drive",
+        "parent_mount_id": 1,
+        "st_dev": 99,
+    }
+    local_mount = {
+        "filesystem_type": "overlay",
+        "major_minor": "0:98",
+        "mount_id": 98,
+        "mount_point": str(ROOT.parent),
+        "mount_root": "/",
+        "mount_source": "overlay",
+        "parent_mount_id": 1,
+        "st_dev": 98,
+    }
+    core: dict[str, object] = {
+        "durable_marker_sha256": _sha_text("marker"),
+        "durable_mount": durable_mount,
+        "durable_mount_root": str(ROOT),
+        "durable_storage_root": str(ROOT),
+        "local_mount": local_mount,
+        "provider": "google_colab_drive_v1",
+        "schema": replay.PRODUCTION_STORAGE_IDENTITY_SCHEMA_V3,
+    }
+    core["storage_identity_sha256"] = (
+        corpus_contracts.execution_authority_v3_bound_sha256(
+            replay.PRODUCTION_STORAGE_IDENTITY_SCHEMA_V3, core
+        )
+    )
+    return core
+
+
+def _installed_inventory(prefix: Path, *, record_sha256: str) -> dict[str, object]:
+    record_path = "lib/python3.11/site-packages/alpha-1.0.dist-info/RECORD"
+    normalized: dict[str, object] = {
+        "bootstrap_distributions": [],
+        "distributions": [
+            {
+                "distribution": "alpha",
+                "file_count": 1,
+                "record_path": record_path,
+                "record_sha256": record_sha256,
+                "source": "hash_locked_wheel",
+                "version": "1.0",
+            }
+        ],
+        "files": [
+            {
+                "bytes": 1,
+                "owners": ["alpha"],
+                "relative_path": record_path,
+                "sha256": record_sha256,
+            }
+        ],
+        "installation_prefix": str(prefix),
+        "schema": production_io.INSTALLED_DISTRIBUTION_INVENTORY_SCHEMA_V3,
+        "site_roots": ["lib/python3.11/site-packages"],
+    }
+    normalized["inventory_identity_sha256"] = (
+        production_io._installed_inventory_identity_sha256_v3(normalized)
+    )
+    return normalized
+
+
+def _write_storage_marker(path: Path, storage_root: Path) -> None:
+    core: dict[str, object] = {
+        "durable_storage_root": str(storage_root.resolve()),
+        "filesystem_type_prefix": "fuse.drive",
+        "mount_source": "drive",
+        "provider": "google_colab_drive_v1",
+        "schema": "weft1_durable_storage_marker_v3",
+    }
+    core["marker_identity_sha256"] = (
+        corpus_contracts.execution_authority_v3_bound_sha256(
+            "weft1_durable_storage_marker_v3", core
+        )
+    )
+    path.write_bytes(replay._canonical_json_line(core))
+
+
+def _global_provenance() -> dict[str, object]:
+    lock_sha256 = _sha_text("dependency-lock")
+    executable_sha256 = _sha_text("python-executable")
+    wheel_sha256 = _sha_text("alpha-wheel")
+    linkage_core = {
+        "executable": {
+            "bytes": 1,
+            "path": str((ROOT / "python3.11").resolve()),
+            "sha256": executable_sha256,
+        },
+        "libpython_library": {
+            "bytes": 1,
+            "path": str((ROOT / "libpython3.11.so.1.0").resolve()),
+            "sha256": _sha_text("libpython"),
+        },
+        "schema": production_io.RUNTIME_LINKAGE_SCHEMA_V3,
+        "sqlite_extension": {
+            "bytes": 1,
+            "path": str((ROOT / "_sqlite3.so").resolve()),
+            "sha256": _sha_text("sqlite-extension"),
+        },
+        "sqlite_library": {
+            "bytes": 1,
+            "path": str((ROOT / "libsqlite3.so.0.8.6").resolve()),
+            "sha256": _sha_text("sqlite-library"),
+        },
+    }
+    environment = {
+        "dependency_lock_sha256": lock_sha256,
+        "distributions": [
+            {
+                "artifact_sha256s": [wheel_sha256],
+                "distribution": "alpha",
+                "version": "1.0",
+            }
+        ],
+        "python_executable_sha256": executable_sha256,
+        "runtime_linkage": {
+            **linkage_core,
+            "linkage_identity_sha256": corpus_contracts.execution_authority_v3_bound_sha256(
+                production_io.RUNTIME_LINKAGE_SCHEMA_V3, linkage_core
+            ),
+        },
+        "runtime_versions": {
+            "libzstd_version": "1.5.7",
+            "python_version": "3.11.9",
+            "sqlite_source_id": "sqlite-source-id",
+            "sqlite_version": "3.45.1",
+            "unicode_data_version": "14.0.0",
+            "zstandard_package_version": "0.25.0",
+        },
+    }
+    return replay._build_global_execution_provenance_v3(
+        environment_payload=environment,
+        environment_identity_sha256=(
+            corpus_contracts.execution_authority_v3_bound_sha256(
+                "weft1_corpus_execution_environment_v3", environment
+            )
+        ),
+        python_executable_sha256=executable_sha256,
+        dependency_lock_sha256=lock_sha256,
+        pipeline_components=(
+            {
+                "bytes": 1,
+                "logical_name": "materializer",
+                "sha256": _sha_text("code"),
+            },
+        ),
+        runtime_build_receipt_identity_sha256=_sha_text(
+            "runtime-receipt-identity"
+        ),
+        runtime_build_receipt_sha256=hashlib.sha256(
+            replay._canonical_json_line(_runtime_build_receipt())
+        ).hexdigest(),
+        selected_wheels=(
+            {
+                "bytes": 1,
+                "filename": "alpha-1.0-py3-none-any.whl",
+                "sha256": wheel_sha256,
+            },
+        ),
+        production_storage_identity=_storage_identity(),
+    )
 
 
 _WORKER_SOURCE = r'''from __future__ import annotations
@@ -397,10 +584,318 @@ def test_reserved_environment_and_guard_bypass_flags_are_rejected(
         )
 
 
+def test_production_offline_environment_routes_all_temp_to_local_work(
+    tmp_path: Path,
+) -> None:
+    local_work = tmp_path / "local-work"
+    local_work.mkdir()
+    environment = replay._offline_environment(
+        guard_directory=tmp_path,
+        guard_sha256="1" * 64,
+        run_id="temp-routing",
+        output_root=tmp_path / "durable-output",
+        local_work_parent=local_work,
+        input_identity_sha256="2" * 64,
+        worker_compatibility_sha256="3" * 64,
+        worker_import_root=tmp_path,
+        extra_environment=None,
+    )
+    assert environment["WEFT1_REPLAY_LOCAL_WORK_PARENT"] == str(local_work)
+    assert {
+        environment[key] for key in ("SQLITE_TMPDIR", "TEMP", "TMP", "TMPDIR")
+    } == {str(local_work)}
+    assert environment["PYTHONPATH"] == str(tmp_path.resolve())
+    assert environment["PYTHONHASHSEED"] == "0"
+    assert environment["PYTHONNOUSERSITE"] == "1"
+    assert environment["PYTHONDONTWRITEBYTECODE"] == "1"
+    assert "PYTHONUSERBASE" not in environment
+
+
+def test_isolated_worker_ignores_hostile_pythonpath_and_usercustomize(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    fixture, worker = _fixture(tmp_path)
+    hostile = tmp_path / "hostile"
+    hostile.mkdir()
+    marker = tmp_path / "usercustomize-ran"
+    (hostile / "usercustomize.py").write_text(
+        f"from pathlib import Path\nPath({str(marker)!r}).write_text('ran')\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("PYTHONPATH", str(hostile))
+    monkeypatch.setenv("PYTHONUSERBASE", str(hostile))
+    result = verify_parent_replays_v3(
+        python_executable=Path(sys.executable),
+        worker_arguments=(str(worker), "happy"),
+        first_output_root=tmp_path / "outputs" / "a",
+        second_output_root=tmp_path / "outputs" / "b",
+        input_files={"fixture": fixture},
+        compatibility_files={"worker": worker},
+        worker_cwd=ROOT,
+        timeout_seconds=20,
+    )
+    assert result.status == "CHECK_PASS"
+    assert not marker.exists()
+
+
+def test_reserved_environment_names_are_case_insensitive(tmp_path: Path) -> None:
+    fixture, worker = _fixture(tmp_path)
+    with pytest.raises(ParentReplayError, match="may not override"):
+        verify_parent_replays_v3(
+            python_executable=Path(sys.executable),
+            worker_arguments=(str(worker), "happy"),
+            first_output_root=tmp_path / "outputs" / "a",
+            second_output_root=tmp_path / "outputs" / "b",
+            input_files={"fixture": fixture},
+            compatibility_files={"worker": worker},
+            worker_cwd=ROOT,
+            timeout_seconds=20,
+            extra_environment={"pythonpath": str(tmp_path)},
+        )
+
+    with pytest.raises(ParentReplayError, match="may not override"):
+        verify_parent_replays_v3(
+            python_executable=Path(sys.executable),
+            worker_arguments=(str(worker), "happy"),
+            first_output_root=tmp_path / "outputs" / "hashseed-a",
+            second_output_root=tmp_path / "outputs" / "hashseed-b",
+            input_files={"fixture": fixture},
+            compatibility_files={"worker": worker},
+            worker_cwd=ROOT,
+            timeout_seconds=20,
+            extra_environment={"pythonhashseed": "random"},
+        )
+
+
 def test_public_child_schema_constant_is_exact() -> None:
     assert CHILD_RECEIPT_SCHEMA_V3 == (
         "weft1_corpus_parent_replay_child_receipt_v3"
     )
+
+
+def test_runtime_build_receipt_binds_exact_runtime_lock_and_selected_wheels(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from scripts import build_weft1_pa_runtime as runtime_builder
+
+    monkeypatch.setattr(
+        runtime_builder,
+        "verify_build_receipt_payload",
+        lambda receipt: str(receipt["receipt_identity_sha256"]),
+    )
+    prefix = tmp_path / "runtime"
+    executable = prefix / "bin" / "python3.11"
+    sqlite_extension = prefix / "lib" / "_sqlite3.so"
+    libpython_library = prefix / "lib" / "libpython3.11.so.1.0"
+    sqlite_library = prefix / "lib" / "libsqlite3.so.0.8.6"
+    executable.parent.mkdir(parents=True)
+    sqlite_extension.parent.mkdir(parents=True)
+    executable.write_bytes(b"python-runtime")
+    sqlite_extension.write_bytes(b"sqlite-extension")
+    libpython_library.write_bytes(b"libpython")
+    sqlite_library.write_bytes(b"sqlite-library")
+    executable_sha256 = hashlib.sha256(executable.read_bytes()).hexdigest()
+    sqlite_extension_sha256 = hashlib.sha256(
+        sqlite_extension.read_bytes()
+    ).hexdigest()
+    libpython_sha256 = hashlib.sha256(libpython_library.read_bytes()).hexdigest()
+    sqlite_library_sha256 = hashlib.sha256(sqlite_library.read_bytes()).hexdigest()
+    lock_sha256 = _sha_text("dependency-lock")
+    wheel_sha256 = _sha_text("alpha-wheel")
+    builder_sha256 = _sha_text("runtime-builder")
+    runtime_contract_sha256 = _sha_text("runtime-contract")
+    runtime_versions = {
+        "libzstd_version": "1.5.7",
+        "python_version": "3.11.9",
+        "sqlite_source_id": "sqlite-source-id",
+        "sqlite_version": "3.45.1",
+        "unicode_data_version": "14.0.0",
+        "zstandard_package_version": "0.25.0",
+    }
+    environment = {
+        "dependency_lock_sha256": lock_sha256,
+        "distributions": [
+            {
+                "artifact_sha256s": [wheel_sha256],
+                "distribution": "alpha",
+                "version": "1.0",
+            }
+        ],
+        "python_executable_sha256": executable_sha256,
+        "runtime_versions": runtime_versions,
+    }
+    installed_inventory = _installed_inventory(
+        prefix, record_sha256=_sha_text("alpha-record")
+    )
+    environment["installed_distribution_inventory"] = installed_inventory
+    linkage_core = {
+        "executable": {
+            "bytes": executable.stat().st_size,
+            "path": str(executable.resolve()),
+            "sha256": executable_sha256,
+        },
+        "libpython_library": {
+            "bytes": libpython_library.stat().st_size,
+            "path": str(libpython_library.resolve()),
+            "sha256": libpython_sha256,
+        },
+        "schema": production_io.RUNTIME_LINKAGE_SCHEMA_V3,
+        "sqlite_extension": {
+            "bytes": sqlite_extension.stat().st_size,
+            "path": str(sqlite_extension.resolve()),
+            "sha256": sqlite_extension_sha256,
+        },
+        "sqlite_library": {
+            "bytes": sqlite_library.stat().st_size,
+            "path": str(sqlite_library.resolve()),
+            "sha256": sqlite_library_sha256,
+        },
+    }
+    environment["runtime_linkage"] = {
+        **linkage_core,
+        "linkage_identity_sha256": corpus_contracts.execution_authority_v3_bound_sha256(
+            production_io.RUNTIME_LINKAGE_SCHEMA_V3, linkage_core
+        ),
+    }
+    environment_identity = corpus_contracts.execution_authority_v3_bound_sha256(
+        "weft1_corpus_execution_environment_v3", environment
+    )
+    runtime = SimpleNamespace(
+        dependency_lock_sha256=lock_sha256,
+        environment_identity_sha256=environment_identity,
+        environment_payload=environment,
+        executable_sha256=executable_sha256,
+    )
+    artifacts = {
+        "build_log_sha256": _sha_text("build-log"),
+        "cpython_executable_sha256": executable_sha256,
+        "libpython_library_sha256": libpython_sha256,
+        "sqlite3_extension_sha256": sqlite_extension_sha256,
+        "sqlite3_library_sha256": sqlite_library_sha256,
+    }
+    probe = {
+        "cpython_executable_ldd": [
+            f"libpython3.11.so.1.0 => {libpython_library}"
+        ],
+        "cpython_executable_search_paths": [str(prefix / "lib")],
+        "extra_distributions": [],
+        "libpython_library_path": str(libpython_library.resolve()),
+        "libpython_library_sha256": libpython_sha256,
+        "libzstd_version": runtime_versions["libzstd_version"],
+        "locked_distributions": [["alpha", "1.0"]],
+        "missing_distributions": [],
+        "python_version": runtime_versions["python_version"],
+        "python_prefix": str(prefix),
+        "sqlite3_extension_search_paths": [str(prefix / "lib")],
+        "sqlite_extension_ldd": ["libsqlite3.so.0 => pinned/libsqlite3.so.0"],
+        "sqlite_extension_path": str(sqlite_extension),
+        "sqlite_extension_sha256": sqlite_extension_sha256,
+        "sqlite_library_path": str(sqlite_library.resolve()),
+        "sqlite_library_sha256": sqlite_library_sha256,
+        "sqlite_source_id": runtime_versions["sqlite_source_id"],
+        "sqlite_version": runtime_versions["sqlite_version"],
+        "unicode_data_version": runtime_versions["unicode_data_version"],
+        "wrong_distributions": [],
+        "zstandard_package_version": runtime_versions[
+            "zstandard_package_version"
+        ],
+    }
+    repository_attestation = {
+        "dependency_lock_sha256": lock_sha256,
+        "environment_identity_sha256": environment_identity,
+        "environment_payload": environment,
+        "executable_sha256": executable_sha256,
+    }
+    evidence = {
+        "artifacts": artifacts,
+        "build_dependency_versions": {},
+        "builder_sha256": builder_sha256,
+        "cpython_site_packages_readme_removal": {},
+        "host": {},
+        "installed_distribution_inventory": installed_inventory,
+        "jobs": 1,
+        "locked_distributions": [["alpha", "1.0"]],
+        "prefix": str(prefix),
+        "recipe": {},
+        "recipe_identity_sha256": _sha_text("recipe"),
+        "requirements_lock": {
+            "bytes": 1,
+            "filename": "requirements.lock",
+            "sha256": lock_sha256,
+            "source_filename": "requirements.lock",
+        },
+        "repository_runtime_attestation": repository_attestation,
+        "runtime_contract_sha256": runtime_contract_sha256,
+        "runtime_probe": probe,
+        "sources": [],
+        "trusted_installer_chain": {},
+        "wheelhouse": [
+            {
+                "bytes": 17,
+                "filename": "alpha-1.0-py3-none-any.whl",
+                "sha256": wheel_sha256,
+            }
+        ],
+        "wheelhouse_identity_sha256": "",
+    }
+    evidence["recipe_identity_sha256"] = hashlib.sha256(
+        replay._canonical_json_line(evidence["recipe"])
+    ).hexdigest()
+    evidence["wheelhouse_identity_sha256"] = hashlib.sha256(
+        replay._canonical_json_line(evidence["wheelhouse"])
+    ).hexdigest()
+
+    def receipt_for(current_evidence: dict[str, object]) -> dict[str, object]:
+        return {
+            "authoritative": True,
+            "evidence": current_evidence,
+            "receipt_identity_sha256": hashlib.sha256(
+                replay._canonical_json_line(
+                    {
+                        "domain": replay.RUNTIME_BUILD_RECEIPT_SCHEMA_V1,
+                        "evidence": current_evidence,
+                    }
+                )
+            ).hexdigest(),
+            "schema": replay.RUNTIME_BUILD_RECEIPT_SCHEMA_V1,
+            "status": "PASS",
+        }
+
+    receipt_path = tmp_path / "runtime-receipt.json"
+    receipt_path.write_bytes(replay._canonical_json_line(receipt_for(evidence)))
+    validated, physical_sha256 = replay._load_runtime_build_receipt_v1(
+        receipt_path,
+        runtime_attestation=runtime,
+        expected_builder_sha256=builder_sha256,
+        expected_runtime_contract_sha256=runtime_contract_sha256,
+        expected_python_executable=executable,
+    )
+    assert validated["selected_wheels"] == evidence["wheelhouse"]
+    assert physical_sha256 == hashlib.sha256(receipt_path.read_bytes()).hexdigest()
+
+    tampered_evidence = json.loads(json.dumps(evidence))
+    tampered_evidence["wheelhouse"][0]["sha256"] = _sha_text("unlocked-wheel")
+    tampered_path = tmp_path / "tampered-runtime-receipt.json"
+    tampered_path.write_bytes(
+        replay._canonical_json_line(receipt_for(tampered_evidence))
+    )
+    with pytest.raises(ParentReplayError, match="hash-locked distribution closure"):
+        replay._load_runtime_build_receipt_v1(
+            tampered_path,
+            runtime_attestation=runtime,
+            expected_builder_sha256=builder_sha256,
+            expected_runtime_contract_sha256=runtime_contract_sha256,
+            expected_python_executable=executable,
+        )
+
+
+def test_global_execution_provenance_recomputes_pipeline_and_receipt_bindings() -> None:
+    provenance = _global_provenance()
+    assert replay.validate_global_execution_provenance_v3(provenance) == provenance
+    tampered = json.loads(json.dumps(provenance))
+    tampered["pipeline_components"][0]["sha256"] = _sha_text("tampered-code")
+    with pytest.raises(ParentReplayError, match="pipeline code identity"):
+        replay.validate_global_execution_provenance_v3(tampered)
 
 
 def test_production_child_metadata_composes_with_parent_rehashed_manifests(
@@ -410,8 +905,39 @@ def test_production_child_metadata_composes_with_parent_rehashed_manifests(
     output_root.mkdir()
     source_identity = hashlib.sha256(b"source").hexdigest()
     tokenizer_identity = hashlib.sha256(b"tokenizer-fit").hexdigest()
-    environment_identity = hashlib.sha256(b"environment").hexdigest()
+    provenance = _global_provenance()
+    environment_identity = str(provenance["environment_identity_sha256"])
+    provenance_path = (
+        output_root / replay.GLOBAL_EXECUTION_PROVENANCE_RELATIVE_PATH_V3
+    )
+    provenance_path.parent.mkdir(parents=True)
+    provenance_path.write_bytes(replay._canonical_json_line(provenance))
+    provenance_row = {
+        "bytes": provenance_path.stat().st_size,
+        "path": replay.GLOBAL_EXECUTION_PROVENANCE_RELATIVE_PATH_V3,
+        "role": "content",
+        "sha256": hashlib.sha256(provenance_path.read_bytes()).hexdigest(),
+    }
+    runtime_receipt_path = output_root / replay.RUNTIME_BUILD_RECEIPT_RELATIVE_PATH_V1
+    runtime_receipt_path.write_bytes(
+        replay._canonical_json_line(_runtime_build_receipt())
+    )
+    runtime_receipt_row = {
+        "bytes": runtime_receipt_path.stat().st_size,
+        "path": replay.RUNTIME_BUILD_RECEIPT_RELATIVE_PATH_V1,
+        "role": "content",
+        "sha256": hashlib.sha256(runtime_receipt_path.read_bytes()).hexdigest(),
+    }
     content = {
+        "global": {
+            "execution_provenance": provenance,
+            "execution_provenance_path": (
+                replay.GLOBAL_EXECUTION_PROVENANCE_RELATIVE_PATH_V3
+            ),
+            "execution_provenance_sha256": provenance_row["sha256"],
+            "runtime_build_receipt_path": replay.RUNTIME_BUILD_RECEIPT_RELATIVE_PATH_V1,
+            "runtime_build_receipt_sha256": runtime_receipt_row["sha256"],
+        },
         "mode": "PRODUCTION",
         "readiness": replay.PRODUCTION_READINESS_V3,
         "schema": replay.PRODUCTION_MATERIALIZER_SCHEMA_V3,
@@ -433,6 +959,16 @@ def test_production_child_metadata_composes_with_parent_rehashed_manifests(
     d1 = {
         "content_identity_sha256": content_identity,
         "file_inventory": [
+            {
+                "bytes": provenance_row["bytes"],
+                "relative_path": provenance_row["path"],
+                "sha256": provenance_row["sha256"],
+            },
+            {
+                "bytes": runtime_receipt_row["bytes"],
+                "relative_path": runtime_receipt_row["path"],
+                "sha256": runtime_receipt_row["sha256"],
+            },
             {
                 "bytes": content_row["bytes"],
                 "relative_path": content_row["path"],
@@ -463,9 +999,20 @@ def test_production_child_metadata_composes_with_parent_rehashed_manifests(
         "content_identity_sha256": content_identity,
         "d1_ready_manifest_sha256": d1_sha256,
         "environment_identity_sha256": environment_identity,
+        "global_execution_provenance_identity_sha256": provenance[
+            "provenance_identity_sha256"
+        ],
+        "global_execution_provenance_sha256": provenance_row["sha256"],
         "materializer_algorithm_version": (
             replay.PRODUCTION_MATERIALIZER_ALGORITHM_VERSION_V3
         ),
+        "pipeline_code_identity_sha256": provenance[
+            "pipeline_code_identity_sha256"
+        ],
+        "runtime_build_receipt_identity_sha256": provenance[
+            "runtime_build_receipt_identity_sha256"
+        ],
+        "runtime_build_receipt_sha256": runtime_receipt_row["sha256"],
         "source_identity_sha256": source_identity,
         "tokenizer_fit_input_receipt_sha256": tokenizer_identity,
     }
@@ -473,10 +1020,11 @@ def test_production_child_metadata_composes_with_parent_rehashed_manifests(
         run_id="production-child",
         actual_process_id=1,
         output_root=str(output_root),
+        child_receipt_bytes=1,
         child_receipt_sha256="1" * 64,
         stdout_sha256="2" * 64,
         stderr_sha256="3" * 64,
-        output_file_rows=(content_row, d1_row),
+        output_file_rows=(provenance_row, runtime_receipt_row, content_row, d1_row),
         output_file_projection_sha256="4" * 64,
         content_projection_sha256="5" * 64,
         dedup_projection_sha256="6" * 64,
@@ -486,11 +1034,13 @@ def test_production_child_metadata_composes_with_parent_rehashed_manifests(
     replay._validate_production_child_profile_v3(
         child,
         expected_environment_identity_sha256=environment_identity,
+        expected_global_execution_provenance=provenance,
     )
     with pytest.raises(ParentReplayError, match="runtime identity"):
         replay._validate_production_child_profile_v3(
             child,
             expected_environment_identity_sha256="f" * 64,
+            expected_global_execution_provenance=provenance,
         )
 
 
@@ -510,6 +1060,7 @@ def test_only_fixed_production_wrapper_can_assert_the_profile(
             "lock.txt",
             "model.bin",
             "routes.json",
+            "runtime-receipt.json",
             "source-manifest.json",
             "worker.py",
         )
@@ -522,6 +1073,7 @@ def test_only_fixed_production_wrapper_can_assert_the_profile(
         "lock.txt": b"lock\n",
         "model.bin": b"model-bytes",
         "routes.json": b"routes\n",
+        "runtime-receipt.json": b"{}\n",
         "source-manifest.json": b"{}\n",
         "worker.py": b"raise SystemExit(0)\n",
     }
@@ -529,6 +1081,14 @@ def test_only_fixed_production_wrapper_can_assert_the_profile(
         path.write_bytes(payloads[name])
     cache_root = tmp_path / "cache"
     cache_root.mkdir()
+    durable_output_parent = tmp_path / "durable"
+    durable_output_parent.mkdir()
+    local_work_parent = tmp_path / "local-work"
+    local_work_parent.mkdir()
+    durable_mount_root = tmp_path / "mount"
+    durable_mount_root.mkdir()
+    durable_storage_marker = durable_mount_root / "storage-marker.json"
+    durable_storage_marker.write_text("{}\n", encoding="utf-8")
 
     def sha(value: bytes) -> str:
         return hashlib.sha256(value).hexdigest()
@@ -563,6 +1123,49 @@ def test_only_fixed_production_wrapper_can_assert_the_profile(
             model_sha256=sha(payloads["model.bin"]),
         ),
     )
+    provenance_template = _global_provenance()
+    runtime_environment = dict(provenance_template["environment_payload"])
+    runtime_environment["dependency_lock_sha256"] = sha(payloads["lock.txt"])
+    runtime_attestation = SimpleNamespace(
+        dependency_lock_sha256=sha(payloads["lock.txt"]),
+        environment_identity_sha256=(
+            corpus_contracts.execution_authority_v3_bound_sha256(
+                "weft1_corpus_execution_environment_v3", runtime_environment
+            )
+        ),
+        environment_payload=runtime_environment,
+        executable_sha256=provenance_template["python_executable_sha256"],
+    )
+    monkeypatch.setattr(
+        production_io,
+        "attest_runtime_v3",
+        lambda **_kwargs: runtime_attestation,
+    )
+    runtime_receipt_identity = _sha_text("runtime-receipt-identity")
+    runtime_receipt_physical = hashlib.sha256(
+        payloads["runtime-receipt.json"]
+    ).hexdigest()
+    monkeypatch.setattr(
+        replay,
+        "_load_runtime_build_receipt_v1",
+        lambda *_args, **_kwargs: (
+            {
+                "receipt_identity_sha256": runtime_receipt_identity,
+                "receipt_sha256": runtime_receipt_physical,
+                "selected_wheels": provenance_template["selected_wheels"],
+            },
+            runtime_receipt_physical,
+        ),
+    )
+    monkeypatch.setattr(
+        replay,
+        "_validate_production_storage_roots_v3",
+        lambda **_kwargs: (
+            durable_output_parent.resolve(),
+            local_work_parent.resolve(),
+            _storage_identity(),
+        ),
+    )
     marker = object()
     captured: dict[str, object] = {}
     captured_snapshot_bytes: dict[str, bytes] = {}
@@ -588,8 +1191,13 @@ def test_only_fixed_production_wrapper_can_assert_the_profile(
         source_manifest_path=files["source-manifest.json"],
         cache_root=cache_root,
         fasttext_model_path=files["model.bin"],
-        first_output_root=tmp_path / "first",
-        second_output_root=tmp_path / "second",
+        runtime_build_receipt_path=files["runtime-receipt.json"],
+        durable_mount_root=durable_mount_root,
+        durable_storage_marker_path=durable_storage_marker,
+        durable_output_parent=durable_output_parent,
+        local_work_parent=local_work_parent,
+        first_output_root=durable_output_parent / "first",
+        second_output_root=durable_output_parent / "second",
     )
     assert result is marker
     assert (
@@ -599,14 +1207,31 @@ def test_only_fixed_production_wrapper_can_assert_the_profile(
     assert captured["network_namespace_executable"] == replay.LINUX_UNSHARE_PATH_V1
     arguments = captured["worker_arguments"]
     assert isinstance(arguments, tuple)
-    assert arguments[0] == str(files["worker.py"].resolve())
+    assert str(arguments[0]).endswith(
+        str(Path("scripts") / "run_weft1_corpus_materialize_a2.py")
+    )
+    assert arguments[0] != str(files["worker.py"].resolve())
     assert "--cache-root" in arguments
+    assert "--execution-provenance" in arguments
     assert captured["extra_environment"] is None
+    compatibility_files = captured["compatibility_files"]
+    assert isinstance(compatibility_files, dict)
+    assert str(compatibility_files["seed_derivation"]).endswith(
+        str(Path("training") / "weft1_seed.py")
+    )
+    assert captured["worker_cwd"] != ROOT
+    assert captured["durable_mount_root"] == durable_mount_root
+    assert captured["durable_storage_marker_path"] == durable_storage_marker
     assert captured_snapshot_bytes["a2_authority"] == payloads["authority.md"]
     assert captured_snapshot_bytes["enumeration_receipt"] == payloads["enumeration.json"]
     assert captured_snapshot_bytes["cache_download_receipt"] == payloads["download.json"]
     assert captured_snapshot_bytes["source_manifest"] == payloads["source-manifest.json"]
     assert captured_snapshot_bytes["fasttext_model"] == payloads["model.bin"]
+    assert captured_snapshot_bytes["runtime_build_receipt"] == payloads[
+        "runtime-receipt.json"
+    ]
+    assert captured["durable_output_parent"] == durable_output_parent.resolve()
+    assert captured["local_work_parent"] == local_work_parent.resolve()
 
 
 def test_internal_reducer_rejects_arbitrary_production_authority_token(
@@ -623,3 +1248,159 @@ def test_internal_reducer_rejects_arbitrary_production_authority_token(
             worker_cwd=ROOT,
             production_profile_sentinel=object(),
         )
+
+
+def test_colab_drive_registration_and_storage_attestation_are_bound(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    mount_root = tmp_path / "drive"
+    storage_root = mount_root / "MyDrive" / "weft1"
+    output_parent = storage_root / "outputs"
+    local_root = tmp_path / "content-local"
+    output_parent.mkdir(parents=True)
+    local_root.mkdir()
+    marker_path = storage_root / "durable-marker.json"
+    durable_row = {
+        "filesystem_type": "fuse.drive",
+        "major_minor": "0:99",
+        "mount_id": 99,
+        "mount_point": str(mount_root.resolve()),
+        "mount_root": "/",
+        "mount_source": "drive",
+        "parent_mount_id": 1,
+        "st_dev": 99,
+    }
+    local_row = {
+        "filesystem_type": "overlay",
+        "major_minor": "0:98",
+        "mount_id": 98,
+        "mount_point": str(local_root.resolve()),
+        "mount_root": "/",
+        "mount_source": "overlay",
+        "parent_mount_id": 1,
+        "st_dev": 98,
+    }
+
+    def observe(path: Path) -> dict[str, object]:
+        resolved = path.resolve()
+        return dict(local_row if resolved == local_root.resolve() else durable_row)
+
+    monkeypatch.setattr(replay, "_observed_mount_identity_v3", observe)
+    monkeypatch.setattr(
+        replay, "_fsync_directory_if_supported_v3", lambda _path: "supported"
+    )
+    registration = replay.register_colab_drive_storage_v3(
+        durable_mount_root=mount_root,
+        durable_storage_root=storage_root,
+        marker_path=marker_path,
+    )
+    assert registration["provider"] == "google_colab_drive_v1"
+    identity = replay.attest_production_storage_v3(
+        durable_mount_root=mount_root,
+        durable_storage_marker_path=marker_path,
+        durable_output_parent=output_parent,
+        local_work_parent=local_root,
+    )
+    assert replay.validate_production_storage_identity_v3(identity) == identity
+    assert identity["durable_marker_sha256"] == registration["marker_sha256"]
+
+    same_backing = dict(local_row)
+    same_backing["st_dev"] = 99
+    monkeypatch.setattr(
+        replay,
+        "_observed_mount_identity_v3",
+        lambda path: dict(
+            same_backing if path.resolve() == local_root.resolve() else durable_row
+        ),
+    )
+    with pytest.raises(ParentReplayError, match="shares the durable backing"):
+        replay.attest_production_storage_v3(
+            durable_mount_root=mount_root,
+            durable_storage_marker_path=marker_path,
+            durable_output_parent=output_parent,
+            local_work_parent=local_root,
+        )
+
+
+def test_production_storage_rejects_non_drive_mount(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    mount_root = tmp_path / "mount"
+    storage_root = mount_root / "storage"
+    output_parent = storage_root / "outputs"
+    local_root = tmp_path / "local"
+    output_parent.mkdir(parents=True)
+    local_root.mkdir()
+    marker = storage_root / "marker.json"
+    _write_storage_marker(marker, storage_root)
+    local_row = {
+        "filesystem_type": "overlay",
+        "major_minor": "0:1",
+        "mount_id": 1,
+        "mount_point": str(tmp_path.resolve()),
+        "mount_root": "/",
+        "mount_source": "overlay",
+        "parent_mount_id": 0,
+        "st_dev": 1,
+    }
+    monkeypatch.setattr(
+        replay, "_observed_mount_identity_v3", lambda _path: dict(local_row)
+    )
+    with pytest.raises(ParentReplayError, match="not the declared Colab Drive"):
+        replay.attest_production_storage_v3(
+            durable_mount_root=mount_root,
+            durable_storage_marker_path=marker,
+            durable_output_parent=output_parent,
+            local_work_parent=local_root,
+        )
+
+
+def test_final_child_receipt_is_physically_reread_and_bound(tmp_path: Path) -> None:
+    output_root = tmp_path / "child"
+    output_root.mkdir()
+    receipt_path = output_root / replay.CHILD_RECEIPT_FILENAME
+    receipt_path.write_bytes(replay._canonical_json_line({"value": 1}))
+    child = replay._VerifiedChildReplayV3(
+        run_id="child",
+        actual_process_id=1,
+        output_root=str(output_root),
+        child_receipt_bytes=receipt_path.stat().st_size,
+        child_receipt_sha256=hashlib.sha256(receipt_path.read_bytes()).hexdigest(),
+        stdout_sha256="1" * 64,
+        stderr_sha256="2" * 64,
+        output_file_rows=(),
+        output_file_projection_sha256="3" * 64,
+        content_projection_sha256="4" * 64,
+        dedup_projection_sha256=None,
+        dedup_evidence_complete=False,
+        content_metadata={"fixture": True},
+    )
+    row = replay._final_child_receipt_row_v3(child)
+    assert row["role"] == "receipt"
+    assert row["sha256"] == child.child_receipt_sha256
+    receipt_path.write_bytes(replay._canonical_json_line({"value": 2}))
+    with pytest.raises(ParentReplayError, match="changed before parent minting"):
+        replay._final_child_receipt_row_v3(child)
+
+
+def test_production_code_snapshot_is_exact_and_rejects_added_files(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    repository = tmp_path / "repository"
+    worker = repository / "scripts" / "run_weft1_corpus_materialize_a2.py"
+    package_init = repository / "training" / "__init__.py"
+    worker.parent.mkdir(parents=True)
+    package_init.parent.mkdir(parents=True)
+    worker.write_text("raise SystemExit(0)\n", encoding="utf-8")
+    package_init.write_text("", encoding="utf-8")
+    (repository / "training" / "rogue.py").write_text("raise RuntimeError\n")
+    monkeypatch.setattr(replay, "REPOSITORY_ROOT_V3", repository)
+    code_root = tmp_path / "snapshot"
+    snapshots = replay._snapshot_production_code_v3(
+        {"training_init": package_init, "worker": worker}, code_root=code_root
+    )
+    replay._validate_exact_code_snapshot_tree_v3(code_root, snapshots)
+    assert not (code_root / "training" / "rogue.py").exists()
+    (code_root / "training" / "rogue.py").write_text("raise RuntimeError\n")
+    with pytest.raises(ParentReplayError, match="gained or lost files"):
+        replay._validate_exact_code_snapshot_tree_v3(code_root, snapshots)

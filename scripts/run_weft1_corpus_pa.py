@@ -12,6 +12,7 @@ from __future__ import annotations
 import argparse
 from collections.abc import Mapping, Sequence
 from dataclasses import asdict
+import errno
 import hashlib
 from importlib import import_module, metadata
 import json
@@ -37,6 +38,8 @@ from training.weft1_corpus_replay_a2 import (  # noqa: E402 - direct script supp
     CHILD_RECEIPT_SCHEMA_V3,
     NETWORK_PROBE_RESULT,
     ParentReplayError,
+    attest_production_storage_v3,
+    register_colab_drive_storage_v3,
     verify_parent_replays_v3,
     verify_production_materialization_replays_v3,
 )
@@ -226,6 +229,29 @@ def _receipt(command: str, evidence: Mapping[str, Any], *, status: str = "PASS")
     }
 
 
+def _fsync_directory_if_supported(path: Path) -> str:
+    if os.name != "posix":
+        return "not_applicable_non_posix"
+    try:
+        directory_fd = os.open(path, os.O_RDONLY)
+        try:
+            os.fsync(directory_fd)
+        finally:
+            os.close(directory_fd)
+    except OSError as error:
+        unsupported = {
+            errno.EINVAL,
+            errno.ENOTSUP,
+            getattr(errno, "EOPNOTSUPP", errno.ENOTSUP),
+        }
+        if error.errno in unsupported:
+            return f"unsupported_errno_{error.errno}"
+        raise PreflightError(
+            f"receipt parent directory fsync failed: {error}"
+        ) from error
+    return "supported"
+
+
 def _emit(value: Mapping[str, Any], output_path: Path | None = None) -> None:
     raw = canonical_json_bytes(value)
     if output_path is not None:
@@ -236,15 +262,43 @@ def _emit(value: Mapping[str, Any], output_path: Path | None = None) -> None:
         lexical_output = _governed_lexical_path(
             lexical_output, "receipt output"
         )
+        partial = lexical_output.with_name(
+            f".{lexical_output.name}.partial-{os.getpid()}"
+        )
+        if partial.exists() or partial.is_symlink():
+            raise PreflightError(f"receipt partial path already exists: {partial}")
         try:
-            with lexical_output.open("xb") as handle:
+            with partial.open("xb") as handle:
                 handle.write(raw)
                 handle.flush()
                 os.fsync(handle.fileno())
+            if lexical_output.exists() or lexical_output.is_symlink():
+                raise PreflightError(
+                    f"receipt output appeared during publication: {lexical_output}"
+                )
+            os.replace(partial, lexical_output)
+            _fsync_directory_if_supported(lexical_output.parent)
+            with lexical_output.open("rb") as handle:
+                observed = handle.read()
+                first_stat = os.fstat(handle.fileno())
+            with lexical_output.open("rb") as handle:
+                confirmed = handle.read()
+                second_stat = os.fstat(handle.fileno())
+            if (
+                observed != raw
+                or confirmed != raw
+                or first_stat.st_size != len(raw)
+                or second_stat.st_size != len(raw)
+                or hashlib.sha256(observed).digest() != hashlib.sha256(raw).digest()
+            ):
+                raise PreflightError("published receipt failed its physical re-read")
         except OSError as error:
             raise PreflightError(
                 f"cannot write receipt {lexical_output}: {error}"
             ) from error
+        finally:
+            if partial.exists() and not partial.is_symlink():
+                partial.unlink()
     sys.stdout.buffer.write(raw)
     sys.stdout.buffer.flush()
 
@@ -924,10 +978,34 @@ def run_full_pa_replays(
     source_cache_manifest_path: Path,
     source_cache: Path,
     fasttext_model_path: Path,
-    output_parent: Path,
+    runtime_build_receipt_path: Path,
+    durable_mount_root: Path,
+    durable_storage_marker_path: Path,
+    durable_output_parent: Path,
+    local_work_parent: Path,
 ) -> dict[str, Any]:
     """Execute the governed offline P-A worker twice and reduce D1/D2."""
 
+    required_paths = {
+        "authority": authority_path,
+        "cache_download_receipt": cache_download_receipt_path,
+        "durable_output_parent": durable_output_parent,
+        "durable_mount_root": durable_mount_root,
+        "durable_storage_marker": durable_storage_marker_path,
+        "enumeration_receipt": enumeration_receipt_path,
+        "fasttext_model": fasttext_model_path,
+        "local_work_parent": local_work_parent,
+        "runtime_build_receipt": runtime_build_receipt_path,
+        "source_cache": source_cache,
+        "source_cache_manifest": source_cache_manifest_path,
+    }
+    missing = sorted(
+        name for name, value in required_paths.items() if not isinstance(value, Path)
+    )
+    if missing:
+        raise PreflightError(
+            "full P-A requires explicit paths for: " + ", ".join(missing)
+        )
     paths = (
         authority_path,
         enumeration_receipt_path,
@@ -935,17 +1013,48 @@ def run_full_pa_replays(
         source_cache_manifest_path,
         source_cache,
         fasttext_model_path,
-        output_parent,
+        runtime_build_receipt_path,
+        durable_mount_root,
+        durable_storage_marker_path,
+        durable_output_parent,
+        local_work_parent,
     )
     if any(not isinstance(path, Path) for path in paths):
         raise TypeError("full P-A paths must be pathlib.Path values")
     governed_output_parent = _governed_lexical_path(
-        output_parent, "full P-A output parent"
+        durable_output_parent, "full P-A durable output parent"
     )
     if governed_output_parent.exists():
-        raise PreflightError("full P-A output parent must be fresh")
+        raise PreflightError("full P-A durable output parent must be fresh")
+    governed_local_work_parent = _governed_lexical_path(
+        local_work_parent, "full P-A local work parent"
+    ).resolve(strict=True)
+    if not governed_local_work_parent.is_dir():
+        raise PreflightError("full P-A local work parent must be a real directory")
+    durable_resolved = governed_output_parent.resolve(strict=False)
+    if (
+        durable_resolved == governed_local_work_parent
+        or durable_resolved in governed_local_work_parent.parents
+        or governed_local_work_parent in durable_resolved.parents
+    ):
+        raise PreflightError(
+            "full P-A durable output and local work parents must be non-overlapping"
+        )
+    try:
+        attest_production_storage_v3(
+            durable_mount_root=durable_mount_root,
+            durable_storage_marker_path=durable_storage_marker_path,
+            durable_output_parent=governed_output_parent.parent,
+            local_work_parent=governed_local_work_parent,
+        )
+    except ParentReplayError as error:
+        raise PreflightError(
+            f"full P-A output durable backing validation failed: {error}"
+        ) from error
     governed_output_parent.mkdir(parents=True)
-    _governed_lexical_path(governed_output_parent, "full P-A output parent")
+    governed_output_parent = _governed_lexical_path(
+        governed_output_parent, "full P-A durable output parent"
+    ).resolve(strict=True)
     try:
         parent = verify_production_materialization_replays_v3(
             python_executable=Path(sys.executable),
@@ -955,6 +1064,11 @@ def run_full_pa_replays(
             source_manifest_path=source_cache_manifest_path,
             cache_root=source_cache,
             fasttext_model_path=fasttext_model_path,
+            runtime_build_receipt_path=runtime_build_receipt_path,
+            durable_mount_root=durable_mount_root,
+            durable_storage_marker_path=durable_storage_marker_path,
+            durable_output_parent=governed_output_parent,
+            local_work_parent=governed_local_work_parent,
             first_output_root=governed_output_parent / "production-replay-a",
             second_output_root=governed_output_parent / "production-replay-b",
         )
@@ -966,21 +1080,41 @@ def run_full_pa_replays(
         "authoritative": True,
         "d1_file_replay_verified": parent.d1_file_replay_verified,
         "d2_dedup_replay_verified": parent.d2_dedup_replay_verified,
+        "durable_output_parent": parent.durable_output_parent,
+        "durable_post_write_rehash_verified": (
+            parent.durable_post_write_rehash_verified
+        ),
+        "global_execution_provenance_identity_sha256": (
+            parent.global_execution_provenance_identity_sha256
+        ),
+        "global_execution_provenance_sha256": (
+            parent.global_execution_provenance_sha256
+        ),
         "gpu_requested": False,
         "network_isolation_kind": parent.network_isolation_kind,
         "network_used": False,
         "parent_replay_receipt": asdict(parent),
         "parent_replay_receipt_sha256": parent.receipt_sha256,
         "production_profile_verified": parent.production_profile_verified,
+        "runtime_build_receipt_identity_sha256": (
+            parent.runtime_build_receipt_identity_sha256
+        ),
+        "runtime_build_receipt_sha256": parent.runtime_build_receipt_sha256,
         "status": parent.status,
     }
 
 
-def _add_receipt_output(parser: argparse.ArgumentParser) -> None:
+def _add_receipt_output(
+    parser: argparse.ArgumentParser, *, required: bool = False
+) -> None:
     parser.add_argument(
         "--receipt-out",
         type=Path,
-        help="optional fresh path for the same canonical JSON printed to stdout",
+        required=required,
+        help=(
+            "fresh path for the same canonical JSON printed to stdout; required "
+            "for full-pa on its registered durable backing"
+        ),
     )
 
 
@@ -1024,6 +1158,12 @@ def build_parser() -> argparse.ArgumentParser:
     colab.add_argument("--runtime-label", required=True)
     _add_receipt_output(colab)
 
+    storage = subparsers.add_parser("register-durable-storage")
+    storage.add_argument("--durable-mount-root", type=Path, required=True)
+    storage.add_argument("--durable-storage-root", type=Path, required=True)
+    storage.add_argument("--marker-out", type=Path, required=True)
+    _add_receipt_output(storage)
+
     full = subparsers.add_parser("full-pa")
     full.add_argument("--authority", type=Path)
     full.add_argument("--enumeration-receipt", type=Path)
@@ -1031,7 +1171,31 @@ def build_parser() -> argparse.ArgumentParser:
     full.add_argument("--source-cache", type=Path)
     full.add_argument("--source-cache-manifest", type=Path)
     full.add_argument("--fasttext-model", type=Path)
-    full.add_argument("--output-parent", type=Path)
+    full.add_argument(
+        "--runtime-build-receipt",
+        type=Path,
+        help="required fresh PASS receipt from the pinned runtime builder",
+    )
+    full.add_argument(
+        "--durable-mount-root",
+        type=Path,
+        help="required existing Colab Drive mount point (normally /content/drive)",
+    )
+    full.add_argument(
+        "--durable-storage-marker",
+        type=Path,
+        help="required canonical marker directly inside the registered Drive storage root",
+    )
+    full.add_argument(
+        "--durable-output-parent",
+        type=Path,
+        help="required fresh durable root; corpus outputs are written here directly",
+    )
+    full.add_argument(
+        "--local-work-parent",
+        type=Path,
+        help="required existing local root for SQLite, spools, snapshots, and temp files",
+    )
     _add_receipt_output(full)
 
     worker = subparsers.add_parser("_fixture-worker")
@@ -1079,18 +1243,42 @@ def _dispatch(args: argparse.Namespace) -> Mapping[str, Any]:
             runtime_label=args.runtime_label,
         )
         return _receipt(args.command, evidence, status="OBSERVED")
+    if args.command == "register-durable-storage":
+        try:
+            evidence = register_colab_drive_storage_v3(
+                durable_mount_root=args.durable_mount_root,
+                durable_storage_root=args.durable_storage_root,
+                marker_path=args.marker_out,
+            )
+        except ParentReplayError as error:
+            raise PreflightError(
+                f"durable storage registration failed: {error}"
+            ) from error
+        return _receipt(args.command, evidence)
     if args.command == "full-pa":
-        if isinstance(args.output_parent, Path) and isinstance(args.receipt_out, Path):
-            output_parent = _governed_lexical_path(
-                args.output_parent, "full P-A output parent"
-            ).resolve(strict=False)
-            receipt_out = _governed_lexical_path(
-                args.receipt_out, "full P-A receipt output"
-            ).resolve(strict=False)
-            if receipt_out == output_parent or output_parent in receipt_out.parents:
-                raise PreflightError(
-                    "full P-A receipt output must be outside the governed replay tree"
-                )
+        if not all(
+            isinstance(value, Path)
+            for value in (
+                args.durable_mount_root,
+                args.durable_storage_marker,
+                args.durable_output_parent,
+                args.local_work_parent,
+                args.receipt_out,
+            )
+        ):
+            raise PreflightError(
+                "full P-A requires mount, marker, output, local-work, and receipt paths"
+            )
+        output_parent = _governed_lexical_path(
+            args.durable_output_parent, "full P-A durable output parent"
+        ).resolve(strict=False)
+        receipt_out = _governed_lexical_path(
+            args.receipt_out, "full P-A receipt output"
+        ).resolve(strict=False)
+        if receipt_out.exists() or receipt_out.parent != output_parent:
+            raise PreflightError(
+                "full P-A receipt must be fresh and a sibling of the two replay roots"
+            )
         evidence = run_full_pa_replays(
             authority_path=args.authority,
             enumeration_receipt_path=args.enumeration_receipt,
@@ -1098,8 +1286,41 @@ def _dispatch(args: argparse.Namespace) -> Mapping[str, Any]:
             source_cache=args.source_cache,
             source_cache_manifest_path=args.source_cache_manifest,
             fasttext_model_path=args.fasttext_model,
-            output_parent=args.output_parent,
+            runtime_build_receipt_path=args.runtime_build_receipt,
+            durable_mount_root=args.durable_mount_root,
+            durable_storage_marker_path=args.durable_storage_marker,
+            durable_output_parent=args.durable_output_parent,
+            local_work_parent=args.local_work_parent,
         )
+        try:
+            storage_identity = attest_production_storage_v3(
+                durable_mount_root=args.durable_mount_root,
+                durable_storage_marker_path=args.durable_storage_marker,
+                durable_output_parent=receipt_out.parent,
+                local_work_parent=args.local_work_parent,
+            )
+        except ParentReplayError as error:
+            raise PreflightError(
+                f"full P-A receipt durable backing validation failed: {error}"
+            ) from error
+        parent_receipt = evidence.get("parent_replay_receipt")
+        if (
+            not isinstance(parent_receipt, Mapping)
+            or parent_receipt.get("production_storage_identity_sha256")
+            != storage_identity.get("storage_identity_sha256")
+        ):
+            raise PreflightError(
+                "full P-A receipt backing differs from parent replay provenance"
+            )
+        evidence = dict(evidence)
+        evidence["receipt_publication"] = {
+            "atomic_replace": True,
+            "directory_fsync_preflight": _fsync_directory_if_supported(
+                receipt_out.parent
+            ),
+            "file_fsync": True,
+            "physical_reread": True,
+        }
         return _receipt(args.command, evidence, status=evidence["status"])
     if args.command == "_fixture-worker":
         assigned_root = os.environ.get("WEFT1_REPLAY_OUTPUT_ROOT")
