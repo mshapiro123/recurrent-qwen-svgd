@@ -62,7 +62,7 @@ A3_EFFECTIVE_ROUTE_OVERLAY_PATH = Path(__file__).with_name(
 # Filled after the canonical template file is written.  A live A3 finalization
 # changes this pin together with the same new ledger; no A1/A2 file changes.
 A3_EFFECTIVE_ROUTE_OVERLAY_SHA256 = (
-    "4cf68f276429b15f929ff54b911e7fadab3c67bc0377ae1e0868048e053053d1"
+    "f563461e1e19c05137f0fcd9e3aa0a3d6fc5951c6e0b366a67f88a37187d453b"
 )
 
 GTOK_EXECUTION_AUTHORITY_CHAIN_V4 = (
@@ -784,9 +784,12 @@ def load_effective_route_overlay_a3(
 
 
 def load_effective_route_overlay_template_a3() -> A3EffectiveRouteOverlayManifest:
-    """Inspect the pinned pending ledger without granting production authority."""
+    """Reject use of the retired pending-template API after A3 resolution."""
 
-    return load_effective_route_overlay_a3(allow_pending_template=True)
+    manifest = load_effective_route_overlay_a3(allow_pending_template=True)
+    if manifest.is_resolved:
+        raise A3RouteError("the checked-in A3 overlay is resolved, not a template")
+    return manifest
 
 
 def _load_combined_breakdown(

@@ -17,7 +17,6 @@ from training.weft1_corpus_a3 import (
     A1_ROUTE_MANIFEST_RECEIPT_SHA256,
     A2_BINDINGS_SHA256,
     A3_AUTHORITY_SHA256,
-    A3BreakdownPending,
     A3_CAMPAIGN_ROOT_SEED,
     A3_EFFECTIVE_ROUTE_OVERLAY_PATH,
     A3_EFFECTIVE_ROUTE_OVERLAY_SHA256,
@@ -28,7 +27,7 @@ from training.weft1_corpus_a3 import (
     execution_authority_v4_bound_sha256,
     finalize_effective_route_overlay_a3,
     load_effective_route_overlay_a3,
-    load_effective_route_overlay_template_a3,
+    resolve_effective_routes_a3,
     verify_a3_authority_artifact,
 )
 from training.weft1_corpus_breakdown_a3 import (
@@ -61,8 +60,8 @@ def _write(path: Path, payload: object) -> None:
     path.write_bytes(canonical_json_bytes(payload) + b"\n")
 
 
-def test_pending_template_binds_forward_only_chain_seed_and_predecessors() -> None:
-    manifest = load_effective_route_overlay_template_a3()
+def test_resolved_overlay_binds_forward_only_chain_seed_and_predecessors() -> None:
+    manifest = load_effective_route_overlay_a3()
     assert verify_a3_authority_artifact() == A3_AUTHORITY_SHA256
     assert GTOK_EXECUTION_AUTHORITY_CHAIN_V4[:-1] == GTOK_EXECUTION_AUTHORITY_CHAIN_V3
     assert GTOK_EXECUTION_AUTHORITY_CHAIN_V4[-1] == A3_AUTHORITY_SHA256
@@ -78,8 +77,8 @@ def test_pending_template_binds_forward_only_chain_seed_and_predecessors() -> No
     )
 
 
-def test_pending_template_has_two_overlays_five_passthroughs_and_no_fake_hashes() -> None:
-    manifest = load_effective_route_overlay_template_a3()
+def test_resolved_overlay_has_two_bound_overlays_and_five_passthroughs() -> None:
+    manifest = load_effective_route_overlay_a3()
     assert tuple(row.source_family for row in manifest.overlay_rows) == SOURCE_FAMILIES
     overlays = tuple(row for row in manifest.overlay_rows if row.mode == OVERLAY_MODE)
     passthroughs = tuple(
@@ -89,17 +88,24 @@ def test_pending_template_has_two_overlays_five_passthroughs_and_no_fake_hashes(
     assert len(passthroughs) == 5
     for row in overlays:
         assert row.breakdown_artifact is not None
-        assert not row.breakdown_artifact.is_bound
-        assert row.family_projection_sha256 is None
-        assert not row.effective_declaration.is_bound
+        assert row.breakdown_artifact.is_bound
+        assert row.family_projection_sha256 is not None
+        assert row.effective_declaration.is_bound
     assert overlays[0].breakdown_artifact == overlays[1].breakdown_artifact
 
 
-def test_checked_in_template_is_byte_pinned_and_production_fails_pending() -> None:
+def test_checked_in_overlay_is_byte_pinned_and_production_resolves() -> None:
     raw = A3_EFFECTIVE_ROUTE_OVERLAY_PATH.read_bytes()
     assert hashlib.sha256(raw).hexdigest() == A3_EFFECTIVE_ROUTE_OVERLAY_SHA256
-    with pytest.raises(A3BreakdownPending):
-        load_effective_route_overlay_a3()
+    manifest = load_effective_route_overlay_a3()
+    resolved = resolve_effective_routes_a3(
+        manifest,
+        breakdown_root=A3_EFFECTIVE_ROUTE_OVERLAY_PATH.parents[1],
+    )
+    assert (
+        resolved.effective_route_identity_sha256
+        == manifest.claimed_effective_route_identity_sha256
+    )
 
 
 def test_alternate_ledger_requires_explicit_fixture_mode(tmp_path: Path) -> None:
@@ -136,7 +142,7 @@ def test_alternate_ledger_requires_explicit_fixture_mode(tmp_path: Path) -> None
         ),
     ),
 )
-def test_authority_seed_order_and_placeholder_tampering_fail_closed(
+def test_authority_seed_order_and_resolved_projection_tampering_fail_closed(
     tmp_path: Path,
     mutation,
 ) -> None:
@@ -145,10 +151,14 @@ def test_authority_seed_order_and_placeholder_tampering_fail_closed(
     path = tmp_path / "tampered.json"
     _write(path, payload)
     with pytest.raises((TypeError, ValueError, RuntimeError)):
-        load_effective_route_overlay_a3(
+        manifest = load_effective_route_overlay_a3(
             path,
             allow_pending_template=True,
             nonproduction_fixture=True,
+        )
+        resolve_effective_routes_a3(
+            manifest,
+            breakdown_root=A3_EFFECTIVE_ROUTE_OVERLAY_PATH.parents[1],
         )
 
 
@@ -183,11 +193,35 @@ def _member(path: str, size: int) -> PathMemberReceiptA3:
     )
 
 
+def _pending_overlay_fixture() -> corpus_a3.A3EffectiveRouteOverlayManifest:
+    payload = _payload()
+    payload["status"] = corpus_a3.PENDING_STATUS
+    payload["claimed_effective_route_identity_sha256"] = None
+    for row in payload["overlay_rows"]:
+        if row["mode"] != OVERLAY_MODE:
+            continue
+        row["breakdown_artifact"] = {
+            "relative_path": None,
+            "physical_bytes": None,
+            "physical_sha256": None,
+            "typed_receipt_sha256": None,
+        }
+        row["family_projection_sha256"] = None
+        row["effective_declaration"] = {
+            "asset_selector": None,
+            "asset_count": None,
+            "available_bytes": None,
+            "available_bytes_basis": None,
+            "resolution": None,
+        }
+    return corpus_a3.A3EffectiveRouteOverlayManifest.from_mapping(payload)
+
+
 def test_finalizer_derives_both_routes_and_self_resolves(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    pending = load_effective_route_overlay_template_a3()
+    pending = _pending_overlay_fixture()
     base = {route.source_family: route for route in load_source_route_manifest().routes}
     dolma_route = base["dolma_web"]
     fineweb_route = base["fineweb_edu"]

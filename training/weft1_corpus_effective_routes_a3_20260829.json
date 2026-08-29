@@ -1,6 +1,6 @@
 {
   "schema": "weft1_corpus_effective_route_overlay_a3_v4",
-  "status": "AWAITING_BREAKDOWN_ARTIFACTS",
+  "status": "RESOLVED",
   "authority_sha256": "4e7b18ec676c6d613c7a0f85ece4c7b8fcc1daab48d5ce0b8cd11bc06875b6c0",
   "predecessors": {
     "a2_authority_sha256": "f7a2655b30f6c699035ec4ffdccee8c03068eeab8da94894be8e5818f955ce02",
@@ -21,18 +21,18 @@
       "base_route_receipt_sha256": "f88e5055a304ce9d0f378dff1d9ddfd6cb25e29aa731bb78f2f3f8f8f61868f2",
       "family_definition": "Dolma 3 web, top quality bucket",
       "breakdown_artifact": {
-        "relative_path": null,
-        "physical_bytes": null,
-        "physical_sha256": null,
-        "typed_receipt_sha256": null
+        "relative_path": "training/weft1_corpus_path_breakdown_a3_20260829.json",
+        "physical_bytes": 160837,
+        "physical_sha256": "f57f07b2970969c9c00e239e02c6bebb2fa6d7c988e7c430bbd27817939db7a0",
+        "typed_receipt_sha256": "05ab7bdf380b203e91805411b758ec04be7e251fada2c276f144d4f4c3cc1cc9"
       },
-      "family_projection_sha256": null,
+      "family_projection_sha256": "c5ac3ada89680c3d059f1b81f3d68e853a2da18394f9534533bb3867d367ac79",
       "effective_declaration": {
-        "asset_selector": null,
-        "asset_count": null,
-        "available_bytes": null,
-        "available_bytes_basis": null,
-        "resolution": null
+        "asset_selector": "data/common_crawl-*-0019/*.jsonl.zst",
+        "asset_count": 14850,
+        "available_bytes": 1126890181878,
+        "available_bytes_basis": "pinned repository compressed asset bytes",
+        "resolution": "CONFIRM_TOP_BUCKET_SELECTOR_REMINT_DECLARATION"
       }
     },
     {
@@ -116,20 +116,20 @@
       "base_route_receipt_sha256": "12d3488382fce14141cd6b5bd718e81b7b11469993659b13c6e897936c0acd58",
       "family_definition": "FineWeb-Edu, main data, all CC dumps; exclude sample-* and score-variant configs",
       "breakdown_artifact": {
-        "relative_path": null,
-        "physical_bytes": null,
-        "physical_sha256": null,
-        "typed_receipt_sha256": null
+        "relative_path": "training/weft1_corpus_path_breakdown_a3_20260829.json",
+        "physical_bytes": 160837,
+        "physical_sha256": "f57f07b2970969c9c00e239e02c6bebb2fa6d7c988e7c430bbd27817939db7a0",
+        "typed_receipt_sha256": "05ab7bdf380b203e91805411b758ec04be7e251fada2c276f144d4f4c3cc1cc9"
       },
-      "family_projection_sha256": null,
+      "family_projection_sha256": "379cc140aacfba40f0b01915fe79fdbe0253e7864c6dd165c7cca776eecf8faf",
       "effective_declaration": {
-        "asset_selector": null,
-        "asset_count": null,
-        "available_bytes": null,
-        "available_bytes_basis": null,
-        "resolution": null
+        "asset_selector": "semantic:fineweb_edu_configured_110_cc_main_dumps_all_parquet_a3_v1",
+        "asset_count": 2410,
+        "available_bytes": 4522727684984,
+        "available_bytes_basis": "pinned repository parquet bytes",
+        "resolution": "WIDEN_TO_ALL_MAIN_DATA_CC_DUMPS"
       }
     }
   ],
-  "claimed_effective_route_identity_sha256": null
+  "claimed_effective_route_identity_sha256": "b67b710c5bfeab38903ac46dcedef41e92a6f21542e7586319098172d69b6263"
 }
