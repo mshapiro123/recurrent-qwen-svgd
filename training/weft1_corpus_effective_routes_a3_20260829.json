@@ -1,0 +1,135 @@
+{
+  "schema": "weft1_corpus_effective_route_overlay_a3_v4",
+  "status": "AWAITING_BREAKDOWN_ARTIFACTS",
+  "authority_sha256": "4e7b18ec676c6d613c7a0f85ece4c7b8fcc1daab48d5ce0b8cd11bc06875b6c0",
+  "predecessors": {
+    "a2_authority_sha256": "f7a2655b30f6c699035ec4ffdccee8c03068eeab8da94894be8e5818f955ce02",
+    "a2_bindings_path": "training/weft1_corpus_gtok_a2_bindings_20260828.json",
+    "a2_bindings_sha256": "ee10e69a3ccd55f7960949f4c318daa4db1197c779f5e88fb67cec82ab7f263b",
+    "a1_route_manifest_path": "training/weft1_gtok_source_routes_20260828.json",
+    "a1_route_manifest_physical_sha256": "1cf99ea33b72013f4bf07101aad8c9b5124879afe3de9f28991e6427ea861a6c",
+    "a1_route_manifest_receipt_sha256": "8455b63f8b0dde7f5a5bdb599bec7563ce2b8c9159a26b09f6302e6e326bb663"
+  },
+  "campaign_seed_policy": {
+    "rule": "PRESERVE_A2_CAMPAIGN_ROOT_SEED_EXACTLY",
+    "campaign_root_seed": 17843936115933234841
+  },
+  "overlay_rows": [
+    {
+      "source_family": "dolma_web",
+      "mode": "BREAKDOWN_OVERLAY",
+      "base_route_receipt_sha256": "f88e5055a304ce9d0f378dff1d9ddfd6cb25e29aa731bb78f2f3f8f8f61868f2",
+      "family_definition": "Dolma 3 web, top quality bucket",
+      "breakdown_artifact": {
+        "relative_path": null,
+        "physical_bytes": null,
+        "physical_sha256": null,
+        "typed_receipt_sha256": null
+      },
+      "family_projection_sha256": null,
+      "effective_declaration": {
+        "asset_selector": null,
+        "asset_count": null,
+        "available_bytes": null,
+        "available_bytes_basis": null,
+        "resolution": null
+      }
+    },
+    {
+      "source_family": "wikipedia_wikibooks",
+      "mode": "PASSTHROUGH_A1",
+      "base_route_receipt_sha256": "a1157b180dd3f24d03c22a9b7dce14088653918134b794e5019926912f633b49",
+      "family_definition": null,
+      "breakdown_artifact": null,
+      "family_projection_sha256": null,
+      "effective_declaration": {
+        "asset_selector": "urls/v1_7.txt -> https://olmo-data.org/dolma-v1_7/wiki/wiki-*.json.gz",
+        "asset_count": 2,
+        "available_bytes": 16200000000,
+        "available_bytes_basis": "pinned repository card reported UTF-8 bytes",
+        "resolution": "PASSTHROUGH_A1_UNCHANGED"
+      }
+    },
+    {
+      "source_family": "stackedu",
+      "mode": "PASSTHROUGH_A1",
+      "base_route_receipt_sha256": "03c4c96c274de529078c2f4b2c1a40f49d96db1e451ddf8b5e7906a825195f6a",
+      "family_definition": null,
+      "breakdown_artifact": null,
+      "family_projection_sha256": null,
+      "effective_declaration": {
+        "asset_selector": "data/stack_edu-*/*.jsonl.zst",
+        "asset_count": 1978,
+        "available_bytes": 174441013376,
+        "available_bytes_basis": "pinned repository compressed asset bytes",
+        "resolution": "PASSTHROUGH_A1_UNCHANGED"
+      }
+    },
+    {
+      "source_family": "finemath_3plus",
+      "mode": "PASSTHROUGH_A1",
+      "base_route_receipt_sha256": "e738b794ef66e8ea4a990ae1990bf1760a3b0603c53fc86e50f22a0e68d0efb6",
+      "family_definition": null,
+      "breakdown_artifact": null,
+      "family_projection_sha256": null,
+      "effective_declaration": {
+        "asset_selector": "finemath-3plus/train-*.parquet",
+        "asset_count": 128,
+        "available_bytes": 65039196945,
+        "available_bytes_basis": "pinned repository parquet bytes",
+        "resolution": "PASSTHROUGH_A1_UNCHANGED"
+      }
+    },
+    {
+      "source_family": "arxiv",
+      "mode": "PASSTHROUGH_A1",
+      "base_route_receipt_sha256": "7a71a7db9bcef43bc58264b9807a579f6b409cd5eeee7cd7195650dbfa16355b",
+      "family_definition": null,
+      "breakdown_artifact": null,
+      "family_projection_sha256": null,
+      "effective_declaration": {
+        "asset_selector": "data/rpj-proofpile-arxiv/*.jsonl.zst",
+        "asset_count": 20,
+        "available_bytes": 22376390133,
+        "available_bytes_basis": "pinned repository compressed asset bytes",
+        "resolution": "PASSTHROUGH_A1_UNCHANGED"
+      }
+    },
+    {
+      "source_family": "olmocr",
+      "mode": "PASSTHROUGH_A1",
+      "base_route_receipt_sha256": "c529968f21f90fb32d3759300c28f16e072f35957bd077e4ec99217a6a029463",
+      "family_definition": null,
+      "breakdown_artifact": null,
+      "family_projection_sha256": null,
+      "effective_declaration": {
+        "asset_selector": "data/olmocr_science_pdfs-*/*.jsonl.zst",
+        "asset_count": 24807,
+        "available_bytes": 821069781702,
+        "available_bytes_basis": "pinned repository compressed asset bytes",
+        "resolution": "PASSTHROUGH_A1_UNCHANGED"
+      }
+    },
+    {
+      "source_family": "fineweb_edu",
+      "mode": "BREAKDOWN_OVERLAY",
+      "base_route_receipt_sha256": "12d3488382fce14141cd6b5bd718e81b7b11469993659b13c6e897936c0acd58",
+      "family_definition": "FineWeb-Edu, main data, all CC dumps; exclude sample-* and score-variant configs",
+      "breakdown_artifact": {
+        "relative_path": null,
+        "physical_bytes": null,
+        "physical_sha256": null,
+        "typed_receipt_sha256": null
+      },
+      "family_projection_sha256": null,
+      "effective_declaration": {
+        "asset_selector": null,
+        "asset_count": null,
+        "available_bytes": null,
+        "available_bytes_basis": null,
+        "resolution": null
+      }
+    }
+  ],
+  "claimed_effective_route_identity_sha256": null
+}
