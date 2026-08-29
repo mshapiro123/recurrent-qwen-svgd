@@ -91,6 +91,7 @@ training/weft1_corpus_fetch_a3.py text eol=lf
 training/weft1_corpus_semantic_evidence_a3.py text eol=lf
 training/weft1_corpus_path_breakdown_a3_20260829.json text eol=lf
 training/weft1_corpus_semantic_evidence_a3_20260829.json text eol=lf
+training/ablation_lm_engineering_quarantine_20260829_a3.json text eol=lf
 scripts/attest_weft1_corpus_a3_replay.py text eol=lf
 scripts/run_weft1_corpus_a3_observer.py text eol=lf
 scripts/run_weft1_corpus_fetch_a3.py text eol=lf
