@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import replace
 import inspect
+from pathlib import Path
 
 import pytest
 import torch
@@ -171,6 +172,18 @@ def test_route_ledger_binds_every_family_and_preserves_discrepancies() -> None:
     assert "zero such assets" in by_family["olmocr"].lineage_evidence
     assert by_family["wikipedia_wikibooks"].external_locator_manifest_sha256
     assert any("preflight receipt" in item for item in manifest.known_route_findings)
+
+
+def test_route_ledger_rejects_duplicate_json_keys(tmp_path: Path) -> None:
+    path = tmp_path / "duplicate-route-key.json"
+    path.write_text(
+        '{"schema":"weft1_gtok_source_route_manifest_v2",'
+        '"routes":[],"routes":[]}\n',
+        encoding="utf-8",
+        newline="\n",
+    )
+    with pytest.raises(ValueError, match="repeats key: routes"):
+        load_source_route_manifest(path)
 
 
 def test_route_binding_rejects_branch_license_capacity_and_card_drift() -> None:

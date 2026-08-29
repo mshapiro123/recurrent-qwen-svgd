@@ -11,7 +11,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from fractions import Fraction
-import json
 from pathlib import Path
 import re
 from typing import Any, Mapping
@@ -35,6 +34,7 @@ from training.weft1_gtok_contract import (
     a1_flat_adamw_recipe,
     execution_authority_v2_bound_sha256,
 )
+from training.weft1_strict_io import load_canonical_json_object
 
 
 SOURCE_ROUTE_MANIFEST_PATH = Path(__file__).with_name(
@@ -206,9 +206,7 @@ def load_source_route_manifest(
 
     if not isinstance(path, Path):
         raise TypeError("route manifest path must be a pathlib.Path")
-    payload = json.loads(path.read_text(encoding="utf-8"))
-    if not isinstance(payload, dict):
-        raise TypeError("route manifest root must be a JSON object")
+    payload = load_canonical_json_object(path)
     routes = tuple(
         SourceRouteBindingV2.from_mapping(item) for item in payload.pop("routes")
     )
