@@ -389,11 +389,19 @@ def _gate_bundle(
 def _decon_payload(pa: pb.PAInspectionV4, *, status: str = "CLEAN") -> dict[str, object]:
     hit = status == "HIT"
     input_core = {
-        "confirm_private_rows_sha256": "1" * 64,
-        "confirm_seal_file_set_sha256": "2" * 64,
+        "confirm_complete_ledger_sha256": (
+            pb.GOVERNED_CONFIRM_COMPLETE_LEDGER_SHA256
+        ),
+        "confirm_private_rows_sha256": pb.GOVERNED_CONFIRM_SOURCE_ROWS_SHA256,
+        "confirm_seal_file_set_sha256": pb.GOVERNED_CONFIRM_SEAL_SET_SHA256,
         "confirm_seal_ledger_sha256": "3" * 64,
-        "eval_e_anonymous_index_sha256": "4" * 64,
-        "eval_e_lock_sha256": "5" * 64,
+        "confirm_source_manifest_sha256": (
+            pb.GOVERNED_CONFIRM_SOURCE_MANIFEST_SHA256
+        ),
+        "eval_e_anonymous_index_sha256": (
+            pb.GOVERNED_EVAL_E_ANONYMOUS_INDEX_SHA256
+        ),
+        "eval_e_lock_sha256": pb.GOVERNED_EVAL_E_LOCK_SHA256,
     }
     inputs = {
         **input_core,
@@ -1282,6 +1290,39 @@ def test_decon_rejects_self_consistent_code_substitution(tmp_path: Path) -> None
         pb.load_hermetic_decon_receipt(path, pa=pa)
 
 
+def test_decon_rejects_self_consistent_eval_e_substitution(tmp_path: Path) -> None:
+    pa, _ = _build_scan_fixture(tmp_path)
+    receipt = _decon_payload(pa)
+    inputs = dict(receipt["input_commitments"])
+    inputs["eval_e_anonymous_index_sha256"] = "4" * 64
+    input_core = {
+        name: inputs[name]
+        for name in sorted(inputs)
+        if name != "private_input_set_commitment_sha256"
+    }
+    inputs["private_input_set_commitment_sha256"] = hashlib.sha256(
+        canonical_json_bytes(input_core)
+    ).hexdigest()
+    receipt["input_commitments"] = inputs
+    receipt["sealed_battery_registry_commitment_sha256"] = hashlib.sha256(
+        canonical_json_bytes(
+            {
+                "algorithm_profiles": receipt["algorithm_profiles"],
+                "input_commitments": inputs,
+                "registered_battery_count": receipt["registered_battery_count"],
+            }
+        )
+    ).hexdigest()
+    receipt["receipt_sha256"] = pb.pb_authority_bound_sha256(
+        pb.PB_DECON_SCHEMA_V5, receipt
+    )
+    path = tmp_path / "decon-eval-e-substitute.json"
+    _write(path, receipt)
+
+    with pytest.raises(pb.PBFreezeError, match="governed input identity"):
+        pb.load_hermetic_decon_receipt(path, pa=pa)
+
+
 def test_decon_rejects_plaintext_field_even_if_receipt_is_rehashed(tmp_path: Path) -> None:
     pa, _ = _build_scan_fixture(tmp_path)
     receipt = _decon_payload(pa)
@@ -1300,30 +1341,25 @@ def test_decon_rejects_plaintext_field_even_if_receipt_is_rehashed(tmp_path: Pat
 def test_hit_hard_stops_before_fresh_output_is_touched(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    pa, _ = _build_scan_fixture(tmp_path)
-    decon_path = tmp_path / "decon-hit.json"
-    _write(decon_path, _decon_payload(pa, status="HIT"))
-    c2_path = tmp_path / "c2.json"
-    _write_c2(c2_path)
-    gate_path = tmp_path / "gates.json"
-    gate_path.write_bytes(b"gates")
-    monkeypatch.setattr(pb, "inspect_pa_v4", lambda unused: pa)
-    monkeypatch.setattr(
-        pb, "load_d1_d6_gate_bundle", lambda *args, **kwargs: ("a" * 64, "b" * 64, ())
-    )
     monkeypatch.setattr(
         pb,
-        "_scan_full_shards",
-        lambda unused: {"c1_status": "PASS", "c3_status": "PASS"},
+        "launch_hermetic_decon",
+        lambda **unused: ("a" * 64, "b" * 64, "HIT"),
     )
     output = tmp_path / "freeze.json"
 
     with pytest.raises(pb.DecontaminationHit):
         pb.mint_freeze_receipt(
-            materialization_root=pa.root,
-            gate_bundle_path=gate_path,
-            c2_evidence_path=c2_path,
-            decon_receipt_path=decon_path,
+            materialization_root=tmp_path / "pa",
+            gate_bundle_path=tmp_path / "gates.json",
+            c2_evidence_path=tmp_path / "c2.json",
+            confirm_seal_paths=(tmp_path / "seal.json",),
+            confirm_seal_ledger_path=tmp_path / "ledger.json",
+            confirm_private_rows_path=tmp_path / "private.jsonl",
+            eval_e_index_path=tmp_path / "eval-index.json",
+            eval_e_lock_path=tmp_path / "eval-lock.json",
+            decon_output_root=tmp_path / "decon-output",
+            decon_local_work_parent=tmp_path / "local-work",
             output_path=output,
         )
     assert not output.exists()
@@ -1333,17 +1369,30 @@ def test_mint_is_exclusive_and_never_overwrites(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     receipt = {
+        "decon_receipt_identity_sha256": "b" * 64,
+        "decon_receipt_sha256": "a" * 64,
         "freeze_receipt_identity_sha256": "f" * 64,
         "schema": pb.PB_FREEZE_SCHEMA_V5,
         "status": "FROZEN",
     }
     monkeypatch.setattr(pb, "build_freeze_receipt", lambda **kwargs: receipt)
+    monkeypatch.setattr(
+        pb,
+        "launch_hermetic_decon",
+        lambda **unused: ("a" * 64, "b" * 64, "CLEAN"),
+    )
     output = tmp_path / "freeze.json"
     kwargs = {
         "materialization_root": tmp_path,
         "gate_bundle_path": tmp_path / "gates.json",
         "c2_evidence_path": tmp_path / "c2.json",
-        "decon_receipt_path": tmp_path / "decon.json",
+        "confirm_seal_paths": (tmp_path / "seal.json",),
+        "confirm_seal_ledger_path": tmp_path / "ledger.json",
+        "confirm_private_rows_path": tmp_path / "private.jsonl",
+        "eval_e_index_path": tmp_path / "eval-index.json",
+        "eval_e_lock_path": tmp_path / "eval-lock.json",
+        "decon_output_root": tmp_path / "decon-output",
+        "decon_local_work_parent": tmp_path / "local-work",
         "output_path": output,
     }
 
@@ -1353,3 +1402,23 @@ def test_mint_is_exclusive_and_never_overwrites(
     assert hashlib.sha256(output.read_bytes()).hexdigest() == physical
     with pytest.raises(pb.PBFreezeError, match="already exists"):
         pb.mint_freeze_receipt(**kwargs)
+
+
+def test_external_hash_shaped_decon_receipt_cannot_cross_mint_boundary(
+    tmp_path: Path,
+) -> None:
+    external = tmp_path / "self-authored-decon.json"
+    external.write_text('{"status":"CLEAN"}\n', encoding="utf-8")
+    output = tmp_path / "freeze.json"
+    assert "decon_receipt_path" not in inspect.signature(
+        pb.mint_freeze_receipt
+    ).parameters
+    with pytest.raises(TypeError, match="decon_receipt_path"):
+        pb.mint_freeze_receipt(  # type: ignore[call-arg]
+            materialization_root=tmp_path / "pa",
+            gate_bundle_path=tmp_path / "gates.json",
+            c2_evidence_path=tmp_path / "c2.json",
+            decon_receipt_path=external,
+            output_path=output,
+        )
+    assert not output.exists()

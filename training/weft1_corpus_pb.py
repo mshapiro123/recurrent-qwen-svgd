@@ -1,9 +1,10 @@
 """Forward-only P-B freeze/minter scaffold for WEFT-1.
 
 The scaffold consumes a completed V4 P-A tree plus independently minted D1-D6
-evidence and a hermetic DECON receipt.  It deliberately has no sealed-data
-reader and no decontamination implementation: the only sealed-screen object it
-can parse is a fixed-shape commitment receipt containing hashes and counts.
+evidence.  Its production mint owns the parent launch of the network-isolated
+DECON child and can only mint from that fresh aggregate receipt.  The parent
+never parses sealed rows; an external receipt may be checked read-only but can
+never cross the mint boundary.
 
 No receipt is written until every P-A file has been re-read, C1-C3 have been
 recomputed, D1-D6 are authoritative, and DECON is clean.  A DECON hit raises a
@@ -89,7 +90,20 @@ from training.weft1_corpus_replay_a3 import (
 from training import weft1_corpus_replay_a2 as replay_v3
 from training.weft1_corpus_decon_contract import (
     DECON_BATTERIES,
+    GOVERNED_CONFIRM_COMPLETE_LEDGER_SHA256,
+    GOVERNED_CONFIRM_SEAL_SET_SHA256,
+    GOVERNED_CONFIRM_SOURCE_MANIFEST_SHA256,
+    GOVERNED_CONFIRM_SOURCE_ROWS_SHA256,
+    GOVERNED_EVAL_E_ANONYMOUS_INDEX_SHA256,
+    GOVERNED_EVAL_E_LOCK_SHA256,
     algorithm_profiles as decon_algorithm_profiles,
+)
+from training.weft1_corpus_decon import (
+    DECON_CODE_RELATIVE_PATHS as _DECON_CODE_RELATIVE_PATHS,
+    DECON_PARENT_WATCHDOG_SECONDS,
+    DECON_RECEIPT_FILENAME,
+    DeconError,
+    launch_hermetic_decon,
 )
 from training import weft1_corpus_pa as corpus_pa
 from training.weft1_gtok_tokenizer_a2 import iter_a2_shard_texts
@@ -107,11 +121,6 @@ PB_FREEZE_SCHEMA_V5 = "weft1_corpus_freeze_receipt_v5"
 FULL_STRATUM_TARGETS_V4 = dict(CORPUS_STRATUM_TARGETS)
 DECON_REQUIRED_BATTERIES = DECON_BATTERIES
 _GATES = ("D1", "D2", "D3", "D4", "D5", "D6")
-_DECON_CODE_RELATIVE_PATHS = (
-    "scripts/run_weft1_corpus_decon.py",
-    "training/weft1_corpus_decon.py",
-    "training/weft1_corpus_decon_contract.py",
-)
 _GATE_VERIFIERS = {
     "D1": "independent_full_replay",
     "D2": "independent_dedup_replay",
@@ -2521,9 +2530,11 @@ def load_hermetic_decon_receipt(
     inputs = _exact_mapping(
         receipt.get("input_commitments"),
         {
+            "confirm_complete_ledger_sha256",
             "confirm_private_rows_sha256",
             "confirm_seal_file_set_sha256",
             "confirm_seal_ledger_sha256",
+            "confirm_source_manifest_sha256",
             "eval_e_anonymous_index_sha256",
             "eval_e_lock_sha256",
             "private_input_set_commitment_sha256",
@@ -2532,6 +2543,20 @@ def load_hermetic_decon_receipt(
     )
     for name, value in inputs.items():
         _require_sha256(value, f"DECON {name}")
+    if (
+        inputs.get("confirm_complete_ledger_sha256")
+        != GOVERNED_CONFIRM_COMPLETE_LEDGER_SHA256
+        or inputs.get("confirm_private_rows_sha256")
+        != GOVERNED_CONFIRM_SOURCE_ROWS_SHA256
+        or inputs.get("confirm_seal_file_set_sha256")
+        != GOVERNED_CONFIRM_SEAL_SET_SHA256
+        or inputs.get("confirm_source_manifest_sha256")
+        != GOVERNED_CONFIRM_SOURCE_MANIFEST_SHA256
+        or inputs.get("eval_e_anonymous_index_sha256")
+        != GOVERNED_EVAL_E_ANONYMOUS_INDEX_SHA256
+        or inputs.get("eval_e_lock_sha256") != GOVERNED_EVAL_E_LOCK_SHA256
+    ):
+        raise PBFreezeError("DECON governed input identity drifted")
     input_core = {
         name: inputs[name]
         for name in sorted(inputs)
@@ -2851,26 +2876,87 @@ def mint_freeze_receipt(
     materialization_root: Path,
     gate_bundle_path: Path,
     c2_evidence_path: Path,
-    decon_receipt_path: Path,
+    confirm_seal_paths: Sequence[Path],
+    confirm_seal_ledger_path: Path,
+    confirm_private_rows_path: Path,
+    eval_e_index_path: Path,
+    eval_e_lock_path: Path,
+    decon_output_root: Path,
+    decon_local_work_parent: Path,
     output_path: Path,
+    python_executable: Path | None = None,
+    unshare_executable: Path | None = None,
+    decon_timeout_seconds: int = DECON_PARENT_WATCHDOG_SECONDS,
 ) -> tuple[dict[str, object], str]:
+    """Launch hermetic DECON and mint from that fresh receipt in one call."""
+
     if output_path.exists() or output_path.is_symlink():
         raise PBFreezeError("output receipt path already exists")
+    if decon_output_root.exists() or decon_output_root.is_symlink():
+        raise PBFreezeError("DECON output root must be fresh before mint")
+    try:
+        decon_physical, decon_identity, decon_status = launch_hermetic_decon(
+            materialization_root=materialization_root,
+            confirm_seal_paths=confirm_seal_paths,
+            confirm_seal_ledger_path=confirm_seal_ledger_path,
+            confirm_private_rows_path=confirm_private_rows_path,
+            eval_e_index_path=eval_e_index_path,
+            eval_e_lock_path=eval_e_lock_path,
+            output_root=decon_output_root,
+            local_work_parent=decon_local_work_parent,
+            python_executable=python_executable,
+            unshare_executable=unshare_executable,
+            timeout_seconds=decon_timeout_seconds,
+        )
+    except DeconError as error:
+        raise PBFreezeError("hermetic DECON launch blocked the P-B mint") from error
+    if decon_status == "HIT":
+        raise DecontaminationHit(
+            "DECON hit: hard stop; no freeze receipt may be minted"
+        )
+    if decon_status != "CLEAN":
+        raise PBFreezeError("hermetic DECON returned no mintable status")
+    decon_receipt_path = decon_output_root / DECON_RECEIPT_FILENAME
     receipt = build_freeze_receipt(
         materialization_root=materialization_root,
         gate_bundle_path=gate_bundle_path,
         c2_evidence_path=c2_evidence_path,
         decon_receipt_path=decon_receipt_path,
     )
+    if (
+        receipt.get("decon_receipt_sha256") != decon_physical
+        or receipt.get("decon_receipt_identity_sha256") != decon_identity
+    ):
+        raise PBFreezeError("fresh DECON result changed before the mint boundary")
     physical = _exclusive_atomic_json(output_path, receipt)
     return receipt, physical
 
 
-def _add_freeze_inputs(parser: argparse.ArgumentParser) -> None:
+def _add_check_inputs(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--materialization-root", type=Path, required=True)
     parser.add_argument("--gate-bundle", type=Path, required=True)
     parser.add_argument("--c2-evidence", type=Path, required=True)
     parser.add_argument("--decon-receipt", type=Path, required=True)
+
+
+def _add_mint_inputs(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("--materialization-root", type=Path, required=True)
+    parser.add_argument("--gate-bundle", type=Path, required=True)
+    parser.add_argument("--c2-evidence", type=Path, required=True)
+    parser.add_argument("--confirm-seal", action="append", type=Path, required=True)
+    parser.add_argument("--confirm-seal-ledger", type=Path, required=True)
+    parser.add_argument("--confirm-private-rows", type=Path, required=True)
+    parser.add_argument("--eval-e-index", type=Path, required=True)
+    parser.add_argument("--eval-e-lock", type=Path, required=True)
+    parser.add_argument("--decon-output-root", type=Path, required=True)
+    parser.add_argument("--decon-local-work-parent", type=Path, required=True)
+    parser.add_argument("--python-executable", type=Path)
+    parser.add_argument("--unshare-executable", type=Path)
+    parser.add_argument(
+        "--decon-timeout-seconds",
+        type=int,
+        default=DECON_PARENT_WATCHDOG_SECONDS,
+    )
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -2889,10 +2975,14 @@ def _parser() -> argparse.ArgumentParser:
     gates.add_argument("--parent-replay-receipt", type=Path, required=True)
     gates.add_argument("--c2-evidence", type=Path, required=True)
     gates.add_argument("--output", type=Path, required=True)
-    check = subparsers.add_parser("check", help="validate without minting")
-    _add_freeze_inputs(check)
-    mint = subparsers.add_parser("mint", help="mint only after every gate passes")
-    _add_freeze_inputs(mint)
+    check = subparsers.add_parser(
+        "check", help="validate an external DECON receipt read-only"
+    )
+    _add_check_inputs(check)
+    mint = subparsers.add_parser(
+        "mint", help="launch hermetic DECON and mint after every gate passes"
+    )
+    _add_mint_inputs(mint)
     mint.add_argument("--output", type=Path, required=True)
     return parser
 
@@ -2935,13 +3025,13 @@ def main(argv: Sequence[str] | None = None) -> int:
                 )
             )
             return 0
-        receipt = build_freeze_receipt(
-            materialization_root=arguments.materialization_root,
-            gate_bundle_path=arguments.gate_bundle,
-            c2_evidence_path=arguments.c2_evidence,
-            decon_receipt_path=arguments.decon_receipt,
-        )
         if arguments.command == "check":
+            receipt = build_freeze_receipt(
+                materialization_root=arguments.materialization_root,
+                gate_bundle_path=arguments.gate_bundle,
+                c2_evidence_path=arguments.c2_evidence,
+                decon_receipt_path=arguments.decon_receipt,
+            )
             print(
                 json.dumps(
                     {
@@ -2951,15 +3041,30 @@ def main(argv: Sequence[str] | None = None) -> int:
                         "prospective_freeze_receipt_identity_sha256": receipt[
                             "freeze_receipt_identity_sha256"
                         ],
-                        "status": "READY_TO_MINT",
+                        "status": (
+                            "EXTERNAL_DECON_RECEIPT_VALIDATED_READ_ONLY_NO_MINT"
+                        ),
                     },
                     sort_keys=True,
                 )
             )
             return 0
-        if arguments.output.exists() or arguments.output.is_symlink():
-            raise PBFreezeError("output receipt path already exists")
-        physical = _exclusive_atomic_json(arguments.output, receipt)
+        receipt, physical = mint_freeze_receipt(
+            materialization_root=arguments.materialization_root,
+            gate_bundle_path=arguments.gate_bundle,
+            c2_evidence_path=arguments.c2_evidence,
+            confirm_seal_paths=tuple(arguments.confirm_seal),
+            confirm_seal_ledger_path=arguments.confirm_seal_ledger,
+            confirm_private_rows_path=arguments.confirm_private_rows,
+            eval_e_index_path=arguments.eval_e_index,
+            eval_e_lock_path=arguments.eval_e_lock,
+            decon_output_root=arguments.decon_output_root,
+            decon_local_work_parent=arguments.decon_local_work_parent,
+            output_path=arguments.output,
+            python_executable=arguments.python_executable,
+            unshare_executable=arguments.unshare_executable,
+            decon_timeout_seconds=arguments.decon_timeout_seconds,
+        )
         print(
             json.dumps(
                 {

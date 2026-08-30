@@ -1,0 +1,72 @@
+{
+  "schema": "weft1_release_card_evidence_v1",
+  "authority_sha256": "d8c4f3bf8829bbe48e2464bf758ec3594ef730a0f952712099b45d183ca2ab3e",
+  "source_route_manifest": {
+    "path": "training/weft1_gtok_source_routes_20260828.json",
+    "bytes": 9114,
+    "sha256": "1cf99ea33b72013f4bf07101aad8c9b5124879afe3de9f28991e6427ea861a6c",
+    "schema": "weft1_gtok_source_route_manifest_v2"
+  },
+  "cards": [
+    {
+      "evidence_id": "dolma3_pool_execution_card",
+      "source_family": "dolma3",
+      "evidence_kind": "committed_execution_route",
+      "route_source_family": "dolma_web",
+      "repository": "allenai/dolma3_pool",
+      "revision": "6462556697df1a8f5c953727e9c686629ad98b68",
+      "url": "https://huggingface.co/datasets/allenai/dolma3_pool/blob/6462556697df1a8f5c953727e9c686629ad98b68/README.md",
+      "resolve_url": "https://huggingface.co/datasets/allenai/dolma3_pool/resolve/6462556697df1a8f5c953727e9c686629ad98b68/README.md",
+      "content_bytes": 4909,
+      "content_sha256": "7a43fb286ca2d57f6e44fbc109b7208a778d59a7f6e3c8a52ccd4f172d4e0ab1"
+    },
+    {
+      "evidence_id": "dolma3_mix_execution_card",
+      "source_family": "dolma3",
+      "evidence_kind": "committed_execution_route",
+      "route_source_family": "stackedu",
+      "repository": "allenai/dolma3_mix-6T",
+      "revision": "689a3ea2d8217e64d73a5058913fa43ad15e81aa",
+      "url": "https://huggingface.co/datasets/allenai/dolma3_mix-6T/blob/689a3ea2d8217e64d73a5058913fa43ad15e81aa/README.md",
+      "resolve_url": "https://huggingface.co/datasets/allenai/dolma3_mix-6T/resolve/689a3ea2d8217e64d73a5058913fa43ad15e81aa/README.md",
+      "content_bytes": 3144,
+      "content_sha256": "901a231cdcae33ea8ce765d1bdef7606555780c4a108b0bcf046a65fa5d5adf9"
+    },
+    {
+      "evidence_id": "fineweb_edu_execution_card",
+      "source_family": "fineweb_edu",
+      "evidence_kind": "committed_execution_route",
+      "route_source_family": "fineweb_edu",
+      "repository": "HuggingFaceFW/fineweb-edu",
+      "revision": "87f09149ef4734204d70ed1d046ddc9ca3f2b8f9",
+      "url": "https://huggingface.co/datasets/HuggingFaceFW/fineweb-edu/blob/87f09149ef4734204d70ed1d046ddc9ca3f2b8f9/README.md",
+      "resolve_url": "https://huggingface.co/datasets/HuggingFaceFW/fineweb-edu/resolve/87f09149ef4734204d70ed1d046ddc9ca3f2b8f9/README.md",
+      "content_bytes": 26354,
+      "content_sha256": "a0cc8998a20499432b28b6575f3046b714938eb8e11b8d59a1d25ddf3716061e"
+    },
+    {
+      "evidence_id": "stackedu_source_card",
+      "source_family": "stackedu",
+      "evidence_kind": "pinned_upstream_card",
+      "repository": "HuggingFaceTB/stack-edu",
+      "revision": "eeec5caac5cc3758a18f1d3ba4416837a9ba814c",
+      "revision_date_utc": "2025-03-20T13:51:54Z",
+      "url": "https://huggingface.co/datasets/HuggingFaceTB/stack-edu/blob/eeec5caac5cc3758a18f1d3ba4416837a9ba814c/README.md",
+      "resolve_url": "https://huggingface.co/datasets/HuggingFaceTB/stack-edu/resolve/eeec5caac5cc3758a18f1d3ba4416837a9ba814c/README.md",
+      "content_bytes": 14847,
+      "content_sha256": "fa264b336a946b87e05e540d449a51968149fbe1ab9b34af340f2d20fc290cd4"
+    },
+    {
+      "evidence_id": "the_stack_v2_source_card",
+      "source_family": "stackedu",
+      "evidence_kind": "pinned_upstream_card",
+      "repository": "bigcode/the-stack-v2",
+      "revision": "e565caa3a78c2423bd374333a472b049eb090e47",
+      "revision_date_utc": "2026-08-03T13:24:25Z",
+      "url": "https://huggingface.co/datasets/bigcode/the-stack-v2/blob/e565caa3a78c2423bd374333a472b049eb090e47/README.md",
+      "resolve_url": "https://huggingface.co/datasets/bigcode/the-stack-v2/resolve/e565caa3a78c2423bd374333a472b049eb090e47/README.md",
+      "content_bytes": 89311,
+      "content_sha256": "b117ef6fe7477e7c8b3ed71b41dde9a11131dcb1966e64d017935fc2339d864a"
+    }
+  ]
+}

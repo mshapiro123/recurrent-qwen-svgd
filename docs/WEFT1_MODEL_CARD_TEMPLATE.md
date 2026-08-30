@@ -29,6 +29,8 @@ Stack-Edu — The code stratum includes Stack-Edu material routed through the pi
 
 Stack-Edu route — Executed from allenai/dolma3_mix-6T at revision 689a3ea2d8217e64d73a5058913fa43ad15e81aa (2026-01-15T05:36:27Z). Stack-Edu is derived from The Stack v2/StarCoder2Data: the underlying source snapshot uses the Software Heritage graph dated 2023-09-06 and GitHub Archive metadata through 2023-09-14. The upstream card records that StarCoder2 used v2.0.1, which incorporated validated opt-outs through 2023-10-20; WEFT-1 inherits The Stack v2’s continuing removal/takedown posture.
 
+Language identification retains the pinned fastText lid.176.bin classifier; no substitute model is authorized.
+
 <!-- Add the remaining manifest-generated attribution rows without changing the text above. -->
 
 ## Corpus reproducibility and distribution
@@ -40,6 +42,8 @@ The public corpus artifact consists of the pipeline code, the manifest (pins, SH
 Comparative claims ride on the matched-compute control only.
 
 no sentence of the form "WEFT-1 outperforms [named public model]" is ever written.
+
+Named public-model comparisons: none.
 
 <!-- Report only receipt-backed within-program and matched-control results. -->
 
