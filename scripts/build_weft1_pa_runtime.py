@@ -79,11 +79,18 @@ BUILD_DEPENDENCY_PACKAGES = (
     "libffi-dev",
     "libgdbm-dev",
     "liblzma-dev",
-    "libncursesw5-dev",
+    # Use the installed package identity, not the compatibility virtual name
+    # ``libncursesw5-dev``.  ``dpkg-query`` reports an empty Version for the
+    # virtual name on current Colab images, which cannot support an exact
+    # provenance receipt.
+    "libncurses-dev",
     "libnsl-dev",
     "libreadline-dev",
     "libssl-dev",
-    "pkg-config",
+    # ``pkg-config`` is a virtual package provided by ``pkgconf`` on current
+    # Ubuntu/Colab images.  Bind the concrete provider while retaining the
+    # required ``pkg-config`` executable check below.
+    "pkgconf",
     "tk-dev",
     "uuid-dev",
     "xz-utils",

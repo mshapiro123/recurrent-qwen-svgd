@@ -32,11 +32,11 @@ readonly -a BUILD_PACKAGES=(
   libffi-dev
   libgdbm-dev
   liblzma-dev
-  libncursesw5-dev
+  libncurses-dev
   libnsl-dev
   libreadline-dev
   libssl-dev
-  pkg-config
+  pkgconf
   tk-dev
   uuid-dev
   xz-utils
