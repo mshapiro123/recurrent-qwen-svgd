@@ -883,6 +883,48 @@ def test_physical_d6_is_freshly_recomputed_in_raw_content_id_domain(
         pb._recompute_physical_d6_evidence(changed_pa)
 
 
+def test_physical_d6_consumer_contract_binds_distinct_governed_data_seeds(
+    tmp_path: Path,
+) -> None:
+    pa, _ = _build_scan_fixture(tmp_path)
+    _physical, evidence = pb._recompute_physical_d6_evidence(pa)
+
+    pb._validate_physical_d6_consumers(evidence)
+    assert tuple(
+        (row["training_seed"], row["data_order_seed"])
+        for row in evidence["consumer_order_receipts"]
+    ) == tuple(pb.GTOK_DATA_ORDER_SEED_BY_TRAINING_SEED_V4.items())
+    assert {
+        (row["training_seed"], row["data_order_seed"])
+        for row in evidence["consumer_bindings"]
+    } == set(pb.GTOK_DATA_ORDER_SEED_BY_TRAINING_SEED_V4.items())
+
+
+@pytest.mark.parametrize("surface", ("receipt", "binding"))
+def test_physical_d6_consumer_contract_rejects_data_seed_substitution(
+    tmp_path: Path,
+    surface: str,
+) -> None:
+    pa, _ = _build_scan_fixture(tmp_path)
+    _physical, evidence = pb._recompute_physical_d6_evidence(pa)
+    changed = json.loads(json.dumps(evidence))
+    if surface == "receipt":
+        row = changed["consumer_order_receipts"][0]
+        row["data_order_seed"] = row["training_seed"]
+        row.pop("receipt_sha256")
+        row["receipt_sha256"] = execution_authority_v4_bound_sha256(
+            pb.CONSUMER_ORDER_SCHEMA_V4, row
+        )
+        match = "order receipt drifted"
+    else:
+        row = changed["consumer_bindings"][0]
+        row["data_order_seed"] = row["training_seed"]
+        match = "consumer binding drifted"
+
+    with pytest.raises(pb.PBFreezeError, match=match):
+        pb._validate_physical_d6_consumers(changed)
+
+
 def test_d3_rejects_general_source_mix_outside_two_percent(tmp_path: Path) -> None:
     pa, _ = _build_scan_fixture(tmp_path)
     scan = _balanced_independent_scan()

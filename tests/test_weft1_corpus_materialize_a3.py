@@ -604,6 +604,14 @@ def _run_and_assert_forward_finalizer_fixture(
     assert d6_physical["schema"] == bridge.D6_PHYSICAL_EVIDENCE_SCHEMA_V4
     assert d6_physical["status"] == "PHYSICAL_REREAD_PASS_NO_GATE_MINT"
     assert len(d6_physical["consumer_order_receipts"]) == 2
+    assert tuple(
+        (row["training_seed"], row["data_order_seed"])
+        for row in d6_physical["consumer_order_receipts"]
+    ) == bridge.GTOK_GOVERNED_DATA_ORDER_SEED_ROWS_V4
+    assert tuple(
+        (row["training_seed"], row["data_order_seed"])
+        for row in d6_physical["consumer_bindings"][:2]
+    ) == bridge.GTOK_GOVERNED_DATA_ORDER_SEED_ROWS_V4
     assert {
         row["ordered_raw_content_ids_sha256"]
         for row in d6_physical["consumer_order_receipts"]
@@ -631,6 +639,29 @@ def _run_and_assert_forward_finalizer_fixture(
         )
         for seed in bridge.GTOK_TRAINING_SEEDS
     )
+    def expected_order(order_seed: int) -> tuple[str, ...]:
+        rows = []
+        for text in fit_texts:
+            raw_id = hashlib.sha1(text.encode("utf-8")).hexdigest()  # noqa: S324
+            key = hashlib.sha256(
+                b"WEFT-1/gtok-training-order/raw-content-id/v4\x00"
+                + order_seed.to_bytes(8, "big")
+                + raw_id.encode("ascii")
+            ).digest()
+            rows.append((key, raw_id, text))
+        return tuple(row[2] for row in sorted(rows))
+
+    expected_data_orders = tuple(
+        expected_order(data_order_seed)
+        for _training_seed, data_order_seed in (
+            bridge.GTOK_GOVERNED_DATA_ORDER_SEED_ROWS_V4
+        )
+    )
+    legacy_training_seed_orders = tuple(
+        expected_order(training_seed) for training_seed in bridge.GTOK_TRAINING_SEEDS
+    )
+    assert training_orders == expected_data_orders
+    assert training_orders != legacy_training_seed_orders
     assert len(set(training_orders)) == len(bridge.GTOK_TRAINING_SEEDS)
     assert all(set(order) == set(fit_texts) for order in training_orders)
     assert screen_manifest["d6_physical_evidence_sha256"] == recomputed_d6_sha
@@ -741,6 +772,39 @@ def test_physical_d6_recompute_rejects_mutated_t_shard(
     ):
         bridge.recompute_physical_d6_evidence_v4(
             root=output, sqlite_path=work / "mutation-d6.sqlite"
+        )
+
+
+def test_physical_d6_rejects_self_consistent_data_order_seed_substitution(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    output, work = _run_and_assert_forward_finalizer_fixture(tmp_path, monkeypatch)
+    path = output / bridge.D6_PHYSICAL_EVIDENCE_RELATIVE_PATH_V4
+    _, evidence = bridge.load_canonical_json_snapshot(path)
+    changed = json.loads(json.dumps(evidence))
+    receipt = changed["consumer_order_receipts"][0]
+    governed_data_seed = receipt["data_order_seed"]
+    assert governed_data_seed != receipt["training_seed"]
+    receipt["data_order_seed"] = receipt["training_seed"]
+    receipt.pop("receipt_sha256")
+    receipt["receipt_sha256"] = bridge.execution_authority_v4_bound_sha256(
+        bridge.CONSUMER_ORDER_SCHEMA_V4, receipt
+    )
+    for binding in changed["consumer_bindings"]:
+        if binding["training_seed"] == receipt["training_seed"]:
+            binding["data_order_seed"] = receipt["data_order_seed"]
+    changed.pop("evidence_identity_sha256")
+    changed["evidence_identity_sha256"] = bridge.execution_authority_v4_bound_sha256(
+        bridge.D6_PHYSICAL_EVIDENCE_SCHEMA_V4, changed
+    )
+    _write(path, changed)
+
+    with pytest.raises(
+        bridge.CorpusMaterializationV4Error,
+        match="stored physical D6 evidence differs",
+    ):
+        bridge.validate_physical_d6_evidence_v4(
+            root=output, sqlite_path=work / "substituted-seed-d6.sqlite"
         )
 
 

@@ -50,6 +50,7 @@ from training.weft1_corpus_materialize_a3 import (
     D6_PHYSICAL_EVIDENCE_SCHEMA_V4,
     FULL_SHARD_MANIFEST_RELATIVE_PATH_V4,
     FULL_SHARD_MANIFEST_SCHEMA_V4,
+    GTOK_DATA_ORDER_SEED_BY_TRAINING_SEED_V4,
     MATERIALIZED_CONTENT_SCHEMA_V4,
     MATERIALIZER_SCHEMA_V4,
     RELEASE_MANIFEST_SECTION_SCHEMA_V4,
@@ -1674,6 +1675,124 @@ def _recompute_physical_d6_evidence(
     return observed_physical, published
 
 
+def _validate_physical_d6_consumers(physical_d6: Mapping[str, Any]) -> None:
+    """Validate the exact governed V4 training/data-order consumer matrix."""
+
+    stream_rows = physical_d6.get("stream_identities")
+    if (
+        not isinstance(stream_rows, list)
+        or len(stream_rows) != 2
+        or any(not isinstance(row, Mapping) for row in stream_rows)
+        or tuple(row.get("stream") for row in stream_rows) != ("T", "H")
+    ):
+        raise PBFreezeError("physical D6 consumer stream identities drifted")
+    training_stream, heldout_stream = stream_rows
+
+    order_rows = physical_d6.get("consumer_order_receipts")
+    if not isinstance(order_rows, list) or len(order_rows) != GTOK_SEED_COUNT:
+        raise PBFreezeError("physical D6 consumer order receipt count drifted")
+    orders: dict[int, Mapping[str, Any]] = {}
+    for raw_order in order_rows:
+        order = _exact_mapping(
+            raw_order,
+            {
+                "data_order_seed",
+                "document_count",
+                "document_multiset_sha256",
+                "framed_payload_sha256",
+                "order_key_domain",
+                "ordered_raw_content_ids_sha256",
+                "receipt_sha256",
+                "retained_text_bytes",
+                "schema",
+                "training_seed",
+            },
+            "physical D6 consumer order receipt",
+        )
+        body = dict(order)
+        claimed = _require_sha256(
+            body.pop("receipt_sha256", None), "physical D6 order receipt identity"
+        )
+        training_seed = order.get("training_seed")
+        data_order_seed = order.get("data_order_seed")
+        if (
+            order.get("schema") != CONSUMER_ORDER_SCHEMA_V4
+            or order.get("order_key_domain")
+            != "WEFT-1/gtok-training-order/raw-content-id/v4"
+            or claimed
+            != execution_authority_v4_bound_sha256(
+                CONSUMER_ORDER_SCHEMA_V4, body
+            )
+            or type(training_seed) is not int
+            or type(data_order_seed) is not int
+            or GTOK_DATA_ORDER_SEED_BY_TRAINING_SEED_V4.get(training_seed)
+            != data_order_seed
+            or training_seed in orders
+        ):
+            raise PBFreezeError("physical D6 consumer order receipt drifted")
+        orders[training_seed] = order
+    if set(orders) != set(GTOK_DATA_ORDER_SEED_BY_TRAINING_SEED_V4):
+        raise PBFreezeError("physical D6 governed training-seed rows drifted")
+    if (
+        len({row["document_multiset_sha256"] for row in orders.values()}) != 1
+        or len({row["ordered_raw_content_ids_sha256"] for row in orders.values()})
+        != len(orders)
+        or any(
+            row["document_count"] != training_stream["document_count"]
+            or row["retained_text_bytes"] != training_stream["retained_text_bytes"]
+            for row in orders.values()
+        )
+    ):
+        raise PBFreezeError("physical D6 consumer order pairing drifted")
+
+    bindings = physical_d6.get("consumer_bindings")
+    expected_pairs = {
+        (vocabulary_size, seed)
+        for vocabulary_size in GTOK_VOCABULARY_ARMS
+        for seed in orders
+    }
+    if not isinstance(bindings, list) or len(bindings) != len(expected_pairs):
+        raise PBFreezeError("physical D6 consumer binding count drifted")
+    seen_pairs: set[tuple[int, int]] = set()
+    heldout_sha = heldout_stream["framed_retained_text_sha256"]
+    for raw_binding in bindings:
+        binding = _exact_mapping(
+            raw_binding,
+            {
+                "data_order_seed",
+                "heldout_framed_retained_text_sha256",
+                "training_document_multiset_sha256",
+                "training_order_receipt_sha256",
+                "training_ordered_raw_content_ids_sha256",
+                "training_seed",
+                "vocabulary_size",
+            },
+            "physical D6 consumer binding",
+        )
+        if type(binding.get("training_seed")) is not int or type(
+            binding.get("vocabulary_size")
+        ) is not int:
+            raise PBFreezeError("physical D6 consumer binding drifted")
+        pair = (binding["vocabulary_size"], binding["training_seed"])
+        order = orders.get(pair[1])
+        if (
+            pair not in expected_pairs
+            or pair in seen_pairs
+            or order is None
+            or binding["data_order_seed"] != order["data_order_seed"]
+            or binding["heldout_framed_retained_text_sha256"] != heldout_sha
+            or binding["training_document_multiset_sha256"]
+            != order["document_multiset_sha256"]
+            or binding["training_order_receipt_sha256"] != order["receipt_sha256"]
+            or binding["training_ordered_raw_content_ids_sha256"]
+            != order["ordered_raw_content_ids_sha256"]
+        ):
+            raise PBFreezeError("physical D6 consumer binding drifted")
+        seen_pairs.add(pair)
+    if seen_pairs != expected_pairs:
+        raise PBFreezeError("physical D6 consumer binding matrix is incomplete")
+
+
 def _validate_d4_d5_d6(
     pa: PAInspectionV4, *, independent_scan: Mapping[str, object]
 ) -> dict[str, str]:
@@ -1999,103 +2118,9 @@ def _validate_d4_d5_d6(
 
     # V3's consumer identities use an internal stable document ID that is not
     # present in physical JSONL.  They are historical diagnostics only.  The
-    # gate authority is the independently recomputed V4 raw-content-ID object.
-    order_rows = physical_d6.get("consumer_order_receipts")
-    if not isinstance(order_rows, list) or len(order_rows) != GTOK_SEED_COUNT:
-        raise PBFreezeError("physical D6 consumer order receipt count drifted")
-    orders: dict[int, Mapping[str, Any]] = {}
-    for raw_order in order_rows:
-        order = _exact_mapping(
-            raw_order,
-            {
-                "document_count",
-                "document_multiset_sha256",
-                "framed_payload_sha256",
-                "order_key_domain",
-                "ordered_raw_content_ids_sha256",
-                "receipt_sha256",
-                "retained_text_bytes",
-                "schema",
-                "training_seed",
-            },
-            "physical D6 consumer order receipt",
-        )
-        body = dict(order)
-        claimed = _require_sha256(
-            body.pop("receipt_sha256", None), "physical D6 order receipt identity"
-        )
-        if (
-            order.get("schema") != CONSUMER_ORDER_SCHEMA_V4
-            or order.get("order_key_domain")
-            != "WEFT-1/gtok-training-order/raw-content-id/v4"
-            or claimed
-            != execution_authority_v4_bound_sha256(
-                CONSUMER_ORDER_SCHEMA_V4, body
-            )
-            or type(order.get("training_seed")) is not int
-            or int(order["training_seed"]) in orders
-        ):
-            raise PBFreezeError("physical D6 consumer order receipt drifted")
-        orders[int(order["training_seed"])] = order
-    training_stream = next(
-        row for row in physical_stream_rows if row["stream"] == "T"
-    )
-    if (
-        len({row["document_multiset_sha256"] for row in orders.values()}) != 1
-        or len({row["ordered_raw_content_ids_sha256"] for row in orders.values()})
-        != len(orders)
-        or any(
-            row["document_count"] != training_stream["document_count"]
-            or row["retained_text_bytes"] != training_stream["retained_text_bytes"]
-            for row in orders.values()
-        )
-    ):
-        raise PBFreezeError("physical D6 consumer order pairing drifted")
-
-    bindings = physical_d6.get("consumer_bindings")
-    expected_pairs = {
-        (vocabulary_size, seed)
-        for vocabulary_size in GTOK_VOCABULARY_ARMS
-        for seed in orders
-    }
-    if not isinstance(bindings, list) or len(bindings) != len(expected_pairs):
-        raise PBFreezeError("physical D6 consumer binding count drifted")
-    seen_pairs: set[tuple[int, int]] = set()
-    heldout_sha = next(
-        row["framed_retained_text_sha256"]
-        for row in physical_stream_rows
-        if row["stream"] == "H"
-    )
-    for raw_binding in bindings:
-        binding = _exact_mapping(
-            raw_binding,
-            {
-                "heldout_framed_retained_text_sha256",
-                "training_document_multiset_sha256",
-                "training_order_receipt_sha256",
-                "training_ordered_raw_content_ids_sha256",
-                "training_seed",
-                "vocabulary_size",
-            },
-            "physical D6 consumer binding",
-        )
-        pair = (int(binding["vocabulary_size"]), int(binding["training_seed"]))
-        order = orders.get(pair[1])
-        if (
-            pair not in expected_pairs
-            or pair in seen_pairs
-            or order is None
-            or binding["heldout_framed_retained_text_sha256"] != heldout_sha
-            or binding["training_document_multiset_sha256"]
-            != order["document_multiset_sha256"]
-            or binding["training_order_receipt_sha256"] != order["receipt_sha256"]
-            or binding["training_ordered_raw_content_ids_sha256"]
-            != order["ordered_raw_content_ids_sha256"]
-        ):
-            raise PBFreezeError("physical D6 consumer binding drifted")
-        seen_pairs.add(pair)
-    if seen_pairs != expected_pairs:
-        raise PBFreezeError("physical D6 consumer binding matrix is incomplete")
+    # gate authority is the independently recomputed V4 raw-content-ID object,
+    # including its distinct governed data-order seed for each training row.
+    _validate_physical_d6_consumers(physical_d6)
 
     fit = _exact_mapping(
         d6.get("tokenizer_fit_contract"),

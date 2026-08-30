@@ -23,6 +23,7 @@ import tempfile
 from typing import Any, Iterator, Mapping, TypeVar
 
 from training.weft1_corpus_a2 import (
+    A2_CAMPAIGN_ROOT_SEED,
     A2_ZSTD_CODEC_BINDING,
     GTOK_EXECUTION_AUTHORITY_CHAIN_V3,
     JsonlZstdShardIdentityV3,
@@ -68,6 +69,7 @@ from training.weft1_gtok_contract import (
     GTOK_VOCABULARY_ARMS,
     canonical_json_bytes,
 )
+from training.weft1_seed import derive_module_seed
 from training.weft1_strict_io import (
     assert_no_symlink_ancestors,
     load_canonical_json_snapshot,
@@ -96,6 +98,32 @@ D6_PHYSICAL_EVIDENCE_SCHEMA_V4 = "weft1_corpus_d6_physical_evidence_v4"
 CONSUMER_ORDER_SCHEMA_V4 = "weft1_corpus_consumer_order_receipt_v4"
 TOKENIZER_FIT_INPUT_SCHEMA_V4 = "weft1_gtok_tokenizer_fit_input_v4"
 V4_READINESS = "AUTHORITATIVE_V4_INPUTS_D1_READY_NO_GATE_MINT"
+
+# The A2 seed row has three distinct identities: the row's training seed, the
+# module-initialization seed, and the data-order seed.  The public V4 consumer
+# API remains keyed by ``training_seed`` so all four vocabulary arms share the
+# same two registered rows, but the physical permutation must be driven by the
+# row's derived ``data_order_seed``.  Keep the governed literals here rather
+# than importing the G-TOK campaign (which depends on this materializer).
+GTOK_GOVERNED_DATA_ORDER_SEED_ROWS_V4 = (
+    (4_069_725_298_476_216_533, 10_666_192_988_433_719_740),
+    (13_256_058_689_613_801_745, 4_197_282_192_878_334_768),
+)
+_DERIVED_DATA_ORDER_SEED_ROWS_V4 = tuple(
+    (
+        training_seed,
+        derive_module_seed(
+            A2_CAMPAIGN_ROOT_SEED,
+            f"gtok.data.shared.{training_seed}",
+        ),
+    )
+    for training_seed in GTOK_TRAINING_SEEDS
+)
+if _DERIVED_DATA_ORDER_SEED_ROWS_V4 != GTOK_GOVERNED_DATA_ORDER_SEED_ROWS_V4:
+    raise RuntimeError("A2 governed V4 data-order seed derivation drifted")
+GTOK_DATA_ORDER_SEED_BY_TRAINING_SEED_V4 = dict(
+    GTOK_GOVERNED_DATA_ORDER_SEED_ROWS_V4
+)
 
 
 class CorpusMaterializationV4Error(RuntimeError):
@@ -835,7 +863,7 @@ def recompute_physical_d6_evidence_v4(
         ):
             _framed_ascii_digest_update(multiset, str(row[0]))
         consumer_orders: list[dict[str, object]] = []
-        for training_seed in GTOK_TRAINING_SEEDS:
+        for training_seed, data_order_seed in GTOK_GOVERNED_DATA_ORDER_SEED_ROWS_V4:
             connection.execute("DROP TABLE IF EXISTS consumer_order")
             connection.execute(
                 "CREATE TABLE consumer_order (order_key BLOB NOT NULL, "
@@ -847,7 +875,7 @@ def recompute_physical_d6_evidence_v4(
                 raw_id = str(row[0])
                 order_key = hashlib.sha256(
                     b"WEFT-1/gtok-training-order/raw-content-id/v4\x00"
-                    + training_seed.to_bytes(8, "big")
+                    + data_order_seed.to_bytes(8, "big")
                     + raw_id.encode("ascii")
                 ).digest()
                 connection.execute(
@@ -877,6 +905,7 @@ def recompute_physical_d6_evidence_v4(
             receipt: dict[str, object] = {
                 "document_count": training_count,
                 "document_multiset_sha256": multiset.hexdigest(),
+                "data_order_seed": data_order_seed,
                 "framed_payload_sha256": framed_payload.hexdigest(),
                 "order_key_domain": "WEFT-1/gtok-training-order/raw-content-id/v4",
                 "ordered_raw_content_ids_sha256": ordered_ids.hexdigest(),
@@ -921,6 +950,7 @@ def recompute_physical_d6_evidence_v4(
                 "training_order_receipt_sha256": order_by_seed[training_seed][
                     "receipt_sha256"
                 ],
+                "data_order_seed": order_by_seed[training_seed]["data_order_seed"],
                 "training_ordered_raw_content_ids_sha256": order_by_seed[
                     training_seed
                 ]["ordered_raw_content_ids_sha256"],
@@ -1144,7 +1174,7 @@ def iter_materialized_tokenizer_fit_texts_v4(root: Path) -> Iterator[str]:
 def iter_materialized_training_texts_v4(
     root: Path, *, training_seed: int
 ) -> Iterator[str]:
-    """Yield T in the V4 raw-content-ID seed order used by every vocab arm."""
+    """Yield T in the governed V4 data order for one registered seed row."""
 
     if training_seed not in GTOK_TRAINING_SEEDS:
         raise CorpusMaterializationV4Error("unknown V4 G-TOK training seed")
@@ -1167,6 +1197,11 @@ def iter_materialized_training_texts_v4(
         )
         if receipt is None or receipt.get("schema") != CONSUMER_ORDER_SCHEMA_V4:
             raise CorpusMaterializationV4Error("V4 consumer seed receipt is absent")
+        data_order_seed = GTOK_DATA_ORDER_SEED_BY_TRAINING_SEED_V4[training_seed]
+        if receipt.get("data_order_seed") != data_order_seed:
+            raise CorpusMaterializationV4Error(
+                "V4 consumer receipt uses the wrong governed data-order seed"
+            )
         database = work / "consumer.sqlite"
         connection = sqlite3.connect(database)
         connection.row_factory = sqlite3.Row
@@ -1180,7 +1215,7 @@ def iter_materialized_training_texts_v4(
             ):
                 key = hashlib.sha256(
                     b"WEFT-1/gtok-training-order/raw-content-id/v4\x00"
-                    + training_seed.to_bytes(8, "big")
+                    + data_order_seed.to_bytes(8, "big")
                     + raw_id.encode("ascii")
                 ).digest()
                 connection.execute(
@@ -1908,6 +1943,8 @@ __all__ = [
     "D6_PHYSICAL_EVIDENCE_SCHEMA_V4",
     "FULL_SHARD_MANIFEST_RELATIVE_PATH_V4",
     "FULL_SHARD_MANIFEST_SCHEMA_V4",
+    "GTOK_DATA_ORDER_SEED_BY_TRAINING_SEED_V4",
+    "GTOK_GOVERNED_DATA_ORDER_SEED_ROWS_V4",
     "MATERIALIZER_SCHEMA_V4",
     "SCREEN_SUBMANIFEST_RELATIVE_PATH_V4",
     "SCREEN_SUBMANIFEST_SCHEMA_V4",
