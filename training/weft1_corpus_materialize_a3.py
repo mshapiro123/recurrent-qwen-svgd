@@ -1077,6 +1077,89 @@ def validate_physical_d6_evidence_v4(
     return normalized_recomputed, observed_physical
 
 
+def assert_current_physical_d6_identity_v4(
+    root: Path, *, expected_physical_sha256: str
+) -> dict[str, object]:
+    """Rejoin a previously validated D6 identity to current control artifacts.
+
+    This is the cheap consumer-side companion to
+    :func:`validate_physical_d6_evidence_v4`.  The producer/source loader must
+    first perform that full physical T/H replay and retain its returned file
+    SHA.  A later T or H factory can call this assertion without rescanning the
+    corpus: it authenticates the same immutable D6 artifact, its authority-
+    domain identity, the current physical screen-shard manifest, and the
+    screen-submanifest binding.  The individual shard iterator remains
+    responsible for consuming/verifying the governed shard bytes.
+    """
+
+    if (
+        not isinstance(expected_physical_sha256, str)
+        or re.fullmatch(r"[0-9a-f]{64}", expected_physical_sha256) is None
+    ):
+        raise CorpusMaterializationV4Error(
+            "expected physical D6 evidence SHA-256 is malformed"
+        )
+    resolved = assert_no_symlink_ancestors(root).resolve(strict=True)
+    path = resolved.joinpath(
+        *PurePosixPath(D6_PHYSICAL_EVIDENCE_RELATIVE_PATH_V4).parts
+    )
+    raw, stored = load_canonical_json_snapshot(path)
+    observed_physical = hashlib.sha256(raw).hexdigest()
+    if observed_physical != expected_physical_sha256:
+        raise CorpusMaterializationV4Error(
+            "current physical D6 evidence differs from source-loaded identity"
+        )
+    stored = dict(stored)
+    if (
+        stored.get("schema") != D6_PHYSICAL_EVIDENCE_SCHEMA_V4
+        or stored.get("authority_chain")
+        != list(GTOK_EXECUTION_AUTHORITY_CHAIN_V4)
+        or stored.get("gate") != "D6"
+        or stored.get("gate_minted") is not False
+        or stored.get("status") != "PHYSICAL_REREAD_PASS_NO_GATE_MINT"
+    ):
+        raise CorpusMaterializationV4Error(
+            "current physical D6 evidence authority fields drifted"
+        )
+    evidence_identity = stored.get("evidence_identity_sha256")
+    core = dict(stored)
+    core.pop("evidence_identity_sha256", None)
+    if (
+        not isinstance(evidence_identity, str)
+        or evidence_identity
+        != execution_authority_v4_bound_sha256(
+            D6_PHYSICAL_EVIDENCE_SCHEMA_V4, core
+        )
+    ):
+        raise CorpusMaterializationV4Error(
+            "current physical D6 evidence identity drifted"
+        )
+    screen_manifest_sha256, _ = _load_screen_shard_manifest_v4(resolved)
+    if screen_manifest_sha256 != stored.get("screen_shard_manifest_sha256"):
+        raise CorpusMaterializationV4Error(
+            "current screen-shard manifest differs from physical D6 evidence"
+        )
+    screen_path = resolved.joinpath(
+        *PurePosixPath(SCREEN_SUBMANIFEST_RELATIVE_PATH_V4).parts
+    )
+    if not screen_path.is_file() or screen_path.is_symlink():
+        raise CorpusMaterializationV4Error(
+            "current V4 screen submanifest is absent"
+        )
+    _, screen = load_canonical_json_snapshot(screen_path)
+    if (
+        screen.get("d6_physical_evidence_path")
+        != D6_PHYSICAL_EVIDENCE_RELATIVE_PATH_V4
+        or screen.get("d6_physical_evidence_sha256") != observed_physical
+        or screen.get("d6_physical_evidence_identity_sha256")
+        != evidence_identity
+    ):
+        raise CorpusMaterializationV4Error(
+            "screen submanifest does not bind current physical D6 evidence"
+        )
+    return stored
+
+
 def _iter_physical_stream_records_v4(
     root: Path, *, stream: str
 ) -> Iterator[tuple[str, bytes]]:
@@ -1172,18 +1255,34 @@ def iter_materialized_tokenizer_fit_texts_v4(root: Path) -> Iterator[str]:
 
 
 def iter_materialized_training_texts_v4(
-    root: Path, *, training_seed: int
+    root: Path,
+    *,
+    training_seed: int,
+    expected_physical_d6_evidence_sha256: str | None = None,
+    expected_consumer_order_receipt: tuple[int, int, str] | None = None,
 ) -> Iterator[str]:
     """Yield T in the governed V4 data order for one registered seed row."""
 
     if training_seed not in GTOK_TRAINING_SEEDS:
         raise CorpusMaterializationV4Error("unknown V4 G-TOK training seed")
+    if (expected_physical_d6_evidence_sha256 is None) != (
+        expected_consumer_order_receipt is None
+    ):
+        raise CorpusMaterializationV4Error(
+            "source-loaded V4 D6 and consumer-order expectations must be paired"
+        )
     resolved = assert_no_symlink_ancestors(root).resolve(strict=True)
     with tempfile.TemporaryDirectory(prefix="weft1-v4-train-order-") as raw_work:
         work = Path(raw_work)
-        evidence, _ = validate_physical_d6_evidence_v4(
-            root=resolved, sqlite_path=work / "verify.sqlite"
-        )
+        if expected_physical_d6_evidence_sha256 is None:
+            evidence, _ = validate_physical_d6_evidence_v4(
+                root=resolved, sqlite_path=work / "verify.sqlite"
+            )
+        else:
+            evidence = assert_current_physical_d6_identity_v4(
+                resolved,
+                expected_physical_sha256=expected_physical_d6_evidence_sha256,
+            )
         receipts = evidence.get("consumer_order_receipts")
         if not isinstance(receipts, list):
             raise CorpusMaterializationV4Error("V4 consumer receipts are absent")
@@ -1202,6 +1301,32 @@ def iter_materialized_training_texts_v4(
             raise CorpusMaterializationV4Error(
                 "V4 consumer receipt uses the wrong governed data-order seed"
             )
+        if expected_consumer_order_receipt is not None:
+            if (
+                not isinstance(expected_consumer_order_receipt, tuple)
+                or len(expected_consumer_order_receipt) != 3
+                or not isinstance(expected_consumer_order_receipt[0], int)
+                or isinstance(expected_consumer_order_receipt[0], bool)
+                or not isinstance(expected_consumer_order_receipt[1], int)
+                or isinstance(expected_consumer_order_receipt[1], bool)
+                or not isinstance(expected_consumer_order_receipt[2], str)
+                or re.fullmatch(
+                    r"[0-9a-f]{64}", expected_consumer_order_receipt[2]
+                )
+                is None
+            ):
+                raise CorpusMaterializationV4Error(
+                    "source-loaded V4 consumer-order expectation is malformed"
+                )
+            observed_receipt = (
+                int(receipt["training_seed"]),
+                int(receipt["data_order_seed"]),
+                str(receipt["ordered_raw_content_ids_sha256"]),
+            )
+            if observed_receipt != expected_consumer_order_receipt:
+                raise CorpusMaterializationV4Error(
+                    "current V4 consumer order differs from source-loaded receipt"
+                )
         database = work / "consumer.sqlite"
         connection = sqlite3.connect(database)
         connection.row_factory = sqlite3.Row
@@ -1951,6 +2076,7 @@ __all__ = [
     "TOKENIZER_FIT_INPUT_SCHEMA_V4",
     "MaterializationInputV4",
     "VerifiedCacheAdapterV4",
+    "assert_current_physical_d6_identity_v4",
     "finalize_materialization_output_v4",
     "build_physical_d6_evidence_v4",
     "load_cache_download_artifact_v4",

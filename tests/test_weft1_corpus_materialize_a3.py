@@ -631,14 +631,61 @@ def _run_and_assert_forward_finalizer_fixture(
         "training-three",
         "training-four",
     )
+    order_receipt_by_seed = {
+        row["training_seed"]: row
+        for row in d6_physical["consumer_order_receipts"]
+    }
     training_orders = tuple(
         tuple(
             bridge.iter_materialized_training_texts_v4(
-                output, training_seed=seed
+                output,
+                training_seed=seed,
+                expected_physical_d6_evidence_sha256=recomputed_d6_sha,
+                expected_consumer_order_receipt=(
+                    seed,
+                    order_receipt_by_seed[seed]["data_order_seed"],
+                    order_receipt_by_seed[seed][
+                        "ordered_raw_content_ids_sha256"
+                    ],
+                ),
             )
         )
         for seed in bridge.GTOK_TRAINING_SEEDS
     )
+    first_seed = bridge.GTOK_TRAINING_SEEDS[0]
+    first_receipt = order_receipt_by_seed[first_seed]
+    with pytest.raises(
+        bridge.CorpusMaterializationV4Error,
+        match="differs from source-loaded identity",
+    ):
+        tuple(
+            bridge.iter_materialized_training_texts_v4(
+                output,
+                training_seed=first_seed,
+                expected_physical_d6_evidence_sha256="0" * 64,
+                expected_consumer_order_receipt=(
+                    first_seed,
+                    first_receipt["data_order_seed"],
+                    first_receipt["ordered_raw_content_ids_sha256"],
+                ),
+            )
+        )
+    with pytest.raises(
+        bridge.CorpusMaterializationV4Error,
+        match="differs from source-loaded receipt",
+    ):
+        tuple(
+            bridge.iter_materialized_training_texts_v4(
+                output,
+                training_seed=first_seed,
+                expected_physical_d6_evidence_sha256=recomputed_d6_sha,
+                expected_consumer_order_receipt=(
+                    first_seed,
+                    first_receipt["data_order_seed"],
+                    "0" * 64,
+                ),
+            )
+        )
     def expected_order(order_seed: int) -> tuple[str, ...]:
         rows = []
         for text in fit_texts:
@@ -805,6 +852,33 @@ def test_physical_d6_rejects_self_consistent_data_order_seed_substitution(
     ):
         bridge.validate_physical_d6_evidence_v4(
             root=output, sqlite_path=work / "substituted-seed-d6.sqlite"
+        )
+
+
+def test_current_physical_d6_identity_rejoins_heldout_control_chain(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    output, _work = _run_and_assert_forward_finalizer_fixture(tmp_path, monkeypatch)
+    d6_path = output / bridge.D6_PHYSICAL_EVIDENCE_RELATIVE_PATH_V4
+    expected_d6_sha256 = hashlib.sha256(d6_path.read_bytes()).hexdigest()
+    observed = bridge.assert_current_physical_d6_identity_v4(
+        output, expected_physical_sha256=expected_d6_sha256
+    )
+    assert observed["screen_shard_manifest_sha256"] == hashlib.sha256(
+        (output / "artifacts" / "shard-manifest.json").read_bytes()
+    ).hexdigest()
+
+    manifest_path = output / "artifacts" / "shard-manifest.json"
+    _, manifest = bridge.load_canonical_json_snapshot(manifest_path)
+    changed = json.loads(json.dumps(manifest))
+    changed["tokenizer_fit_input_receipt_sha256"] = "0" * 64
+    _write(manifest_path, changed)
+    with pytest.raises(
+        bridge.CorpusMaterializationV4Error,
+        match="screen-shard manifest differs",
+    ):
+        bridge.assert_current_physical_d6_identity_v4(
+            output, expected_physical_sha256=expected_d6_sha256
         )
 
 

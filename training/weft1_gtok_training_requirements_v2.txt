@@ -1,0 +1,6 @@
+# WEFT-1 G-TOK training roots.  The generated lock is Linux x86_64,
+# CPython 3.11.9, CUDA 12.8.  No torchvision/torchaudio are in scope.
+pip
+tokenizers==0.22.2
+torch==2.11.0+cu128
+zstandard==0.25.0

@@ -13,14 +13,16 @@ from fractions import Fraction
 import math
 from typing import NoReturn
 
-from training.weft1_gtok_a1_contract import ScreenCorpusReceiptV2
 from training.weft1_gtok_contract import (
     FlatAdamWRecipe,
     GTOK_EXECUTION_AUTHORITY_CHAIN_V2,
     GTOK_HELDOUT_BYTE_TARGET,
     GTOK_PROXY_TOPOLOGY_SHA256,
+    GTOK_SCREEN_HELDOUT_STRATUM_TARGETS,
+    GTOK_SCREEN_TRAIN_STRATUM_TARGETS,
     GTOK_SEED_COUNT,
     GTOK_STRATA,
+    GTOK_STRATUM_TOLERANCE,
     GTOK_TRAINING_BYTE_BUDGET,
     GTOK_VOCABULARY_ARMS,
     StratumNllReceipt,
@@ -142,59 +144,168 @@ def gtok_v2_bound_sha256(schema: str, value: object) -> str:
 
 
 @dataclass(frozen=True)
+class A2FirstFitGroupReceiptV2:
+    """One A2 first-fit-continuation group, without A1 prefix-floor fields."""
+
+    stream: str
+    stratum: str
+    target_bytes: int
+    realized_bytes: int
+    deficit_bytes: int
+    document_count: int
+    ordered_raw_content_ids_sha256: str
+
+    def __post_init__(self) -> None:
+        if self.stream not in ("T", "H"):
+            raise ValueError("first-fit stream must be T or H")
+        if self.stratum not in GTOK_STRATA:
+            raise ValueError("first-fit group has an unregistered stratum")
+        targets = dict(
+            GTOK_SCREEN_TRAIN_STRATUM_TARGETS
+            if self.stream == "T"
+            else GTOK_SCREEN_HELDOUT_STRATUM_TARGETS
+        )
+        for name, minimum in (
+            ("target_bytes", 1),
+            ("realized_bytes", 1),
+            ("deficit_bytes", 0),
+            ("document_count", 1),
+        ):
+            _require_exact_int(getattr(self, name), name, minimum=minimum)
+        if self.target_bytes != targets[self.stratum]:
+            raise ValueError("first-fit target differs from the governed target")
+        if self.target_bytes - self.realized_bytes != self.deficit_bytes:
+            raise ValueError("first-fit deficit must equal target minus realized")
+        if Fraction(self.deficit_bytes, self.target_bytes) > GTOK_STRATUM_TOLERANCE:
+            raise ValueError("first-fit group exceeds the 0.5 percent tolerance")
+        _require_sha256(
+            self.ordered_raw_content_ids_sha256,
+            "ordered_raw_content_ids_sha256",
+        )
+
+
+@dataclass(frozen=True)
+class A2FirstFitScreenReceiptV2:
+    """The eight canonical A2 first-fit groups and physical T/H identities."""
+
+    groups: tuple[A2FirstFitGroupReceiptV2, ...]
+    training_framed_stream_sha256: str
+    heldout_framed_stream_sha256: str
+    document_overlap_count: int
+    cluster_overlap_count: int
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.groups, tuple) or any(
+            not isinstance(row, A2FirstFitGroupReceiptV2) for row in self.groups
+        ):
+            raise TypeError("first-fit groups must be a tuple of group receipts")
+        expected = tuple(
+            (stream, stratum)
+            for stream in ("T", "H")
+            for stratum in GTOK_STRATA
+        )
+        observed = tuple((row.stream, row.stratum) for row in self.groups)
+        if observed != expected:
+            raise ValueError("first-fit groups must be the exact canonical eight")
+        _require_sha256(
+            self.training_framed_stream_sha256,
+            "training_framed_stream_sha256",
+        )
+        _require_sha256(
+            self.heldout_framed_stream_sha256,
+            "heldout_framed_stream_sha256",
+        )
+        for name in ("document_overlap_count", "cluster_overlap_count"):
+            if type(getattr(self, name)) is not int or getattr(self, name) != 0:
+                raise ValueError(f"{name} must be exact zero")
+
+    @property
+    def training(self) -> tuple[A2FirstFitGroupReceiptV2, ...]:
+        return tuple(row for row in self.groups if row.stream == "T")
+
+    @property
+    def heldout(self) -> tuple[A2FirstFitGroupReceiptV2, ...]:
+        return tuple(row for row in self.groups if row.stream == "H")
+
+    @property
+    def training_target_bytes(self) -> int:
+        return sum(row.target_bytes for row in self.training)
+
+    @property
+    def training_realized_bytes(self) -> int:
+        return sum(row.realized_bytes for row in self.training)
+
+    @property
+    def heldout_target_bytes(self) -> int:
+        return sum(row.target_bytes for row in self.heldout)
+
+    @property
+    def heldout_realized_bytes(self) -> int:
+        return sum(row.realized_bytes for row in self.heldout)
+
+    @property
+    def receipt_sha256(self) -> str:
+        return gtok_v2_bound_sha256("weft1_gtok_v2_a2_first_fit_screen", self)
+
+
+@dataclass(frozen=True)
 class FrozenScreenCorpusV2:
-    """P-B-frozen parent corpus plus A1's independent T/H floors."""
+    """P-B-frozen corpus and the revalidated A2 first-fit physical view."""
 
     full_corpus_manifest_sha256: str
     screen_submanifest_sha256: str
+    d6_physical_evidence_sha256: str
     corpus_freeze_receipt_sha256: str
     d1_d6_gate_bundle_sha256: str
     decontamination_receipt_sha256: str
-    floors: ScreenCorpusReceiptV2
+    first_fit: A2FirstFitScreenReceiptV2
 
     def __post_init__(self) -> None:
         for name in (
             "full_corpus_manifest_sha256",
             "screen_submanifest_sha256",
+            "d6_physical_evidence_sha256",
             "corpus_freeze_receipt_sha256",
             "d1_d6_gate_bundle_sha256",
             "decontamination_receipt_sha256",
         ):
             _require_sha256(getattr(self, name), name)
-        if not isinstance(self.floors, ScreenCorpusReceiptV2):
-            raise TypeError("floors must be an A1 ScreenCorpusReceiptV2")
-        if self.floors.training_target_bytes != GTOK_TRAINING_BYTE_BUDGET:
+        if not isinstance(self.first_fit, A2FirstFitScreenReceiptV2):
+            raise TypeError("first_fit must be an A2FirstFitScreenReceiptV2")
+        if self.first_fit.training_target_bytes != GTOK_TRAINING_BYTE_BUDGET:
             raise ValueError("T target must remain exactly 4,000,000,000 bytes")
-        if self.floors.heldout_target_bytes != GTOK_HELDOUT_BYTE_TARGET:
+        if self.first_fit.heldout_target_bytes != GTOK_HELDOUT_BYTE_TARGET:
             raise ValueError("H target must remain exactly 80,000,000 bytes")
 
     @property
     def training_target_bytes(self) -> int:
-        return self.floors.training_target_bytes
+        return self.first_fit.training_target_bytes
 
     @property
     def training_realized_bytes(self) -> int:
-        return self.floors.training_realized_bytes
+        return self.first_fit.training_realized_bytes
 
     @property
     def heldout_target_bytes(self) -> int:
-        return self.floors.heldout_target_bytes
+        return self.first_fit.heldout_target_bytes
 
     @property
     def heldout_realized_bytes(self) -> int:
-        return self.floors.heldout_realized_bytes
+        return self.first_fit.heldout_realized_bytes
 
     @property
     def training_stream_sha256(self) -> str:
-        return self.floors.training_stream_sha256
+        return self.first_fit.training_framed_stream_sha256
 
     @property
     def heldout_stream_sha256(self) -> str:
-        return self.floors.heldout_stream_sha256
+        return self.first_fit.heldout_framed_stream_sha256
 
     @property
     def heldout_denominator_signature(self) -> tuple[tuple[str, int], ...]:
-        return tuple((row.stratum, row.realized_bytes) for row in self.floors.heldout)
+        return tuple(
+            (row.stratum, row.realized_bytes) for row in self.first_fit.heldout
+        )
 
     @property
     def receipt_sha256(self) -> str:
@@ -357,11 +468,14 @@ class GTokRunReceiptV2:
     shared_initial_state_sha256: str
     data_order_seed: int
     data_order_sha256: str
+    training_runtime_receipt_sha256: str
+    code_closure_receipt_sha256: str
     compute_attempt_id: str
     measured_a100_microseconds: int
     measured_flops: int
     optimizer: FlatAdamWRecipe
     observations: tuple[BpbMilestoneReceiptV2, ...]
+    gpu_uuid_provenance: str | None = None
     model_topology_sha256: str = GTOK_PROXY_TOPOLOGY_SHA256
     executing_block_count: int = 10
     checkpoint_retained: bool = False
@@ -379,6 +493,8 @@ class GTokRunReceiptV2:
             "initialization_recipe_sha256",
             "shared_initial_state_sha256",
             "data_order_sha256",
+            "training_runtime_receipt_sha256",
+            "code_closure_receipt_sha256",
             "model_topology_sha256",
         ):
             _require_sha256(getattr(self, name), name)
@@ -391,6 +507,12 @@ class GTokRunReceiptV2:
                 raise TypeError(f"{name} must be an exact integer")
         if not isinstance(self.compute_attempt_id, str) or not self.compute_attempt_id:
             raise ValueError("compute_attempt_id must be nonempty")
+        if self.gpu_uuid_provenance is not None and (
+            not isinstance(self.gpu_uuid_provenance, str)
+            or not self.gpu_uuid_provenance.startswith("GPU-")
+            or len(self.gpu_uuid_provenance) <= 4
+        ):
+            raise ValueError("GPU UUID provenance must be an NVIDIA GPU UUID")
         _require_exact_int(
             self.measured_a100_microseconds,
             "measured_a100_microseconds",
@@ -442,7 +564,7 @@ class GTokRunReceiptV2:
 
 @dataclass(frozen=True)
 class ArmCalibrationProjectionV2:
-    """Measured <=100-step calibration and exact projection for one arm."""
+    """Literal 20-warmup/80-measured calibration and exact arm projection."""
 
     scope: str
     vocab_size: int
@@ -454,6 +576,11 @@ class ArmCalibrationProjectionV2:
     projected_run_a100_microseconds: int
     full_run_count: int = GTOK_SEED_COUNT
     full_run_attempt_count_at_projection: int = 0
+    charged_calibration_a100_microseconds: int | None = None
+    measured_heldout_evaluation_a100_microseconds: int = 0
+    heldout_evaluations_per_full_run: int = 0
+    measured_output_surface_a100_microseconds: int = 0
+    output_surface_benchmarks_per_full_run: int = 0
 
     def __post_init__(self) -> None:
         if self.scope not in GTOK_COMPUTE_SCOPES:
@@ -467,6 +594,8 @@ class ArmCalibrationProjectionV2:
         _require_exact_int(self.calibration_steps, "calibration_steps", minimum=1)
         if self.calibration_steps > GTOK_CALIBRATION_MAX_STEPS:
             raise ValueError("an A2-R6 calibration burst may not exceed 100 steps")
+        if self.calibration_steps != GTOK_CALIBRATION_MAX_STEPS:
+            raise ValueError("A2 calibration must execute exactly 20 warmup + 80 measured steps")
         for name in (
             "measured_tokens",
             "measured_a100_microseconds",
@@ -474,9 +603,44 @@ class ArmCalibrationProjectionV2:
             "projected_run_a100_microseconds",
         ):
             _require_exact_int(getattr(self, name), name, minimum=1)
-        expected_projection = _ceil_div(
+        training_projection = _ceil_div(
             self.measured_a100_microseconds * self.planned_tokens_per_run,
             self.measured_tokens,
+        )
+        _require_exact_int(
+            self.measured_heldout_evaluation_a100_microseconds,
+            "measured_heldout_evaluation_a100_microseconds",
+        )
+        _require_exact_int(
+            self.heldout_evaluations_per_full_run,
+            "heldout_evaluations_per_full_run",
+        )
+        if self.heldout_evaluations_per_full_run not in (0, 3):
+            raise ValueError("full-run projection must bind all three H evaluations")
+        if bool(self.measured_heldout_evaluation_a100_microseconds) != bool(
+            self.heldout_evaluations_per_full_run
+        ):
+            raise ValueError("H-evaluation projection evidence is incomplete")
+        _require_exact_int(
+            self.measured_output_surface_a100_microseconds,
+            "measured_output_surface_a100_microseconds",
+        )
+        _require_exact_int(
+            self.output_surface_benchmarks_per_full_run,
+            "output_surface_benchmarks_per_full_run",
+        )
+        if self.output_surface_benchmarks_per_full_run not in (0, 1):
+            raise ValueError("full-run projection may price one output-surface panel")
+        if bool(self.measured_output_surface_a100_microseconds) != bool(
+            self.output_surface_benchmarks_per_full_run
+        ):
+            raise ValueError("output-surface projection evidence is incomplete")
+        expected_projection = training_projection + (
+            self.measured_heldout_evaluation_a100_microseconds
+            * self.heldout_evaluations_per_full_run
+        ) + (
+            self.measured_output_surface_a100_microseconds
+            * self.output_surface_benchmarks_per_full_run
         )
         if self.projected_run_a100_microseconds != expected_projection:
             raise ValueError("per-arm projection must be computed from measured tokens/sec")
@@ -484,16 +648,123 @@ class ArmCalibrationProjectionV2:
             raise ValueError("each projected arm must price the registered two-seed panel")
         if self.full_run_attempt_count_at_projection != 0:
             raise GTokV2Stop("preflight projection must precede every full-run launch")
+        if self.charged_calibration_a100_microseconds is not None:
+            _require_exact_int(
+                self.charged_calibration_a100_microseconds,
+                "charged_calibration_a100_microseconds",
+                minimum=1,
+            )
+            if self.charged_calibration_a100_microseconds < self.measured_a100_microseconds:
+                raise ValueError("charged calibration time cannot omit the warmup window")
+
+    @property
+    def charged_a100_microseconds(self) -> int:
+        """All 100 steps are charged; legacy fixtures default to their measured value."""
+
+        return (
+            self.measured_a100_microseconds
+            if self.charged_calibration_a100_microseconds is None
+            else self.charged_calibration_a100_microseconds
+        )
 
     @property
     def projected_scope_a100_microseconds(self) -> int:
-        return self.measured_a100_microseconds + (
+        return self.charged_a100_microseconds + (
             self.full_run_count * self.projected_run_a100_microseconds
         )
 
     @property
     def receipt_sha256(self) -> str:
         return gtok_v2_bound_sha256("weft1_gtok_v2_arm_calibration_projection", self)
+
+
+@dataclass(frozen=True)
+class PrecalibrationReplayAttemptReceiptV2:
+    """One durably metered physical replica in the pre-calibration replay gate.
+
+    Replay attempts deliberately have their own receipt shape.  A first replica
+    is the measurement burst which creates the pair projection, so pretending it
+    already had an arm-calibration projection would be circular.  A second
+    replica must, by contrast, join the measured pair projection and its exact
+    2x watchdog.  Failed and hard-killed retries remain in this ledger.
+    """
+
+    attempt_id: str
+    scope: str
+    kind: str
+    vocab_size: int
+    terminal_rows: int
+    representative_seed: int
+    replica_index: int
+    consumed_a100_microseconds: int
+    status: str
+    replay_plan_binding_sha256: str
+    replay_pair_projection_sha256: str | None = None
+    projected_replica_a100_microseconds: int | None = None
+    watchdog_limit_a100_microseconds: int | None = None
+    hard_abort_issued: bool = False
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.attempt_id, str) or not self.attempt_id:
+            raise ValueError("replay compute attempt_id must be nonempty")
+        if self.scope != "base_screen" or self.kind != "determinism_replay":
+            raise ValueError("determinism replay attempts belong to the base preflight")
+        if self.vocab_size not in GTOK_VOCABULARY_ARMS:
+            raise ValueError("replay attempt uses an unregistered vocabulary")
+        _require_exact_int(self.terminal_rows, "terminal_rows", minimum=1)
+        if type(self.representative_seed) is not int:
+            raise TypeError("representative_seed must be an exact integer")
+        if self.replica_index not in (0, 1):
+            raise ValueError("replay attempt replica index must be zero or one")
+        _require_exact_int(
+            self.consumed_a100_microseconds,
+            "consumed_a100_microseconds",
+            minimum=1,
+        )
+        if self.status not in ("completed", "failed", "preempted", "aborted_watchdog"):
+            raise ValueError("durable replay attempt has an unregistered terminal status")
+        _require_sha256(
+            self.replay_plan_binding_sha256,
+            "replay_plan_binding_sha256",
+        )
+        projection_values = (
+            self.replay_pair_projection_sha256,
+            self.projected_replica_a100_microseconds,
+            self.watchdog_limit_a100_microseconds,
+        )
+        if self.replica_index == 1:
+            if any(value is None for value in projection_values):
+                raise ValueError("second replay replica must join its measured projection")
+            _require_sha256(
+                str(self.replay_pair_projection_sha256),
+                "replay_pair_projection_sha256",
+            )
+            _require_exact_int(
+                int(self.projected_replica_a100_microseconds),
+                "projected_replica_a100_microseconds",
+                minimum=1,
+            )
+            if self.watchdog_limit_a100_microseconds != (
+                GTOK_PER_RUN_WATCHDOG_MULTIPLIER
+                * int(self.projected_replica_a100_microseconds)
+            ):
+                raise ValueError("second replay watchdog must be exactly 2x projection")
+        elif any(value is not None for value in projection_values):
+            raise ValueError("first replay burst may not claim a prior pair projection")
+        if type(self.hard_abort_issued) is not bool:
+            raise TypeError("hard_abort_issued must be an exact bool")
+        if self.status == "aborted_watchdog":
+            if self.replica_index != 1 or not self.hard_abort_issued:
+                raise ValueError("only a second replay replica may hard-abort at its watchdog")
+        elif self.hard_abort_issued:
+            raise ValueError("replay hard abort requires watchdog-aborted status")
+
+    @property
+    def receipt_sha256(self) -> str:
+        return gtok_v2_bound_sha256(
+            "weft1_gtok_v2_precalibration_replay_compute_attempt",
+            self,
+        )
 
 
 @dataclass(frozen=True)
@@ -507,6 +778,11 @@ class PreflightProjectionReceiptV2:
     projected_campaign_a100_microseconds: int
     full_run_launch_count_at_projection: int = 0
     tripwire_a100_microseconds: int = GTOK_TRIPWIRE_A100_MICROSECONDS
+    recovered_attempt_a100_microseconds: int = 0
+    precalibration_replay_attempts: tuple[PrecalibrationReplayAttemptReceiptV2, ...] = ()
+    precalibration_replay_plan_set_sha256: str | None = None
+    precalibration_replay_receipt_sha256s: tuple[str, ...] = ()
+    precalibration_replay_authority_sha256: str | None = None
 
     def __post_init__(self) -> None:
         if self.scope not in GTOK_COMPUTE_SCOPES:
@@ -514,6 +790,10 @@ class PreflightProjectionReceiptV2:
         _require_exact_int(
             self.prior_campaign_a100_microseconds,
             "prior_campaign_a100_microseconds",
+        )
+        _require_exact_int(
+            self.recovered_attempt_a100_microseconds,
+            "recovered_attempt_a100_microseconds",
         )
         if self.scope == "base_screen":
             if self.prior_campaign_a100_microseconds != 0:
@@ -538,6 +818,41 @@ class PreflightProjectionReceiptV2:
             raise TypeError("calibrations must contain ArmCalibrationProjectionV2 values")
         if any(item.scope != self.scope for item in self.calibrations):
             raise ValueError("calibration scope differs from its preflight")
+        replay_bound = bool(self.precalibration_replay_attempts)
+        if replay_bound:
+            if self.scope != "base_screen" or any(
+                not isinstance(item, PrecalibrationReplayAttemptReceiptV2)
+                for item in self.precalibration_replay_attempts
+            ):
+                raise TypeError("base preflight replay attempts require typed receipts")
+            for name, value in (
+                (
+                    "precalibration_replay_plan_set_sha256",
+                    self.precalibration_replay_plan_set_sha256,
+                ),
+                (
+                    "precalibration_replay_authority_sha256",
+                    self.precalibration_replay_authority_sha256,
+                ),
+            ):
+                _require_sha256(str(value), name)
+            if not self.precalibration_replay_receipt_sha256s:
+                raise ValueError("base preflight must bind every green replay pair receipt")
+            for value in self.precalibration_replay_receipt_sha256s:
+                _require_sha256(value, "precalibration_replay_receipt_sha256s")
+            if len(set(self.precalibration_replay_receipt_sha256s)) != len(
+                self.precalibration_replay_receipt_sha256s
+            ):
+                raise ValueError("pre-calibration replay receipt identities must be unique")
+        elif any(
+            value
+            for value in (
+                self.precalibration_replay_plan_set_sha256,
+                self.precalibration_replay_receipt_sha256s,
+                self.precalibration_replay_authority_sha256,
+            )
+        ):
+            raise ValueError("pre-calibration replay binding is incomplete")
         vocabularies = tuple(item.vocab_size for item in self.calibrations)
         if vocabularies != tuple(sorted(set(vocabularies))):
             raise ValueError("preflight calibrations must use unique ascending arms")
@@ -549,8 +864,16 @@ class PreflightProjectionReceiptV2:
             "projected_campaign_a100_microseconds",
             minimum=1,
         )
-        expected = self.prior_campaign_a100_microseconds + sum(
+        expected = (
+            self.prior_campaign_a100_microseconds
+            + self.recovered_attempt_a100_microseconds
+            + sum(
+                item.consumed_a100_microseconds
+                for item in self.precalibration_replay_attempts
+            )
+            + sum(
             item.projected_scope_a100_microseconds for item in self.calibrations
+            )
         )
         if self.projected_campaign_a100_microseconds != expected:
             raise ValueError("campaign projection must use measured per-arm throughput")
@@ -623,8 +946,6 @@ class ComputeAttemptReceiptV2:
         if type(self.hard_abort_issued) is not bool:
             raise TypeError("hard_abort_issued must be an exact bool")
         exceeded = self.consumed_a100_microseconds > expected_limit
-        if self.kind == "calibration" and exceeded:
-            raise ValueError("calibration compute cannot exceed its projected run watchdog")
         if self.kind == "full_run" and exceeded:
             if self.status != "aborted_watchdog" or not self.hard_abort_issued:
                 raise GTokV2Stop(
@@ -717,7 +1038,9 @@ class CampaignComputeReceiptV2:
     scope: str
     predecessor_campaign_sha256: str | None
     preflight: PreflightProjectionReceiptV2
-    attempts: tuple[ComputeAttemptReceiptV2, ...]
+    attempts: tuple[
+        ComputeAttemptReceiptV2 | PrecalibrationReplayAttemptReceiptV2, ...
+    ]
     event_ledger_sha256: str
     consumed_a100_microseconds: int
     selected_run_a100_microseconds: int
@@ -745,17 +1068,33 @@ class CampaignComputeReceiptV2:
             )
         if not isinstance(self.attempts, tuple) or not self.attempts:
             raise ValueError("campaign requires a nonempty all-attempt ledger")
-        if any(not isinstance(item, ComputeAttemptReceiptV2) for item in self.attempts):
-            raise TypeError("attempts must contain ComputeAttemptReceiptV2 values")
+        if any(
+            not isinstance(
+                item,
+                (ComputeAttemptReceiptV2, PrecalibrationReplayAttemptReceiptV2),
+            )
+            for item in self.attempts
+        ):
+            raise TypeError("attempts must contain registered compute-attempt receipts")
         if any(item.scope != self.scope for item in self.attempts):
             raise ValueError("compute attempt scope differs from its campaign")
         attempt_ids = tuple(item.attempt_id for item in self.attempts)
         if len(set(attempt_ids)) != len(attempt_ids):
             raise ValueError("campaign compute attempt IDs must be unique")
         projections = {item.vocab_size: item for item in self.preflight.calibrations}
-        if any(item.vocab_size not in projections for item in self.attempts):
+        ordinary_attempts = tuple(
+            item for item in self.attempts if isinstance(item, ComputeAttemptReceiptV2)
+        )
+        replay_attempts = tuple(
+            item
+            for item in self.attempts
+            if isinstance(item, PrecalibrationReplayAttemptReceiptV2)
+        )
+        if replay_attempts != self.preflight.precalibration_replay_attempts:
+            raise ValueError("campaign replay meter differs from its preflight authority")
+        if any(item.vocab_size not in projections for item in ordinary_attempts):
             raise ValueError("compute attempt lacks a per-arm calibration projection")
-        for attempt in self.attempts:
+        for attempt in ordinary_attempts:
             projection = projections[attempt.vocab_size]
             if (
                 attempt.calibration_projection_sha256 != projection.receipt_sha256
@@ -764,10 +1103,8 @@ class CampaignComputeReceiptV2:
             ):
                 raise ValueError("compute attempt does not join its arm projection")
         calibration_attempts = tuple(
-            item for item in self.attempts if item.kind == "calibration"
+            item for item in ordinary_attempts if item.kind == "calibration"
         )
-        if len(calibration_attempts) != len(self.preflight.calibrations):
-            raise ValueError("every per-arm calibration must be charged exactly once")
         calibration_by_id = {item.attempt_id: item for item in calibration_attempts}
         for projection in self.preflight.calibrations:
             attempt = calibration_by_id.get(projection.calibration_attempt_id)
@@ -775,10 +1112,21 @@ class CampaignComputeReceiptV2:
                 attempt is None
                 or attempt.vocab_size != projection.vocab_size
                 or attempt.consumed_a100_microseconds
-                != projection.measured_a100_microseconds
+                != projection.charged_a100_microseconds
                 or attempt.status != "completed"
             ):
                 raise ValueError("calibration attempt is absent from the cumulative ledger")
+        for projection in self.preflight.calibrations:
+            completed_for_arm = tuple(
+                item
+                for item in calibration_attempts
+                if item.vocab_size == projection.vocab_size
+                and item.status == "completed"
+            )
+            if len(completed_for_arm) != 1:
+                raise ValueError(
+                    "each arm needs exactly one completed calibration; retries remain charged"
+                )
         _require_sha256(self.event_ledger_sha256, "event_ledger_sha256")
         _require_exact_int(
             self.consumed_a100_microseconds,
@@ -797,7 +1145,7 @@ class CampaignComputeReceiptV2:
         )
         if self.selected_run_a100_microseconds > sum(
             item.consumed_a100_microseconds
-            for item in self.attempts
+            for item in ordinary_attempts
             if item.kind == "full_run"
         ):
             raise ValueError("selected-run compute cannot exceed full-run attempt compute")
@@ -838,6 +1186,8 @@ class ValidatedGTokMatrixV2:
     tokenizers: tuple[TokenizerArmReceiptV2, ...]
     runs: tuple[GTokRunReceiptV2, ...]
     compute: CampaignComputeReceiptV2
+    training_runtime_receipt_sha256: str
+    code_closure_receipt_sha256: str
     seeds: tuple[int, ...]
     status: str
 
@@ -868,6 +1218,8 @@ class ValidatedGTokMatrixV2:
             "tokenizers": tokenizers,
             "runs": runs,
             "compute": compute,
+            "training_runtime_receipt_sha256": runs[0].training_runtime_receipt_sha256,
+            "code_closure_receipt_sha256": runs[0].code_closure_receipt_sha256,
             "seeds": seeds,
             "status": "GREEN_COMPLETE_EVIDENCE",
         }
@@ -942,6 +1294,10 @@ def validate_complete_gtok_matrix_v2(
         raise ValueError("every run must join the same frozen screen corpus")
     if {run.model_topology_sha256 for run in runs} != {GTOK_PROXY_TOPOLOGY_SHA256}:
         raise ValueError("every run must use the corrected ten-block topology")
+    if len({run.training_runtime_receipt_sha256 for run in runs}) != 1:
+        raise ValueError("every base run must use one exact training runtime")
+    if len({run.code_closure_receipt_sha256 for run in runs}) != 1:
+        raise ValueError("every base run must use one exact behavior-bearing code closure")
     if len({run.initialization_recipe_sha256 for run in runs}) != 1:
         raise ValueError("every run must use one initialization recipe")
     if any(
@@ -1332,6 +1688,9 @@ class ComputeConfirmationRunV2:
     heldout_stream_sha256: str
     strata: tuple[StratumNllReceipt, ...]
     measured_a100_microseconds: int
+    training_runtime_receipt_sha256: str
+    code_closure_receipt_sha256: str
+    gpu_uuid_provenance: str | None = None
     checkpoint_retained: bool = False
 
     def __post_init__(self) -> None:
@@ -1358,6 +1717,20 @@ class ComputeConfirmationRunV2:
             "measured_a100_microseconds",
             minimum=1,
         )
+        _require_sha256(
+            self.training_runtime_receipt_sha256,
+            "training_runtime_receipt_sha256",
+        )
+        _require_sha256(
+            self.code_closure_receipt_sha256,
+            "code_closure_receipt_sha256",
+        )
+        if self.gpu_uuid_provenance is not None and (
+            not isinstance(self.gpu_uuid_provenance, str)
+            or not self.gpu_uuid_provenance.startswith("GPU-")
+            or len(self.gpu_uuid_provenance) <= 4
+        ):
+            raise ValueError("confirmation GPU provenance must be an NVIDIA GPU UUID")
         if type(self.checkpoint_retained) is not bool:
             raise TypeError("checkpoint_retained must be an exact bool")
         if self.checkpoint_retained:
@@ -1485,6 +1858,17 @@ def validate_compute_confirmation_v2(
         for run in runs
     ):
         raise ValueError("confirmation run is not joined to its base arm/seed receipt")
+    if any(
+        run.training_runtime_receipt_sha256
+        != matrix.training_runtime_receipt_sha256
+        for run in runs
+    ):
+        raise ValueError("confirmation runtime differs from the base campaign runtime")
+    if any(
+        run.code_closure_receipt_sha256 != matrix.code_closure_receipt_sha256
+        for run in runs
+    ):
+        raise ValueError("confirmation code closure differs from the base campaign")
     attempt_ids = tuple(run.compute_attempt_id for run in runs)
     if len(set(attempt_ids)) != len(attempt_ids):
         raise ValueError("confirmation selected-run attempt IDs must be unique")
@@ -1674,6 +2058,8 @@ def refuse_unvalidated_freeze(action: str) -> NoReturn:
 
 
 __all__ = [
+    "A2FirstFitGroupReceiptV2",
+    "A2FirstFitScreenReceiptV2",
     "ArmCalibrationProjectionV2",
     "ArmTerminalStatisticsV2",
     "BpbMilestoneReceiptV2",
@@ -1700,6 +2086,7 @@ __all__ = [
     "GTokRunReceiptV2",
     "GTokSelectionReceiptV2",
     "GTokV2Stop",
+    "PrecalibrationReplayAttemptReceiptV2",
     "PreflightProjectionReceiptV2",
     "RuntimeTripwireSnapshotV2",
     "SelectionComparisonV2",

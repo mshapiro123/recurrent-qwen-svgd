@@ -6,10 +6,6 @@ import math
 
 import pytest
 
-from training.weft1_gtok_a1_contract import (
-    ScreenCorpusReceiptV2,
-    StratumFloorReceiptV2,
-)
 from training.weft1_gtok_contract import (
     FlatAdamWRecipe,
     GTOK_EXECUTION_AUTHORITY_CHAIN_V2,
@@ -26,6 +22,8 @@ from training.weft1_gtok_contract import (
     sha256_bytes,
 )
 from training.weft1_gtok_v2_contract import (
+    A2FirstFitGroupReceiptV2,
+    A2FirstFitScreenReceiptV2,
     ArmCalibrationProjectionV2,
     BpbMilestoneReceiptV2,
     CampaignComputeReceiptV2,
@@ -46,6 +44,7 @@ from training.weft1_gtok_v2_contract import (
     GTOK_V2_AUTHORITY_CHAIN,
     GTokRunReceiptV2,
     GTokV2Stop,
+    PrecalibrationReplayAttemptReceiptV2,
     PreflightProjectionReceiptV2,
     RuntimeTripwireSnapshotV2,
     SelectionComparisonV2,
@@ -82,42 +81,44 @@ def _hash(label: str) -> str:
     return sha256_bytes(label.encode("utf-8"))
 
 
-def _floors(stream: str, *, shortfall: int = 1) -> tuple[StratumFloorReceiptV2, ...]:
+def _groups(
+    stream: str, *, shortfall: int = 1
+) -> tuple[A2FirstFitGroupReceiptV2, ...]:
     targets = dict(
         GTOK_SCREEN_TRAIN_STRATUM_TARGETS
         if stream == "T"
         else GTOK_SCREEN_HELDOUT_STRATUM_TARGETS
     )
     return tuple(
-        StratumFloorReceiptV2(
+        A2FirstFitGroupReceiptV2(
             stream=stream,
             stratum=stratum,
             target_bytes=targets[stratum],
             realized_bytes=targets[stratum] - shortfall,
-            ordered_document_ids_sha256=_hash(f"{stream}-{stratum}-order"),
-            boundary_document_id_sha256=_hash(f"{stream}-{stratum}-boundary"),
-            next_document_byte_count=shortfall + 1,
+            deficit_bytes=shortfall,
+            document_count=10,
+            ordered_raw_content_ids_sha256=_hash(f"{stream}-{stratum}-order"),
         )
         for stratum in GTOK_STRATA
     )
 
 
 def _corpus() -> FrozenScreenCorpusV2:
-    floors = ScreenCorpusReceiptV2(
-        training=_floors("T"),
-        heldout=_floors("H"),
-        training_stream_sha256=_hash("training-stream"),
-        heldout_stream_sha256=_hash("heldout-stream"),
+    first_fit = A2FirstFitScreenReceiptV2(
+        groups=(*_groups("T"), *_groups("H")),
+        training_framed_stream_sha256=_hash("training-stream"),
+        heldout_framed_stream_sha256=_hash("heldout-stream"),
         document_overlap_count=0,
         cluster_overlap_count=0,
     )
     return FrozenScreenCorpusV2(
         full_corpus_manifest_sha256=_hash("full-corpus-manifest"),
         screen_submanifest_sha256=_hash("screen-submanifest"),
+        d6_physical_evidence_sha256=_hash("physical-d6"),
         corpus_freeze_receipt_sha256=_hash("p-b-freeze"),
         d1_d6_gate_bundle_sha256=_hash("d1-d6"),
         decontamination_receipt_sha256=_hash("decon"),
-        floors=floors,
+        first_fit=first_fit,
     )
 
 
@@ -202,6 +203,8 @@ def _runs(
             shared_initial_state_sha256=_hash(f"shared-state-{seed}"),
             data_order_seed=20_000 + seed,
             data_order_sha256=_hash(f"data-order-{seed}"),
+            training_runtime_receipt_sha256=_hash("training-runtime"),
+            code_closure_receipt_sha256=_hash("code-closure"),
             compute_attempt_id=f"base-{vocab_size}-{seed}",
             measured_a100_microseconds=100_000_000,
             measured_flops=1_000_000_000_000 + vocab_size,
@@ -377,6 +380,8 @@ def _confirmation_runs(matrix, selection):
                     heldout_stream_sha256=matrix.corpus.heldout_stream_sha256,
                     strata=_strata(matrix.corpus, bpb),
                     measured_a100_microseconds=50_000_000,
+                    training_runtime_receipt_sha256=_hash("training-runtime"),
+                    code_closure_receipt_sha256=_hash("code-closure"),
                 )
             )
     return tuple(rows)
@@ -679,7 +684,7 @@ def test_preflight_binds_100_step_calibration_and_halts_before_full_launch() -> 
         scope="base_screen",
         vocab_size=16_384,
         calibration_attempt_id="over-projection-calibration",
-        calibration_steps=1,
+        calibration_steps=GTOK_CALIBRATION_MAX_STEPS,
         measured_tokens=1,
         measured_a100_microseconds=1,
         planned_tokens_per_run=GTOK_TRIPWIRE_A100_MICROSECONDS,
@@ -878,3 +883,56 @@ def test_admissibility_is_exact_rung_b_fraction_and_guards_confirmation_pair() -
     assert rows[-1].fraction > Fraction(1, 5)
     with pytest.raises(GTokV2Stop, match="confirmation arm fails"):
         select_vocabulary_v2(matrix, admissibility=tuple(rows))
+
+
+def test_precalibration_replay_attempts_are_projected_and_metered() -> None:
+    binding_sha = _hash("replay-plan-binding")
+    projection_sha = _hash("replay-pair-projection")
+    first = PrecalibrationReplayAttemptReceiptV2(
+        attempt_id="base-determinism-v16384-t17-r0",
+        scope="base_screen",
+        kind="determinism_replay",
+        vocab_size=16_384,
+        terminal_rows=17,
+        representative_seed=SEEDS[0],
+        replica_index=0,
+        consumed_a100_microseconds=11,
+        status="completed",
+        replay_plan_binding_sha256=binding_sha,
+    )
+    second = PrecalibrationReplayAttemptReceiptV2(
+        attempt_id="base-determinism-v16384-t17-r1",
+        scope="base_screen",
+        kind="determinism_replay",
+        vocab_size=16_384,
+        terminal_rows=17,
+        representative_seed=SEEDS[0],
+        replica_index=1,
+        consumed_a100_microseconds=12,
+        status="completed",
+        replay_plan_binding_sha256=binding_sha,
+        replay_pair_projection_sha256=projection_sha,
+        projected_replica_a100_microseconds=11,
+        watchdog_limit_a100_microseconds=22,
+    )
+    calibration = _preflight("base_screen", (16_384,)).calibrations
+    preflight = PreflightProjectionReceiptV2(
+        scope="base_screen",
+        prior_campaign_a100_microseconds=0,
+        prior_event_ledger_sha256=None,
+        calibrations=calibration,
+        projected_campaign_a100_microseconds=(
+            23 + sum(row.projected_scope_a100_microseconds for row in calibration)
+        ),
+        precalibration_replay_attempts=(first, second),
+        precalibration_replay_plan_set_sha256=_hash("replay-plan-set"),
+        precalibration_replay_receipt_sha256s=(_hash("replay-pair-receipt"),),
+        precalibration_replay_authority_sha256=_hash("replay-authority"),
+    )
+    assert preflight.projected_campaign_a100_microseconds == (
+        first.consumed_a100_microseconds
+        + second.consumed_a100_microseconds
+        + sum(row.projected_scope_a100_microseconds for row in calibration)
+    )
+    with pytest.raises(ValueError, match="exactly 2x"):
+        replace(second, watchdog_limit_a100_microseconds=23)
