@@ -23,8 +23,11 @@ from training.weft1_corpus_enumeration_a2 import (
 from training.weft1_corpus_source_io_a2 import (
     DROP_INVALID_UTF8,
     DROP_QUALITY_LT3,
+    PRODUCTION_PARSER_COMPOSITE_IDENTITIES_V3,
     PRODUCTION_PARSER_BINDINGS_V3,
     RETAIN,
+    STACKEDU_NORMALIZED_PARSER_BINDING_V3,
+    STACKEDU_PYTHON_PARSER_BINDING_V3,
     SourceContainerError,
     SourceSchemaError,
     SourceTransportError,
@@ -36,6 +39,7 @@ from training.weft1_corpus_source_io_a2 import (
     materialize_parsed_source_spool_v3,
     materialize_source_cache_v3,
     plan_source_cache_assets_v3,
+    resolve_production_parser_binding_v3,
     verify_parsed_source_spool_v3,
     write_source_cache_download_receipt_v3,
 )
@@ -58,7 +62,7 @@ def _locator(family: str, index: int = 0) -> str:
         "wikipedia_wikibooks": (
             f"https://olmo-data.org/dolma-v1_7/wiki/wiki-{index:04d}.json.gz"
         ),
-        "stackedu": f"data/stack_edu-unit/{index:05d}.jsonl.zst",
+        "stackedu": f"data/stack_edu-Java/shard_{index:08d}.jsonl.zst",
         "finemath_3plus": f"finemath-3plus/train-{index:05d}.parquet",
         "arxiv": f"data/rpj-proofpile-arxiv/{index:05d}.jsonl.zst",
         "olmocr": f"data/olmocr_science_pdfs-unit/{index:05d}.jsonl.zst",
@@ -132,6 +136,8 @@ def _asset_for_bytes(
     tmp_path: Path,
     family: str,
     payload: bytes,
+    *,
+    asset_locator: str | None = None,
 ) -> tuple[VerifiedLocalCacheAssetV3, Path]:
     route = next(
         item for item in load_exact_source_routes_v3() if item.source_family == family
@@ -156,7 +162,7 @@ def _asset_for_bytes(
         config=route.config,
         revision=route.revision,
         split=route.split,
-        asset_locator=_locator(family),
+        asset_locator=asset_locator or _locator(family),
         relative_path=relative,
         bytes=len(payload),
         sha256=_sha(payload),
@@ -220,6 +226,23 @@ def _production_json_row(family: str, *, score: int = 3) -> dict[str, object]:
     if family == "olmocr":
         return common
     raise AssertionError(family)
+
+
+def _stackedu_python_row(*, score: int = 3) -> dict[str, object]:
+    return {
+        "blob_id": "python-blob-id",
+        "detected_licenses": [],
+        "download_success": True,
+        "int_score": score,
+        "language": "Python",
+        "length_bytes": 28,
+        "license_type": "permissive",
+        "path": "src/example.py",
+        "repo_name": "example/repository",
+        "score": 3.5,
+        "src_encoding": "UTF-8",
+        "text": "def retained_python(): pass",
+    }
 
 
 def _arrow_type(name: str) -> pa.DataType:
@@ -482,6 +505,10 @@ def test_exact_production_json_schemas_emit_typed_records(
         record.canonical_record.canonical_source_record_id
     )
     assert record.canonical_record.native_record_id == f"{family}-id"
+    if family == "wikipedia_wikibooks":
+        assert record.canonical_record.native_record_namespace == "wikipedia"
+    else:
+        assert record.canonical_record.native_record_namespace is None
     assert record.parser_binding_sha256 == (
         PRODUCTION_PARSER_BINDINGS_V3[family].binding_sha256
     )
@@ -502,6 +529,148 @@ def test_exact_production_json_schemas_emit_typed_records(
         ).encode("utf-8")
     )
     assert '"kind":"object"' in observation.observed_schema_canonical_json
+
+
+def test_wikipedia_same_page_id_uses_full_provenance_namespace(
+    tmp_path: Path,
+) -> None:
+    first = _production_json_row("wikipedia_wikibooks")
+    second = _production_json_row("wikipedia_wikibooks")
+    first["id"] = second["id"] = "12"
+    first["metadata"]["provenance"] = (  # type: ignore[index]
+        "en_simple_wiki_v0-0001.json.gz:2755174"
+    )
+    second["metadata"]["provenance"] = (  # type: ignore[index]
+        "en_simple_wiki_v0-0000.json.gz:4"
+    )
+    first["text"] = "first project page"
+    second["text"] = "second project page"
+    payload = _compress_json(
+        "wikipedia_wikibooks",
+        _json_bytes([first, second]),
+    )
+    asset, root = _asset_for_bytes(
+        tmp_path,
+        "wikipedia_wikibooks",
+        payload,
+    )
+    records = tuple(
+        event.record
+        for event in iter_source_asset_events_v3(asset, root)
+        if event.record is not None
+    )
+    assert tuple(
+        record.canonical_record.native_record_namespace for record in records
+    ) == (
+        "en_simple_wiki_v0-0001.json.gz:2755174",
+        "en_simple_wiki_v0-0000.json.gz:4",
+    )
+    assert records[0].raw_document.stable_source_record_id != (
+        records[1].raw_document.stable_source_record_id
+    )
+
+    second["metadata"]["provenance"] = first["metadata"][  # type: ignore[index]
+        "provenance"
+    ]
+    same_namespace_payload = _compress_json(
+        "wikipedia_wikibooks",
+        _json_bytes([first, second]),
+    )
+    same_asset, same_root = _asset_for_bytes(
+        tmp_path / "same-namespace",
+        "wikipedia_wikibooks",
+        same_namespace_payload,
+    )
+    same_records = tuple(
+        event.record
+        for event in iter_source_asset_events_v3(same_asset, same_root)
+        if event.record is not None
+    )
+    assert same_records[0].raw_document.stable_source_record_id == (
+        same_records[1].raw_document.stable_source_record_id
+    )
+
+
+def test_stackedu_direct_python_variant_is_exact_and_path_resolved(
+    tmp_path: Path,
+) -> None:
+    payload = _compress_json(
+        "stackedu",
+        _json_bytes([_stackedu_python_row(score=4)]),
+    )
+    asset, root = _asset_for_bytes(
+        tmp_path,
+        "stackedu",
+        payload,
+        asset_locator="data/stack_edu-Python/part-000000054.jsonl.zst",
+    )
+    assert resolve_production_parser_binding_v3(asset) == (
+        STACKEDU_PYTHON_PARSER_BINDING_V3
+    )
+    events = tuple(iter_source_asset_events_v3(asset, root))
+    assert [event.disposition for event in events] == [RETAIN]
+    record = events[0].record
+    assert record is not None
+    assert record.canonical_record.native_record_id == "python-blob-id"
+    assert record.canonical_record.int_score == 4
+    assert record.parser_binding_sha256 == (
+        STACKEDU_PYTHON_PARSER_BINDING_V3.binding_sha256
+    )
+    with pytest.raises(SourceSchemaError, match="exact asset variant"):
+        tuple(
+            iter_source_asset_events_v3(
+                asset,
+                root,
+                binding=STACKEDU_NORMALIZED_PARSER_BINDING_V3,
+            )
+        )
+
+
+def test_stackedu_variant_path_and_direct_field_types_fail_closed(
+    tmp_path: Path,
+) -> None:
+    direct_row = _stackedu_python_row()
+    payload = _compress_json("stackedu", _json_bytes([direct_row]))
+    mismatched, mismatch_root = _asset_for_bytes(
+        tmp_path / "path-mismatch",
+        "stackedu",
+        payload,
+        asset_locator="data/stack_edu-Python/shard_00000054.jsonl.zst",
+    )
+    with pytest.raises(SourceSchemaError, match="no exact governed parser variant"):
+        tuple(iter_source_asset_events_v3(mismatched, mismatch_root))
+
+    for index, (field, value, match) in enumerate(
+        (
+            ("download_success", 1, "download_success.*boolean"),
+            ("score", 3, "score.*float"),
+        )
+    ):
+        typed_row = _stackedu_python_row()
+        typed_row[field] = value
+        typed_payload = _compress_json("stackedu", _json_bytes([typed_row]))
+        typed, typed_root = _asset_for_bytes(
+            tmp_path / f"type-mismatch-{index}",
+            "stackedu",
+            typed_payload,
+            asset_locator="data/stack_edu-Python/part-000000054.jsonl.zst",
+        )
+        with pytest.raises(SourceSchemaError, match=match):
+            tuple(iter_source_asset_events_v3(typed, typed_root))
+
+
+def test_stackedu_composite_parser_identity_binds_both_exact_variants() -> None:
+    identity = PRODUCTION_PARSER_COMPOSITE_IDENTITIES_V3["stackedu"]
+    assert identity == (
+        "30236658d243ef29c06fbac12fdb999db036661fdd602740dc09a8f9665346f7"
+    )
+    assert identity not in {
+        STACKEDU_NORMALIZED_PARSER_BINDING_V3.binding_sha256,
+        STACKEDU_PYTHON_PARSER_BINDING_V3.binding_sha256,
+    }
+    assert PRODUCTION_PARSER_COMPOSITE_IDENTITIES_V3["dolma_web"] == (
+        PRODUCTION_PARSER_BINDINGS_V3["dolma_web"].binding_sha256
+    )
 
 
 @pytest.mark.parametrize("family", ("finemath_3plus", "fineweb_edu"))
@@ -591,6 +760,64 @@ def test_factory_parsed_spool_binds_receipts_events_and_text_bytes(
         verify_parsed_source_spool_v3(receipt, spool_path)
 
 
+def test_generic_spool_binds_stackedu_composite_variant_identity(
+    tmp_path: Path,
+) -> None:
+    stack_payload = _compress_json(
+        "stackedu",
+        _json_bytes([_production_json_row("stackedu")]),
+    )
+    payloads = {
+        family: (
+            stack_payload
+            if family == "stackedu"
+            else f"unused:{family}".encode("ascii")
+        )
+        for family in SOURCE_FAMILIES
+    }
+    enumeration = _fixture_enumeration(payloads)
+    selected = next(
+        asset
+        for family in enumeration.families
+        for asset in family.assets
+        if asset.source_family == "stackedu"
+    )
+    plan = plan_source_cache_assets_v3(enumeration, (selected,))
+    materialized = materialize_source_cache_v3(
+        enumeration,
+        plan,
+        tmp_path / "stack-cache",
+        open_upstream=lambda unused: io.BytesIO(stack_payload),
+        allow_nonauthoritative_fixture=True,
+    )
+    download = finalize_source_cache_v3(
+        enumeration,
+        (materialized,),
+        tmp_path / "stack-cache",
+        tmp_path / "stack-manifest.json",
+        allow_nonauthoritative_fixture=True,
+    )
+    verified = verify_local_source_cache_v3(
+        tmp_path / "stack-manifest.json",
+        tmp_path / "stack-cache",
+    )
+    receipt = materialize_parsed_source_spool_v3(
+        enumeration,
+        download,
+        verified,
+        tmp_path / "stack-cache",
+        tmp_path / "stack-spool.jsonl",
+        allow_nonauthoritative_fixture=True,
+    )
+    assert receipt.parser_bindings == (
+        (
+            "stackedu",
+            PRODUCTION_PARSER_COMPOSITE_IDENTITIES_V3["stackedu"],
+        ),
+    )
+    assert receipt.observations[0].source_family == "stackedu"
+
+
 def test_invalid_utf8_is_whole_document_drop_and_low_score_is_explicit(
     tmp_path: Path,
 ) -> None:
@@ -603,6 +830,25 @@ def test_invalid_utf8_is_whole_document_drop_and_low_score_is_explicit(
         DROP_QUALITY_LT3,
     ]
     assert all(event.record is None and event.reason for event in events)
+
+
+def test_stackedu_low_score_occurrence_does_not_block_later_retained_repeat(
+    tmp_path: Path,
+) -> None:
+    low = _production_json_row("stackedu", score=2)
+    retained = _production_json_row("stackedu", score=4)
+    assert low["id"] == retained["id"]
+    assert low["text"] == retained["text"]
+    payload = _compress_json("stackedu", _json_bytes([low, retained]))
+    asset, root = _asset_for_bytes(tmp_path, "stackedu", payload)
+    events = tuple(iter_source_asset_events_v3(asset, root))
+    assert [event.disposition for event in events] == [
+        DROP_QUALITY_LT3,
+        RETAIN,
+    ]
+    assert events[0].record is None
+    assert events[1].record is not None
+    assert events[1].record.canonical_record.int_score == 4
 
 
 def test_json_schema_drift_duplicate_keys_and_malformed_container_fail_closed(
@@ -718,10 +964,15 @@ def test_fixture_binding_is_explicitly_nonproduction(tmp_path: Path) -> None:
 
 def test_production_bindings_cover_all_families_and_pin_quality_paths() -> None:
     assert tuple(PRODUCTION_PARSER_BINDINGS_V3) == SOURCE_FAMILIES
+    assert PRODUCTION_PARSER_BINDINGS_V3[
+        "wikipedia_wikibooks"
+    ].native_record_namespace_path == ("metadata", "provenance")
     assert PRODUCTION_PARSER_BINDINGS_V3["stackedu"].int_score_path == (
         "metadata",
         "int_score",
     )
+    assert STACKEDU_PYTHON_PARSER_BINDING_V3.native_id_path == ("blob_id",)
+    assert STACKEDU_PYTHON_PARSER_BINDING_V3.int_score_path == ("int_score",)
     assert PRODUCTION_PARSER_BINDINGS_V3["finemath_3plus"].native_id_path is None
     assert PRODUCTION_PARSER_BINDINGS_V3["fineweb_edu"].native_id_path == ("id",)
     assert all(

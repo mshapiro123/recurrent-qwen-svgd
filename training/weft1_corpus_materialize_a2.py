@@ -73,11 +73,12 @@ from training.weft1_corpus_source_io_a2 import (
     DROP_EMPTY_TEXT,
     DROP_INVALID_UTF8,
     DROP_QUALITY_LT3,
-    PRODUCTION_PARSER_BINDINGS_V3,
+    PRODUCTION_PARSER_COMPOSITE_IDENTITIES_V3,
     RETAIN,
     SourceCacheDownloadReceiptV3,
     iter_source_asset_events_v3,
     plan_source_cache_assets_v3,
+    resolve_production_parser_binding_v3,
 )
 from training.weft1_corpus_replay_a2 import DEDUP_LEDGER_IDENTITY_DOMAIN_V3
 from training.weft1_corpus_replay_a2 import (
@@ -154,6 +155,19 @@ GTOK_TRAINING_SEEDS = tuple(
 )
 
 _SHA256_CHARS = frozenset("0123456789abcdef")
+_STABLE_SOURCE_REPEAT_EVIDENCE_SCHEMA_V3 = (
+    "weft1_corpus_stable_source_repeat_evidence_v3"
+)
+_STABLE_ID_SCORE_VARIANCE_DIGEST_DOMAIN_V3 = (
+    b"WEFT-1/corpus-stable-id-score-variance/v1"
+)
+_STABLE_ID_SCORE_VARIANCE_DIGEST_PREFIX_V3 = (
+    len(_STABLE_ID_SCORE_VARIANCE_DIGEST_DOMAIN_V3).to_bytes(8, "big")
+    + _STABLE_ID_SCORE_VARIANCE_DIGEST_DOMAIN_V3
+)
+_EMPTY_STABLE_ID_SCORE_VARIANCE_DIGEST_SHA256_V3 = hashlib.sha256(
+    _STABLE_ID_SCORE_VARIANCE_DIGEST_PREFIX_V3
+).hexdigest()
 
 
 class CorpusMaterializationError(RuntimeError):
@@ -168,6 +182,163 @@ def _require_sha256(value: str, name: str) -> str:
     ):
         raise ValueError(f"{name} must be a lowercase SHA-256")
     return value
+
+
+def _stable_source_repeat_evidence_v3(
+    *,
+    classification: str,
+    source: str,
+    stable_source_record_id: str,
+    first_source_asset_identity_sha256: str,
+    first_asset_order_ordinal: int,
+    first_asset_record_ordinal: int,
+    first_text: bytes,
+    first_retained_bytes: int,
+    first_int_score: int | None,
+    repeated_source_asset_identity_sha256: str,
+    repeated_asset_order_ordinal: int,
+    repeated_asset_record_ordinal: int,
+    repeated_text: bytes,
+    repeated_retained_bytes: int,
+    repeated_int_score: int | None,
+) -> dict[str, object]:
+    """Return hash-only evidence for one repeated route-native record ID."""
+
+    core: dict[str, object] = {
+        "classification": classification,
+        "first_asset_order_ordinal": first_asset_order_ordinal,
+        "first_asset_record_ordinal": first_asset_record_ordinal,
+        "first_int_score": first_int_score,
+        "first_retained_byte_count": first_retained_bytes,
+        "first_retained_text_sha256": hashlib.sha256(first_text).hexdigest(),
+        "first_source_asset_identity_sha256": (
+            first_source_asset_identity_sha256
+        ),
+        "repeated_asset_order_ordinal": repeated_asset_order_ordinal,
+        "repeated_asset_record_ordinal": repeated_asset_record_ordinal,
+        "repeated_int_score": repeated_int_score,
+        "repeated_retained_byte_count": repeated_retained_bytes,
+        "repeated_retained_text_sha256": hashlib.sha256(repeated_text).hexdigest(),
+        "repeated_source_asset_identity_sha256": (
+            repeated_source_asset_identity_sha256
+        ),
+        "schema": _STABLE_SOURCE_REPEAT_EVIDENCE_SCHEMA_V3,
+        "source_family": source,
+        "stable_source_record_id": stable_source_record_id,
+    }
+    return {
+        **core,
+        "evidence_identity_sha256": execution_authority_v3_bound_sha256(
+            _STABLE_SOURCE_REPEAT_EVIDENCE_SCHEMA_V3,
+            core,
+        ),
+    }
+
+
+def _insert_parsed_record_v3(
+    connection: sqlite3.Connection,
+    *,
+    source: str,
+    stable_source_record_id: str,
+    source_asset_identity_sha256: str,
+    asset_order_ordinal: int,
+    asset_record_ordinal: int,
+    text_bytes: bytes,
+    retained_bytes: int,
+    int_score: int | None,
+) -> tuple[str, dict[str, object] | None]:
+    """Insert a native-ID record or classify its deterministic repetition.
+
+    The primary key remains the route-level native identity.  A repeated
+    StackEdu identity may vary only in its already-passing integer score; its
+    retained text must be byte-identical and the first occurrence remains the
+    canonical row.
+    """
+
+    try:
+        connection.execute(
+            "INSERT INTO parsed_records VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                source,
+                stable_source_record_id,
+                source_asset_identity_sha256,
+                asset_order_ordinal,
+                asset_record_ordinal,
+                text_bytes,
+                retained_bytes,
+                int_score,
+            ),
+        )
+        return "INSERTED", None
+    except sqlite3.IntegrityError as error:
+        existing = connection.execute(
+            "SELECT source_asset_identity_sha256, asset_order_ordinal, "
+            "asset_record_ordinal, text, retained_bytes, int_score FROM "
+            "parsed_records WHERE source = ? AND stable_source_record_id = ?",
+            (source, stable_source_record_id),
+        ).fetchone()
+        if existing is None:
+            raise CorpusMaterializationError(
+                "parsed source record violated a non-identity database constraint"
+            ) from error
+
+        first_text = bytes(existing["text"])
+        first_retained_bytes = int(existing["retained_bytes"])
+        first_int_score = existing["int_score"]
+        same_text = first_text == text_bytes
+        same_retained_bytes = first_retained_bytes == retained_bytes
+        same_score = first_int_score == int_score
+
+        if same_text and same_retained_bytes and same_score:
+            return "EXACT_REPEAT", None
+
+        score_only_variance_is_authorized = (
+            source == "stackedu"
+            and same_text
+            and same_retained_bytes
+            and not same_score
+            and type(first_int_score) is int
+            and first_int_score >= 3
+            and type(int_score) is int
+            and int_score >= 3
+        )
+        if score_only_variance_is_authorized:
+            classification = "STACKEDU_SCORE_ONLY_VARIANCE"
+        else:
+            classification = (
+                "CONTENT_DIVERGENCE"
+                if not same_text
+                else (
+                    "RETAINED_BYTE_COUNT_DIVERGENCE"
+                    if not same_retained_bytes
+                    else "UNAUTHORIZED_SCORE_VARIANCE"
+                )
+            )
+        evidence = _stable_source_repeat_evidence_v3(
+            classification=classification,
+            source=source,
+            stable_source_record_id=stable_source_record_id,
+            first_source_asset_identity_sha256=str(
+                existing["source_asset_identity_sha256"]
+            ),
+            first_asset_order_ordinal=int(existing["asset_order_ordinal"]),
+            first_asset_record_ordinal=int(existing["asset_record_ordinal"]),
+            first_text=first_text,
+            first_retained_bytes=first_retained_bytes,
+            first_int_score=first_int_score,
+            repeated_source_asset_identity_sha256=source_asset_identity_sha256,
+            repeated_asset_order_ordinal=asset_order_ordinal,
+            repeated_asset_record_ordinal=asset_record_ordinal,
+            repeated_text=text_bytes,
+            repeated_retained_bytes=retained_bytes,
+            repeated_int_score=int_score,
+        )
+        if score_only_variance_is_authorized:
+            return classification, evidence
+        raise CorpusMaterializationError(
+            "stable source record collision evidence="
+            + canonical_json_bytes(evidence).decode("ascii")
+        ) from error
 
 
 def _rows_mapping(
@@ -1210,6 +1381,10 @@ class _Materializer:
                 "quality_drop_count": stream.quality_drop_count,
                 "source_family": stream.source_family,
                 "stable_id_duplicate_count": 0,
+                "stable_id_score_variance_count": 0,
+                "stable_id_score_variance_digest_sha256": (
+                    _EMPTY_STABLE_ID_SCORE_VARIANCE_DIGEST_SHA256_V3
+                ),
             }
             for stream in inputs.streams
         }
@@ -1329,16 +1504,25 @@ class _Materializer:
         }
         try:
             for source in SOURCE_FAMILIES:
-                binding = PRODUCTION_PARSER_BINDINGS_V3[source]
+                parser_composite_identity = (
+                    PRODUCTION_PARSER_COMPOSITE_IDENTITIES_V3[source]
+                )
                 ledger_path = parse_root / f"{source}.jsonl"
                 ledger_digest = hashlib.sha256()
                 disposition_counts = Counter()
                 duplicate_count = 0
+                score_variance_count = 0
+                score_variance_digest = hashlib.sha256(
+                    _STABLE_ID_SCORE_VARIANCE_DIGEST_PREFIX_V3
+                )
                 event_ordinal = 0
                 with ledger_path.open("xb") as ledger:
                     for asset_order_ordinal, verified_asset in enumerate(
                         assets_by_source[source]
                     ):
+                        binding = resolve_production_parser_binding_v3(
+                            verified_asset
+                        )
                         lexical_asset = self.inputs.cache_root.joinpath(
                             *PurePosixPath(
                                 verified_asset.expected.relative_path
@@ -1383,41 +1567,41 @@ class _Materializer:
                                 text_bytes = raw.text
                             else:
                                 text_bytes = raw.text.encode("utf-8", errors="strict")
-                            try:
-                                connection.execute(
-                                    "INSERT INTO parsed_records VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-                                    (
-                                        source,
-                                        raw.stable_source_record_id,
-                                        canonical.asset.asset_identity_sha256,
-                                        asset_order_ordinal,
-                                        event.source_record_ordinal,
-                                        text_bytes,
-                                        canonical.retained_byte_count,
-                                        canonical.int_score,
+                            repeat_classification, repeat_evidence = (
+                                _insert_parsed_record_v3(
+                                    connection,
+                                    source=source,
+                                    stable_source_record_id=(
+                                        raw.stable_source_record_id
                                     ),
+                                    source_asset_identity_sha256=(
+                                        canonical.asset.asset_identity_sha256
+                                    ),
+                                    asset_order_ordinal=asset_order_ordinal,
+                                    asset_record_ordinal=(
+                                        event.source_record_ordinal
+                                    ),
+                                    text_bytes=text_bytes,
+                                    retained_bytes=(
+                                        canonical.retained_byte_count
+                                    ),
+                                    int_score=canonical.int_score,
                                 )
-                            except sqlite3.IntegrityError:
-                                # Upsampled source mixes can repeat a stable
-                                # document.  Canonical first asset/row wins,
-                                # but only after byte/metadata equality proves
-                                # this is multiplicity rather than an ID clash.
-                                existing = connection.execute(
-                                    "SELECT text, retained_bytes, int_score FROM "
-                                    "parsed_records WHERE source = ? AND "
-                                    "stable_source_record_id = ?",
-                                    (source, raw.stable_source_record_id),
-                                ).fetchone()
-                                if existing is None or (
-                                    bytes(existing["text"]) != text_bytes
-                                    or int(existing["retained_bytes"])
-                                    != canonical.retained_byte_count
-                                    or existing["int_score"] != canonical.int_score
-                                ):
-                                    raise CorpusMaterializationError(
-                                        "stable source record ID repeats with different bytes"
-                                    )
+                            )
+                            if repeat_classification != "INSERTED":
                                 duplicate_count += 1
+                            if repeat_classification == (
+                                "STACKEDU_SCORE_ONLY_VARIANCE"
+                            ):
+                                assert repeat_evidence is not None
+                                evidence_payload = canonical_json_bytes(
+                                    repeat_evidence
+                                )
+                                score_variance_digest.update(
+                                    len(evidence_payload).to_bytes(8, "big")
+                                )
+                                score_variance_digest.update(evidence_payload)
+                                score_variance_count += 1
                             if event_ordinal % 4096 == 0:
                                 connection.commit()
                                 connection.execute("BEGIN IMMEDIATE")
@@ -1443,10 +1627,14 @@ class _Materializer:
                     "parse_event_count": event_ordinal,
                     "parse_event_ledger_path": f"source-parse/{source}.jsonl",
                     "parse_event_ledger_sha256": ledger_digest.hexdigest(),
-                    "parser_binding_sha256": binding.binding_sha256,
+                    "parser_binding_sha256": parser_composite_identity,
                     "quality_drop_count": disposition_counts[DROP_QUALITY_LT3],
                     "source_family": source,
                     "stable_id_duplicate_count": duplicate_count,
+                    "stable_id_score_variance_count": score_variance_count,
+                    "stable_id_score_variance_digest_sha256": (
+                        score_variance_digest.hexdigest()
+                    ),
                 }
             connection.commit()
             self._production_source_db = connection

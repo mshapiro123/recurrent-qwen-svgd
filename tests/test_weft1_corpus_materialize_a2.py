@@ -5,6 +5,7 @@ import io
 import json
 import os
 from pathlib import Path
+import sqlite3
 import socket
 
 import pytest
@@ -30,6 +31,8 @@ from training.weft1_corpus_materialize_a2 import (
     materialize_corpus_pa_v3,
     iter_materialized_tokenizer_fit_texts_v3,
     run_production_materialization_worker_v3,
+    _EMPTY_STABLE_ID_SCORE_VARIANCE_DIGEST_SHA256_V3,
+    _insert_parsed_record_v3,
     _PRODUCTION_WORKER_RECEIPT_SENTINEL,
     _write_production_replay_child_receipt_v3,
     screen_order_digest_v3,
@@ -45,6 +48,27 @@ from training.weft1_gtok_contract import GTOK_STRATA
 
 def _sha(value: str) -> str:
     return hashlib.sha256(value.encode("utf-8")).hexdigest()
+
+
+def _parsed_records_connection() -> sqlite3.Connection:
+    connection = sqlite3.connect(":memory:")
+    connection.row_factory = sqlite3.Row
+    connection.execute(
+        """
+        CREATE TABLE parsed_records (
+          source TEXT NOT NULL,
+          stable_source_record_id TEXT NOT NULL,
+          source_asset_identity_sha256 TEXT NOT NULL,
+          asset_order_ordinal INTEGER NOT NULL,
+          asset_record_ordinal INTEGER NOT NULL,
+          text BLOB NOT NULL,
+          retained_bytes INTEGER NOT NULL,
+          int_score INTEGER,
+          PRIMARY KEY(source, stable_source_record_id)
+        ) WITHOUT ROWID, STRICT
+        """
+    )
+    return connection
 
 
 def _runtime_build_receipt() -> dict[str, object]:
@@ -318,6 +342,11 @@ def test_fixture_two_fresh_runs_are_byte_identical_and_d1_ready(tmp_path: Path) 
     assert dict(content["global_exact_duplicate_drops_by_source"])[
         "wikipedia_wikibooks"
     ] == 1
+    for receipt in content["source_parse_drop_counts"]:
+        assert receipt["stable_id_score_variance_count"] == 0
+        assert receipt["stable_id_score_variance_digest_sha256"] == (
+            _EMPTY_STABLE_ID_SCORE_VARIANCE_DIGEST_SHA256_V3
+        )
 
     d3 = json.loads((first.output_root / "diagnostics" / "d3.json").read_text())
     d4 = json.loads((first.output_root / "diagnostics" / "d4.json").read_text())
@@ -458,6 +487,201 @@ def test_production_input_fails_without_authoritative_enumeration_and_cache() ->
 
     with pytest.raises(CorpusMaterializationError, match="authoritative upstream"):
         MaterializationInputV3(mode=PRODUCTION_MODE)
+
+
+def test_parsed_native_id_exact_repeat_keeps_first_route_occurrence() -> None:
+    connection = _parsed_records_connection()
+    try:
+        stable_id = _sha("stackedu:native-id")
+        first_asset = _sha("asset:first")
+        repeated_asset = _sha("asset:repeat")
+        first = _insert_parsed_record_v3(
+            connection,
+            source="stackedu",
+            stable_source_record_id=stable_id,
+            source_asset_identity_sha256=first_asset,
+            asset_order_ordinal=2,
+            asset_record_ordinal=11,
+            text_bytes=b"identical retained text",
+            retained_bytes=len(b"identical retained text"),
+            int_score=3,
+        )
+        repeated = _insert_parsed_record_v3(
+            connection,
+            source="stackedu",
+            stable_source_record_id=stable_id,
+            source_asset_identity_sha256=repeated_asset,
+            asset_order_ordinal=7,
+            asset_record_ordinal=19,
+            text_bytes=b"identical retained text",
+            retained_bytes=len(b"identical retained text"),
+            int_score=3,
+        )
+        canonical = connection.execute(
+            "SELECT source_asset_identity_sha256, asset_order_ordinal, "
+            "asset_record_ordinal, int_score FROM parsed_records"
+        ).fetchone()
+        assert first == ("INSERTED", None)
+        assert repeated == ("EXACT_REPEAT", None)
+        assert tuple(canonical) == (first_asset, 2, 11, 3)
+    finally:
+        connection.close()
+
+
+def test_stackedu_score_only_repeat_is_bound_and_first_score_wins() -> None:
+    connection = _parsed_records_connection()
+    try:
+        stable_id = _sha("stackedu:native-score-variance")
+        first_asset = _sha("asset:first-score")
+        repeated_asset = _sha("asset:repeated-score")
+        text = b"same retained bytes across an upsampled StackEdu row"
+        assert _insert_parsed_record_v3(
+            connection,
+            source="stackedu",
+            stable_source_record_id=stable_id,
+            source_asset_identity_sha256=first_asset,
+            asset_order_ordinal=0,
+            asset_record_ordinal=4,
+            text_bytes=text,
+            retained_bytes=len(text),
+            int_score=3,
+        ) == ("INSERTED", None)
+        classification, evidence = _insert_parsed_record_v3(
+            connection,
+            source="stackedu",
+            stable_source_record_id=stable_id,
+            source_asset_identity_sha256=repeated_asset,
+            asset_order_ordinal=5,
+            asset_record_ordinal=8,
+            text_bytes=text,
+            retained_bytes=len(text),
+            int_score=4,
+        )
+        canonical = connection.execute(
+            "SELECT source_asset_identity_sha256, asset_order_ordinal, "
+            "asset_record_ordinal, int_score FROM parsed_records"
+        ).fetchone()
+        assert classification == "STACKEDU_SCORE_ONLY_VARIANCE"
+        assert evidence is not None
+        assert evidence["classification"] == classification
+        assert evidence["first_retained_text_sha256"] == hashlib.sha256(
+            text
+        ).hexdigest()
+        assert evidence["repeated_retained_text_sha256"] == hashlib.sha256(
+            text
+        ).hexdigest()
+        assert evidence["first_int_score"] == 3
+        assert evidence["repeated_int_score"] == 4
+        assert tuple(canonical) == (first_asset, 0, 4, 3)
+    finally:
+        connection.close()
+
+
+def test_parsed_native_id_content_divergence_fails_with_hash_only_evidence() -> None:
+    connection = _parsed_records_connection()
+    first_text = b"first private retained text"
+    repeated_text = b"different private retained text"
+    try:
+        stable_id = _sha("stackedu:native-content-divergence")
+        _insert_parsed_record_v3(
+            connection,
+            source="stackedu",
+            stable_source_record_id=stable_id,
+            source_asset_identity_sha256=_sha("asset:first-content"),
+            asset_order_ordinal=1,
+            asset_record_ordinal=2,
+            text_bytes=first_text,
+            retained_bytes=len(first_text),
+            int_score=3,
+        )
+        with pytest.raises(
+            CorpusMaterializationError,
+            match="stable source record collision evidence=",
+        ) as caught:
+            _insert_parsed_record_v3(
+                connection,
+                source="stackedu",
+                stable_source_record_id=stable_id,
+                source_asset_identity_sha256=_sha("asset:repeated-content"),
+                asset_order_ordinal=3,
+                asset_record_ordinal=5,
+                text_bytes=repeated_text,
+                retained_bytes=len(repeated_text),
+                int_score=4,
+            )
+        message = str(caught.value)
+        evidence = json.loads(message.split("evidence=", 1)[1])
+        assert evidence["classification"] == "CONTENT_DIVERGENCE"
+        assert evidence["first_retained_text_sha256"] == hashlib.sha256(
+            first_text
+        ).hexdigest()
+        assert evidence["repeated_retained_text_sha256"] == hashlib.sha256(
+            repeated_text
+        ).hexdigest()
+        assert first_text.decode("ascii") not in message
+        assert repeated_text.decode("ascii") not in message
+        assert connection.execute(
+            "SELECT COUNT(*) FROM parsed_records"
+        ).fetchone()[0] == 1
+    finally:
+        connection.close()
+
+
+def test_wikipedia_cross_provenance_succeeds_but_same_namespace_divergence_stops(
+) -> None:
+    connection = _parsed_records_connection()
+    try:
+        first_identity = _sha(
+            "wiki:12:en_simple_wiki_v0-0001.json.gz:2755174"
+        )
+        cross_provenance_identity = _sha(
+            "wiki:12:en_simple_wiki_v0-0000.json.gz:4"
+        )
+        assert _insert_parsed_record_v3(
+            connection,
+            source="wikipedia_wikibooks",
+            stable_source_record_id=first_identity,
+            source_asset_identity_sha256=_sha("wiki:asset:0"),
+            asset_order_ordinal=0,
+            asset_record_ordinal=2_755_173,
+            text_bytes=b"first project page",
+            retained_bytes=len(b"first project page"),
+            int_score=None,
+        ) == ("INSERTED", None)
+        assert _insert_parsed_record_v3(
+            connection,
+            source="wikipedia_wikibooks",
+            stable_source_record_id=cross_provenance_identity,
+            source_asset_identity_sha256=_sha("wiki:asset:1"),
+            asset_order_ordinal=1,
+            asset_record_ordinal=3,
+            text_bytes=b"second project page",
+            retained_bytes=len(b"second project page"),
+            int_score=None,
+        ) == ("INSERTED", None)
+        assert connection.execute(
+            "SELECT COUNT(*) FROM parsed_records"
+        ).fetchone()[0] == 2
+
+        with pytest.raises(
+            CorpusMaterializationError,
+            match='"classification":"CONTENT_DIVERGENCE"',
+        ):
+            _insert_parsed_record_v3(
+                connection,
+                source="wikipedia_wikibooks",
+                stable_source_record_id=first_identity,
+                source_asset_identity_sha256=_sha("wiki:asset:repeat"),
+                asset_order_ordinal=2,
+                asset_record_ordinal=9,
+                text_bytes=b"divergent text in the same provenance namespace",
+                retained_bytes=len(
+                    b"divergent text in the same provenance namespace"
+                ),
+                int_score=None,
+            )
+    finally:
+        connection.close()
 
 
 def test_plan_and_screen_order_are_exact_and_fail_closed() -> None:

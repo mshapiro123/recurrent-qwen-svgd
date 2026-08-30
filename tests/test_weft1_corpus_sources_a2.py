@@ -68,6 +68,7 @@ def _record(
     ordinal: int,
     *,
     native_id: str | None = None,
+    native_namespace: str | None = None,
     int_score: int | None = None,
     byte_count: int = 10,
 ) -> CanonicalSourceRecordV3:
@@ -76,6 +77,7 @@ def _record(
         source_record_ordinal=ordinal,
         retained_byte_count=byte_count,
         native_record_id=native_id,
+        native_record_namespace=native_namespace,
         int_score=int_score,
     )
 
@@ -196,6 +198,42 @@ def test_native_source_identity_survives_upsampled_asset_occurrences() -> None:
     physical = _record(second_asset, 999, int_score=3)
     assert first.canonical_source_record_id == duplicate.canonical_source_record_id
     assert first.canonical_source_record_id != physical.canonical_source_record_id
+    assert first.canonical_source_record_id == (
+        "d814c16283395b8d61980d0702d2157f5cbb06620a7a6cd4674c7e60754a727f"
+    )
+
+
+def test_wikipedia_native_page_id_is_namespaced_by_full_provenance() -> None:
+    asset = _asset(
+        "wikipedia_wikibooks",
+        "https://olmo-data.org/dolma-v1_7/wiki/wiki-0000.json.gz",
+    )
+    first = _record(
+        asset,
+        2_755_173,
+        native_id="12",
+        native_namespace="en_simple_wiki_v0-0001.json.gz:2755174",
+    )
+    cross_project = _record(
+        asset,
+        3,
+        native_id="12",
+        native_namespace="en_simple_wiki_v0-0000.json.gz:4",
+    )
+    same_project_repeat = _record(
+        asset,
+        99,
+        native_id="12",
+        native_namespace="en_simple_wiki_v0-0001.json.gz:2755174",
+    )
+    assert first.canonical_source_record_id != (
+        cross_project.canonical_source_record_id
+    )
+    assert first.canonical_source_record_id == (
+        same_project_repeat.canonical_source_record_id
+    )
+    with pytest.raises(ValueError, match="requires a native_record_id"):
+        _record(asset, 0, native_namespace="wikipedia")
 
 
 def test_scored_families_sort_descending_with_canonical_id_tie() -> None:

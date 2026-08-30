@@ -921,7 +921,14 @@ class JsonFieldV3:
             not isinstance(item, str) or not item for item in self.path
         ):
             raise ValueError("JSON field paths must be nonempty string tuples")
-        if self.kind not in {"string", "object", "integer"}:
+        if self.kind not in {
+            "array",
+            "boolean",
+            "float",
+            "integer",
+            "object",
+            "string",
+        }:
             raise ValueError("JSON field binding uses an unsupported exact kind")
 
 
@@ -934,6 +941,7 @@ class SourceParserBindingV3:
     text_path: tuple[str, ...]
     native_id_path: tuple[str, ...] | None
     int_score_path: tuple[str, ...] | None
+    native_record_namespace_path: tuple[str, ...] | None = None
     exact_json_top_level_fields: tuple[str, ...] = ()
     required_json_fields: tuple[JsonFieldV3, ...] = ()
     declared_parquet_columns: tuple[tuple[str, str], ...] = ()
@@ -952,6 +960,11 @@ class SourceParserBindingV3:
         _require_sha256(self.authority_sha256, "parser authority_sha256")
         if not self.text_path:
             raise ValueError("parser binding requires an exact text path")
+        if (
+            self.native_record_namespace_path is not None
+            and self.native_id_path is None
+        ):
+            raise ValueError("native record namespace requires a native ID path")
         if self.source_family in QUALITY_GATED_SOURCE_FAMILIES:
             if self.int_score_path is None:
                 raise ValueError("quality-gated parser requires int_score path")
@@ -969,6 +982,7 @@ class SourceParserBindingV3:
                 self.text_path,
                 self.native_id_path,
                 self.int_score_path,
+                self.native_record_namespace_path,
             )
             if any(
                 path is not None
@@ -985,7 +999,12 @@ class SourceParserBindingV3:
             ):
                 raise ValueError("JSON top-level fields must be unique and sorted")
             required_paths = {field.path for field in self.required_json_fields}
-            for path in (self.text_path, self.native_id_path, self.int_score_path):
+            for path in (
+                self.text_path,
+                self.native_id_path,
+                self.int_score_path,
+                self.native_record_namespace_path,
+            ):
                 if path is not None and path not in required_paths:
                     raise ValueError("JSON parser path is absent from required fields")
             if any(
@@ -996,18 +1015,38 @@ class SourceParserBindingV3:
 
     @property
     def binding_sha256(self) -> str:
+        payload = asdict(self)
+        # Preserve every pre-namespace parser identity byte-for-byte.  Only a
+        # binding that explicitly supplies a namespace path enters the new
+        # identity domain.
+        if self.native_record_namespace_path is None:
+            payload.pop("native_record_namespace_path")
         return canonical_sha256(
-            {"payload": self, "schema": "weft1_source_parser_binding_v3"}
+            {"payload": payload, "schema": "weft1_source_parser_binding_v3"}
         )
 
 
-_STACKEDU_FIELDS = (
+_STACKEDU_NORMALIZED_FIELDS = (
     JsonFieldV3(("added",), "string"),
     JsonFieldV3(("created",), "string"),
     JsonFieldV3(("id",), "string"),
     JsonFieldV3(("metadata",), "object"),
     JsonFieldV3(("metadata", "int_score"), "integer"),
     JsonFieldV3(("source",), "string"),
+    JsonFieldV3(("text",), "string"),
+)
+_STACKEDU_PYTHON_FIELDS = (
+    JsonFieldV3(("blob_id",), "string"),
+    JsonFieldV3(("detected_licenses",), "array"),
+    JsonFieldV3(("download_success",), "boolean"),
+    JsonFieldV3(("int_score",), "integer"),
+    JsonFieldV3(("language",), "string"),
+    JsonFieldV3(("length_bytes",), "integer"),
+    JsonFieldV3(("license_type",), "string"),
+    JsonFieldV3(("path",), "string"),
+    JsonFieldV3(("repo_name",), "string"),
+    JsonFieldV3(("score",), "float"),
+    JsonFieldV3(("src_encoding",), "string"),
     JsonFieldV3(("text",), "string"),
 )
 _DOLMA_WEB_FIELDS = (
@@ -1097,6 +1136,61 @@ def _declared_schema_binding_sha256(
     )
 
 
+STACKEDU_NORMALIZED_PARSER_BINDING_V3 = SourceParserBindingV3(
+    source_family="stackedu",
+    container="jsonl.zst",
+    authority="PINNED_ASSET_DECLARATION",
+    authority_sha256=_declared_schema_binding_sha256(
+        "stackedu",
+        "689a3ea2d8217e64d73a5058913fa43ad15e81aa",
+        "data/stack_edu-Java/shard_00000243.jsonl.zst",
+        _STACKEDU_NORMALIZED_FIELDS,
+    ),
+    text_path=("text",),
+    native_id_path=("id",),
+    int_score_path=("metadata", "int_score"),
+    exact_json_top_level_fields=(
+        "added",
+        "created",
+        "id",
+        "metadata",
+        "source",
+        "text",
+    ),
+    required_json_fields=_STACKEDU_NORMALIZED_FIELDS,
+)
+
+STACKEDU_PYTHON_PARSER_BINDING_V3 = SourceParserBindingV3(
+    source_family="stackedu",
+    container="jsonl.zst",
+    authority="PINNED_ASSET_DECLARATION",
+    authority_sha256=_declared_schema_binding_sha256(
+        "stackedu",
+        "689a3ea2d8217e64d73a5058913fa43ad15e81aa",
+        "data/stack_edu-Python/part-000000054.jsonl.zst",
+        _STACKEDU_PYTHON_FIELDS,
+    ),
+    text_path=("text",),
+    native_id_path=("blob_id",),
+    int_score_path=("int_score",),
+    exact_json_top_level_fields=(
+        "blob_id",
+        "detected_licenses",
+        "download_success",
+        "int_score",
+        "language",
+        "length_bytes",
+        "license_type",
+        "path",
+        "repo_name",
+        "score",
+        "src_encoding",
+        "text",
+    ),
+    required_json_fields=_STACKEDU_PYTHON_FIELDS,
+)
+
+
 PRODUCTION_PARSER_BINDINGS_V3: Mapping[str, SourceParserBindingV3] = {
     "dolma_web": SourceParserBindingV3(
         source_family="dolma_web",
@@ -1127,6 +1221,7 @@ PRODUCTION_PARSER_BINDINGS_V3: Mapping[str, SourceParserBindingV3] = {
         text_path=("text",),
         native_id_path=("id",),
         int_score_path=None,
+        native_record_namespace_path=("metadata", "provenance"),
         exact_json_top_level_fields=(
             "added",
             "created",
@@ -1138,22 +1233,7 @@ PRODUCTION_PARSER_BINDINGS_V3: Mapping[str, SourceParserBindingV3] = {
         ),
         required_json_fields=_WIKIPEDIA_FIELDS,
     ),
-    "stackedu": SourceParserBindingV3(
-        source_family="stackedu",
-        container="jsonl.zst",
-        authority="PINNED_ASSET_DECLARATION",
-        authority_sha256=_declared_schema_binding_sha256(
-            "stackedu",
-            "689a3ea2d8217e64d73a5058913fa43ad15e81aa",
-            "data/stack_edu-Java/shard_00000243.jsonl.zst",
-            _STACKEDU_FIELDS,
-        ),
-        text_path=("text",),
-        native_id_path=("id",),
-        int_score_path=("metadata", "int_score"),
-        exact_json_top_level_fields=("added", "created", "id", "metadata", "source", "text"),
-        required_json_fields=_STACKEDU_FIELDS,
-    ),
+    "stackedu": STACKEDU_NORMALIZED_PARSER_BINDING_V3,
     "finemath_3plus": SourceParserBindingV3(
         source_family="finemath_3plus",
         container="parquet",
@@ -1207,6 +1287,85 @@ PRODUCTION_PARSER_BINDINGS_V3: Mapping[str, SourceParserBindingV3] = {
         declared_parquet_columns=_FINEWEB_SCHEMA,
     ),
 }
+
+_STACKEDU_NORMALIZED_ASSET_PATTERN_V3 = re.compile(
+    r"^data/stack_edu-(?!Python/)[^/]+/shard_[0-9]+\.jsonl\.zst$"
+)
+_STACKEDU_PYTHON_ASSET_PATTERN_V3 = re.compile(
+    r"^data/stack_edu-Python/part-[0-9]+\.jsonl\.zst$"
+)
+STACKEDU_PARSER_VARIANTS_V3 = (
+    (
+        "DOLMA_NORMALIZED_NON_PYTHON_SHARD",
+        _STACKEDU_NORMALIZED_ASSET_PATTERN_V3.pattern,
+        STACKEDU_NORMALIZED_PARSER_BINDING_V3,
+    ),
+    (
+        "DIRECT_PYTHON_PART",
+        _STACKEDU_PYTHON_ASSET_PATTERN_V3.pattern,
+        STACKEDU_PYTHON_PARSER_BINDING_V3,
+    ),
+)
+_STACKEDU_PARSER_COMPOSITE_IDENTITY_SHA256_V3 = canonical_sha256(
+    {
+        "payload": {
+            "repository": "allenai/dolma3_mix-6T",
+            "revision": "689a3ea2d8217e64d73a5058913fa43ad15e81aa",
+            "source_family": "stackedu",
+            "variants": tuple(
+                {
+                    "asset_locator_pattern": pattern,
+                    "parser_binding_sha256": binding.binding_sha256,
+                    "variant": name,
+                }
+                for name, pattern, binding in STACKEDU_PARSER_VARIANTS_V3
+            ),
+        },
+        "schema": "weft1_source_parser_variant_set_v3",
+    }
+)
+PRODUCTION_PARSER_COMPOSITE_IDENTITIES_V3: Mapping[str, str] = {
+    source: (
+        _STACKEDU_PARSER_COMPOSITE_IDENTITY_SHA256_V3
+        if source == "stackedu"
+        else binding.binding_sha256
+    )
+    for source, binding in PRODUCTION_PARSER_BINDINGS_V3.items()
+}
+
+
+def resolve_production_parser_binding_v3(
+    verified_asset: VerifiedLocalCacheAssetV3,
+) -> SourceParserBindingV3:
+    """Resolve one production parser only from its exact governed asset path."""
+
+    if not isinstance(verified_asset, VerifiedLocalCacheAssetV3):
+        raise TypeError("parser resolver requires a verified cache asset")
+    expected = verified_asset.expected
+    source = expected.source_family
+    if source != "stackedu":
+        try:
+            return PRODUCTION_PARSER_BINDINGS_V3[source]
+        except KeyError as error:
+            raise SourceSchemaBindingRequired(
+                f"{source} requires pinned first-record schema inspection"
+            ) from error
+    if (
+        expected.repository != "allenai/dolma3_mix-6T"
+        or expected.config != "default"
+        or expected.revision
+        != "689a3ea2d8217e64d73a5058913fa43ad15e81aa"
+        or expected.split != "train"
+    ):
+        raise SourceSchemaError("StackEdu parser resolver route drifted")
+    locator = expected.asset_locator
+    if _STACKEDU_NORMALIZED_ASSET_PATTERN_V3.fullmatch(locator):
+        return STACKEDU_NORMALIZED_PARSER_BINDING_V3
+    if _STACKEDU_PYTHON_ASSET_PATTERN_V3.fullmatch(locator):
+        return STACKEDU_PYTHON_PARSER_BINDING_V3
+    raise SourceSchemaError(
+        "StackEdu asset locator has no exact governed parser variant"
+    )
 
 
 def fixture_source_parser_binding_v3(source_family: str) -> SourceParserBindingV3:
@@ -1374,8 +1533,17 @@ class SourceParseEventV3:
 
     @property
     def event_sha256(self) -> str:
+        payload = asdict(self)
+        record = payload.get("record")
+        if isinstance(record, dict):
+            canonical_record = record.get("canonical_record")
+            if (
+                isinstance(canonical_record, dict)
+                and canonical_record.get("native_record_namespace") is None
+            ):
+                canonical_record.pop("native_record_namespace")
         return canonical_sha256(
-            {"payload": self, "schema": SOURCE_PARSE_EVENT_SCHEMA_V3}
+            {"payload": payload, "schema": SOURCE_PARSE_EVENT_SCHEMA_V3}
         )
 
 
@@ -1402,6 +1570,12 @@ def _require_json_kind(value: object, field: JsonFieldV3) -> None:
         valid = isinstance(value, str)
     elif field.kind == "object":
         valid = isinstance(value, Mapping)
+    elif field.kind == "array":
+        valid = isinstance(value, list)
+    elif field.kind == "boolean":
+        valid = type(value) is bool
+    elif field.kind == "float":
+        valid = type(value) is float
     else:
         valid = type(value) is int
     if not valid:
@@ -1533,6 +1707,7 @@ def _event_from_values(
     ordinal: int,
     text: object,
     native_id: object | None,
+    native_record_namespace: object | None,
     int_score: object | None,
     observation: SourceRecordObservationV3 | None = None,
 ) -> SourceParseEventV3:
@@ -1579,6 +1754,18 @@ def _event_from_values(
             raise SourceSchemaError("bound native ID is not a nonempty exact string")
     elif native_id is not None:
         raise SourceSchemaError("source without native ID unexpectedly supplied one")
+    if binding.native_record_namespace_path is not None:
+        if (
+            not isinstance(native_record_namespace, str)
+            or not native_record_namespace
+        ):
+            raise SourceSchemaError(
+                "bound native record namespace is not a nonempty exact string"
+            )
+    elif native_record_namespace is not None:
+        raise SourceSchemaError(
+            "source without native record namespace unexpectedly supplied one"
+        )
     if source in QUALITY_GATED_SOURCE_FAMILIES:
         if type(int_score) is not int:
             raise SourceSchemaError("bound int_score is not an exact integer")
@@ -1598,6 +1785,11 @@ def _event_from_values(
         source_record_ordinal=ordinal,
         retained_byte_count=len(text_bytes),
         native_record_id=native_id if isinstance(native_id, str) else None,
+        native_record_namespace=(
+            native_record_namespace
+            if isinstance(native_record_namespace, str)
+            else None
+        ),
         int_score=int_score if type(int_score) is int else None,
     )
     raw = RawDocumentV3(
@@ -1752,6 +1944,11 @@ def _iter_jsonl_events(
                         if binding.native_id_path is not None
                         else None
                     ),
+                    native_record_namespace=(
+                        _lookup_path(row, binding.native_record_namespace_path)
+                        if binding.native_record_namespace_path is not None
+                        else None
+                    ),
                     int_score=(
                         _lookup_path(row, binding.int_score_path)
                         if binding.int_score_path is not None
@@ -1822,6 +2019,11 @@ def _iter_parquet_events(
                         if binding.native_id_path is not None
                         else None
                     ),
+                    native_record_namespace=(
+                        values[binding.native_record_namespace_path[0]][offset]
+                        if binding.native_record_namespace_path is not None
+                        else None
+                    ),
                     int_score=(
                         values[binding.int_score_path[0]][offset]
                         if binding.int_score_path is not None
@@ -1851,12 +2053,7 @@ def iter_source_asset_events_v3(
         raise TypeError("cache_root must be a pathlib.Path")
     source = verified_asset.expected.source_family
     if binding is None:
-        try:
-            binding = PRODUCTION_PARSER_BINDINGS_V3[source]
-        except KeyError as error:
-            raise SourceSchemaBindingRequired(
-                f"{source} requires pinned first-record schema inspection"
-            ) from error
+        binding = resolve_production_parser_binding_v3(verified_asset)
     if not isinstance(binding, SourceParserBindingV3):
         raise TypeError("source parser binding is untyped")
     if binding.source_family != source:
@@ -1864,9 +2061,11 @@ def iter_source_asset_events_v3(
     if binding.authority == "FIXTURE_ONLY" and not allow_fixture_binding:
         raise SourceSchemaError("fixture-only parser binding cannot run in production")
     if binding.authority != "FIXTURE_ONLY":
-        frozen = PRODUCTION_PARSER_BINDINGS_V3.get(source)
-        if frozen is None or frozen.binding_sha256 != binding.binding_sha256:
-            raise SourceSchemaError("production parser binding differs from frozen literal")
+        frozen = resolve_production_parser_binding_v3(verified_asset)
+        if frozen.binding_sha256 != binding.binding_sha256:
+            raise SourceSchemaError(
+                "production parser binding differs from its exact asset variant"
+            )
     path = _safe_cache_path(
         cache_root.resolve(strict=True),
         verified_asset.expected.relative_path,
@@ -2107,8 +2306,11 @@ def _canonical_spool_event(
         text_string = text_bytes.decode("utf-8", errors="strict")
         if len(text_bytes) != record.canonical_record.retained_byte_count:
             raise SourceSchemaError("parsed text bytes disagree with canonical metadata")
+        canonical_record = asdict(record.canonical_record)
+        if canonical_record.get("native_record_namespace") is None:
+            canonical_record.pop("native_record_namespace")
         retained = {
-            "canonical_record": asdict(record.canonical_record),
+            "canonical_record": canonical_record,
             "parser_binding_sha256": record.parser_binding_sha256,
             "raw_document": {
                 "source": record.raw_document.source,
@@ -2236,10 +2438,9 @@ def materialize_parsed_source_spool_v3(
     plan = plan_source_cache_assets_v3(enumeration, selected)
     if plan.plan_sha256 != download_receipt.selection_plan_sha256:
         raise SourceTransportError("parsed cache selection differs from download plan")
+    use_production_resolver = parser_bindings is None
     bindings = (
-        PRODUCTION_PARSER_BINDINGS_V3
-        if parser_bindings is None
-        else parser_bindings
+        PRODUCTION_PARSER_BINDINGS_V3 if use_production_resolver else parser_bindings
     )
     if not isinstance(bindings, Mapping):
         raise TypeError("parser_bindings must be a mapping")
@@ -2254,6 +2455,15 @@ def materialize_parsed_source_spool_v3(
     bound = tuple((source, bindings[source]) for source in selected_sources)
     if any(not isinstance(binding, SourceParserBindingV3) for unused, binding in bound):
         raise TypeError("parsed spool contains an untyped parser binding")
+    receipt_parser_bindings = tuple(
+        (
+            source,
+            PRODUCTION_PARSER_COMPOSITE_IDENTITIES_V3[source]
+            if use_production_resolver
+            else binding.binding_sha256,
+        )
+        for source, binding in bound
+    )
 
     assert_no_symlink_ancestors(cache_root)
     assert_no_symlink_ancestors(spool_path)
@@ -2275,7 +2485,11 @@ def materialize_parsed_source_spool_v3(
                 verified_cache.assets
             ):
                 source = verified_asset.expected.source_family
-                binding = bindings[source]
+                binding = (
+                    resolve_production_parser_binding_v3(verified_asset)
+                    if use_production_resolver
+                    else bindings[source]
+                )
                 asset_observation_count = 0
                 for event in iter_source_asset_events_v3(
                     verified_asset,
@@ -2322,9 +2536,7 @@ def materialize_parsed_source_spool_v3(
         download_receipt_sha256=download_receipt.receipt_sha256,
         verification_receipt_sha256=verified_cache.verification_receipt_sha256,
         source_manifest_sha256=verified_cache.source_manifest.manifest_sha256,
-        parser_bindings=tuple(
-            (source, binding.binding_sha256) for source, binding in bound
-        ),
+        parser_bindings=receipt_parser_bindings,
         observations=tuple(observations),
         event_count=event_count,
         retained_record_count=len(retained_payloads),
@@ -2346,6 +2558,7 @@ __all__ = [
     "DROP_QUALITY_LT3",
     "PARSE_DISPOSITIONS",
     "PARSED_SOURCE_SPOOL_SCHEMA_V3",
+    "PRODUCTION_PARSER_COMPOSITE_IDENTITIES_V3",
     "PRODUCTION_PARSER_BINDINGS_V3",
     "RETAIN",
     "DownloadedAssetEvidenceV3",
@@ -2363,6 +2576,9 @@ __all__ = [
     "SourceSchemaBindingRequired",
     "SourceSchemaError",
     "SourceTransportError",
+    "STACKEDU_NORMALIZED_PARSER_BINDING_V3",
+    "STACKEDU_PARSER_VARIANTS_V3",
+    "STACKEDU_PYTHON_PARSER_BINDING_V3",
     "fixture_source_parser_binding_v3",
     "finalize_source_cache_v3",
     "iter_retained_source_records_v3",
@@ -2372,6 +2588,7 @@ __all__ = [
     "materialize_complete_fixture_source_cache_v3",
     "materialize_source_cache_v3",
     "plan_source_cache_assets_v3",
+    "resolve_production_parser_binding_v3",
     "verify_parsed_source_spool_v3",
     "write_source_cache_download_receipt_v3",
 ]

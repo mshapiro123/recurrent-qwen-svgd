@@ -591,6 +591,7 @@ class CanonicalSourceRecordV3:
     retained_byte_count: int
     native_record_id: str | None = None
     int_score: int | None = None
+    native_record_namespace: str | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.asset, SourceCacheAssetV3):
@@ -601,6 +602,15 @@ class CanonicalSourceRecordV3:
             raise ValueError("retained_byte_count must be a positive exact integer")
         if self.native_record_id is not None:
             _require_nonempty(self.native_record_id, "native_record_id")
+        if self.native_record_namespace is not None:
+            if self.native_record_id is None:
+                raise ValueError(
+                    "native_record_namespace requires a native_record_id"
+                )
+            _require_nonempty(
+                self.native_record_namespace,
+                "native_record_namespace",
+            )
         if self.asset.source_family in QUALITY_GATED_SOURCE_FAMILIES:
             if type(self.int_score) is not int or self.int_score < 3:
                 raise ValueError(
@@ -623,6 +633,11 @@ class CanonicalSourceRecordV3:
                 "revision": self.asset.revision,
                 "source_family": self.source_family,
             }
+            if self.native_record_namespace is not None:
+                identity = {
+                    **identity,
+                    "native_record_namespace": self.native_record_namespace,
+                }
         else:
             identity = {
                 "asset_locator": self.asset.asset_locator,
