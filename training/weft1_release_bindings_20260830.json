@@ -1,0 +1,88 @@
+{
+  "schema": "weft1_release_bindings_v1",
+  "authority": {
+    "path": "docs/STRATEGY_RELEASE_POSTURE_AND_LICENSE_CLOSE_20260830.md",
+    "bytes": 5746,
+    "sha256": "d8c4f3bf8829bbe48e2464bf758ec3594ef730a0f952712099b45d183ca2ab3e"
+  },
+  "public_release": {
+    "weights_license_spdx": "Apache-2.0",
+    "publish": [
+      "pipeline_code",
+      "corpus_manifest_with_pins_shas_seeds_and_dedup_rates",
+      "d1_replay_instructions"
+    ],
+    "never_publish": [
+      "raw_text_shards"
+    ],
+    "public_corpus_identity": "manifest_sha256",
+    "reproducibility_claim": "replay_the_public_manifest_and_verify_d1"
+  },
+  "claims": {
+    "required_provenance_sentence": "from-scratch in weights, not in data provenance — trained from random initialization on an open corpus including model-generated reasoning traces in a declared final phase.",
+    "matched_comparison_rule": "Comparative claims ride on the matched-compute control only.",
+    "no_named_public_model_comparisons_rule": "no sentence of the form \"WEFT-1 outperforms [named public model]\" is ever written."
+  },
+  "attributions": [
+    {
+      "source_family": "dolma3",
+      "exact_text": "Dolma 3 — This training corpus includes Dolma 3 Pool and Dolma 3 Mix material from the Allen Institute for AI, licensed under the Open Data Commons Attribution License v1.0 (ODC-By); cite Team Olmo et al., “Olmo 3” (2025), arXiv:2512.13961.",
+      "cards": [
+        {
+          "repository": "allenai/dolma3_pool",
+          "revision": "6462556697df1a8f5c953727e9c686629ad98b68",
+          "url": "https://huggingface.co/datasets/allenai/dolma3_pool/blob/6462556697df1a8f5c953727e9c686629ad98b68/README.md",
+          "content_sha256": "7a43fb286ca2d57f6e44fbc109b7208a778d59a7f6e3c8a52ccd4f172d4e0ab1"
+        },
+        {
+          "repository": "allenai/dolma3_mix-6T",
+          "revision": "689a3ea2d8217e64d73a5058913fa43ad15e81aa",
+          "url": "https://huggingface.co/datasets/allenai/dolma3_mix-6T/blob/689a3ea2d8217e64d73a5058913fa43ad15e81aa/README.md",
+          "content_sha256": "901a231cdcae33ea8ce765d1bdef7606555780c4a108b0bcf046a65fa5d5adf9"
+        }
+      ]
+    },
+    {
+      "source_family": "fineweb_edu",
+      "exact_text": "FineWeb-Edu — This training corpus includes FineWeb-Edu by Anton Lozhkov, Loubna Ben Allal, Leandro von Werra, and Thomas Wolf, licensed under ODC-By v1.0 and subject to Common Crawl’s Terms of Use; cite “FineWeb-Edu: the Finest Collection of Educational Content” (2024), DOI 10.57967/hf/2497.",
+      "cards": [
+        {
+          "repository": "HuggingFaceFW/fineweb-edu",
+          "revision": "87f09149ef4734204d70ed1d046ddc9ca3f2b8f9",
+          "url": "https://huggingface.co/datasets/HuggingFaceFW/fineweb-edu/blob/87f09149ef4734204d70ed1d046ddc9ca3f2b8f9/README.md",
+          "content_sha256": "a0cc8998a20499432b28b6575f3046b714938eb8e11b8d59a1d25ddf3716061e"
+        }
+      ]
+    },
+    {
+      "source_family": "stackedu",
+      "exact_text": "Stack-Edu — The code stratum includes Stack-Edu material routed through the pinned Dolma 3 Mix; Stack-Edu is a 125B-token educational-code corpus filtered from The Stack v2. Cite Loubna Ben Allal et al., “SmolLM2: When Smol Goes Big — Data-Centric Training of a Small Language Model” (2025), arXiv:2502.02737. The Stack v2’s original per-file licenses, attribution requirements, and removal/opt-out process remain applicable.",
+      "cards": [
+        {
+          "repository": "HuggingFaceTB/stack-edu",
+          "revision": "eeec5caac5cc3758a18f1d3ba4416837a9ba814c",
+          "revision_date_utc": "2025-03-20T13:51:54Z",
+          "url": "https://huggingface.co/datasets/HuggingFaceTB/stack-edu/blob/eeec5caac5cc3758a18f1d3ba4416837a9ba814c/README.md",
+          "content_sha256": "fa264b336a946b87e05e540d449a51968149fbe1ab9b34af340f2d20fc290cd4"
+        },
+        {
+          "repository": "bigcode/the-stack-v2",
+          "revision": "e565caa3a78c2423bd374333a472b049eb090e47",
+          "revision_date_utc": "2026-08-03T13:24:25Z",
+          "url": "https://huggingface.co/datasets/bigcode/the-stack-v2/blob/e565caa3a78c2423bd374333a472b049eb090e47/README.md",
+          "content_sha256": "b117ef6fe7477e7c8b3ed71b41dde9a11131dcb1966e64d017935fc2339d864a"
+        }
+      ]
+    }
+  ],
+  "stackedu_disclosure": {
+    "exact_text": "Stack-Edu route — Executed from allenai/dolma3_mix-6T at revision 689a3ea2d8217e64d73a5058913fa43ad15e81aa (2026-01-15T05:36:27Z). Stack-Edu is derived from The Stack v2/StarCoder2Data: the underlying source snapshot uses the Software Heritage graph dated 2023-09-06 and GitHub Archive metadata through 2023-09-14. The upstream card records that StarCoder2 used v2.0.1, which incorporated validated opt-outs through 2023-10-20; WEFT-1 inherits The Stack v2’s continuing removal/takedown posture.",
+    "execution_repository": "allenai/dolma3_mix-6T",
+    "execution_revision": "689a3ea2d8217e64d73a5058913fa43ad15e81aa",
+    "execution_revision_date_utc": "2026-01-15T05:36:27Z",
+    "software_heritage_graph_snapshot_date": "2023-09-06",
+    "github_archive_metadata_through_date": "2023-09-14",
+    "starcoder2_opt_out_cutoff": "2023-10-20",
+    "upstream_removal_posture": "INHERITED_AND_MUST_BE_HONORED"
+  }
+}
