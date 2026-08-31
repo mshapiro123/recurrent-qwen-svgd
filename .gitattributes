@@ -141,6 +141,7 @@ tests/test_probe_weft1_source_parse_drivefs_v1.py text eol=lf
 tests/test_weft1_gtok_*_v2.py text eol=lf
 tests/test_weft1_gtok_v2_contract.py text eol=lf
 tests/test_weft1_stackedu_collision_audit_v1.py text eol=lf
+tests/test_monitor_weft1_pa_r3_closed_checkpoints_v1.py text eol=lf
 models/ablation_lm/*.py text eol=lf
 models/ablation_lm/**/*.py text eol=lf
 models/sidecar_v2.py text eol=lf
