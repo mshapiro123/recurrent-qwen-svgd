@@ -147,5 +147,7 @@ models/sidecar_v2.py text eol=lf
 docs/CODING_TO_STRATEGY_WEFT1_GTOK_CONFIRMATION_CLARIFICATION_REQUEST_20260830.md text eol=lf
 docs/CODING_TO_STRATEGY_WEFT1_GTOK_SCAFFOLD_RECEIPT_20260830.md text eol=lf
 docs/CODING_TO_STRATEGY_WEFT1_PA_PARSER_RECOVERY_20260830.md text eol=lf
+docs/CODING_TO_STRATEGY_WEFT1_PA_DURABILITY_REMEDIATION_20260830.md text eol=lf
 training/ablation_lm_engineering_quarantine_20260830_gtok.json text eol=lf
 training/ablation_lm_engineering_quarantine_20260830_pa_recovery.json text eol=lf
+training/ablation_lm_engineering_quarantine_20260830_pa_durability.json text eol=lf
