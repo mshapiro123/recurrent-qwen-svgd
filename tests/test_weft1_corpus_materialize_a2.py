@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from collections import Counter
+from collections.abc import Mapping
 import hashlib
 import io
 import json
@@ -7,12 +9,17 @@ import os
 from pathlib import Path
 import sqlite3
 import socket
+import subprocess
+import sys
+from types import SimpleNamespace
 
 import pytest
 import zstandard
 
 import training.weft1_corpus_pa as production_io
+import training.weft1_corpus_materialize_a2 as materializer
 import training.weft1_corpus_replay_a2 as replay
+import training.weft1_strict_io as strict_io
 from training.weft1_corpus_a2 import (
     LanguageIdDecisionV3,
     StableDocumentV3,
@@ -48,6 +55,716 @@ from training.weft1_gtok_contract import GTOK_STRATA
 
 def _sha(value: str) -> str:
     return hashlib.sha256(value.encode("utf-8")).hexdigest()
+
+
+def _parse_event_payload(
+    ordinal: int,
+    *,
+    asset_order_ordinal: int = 0,
+    source_record_ordinal: int | None = None,
+) -> bytes:
+    source_record = ordinal if source_record_ordinal is None else source_record_ordinal
+    return (
+        json.dumps(
+            {
+                "asset_order_ordinal": asset_order_ordinal,
+                "disposition": "RETAIN",
+                "event_ordinal": ordinal,
+                "event_sha256": _sha(f"event:{ordinal}"),
+                "source_asset_identity_sha256": _sha(
+                    f"asset:{asset_order_ordinal}"
+                ),
+                "source_family": "wikipedia_wikibooks",
+                "source_record_ordinal": source_record,
+            },
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+        + b"\n"
+    )
+
+
+def test_source_parse_checkpoint_hard_kill_preserves_only_closed_chunks(
+    tmp_path: Path,
+) -> None:
+    output_root = tmp_path / "durable-output"
+    work_root = tmp_path / "local-work"
+    parse_root = output_root / "source-parse"
+    parse_root.mkdir(parents=True)
+    work_root.mkdir()
+    (output_root / "_INCOMPLETE").write_bytes(b"P-A incomplete\n")
+    final_path = parse_root / "wikipedia_wikibooks.jsonl"
+    child = f'''\
+import hashlib
+import json
+import os
+from pathlib import Path
+from training.weft1_corpus_materialize_a2 import _DurableSourceParseLedgerV3
+
+writer = _DurableSourceParseLedgerV3(
+    final_path=Path({str(final_path)!r}),
+    local_root=Path({str(work_root)!r}),
+    source_family="wikipedia_wikibooks",
+    checkpoint_event_cadence=2,
+    after_checkpoint=lambda receipt: (
+        os._exit(77) if receipt["chunk_index"] == 1 else None
+    ),
+)
+with writer:
+    for ordinal in range(6):
+        payload = (
+            json.dumps(
+                {{
+                    "asset_order_ordinal": 0,
+                    "disposition": "RETAIN",
+                    "event_ordinal": ordinal,
+                    "event_sha256": hashlib.sha256(
+                        f"event:{{ordinal}}".encode("utf-8")
+                    ).hexdigest(),
+                    "source_asset_identity_sha256": hashlib.sha256(
+                        b"asset:0"
+                    ).hexdigest(),
+                    "source_family": "wikipedia_wikibooks",
+                    "source_record_ordinal": ordinal,
+                }},
+                sort_keys=True,
+                separators=(",", ":"),
+            ).encode("utf-8")
+            + b"\\n"
+        )
+        writer.write(
+            payload,
+            event_ordinal=ordinal,
+            asset_order_ordinal=0,
+            source_record_ordinal=ordinal,
+        )
+        writer.commit_event(ordinal)
+'''
+    killed = subprocess.run(
+        [sys.executable, "-c", child],
+        cwd=Path(__file__).resolve().parents[1],
+        check=False,
+    )
+    assert killed.returncode == 77
+
+    checkpoint_root = materializer._source_parse_checkpoint_root_v3(final_path)
+    recovery = materializer._validate_source_parse_checkpoint_chain_v3(
+        checkpoint_root,
+        source_family="wikipedia_wikibooks",
+    )
+    receipts = recovery.receipts
+    assert [row["chunk_index"] for row in receipts] == [0, 1]
+    assert [row["event_start_ordinal"] for row in receipts] == [0, 2]
+    assert [row["event_end_ordinal_exclusive"] for row in receipts] == [2, 4]
+    assert recovery.next_event_ordinal == 4
+    assert recovery.tail_status == "CLEAN"
+    assert all(
+        row["progress_semantics"] == "PARSE_PROGRESS_ONLY_NO_RESUME"
+        for row in receipts
+    )
+    assert [row["next_event_ordinal_required"] for row in receipts] == [2, 4]
+    assert b"".join(
+        (checkpoint_root / str(row["chunk_name"])).read_bytes()
+        for row in receipts
+    ) == b"".join(_parse_event_payload(ordinal) for ordinal in range(4))
+    assert not final_path.exists()
+    assert (output_root / "_INCOMPLETE").is_file()
+    assert not (output_root / "content-manifest.json").exists()
+    assert not (output_root / "d1-ready-manifest.json").exists()
+    assert not (output_root / replay.CHILD_RECEIPT_FILENAME).exists()
+    assert not tuple(checkpoint_root.glob("*.partial"))
+
+
+def test_source_parse_checkpoint_completion_reconstructs_legacy_ledger(
+    tmp_path: Path,
+) -> None:
+    final_path = tmp_path / "output" / "source-parse" / "wikipedia_wikibooks.jsonl"
+    final_path.parent.mkdir(parents=True)
+    work_root = tmp_path / "work"
+    work_root.mkdir()
+    payloads = tuple(
+        _parse_event_payload(ordinal, asset_order_ordinal=ordinal // 3)
+        for ordinal in range(5)
+    )
+    writer = materializer._DurableSourceParseLedgerV3(
+        final_path=final_path,
+        local_root=work_root,
+        source_family="wikipedia_wikibooks",
+        checkpoint_event_cadence=2,
+    )
+    with writer:
+        for ordinal, payload in enumerate(payloads):
+            writer.write(
+                payload,
+                event_ordinal=ordinal,
+                asset_order_ordinal=ordinal // 3,
+                source_record_ordinal=ordinal,
+            )
+            writer.commit_event(ordinal)
+            if ordinal == 2:
+                writer.seal_asset_boundary()
+        observed_sha256 = writer.finish()
+
+    expected = b"".join(payloads)
+    assert final_path.read_bytes() == expected
+    assert observed_sha256 == hashlib.sha256(expected).hexdigest()
+    assert not materializer._source_parse_checkpoint_root_v3(final_path).exists()
+    assert not tuple(final_path.parent.rglob("*.partial"))
+
+
+def test_source_parse_checkpoint_rehash_mismatch_fails_before_receipt(
+    tmp_path: Path,
+) -> None:
+    final_path = tmp_path / "output" / "source-parse" / "wikipedia_wikibooks.jsonl"
+    final_path.parent.mkdir(parents=True)
+    work_root = tmp_path / "work"
+    work_root.mkdir()
+    checkpoint_root = materializer._source_parse_checkpoint_root_v3(final_path)
+
+    def corrupt_replaced_chunk(phase: str) -> None:
+        if phase == "chunk_replaced":
+            with (checkpoint_root / "chunk-000000.jsonl").open("ab") as handle:
+                handle.write(b"corruption")
+
+    writer = materializer._DurableSourceParseLedgerV3(
+        final_path=final_path,
+        local_root=work_root,
+        source_family="wikipedia_wikibooks",
+        checkpoint_event_cadence=1,
+        publication_hook=corrupt_replaced_chunk,
+    )
+    with writer, pytest.raises(
+        CorpusMaterializationError,
+        match="failed close/reopen rehash",
+    ):
+        writer.write(
+            _parse_event_payload(0),
+            event_ordinal=0,
+            asset_order_ordinal=0,
+            source_record_ordinal=0,
+        )
+        writer.commit_event(0)
+    assert not final_path.exists()
+    assert not tuple(checkpoint_root.glob("*.receipt.json"))
+
+
+def test_source_parse_checkpoint_replace_failure_never_publishes_chunk(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    final_path = tmp_path / "output" / "source-parse" / "wikipedia_wikibooks.jsonl"
+    final_path.parent.mkdir(parents=True)
+    work_root = tmp_path / "work"
+    work_root.mkdir()
+    writer = materializer._DurableSourceParseLedgerV3(
+        final_path=final_path,
+        local_root=work_root,
+        source_family="wikipedia_wikibooks",
+        checkpoint_event_cadence=1,
+    )
+    checkpoint_root = materializer._source_parse_checkpoint_root_v3(final_path)
+
+    def fail_replace(_source: Path, _destination: Path) -> None:
+        raise OSError("injected replace failure")
+
+    original_replace = materializer.os.replace
+    monkeypatch.setattr(materializer.os, "replace", fail_replace)
+    with writer, pytest.raises(OSError, match="injected replace failure"):
+        writer.write(
+            _parse_event_payload(0),
+            event_ordinal=0,
+            asset_order_ordinal=0,
+            source_record_ordinal=0,
+        )
+        writer.commit_event(0)
+    assert not final_path.exists()
+    assert not tuple(checkpoint_root.glob("chunk-*.jsonl"))
+    assert not tuple(checkpoint_root.glob("*.receipt.json"))
+    assert tuple(checkpoint_root.glob("*.partial"))
+    monkeypatch.setattr(materializer.os, "replace", original_replace)
+    with pytest.raises(CorpusMaterializationError, match="unpublished tail"):
+        writer.finish()
+
+
+@pytest.mark.parametrize(
+    ("phase", "returncode", "expected_orphan_chunks"),
+    [
+        ("chunk_partial_written", 78, ()),
+        ("receipt_partial_written", 79, ("chunk-000001.jsonl",)),
+    ],
+)
+def test_source_parse_checkpoint_recovers_prefix_across_publication_kill(
+    tmp_path: Path,
+    phase: str,
+    returncode: int,
+    expected_orphan_chunks: tuple[str, ...],
+) -> None:
+    final_path = tmp_path / phase / "source-parse" / "wikipedia_wikibooks.jsonl"
+    final_path.parent.mkdir(parents=True)
+    work_root = tmp_path / f"work-{phase}"
+    work_root.mkdir()
+    child = f'''\
+import hashlib
+import json
+import os
+from pathlib import Path
+from training.weft1_corpus_materialize_a2 import _DurableSourceParseLedgerV3
+
+target_phase = {phase!r}
+exit_code = {returncode}
+target_hits = 0
+
+def publication_hook(observed):
+    global target_hits
+    if observed == target_phase:
+        target_hits += 1
+        if target_hits == 2:
+            os._exit(exit_code)
+
+writer = _DurableSourceParseLedgerV3(
+    final_path=Path({str(final_path)!r}),
+    local_root=Path({str(work_root)!r}),
+    source_family="wikipedia_wikibooks",
+    checkpoint_event_cadence=1,
+    publication_hook=publication_hook,
+)
+with writer:
+    for ordinal in range(2):
+        payload = (
+            json.dumps(
+                {{
+                    "asset_order_ordinal": 0,
+                    "disposition": "RETAIN",
+                    "event_ordinal": ordinal,
+                    "event_sha256": hashlib.sha256(
+                        f"event:{{ordinal}}".encode("utf-8")
+                    ).hexdigest(),
+                    "source_asset_identity_sha256": hashlib.sha256(b"asset:0").hexdigest(),
+                    "source_family": "wikipedia_wikibooks",
+                    "source_record_ordinal": ordinal,
+                }},
+                sort_keys=True,
+                separators=(",", ":"),
+            ).encode("utf-8")
+            + b"\\n"
+        )
+        writer.write(
+            payload,
+            event_ordinal=ordinal,
+            asset_order_ordinal=0,
+            source_record_ordinal=ordinal,
+        )
+        writer.commit_event(ordinal)
+'''
+    killed = subprocess.run(
+        [sys.executable, "-c", child],
+        cwd=Path(__file__).resolve().parents[1],
+        check=False,
+    )
+    assert killed.returncode == returncode
+    recovery = materializer._validate_source_parse_checkpoint_chain_v3(
+        materializer._source_parse_checkpoint_root_v3(final_path),
+        source_family="wikipedia_wikibooks",
+    )
+    assert [row["chunk_index"] for row in recovery.receipts] == [0]
+    assert recovery.next_event_ordinal == 1
+    assert recovery.tail_status == "UNPUBLISHED_TAIL"
+    assert recovery.orphan_chunk_names == expected_orphan_chunks
+    assert recovery.partial_names
+    assert not final_path.exists()
+
+
+def test_source_parse_checkpoint_cadence_and_asset_boundary_are_exact(
+    tmp_path: Path,
+) -> None:
+    final_path = tmp_path / "output" / "source-parse" / "wikipedia_wikibooks.jsonl"
+    final_path.parent.mkdir(parents=True)
+    work_root = tmp_path / "work"
+    work_root.mkdir()
+    published: list[Mapping[str, object]] = []
+    writer = materializer._DurableSourceParseLedgerV3(
+        final_path=final_path,
+        local_root=work_root,
+        source_family="wikipedia_wikibooks",
+        checkpoint_event_cadence=3,
+        after_checkpoint=lambda receipt: published.append(dict(receipt)),
+    )
+    with writer:
+        ordinal = 0
+        for asset, count in ((0, 2), (1, 3), (2, 1)):
+            for source_record in range(count):
+                published_before_write = len(published)
+                writer.write(
+                    _parse_event_payload(
+                        ordinal,
+                        asset_order_ordinal=asset,
+                        source_record_ordinal=source_record,
+                    ),
+                    event_ordinal=ordinal,
+                    asset_order_ordinal=asset,
+                    source_record_ordinal=source_record,
+                )
+                assert len(published) == published_before_write
+                writer.commit_event(ordinal)
+                ordinal += 1
+            writer.seal_asset_boundary()
+        writer.finish()
+    assert [row["event_count"] for row in published] == [2, 3, 1]
+    assert [row["first_asset_order_ordinal"] for row in published] == [0, 1, 2]
+    assert [row["last_asset_order_ordinal"] for row in published] == [0, 1, 2]
+    assert [row["next_event_ordinal_required"] for row in published] == [2, 5, 6]
+
+
+def test_source_parse_empty_source_finishes_as_exact_empty_legacy_ledger(
+    tmp_path: Path,
+) -> None:
+    final_path = tmp_path / "output" / "source-parse" / "wikipedia_wikibooks.jsonl"
+    final_path.parent.mkdir(parents=True)
+    work_root = tmp_path / "work"
+    work_root.mkdir()
+    writer = materializer._DurableSourceParseLedgerV3(
+        final_path=final_path,
+        local_root=work_root,
+        source_family="wikipedia_wikibooks",
+    )
+    with writer:
+        observed = writer.finish()
+    assert final_path.read_bytes() == b""
+    assert observed == hashlib.sha256(b"").hexdigest()
+    assert not materializer._source_parse_checkpoint_root_v3(final_path).exists()
+
+
+def test_source_parse_checkpoint_payload_source_is_bound_to_receipt(
+    tmp_path: Path,
+) -> None:
+    final_path = tmp_path / "output" / "source-parse" / "wikipedia_wikibooks.jsonl"
+    final_path.parent.mkdir(parents=True)
+    work_root = tmp_path / "work"
+    work_root.mkdir()
+
+    def stop_after_checkpoint(_receipt: Mapping[str, object]) -> None:
+        raise RuntimeError("stop after checkpoint")
+
+    writer = materializer._DurableSourceParseLedgerV3(
+        final_path=final_path,
+        local_root=work_root,
+        source_family="wikipedia_wikibooks",
+        checkpoint_event_cadence=1,
+        after_checkpoint=stop_after_checkpoint,
+    )
+    with writer, pytest.raises(RuntimeError, match="stop after checkpoint"):
+        writer.write(
+            _parse_event_payload(0),
+            event_ordinal=0,
+            asset_order_ordinal=0,
+            source_record_ordinal=0,
+        )
+        writer.commit_event(0)
+    checkpoint_root = materializer._source_parse_checkpoint_root_v3(final_path)
+    chunk = checkpoint_root / "chunk-000000.jsonl"
+    changed_payload = json.loads(chunk.read_text(encoding="utf-8"))
+    changed_payload["source_family"] = "dolma_web"
+    changed_bytes = (
+        json.dumps(changed_payload, sort_keys=True, separators=(",", ":")).encode(
+            "utf-8"
+        )
+        + b"\n"
+    )
+    chunk.write_bytes(changed_bytes)
+    receipt_path = checkpoint_root / "chunk-000000.receipt.json"
+    receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+    receipt["chunk_bytes"] = len(changed_bytes)
+    receipt["chunk_sha256"] = hashlib.sha256(changed_bytes).hexdigest()
+    receipt_path.write_bytes(
+        json.dumps(receipt, sort_keys=True, separators=(",", ":")).encode("utf-8")
+        + b"\n"
+    )
+    with pytest.raises(CorpusMaterializationError, match="payload fields"):
+        materializer._validate_source_parse_checkpoint_chain_v3(
+            checkpoint_root,
+            source_family="wikipedia_wikibooks",
+        )
+
+
+def test_source_parse_checkpoint_rejects_child_symlink_or_reparse(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    final_path = tmp_path / "output" / "source-parse" / "wikipedia_wikibooks.jsonl"
+    final_path.parent.mkdir(parents=True)
+    work_root = tmp_path / "work"
+    work_root.mkdir()
+    writer = materializer._DurableSourceParseLedgerV3(
+        final_path=final_path,
+        local_root=work_root,
+        source_family="wikipedia_wikibooks",
+        checkpoint_event_cadence=1,
+        after_checkpoint=lambda _receipt: (_ for _ in ()).throw(RuntimeError("stop")),
+    )
+    with writer, pytest.raises(RuntimeError, match="stop"):
+        writer.write(
+            _parse_event_payload(0),
+            event_ordinal=0,
+            asset_order_ordinal=0,
+            source_record_ordinal=0,
+        )
+        writer.commit_event(0)
+    checkpoint_root = materializer._source_parse_checkpoint_root_v3(final_path)
+    chunk = checkpoint_root / "chunk-000000.jsonl"
+    original = strict_io._is_link_or_reparse
+    monkeypatch.setattr(
+        strict_io,
+        "_is_link_or_reparse",
+        lambda path: path == chunk or original(path),
+    )
+    with pytest.raises(strict_io.StrictPathError, match="symlink/reparse"):
+        materializer._validate_source_parse_checkpoint_chain_v3(
+            checkpoint_root,
+            source_family="wikipedia_wikibooks",
+        )
+
+
+def test_source_parse_uncommitted_event_is_never_published(tmp_path: Path) -> None:
+    final_path = tmp_path / "output" / "source-parse" / "wikipedia_wikibooks.jsonl"
+    final_path.parent.mkdir(parents=True)
+    work_root = tmp_path / "work"
+    work_root.mkdir()
+    phases: list[str] = []
+    writer = materializer._DurableSourceParseLedgerV3(
+        final_path=final_path,
+        local_root=work_root,
+        source_family="wikipedia_wikibooks",
+        checkpoint_event_cadence=1,
+        publication_hook=phases.append,
+    )
+    with writer:
+        writer.write(
+            _parse_event_payload(0),
+            event_ordinal=0,
+            asset_order_ordinal=0,
+            source_record_ordinal=0,
+        )
+        checkpoint_root = materializer._source_parse_checkpoint_root_v3(final_path)
+        assert tuple(checkpoint_root.iterdir()) == ()
+        assert phases == []
+        with pytest.raises(CorpusMaterializationError, match="uncommitted event"):
+            writer.seal_asset_boundary()
+        with pytest.raises(CorpusMaterializationError, match="uncommitted event"):
+            writer.finish()
+    assert tuple(checkpoint_root.iterdir()) == ()
+    assert not final_path.exists()
+
+
+def test_source_parse_existing_incomplete_chain_is_not_a_resume_input(
+    tmp_path: Path,
+) -> None:
+    final_path = tmp_path / "output" / "source-parse" / "wikipedia_wikibooks.jsonl"
+    final_path.parent.mkdir(parents=True)
+    first_work_root = tmp_path / "first-work"
+    first_work_root.mkdir()
+    writer = materializer._DurableSourceParseLedgerV3(
+        final_path=final_path,
+        local_root=first_work_root,
+        source_family="wikipedia_wikibooks",
+        checkpoint_event_cadence=1,
+    )
+    with writer:
+        writer.write(
+            _parse_event_payload(0),
+            event_ordinal=0,
+            asset_order_ordinal=0,
+            source_record_ordinal=0,
+        )
+        writer.commit_event(0)
+
+    second_work_root = tmp_path / "second-work"
+    second_work_root.mkdir()
+    with pytest.raises(CorpusMaterializationError, match="must be fresh"):
+        materializer._DurableSourceParseLedgerV3(
+            final_path=final_path,
+            local_root=second_work_root,
+            source_family="wikipedia_wikibooks",
+            checkpoint_event_cadence=1,
+        )
+    recovery = materializer._validate_source_parse_checkpoint_chain_v3(
+        materializer._source_parse_checkpoint_root_v3(final_path),
+        source_family="wikipedia_wikibooks",
+    )
+    assert recovery.next_event_ordinal == 1
+    assert recovery.receipts[0]["resume_authorized"] is False
+    assert not final_path.exists()
+
+
+@pytest.mark.parametrize(
+    "tamper",
+    ("previous_receipt", "event_range", "unpaired_chunk"),
+)
+def test_source_parse_tampered_chain_or_unpaired_chunk_fails_closed(
+    tmp_path: Path,
+    tamper: str,
+) -> None:
+    final_path = tmp_path / tamper / "source-parse" / "wikipedia_wikibooks.jsonl"
+    final_path.parent.mkdir(parents=True)
+    work_root = tmp_path / f"work-{tamper}"
+    work_root.mkdir()
+    writer = materializer._DurableSourceParseLedgerV3(
+        final_path=final_path,
+        local_root=work_root,
+        source_family="wikipedia_wikibooks",
+        checkpoint_event_cadence=1,
+    )
+    with writer:
+        for ordinal in range(2):
+            writer.write(
+                _parse_event_payload(ordinal),
+                event_ordinal=ordinal,
+                asset_order_ordinal=0,
+                source_record_ordinal=ordinal,
+            )
+            writer.commit_event(ordinal)
+        checkpoint_root = materializer._source_parse_checkpoint_root_v3(final_path)
+        second_receipt_path = checkpoint_root / "chunk-000001.receipt.json"
+        if tamper == "unpaired_chunk":
+            second_receipt_path.unlink()
+            recovery = materializer._validate_source_parse_checkpoint_chain_v3(
+                checkpoint_root,
+                source_family="wikipedia_wikibooks",
+            )
+            assert [row["chunk_index"] for row in recovery.receipts] == [0]
+            assert recovery.orphan_chunk_names == ("chunk-000001.jsonl",)
+            assert recovery.tail_status == "UNPUBLISHED_TAIL"
+        else:
+            receipt = json.loads(second_receipt_path.read_text(encoding="utf-8"))
+            if tamper == "previous_receipt":
+                receipt["previous_checkpoint_receipt_sha256"] = "0" * 64
+            else:
+                receipt["event_start_ordinal"] = 0
+            second_receipt_path.write_bytes(
+                json.dumps(receipt, sort_keys=True, separators=(",", ":")).encode(
+                    "utf-8"
+                )
+                + b"\n"
+            )
+            with pytest.raises(
+                CorpusMaterializationError,
+                match="receipt chain drifted",
+            ):
+                materializer._validate_source_parse_checkpoint_chain_v3(
+                    checkpoint_root,
+                    source_family="wikipedia_wikibooks",
+                )
+        with pytest.raises(CorpusMaterializationError):
+            writer.finish()
+    assert not final_path.exists()
+
+
+def test_production_prepare_reconstructs_legacy_ledgers_and_removes_checkpoints(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    output_root = tmp_path / "output"
+    work_root = tmp_path / "work"
+    cache_root = tmp_path / "cache"
+    output_root.mkdir()
+    work_root.mkdir()
+    cache_root.mkdir()
+    asset_identity = _sha("wikipedia:asset")
+    expected_binding = materializer.PRODUCTION_PARSER_COMPOSITE_IDENTITIES_V3[
+        "wikipedia_wikibooks"
+    ]
+    verified_asset = SimpleNamespace(
+        expected=SimpleNamespace(
+            source_family="wikipedia_wikibooks",
+            relative_path="wikipedia/asset.jsonl",
+            asset_identity_sha256=asset_identity,
+        )
+    )
+    parsed = SimpleNamespace(
+        parser_binding_sha256=expected_binding,
+        raw_document=SimpleNamespace(
+            stable_source_record_id=_sha("wikipedia:record"),
+            text="retained production-path text",
+        ),
+        canonical_record=SimpleNamespace(
+            asset=SimpleNamespace(asset_identity_sha256=asset_identity),
+            retained_byte_count=len(b"retained production-path text"),
+            int_score=None,
+        ),
+    )
+    event = SimpleNamespace(
+        disposition=materializer.RETAIN,
+        event_sha256=_sha("wikipedia:event"),
+        record=parsed,
+        source_record_ordinal=0,
+    )
+
+    monkeypatch.setattr(
+        materializer,
+        "resolve_production_parser_binding_v3",
+        lambda _asset: SimpleNamespace(binding_sha256=expected_binding),
+    )
+    monkeypatch.setattr(
+        materializer,
+        "iter_source_asset_events_v3",
+        lambda asset, _root, *, binding: (
+            (event,) if asset is verified_asset else ()
+        ),
+    )
+    inputs = SimpleNamespace(
+        mode=PRODUCTION_MODE,
+        verified_cache=SimpleNamespace(assets=(verified_asset,)),
+        cache_root=cache_root,
+        source_cache_download_receipt=object(),
+        source_identity_sha256=_sha("transport"),
+    )
+    instance = object.__new__(materializer._Materializer)
+    instance.inputs = inputs
+    instance.output_root = output_root
+    instance.work_root = work_root
+    instance.source_parse_drop_counts = {
+        source: {"empty_text": 0, "invalid_utf8": 0, "quality_lt3": 0}
+        for source in SOURCE_FAMILIES
+    }
+    instance.invalid_utf8_by_source = Counter(
+        {source: 0 for source in SOURCE_FAMILIES}
+    )
+    instance.source_parse_receipts = {}
+    instance._production_source_db = None
+
+    instance._prepare_production_sources()
+    try:
+        parse_root = output_root / "source-parse"
+        assert tuple(sorted(path.name for path in parse_root.iterdir())) == tuple(
+            sorted(f"{source}.jsonl" for source in SOURCE_FAMILIES)
+        )
+        expected_payload = materializer.canonical_json_bytes(
+            {
+                "asset_order_ordinal": 0,
+                "disposition": materializer.RETAIN,
+                "event_ordinal": 0,
+                "event_sha256": event.event_sha256,
+                "source_asset_identity_sha256": asset_identity,
+                "source_family": "wikipedia_wikibooks",
+                "source_record_ordinal": 0,
+            }
+        ) + b"\n"
+        assert (
+            parse_root / "wikipedia_wikibooks.jsonl"
+        ).read_bytes() == expected_payload
+        assert all(
+            (parse_root / f"{source}.jsonl").read_bytes() == b""
+            for source in SOURCE_FAMILIES
+            if source != "wikipedia_wikibooks"
+        )
+        assert not tuple(parse_root.glob(".*.checkpoints"))
+        checkpoint_work_root = work_root / "source-parse-checkpoints"
+        assert tuple(checkpoint_work_root.iterdir()) == ()
+        assert instance.source_parse_receipts["wikipedia_wikibooks"][
+            "parse_event_ledger_sha256"
+        ] == hashlib.sha256(expected_payload).hexdigest()
+    finally:
+        assert instance._production_source_db is not None
+        instance._production_source_db.close()
 
 
 def _parsed_records_connection() -> sqlite3.Connection:

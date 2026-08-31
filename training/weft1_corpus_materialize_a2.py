@@ -18,6 +18,7 @@ from __future__ import annotations
 from collections import Counter
 from collections.abc import Iterable, Iterator, Mapping, Sequence
 from dataclasses import asdict, dataclass
+import errno
 from fractions import Fraction
 import hashlib
 import io
@@ -26,8 +27,9 @@ import os
 from pathlib import Path, PurePosixPath
 import sqlite3
 import socket
+import stat
 import tempfile
-from typing import Protocol
+from typing import BinaryIO, Callable, Protocol
 
 import zstandard
 
@@ -168,10 +170,729 @@ _STABLE_ID_SCORE_VARIANCE_DIGEST_PREFIX_V3 = (
 _EMPTY_STABLE_ID_SCORE_VARIANCE_DIGEST_SHA256_V3 = hashlib.sha256(
     _STABLE_ID_SCORE_VARIANCE_DIGEST_PREFIX_V3
 ).hexdigest()
+SOURCE_PARSE_CHECKPOINT_EVENT_CADENCE_V3 = 65_536
+_SOURCE_PARSE_CHECKPOINT_SCHEMA_V3 = "weft1_source_parse_checkpoint_v3"
 
 
 class CorpusMaterializationError(RuntimeError):
     """Fail-closed P-A orchestration error."""
+
+
+def _source_parse_checkpoint_root_v3(final_path: Path) -> Path:
+    return final_path.parent / f".{final_path.name}.checkpoints"
+
+
+def _source_parse_directory_fsync_v3(path: Path) -> str:
+    """Fsync a directory when the backing filesystem implements it.
+
+    DriveFS commonly reports directory fsync as unsupported.  That outcome is
+    recorded in each checkpoint rather than treated as success; every other
+    error fails closed.  File close/reopen/rehash remains mandatory either way.
+    """
+
+    if os.name != "posix":
+        return "not_applicable_non_posix"
+    try:
+        descriptor = os.open(path, os.O_RDONLY)
+        try:
+            os.fsync(descriptor)
+        finally:
+            os.close(descriptor)
+    except OSError as error:
+        unsupported = {
+            errno.EINVAL,
+            errno.ENOTSUP,
+            getattr(errno, "EOPNOTSUPP", errno.ENOTSUP),
+        }
+        if error.errno in unsupported:
+            return f"unsupported_errno_{error.errno}"
+        raise CorpusMaterializationError(
+            f"source-parse checkpoint directory fsync failed: {error}"
+        ) from error
+    return "supported"
+
+
+def _open_source_parse_child_once_v3(path: Path) -> BinaryIO:
+    """Open one governed regular child without following a final symlink."""
+
+    assert_no_symlink_ancestors(path)
+    flags = os.O_RDONLY | getattr(os, "O_BINARY", 0) | getattr(os, "O_NOFOLLOW", 0)
+    descriptor = os.open(path, flags)
+    try:
+        if not stat.S_ISREG(os.fstat(descriptor).st_mode):
+            raise CorpusMaterializationError(
+                "source-parse checkpoint child is not a regular file"
+            )
+        return os.fdopen(descriptor, "rb", closefd=True)
+    except BaseException:
+        os.close(descriptor)
+        raise
+
+
+def _read_source_parse_child_once_v3(path: Path) -> bytes:
+    with _open_source_parse_child_once_v3(path) as handle:
+        return handle.read()
+
+
+def _checkpoint_object_no_duplicates_v3(
+    pairs: list[tuple[str, object]],
+) -> dict[str, object]:
+    value: dict[str, object] = {}
+    for key, item in pairs:
+        if key in value:
+            raise CorpusMaterializationError(
+                "source-parse checkpoint JSON repeats a key"
+            )
+        value[key] = item
+    return value
+
+
+def _parse_checkpoint_json_object_v3(raw: bytes, *, name: str) -> dict[str, object]:
+    try:
+        value = json.loads(
+            raw.decode("utf-8", errors="strict"),
+            object_pairs_hook=_checkpoint_object_no_duplicates_v3,
+            parse_constant=lambda constant: (_ for _ in ()).throw(
+                CorpusMaterializationError(
+                    f"{name} uses non-finite JSON constant {constant}"
+                )
+            ),
+        )
+    except CorpusMaterializationError:
+        raise
+    except (UnicodeDecodeError, json.JSONDecodeError, TypeError, ValueError) as error:
+        raise CorpusMaterializationError(f"{name} is not strict JSON") from error
+    if not isinstance(value, dict) or canonical_json_bytes(value) + b"\n" != raw:
+        raise CorpusMaterializationError(f"{name} is not canonical JSON")
+    return value
+
+
+def _verify_source_parse_file_once_v3(
+    path: Path,
+    *,
+    expected_sha256: str,
+    expected_bytes: int,
+) -> None:
+    digest = hashlib.sha256()
+    observed_bytes = 0
+    with _open_source_parse_child_once_v3(path) as handle:
+        for chunk in iter(lambda: handle.read(8 * 1024 * 1024), b""):
+            observed_bytes += len(chunk)
+            digest.update(chunk)
+    if observed_bytes != expected_bytes or digest.hexdigest() != expected_sha256:
+        raise CorpusMaterializationError(
+            "durable source-parse checkpoint failed close/reopen rehash"
+        )
+
+
+def _publish_source_parse_file_v3(
+    source: Path,
+    destination: Path,
+    *,
+    expected_sha256: str,
+    expected_bytes: int,
+    publication_hook: Callable[[str], None] | None,
+) -> str:
+    """Copy one closed local chunk into one fresh closed durable object."""
+
+    partial = destination.with_name(destination.name + ".partial")
+    assert_no_symlink_ancestors(source)
+    assert_no_symlink_ancestors(destination)
+    assert_no_symlink_ancestors(partial)
+    if destination.exists() or partial.exists():
+        raise CorpusMaterializationError(
+            "source-parse checkpoint destination must be fresh"
+        )
+    copied = 0
+    digest = hashlib.sha256()
+    with source.open("rb") as read_handle, partial.open("xb") as write_handle:
+        for chunk in iter(lambda: read_handle.read(8 * 1024 * 1024), b""):
+            copied += len(chunk)
+            digest.update(chunk)
+            write_handle.write(chunk)
+            if publication_hook is not None:
+                publication_hook("chunk_partial_written")
+        write_handle.flush()
+        os.fsync(write_handle.fileno())
+    if copied != expected_bytes or digest.hexdigest() != expected_sha256:
+        raise CorpusMaterializationError(
+            "local source-parse checkpoint changed before durable publication"
+        )
+    os.replace(partial, destination)
+    if publication_hook is not None:
+        publication_hook("chunk_replaced")
+    directory_fsync = _source_parse_directory_fsync_v3(destination.parent)
+    _verify_source_parse_file_once_v3(
+        destination,
+        expected_sha256=expected_sha256,
+        expected_bytes=expected_bytes,
+    )
+    return directory_fsync
+
+
+def _publish_source_parse_receipt_v3(
+    path: Path,
+    receipt: Mapping[str, object],
+    *,
+    publication_hook: Callable[[str], None] | None,
+) -> str:
+    payload = canonical_json_bytes(dict(receipt)) + b"\n"
+    partial = path.with_name(path.name + ".partial")
+    assert_no_symlink_ancestors(path)
+    assert_no_symlink_ancestors(partial)
+    if path.exists() or partial.exists():
+        raise CorpusMaterializationError(
+            "source-parse checkpoint receipt must be fresh"
+        )
+    with partial.open("xb") as handle:
+        handle.write(payload)
+        if publication_hook is not None:
+            publication_hook("receipt_partial_written")
+        handle.flush()
+        os.fsync(handle.fileno())
+    os.replace(partial, path)
+    _source_parse_directory_fsync_v3(path.parent)
+    if _read_source_parse_child_once_v3(path) != payload:
+        raise CorpusMaterializationError(
+            "source-parse checkpoint receipt failed close/reopen replay"
+        )
+    return hashlib.sha256(payload).hexdigest()
+
+
+@dataclass(frozen=True)
+class _SourceParseCheckpointRecoveryV3:
+    receipts: tuple[dict[str, object], ...]
+    next_event_ordinal: int
+    tail_status: str
+    partial_names: tuple[str, ...]
+    orphan_chunk_names: tuple[str, ...]
+    orphan_receipt_names: tuple[str, ...]
+    unexpected_names: tuple[str, ...]
+
+
+def _checkpoint_index_v3(name: str, suffix: str) -> int | None:
+    if not name.startswith("chunk-") or not name.endswith(suffix):
+        return None
+    digits = name[len("chunk-") : -len(suffix)]
+    return int(digits) if len(digits) == 6 and digits.isdigit() else None
+
+
+def _checkpoint_nonnegative_int_v3(value: object) -> bool:
+    return isinstance(value, int) and not isinstance(value, bool) and value >= 0
+
+
+def _verify_source_parse_chunk_payload_v3(
+    path: Path,
+    receipt: Mapping[str, object],
+    *,
+    source_family: str,
+) -> None:
+    expected_keys = {
+        "asset_order_ordinal",
+        "disposition",
+        "event_ordinal",
+        "event_sha256",
+        "source_asset_identity_sha256",
+        "source_family",
+        "source_record_ordinal",
+    }
+    digest = hashlib.sha256()
+    observed_bytes = 0
+    observed_count = 0
+    first_asset: int | None = None
+    first_record: int | None = None
+    last_asset: int | None = None
+    last_record: int | None = None
+    next_event = int(receipt["event_start_ordinal"])
+    with _open_source_parse_child_once_v3(path) as handle:
+        for line in handle:
+            observed_bytes += len(line)
+            digest.update(line)
+            row = _parse_checkpoint_json_object_v3(line, name="checkpoint event")
+            asset = row.get("asset_order_ordinal")
+            record = row.get("source_record_ordinal")
+            if (
+                set(row) != expected_keys
+                or row.get("source_family") != source_family
+                or not _checkpoint_nonnegative_int_v3(row.get("event_ordinal"))
+                or row.get("event_ordinal") != next_event
+                or not _checkpoint_nonnegative_int_v3(asset)
+                or not _checkpoint_nonnegative_int_v3(record)
+                or not isinstance(row.get("disposition"), str)
+                or row.get("disposition")
+                not in {RETAIN, DROP_EMPTY_TEXT, DROP_INVALID_UTF8, DROP_QUALITY_LT3}
+                or not isinstance(row.get("event_sha256"), str)
+                or not isinstance(row.get("source_asset_identity_sha256"), str)
+            ):
+                raise CorpusMaterializationError(
+                    "source-parse checkpoint payload fields differ from receipt"
+                )
+            try:
+                _require_sha256(row["event_sha256"], "event SHA-256")
+                _require_sha256(
+                    row["source_asset_identity_sha256"],
+                    "source asset identity SHA-256",
+                )
+            except ValueError as error:
+                raise CorpusMaterializationError(
+                    "source-parse checkpoint payload fields differ from receipt"
+                ) from error
+            if first_asset is None:
+                first_asset = asset
+                first_record = record
+            last_asset = asset
+            last_record = record
+            observed_count += 1
+            next_event += 1
+    if (
+        observed_bytes != receipt.get("chunk_bytes")
+        or digest.hexdigest() != receipt.get("chunk_sha256")
+        or observed_count != receipt.get("event_count")
+        or next_event != receipt.get("event_end_ordinal_exclusive")
+        or first_asset != receipt.get("first_asset_order_ordinal")
+        or first_record != receipt.get("first_source_record_ordinal")
+        or last_asset != receipt.get("last_asset_order_ordinal")
+        or last_record != receipt.get("last_source_record_ordinal")
+    ):
+        raise CorpusMaterializationError(
+            "source-parse checkpoint payload fields differ from receipt"
+        )
+
+
+def _validate_source_parse_checkpoint_chain_v3(
+    checkpoint_root: Path,
+    *,
+    source_family: str,
+) -> _SourceParseCheckpointRecoveryV3:
+    """Recover the maximal verified prefix and describe any unpublished tail."""
+
+    if source_family not in SOURCE_FAMILIES:
+        raise CorpusMaterializationError("source-parse checkpoint uses unknown source")
+    assert_no_symlink_ancestors(checkpoint_root)
+    if not checkpoint_root.is_dir():
+        raise CorpusMaterializationError("source-parse checkpoint root is absent")
+    children = tuple(sorted(checkpoint_root.iterdir(), key=lambda path: path.name))
+    for child in children:
+        assert_no_symlink_ancestors(child)
+        if not child.is_file():
+            raise CorpusMaterializationError(
+                "source-parse checkpoint root contains a non-file child"
+            )
+    names = {path.name for path in children}
+    chunk_indices = {
+        index
+        for name in names
+        if (index := _checkpoint_index_v3(name, ".jsonl")) is not None
+    }
+    receipt_indices = {
+        index
+        for name in names
+        if (index := _checkpoint_index_v3(name, ".receipt.json")) is not None
+    }
+    partial_names = tuple(sorted(name for name in names if name.endswith(".partial")))
+    recognized = {
+        *(f"chunk-{index:06d}.jsonl" for index in chunk_indices),
+        *(f"chunk-{index:06d}.receipt.json" for index in receipt_indices),
+        *partial_names,
+    }
+    unexpected_names = tuple(sorted(names - recognized))
+    expected_receipt_keys = {
+        "chunk_bytes",
+        "chunk_index",
+        "chunk_name",
+        "chunk_sha256",
+        "directory_fsync",
+        "event_count",
+        "event_end_ordinal_exclusive",
+        "event_start_ordinal",
+        "first_asset_order_ordinal",
+        "first_source_record_ordinal",
+        "last_asset_order_ordinal",
+        "last_source_record_ordinal",
+        "next_event_ordinal_required",
+        "previous_checkpoint_receipt_sha256",
+        "progress_semantics",
+        "resume_authorized",
+        "schema",
+        "source_family",
+    }
+    rows: list[dict[str, object]] = []
+    previous_receipt_sha256: str | None = None
+    next_event_ordinal = 0
+    expected_index = 0
+    while expected_index in chunk_indices and expected_index in receipt_indices:
+        chunk_name = f"chunk-{expected_index:06d}.jsonl"
+        receipt_name = f"chunk-{expected_index:06d}.receipt.json"
+        receipt_path = checkpoint_root / receipt_name
+        receipt_bytes = _read_source_parse_child_once_v3(receipt_path)
+        receipt = _parse_checkpoint_json_object_v3(
+            receipt_bytes, name="source-parse checkpoint receipt"
+        )
+        event_count = receipt.get("event_count")
+        if (
+            set(receipt) != expected_receipt_keys
+            or receipt.get("schema") != _SOURCE_PARSE_CHECKPOINT_SCHEMA_V3
+            or receipt.get("source_family") != source_family
+            or not _checkpoint_nonnegative_int_v3(receipt.get("chunk_index"))
+            or receipt.get("chunk_index") != expected_index
+            or receipt.get("chunk_name") != chunk_name
+            or not _checkpoint_nonnegative_int_v3(receipt.get("chunk_bytes"))
+            or int(receipt.get("chunk_bytes", 0)) <= 0
+            or not isinstance(receipt.get("chunk_sha256"), str)
+            or len(str(receipt.get("chunk_sha256"))) != 64
+            or any(
+                character not in _SHA256_CHARS
+                for character in str(receipt.get("chunk_sha256"))
+            )
+            or not isinstance(receipt.get("directory_fsync"), str)
+            or receipt.get("previous_checkpoint_receipt_sha256")
+            != previous_receipt_sha256
+            or not _checkpoint_nonnegative_int_v3(
+                receipt.get("event_start_ordinal")
+            )
+            or receipt.get("event_start_ordinal") != next_event_ordinal
+            or not isinstance(event_count, int)
+            or isinstance(event_count, bool)
+            or event_count <= 0
+            or not _checkpoint_nonnegative_int_v3(
+                receipt.get("event_end_ordinal_exclusive")
+            )
+            or not _checkpoint_nonnegative_int_v3(
+                receipt.get("first_asset_order_ordinal")
+            )
+            or not _checkpoint_nonnegative_int_v3(
+                receipt.get("first_source_record_ordinal")
+            )
+            or not _checkpoint_nonnegative_int_v3(
+                receipt.get("last_asset_order_ordinal")
+            )
+            or not _checkpoint_nonnegative_int_v3(
+                receipt.get("last_source_record_ordinal")
+            )
+            or receipt.get("event_end_ordinal_exclusive")
+            != next_event_ordinal + event_count
+            or not _checkpoint_nonnegative_int_v3(
+                receipt.get("next_event_ordinal_required")
+            )
+            or receipt.get("next_event_ordinal_required")
+            != receipt.get("event_end_ordinal_exclusive")
+            or receipt.get("progress_semantics")
+            != "PARSE_PROGRESS_ONLY_NO_RESUME"
+            or receipt.get("resume_authorized") is not False
+        ):
+            raise CorpusMaterializationError(
+                "source-parse checkpoint receipt chain drifted"
+            )
+        _verify_source_parse_chunk_payload_v3(
+            checkpoint_root / chunk_name,
+            receipt,
+            source_family=source_family,
+        )
+        rows.append(dict(receipt))
+        next_event_ordinal = int(receipt["event_end_ordinal_exclusive"])
+        previous_receipt_sha256 = hashlib.sha256(receipt_bytes).hexdigest()
+        expected_index += 1
+    consumed_indices = set(range(expected_index))
+    orphan_chunks = tuple(
+        f"chunk-{index:06d}.jsonl"
+        for index in sorted(chunk_indices - consumed_indices)
+    )
+    orphan_receipts = tuple(
+        f"chunk-{index:06d}.receipt.json"
+        for index in sorted(receipt_indices - consumed_indices)
+    )
+    tail_status = (
+        "UNPUBLISHED_TAIL"
+        if partial_names or orphan_chunks or orphan_receipts or unexpected_names
+        else "CLEAN"
+    )
+    return _SourceParseCheckpointRecoveryV3(
+        receipts=tuple(rows),
+        next_event_ordinal=next_event_ordinal,
+        tail_status=tail_status,
+        partial_names=partial_names,
+        orphan_chunk_names=orphan_chunks,
+        orphan_receipt_names=orphan_receipts,
+        unexpected_names=unexpected_names,
+    )
+
+
+class _DurableSourceParseLedgerV3:
+    """Stage source events as immutable closed chunks, then rebuild one ledger.
+
+    The checkpoints replace one long-lived open DriveFS file with immutable,
+    closed objects and therefore reduce the process-local/open-file loss window.
+    Survival across a whole-backend replacement is claimed only after a physical
+    provider reopen verifies the objects.  They are never resumable inputs: a
+    killed run retains ``_INCOMPLETE`` and a later replay still uses a fresh root.
+    Successful completion concatenates the verified chunks into the legacy
+    ledger path and removes staging, so the governed logical ledger bytes and
+    final tree shape remain unchanged.
+    """
+
+    def __init__(
+        self,
+        *,
+        final_path: Path,
+        local_root: Path,
+        source_family: str,
+        checkpoint_event_cadence: int = SOURCE_PARSE_CHECKPOINT_EVENT_CADENCE_V3,
+        after_checkpoint: Callable[[Mapping[str, object]], None] | None = None,
+        publication_hook: Callable[[str], None] | None = None,
+    ) -> None:
+        if source_family not in SOURCE_FAMILIES:
+            raise CorpusMaterializationError("source-parse ledger uses unknown source")
+        if (
+            isinstance(checkpoint_event_cadence, bool)
+            or not isinstance(checkpoint_event_cadence, int)
+            or checkpoint_event_cadence <= 0
+        ):
+            raise ValueError("source-parse checkpoint cadence must be positive")
+        self.final_path = final_path
+        self.source_family = source_family
+        self.checkpoint_event_cadence = checkpoint_event_cadence
+        self.after_checkpoint = after_checkpoint
+        self.publication_hook = publication_hook
+        self.checkpoint_root = _source_parse_checkpoint_root_v3(final_path)
+        self.local_source_root = local_root / source_family
+        assert_no_symlink_ancestors(final_path)
+        assert_no_symlink_ancestors(self.checkpoint_root)
+        assert_no_symlink_ancestors(self.local_source_root)
+        if (
+            final_path.exists()
+            or self.checkpoint_root.exists()
+            or self.local_source_root.exists()
+        ):
+            raise CorpusMaterializationError(
+                "source-parse ledger and checkpoint roots must be fresh"
+            )
+        self.checkpoint_root.mkdir()
+        self.local_source_root.mkdir(parents=True)
+        self._chunk_index = 0
+        self._next_event_ordinal = 0
+        self._committed_next_event_ordinal = 0
+        self._pending_event_ordinal: int | None = None
+        self._chunk_event_count = 0
+        self._chunk_bytes = 0
+        self._chunk_digest = hashlib.sha256()
+        self._ledger_digest = hashlib.sha256()
+        self._local_path: Path | None = None
+        self._local_handle: BinaryIO | None = None
+        self._first_asset_order_ordinal: int | None = None
+        self._first_source_record_ordinal: int | None = None
+        self._last_asset_order_ordinal: int | None = None
+        self._last_source_record_ordinal: int | None = None
+        self._previous_receipt_sha256: str | None = None
+        self._finished = False
+
+    def __enter__(self) -> _DurableSourceParseLedgerV3:
+        return self
+
+    def __exit__(self, _type: object, _value: object, _traceback: object) -> None:
+        if self._local_handle is not None:
+            try:
+                self._local_handle.flush()
+                os.fsync(self._local_handle.fileno())
+            finally:
+                self._local_handle.close()
+                self._local_handle = None
+
+    def _open_local_chunk(self) -> None:
+        if self._local_handle is not None:
+            return
+        self._local_path = self.local_source_root / (
+            f"chunk-{self._chunk_index:06d}.jsonl.local"
+        )
+        self._local_handle = self._local_path.open("xb")
+
+    def write(
+        self,
+        payload: bytes,
+        *,
+        event_ordinal: int,
+        asset_order_ordinal: int,
+        source_record_ordinal: int,
+    ) -> None:
+        if self._finished:
+            raise CorpusMaterializationError("source-parse ledger is already finished")
+        if (
+            not isinstance(payload, bytes)
+            or not payload
+            or not payload.endswith(b"\n")
+            or payload.count(b"\n") != 1
+            or event_ordinal != self._next_event_ordinal
+            or self._pending_event_ordinal is not None
+            or asset_order_ordinal < 0
+            or source_record_ordinal < 0
+        ):
+            raise CorpusMaterializationError(
+                "source-parse checkpoint received a malformed or unordered event"
+            )
+        self._open_local_chunk()
+        assert self._local_handle is not None
+        self._local_handle.write(payload)
+        self._chunk_digest.update(payload)
+        self._ledger_digest.update(payload)
+        self._chunk_event_count += 1
+        self._chunk_bytes += len(payload)
+        self._next_event_ordinal += 1
+        if self._first_asset_order_ordinal is None:
+            self._first_asset_order_ordinal = asset_order_ordinal
+            self._first_source_record_ordinal = source_record_ordinal
+        self._last_asset_order_ordinal = asset_order_ordinal
+        self._last_source_record_ordinal = source_record_ordinal
+        self._pending_event_ordinal = event_ordinal
+
+    def commit_event(self, event_ordinal: int) -> None:
+        """Acknowledge that parsing, validation, and DB insertion all completed."""
+
+        if (
+            self._pending_event_ordinal != event_ordinal
+            or event_ordinal != self._committed_next_event_ordinal
+        ):
+            raise CorpusMaterializationError(
+                "source-parse checkpoint commit is missing or out of order"
+            )
+        self._pending_event_ordinal = None
+        self._committed_next_event_ordinal += 1
+        if self._chunk_event_count >= self.checkpoint_event_cadence:
+            self._seal_chunk()
+
+    def seal_asset_boundary(self) -> None:
+        self._seal_chunk()
+
+    def _seal_chunk(self) -> None:
+        if self._local_handle is None:
+            return
+        if (
+            self._pending_event_ordinal is not None
+            or self._committed_next_event_ordinal != self._next_event_ordinal
+        ):
+            raise CorpusMaterializationError(
+                "source-parse checkpoint cannot publish an uncommitted event"
+            )
+        assert self._local_path is not None
+        assert self._chunk_event_count > 0
+        assert self._first_asset_order_ordinal is not None
+        assert self._first_source_record_ordinal is not None
+        assert self._last_asset_order_ordinal is not None
+        assert self._last_source_record_ordinal is not None
+        self._local_handle.flush()
+        os.fsync(self._local_handle.fileno())
+        self._local_handle.close()
+        self._local_handle = None
+        chunk_name = f"chunk-{self._chunk_index:06d}.jsonl"
+        chunk_path = self.checkpoint_root / chunk_name
+        chunk_sha256 = self._chunk_digest.hexdigest()
+        directory_fsync = _publish_source_parse_file_v3(
+            self._local_path,
+            chunk_path,
+            expected_sha256=chunk_sha256,
+            expected_bytes=self._chunk_bytes,
+            publication_hook=self.publication_hook,
+        )
+        event_start = self._committed_next_event_ordinal - self._chunk_event_count
+        receipt: dict[str, object] = {
+            "chunk_bytes": self._chunk_bytes,
+            "chunk_index": self._chunk_index,
+            "chunk_name": chunk_name,
+            "chunk_sha256": chunk_sha256,
+            "directory_fsync": directory_fsync,
+            "event_count": self._chunk_event_count,
+            "event_end_ordinal_exclusive": self._committed_next_event_ordinal,
+            "event_start_ordinal": event_start,
+            "first_asset_order_ordinal": self._first_asset_order_ordinal,
+            "first_source_record_ordinal": self._first_source_record_ordinal,
+            "last_asset_order_ordinal": self._last_asset_order_ordinal,
+            "last_source_record_ordinal": self._last_source_record_ordinal,
+            "next_event_ordinal_required": self._committed_next_event_ordinal,
+            "previous_checkpoint_receipt_sha256": self._previous_receipt_sha256,
+            "progress_semantics": "PARSE_PROGRESS_ONLY_NO_RESUME",
+            "resume_authorized": False,
+            "schema": _SOURCE_PARSE_CHECKPOINT_SCHEMA_V3,
+            "source_family": self.source_family,
+        }
+        receipt_path = self.checkpoint_root / (
+            f"chunk-{self._chunk_index:06d}.receipt.json"
+        )
+        self._previous_receipt_sha256 = _publish_source_parse_receipt_v3(
+            receipt_path,
+            receipt,
+            publication_hook=self.publication_hook,
+        )
+        self._local_path.unlink()
+        self._chunk_index += 1
+        self._chunk_event_count = 0
+        self._chunk_bytes = 0
+        self._chunk_digest = hashlib.sha256()
+        self._local_path = None
+        self._first_asset_order_ordinal = None
+        self._first_source_record_ordinal = None
+        self._last_asset_order_ordinal = None
+        self._last_source_record_ordinal = None
+        if self.after_checkpoint is not None:
+            self.after_checkpoint(receipt)
+
+    def finish(self) -> str:
+        if self._finished:
+            raise CorpusMaterializationError("source-parse ledger is already finished")
+        if self._pending_event_ordinal is not None:
+            raise CorpusMaterializationError(
+                "source-parse ledger cannot finish with an uncommitted event"
+            )
+        self._seal_chunk()
+        recovery = _validate_source_parse_checkpoint_chain_v3(
+            self.checkpoint_root,
+            source_family=self.source_family,
+        )
+        if recovery.tail_status != "CLEAN":
+            raise CorpusMaterializationError(
+                "source-parse checkpoint has an unpublished tail"
+            )
+        receipts = recovery.receipts
+        if (
+            recovery.next_event_ordinal != self._committed_next_event_ordinal
+            or sum(int(row["event_count"]) for row in receipts)
+            != self._committed_next_event_ordinal
+        ):
+            raise CorpusMaterializationError(
+                "source-parse checkpoint chain does not cover every event"
+            )
+        partial = self.final_path.with_name(self.final_path.name + ".partial")
+        if self.final_path.exists() or partial.exists():
+            raise CorpusMaterializationError("source-parse final ledger must be fresh")
+        rebuilt_digest = hashlib.sha256()
+        with partial.open("xb") as destination:
+            for receipt in receipts:
+                chunk_path = self.checkpoint_root / str(receipt["chunk_name"])
+                with _open_source_parse_child_once_v3(chunk_path) as source:
+                    for chunk in iter(lambda: source.read(8 * 1024 * 1024), b""):
+                        rebuilt_digest.update(chunk)
+                        destination.write(chunk)
+            destination.flush()
+            os.fsync(destination.fileno())
+        expected_sha256 = self._ledger_digest.hexdigest()
+        if rebuilt_digest.hexdigest() != expected_sha256:
+            raise CorpusMaterializationError(
+                "source-parse durable chunks do not reconstruct the logical ledger"
+            )
+        os.replace(partial, self.final_path)
+        _source_parse_directory_fsync_v3(self.final_path.parent)
+        if sha256_file(self.final_path) != expected_sha256:
+            raise CorpusMaterializationError(
+                "source-parse final ledger failed close/reopen rehash"
+            )
+        for receipt in receipts:
+            (self.checkpoint_root / str(receipt["chunk_name"])).unlink()
+            (
+                self.checkpoint_root
+                / f"chunk-{int(receipt['chunk_index']):06d}.receipt.json"
+            ).unlink()
+        self.checkpoint_root.rmdir()
+        _source_parse_directory_fsync_v3(self.final_path.parent)
+        self.local_source_root.rmdir()
+        self._finished = True
+        return expected_sha256
 
 
 def _require_sha256(value: str, name: str) -> str:
@@ -1465,6 +2186,8 @@ class _Materializer:
         assert self.inputs.source_cache_download_receipt is not None
         parse_root = self.output_root / "source-parse"
         parse_root.mkdir()
+        checkpoint_work_root = self.work_root / "source-parse-checkpoints"
+        checkpoint_work_root.mkdir()
         database_path = self.work_root / "production-source-records.sqlite"
         connection = sqlite3.connect(database_path, isolation_level=None)
         connection.row_factory = sqlite3.Row
@@ -1516,7 +2239,11 @@ class _Materializer:
                     _STABLE_ID_SCORE_VARIANCE_DIGEST_PREFIX_V3
                 )
                 event_ordinal = 0
-                with ledger_path.open("xb") as ledger:
+                with _DurableSourceParseLedgerV3(
+                    final_path=ledger_path,
+                    local_root=checkpoint_work_root,
+                    source_family=source,
+                ) as ledger:
                     for asset_order_ordinal, verified_asset in enumerate(
                         assets_by_source[source]
                     ):
@@ -1549,11 +2276,17 @@ class _Materializer:
                                     "disposition": event.disposition,
                                 }
                             ) + b"\n"
-                            ledger.write(payload)
+                            ledger.write(
+                                payload,
+                                event_ordinal=event_ordinal,
+                                asset_order_ordinal=asset_order_ordinal,
+                                source_record_ordinal=event.source_record_ordinal,
+                            )
                             ledger_digest.update(payload)
                             event_ordinal += 1
                             disposition_counts[event.disposition] += 1
                             if event.disposition != RETAIN:
+                                ledger.commit_event(event_ordinal - 1)
                                 continue
                             assert event.record is not None
                             parsed = event.record
@@ -1605,6 +2338,13 @@ class _Materializer:
                             if event_ordinal % 4096 == 0:
                                 connection.commit()
                                 connection.execute("BEGIN IMMEDIATE")
+                            ledger.commit_event(event_ordinal - 1)
+                        ledger.seal_asset_boundary()
+                    ledger_sha256 = ledger.finish()
+                if ledger_sha256 != ledger_digest.hexdigest():
+                    raise CorpusMaterializationError(
+                        "source-parse checkpoint ledger differs from its stream digest"
+                    )
                 asset_order_identity = execution_authority_v3_bound_sha256(
                     "weft1_corpus_source_asset_consumption_order_v3",
                     tuple(
