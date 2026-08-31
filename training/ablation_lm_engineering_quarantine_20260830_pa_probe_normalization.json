@@ -1,0 +1,62 @@
+{
+  "kind": "ablation_lm_engineering_quarantine_v10",
+  "date": "2026-08-30",
+  "status": "exact_node_quarantine_build_only",
+  "reviewed_at_commit": "a6a7fc2174dd82b5b95b5e6de4ae36088b867f99",
+  "review_due_on": "2026-09-04",
+  "review_trigger": "Review before the next repository-wide engineering receipt or 2026-09-04, whichever comes first.",
+  "scope": "ablation_lm_engineering_gate_only",
+  "supersedes": {
+    "path": "training/ablation_lm_engineering_quarantine_20260830_pa_durability.json",
+    "sha256": "80a53a3ad6e264b401d2e02cd1bfd4bed486edbc94d1fdae0cc74ecbbb4e33e3"
+  },
+  "repo_wide_green_claim_permitted": false,
+  "build_and_unit_test_work_authorized": true,
+  "tokenizer_fit_or_freeze_authorized": false,
+  "optimizer_construction_authorized": false,
+  "training_authorized": false,
+  "authorization_note": "This engineering quarantine does not grant or revoke the separately governed bounded G-TOK run-axis exception.",
+  "evaluation_panel_contact_authorized": false,
+  "sealed_partition_contact_authorized": false,
+  "sealed_files_touched": [],
+  "full_suite_expected_exit_code": 1,
+  "last_observed_full_suite": {
+    "passed": 3866,
+    "failed": 1,
+    "warnings": 19,
+    "duration_seconds": 164.67,
+    "observed_at": "2026-08-30T23:14:27-04:00"
+  },
+  "review_execution": {
+    "command": "python scripts/run_ablation_lm_engineering_gate.py",
+    "result": "gate PASS; underlying suite 1 failed, 3866 passed, 19 warnings in 164.67s",
+    "reviewed_on": "2026-08-30"
+  },
+  "expected_failures": [
+    {
+      "node_id": "tests/test_paper2_claim_evidence_ledger.py::test_paper2_claim_evidence_paths_exist",
+      "cause": "Two legacy Paper 2 evidence-ledger output paths are absent and gitignored; one aggregate exists in an archive under a different path and one banked analysis hash has no archived file.",
+      "resolution_owner": "paper2_claim_evidence_ledger",
+      "scope_stop": "Paper and publication evidence audit remains red; no repo-wide green claim.",
+      "unblock_condition": "Restore the exact receipted outputs under written evidence-governance authority or amend the ledger through its governed process.",
+      "sealed_failure": false
+    }
+  ],
+  "resolved_since_prior": [],
+  "remaining_failure_evidence": {
+    "archive_aggregate_path": "artifacts/stage2a_t3_20260818/receipts/summary.json",
+    "archive_aggregate_bytes": 40847,
+    "archive_aggregate_receipted_sha256_abbrev": "3e4eaa7...f7bb",
+    "missing_analysis_summary": true
+  },
+  "d5_stop_authority": [
+    "docs/STRATEGY_2BS_RECON_ADJ_DEPTH_STUDY_20260822.md",
+    "docs/STRATEGY_2BS_DEPTH_STUDY_HANDOFF_20260822.md",
+    "docs/STRATEGY_2BS_FINAL_CELL_AUTHORIZATION_20260823.md",
+    "docs/STRATEGY_BICAMERAL_W2P_D4_RULINGS_20260825.md",
+    "docs/CODING_TO_STRATEGY_TM0_RESULT_HANDOFF_20260825.md",
+    "training/paper2_bicameral_w2p_lock.json",
+    "training/paper2_stage2bs_depth_study_lock.json"
+  ],
+  "new_lineage_stop_authority": "docs/ABLATION_LM_SUBSTRATE_CONTRACT_20260826.md"
+}

@@ -5,6 +5,11 @@ import json
 from pathlib import Path
 import subprocess
 import sys
+from types import SimpleNamespace
+
+import pytest
+
+import scripts.probe_weft1_source_parse_drivefs_v1 as probe
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -226,3 +231,41 @@ def test_two_phase_local_dry_run_is_bound_nonreusable_and_fail_closed(
     )
     assert duplicate.returncode == 2
     assert _sha(final_path.read_bytes()) == final_sha256
+
+
+def test_exact_runtime_evidence_is_json_normalized_before_stage_comparison(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    nested_attestation_payload = {
+        "locked_distributions": (
+            {
+                "artifact_sha256s": ("a" * 64, "b" * 64),
+                "distribution": "example",
+            },
+        ),
+        "required_environment": (("TOKENIZERS_PARALLELISM", "false"),),
+    }
+    monkeypatch.setattr(
+        probe,
+        "attest_runtime_v3",
+        lambda: SimpleNamespace(
+            dependency_lock_sha256="c" * 64,
+            environment_identity_sha256="d" * 64,
+            environment_payload=nested_attestation_payload,
+            executable_sha256="e" * 64,
+        ),
+    )
+
+    current = probe._runtime_evidence(local_dry_run=False)
+    stage_after_serialize_reload = json.loads(_canonical(current))
+
+    assert current == stage_after_serialize_reload
+    assert isinstance(current["environment_payload"]["locked_distributions"], list)
+    assert isinstance(current["environment_payload"]["required_environment"], list)
+    assert isinstance(
+        current["environment_payload"]["required_environment"][0], list
+    )
+
+    drifted_stage = json.loads(_canonical(current))
+    drifted_stage["environment_payload"]["required_environment"][0][1] = "true"
+    assert current != drifted_stage

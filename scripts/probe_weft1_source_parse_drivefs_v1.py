@@ -280,7 +280,7 @@ def _runtime_evidence(*, local_dry_run: bool) -> dict[str, object]:
     executable = Path(sys.executable)
     if local_dry_run:
         resolved_executable = executable.resolve()
-        return {
+        evidence: dict[str, object] = {
             "authoritative_exact_runtime": False,
             "executable": os.fspath(resolved_executable),
             "executable_sha256": _sha256_bytes(
@@ -289,17 +289,25 @@ def _runtime_evidence(*, local_dry_run: bool) -> dict[str, object]:
             "mode": "LOCAL_TMP_DRY_RUN_NO_DRIVE_CLAIM",
             "python_version": platform.python_version(),
         }
-    attestation = attest_runtime_v3()
-    return {
-        "authoritative_exact_runtime": True,
-        "dependency_lock_sha256": attestation.dependency_lock_sha256,
-        "environment_identity_sha256": attestation.environment_identity_sha256,
-        "environment_payload": dict(attestation.environment_payload),
-        "executable": os.fspath(executable),
-        "executable_sha256": attestation.executable_sha256,
-        "mode": "EXACT_RUNTIME_DRIVEFS",
-        "python_version": platform.python_version(),
-    }
+    else:
+        attestation = attest_runtime_v3()
+        evidence = {
+            "authoritative_exact_runtime": True,
+            "dependency_lock_sha256": attestation.dependency_lock_sha256,
+            "environment_identity_sha256": attestation.environment_identity_sha256,
+            "environment_payload": dict(attestation.environment_payload),
+            "executable": os.fspath(executable),
+            "executable_sha256": attestation.executable_sha256,
+            "mode": "EXACT_RUNTIME_DRIVEFS",
+            "python_version": platform.python_version(),
+        }
+    # Runtime attestation contains tuple-valued nested inventories.  Normalize
+    # at the evidence boundary so the in-memory value and its staged JSON reload
+    # use the same list-valued representation during exact verify comparison.
+    return _parse_canonical_object(
+        _canonical_json_bytes(evidence),
+        name="runtime evidence",
+    )
 
 
 def _code_evidence() -> dict[str, object]:
