@@ -85,11 +85,11 @@ V4_PARENT_LANE_OPERATION_ORDER = (
     ("materialize", 0),
     ("materialize", 1),
 )
-PARSED_ASSET_CODE_IDENTITY_SCHEMA_V1 = (
-    "weft1_parsed_asset_cache_code_identity_v1"
+PARSED_ASSET_CODE_IDENTITY_SCHEMA_V4 = (
+    "weft1_parsed_asset_cache_code_identity_v4"
 )
-PARSED_ASSET_INPUT_IDENTITY_SCHEMA_V1 = (
-    "weft1_parsed_asset_cache_input_identity_v1"
+PARSED_ASSET_INPUT_IDENTITY_SCHEMA_V4 = (
+    "weft1_parsed_asset_cache_input_identity_v4"
 )
 PARSED_ASSET_CODE_LOGICAL_NAMES_V1 = frozenset(
     {
@@ -797,7 +797,7 @@ def verify_production_materialization_replays_v4(
             "V4 parsed-asset parser/cache code closure is incomplete"
         )
     parsed_asset_code_identity = execution_authority_v4_bound_sha256(
-        PARSED_ASSET_CODE_IDENTITY_SCHEMA_V1,
+        PARSED_ASSET_CODE_IDENTITY_SCHEMA_V4,
         parsed_asset_code_rows,
     )
     compatibility_hashes = {
@@ -907,7 +907,7 @@ def verify_production_materialization_replays_v4(
             name="V4 parsed-asset recovery inputs",
         )
         parsed_asset_input_identity = execution_authority_v4_bound_sha256(
-            PARSED_ASSET_INPUT_IDENTITY_SCHEMA_V1,
+            PARSED_ASSET_INPUT_IDENTITY_SCHEMA_V4,
             parsed_asset_input_rows,
         )
         input_rows = replay_v3._logical_file_rows(input_files, name="V4 replay inputs")

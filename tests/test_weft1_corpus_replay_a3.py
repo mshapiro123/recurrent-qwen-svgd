@@ -164,6 +164,18 @@ def test_v4_parent_fills_both_lanes_before_either_materialization() -> None:
     )
 
 
+def test_v4_parsed_asset_identity_schemas_are_authority_bound() -> None:
+    payload = ({"logical_name": "component", "sha256": "a" * 64},)
+    for schema in (
+        replay_v4.PARSED_ASSET_CODE_IDENTITY_SCHEMA_V4,
+        replay_v4.PARSED_ASSET_INPUT_IDENTITY_SCHEMA_V4,
+    ):
+        assert schema.endswith("_v4")
+        assert len(
+            replay_v4.execution_authority_v4_bound_sha256(schema, payload)
+        ) == 64
+
+
 @pytest.mark.parametrize(
     "timeout_seconds",
     [

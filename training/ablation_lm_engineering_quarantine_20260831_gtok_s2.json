@@ -21,15 +21,15 @@
   "sealed_files_touched": [],
   "full_suite_expected_exit_code": 1,
   "last_observed_full_suite": {
-    "passed": 3951,
+    "passed": 3952,
     "failed": 1,
     "warnings": 19,
-    "duration_seconds": 162.53,
-    "observed_at": "2026-08-31T17:25:57-04:00"
+    "duration_seconds": 165.62,
+    "observed_at": "2026-08-31T17:56:51-04:00"
   },
   "review_execution": {
     "command": "python scripts/run_ablation_lm_engineering_gate.py",
-    "result": "PASS: exactly 1 quarantined failure; 3951 passed; 19 warnings",
+    "result": "PASS: exactly 1 quarantined failure; 3952 passed; 19 warnings",
     "reviewed_on": "2026-08-31"
   },
   "expected_failures": [
