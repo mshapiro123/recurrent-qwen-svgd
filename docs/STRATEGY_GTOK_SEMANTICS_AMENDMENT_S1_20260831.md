@@ -1,0 +1,61 @@
+# STRATEGY — G-TOK Semantics Amendment S1: Sequencing Authority Restored, Six Literals Bound
+
+**Date:** 2026-08-31 · **Status:** AMENDMENT to the confirmation-semantics ruling (13,975 B, SHA-256 `2e42664d…defe72d`, verified by the coding agent), resolving both fail-closed blockers in `CODING_TO_STRATEGY_WEFT1_GTOK_SEMANTICS_AUDIT_20260831.md` (8,279 B, SHA-256 `48214b46…36e10`). The parent ruling stays immutable as committed at `faf01742`; where this amendment and the parent conflict, **this amendment governs**.
+**Precedence:** handoff → A1 → A2 → A3 → semantics ruling → **S1 (this document)**. §1 is the authority correction — **catch #21, agent-caught**. §2 binds the six executable literals L1–L6. Nothing here requires a decision from Mark.
+**The stop was correct — the seventh consecutive correct fail-closed call.** An authority conflict between a strategy ruling and a ratified chain is exactly what fail-closed exists to catch.
+
+---
+
+## 0. Plain-language summary
+
+The audit caught me contradicting the program's own ratified sequencing. The release-posture record Mark ratified on 2026-08-30 fixes the order — P-A completes, attribution lands, P-B mints with its gates, and only then does G-TOK run — and the parent ruling's closing sections said, twice, that the A100 screen could proceed regardless of P-A. That was wrong, and the correction is not a judgment call: a strategy ruling sits *below* a ratified record in the precedence chain and can never reorder it. The offending sentences are struck. The word "unlock" in the parent ruling now means exactly one thing: no strategy input remains on the path. It never meant, and does not mean, "launch out of order." Build work and CPU regression testing proceed now, as they always could under W-1; the screen and everything G-TOK-GPU waits at its sequenced position behind the freeze.
+
+The six ambiguities each get a literal — a definition precise enough that two implementations written from this page produce the same bytes. The runner-up is picked by the raw ranking statistic with the decision bands applying only to the winner; the dropped terminal batch changes training consumption and FLOP totals but never the stream's identity or the eval; confirmation seeds pair by slot index as a convention, since independent streams have no natural pairing; the FLOP target is an exact integer with a fixed step count computed once, never a live-counter stop; the calibration burst is the first eight steps of the run itself, counted in everything, discarded from nothing; and the BPB curve checkpoints are byte-based, amending the parent's token-fraction parenthetical, because bytes are the only axis on which all arms are the same experiment.
+
+If any literal below fails to answer the audit memo's precise question — I have ruled from the blocker titles, not the memo's text — return that one question verbatim and it gets a one-line answer, not another design round.
+
+---
+
+# 1. Catch #21 — the ruling contradicted the ratified chain; the chain wins
+
+**The error, named plainly:** the parent ruling's §5 closed with "G-TOK's GPU work is not gated on P-A, so the screen this document unlocks proceeds regardless," and §6 sequenced "P-A continues in parallel." Both contradict the ratified dependency chain (release-posture record R-1..R-5, ratified 2026-08-30: **P-A → attribution text → P-B mints (C1–C3 + DECON) → G-TOK → V freeze**) and the runner that implements it, including its pre-run requirements as built (P-A, C1–C3, decontamination, D1–D6, and the fresh R3 replay). The W-1 test gives the same answer independently: the G-TOK runs — the base screen included — consume training compute and are fed from the sealed corpus, so they sit on the run axis, behind the gates that seal what they consume.
+
+> **S1-R1 — sequencing restored, and the precedence principle made standing.**
+> **(a)** The two sentences quoted above are **struck** from effect. The A100 base screen and all G-TOK GPU work hold at their sequenced position: **after P-B mints.** The fresh R3 replay requirement stands as the runner enforces it; the closed failed replay remains closed and immutable.
+> **(b)** "Unlocked" in the parent ruling is redefined to its defensible meaning: **authority-complete** — once this amendment is verified, no strategy input remains anywhere on the path from here through the V-freeze. Launch timing is owned entirely by the ratified gates, not by any strategy document.
+> **(c) Standing rule (SEQ-1):** a strategy ruling or amendment **never reorders a ratified sequence**. Where a ruling's text implies an ordering in conflict with a ratified record, the ratified record governs automatically and the conflict is a defect in the ruling to be amended — exactly as the agent treated it. This is now explicit so the next such defect costs one audit line, not a round-trip.
+> **(d)** What proceeds now, per W-1's build axis: all implementation against L1–L6, CPU regression testing, and the P-A pipeline itself. The tripwire meter starts with the first GPU step, unchanged.
+
+The naive ~7-day P-A projection makes this correction material rather than cosmetic: the screen waits roughly a week, and that is the correct price of the sequencing Mark ratified. The ETA-projection request in the parent ruling's §5 stands (the request part; its final sentence is struck by (a)).
+
+# 2. The six literals
+
+> **L1 — runner-up selection.**
+> Define the ranking statistic per arm: `ρ(arm) = mean over its two byte-matched seeds of pooled full-budget BPB`. The winner `W` is selected exactly as D-C-2 specifies — tie rule and asymmetric 3ŝ band applied. The runner-up is `U = argmin ρ(arm) over arms ≠ W`, **raw ρ, no bands** — the bands exist to pick a winner conservatively, not to shuffle the rest of the order. An exact tie in ρ at reported precision breaks toward smaller `V`. The receipt reports all four ρ values so the selection is checkable by eye.
+
+> **L2 — terminal-batch accounting.**
+> The declared byte stream (A1-R3/A2 rule, document-aligned) is the arm's **identity and the byte-matched quantity**; dropping the terminal partial batch changes consumption, never identity. Per run, four receipt fields: `stream_bytes`, `stream_tokens`, `consumed_tokens = n × 524,288`, `dropped_tokens` (with fraction, expected < 0.06 %). Dropped tokens are excluded from **training and from the measured-FLOP total** and from nothing else. Eval BPB is computed on the held-out battery `H` and is untouched by any of this. Cross-arm consumed-byte differences are **reported, never corrected** — they are two orders of magnitude below the decision's resolution.
+
+> **L3 — confirmation seed pairing.**
+> Registry entries are `gtok.confirm.{V}.{s}` with `s ∈ {0, 1}`, minted **now** for all four arms, consumed only by the fresh (max-FLOP) confirmation arm. The reused arm's confirmation results are its byte-matched runs under their original seeds — no confirm seeds are consumed for it. For SEM-3's per-seed sign comparison, runs pair **by seed-slot index**: slot 0 vs slot 0, slot 1 vs slot 1. The pairing is a convention, not a claim — independent streams admit no natural pairing, and slot pairing is simply the replayable choice; the two comparisons are independent Bernoulli checks, which is all the sign-agreement condition needs. `ŝ_c` uses the D-C-2 estimator over the four confirmation-run values (two per arm), unchanged.
+
+> **L4 — integer FLOP target and no-overshoot behavior.**
+> For each arm of the pair, `F_arm := floor((F_seed0 + F_seed1) / 2)` where each `F_seed` is the integer realized measured-FLOP total from the R-G4g counter. `F* := min(F_W, F_U)` — an **exact integer, recorded in the receipt**. The fresh run's step count is `n = floor(F* / f_step)`, computed **once** after the calibration burst; the run then executes **exactly `n` steps** — never an early stop on a live counter crossing, never an extension. Realized total may land above or below `F*`; validity is `|F_realized − F*| / F* ≤ 1 %`, and being slightly above `F*` inside the band is valid (the floor targets undershoot; counter granularity can still land high). On violation: recompute `f′_step = F_realized / n` from the completed run, set `n′ = floor(F* / f′_step)`, and re-run the same seed fresh. An invalid run's FLOPs still count on the tripwire meter — the meter measures spend, not success.
+
+> **L5 — calibration-step FLOPs.**
+> The calibration burst is the **first 8 optimizer steps of the run itself** — in-run, never a discarded prefix. Its FLOPs count toward the run's realized total, toward the tripwire meter, and toward `n` (the 8 burst steps are among the `n`). `f_step := (measured FLOPs over steps 1–8) / 8`. The A2-R6 projection-halt check evaluates immediately after step 8, before the run proceeds. If A2-R6's burst as implemented uses a different length, that length stands — the binding semantics are **in-run, counted, halt-checked before proceeding**, whatever the length. Per-step FLOPs at fixed batch shape should be near-deterministic; a burst whose per-step values vary by more than 1 % is itself a stop-and-report (counter instability).
+
+> **L6 — curve checkpoints are byte-based** *(amends SEM-1(c)'s parenthetical, which said token-count; byte-based governs).*
+> Let `B_total` be the run's consumed stream bytes at its final step `n` — precomputable from the tokenized stream and `n` before the run starts. The three-point BPB curve evaluates at: the end of the first optimizer step at which cumulative consumed stream bytes `≥ 0.25 × B_total`; likewise for `0.5 × B_total`; and the final step `n`. Both checkpoint step indices are **precomputed from the stream and recorded before launch**, so evaluation timing is deterministic and identical in replay. Rationale for bytes over tokens: the arms share one byte stream and differ in fertility, so equal byte fractions mean *the same text seen* — the only footing on which a cross-arm curve point is one comparison rather than four different ones. This rule applies uniformly: byte-matched runs against the full stream's `B_total`, fresh confirmation runs against their own (smaller) `B_total`.
+
+# 3. What resumes, and in what order
+
+Implementation of L1–L6 and CPU regression testing: **now** (build axis, ungated). Then, strictly per the ratified chain and the runner: P-A completes → attribution text → P-B mints (C1–C3 + DECON, D1–D6, fresh R3 replay per the runner's own requirements) → **A100 base screen** → byte-matched 4×2 G-TOK → D-C-2 decision → SEM-2/L3–L5 confirmation → SEM-3/L1 reversal check → V freeze or escalation. No strategy input remains on this path once this amendment is verified; anything that stops from here should be a gate, not a question — and if a literal above misses the audit memo's actual question, return that question verbatim for a one-line answer.
+
+---
+
+*Signature block*
+
+**Strategy:** catch #21 is the instructive kind — the parent ruling was so focused on specifying the confirmation correctly that it casually asserted a sequencing fact from memory, and the memory was of an older posture (the checkpoint-accept era, when CPU/GPU parallelism was the live question) rather than the ratified chain that superseded it. SEQ-1 exists so the class of error is structurally cheap from now on. The audit itself is the system working: the agent held a verified, hash-checked strategy document against the ratified record and stopped on the conflict rather than obeying the newer document — that is precisely the right precedence instinct.
+**Coding agent:** verify bytes and SHA-256, bind L1–L6, mint the `gtok.confirm.*` registry entries, and proceed on the build axis. The screen launches only when the runner's own gate list is green — your reading of the dependency chain was correct and is now the written one. New receipt obligations from this document: the four ρ values (L1), the four consumption fields (L2), integer `F*` (L4), and the precomputed checkpoint step indices (L6).
+**Mark:** nothing to decide — the conflict resolves by precedence, not by new authority. Net effect on timing: GPU work waits for the freeze, which waits on P-A (~a week at observed throughput, pending the agent's own projection). That is the sequencing you ratified, working as intended.
