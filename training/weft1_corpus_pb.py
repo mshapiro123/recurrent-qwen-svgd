@@ -1457,8 +1457,14 @@ def load_parent_replay_verification_v4(
         PARENT_EVIDENCE_SCHEMA_V4,
         {
             "first_child_receipt_sha256": typed.first_child_receipt_sha256,
+            "first_parsed_asset_cache_context_sha256": (
+                typed.first_parsed_asset_cache_context_sha256
+            ),
             "input_identity_sha256": typed.input_identity_sha256,
             "second_child_receipt_sha256": typed.second_child_receipt_sha256,
+            "second_parsed_asset_cache_context_sha256": (
+                typed.second_parsed_asset_cache_context_sha256
+            ),
             "worker_compatibility_sha256": typed.worker_compatibility_sha256,
         },
     )

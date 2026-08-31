@@ -26,6 +26,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--breakdown-root", required=True, type=Path)
     parser.add_argument("--execution-provenance", required=True, type=Path)
     parser.add_argument("--runtime-build-receipt", required=True, type=Path)
+    parser.add_argument("--cache-fill-only", action="store_true")
     return parser
 
 
@@ -40,6 +41,7 @@ def main() -> int:
         breakdown_root=arguments.breakdown_root,
         execution_provenance_path=arguments.execution_provenance,
         runtime_build_receipt_path=arguments.runtime_build_receipt,
+        cache_fill_only=arguments.cache_fill_only,
     )
     return 0
 

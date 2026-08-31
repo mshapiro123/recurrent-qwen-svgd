@@ -12,11 +12,12 @@ Packing is a literal A2-R7 binding:
 * a long document may continue in a later sequence under one causal document
   identity; its cross-row next-token target is retained even though attention
   never crosses a sequence row;
-* all full global batches contain 256x2048 compute slots and the terminal batch
-  executes its actual row count without row duplication or empty-row padding;
-* raw bytes are credited only in the optimizer step containing that document's
-  EOS, so milestone receipts never credit untrained suffix tokens;
-* no global batch is dropped and no checkpoint is retained.
+* all executed global batches contain exactly 256x2048 non-padding token IDs;
+  the terminal partial batch is accounted for as the dropped stream suffix and
+  is never executed, padded into a full batch, or wrapped;
+* protocol BOS/EOS/document-boundary IDs contribute zero source bytes, while
+  each consumed content token contributes its exact ByteLevel source bytes;
+* no checkpoint is retained.
 """
 
 from __future__ import annotations
@@ -27,7 +28,7 @@ import hashlib
 import math
 from pathlib import Path
 import time
-from typing import Callable, Iterable, Iterator, Mapping, Protocol
+from typing import Any, Callable, Iterable, Iterator, Mapping, Protocol, Sequence
 
 import torch
 import torch.nn.functional as F
@@ -36,10 +37,12 @@ from tokenizers import Tokenizer
 from models.ablation_lm import AblationLM, AblationLMConfig
 from training.weft1_corpus_a2 import JsonlZstdShardIdentityV3
 from training.weft1_corpus_materialize_a3 import (
+    ConfirmationConsumerOrderV4,
     GTOK_DATA_ORDER_SEED_BY_TRAINING_SEED_V4,
     GTOK_TRAINING_SEEDS,
     _load_screen_shard_manifest_v4,
     assert_current_physical_d6_identity_v4,
+    iter_materialized_confirmation_training_texts_v4,
     iter_materialized_training_texts_v4,
     validate_physical_d6_evidence_v4,
 )
@@ -56,9 +59,7 @@ from training.weft1_gtok_tokenizer_a2 import iter_a2_shard_texts, special_token_
 from training.weft1_gtok_v2_contract import (
     BpbMilestoneReceiptV2,
     FrozenScreenCorpusV2,
-    GTOK_FIRST_BOUNDARY_BYTES,
     GTOK_MILESTONE_LABELS,
-    GTOK_SECOND_BOUNDARY_BYTES,
     GTokRunReceiptV2,
     TokenizerArmReceiptV2,
 )
@@ -69,11 +70,12 @@ PACKING_BINDING_V2 = {
     "batch_sequences": 256,
     "bos": "one_at_document_start",
     "document_boundary_attention": "forbidden_by_document_ids",
-    "document_credit": "raw_bytes_at_batch_containing_eos",
+    "document_credit": "exact_content_token_source_bytes_protocol_specials_zero",
     "eos": "one_at_document_end",
     "doc_boundary": "append_after_every_document",
-    "final_batch": "execute_partial_sequence_batch_without_duplication_or_drop",
+    "final_batch": "drop_partial_global_batch_without_padding_wrap_or_execution",
     "long_document": "lossless_token_chunks_one_document_identity_cross_row_target_retained",
+    "stream_tokens": "all_nonpadding_ids_including_bos_eos_doc_boundary",
     "packing": "greedy_in_registered_raw_content_id_order",
     "sequence_length": 2_048,
 }
@@ -212,6 +214,65 @@ class PackedBatchV2:
             raise ValueError("packed batch target count differs from its receipt")
 
 
+@dataclass
+class _PackedStreamAccountingV2:
+    """Mutable, private accounting for one complete realized document order."""
+
+    stream_bytes: int = 0
+    stream_docs: int = 0
+    stream_tokens: int = 0
+    trained_bytes: int = 0
+    trained_docs_full: int = 0
+    trained_tokens: int = 0
+    boundary_doc_id: str | None = None
+    boundary_doc_consumed_tokens: int | None = None
+    _active_doc_id: str | None = None
+    _active_doc_consumed_tokens: int = 0
+    _active_doc_record_tokens: int = 0
+
+    def begin_document(self, document: TrainingDocumentV2, *, record_tokens: int) -> None:
+        if self._active_doc_id is not None:
+            raise GTokTrainingV2Error("stream accounting began a document before closing the prior one")
+        if record_tokens < 3:
+            raise GTokTrainingV2Error("a packed document record requires BOS/EOS/boundary")
+        self._active_doc_id = document.raw_content_id
+        self._active_doc_consumed_tokens = 0
+        self._active_doc_record_tokens = record_tokens
+
+    def consume(self, *, source_bytes: int, completes_document: bool) -> None:
+        if self._active_doc_id is None:
+            raise GTokTrainingV2Error("stream accounting consumed a token outside a document")
+        if type(source_bytes) is not int or source_bytes < 0:
+            raise GTokTrainingV2Error("packed token source-byte credit must be non-negative")
+        self.stream_tokens += 1
+        self.stream_bytes += source_bytes
+        self._active_doc_consumed_tokens += 1
+        if self._active_doc_consumed_tokens > self._active_doc_record_tokens:
+            raise GTokTrainingV2Error("packed document consumed beyond its token record")
+        if completes_document:
+            if self._active_doc_consumed_tokens != self._active_doc_record_tokens:
+                raise GTokTrainingV2Error("document boundary arrived before the token record ended")
+            self.stream_docs += 1
+            self._active_doc_id = None
+            self._active_doc_consumed_tokens = 0
+            self._active_doc_record_tokens = 0
+
+    def snapshot_full_prefix(self) -> None:
+        """Record the cumulative prefix at one complete global-batch boundary."""
+
+        self.trained_bytes = self.stream_bytes
+        self.trained_docs_full = self.stream_docs
+        self.trained_tokens = self.stream_tokens
+        if self._active_doc_id is None:
+            self.boundary_doc_id = None
+            self.boundary_doc_consumed_tokens = None
+        else:
+            if not 0 < self._active_doc_consumed_tokens < self._active_doc_record_tokens:
+                raise GTokTrainingV2Error("terminal boundary document is not a strict partial record")
+            self.boundary_doc_id = self._active_doc_id
+            self.boundary_doc_consumed_tokens = self._active_doc_consumed_tokens
+
+
 @dataclass(frozen=True)
 class TrainingPlanV2:
     optimizer_steps: int
@@ -227,6 +288,18 @@ class TrainingPlanV2:
     calibration_prefix_realized_raw_bytes: int | None = None
     calibration_prefix_document_count: int | None = None
     calibration_prefix_packed_stream_sha256: str | None = None
+    stream_bytes: int | None = None
+    stream_docs: int | None = None
+    stream_tokens: int | None = None
+    trained_tokens: int | None = None
+    dropped_tokens: int | None = None
+    trained_bytes: int | None = None
+    dropped_bytes: int | None = None
+    trained_docs_full: int | None = None
+    boundary_doc_id: str | None = None
+    boundary_doc_consumed_tokens: int | None = None
+    dropped_docs: int | None = None
+    bpb_checkpoint_steps: tuple[int, int, int] | None = None
 
     def __post_init__(self) -> None:
         for name in (
@@ -234,20 +307,103 @@ class TrainingPlanV2:
             "compute_token_slots",
             "valid_prediction_count",
             "realized_raw_bytes",
-            "document_count",
         ):
             if type(getattr(self, name)) is not int or getattr(self, name) < 1:
                 raise ValueError(f"{name} must be a positive exact integer")
+        if type(self.document_count) is not int or self.document_count < 0:
+            raise ValueError("document_count must be a non-negative exact integer")
         row_slots = int(PACKING_BINDING_V2["sequence_length"])
         full_batch_slots = int(PACKING_BINDING_V2["batch_sequences"]) * row_slots
-        minimum = (self.optimizer_steps - 1) * full_batch_slots + row_slots
-        maximum = self.optimizer_steps * full_batch_slots
-        if (
-            self.compute_token_slots < minimum
-            or self.compute_token_slots > maximum
-            or self.compute_token_slots % row_slots
-        ):
-            raise ValueError("planned compute slots do not encode one actual partial final batch")
+        accounting_names = (
+            "stream_bytes",
+            "stream_docs",
+            "stream_tokens",
+            "trained_tokens",
+            "dropped_tokens",
+            "trained_bytes",
+            "dropped_bytes",
+            "trained_docs_full",
+            "dropped_docs",
+        )
+        accounting_values = tuple(getattr(self, name) for name in accounting_names)
+        exact_accounting = any(value is not None for value in accounting_values) or any(
+            value is not None
+            for value in (self.boundary_doc_id, self.boundary_doc_consumed_tokens)
+        )
+        if exact_accounting:
+            if any(value is None for value in accounting_values):
+                raise ValueError("training plan stream accounting is incomplete")
+            for name in accounting_names:
+                value = getattr(self, name)
+                if type(value) is not int or value < 0:
+                    raise ValueError(f"{name} must be a non-negative exact integer")
+            assert self.stream_bytes is not None
+            assert self.stream_docs is not None
+            assert self.stream_tokens is not None
+            assert self.trained_tokens is not None
+            assert self.dropped_tokens is not None
+            assert self.trained_bytes is not None
+            assert self.dropped_bytes is not None
+            assert self.trained_docs_full is not None
+            assert self.dropped_docs is not None
+            if self.compute_token_slots != self.optimizer_steps * full_batch_slots:
+                raise ValueError("exact stream plan may execute only complete global batches")
+            if self.trained_tokens != self.compute_token_slots:
+                raise ValueError("trained tokens must equal physically executed token slots")
+            if self.stream_tokens != self.trained_tokens + self.dropped_tokens:
+                raise ValueError("stream token accounting does not close")
+            if not 0 <= self.dropped_tokens < full_batch_slots:
+                raise ValueError("dropped tokens must be one strict partial global-batch suffix")
+            if self.stream_bytes != self.trained_bytes + self.dropped_bytes:
+                raise ValueError("stream byte accounting does not close")
+            if self.realized_raw_bytes != self.trained_bytes:
+                raise ValueError("legacy realized_raw_bytes must equal the trained byte prefix")
+            if self.document_count != self.trained_docs_full:
+                raise ValueError("legacy document_count must equal fully trained documents")
+            has_boundary = self.boundary_doc_id is not None
+            if has_boundary is not (self.boundary_doc_consumed_tokens is not None):
+                raise ValueError("boundary document identity and token count must appear together")
+            if has_boundary:
+                assert self.boundary_doc_id is not None
+                assert self.boundary_doc_consumed_tokens is not None
+                if (
+                    len(self.boundary_doc_id) != 40
+                    or any(character not in "0123456789abcdef" for character in self.boundary_doc_id)
+                ):
+                    raise ValueError("boundary document ID must be a lowercase SHA-1 raw-content ID")
+                if self.boundary_doc_consumed_tokens < 1:
+                    raise ValueError("boundary document must consume at least one token")
+            if self.stream_docs != (
+                self.trained_docs_full + self.dropped_docs + int(has_boundary)
+            ):
+                raise ValueError("stream document accounting does not close")
+        else:
+            # Compatibility for pre-S2 synthetic plans while confirmation is
+            # migrated separately. Production planning always supplies the
+            # exact accounting fields above.
+            minimum = (self.optimizer_steps - 1) * full_batch_slots + row_slots
+            maximum = self.optimizer_steps * full_batch_slots
+            if (
+                self.compute_token_slots < minimum
+                or self.compute_token_slots > maximum
+                or self.compute_token_slots % row_slots
+            ):
+                raise ValueError("legacy planned compute slots do not encode one partial final batch")
+        if self.bpb_checkpoint_steps is None:
+            if exact_accounting:
+                raise ValueError("exact stream plan requires three precomputed BPB checkpoint steps")
+        else:
+            if (
+                not isinstance(self.bpb_checkpoint_steps, tuple)
+                or len(self.bpb_checkpoint_steps) != 3
+                or any(type(step) is not int for step in self.bpb_checkpoint_steps)
+            ):
+                raise ValueError("BPB checkpoint steps must be three exact integers")
+            quarter_step, half_step, terminal_step = self.bpb_checkpoint_steps
+            if not (1 <= quarter_step < half_step < terminal_step == self.optimizer_steps):
+                raise ValueError(
+                    "BPB checkpoint steps must be three distinct increasing steps ending at n"
+                )
         if self.packing_binding_sha256 != PACKING_BINDING_SHA256_V2:
             raise ValueError("training plan packing binding drifted")
         for value in (self.packed_stream_sha256, self.packing_binding_sha256):
@@ -306,6 +462,176 @@ class TrainingPlanV2:
     def receipt_sha256(self) -> str:
         return canonical_sha256(self)
 
+    @property
+    def has_exact_stream_accounting(self) -> bool:
+        return self.stream_tokens is not None
+
+    @property
+    def dropped_token_fraction(self) -> float | None:
+        if self.stream_tokens is None or self.dropped_tokens is None:
+            return None
+        return self.dropped_tokens / self.stream_tokens
+
+
+@dataclass(frozen=True)
+class ConfirmationTrainingPlanV2:
+    """Exact full-stream and fixed-prefix evidence for one fresh confirmation.
+
+    Unlike :class:`TrainingPlanV2`, the governed optimizer horizon may stop
+    many complete global batches before the independent document order ends.
+    This separate type therefore permits a large dropped suffix without
+    weakening the base screen's terminal-partial-batch invariant.
+    """
+
+    confirmation_order_receipt_sha256: str
+    optimizer_steps: int
+    global_batch_sequences: int
+    sequence_length: int
+    compute_token_slots: int
+    valid_prediction_count: int
+    trained_bytes: int
+    trained_tokens: int
+    trained_docs_full: int
+    boundary_doc_id: str | None
+    boundary_doc_consumed_tokens: int | None
+    stream_bytes: int
+    stream_tokens: int
+    stream_docs: int
+    dropped_bytes: int
+    dropped_tokens: int
+    dropped_docs: int
+    packed_stream_sha256: str
+    calibration_prefix_compute_token_slots: int
+    calibration_prefix_valid_prediction_count: int
+    calibration_prefix_realized_raw_bytes: int
+    calibration_prefix_document_count: int
+    calibration_prefix_packed_stream_sha256: str
+    bpb_checkpoint_steps: tuple[int, int, int]
+    packing_binding_sha256: str = PACKING_BINDING_SHA256_V2
+    calibration_prefix_steps: int = 100
+
+    def __post_init__(self) -> None:
+        for name in (
+            "optimizer_steps",
+            "global_batch_sequences",
+            "sequence_length",
+            "compute_token_slots",
+            "valid_prediction_count",
+            "trained_bytes",
+            "trained_tokens",
+            "stream_bytes",
+            "stream_tokens",
+            "stream_docs",
+        ):
+            value = getattr(self, name)
+            if type(value) is not int or value < 1:
+                raise ValueError(f"{name} must be a positive exact integer")
+        for name in (
+            "trained_docs_full",
+            "dropped_bytes",
+            "dropped_tokens",
+            "dropped_docs",
+            "calibration_prefix_realized_raw_bytes",
+            "calibration_prefix_document_count",
+        ):
+            value = getattr(self, name)
+            if type(value) is not int or value < 0:
+                raise ValueError(f"{name} must be a non-negative exact integer")
+        if self.sequence_length < 2:
+            raise ValueError("confirmation sequence length must be at least two")
+        full_batch_slots = self.global_batch_sequences * self.sequence_length
+        if self.optimizer_steps < self.calibration_prefix_steps:
+            raise ValueError("confirmation horizon is shorter than its 100-step burst")
+        if self.calibration_prefix_steps != 100:
+            raise ValueError("confirmation calibration prefix must be exactly 100 steps")
+        if self.compute_token_slots != self.optimizer_steps * full_batch_slots:
+            raise ValueError("confirmation prefix may execute only complete global batches")
+        if self.trained_tokens != self.compute_token_slots:
+            raise ValueError("confirmation trained tokens differ from executed token slots")
+        if self.stream_tokens != self.trained_tokens + self.dropped_tokens:
+            raise ValueError("confirmation stream token accounting does not close")
+        if self.stream_bytes != self.trained_bytes + self.dropped_bytes:
+            raise ValueError("confirmation stream byte accounting does not close")
+        has_boundary = self.boundary_doc_id is not None
+        if has_boundary is not (self.boundary_doc_consumed_tokens is not None):
+            raise ValueError("confirmation boundary identity and token count must appear together")
+        if has_boundary:
+            assert self.boundary_doc_id is not None
+            assert self.boundary_doc_consumed_tokens is not None
+            if (
+                len(self.boundary_doc_id) != 40
+                or any(character not in "0123456789abcdef" for character in self.boundary_doc_id)
+            ):
+                raise ValueError("confirmation boundary document ID must be lowercase SHA-1")
+            if self.boundary_doc_consumed_tokens < 1:
+                raise ValueError("confirmation boundary document consumed no tokens")
+        if self.stream_docs != self.trained_docs_full + self.dropped_docs + int(has_boundary):
+            raise ValueError("confirmation stream document accounting does not close")
+        if (
+            type(self.calibration_prefix_compute_token_slots) is not int
+            or self.calibration_prefix_compute_token_slots
+            != self.calibration_prefix_steps * full_batch_slots
+        ):
+            raise ValueError("confirmation calibration token slots drifted")
+        if (
+            type(self.calibration_prefix_valid_prediction_count) is not int
+            or self.calibration_prefix_valid_prediction_count < 1
+            or self.calibration_prefix_valid_prediction_count > self.valid_prediction_count
+        ):
+            raise ValueError("confirmation calibration prediction count is invalid")
+        if self.calibration_prefix_realized_raw_bytes > self.trained_bytes:
+            raise ValueError("confirmation calibration bytes exceed the trained prefix")
+        if self.calibration_prefix_document_count > self.trained_docs_full:
+            raise ValueError("confirmation calibration documents exceed the trained prefix")
+        if (
+            not isinstance(self.bpb_checkpoint_steps, tuple)
+            or len(self.bpb_checkpoint_steps) != 3
+            or any(type(step) is not int for step in self.bpb_checkpoint_steps)
+        ):
+            raise ValueError("confirmation BPB checkpoints must be three exact integers")
+        quarter_step, half_step, terminal_step = self.bpb_checkpoint_steps
+        if not (1 <= quarter_step < half_step < terminal_step == self.optimizer_steps):
+            raise ValueError(
+                "confirmation BPB checkpoints must be distinct and end at the horizon"
+            )
+        if self.valid_prediction_count > self.compute_token_slots:
+            raise ValueError("confirmation predictions exceed executed token slots")
+        if self.packing_binding_sha256 != PACKING_BINDING_SHA256_V2:
+            raise ValueError("confirmation packing binding drifted")
+        for name in (
+            "confirmation_order_receipt_sha256",
+            "packed_stream_sha256",
+            "calibration_prefix_packed_stream_sha256",
+            "packing_binding_sha256",
+        ):
+            value = getattr(self, name)
+            if (
+                not isinstance(value, str)
+                or len(value) != 64
+                or any(character not in "0123456789abcdef" for character in value)
+            ):
+                raise ValueError(f"{name} must be a lowercase SHA-256")
+
+    @property
+    def realized_raw_bytes(self) -> int:
+        """Compatibility spelling for the physically trained byte prefix."""
+
+        return self.trained_bytes
+
+    @property
+    def document_count(self) -> int:
+        """Compatibility spelling for fully consumed prefix documents."""
+
+        return self.trained_docs_full
+
+    @property
+    def receipt_sha256(self) -> str:
+        return canonical_sha256(self)
+
+    @property
+    def dropped_token_fraction(self) -> float:
+        return self.dropped_tokens / self.stream_tokens
+
 
 class ModelOutput(Protocol):
     logits: torch.Tensor
@@ -327,13 +653,20 @@ def iter_packed_global_batches_v2(
     tokenizer: Tokenizer,
     global_batch_sequences: int = 256,
     sequence_length: int = 2_048,
+    _accounting: _PackedStreamAccountingV2 | None = None,
 ) -> Iterator[PackedBatchV2]:
-    """Greedily pack one registered document order into fixed global batches."""
+    """Greedily pack and emit only complete global batches.
+
+    ``_accounting`` is deliberately private: planning uses it to retain the
+    complete logical stream identity even though this iterator drops the final
+    partial global batch from physical execution.
+    """
 
     if type(global_batch_sequences) is not int or global_batch_sequences < 1:
         raise ValueError("global_batch_sequences must be positive")
     if type(sequence_length) is not int or sequence_length < 2:
         raise ValueError("sequence_length must be at least two")
+    accounting = _PackedStreamAccountingV2() if _accounting is None else _accounting
     pad_id, bos_id, eos_id, boundary_id = _tokenizer_ids(tokenizer)
     rows_tokens: list[list[int]] = []
     rows_targets: list[list[int]] = []
@@ -357,9 +690,9 @@ def iter_packed_global_batches_v2(
         current_targets = []
         current_documents = []
 
-    def maybe_emit(*, force: bool = False) -> PackedBatchV2 | None:
+    def maybe_emit() -> PackedBatchV2 | None:
         nonlocal rows_tokens, rows_targets, rows_documents, batch_raw_bytes, batch_documents
-        if not rows_tokens or (not force and len(rows_tokens) != global_batch_sequences):
+        if not rows_tokens or len(rows_tokens) != global_batch_sequences:
             return None
         if len(rows_tokens) > global_batch_sequences:
             raise GTokTrainingV2Error("packer accumulated more than one global batch")
@@ -367,6 +700,8 @@ def iter_packed_global_batches_v2(
         targets = torch.tensor(rows_targets, dtype=torch.int64)
         doc_ids = torch.tensor(rows_documents, dtype=torch.int64)
         mask = doc_ids.ge(0)
+        if not bool(mask.all()):
+            raise GTokTrainingV2Error("an executed global batch contains padding")
         count = int(targets.ne(-100).sum().item())
         if count < 1:
             raise GTokTrainingV2Error("packed global batch has no next-token target")
@@ -379,6 +714,7 @@ def iter_packed_global_batches_v2(
             completed_document_count=batch_documents,
             valid_prediction_count=count,
         )
+        accounting.snapshot_full_prefix()
         rows_tokens = []
         rows_targets = []
         rows_documents = []
@@ -389,10 +725,27 @@ def iter_packed_global_batches_v2(
     for document in documents:
         if not isinstance(document, TrainingDocumentV2):
             raise TypeError("packed stream requires TrainingDocumentV2 values")
-        content_ids = tokenizer.encode(document.text, add_special_tokens=False).ids
+        if len(current_tokens) == sequence_length:
+            close_row()
+            emitted = maybe_emit()
+            if emitted is not None:
+                yield emitted
+        encoding = tokenizer.encode(document.text, add_special_tokens=False)
+        content_ids = encoding.ids
+        content_source_bytes = tuple(len(token) for token in encoding.tokens)
+        if len(content_ids) != len(content_source_bytes) or sum(content_source_bytes) != len(
+            document.raw_bytes
+        ):
+            raise GTokTrainingV2Error(
+                "ByteLevel content-token source-byte accounting is not lossless"
+            )
         token_ids = [bos_id, *content_ids, eos_id, boundary_id]
+        source_byte_counts = [0, *content_source_bytes, 0, 0]
         target_ids = token_ids[1:] + [-100]
-        for token_index, token_id in enumerate(token_ids):
+        accounting.begin_document(document, record_tokens=len(token_ids))
+        for token_index, (token_id, source_bytes) in enumerate(
+            zip(token_ids, source_byte_counts, strict=True)
+        ):
             if len(current_tokens) == sequence_length:
                 close_row()
                 emitted = maybe_emit()
@@ -401,13 +754,18 @@ def iter_packed_global_batches_v2(
             current_tokens.append(int(token_id))
             current_targets.append(int(target_ids[token_index]))
             current_documents.append(document_ordinal)
-            if token_id == eos_id and token_index == len(token_ids) - 2:
-                batch_raw_bytes += len(document.raw_bytes)
+            batch_raw_bytes += source_bytes
+            completes_document = token_index == len(token_ids) - 1
+            accounting.consume(
+                source_bytes=source_bytes,
+                completes_document=completes_document,
+            )
+            if completes_document:
                 batch_documents += 1
         document_ordinal += 1
-    close_row()
-    if rows_tokens:
-        emitted = maybe_emit(force=True)
+    if len(current_tokens) == sequence_length:
+        close_row()
+        emitted = maybe_emit()
         if emitted is not None:
             yield emitted
 
@@ -426,6 +784,43 @@ def _update_training_plan_digest_v2(
     digest.update(hashlib.sha256(batch.document_ids.numpy().tobytes()).digest())
 
 
+def _precompute_l6_bpb_checkpoint_steps_v2(
+    cumulative_trained_bytes: Sequence[int],
+) -> tuple[int, int, int]:
+    """Return the first 1/4-byte, first 1/2-byte, and terminal step indices."""
+
+    if not cumulative_trained_bytes:
+        raise GTokTrainingV2Error("L6 checkpoint planning requires at least one optimizer step")
+    previous = -1
+    for value in cumulative_trained_bytes:
+        if type(value) is not int or value < 0:
+            raise GTokTrainingV2Error(
+                "L6 cumulative trained bytes must be non-negative exact integers"
+            )
+        if value < previous:
+            raise GTokTrainingV2Error("L6 cumulative trained bytes must be monotone")
+        previous = value
+    trained_bytes = cumulative_trained_bytes[-1]
+    if trained_bytes < 1:
+        raise GTokTrainingV2Error("L6 terminal trained bytes must be positive")
+    quarter_step = next(
+        index
+        for index, cumulative in enumerate(cumulative_trained_bytes, start=1)
+        if 4 * cumulative >= trained_bytes
+    )
+    half_step = next(
+        index
+        for index, cumulative in enumerate(cumulative_trained_bytes, start=1)
+        if 2 * cumulative >= trained_bytes
+    )
+    terminal_step = len(cumulative_trained_bytes)
+    if not (quarter_step < half_step < terminal_step):
+        raise GTokTrainingV2Error(
+            "L6 requires three distinct 1/4-byte, 1/2-byte, and terminal checkpoints"
+        )
+    return quarter_step, half_step, terminal_step
+
+
 def plan_training_stream_v2(
     document_factory: Callable[[], Iterable[TrainingDocumentV2]],
     *,
@@ -434,6 +829,7 @@ def plan_training_stream_v2(
     global_batch_sequences: int = 256,
     sequence_length: int = 2_048,
 ) -> TrainingPlanV2:
+    accounting = _PackedStreamAccountingV2()
     digest = hashlib.sha256()
     prefix_digest = hashlib.sha256()
     steps = 0
@@ -445,17 +841,20 @@ def plan_training_stream_v2(
     prefix_predictions = 0
     prefix_raw_bytes = 0
     prefix_documents = 0
+    cumulative_trained_bytes: list[int] = []
     for batch in iter_packed_global_batches_v2(
         document_factory(),
         tokenizer=tokenizer,
         global_batch_sequences=global_batch_sequences,
         sequence_length=sequence_length,
+        _accounting=accounting,
     ):
         _update_training_plan_digest_v2(digest, batch)
         steps += 1
         slots += batch.input_ids.numel()
         predictions += batch.valid_prediction_count
         raw_bytes += batch.completed_raw_bytes
+        cumulative_trained_bytes.append(raw_bytes)
         documents += batch.completed_document_count
         if steps <= 100:
             _update_training_plan_digest_v2(prefix_digest, batch)
@@ -463,10 +862,30 @@ def plan_training_stream_v2(
             prefix_predictions += batch.valid_prediction_count
             prefix_raw_bytes += batch.completed_raw_bytes
             prefix_documents += batch.completed_document_count
-    if raw_bytes != expected_realized_raw_bytes:
+    if accounting.stream_bytes != expected_realized_raw_bytes:
         raise GTokTrainingV2Error(
-            f"planned T bytes {raw_bytes} differ from frozen realized T {expected_realized_raw_bytes}"
+            f"declared stream bytes {accounting.stream_bytes} differ from frozen realized T "
+            f"{expected_realized_raw_bytes}"
         )
+    if steps < 1:
+        raise GTokTrainingV2Error("tokenized T contains no complete global batch")
+    full_batch_slots = global_batch_sequences * sequence_length
+    if (
+        slots != steps * full_batch_slots
+        or accounting.trained_tokens != slots
+        or accounting.trained_bytes != raw_bytes
+        or accounting.trained_docs_full != documents
+    ):
+        raise GTokTrainingV2Error("complete-batch prefix accounting diverged from packing")
+    dropped_tokens = accounting.stream_tokens - accounting.trained_tokens
+    dropped_bytes = accounting.stream_bytes - accounting.trained_bytes
+    has_boundary = accounting.boundary_doc_id is not None
+    dropped_docs = accounting.stream_docs - accounting.trained_docs_full - int(has_boundary)
+    if min(dropped_tokens, dropped_bytes, dropped_docs) < 0:
+        raise GTokTrainingV2Error("dropped stream suffix accounting became negative")
+    bpb_checkpoint_steps = _precompute_l6_bpb_checkpoint_steps_v2(
+        cumulative_trained_bytes
+    )
     return TrainingPlanV2(
         optimizer_steps=steps,
         compute_token_slots=slots,
@@ -483,6 +902,147 @@ def plan_training_stream_v2(
         calibration_prefix_document_count=(prefix_documents if steps >= 100 else None),
         calibration_prefix_packed_stream_sha256=(
             prefix_digest.hexdigest() if steps >= 100 else None
+        ),
+        stream_bytes=accounting.stream_bytes,
+        stream_docs=accounting.stream_docs,
+        stream_tokens=accounting.stream_tokens,
+        trained_tokens=accounting.trained_tokens,
+        dropped_tokens=dropped_tokens,
+        trained_bytes=accounting.trained_bytes,
+        dropped_bytes=dropped_bytes,
+        trained_docs_full=accounting.trained_docs_full,
+        boundary_doc_id=accounting.boundary_doc_id,
+        boundary_doc_consumed_tokens=accounting.boundary_doc_consumed_tokens,
+        dropped_docs=dropped_docs,
+        bpb_checkpoint_steps=bpb_checkpoint_steps,
+    )
+
+
+def plan_confirmation_training_prefix_v2(
+    document_factory: Callable[[], Iterable[TrainingDocumentV2]],
+    *,
+    tokenizer: Tokenizer,
+    optimizer_steps: int,
+    confirmation_order_receipt: ConfirmationConsumerOrderV4,
+    global_batch_sequences: int = 256,
+    sequence_length: int = 2_048,
+) -> ConfirmationTrainingPlanV2:
+    """Plan a fixed whole-step prefix while exhausting the fresh Q3 order.
+
+    The first ``optimizer_steps`` complete batches are the executable prefix.
+    Iteration deliberately continues through the whole independent order so
+    stream bytes/tokens/documents and the potentially large untrained suffix
+    are exact.  The Q3 receipt remains the source-order identity.
+    """
+
+    if not isinstance(confirmation_order_receipt, ConfirmationConsumerOrderV4):
+        raise TypeError("confirmation prefix planning requires its typed Q3 order receipt")
+    if type(optimizer_steps) is not int or optimizer_steps < 100:
+        raise ValueError("confirmation prefix requires at least the governed 100-step burst")
+    if type(global_batch_sequences) is not int or global_batch_sequences < 1:
+        raise ValueError("confirmation global batch size must be positive")
+    if type(sequence_length) is not int or sequence_length < 2:
+        raise ValueError("confirmation sequence length must be at least two")
+
+    accounting = _PackedStreamAccountingV2()
+    digest = hashlib.sha256()
+    calibration_digest = hashlib.sha256()
+    prefix_predictions = 0
+    prefix_bytes = 0
+    prefix_docs = 0
+    calibration_predictions = 0
+    calibration_bytes = 0
+    calibration_docs = 0
+    prefix_boundary_doc_id: str | None = None
+    prefix_boundary_doc_consumed_tokens: int | None = None
+    cumulative_prefix_bytes: list[int] = []
+    available_complete_batches = 0
+
+    for batch in iter_packed_global_batches_v2(
+        document_factory(),
+        tokenizer=tokenizer,
+        global_batch_sequences=global_batch_sequences,
+        sequence_length=sequence_length,
+        _accounting=accounting,
+    ):
+        available_complete_batches += 1
+        if available_complete_batches > optimizer_steps:
+            continue
+        _update_training_plan_digest_v2(digest, batch)
+        prefix_predictions += batch.valid_prediction_count
+        prefix_bytes += batch.completed_raw_bytes
+        prefix_docs += batch.completed_document_count
+        cumulative_prefix_bytes.append(prefix_bytes)
+        if available_complete_batches <= 100:
+            _update_training_plan_digest_v2(calibration_digest, batch)
+            calibration_predictions += batch.valid_prediction_count
+            calibration_bytes += batch.completed_raw_bytes
+            calibration_docs += batch.completed_document_count
+        if available_complete_batches == optimizer_steps:
+            if accounting.trained_tokens != (
+                optimizer_steps * global_batch_sequences * sequence_length
+            ):
+                raise GTokTrainingV2Error(
+                    "confirmation prefix token accounting diverged at its horizon"
+                )
+            if (
+                accounting.trained_bytes != prefix_bytes
+                or accounting.trained_docs_full != prefix_docs
+            ):
+                raise GTokTrainingV2Error(
+                    "confirmation prefix byte/document accounting diverged at its horizon"
+                )
+            prefix_boundary_doc_id = accounting.boundary_doc_id
+            prefix_boundary_doc_consumed_tokens = (
+                accounting.boundary_doc_consumed_tokens
+            )
+
+    if available_complete_batches < optimizer_steps:
+        raise GTokTrainingV2Error(
+            "fresh confirmation order contains fewer complete batches than its horizon"
+        )
+    if (
+        accounting.stream_bytes != confirmation_order_receipt.retained_text_bytes
+        or accounting.stream_docs != confirmation_order_receipt.document_count
+    ):
+        raise GTokTrainingV2Error(
+            "fresh confirmation stream differs from its Q3 order receipt"
+        )
+    full_batch_slots = global_batch_sequences * sequence_length
+    trained_tokens = optimizer_steps * full_batch_slots
+    dropped_tokens = accounting.stream_tokens - trained_tokens
+    dropped_bytes = accounting.stream_bytes - prefix_bytes
+    has_boundary = prefix_boundary_doc_id is not None
+    dropped_docs = accounting.stream_docs - prefix_docs - int(has_boundary)
+    if min(dropped_tokens, dropped_bytes, dropped_docs) < 0:
+        raise GTokTrainingV2Error("fresh confirmation suffix accounting became negative")
+
+    return ConfirmationTrainingPlanV2(
+        confirmation_order_receipt_sha256=confirmation_order_receipt.receipt_sha256,
+        optimizer_steps=optimizer_steps,
+        global_batch_sequences=global_batch_sequences,
+        sequence_length=sequence_length,
+        compute_token_slots=trained_tokens,
+        valid_prediction_count=prefix_predictions,
+        trained_bytes=prefix_bytes,
+        trained_tokens=trained_tokens,
+        trained_docs_full=prefix_docs,
+        boundary_doc_id=prefix_boundary_doc_id,
+        boundary_doc_consumed_tokens=prefix_boundary_doc_consumed_tokens,
+        stream_bytes=accounting.stream_bytes,
+        stream_tokens=accounting.stream_tokens,
+        stream_docs=accounting.stream_docs,
+        dropped_bytes=dropped_bytes,
+        dropped_tokens=dropped_tokens,
+        dropped_docs=dropped_docs,
+        packed_stream_sha256=digest.hexdigest(),
+        calibration_prefix_compute_token_slots=100 * full_batch_slots,
+        calibration_prefix_valid_prediction_count=calibration_predictions,
+        calibration_prefix_realized_raw_bytes=calibration_bytes,
+        calibration_prefix_document_count=calibration_docs,
+        calibration_prefix_packed_stream_sha256=calibration_digest.hexdigest(),
+        bpb_checkpoint_steps=_precompute_l6_bpb_checkpoint_steps_v2(
+            cumulative_prefix_bytes
         ),
     )
 
@@ -641,6 +1201,14 @@ def _elapsed_microseconds(start_ns: int, device: torch.device) -> int:
     return max(1, math.ceil((time.perf_counter_ns() - start_ns) / 1_000))
 
 
+def _sum_losses_float64_v2(losses: torch.Tensor) -> torch.Tensor:
+    """Promote before reduction so no microbatch NLL is summed in float32."""
+
+    if not isinstance(losses, torch.Tensor) or not losses.is_floating_point():
+        raise TypeError("NLL accumulation requires a floating tensor")
+    return losses.to(dtype=torch.float64).sum(dtype=torch.float64)
+
+
 def evaluate_heldout_v2(
     model: torch.nn.Module,
     *,
@@ -654,7 +1222,7 @@ def evaluate_heldout_v2(
     receipts: list[StratumNllReceipt] = []
     with torch.no_grad():
         for stratum in GTOK_STRATA:
-            nll = 0.0
+            nll = torch.zeros((), dtype=torch.float64, device=device)
             raw_bytes = 0
             for batch in iter_packed_global_batches_v2(
                 heldout_factory(stratum),
@@ -689,20 +1257,22 @@ def evaluate_heldout_v2(
                             labels=None,
                         )
                     logits = output.logits.float()
-                    nll += float(
-                        F.cross_entropy(
-                            logits.reshape(-1, logits.shape[-1]),
-                            targets.reshape(-1),
-                            ignore_index=-100,
-                            reduction="sum",
-                        ).item()
+                    nll.add_(
+                        _sum_losses_float64_v2(
+                            F.cross_entropy(
+                                logits.reshape(-1, logits.shape[-1]),
+                                targets.reshape(-1),
+                                ignore_index=-100,
+                                reduction="none",
+                            )
+                        )
                     )
                     if count < 1:
                         raise GTokTrainingV2Error("held-out microbatch has no target")
             receipts.append(
                 StratumNllReceipt(
                     stratum=stratum,
-                    nll_nats=nll,
+                    nll_nats=float(nll.item()),
                     raw_byte_count=raw_bytes,
                 )
             )
@@ -1116,6 +1686,7 @@ class _PhysicalFlopAccountantV2:
         self.model = model
         self.device = device
         self._occurrences: dict[tuple[int, int, str], int] = {}
+        self._ordered_step_flops: list[int] = []
         self._prototypes: dict[
             tuple[int, int, str],
             tuple[
@@ -1198,10 +1769,30 @@ class _PhysicalFlopAccountantV2:
         else:
             operation()
         self._occurrences[key] = self._occurrences.get(key, 0) + 1
+        profiler_rows, unsupported_rows, _zero_rows = self._prototypes[key]
+        self._ordered_step_flops.append(
+            sum(row.flops_per_occurrence for row in profiler_rows)
+            + sum(row.flops_per_occurrence for row in unsupported_rows)
+        )
+
+    @property
+    def ordered_step_flops(self) -> tuple[int, ...]:
+        """Attributed FLOPs in physical optimizer-step order.
+
+        R-G4g profiles the first occurrence of each registered physical shape
+        and optimizer phase, then reuses that exact prototype for later
+        occurrences of the same static graph.  Keeping the attributed values
+        in execution order makes the governed 100-step stability gate
+        available before the remainder of a run executes.
+        """
+
+        return tuple(self._ordered_step_flops)
 
     def finalize(self, plan: TrainingPlanV2) -> CompleteFlopLedgerV2:
         if set(self._occurrences) != set(self._prototypes):
             raise GTokTrainingV2Error("FLOP profiler shape inventory is incomplete")
+        if len(self._ordered_step_flops) != sum(self._occurrences.values()):
+            raise GTokTrainingV2Error("ordered FLOP evidence differs from physical steps")
         shapes = tuple(
             PhysicalShapeFlopReceiptV2(
                 batch_rows=key[0],
@@ -1745,10 +2336,12 @@ def _train_batches_v2(
     slots_total = 0
     predictions_total = 0
     packed_digest = hashlib.sha256()
-    milestone_thresholds = (
-        (GTOK_MILESTONE_LABELS[0], GTOK_FIRST_BOUNDARY_BYTES),
-        (GTOK_MILESTONE_LABELS[1], GTOK_SECOND_BOUNDARY_BYTES),
-    )
+    checkpoint_labels_by_step: dict[int, str] = {}
+    if maximum_steps is None and plan.bpb_checkpoint_steps is not None:
+        checkpoint_labels_by_step = {
+            plan.bpb_checkpoint_steps[0]: GTOK_MILESTONE_LABELS[0],
+            plan.bpb_checkpoint_steps[1]: GTOK_MILESTONE_LABELS[1],
+        }
 
     def checked_elapsed() -> int:
         elapsed_value = _elapsed_microseconds(start_ns, device)
@@ -1794,30 +2387,27 @@ def _train_batches_v2(
         documents_total += batch.completed_document_count
         checked_elapsed()
         if heldout_factory is not None and heldout_stream_sha256 is not None:
-            for label, threshold in milestone_thresholds:
-                if (
-                    label not in {item.label for item in observations}
-                    and previous_raw < threshold <= raw_total
-                ):
-                    observations.append(
-                        BpbMilestoneReceiptV2(
-                            label=label,
-                            optimizer_step=step,
-                            previous_training_raw_bytes=previous_raw,
-                            training_raw_bytes=raw_total,
-                            heldout_stream_sha256=heldout_stream_sha256,
-                            strata=evaluate_heldout_v2(
-                                model,
-                                tokenizer=tokenizer,
-                                heldout_factory=heldout_factory,
-                                device=device,
-                                microbatch_sequences=microbatch_sequences,
-                            ),
-                        )
+            label = checkpoint_labels_by_step.get(step)
+            if label is not None:
+                observations.append(
+                    BpbMilestoneReceiptV2(
+                        label=label,
+                        optimizer_step=step,
+                        previous_training_raw_bytes=previous_raw,
+                        training_raw_bytes=raw_total,
+                        heldout_stream_sha256=heldout_stream_sha256,
+                        strata=evaluate_heldout_v2(
+                            model,
+                            tokenizer=tokenizer,
+                            heldout_factory=heldout_factory,
+                            device=device,
+                            microbatch_sequences=microbatch_sequences,
+                        ),
                     )
-                    # Evaluation is part of the same watchdog and cumulative
-                    # A100-hour meter, so re-read after it completes.
-                    checked_elapsed()
+                )
+                # Evaluation is part of the same watchdog and cumulative
+                # A100-hour meter, so re-read after it completes.
+                checked_elapsed()
     if maximum_steps is None:
         if (
             steps_executed != plan.optimizer_steps
@@ -1830,13 +2420,22 @@ def _train_batches_v2(
             raise GTokTrainingV2Error("full run did not exhaust its frozen training plan")
         if heldout_factory is None or heldout_stream_sha256 is None:
             raise GTokTrainingV2Error("full run requires frozen held-out evaluation")
-        if tuple(item.label for item in observations) != GTOK_MILESTONE_LABELS[:2]:
-            raise GTokTrainingV2Error("full run failed to cross both preregistered byte milestones")
+        if plan.bpb_checkpoint_steps is None:
+            raise GTokTrainingV2Error("full run lacks precomputed L6 BPB checkpoint steps")
+        expected_checkpoint_pairs = tuple(
+            zip(GTOK_MILESTONE_LABELS[:2], plan.bpb_checkpoint_steps[:2], strict=True)
+        )
+        if tuple(
+            (item.label, item.optimizer_step) for item in observations
+        ) != expected_checkpoint_pairs:
+            raise GTokTrainingV2Error(
+                "full run missed its precomputed 1/4-byte or 1/2-byte BPB checkpoint"
+            )
         observations.append(
             BpbMilestoneReceiptV2(
                 label=GTOK_MILESTONE_LABELS[2],
                 optimizer_step=steps_executed,
-                previous_training_raw_bytes=observations[-1].training_raw_bytes,
+                previous_training_raw_bytes=previous_raw,
                 training_raw_bytes=raw_total,
                 heldout_stream_sha256=heldout_stream_sha256,
                 strata=evaluate_heldout_v2(
@@ -2076,6 +2675,17 @@ def execute_full_run_v2(
         optimizer=a1_flat_adamw_recipe(),
         observations=observations,
         byte_round_trip_passed=tokenizer_corpus_metrics.exact_byte_round_trip_passed,
+        stream_bytes=plan.stream_bytes,
+        stream_docs=plan.stream_docs,
+        stream_tokens=plan.stream_tokens,
+        trained_tokens=plan.trained_tokens,
+        dropped_tokens=plan.dropped_tokens,
+        trained_bytes=plan.trained_bytes,
+        dropped_bytes=plan.dropped_bytes,
+        trained_docs_full=plan.trained_docs_full,
+        boundary_doc_id=plan.boundary_doc_id,
+        boundary_doc_consumed_tokens=plan.boundary_doc_consumed_tokens,
+        dropped_docs=plan.dropped_docs,
     )
     return FullRunMeasurementV2(
         run=receipt,
@@ -2130,6 +2740,44 @@ class V4CorpusSourceV2:
                 raw_content_id=hashlib.sha1(raw).hexdigest(),  # noqa: S324
                 text=text,
                 stratum="general",  # Training loss is pooled; physical order proves T.
+            )
+
+    def confirmation_training_documents(
+        self,
+        order_receipt: ConfirmationConsumerOrderV4,
+    ) -> Iterator[TrainingDocumentV2]:
+        """Yield one independently redrawn, physically joined Q3 T order."""
+
+        if not isinstance(order_receipt, ConfirmationConsumerOrderV4):
+            raise TypeError("fresh confirmation order requires its typed Q3 receipt")
+        if order_receipt.physical_d6_evidence_sha256 != self.physical_d6_evidence_sha256:
+            raise GTokTrainingV2Error(
+                "fresh confirmation order is not joined to this physical D6 corpus"
+            )
+        if order_receipt.retained_text_bytes != self.training_raw_bytes:
+            raise GTokTrainingV2Error(
+                "fresh confirmation order is not joined to this frozen T byte identity"
+            )
+        observed_docs = 0
+        observed_bytes = 0
+        for text in iter_materialized_confirmation_training_texts_v4(
+            self.root,
+            order_receipt=order_receipt,
+        ):
+            raw = text.encode("utf-8", errors="strict")
+            observed_docs += 1
+            observed_bytes += len(raw)
+            yield TrainingDocumentV2(
+                raw_content_id=hashlib.sha1(raw).hexdigest(),  # noqa: S324
+                text=text,
+                stratum="general",
+            )
+        if (
+            observed_docs != order_receipt.document_count
+            or observed_bytes != order_receipt.retained_text_bytes
+        ):
+            raise GTokTrainingV2Error(
+                "fresh confirmation adapter exhaustion differs from its Q3 receipt"
             )
 
     def heldout_documents(self, stratum: str) -> Iterator[TrainingDocumentV2]:
@@ -2232,6 +2880,7 @@ __all__ = [
     "PhysicalShapeFlopReceiptV2",
     "ProfilerOperatorFlopRowV2",
     "SCHEDULE_BINDING_SHA256_V2",
+    "ConfirmationTrainingPlanV2",
     "TrainingDocumentV2",
     "TrainingPlanV2",
     "StratumCompressionMetricsV2",
@@ -2249,6 +2898,7 @@ __all__ = [
     "measure_output_surface_performance_v2",
     "measure_tokenizer_corpus_metrics_v2",
     "measure_vocabulary_fractions_v2",
+    "plan_confirmation_training_prefix_v2",
     "plan_training_stream_v2",
     "require_production_a100_v2",
     "shared_nonvocabulary_state_sha256_v2",

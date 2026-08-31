@@ -578,6 +578,10 @@ def _synthetic_executors(
         seed = kwargs["seed"]
         seed_index = seeds.index(seed)
         flop_ledger, measurement_panel = _synthetic_measurement_evidence(vocab, plan)
+        # The attempt-boundary fixture retains a smaller synthetic replay shape,
+        # but its governed run receipt must still encode complete 256x2048
+        # optimizer batches under the post-S2 Q2 contract.
+        trained_tokens = plan.optimizer_steps * 256 * 2_048
         run = GTokRunReceiptV2(
             vocab_size=vocab,
             seed=seed,
@@ -599,6 +603,15 @@ def _synthetic_executors(
                 frozen,
                 vocab / 1_000_000 + seed_index / 10_000,
             ),
+            stream_bytes=frozen.training_realized_bytes,
+            stream_docs=plan.document_count,
+            stream_tokens=trained_tokens,
+            trained_tokens=trained_tokens,
+            dropped_tokens=0,
+            trained_bytes=plan.realized_raw_bytes,
+            dropped_bytes=0,
+            trained_docs_full=plan.document_count,
+            dropped_docs=0,
         )
         return FullRunMeasurementV2(
             run=run,
@@ -774,6 +787,76 @@ def test_governed_seed_rows_equal_the_a2_namespaced_derivation() -> None:
         (4_069_725_298_476_216_533, 9_305_630_768_498_788_030, 10_666_192_988_433_719_740),
         (13_256_058_689_613_801_745, 12_171_684_496_048_357_438, 4_197_282_192_878_334_768),
     )
+
+
+def test_confirmation_seed_registry_binds_all_direct_roots_and_fresh_roles() -> None:
+    rows = campaign.GTOK_CONFIRMATION_SEED_ROWS_V2
+    assert tuple((row.vocab_size, row.seed_slot) for row in rows) == tuple(
+        (vocab_size, slot)
+        for vocab_size in GTOK_VOCABULARY_ARMS
+        for slot in (0, 1)
+    )
+    assert tuple(row.run_seed for row in rows) == (
+        14_491_391_970_410_640_762,
+        11_241_563_954_874_861_528,
+        15_081_792_657_614_179_907,
+        18_192_772_026_849_707_115,
+        9_884_118_125_684_999_954,
+        7_190_589_679_906_404_951,
+        1_571_914_625_861_595_228,
+        2_644_639_369_611_050_861,
+    )
+    assert all(
+        row.run_seed
+        == int.from_bytes(
+            hashlib.sha256(row.registry_key.encode("ascii")).digest()[:8],
+            "big",
+        )
+        for row in rows
+    )
+    assert all(
+        row.initialization_seed
+        == derive_module_seed(
+            A2_CAMPAIGN_ROOT_SEED,
+            f"gtok.init.shared.{row.run_seed}",
+        )
+        and row.data_order_seed
+        == derive_module_seed(
+            A2_CAMPAIGN_ROOT_SEED,
+            f"gtok.data.shared.{row.run_seed}",
+        )
+        for row in rows
+    )
+    assert len({row.run_seed for row in rows}) == 8
+    assert len({row.initialization_seed for row in rows}) == 8
+    assert len({row.data_order_seed for row in rows}) == 8
+    assert {row.run_seed for row in rows}.isdisjoint(
+        campaign.GTOK_GOVERNED_TRAINING_SEEDS_V2
+    )
+    assert {row.initialization_seed for row in rows}.isdisjoint(
+        campaign.GTOK_GOVERNED_INITIALIZATION_SEEDS_V2
+    )
+    assert {row.data_order_seed for row in rows}.isdisjoint(
+        campaign.GTOK_GOVERNED_DATA_ORDER_SEEDS_V2
+    )
+    assert all(
+        campaign.confirmation_seed_rows_for_vocabulary_v2(vocab_size)
+        == tuple(row for row in rows if row.vocab_size == vocab_size)
+        for vocab_size in GTOK_VOCABULARY_ARMS
+    )
+    assert len(campaign.GTOK_CONFIRMATION_SEED_BINDING_SHA256_V2) == 64
+
+
+def test_confirmation_seed_registry_rejects_tampering() -> None:
+    row = campaign.GTOK_CONFIRMATION_SEED_ROWS_V2[0]
+    with pytest.raises(ValueError, match="direct SHA root"):
+        replace(row, run_seed=row.run_seed + 1)
+    with pytest.raises(ValueError, match="initialization seed"):
+        replace(row, initialization_seed=row.initialization_seed + 1)
+    with pytest.raises(ValueError, match="data-order seed"):
+        replace(row, data_order_seed=row.data_order_seed + 1)
+    with pytest.raises(ValueError, match="unregistered vocabulary"):
+        campaign.confirmation_seed_rows_for_vocabulary_v2(65_536)
 
 
 def test_seed_one_all_arm_initialization_substitution_is_rejected() -> None:
@@ -1071,41 +1154,16 @@ def test_production_launch_receipt_is_idempotent_but_not_replaceable(
         campaign_cli._exclusive_json(path, {"status": "DRIFT"})
 
 
-def test_production_cli_stops_on_unresolved_confirmation_semantics_before_gpu(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    called = False
-
-    def runtime(**_kwargs):
-        nonlocal called
-        called = True
-        raise AssertionError("unresolved confirmation semantics must precede GPU spend")
-
-    monkeypatch.setattr(campaign_cli, "attest_gtok_training_runtime_v2", runtime)
-    with pytest.raises(GTokV2Stop, match="UNRESOLVED_EXACT_FLOP_AND_TOP_TWO"):
-        campaign_cli.main(
-            [
-                "--corpus-root", str(tmp_path / "corpus"),
-                "--freeze-receipt", str(tmp_path / "freeze"),
-                "--gate-bundle", str(tmp_path / "gates"),
-                "--c2-evidence", str(tmp_path / "c2"),
-                "--decon-receipt", str(tmp_path / "decon"),
-                "--training-requirements-lock", str(tmp_path / "lock"),
-                "--runtime-build-receipt", str(tmp_path / "runtime"),
-                "--pa-runtime-build-receipt", str(tmp_path / "pa-runtime"),
-                "--training-runtime-binding", str(tmp_path / "binding"),
-                "--offline-network-receipt", str(tmp_path / "offline"),
-                "--precalibration-cpu-evidence", str(tmp_path / "precompute"),
-                "--precalibration-offline-network-receipt", str(tmp_path / "pre-offline"),
-                "--tokenizer-panel-receipt", str(tmp_path / "panel"),
-                "--tokenizer-artifact-root", str(tmp_path / "tokenizers"),
-                "--tokenizer-offline-network-receipt", str(tmp_path / "tok-offline"),
-                "--output-root", str(tmp_path / "output"),
-                "--microbatch-sequences", "8",
-            ]
-        )
-    assert not called
-    assert not (tmp_path / "output").exists()
+def test_confirmation_semantics_authority_is_complete_but_does_not_reorder_pb() -> None:
+    campaign.require_resolved_confirmation_semantics_v2()
+    assert campaign.CONFIRMATION_SEMANTICS_AUTHORITY_STATUS_V2 == (
+        "RESOLVED_PARENT_PLUS_S1_PLUS_S2_BUILD_AXIS;GPU_REMAINS_BEHIND_PB"
+    )
+    assert tuple(path for path, _sha256 in campaign.CONFIRMATION_SEMANTICS_AUTHORITY_V2) == (
+        "docs/STRATEGY_GTOK_CONFIRMATION_SEMANTICS_20260831.md",
+        "docs/STRATEGY_GTOK_SEMANTICS_AMENDMENT_S1_20260831.md",
+        "docs/STRATEGY_GTOK_SEMANTICS_AMENDMENT_S2_20260831.md",
+    )
 
 
 def test_tokenizer_panel_loader_revalidates_receipts_and_rejects_row_substitution(

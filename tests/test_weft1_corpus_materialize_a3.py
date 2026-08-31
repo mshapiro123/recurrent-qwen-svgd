@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import asdict
+from dataclasses import asdict, replace
 import hashlib
 import json
 from pathlib import Path
@@ -14,11 +14,13 @@ import training.weft1_corpus_pa as production_io
 import training.weft1_corpus_replay_a2 as replay_v3
 import training.weft1_corpus_replay_a3 as replay_v4
 from training.weft1_corpus_a2 import (
+    A2_CAMPAIGN_ROOT_SEED,
     A2_ZSTD_CODEC_BINDING,
     GTOK_EXECUTION_AUTHORITY_CHAIN_V3,
     StableDocumentV3,
     execution_authority_v3_bound_sha256,
 )
+from training.weft1_seed import derive_module_seed
 from training.weft1_corpus_a3 import (
     A3EffectiveRouteResolution,
     EffectiveSourceRouteA3,
@@ -313,6 +315,40 @@ def test_v4_bridge_loads_strict_receipts_rehashes_cache_and_is_v3_parser_compati
     assert len(inputs.verified_cache.assets) == len(SOURCE_FAMILIES)
     assert inputs.source_identity_sha256 == inputs.source_identity_sha256
     assert all(asset.expected.execution_binding_sha256 for asset in inputs.verified_cache.assets)
+
+
+def test_cache_fill_loader_skips_global_rehash_but_preserves_receipt_composition(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    (
+        context,
+        _,
+        _,
+        _,
+        enumeration_path,
+        manifest_path,
+        download_path,
+        cache_root,
+    ) = _fixture(tmp_path)
+    monkeypatch.setattr(
+        bridge,
+        "load_pa_source_execution_context_v4",
+        lambda *, breakdown_root: context,
+    )
+
+    def forbidden_global_rehash(*_args: object, **_kwargs: object) -> object:
+        raise AssertionError("cache-fill loader invoked the whole-cache rehash")
+
+    monkeypatch.setattr(bridge, "_verify_cache", forbidden_global_rehash)
+    inputs = bridge.load_cache_fill_input_v4(
+        enumeration_receipt_path=enumeration_path,
+        cache_download_receipt_path=download_path,
+        source_manifest_path=manifest_path,
+        cache_root=cache_root,
+        breakdown_root=tmp_path,
+    )
+    assert isinstance(inputs, MaterializationInputV3)
+    assert len(inputs.verified_cache.assets) == len(SOURCE_FAMILIES)
 
 
 def test_v4_bridge_fails_closed_on_cache_mutation(
@@ -880,6 +916,111 @@ def test_current_physical_d6_identity_rejoins_heldout_control_chain(
         bridge.assert_current_physical_d6_identity_v4(
             output, expected_physical_sha256=expected_d6_sha256
         )
+
+
+def test_confirmation_orders_are_fresh_read_only_views_of_frozen_t(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    output, _work = _run_and_assert_forward_finalizer_fixture(tmp_path, monkeypatch)
+    d6_path = output / bridge.D6_PHYSICAL_EVIDENCE_RELATIVE_PATH_V4
+    d6_before = d6_path.read_bytes()
+    d6_sha256 = hashlib.sha256(d6_before).hexdigest()
+    tree_before = {
+        path.relative_to(output).as_posix(): hashlib.sha256(path.read_bytes()).hexdigest()
+        for path in output.rglob("*")
+        if path.is_file()
+    }
+    _, evidence = bridge.load_canonical_json_snapshot(d6_path)
+    base_receipts = {
+        row["training_seed"]: row for row in evidence["consumer_order_receipts"]
+    }
+    base_orders = tuple(
+        tuple(
+            bridge.iter_materialized_training_texts_v4(
+                output,
+                training_seed=seed,
+                expected_physical_d6_evidence_sha256=d6_sha256,
+                expected_consumer_order_receipt=(
+                    seed,
+                    base_receipts[seed]["data_order_seed"],
+                    base_receipts[seed]["ordered_raw_content_ids_sha256"],
+                ),
+            )
+        )
+        for seed in bridge.GTOK_TRAINING_SEEDS
+    )
+    run_seeds = (
+        9_884_118_125_684_999_954,
+        7_190_589_679_906_404_951,
+    )
+    order_receipts = tuple(
+        bridge.build_materialized_confirmation_order_v4(
+            output,
+            confirmation_run_seed=run_seed,
+            data_order_seed=derive_module_seed(
+                A2_CAMPAIGN_ROOT_SEED,
+                f"gtok.data.shared.{run_seed}",
+            ),
+            expected_physical_d6_evidence_sha256=d6_sha256,
+        )
+        for run_seed in run_seeds
+    )
+    confirmation_orders = tuple(
+        tuple(
+            bridge.iter_materialized_confirmation_training_texts_v4(
+                output,
+                order_receipt=receipt,
+            )
+        )
+        for receipt in order_receipts
+    )
+
+    frozen_multiset = set(base_orders[0])
+    assert len(set(confirmation_orders)) == 2
+    assert all(order not in base_orders for order in confirmation_orders)
+    assert all(set(order) == frozen_multiset for order in confirmation_orders)
+    assert {
+        receipt.document_multiset_sha256 for receipt in order_receipts
+    } == {
+        row["document_multiset_sha256"]
+        for row in evidence["consumer_order_receipts"]
+    }
+    assert all(
+        receipt.order_key_domain == bridge.CONSUMER_ORDER_KEY_DOMAIN_V4
+        and receipt.schema == bridge.CONFIRMATION_CONSUMER_ORDER_SCHEMA_V4
+        and len(receipt.receipt_sha256) == 64
+        for receipt in order_receipts
+    )
+
+    with pytest.raises(ValueError, match="run-harness tree"):
+        bridge.build_materialized_confirmation_order_v4(
+            output,
+            confirmation_run_seed=run_seeds[0],
+            data_order_seed=order_receipts[0].data_order_seed + 1,
+            expected_physical_d6_evidence_sha256=d6_sha256,
+        )
+    tampered = replace(
+        order_receipts[0],
+        ordered_raw_content_ids_sha256="0" * 64,
+    )
+    with pytest.raises(
+        bridge.CorpusMaterializationV4Error,
+        match="differs from its read-only receipt",
+    ):
+        tuple(
+            bridge.iter_materialized_confirmation_training_texts_v4(
+                output,
+                order_receipt=tampered,
+            )
+        )
+
+    assert d6_path.read_bytes() == d6_before
+    tree_after = {
+        path.relative_to(output).as_posix(): hashlib.sha256(path.read_bytes()).hexdigest()
+        for path in output.rglob("*")
+        if path.is_file()
+    }
+    assert tree_after == tree_before
 
 
 def test_v4_runtime_builder_binding_is_the_existing_v3_builder() -> None:

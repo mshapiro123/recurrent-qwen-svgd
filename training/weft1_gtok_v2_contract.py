@@ -8,11 +8,15 @@ unchanged; every receipt here uses a new authority chain and schema domain.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
+from decimal import Decimal, ROUND_HALF_EVEN, localcontext
 from fractions import Fraction
+import hashlib
 import math
-from typing import NoReturn
+from typing import Any, Mapping, NoReturn
 
+from training.weft1_corpus_a2 import A2_CAMPAIGN_ROOT_SEED
+from training.weft1_corpus_a3 import execution_authority_v4_bound_sha256
 from training.weft1_gtok_contract import (
     FlatAdamWRecipe,
     GTOK_EXECUTION_AUTHORITY_CHAIN_V2,
@@ -30,6 +34,7 @@ from training.weft1_gtok_contract import (
     canonical_json_bytes,
     canonical_sha256,
 )
+from training.weft1_seed import derive_module_seed
 
 
 GTOK_AMENDMENT_A2_SHA256 = (
@@ -86,10 +91,49 @@ GTOK_SELECTOR_LITERAL_BINDING_V2 = {
 GTOK_SELECTOR_LITERAL_BINDING_SHA256_V2 = canonical_sha256(
     GTOK_SELECTOR_LITERAL_BINDING_V2
 )
+GTOK_CONFIRMATION_SEMANTICS_SHA256 = (
+    "2e42664d0062a119c9fadcb76bf227a91134914920116627f9244f650defe72d"
+)
+GTOK_SEMANTICS_AMENDMENT_S1_SHA256 = (
+    "c37c4be064fe447e01182acc11b1713239c761ddd50583a8299972b4b340bd2a"
+)
+GTOK_SEMANTICS_AMENDMENT_S2_SHA256 = (
+    "5420a4e57c080d09f5f924acc859a5579edd1ca1939c8bbdaf727e5afd55ac5e"
+)
+GTOK_SELECTION_CONFIRMATION_AUTHORITY_CHAIN = (
+    *GTOK_V2_AUTHORITY_CHAIN,
+    GTOK_CONFIRMATION_SEMANTICS_SHA256,
+    GTOK_SEMANTICS_AMENDMENT_S1_SHA256,
+    GTOK_SEMANTICS_AMENDMENT_S2_SHA256,
+)
+GTOK_SELECTION_CONFIRMATION_AUTHORITY_SHA256 = canonical_sha256(
+    {
+        "authority_chain": GTOK_SELECTION_CONFIRMATION_AUTHORITY_CHAIN,
+        "schema": "weft1_gtok_selection_confirmation_authority_v2",
+    }
+)
+GTOK_RHO_BPB_DECIMAL_PLACES = 6
+GTOK_RHO_BPB_SCALE = 10**GTOK_RHO_BPB_DECIMAL_PLACES
+GTOK_PHYSICAL_FLOP_BINDING_SHA256_V2 = (
+    "8e47324f079a52da68f28878dbc5f1fdd279b2733352e787c21966683712a61a"
+)
+GTOK_SELECTION_CONFIRMATION_LITERAL_BINDING_V2 = {
+    **GTOK_SELECTOR_LITERAL_BINDING_V2,
+    "confirmation_pair": "D-C-2_winner_W_then_raw_rho_runner_up_U",
+    "rho_accumulation": "float64_mean_of_two_float64_pooled_BPB_values",
+    "rho_comparison": "integer_micros_after_half_even_6_decimal_rounding",
+    "rho_reporting": "integer_BPB_micros_for_all_four_arms",
+    "rho_tie_break": "equal_integer_micros_breaks_toward_smaller_V",
+}
+GTOK_SELECTION_CONFIRMATION_LITERAL_BINDING_SHA256_V2 = canonical_sha256(
+    GTOK_SELECTION_CONFIRMATION_LITERAL_BINDING_V2
+)
 _A1_OPTIMIZER = a1_flat_adamw_recipe()
 _A1_OPTIMIZER_BYTES = canonical_json_bytes(_A1_OPTIMIZER)
 _SHA256_CHARS = frozenset("0123456789abcdef")
 _FACTORY_SENTINEL = object()
+_RHO_BPB_QUANTUM = Decimal("0.000001")
+_RHO_BPB_SCALE_DECIMAL = Decimal(GTOK_RHO_BPB_SCALE)
 
 
 class GTokV2Stop(RuntimeError):
@@ -122,8 +166,38 @@ def _require_finite(value: float, name: str, *, positive: bool = False) -> float
     return result
 
 
+def _rho_bpb_micros(value: float) -> int:
+    """Round one already-computed binary64 rho half-even to six BPB decimals."""
+
+    rho = _require_finite(value, "rho BPB", positive=True)
+    with localcontext() as context:
+        context.prec = 50
+        rounded = Decimal.from_float(rho).quantize(
+            _RHO_BPB_QUANTUM,
+            rounding=ROUND_HALF_EVEN,
+        )
+        micros = rounded * _RHO_BPB_SCALE_DECIMAL
+    return int(micros)
+
+
 def _ceil_div(numerator: int, denominator: int) -> int:
     return (numerator + denominator - 1) // denominator
+
+
+def compute_event_ledger_sha256_v2(attempts: tuple[Any, ...]) -> str:
+    """Canonical ordered attempt-ledger identity used by every v2 mint."""
+
+    return hashlib.sha256(
+        canonical_json_bytes(
+            tuple(
+                {
+                    "attempt_id": attempt.attempt_id,
+                    "receipt_sha256": attempt.receipt_sha256,
+                }
+                for attempt in attempts
+            )
+        )
+    ).hexdigest()
 
 
 def gtok_v2_bound_sha256(schema: str, value: object) -> str:
@@ -412,16 +486,6 @@ class BpbMilestoneReceiptV2:
         _require_exact_int(self.training_raw_bytes, "training_raw_bytes", minimum=1)
         if self.previous_training_raw_bytes >= self.training_raw_bytes:
             raise ValueError("milestone bytes must advance at a batch boundary")
-        threshold = {
-            "after_1b": GTOK_FIRST_BOUNDARY_BYTES,
-            "after_2b": GTOK_SECOND_BOUNDARY_BYTES,
-        }.get(self.label)
-        if threshold is not None and not (
-            self.previous_training_raw_bytes < threshold <= self.training_raw_bytes
-        ):
-            raise ValueError(
-                f"{self.label} must be the first batch boundary at or after its threshold"
-            )
         _require_sha256(self.heldout_stream_sha256, "heldout_stream_sha256")
         if not isinstance(self.strata, tuple) or any(
             not isinstance(item, StratumNllReceipt) for item in self.strata
@@ -481,6 +545,17 @@ class GTokRunReceiptV2:
     checkpoint_retained: bool = False
     sealed_data_consumed: bool = False
     byte_round_trip_passed: bool = True
+    stream_bytes: int | None = None
+    stream_docs: int | None = None
+    stream_tokens: int | None = None
+    trained_tokens: int | None = None
+    dropped_tokens: int | None = None
+    trained_bytes: int | None = None
+    dropped_bytes: int | None = None
+    trained_docs_full: int | None = None
+    boundary_doc_id: str | None = None
+    boundary_doc_consumed_tokens: int | None = None
+    dropped_docs: int | None = None
 
     def __post_init__(self) -> None:
         if self.vocab_size not in GTOK_VOCABULARY_ARMS:
@@ -547,11 +622,89 @@ class GTokRunReceiptV2:
         if any(not isinstance(item, BpbMilestoneReceiptV2) for item in self.observations):
             raise TypeError("observations must contain BpbMilestoneReceiptV2 values")
         steps = tuple(item.optimizer_step for item in self.observations)
-        if not steps[0] < steps[1] <= steps[2]:
+        if not steps[0] < steps[1] < steps[2]:
             raise ValueError("milestone optimizer steps must preserve execution order")
         observed_bytes = tuple(item.training_raw_bytes for item in self.observations)
-        if not observed_bytes[0] < observed_bytes[1] <= observed_bytes[2]:
+        if not observed_bytes[0] < observed_bytes[1] < observed_bytes[2]:
             raise ValueError("milestone raw-byte boundaries must preserve execution order")
+        accounting_names = (
+            "stream_bytes",
+            "stream_docs",
+            "stream_tokens",
+            "trained_tokens",
+            "dropped_tokens",
+            "trained_bytes",
+            "dropped_bytes",
+            "trained_docs_full",
+            "dropped_docs",
+        )
+        accounting_values = tuple(getattr(self, name) for name in accounting_names)
+        exact_accounting = any(value is not None for value in accounting_values) or any(
+            value is not None
+            for value in (self.boundary_doc_id, self.boundary_doc_consumed_tokens)
+        )
+        if exact_accounting:
+            if any(value is None for value in accounting_values):
+                raise ValueError("run stream accounting is incomplete")
+            for name in accounting_names:
+                value = getattr(self, name)
+                if type(value) is not int or value < 0:
+                    raise ValueError(f"{name} must be a non-negative exact integer")
+            assert self.stream_bytes is not None
+            assert self.stream_docs is not None
+            assert self.stream_tokens is not None
+            assert self.trained_tokens is not None
+            assert self.dropped_tokens is not None
+            assert self.trained_bytes is not None
+            assert self.dropped_bytes is not None
+            assert self.trained_docs_full is not None
+            assert self.dropped_docs is not None
+            if self.trained_tokens < 1 or self.trained_tokens % (256 * 2_048):
+                raise ValueError("trained tokens must contain only complete global batches")
+            if self.stream_tokens != self.trained_tokens + self.dropped_tokens:
+                raise ValueError("run stream token accounting does not close")
+            if not 0 <= self.dropped_tokens < 256 * 2_048:
+                raise ValueError("run dropped tokens must be one partial global-batch suffix")
+            if self.stream_bytes != self.trained_bytes + self.dropped_bytes:
+                raise ValueError("run stream byte accounting does not close")
+            if self.terminal.training_raw_bytes != self.trained_bytes:
+                raise ValueError("terminal BPB training bytes must equal the trained prefix")
+            quarter, half, terminal = self.observations
+            if not (
+                4 * quarter.previous_training_raw_bytes
+                < self.trained_bytes
+                <= 4 * quarter.training_raw_bytes
+            ):
+                raise ValueError(
+                    "quarter BPB must be the first batch crossing one quarter of trained bytes"
+                )
+            if not (
+                2 * half.previous_training_raw_bytes
+                < self.trained_bytes
+                <= 2 * half.training_raw_bytes
+            ):
+                raise ValueError(
+                    "half BPB must be the first batch crossing one half of trained bytes"
+                )
+            if terminal.optimizer_step != self.trained_tokens // (256 * 2_048):
+                raise ValueError("terminal BPB step must equal the final executed full batch")
+            has_boundary = self.boundary_doc_id is not None
+            if has_boundary is not (self.boundary_doc_consumed_tokens is not None):
+                raise ValueError("run boundary identity and token count must appear together")
+            if has_boundary:
+                assert self.boundary_doc_id is not None
+                assert self.boundary_doc_consumed_tokens is not None
+                if (
+                    len(self.boundary_doc_id) != 40
+                    or any(character not in "0123456789abcdef" for character in self.boundary_doc_id)
+                ):
+                    raise ValueError("run boundary document ID must be lowercase SHA-1")
+                if self.boundary_doc_consumed_tokens < 1:
+                    raise ValueError("run boundary document must consume at least one token")
+            if self.stream_docs != (
+                self.trained_docs_full + self.dropped_docs + int(has_boundary)
+            ):
+                raise ValueError("run stream document accounting does not close")
 
     @property
     def terminal(self) -> BpbMilestoneReceiptV2:
@@ -560,6 +713,16 @@ class GTokRunReceiptV2:
     @property
     def receipt_sha256(self) -> str:
         return gtok_v2_bound_sha256("weft1_gtok_v2_run", self)
+
+    @property
+    def has_exact_stream_accounting(self) -> bool:
+        return self.stream_tokens is not None
+
+    @property
+    def dropped_token_fraction(self) -> float | None:
+        if self.stream_tokens is None or self.dropped_tokens is None:
+            return None
+        return self.dropped_tokens / self.stream_tokens
 
 
 @dataclass(frozen=True)
@@ -581,6 +744,8 @@ class ArmCalibrationProjectionV2:
     heldout_evaluations_per_full_run: int = 0
     measured_output_surface_a100_microseconds: int = 0
     output_surface_benchmarks_per_full_run: int = 0
+    projection_source: str = "standalone_calibration"
+    projection_source_receipt_sha256: str | None = None
 
     def __post_init__(self) -> None:
         if self.scope not in GTOK_COMPUTE_SCOPES:
@@ -591,6 +756,21 @@ class ArmCalibrationProjectionV2:
             self.calibration_attempt_id
         ):
             raise ValueError("calibration_attempt_id must be nonempty")
+        if self.projection_source not in {
+            "standalone_calibration",
+            "completed_base_calibration",
+        }:
+            raise ValueError("arm projection uses an unregistered evidence source")
+        inherited = self.projection_source == "completed_base_calibration"
+        if inherited:
+            if self.scope != "confirmation":
+                raise ValueError("only confirmation may inherit completed base calibration")
+            _require_sha256(
+                str(self.projection_source_receipt_sha256),
+                "projection_source_receipt_sha256",
+            )
+        elif self.projection_source_receipt_sha256 is not None:
+            raise ValueError("standalone calibration may not claim an inherited source")
         _require_exact_int(self.calibration_steps, "calibration_steps", minimum=1)
         if self.calibration_steps > GTOK_CALIBRATION_MAX_STEPS:
             raise ValueError("an A2-R6 calibration burst may not exceed 100 steps")
@@ -652,10 +832,13 @@ class ArmCalibrationProjectionV2:
             _require_exact_int(
                 self.charged_calibration_a100_microseconds,
                 "charged_calibration_a100_microseconds",
-                minimum=1,
             )
-            if self.charged_calibration_a100_microseconds < self.measured_a100_microseconds:
+            if inherited and self.charged_calibration_a100_microseconds != 0:
+                raise ValueError("inherited base calibration adds no confirmation spend")
+            if not inherited and self.charged_calibration_a100_microseconds < self.measured_a100_microseconds:
                 raise ValueError("charged calibration time cannot omit the warmup window")
+        elif inherited:
+            raise ValueError("inherited base calibration must record zero added spend")
 
     @property
     def charged_a100_microseconds(self) -> int:
@@ -905,6 +1088,8 @@ class ComputeAttemptReceiptV2:
     calibration_projection_sha256: str
     projected_run_a100_microseconds: int
     watchdog_limit_a100_microseconds: int
+    execution_plan_sha256: str | None = None
+    planned_compute_token_slots: int | None = None
     hard_abort_issued: bool = False
 
     def __post_init__(self) -> None:
@@ -937,6 +1122,21 @@ class ComputeAttemptReceiptV2:
             "projected_run_a100_microseconds",
             minimum=1,
         )
+        confirmation_full_run = self.scope == "confirmation" and self.kind == "full_run"
+        if confirmation_full_run:
+            _require_sha256(str(self.execution_plan_sha256), "execution_plan_sha256")
+            _require_exact_int(
+                self.planned_compute_token_slots,
+                "planned_compute_token_slots",
+                minimum=1,
+            )
+        elif (
+            self.execution_plan_sha256 is not None
+            or self.planned_compute_token_slots is not None
+        ):
+            raise ValueError(
+                "only a confirmation full-run attempt may bind an execution plan"
+            )
         expected_limit = (
             GTOK_PER_RUN_WATCHDOG_MULTIPLIER
             * self.projected_run_a100_microseconds
@@ -1096,17 +1296,41 @@ class CampaignComputeReceiptV2:
             raise ValueError("compute attempt lacks a per-arm calibration projection")
         for attempt in ordinary_attempts:
             projection = projections[attempt.vocab_size]
-            if (
-                attempt.calibration_projection_sha256 != projection.receipt_sha256
-                or attempt.projected_run_a100_microseconds
-                != projection.projected_run_a100_microseconds
-            ):
+            if attempt.calibration_projection_sha256 != projection.receipt_sha256:
                 raise ValueError("compute attempt does not join its arm projection")
+            if self.scope == "confirmation" and attempt.kind == "full_run":
+                assert attempt.planned_compute_token_slots is not None
+                expected_projected_run = _ceil_div(
+                    projection.measured_a100_microseconds
+                    * attempt.planned_compute_token_slots,
+                    projection.measured_tokens,
+                ) + (
+                    projection.measured_heldout_evaluation_a100_microseconds
+                    * projection.heldout_evaluations_per_full_run
+                ) + (
+                    projection.measured_output_surface_a100_microseconds
+                    * projection.output_surface_benchmarks_per_full_run
+                )
+            else:
+                expected_projected_run = projection.projected_run_a100_microseconds
+            if attempt.projected_run_a100_microseconds != expected_projected_run:
+                raise ValueError(
+                    "compute attempt projection differs from its exact planned horizon"
+                )
         calibration_attempts = tuple(
             item for item in ordinary_attempts if item.kind == "calibration"
         )
         calibration_by_id = {item.attempt_id: item for item in calibration_attempts}
         for projection in self.preflight.calibrations:
+            if projection.projection_source == "completed_base_calibration":
+                if any(
+                    item.vocab_size == projection.vocab_size
+                    for item in calibration_attempts
+                ):
+                    raise ValueError(
+                        "inherited confirmation projection may not add calibration attempts"
+                    )
+                continue
             attempt = calibration_by_id.get(projection.calibration_attempt_id)
             if (
                 attempt is None
@@ -1123,11 +1347,20 @@ class CampaignComputeReceiptV2:
                 if item.vocab_size == projection.vocab_size
                 and item.status == "completed"
             )
-            if len(completed_for_arm) != 1:
+            expected_completed = (
+                0
+                if projection.projection_source == "completed_base_calibration"
+                else 1
+            )
+            if len(completed_for_arm) != expected_completed:
                 raise ValueError(
-                    "each arm needs exactly one completed calibration; retries remain charged"
+                    "arm calibration attempts differ from their projection source"
                 )
         _require_sha256(self.event_ledger_sha256, "event_ledger_sha256")
+        if self.event_ledger_sha256 != compute_event_ledger_sha256_v2(
+            self.attempts
+        ):
+            raise ValueError("compute event ledger differs from ordered attempt receipts")
         _require_exact_int(
             self.consumed_a100_microseconds,
             "consumed_a100_microseconds",
@@ -1247,6 +1480,8 @@ def validate_complete_gtok_matrix_v2(
         raise TypeError("compute must be a CampaignComputeReceiptV2")
     if compute.scope != "base_screen":
         raise ValueError("base G-TOK matrix requires a base_screen compute campaign")
+    if any(getattr(attempt, "status", None) == "aborted_watchdog" for attempt in compute.attempts):
+        raise GTokV2Stop("base G-TOK evidence contains a watchdog abort")
     if tuple(item.vocab_size for item in compute.preflight.calibrations) != (
         GTOK_VOCABULARY_ARMS
     ):
@@ -1347,8 +1582,12 @@ def validate_complete_gtok_matrix_v2(
 
     denominator = corpus.heldout_denominator_signature
     for run in runs:
-        if run.terminal.training_raw_bytes != corpus.training_realized_bytes:
-            raise ValueError("terminal milestone must equal realized T, not its target")
+        if not run.has_exact_stream_accounting:
+            raise ValueError("authoritative matrix requires exact Q2 stream accounting")
+        if run.stream_bytes != corpus.training_realized_bytes:
+            raise ValueError("declared run stream must equal manifested realized T")
+        if run.terminal.training_raw_bytes != run.trained_bytes:
+            raise ValueError("terminal milestone must equal the trained byte prefix")
         if run.observations[1].training_raw_bytes > run.terminal.training_raw_bytes:
             raise ValueError("the 2B crossing cannot occur after terminal realized T")
         for observation in run.observations:
@@ -1419,7 +1658,7 @@ class ArmTerminalStatisticsV2:
     vocab_size: int
     seeds: tuple[int, int]
     seed_bpbs: tuple[float, float]
-    mean_bpb: float
+    rho_bpb_micros: int
     sample_sd: float
 
     def __post_init__(self) -> None:
@@ -1434,8 +1673,16 @@ class ArmTerminalStatisticsV2:
         values = tuple(_require_finite(item, "seed BPB", positive=True) for item in self.seed_bpbs)
         expected_mean = math.fsum(values) / 2.0
         expected_sd = math.sqrt(math.fsum((item - expected_mean) ** 2 for item in values))
-        if self.mean_bpb != expected_mean or self.sample_sd != expected_sd:
-            raise ValueError("arm mean/SD do not equal the two-seed sample statistics")
+        if self.rho_bpb_micros != _rho_bpb_micros(expected_mean):
+            raise ValueError("arm rho does not equal the rounded float64 two-seed mean")
+        if self.sample_sd != expected_sd:
+            raise ValueError("arm SD does not equal the unrounded two-seed sample SD")
+
+    @property
+    def rho_bpb(self) -> float:
+        """Return the authoritative reported rho in BPB units."""
+
+        return self.rho_bpb_micros / GTOK_RHO_BPB_SCALE
 
 
 @dataclass(frozen=True)
@@ -1443,12 +1690,12 @@ class SelectionComparisonV2:
     comparison_index: int
     incumbent_vocab_before: int
     challenger_vocab: int
-    incumbent_mean_bpb: float
-    challenger_mean_bpb: float
+    incumbent_rho_bpb_micros: int
+    challenger_rho_bpb_micros: int
     incumbent_sample_sd: float
     challenger_sample_sd: float
     s_hat: float
-    delta_bpb: float
+    delta_bpb_micros: int
     two_s_hat: float
     three_s_hat: float
     tie_diagnostic: bool
@@ -1468,12 +1715,16 @@ class SelectionComparisonV2:
         if self.challenger_vocab <= self.incumbent_vocab_before:
             raise ValueError("selector traversal must challenge in ascending vocabulary order")
         for name in (
-            "incumbent_mean_bpb",
-            "challenger_mean_bpb",
+            "incumbent_rho_bpb_micros",
+            "challenger_rho_bpb_micros",
+        ):
+            _require_exact_int(getattr(self, name), name, minimum=1)
+        if type(self.delta_bpb_micros) is not int:
+            raise ValueError("delta_bpb_micros must be an exact integer")
+        for name in (
             "incumbent_sample_sd",
             "challenger_sample_sd",
             "s_hat",
-            "delta_bpb",
             "two_s_hat",
             "three_s_hat",
         ):
@@ -1490,10 +1741,12 @@ class SelectionComparisonV2:
         expected_s_hat = math.sqrt(
             (self.incumbent_sample_sd**2 + self.challenger_sample_sd**2) / 2.0
         )
-        expected_delta = self.incumbent_mean_bpb - self.challenger_mean_bpb
+        expected_delta = (
+            self.incumbent_rho_bpb_micros - self.challenger_rho_bpb_micros
+        )
         if self.s_hat != expected_s_hat:
             raise ValueError("s_hat must use the pairwise equal-n pooled sample SD")
-        if self.delta_bpb != expected_delta:
+        if self.delta_bpb_micros != expected_delta:
             raise ValueError("comparison delta uses the wrong arm pair or metric")
         if self.two_s_hat != 2.0 * self.s_hat or self.three_s_hat != 3.0 * self.s_hat:
             raise ValueError("comparison thresholds must be exact multiples of s_hat")
@@ -1509,10 +1762,23 @@ class SelectionComparisonV2:
         if self.displacement_operator != ">":
             raise ValueError("selector displacement operator must remain strict >")
 
+    @property
+    def incumbent_rho_bpb(self) -> float:
+        return self.incumbent_rho_bpb_micros / GTOK_RHO_BPB_SCALE
+
+    @property
+    def challenger_rho_bpb(self) -> float:
+        return self.challenger_rho_bpb_micros / GTOK_RHO_BPB_SCALE
+
+    @property
+    def delta_bpb(self) -> float:
+        return self.delta_bpb_micros / GTOK_RHO_BPB_SCALE
+
 
 @dataclass(frozen=True)
 class GTokSelectionReceiptV2:
     matrix_receipt_sha256: str
+    selection_confirmation_authority_sha256: str
     selector_literal_binding_sha256: str
     seed_specific_orders: tuple[tuple[int, tuple[int, ...]], ...]
     agreed_strict_terminal_order: tuple[int, ...]
@@ -1525,8 +1791,16 @@ class GTokSelectionReceiptV2:
 
     def __post_init__(self) -> None:
         _require_sha256(self.matrix_receipt_sha256, "matrix_receipt_sha256")
-        if self.selector_literal_binding_sha256 != GTOK_SELECTOR_LITERAL_BINDING_SHA256_V2:
-            raise ValueError("selection uses a different A2-R7 literal binding")
+        if (
+            self.selection_confirmation_authority_sha256
+            != GTOK_SELECTION_CONFIRMATION_AUTHORITY_SHA256
+        ):
+            raise ValueError("selection uses a different forward semantics authority")
+        if (
+            self.selector_literal_binding_sha256
+            != GTOK_SELECTION_CONFIRMATION_LITERAL_BINDING_SHA256_V2
+        ):
+            raise ValueError("selection uses a different forward literal binding")
         if self.status != "GREEN_PENDING_COMPUTE_CONFIRMATION":
             raise ValueError("selection status drifted")
         if self.selected_vocab_size not in GTOK_VOCABULARY_ARMS:
@@ -1558,7 +1832,7 @@ def _arm_terminal_statistics(
                 vocab_size=vocab_size,
                 seeds=(arm_runs[0].seed, arm_runs[1].seed),
                 seed_bpbs=(values[0], values[1]),
-                mean_bpb=mean,
+                rho_bpb_micros=_rho_bpb_micros(mean),
                 sample_sd=sample_sd,
             )
         )
@@ -1604,8 +1878,6 @@ def _build_selection_v2(
     allowed = tuple(row.vocab_size for row in admissibility if row.admissible)
     if not allowed:
         raise GTokV2Stop("no vocabulary arm passes the rung-B 20-percent guard")
-    if any(vocab_size not in allowed for vocab_size in agreed_order[:2]):
-        raise GTokV2Stop("a compute-confirmation arm fails the rung-B admissibility guard")
 
     statistics = _arm_terminal_statistics(matrix)
     by_vocab = {row.vocab_size: row for row in statistics}
@@ -1617,7 +1889,10 @@ def _build_selection_v2(
         s_hat = math.sqrt(
             (incumbent_stats.sample_sd**2 + challenger_stats.sample_sd**2) / 2.0
         )
-        delta = incumbent_stats.mean_bpb - challenger_stats.mean_bpb
+        delta_micros = (
+            incumbent_stats.rho_bpb_micros - challenger_stats.rho_bpb_micros
+        )
+        delta = delta_micros / GTOK_RHO_BPB_SCALE
         displaced = delta > 3.0 * s_hat
         next_incumbent = challenger if displaced else incumbent
         comparisons.append(
@@ -1625,12 +1900,12 @@ def _build_selection_v2(
                 comparison_index=len(comparisons),
                 incumbent_vocab_before=incumbent,
                 challenger_vocab=challenger,
-                incumbent_mean_bpb=incumbent_stats.mean_bpb,
-                challenger_mean_bpb=challenger_stats.mean_bpb,
+                incumbent_rho_bpb_micros=incumbent_stats.rho_bpb_micros,
+                challenger_rho_bpb_micros=challenger_stats.rho_bpb_micros,
                 incumbent_sample_sd=incumbent_stats.sample_sd,
                 challenger_sample_sd=challenger_stats.sample_sd,
                 s_hat=s_hat,
-                delta_bpb=delta,
+                delta_bpb_micros=delta_micros,
                 two_s_hat=2.0 * s_hat,
                 three_s_hat=3.0 * s_hat,
                 tie_diagnostic=abs(delta) < 2.0 * s_hat,
@@ -1639,16 +1914,28 @@ def _build_selection_v2(
             )
         )
         incumbent = next_incumbent
+    runner_up = min(
+        (row for row in statistics if row.vocab_size != incumbent),
+        key=lambda row: (row.rho_bpb_micros, row.vocab_size),
+    ).vocab_size
+    confirmation_pair = (incumbent, runner_up)
+    if any(vocab_size not in allowed for vocab_size in confirmation_pair):
+        raise GTokV2Stop("a compute-confirmation arm fails the rung-B admissibility guard")
     return GTokSelectionReceiptV2(
         matrix_receipt_sha256=matrix.receipt_sha256,
-        selector_literal_binding_sha256=GTOK_SELECTOR_LITERAL_BINDING_SHA256_V2,
+        selection_confirmation_authority_sha256=(
+            GTOK_SELECTION_CONFIRMATION_AUTHORITY_SHA256
+        ),
+        selector_literal_binding_sha256=(
+            GTOK_SELECTION_CONFIRMATION_LITERAL_BINDING_SHA256_V2
+        ),
         seed_specific_orders=seed_orders,
         agreed_strict_terminal_order=agreed_order,
         arm_statistics=statistics,
         admissibility=admissibility,
         comparisons=tuple(comparisons),
         selected_vocab_size=incumbent,
-        compute_confirmation_pair=(agreed_order[0], agreed_order[1]),
+        compute_confirmation_pair=confirmation_pair,
     )
 
 
@@ -1679,39 +1966,103 @@ def validate_selection_receipt_v2(
 
 @dataclass(frozen=True)
 class ComputeConfirmationRunV2:
+    """One fresh max-FLOP confirmation run, paired to a base seed slot."""
+
     vocab_size: int
+    seed_slot: int
+    registry_key: str
     seed: int
+    initialization_seed: int
+    data_order_seed: int
+    data_order_sha256: str
+    confirmation_order_receipt_sha256: str
+    physical_d6_evidence_sha256: str
+    document_multiset_sha256: str
+    framed_payload_sha256: str
+    execution_plan_sha256: str
+    training_plan_sha256: str
     base_run_receipt_sha256: str
     compute_attempt_id: str
     common_flop_budget: int
     measured_flops: int
     heldout_stream_sha256: str
-    strata: tuple[StratumNllReceipt, ...]
+    observations: tuple[BpbMilestoneReceiptV2, ...]
     measured_a100_microseconds: int
     training_runtime_receipt_sha256: str
     code_closure_receipt_sha256: str
+    stream_bytes: int
+    stream_docs: int
+    stream_tokens: int
+    trained_tokens: int
+    dropped_tokens: int
+    trained_bytes: int
+    dropped_bytes: int
+    trained_docs_full: int
+    boundary_doc_id: str | None
+    boundary_doc_consumed_tokens: int | None
+    dropped_docs: int
     gpu_uuid_provenance: str | None = None
     checkpoint_retained: bool = False
 
     def __post_init__(self) -> None:
         if self.vocab_size not in GTOK_VOCABULARY_ARMS:
             raise ValueError("confirmation uses an unregistered vocabulary")
-        if type(self.seed) is not int:
-            raise TypeError("confirmation seed must be an exact integer")
+        if self.seed_slot not in (0, 1):
+            raise ValueError("confirmation seed slot must be exactly 0 or 1")
+        expected_key = f"gtok.confirm.{self.vocab_size}.{self.seed_slot}"
+        if self.registry_key != expected_key:
+            raise ValueError("confirmation seed registry key drifted")
+        expected_seed = int.from_bytes(
+            hashlib.sha256(expected_key.encode("ascii")).digest()[:8],
+            byteorder="big",
+        )
+        if self.seed != expected_seed:
+            raise ValueError("confirmation seed differs from its direct SHA-256 root")
+        if self.initialization_seed != derive_module_seed(
+            A2_CAMPAIGN_ROOT_SEED,
+            f"gtok.init.shared.{self.seed}",
+        ):
+            raise ValueError("confirmation initialization seed left the A2 role tree")
+        if self.data_order_seed != derive_module_seed(
+            A2_CAMPAIGN_ROOT_SEED,
+            f"gtok.data.shared.{self.seed}",
+        ):
+            raise ValueError("confirmation data-order seed left the A2 role tree")
+        _require_sha256(self.data_order_sha256, "data_order_sha256")
+        for name in (
+            "confirmation_order_receipt_sha256",
+            "physical_d6_evidence_sha256",
+            "document_multiset_sha256",
+            "framed_payload_sha256",
+            "execution_plan_sha256",
+        ):
+            _require_sha256(getattr(self, name), name)
+        _require_sha256(self.training_plan_sha256, "training_plan_sha256")
         _require_sha256(self.base_run_receipt_sha256, "base_run_receipt_sha256")
         if not isinstance(self.compute_attempt_id, str) or not self.compute_attempt_id:
             raise ValueError("confirmation compute_attempt_id must be nonempty")
         _require_exact_int(self.common_flop_budget, "common_flop_budget", minimum=1)
         _require_exact_int(self.measured_flops, "measured_flops", minimum=1)
-        if self.measured_flops != self.common_flop_budget:
-            raise ValueError("compute confirmation must stop at the exact common FLOP budget")
+        if 100 * abs(self.measured_flops - self.common_flop_budget) > self.common_flop_budget:
+            raise ValueError("compute confirmation must remain within one percent of F_star")
         _require_sha256(self.heldout_stream_sha256, "heldout_stream_sha256")
-        if not isinstance(self.strata, tuple) or any(
-            not isinstance(item, StratumNllReceipt) for item in self.strata
+        if not isinstance(self.observations, tuple) or tuple(
+            item.label for item in self.observations
+        ) != GTOK_MILESTONE_LABELS:
+            raise ValueError("confirmation requires quarter, half, and terminal observations")
+        if any(not isinstance(item, BpbMilestoneReceiptV2) for item in self.observations):
+            raise TypeError("confirmation observations must be BPB milestone receipts")
+        if any(
+            item.heldout_stream_sha256 != self.heldout_stream_sha256
+            for item in self.observations
         ):
-            raise TypeError("confirmation strata must contain StratumNllReceipt values")
-        if tuple(item.stratum for item in self.strata) != GTOK_STRATA:
-            raise ValueError("confirmation requires canonical held-out strata")
+            raise ValueError("confirmation observation held-out identity drifted")
+        steps = tuple(item.optimizer_step for item in self.observations)
+        if not steps[0] < steps[1] < steps[2]:
+            raise ValueError("confirmation BPB checkpoint steps must be strictly increasing")
+        observed_bytes = tuple(item.training_raw_bytes for item in self.observations)
+        if not observed_bytes[0] < observed_bytes[1] < observed_bytes[2]:
+            raise ValueError("confirmation BPB checkpoint bytes must be strictly increasing")
         _require_exact_int(
             self.measured_a100_microseconds,
             "measured_a100_microseconds",
@@ -1735,32 +2086,1035 @@ class ComputeConfirmationRunV2:
             raise TypeError("checkpoint_retained must be an exact bool")
         if self.checkpoint_retained:
             raise ValueError("compute confirmation may not retain checkpoints")
+        accounting_names = (
+            "stream_bytes",
+            "stream_docs",
+            "stream_tokens",
+            "trained_tokens",
+            "dropped_tokens",
+            "trained_bytes",
+            "dropped_bytes",
+            "trained_docs_full",
+            "dropped_docs",
+        )
+        for name in accounting_names:
+            value = getattr(self, name)
+            if type(value) is not int or value < 0:
+                raise ValueError(f"{name} must be a non-negative exact integer")
+        if self.stream_bytes < 1 or self.stream_docs < 1 or self.stream_tokens < 1:
+            raise ValueError("confirmation stream accounting must be positive")
+        if self.trained_tokens < 1 or self.trained_tokens % (256 * 2_048):
+            raise ValueError("confirmation trains only complete global batches")
+        if self.stream_tokens != self.trained_tokens + self.dropped_tokens:
+            raise ValueError("confirmation stream token accounting does not close")
+        if self.stream_bytes != self.trained_bytes + self.dropped_bytes:
+            raise ValueError("confirmation stream byte accounting does not close")
+        if self.terminal.training_raw_bytes != self.trained_bytes:
+            raise ValueError("confirmation terminal BPB bytes differ from trained bytes")
+        if self.terminal.optimizer_step != self.trained_tokens // (256 * 2_048):
+            raise ValueError("confirmation terminal BPB step differs from trained tokens")
+        quarter, half, _terminal = self.observations
+        if not (
+            4 * quarter.previous_training_raw_bytes
+            < self.trained_bytes
+            <= 4 * quarter.training_raw_bytes
+        ):
+            raise ValueError("confirmation quarter checkpoint is not the first byte crossing")
+        if not (
+            2 * half.previous_training_raw_bytes
+            < self.trained_bytes
+            <= 2 * half.training_raw_bytes
+        ):
+            raise ValueError("confirmation half checkpoint is not the first byte crossing")
+        has_boundary = self.boundary_doc_id is not None
+        if has_boundary is not (self.boundary_doc_consumed_tokens is not None):
+            raise ValueError("confirmation boundary identity and token count must appear together")
+        if has_boundary:
+            assert self.boundary_doc_id is not None
+            assert self.boundary_doc_consumed_tokens is not None
+            if (
+                len(self.boundary_doc_id) != 40
+                or any(character not in "0123456789abcdef" for character in self.boundary_doc_id)
+            ):
+                raise ValueError("confirmation boundary document ID must be lowercase SHA-1")
+            if self.boundary_doc_consumed_tokens < 1:
+                raise ValueError("confirmation boundary document must consume at least one token")
+        if self.stream_docs != (
+            self.trained_docs_full + self.dropped_docs + int(has_boundary)
+        ):
+            raise ValueError("confirmation stream document accounting does not close")
         if not math.isfinite(self.pooled_bpb):
             raise ValueError("confirmation pooled BPB must remain finite")
 
     @property
+    def terminal(self) -> BpbMilestoneReceiptV2:
+        return self.observations[-1]
+
+    @property
     def pooled_bpb(self) -> float:
-        nll = math.fsum(item.nll_nats for item in self.strata)
-        raw_bytes = sum(item.raw_byte_count for item in self.strata)
-        return nll / (math.log(2.0) * raw_bytes)
+        return self.terminal.pooled_bpb
 
     @property
     def denominator_signature(self) -> tuple[tuple[str, int], ...]:
-        return tuple((item.stratum, item.raw_byte_count) for item in self.strata)
+        return self.terminal.denominator_signature
 
     @property
     def receipt_sha256(self) -> str:
         return gtok_v2_bound_sha256("weft1_gtok_v2_compute_confirmation_run", self)
 
 
+@dataclass(frozen=True)
+class ConfirmationFreshEvidenceJoinV2:
+    """One successful fresh slot joined through Q3, execution, and lifecycle."""
+
+    vocab_size: int
+    seed_slot: int
+    fresh_run_receipt_sha256: str
+    confirmation_order_receipt_sha256: str
+    physical_d6_evidence_sha256: str
+    document_multiset_sha256: str
+    ordered_raw_content_ids_sha256: str
+    framed_payload_sha256: str
+    order_document_count: int
+    order_retained_text_bytes: int
+    execution_plan_sha256: str
+    training_plan_sha256: str
+    compute_attempt_id: str
+    terminal_lifecycle_event_sha256: str
+    burst_receipt_sha256: str
+    physical_flop_ledger_sha256: str
+
+    def __post_init__(self) -> None:
+        if self.vocab_size not in GTOK_VOCABULARY_ARMS or self.seed_slot not in (0, 1):
+            raise ValueError("confirmation evidence slot identity is invalid")
+        for name in (
+            "fresh_run_receipt_sha256",
+            "confirmation_order_receipt_sha256",
+            "physical_d6_evidence_sha256",
+            "document_multiset_sha256",
+            "ordered_raw_content_ids_sha256",
+            "framed_payload_sha256",
+            "execution_plan_sha256",
+            "training_plan_sha256",
+            "terminal_lifecycle_event_sha256",
+            "burst_receipt_sha256",
+            "physical_flop_ledger_sha256",
+        ):
+            _require_sha256(getattr(self, name), name)
+        if not isinstance(self.compute_attempt_id, str) or not self.compute_attempt_id:
+            raise ValueError("confirmation evidence requires its successful attempt ID")
+        _require_exact_int(self.order_document_count, "order_document_count", minimum=1)
+        _require_exact_int(
+            self.order_retained_text_bytes,
+            "order_retained_text_bytes",
+            minimum=1,
+        )
+
+    @property
+    def receipt_sha256(self) -> str:
+        return gtok_v2_bound_sha256("weft1_gtok_v2_confirmation_fresh_join", self)
+
+
+@dataclass(frozen=True)
+class ConfirmationRetryEvidenceJoinV2:
+    """One invalid-band attempt and the exact fresh successor it authorizes."""
+
+    vocab_size: int
+    seed_slot: int
+    correction_ordinal: int
+    failed_attempt_id: str
+    failed_attempt_receipt_sha256: str
+    failed_execution_plan_sha256: str
+    failed_terminal_lifecycle_event_sha256: str
+    invalid_physical_flop_ledger_sha256: str
+    realized_flops: int
+    target_flops: int
+    prior_optimizer_steps: int
+    retry_optimizer_steps: int
+    retry_execution_plan_sha256: str
+    retry_artifact_physical_sha256: str
+
+    def __post_init__(self) -> None:
+        if self.vocab_size not in GTOK_VOCABULARY_ARMS or self.seed_slot not in (0, 1):
+            raise ValueError("confirmation retry evidence slot identity is invalid")
+        _require_exact_int(
+            self.correction_ordinal,
+            "correction_ordinal",
+        )
+        if not isinstance(self.failed_attempt_id, str) or not self.failed_attempt_id:
+            raise ValueError("confirmation retry join requires its failed attempt ID")
+        for name in (
+            "failed_attempt_receipt_sha256",
+            "failed_execution_plan_sha256",
+            "failed_terminal_lifecycle_event_sha256",
+            "invalid_physical_flop_ledger_sha256",
+            "retry_execution_plan_sha256",
+            "retry_artifact_physical_sha256",
+        ):
+            _require_sha256(getattr(self, name), name)
+        for name in (
+            "realized_flops",
+            "target_flops",
+            "prior_optimizer_steps",
+            "retry_optimizer_steps",
+        ):
+            _require_exact_int(getattr(self, name), name, minimum=1)
+        if self.retry_optimizer_steps != (
+            self.target_flops * self.prior_optimizer_steps
+        ) // self.realized_flops:
+            raise ValueError("confirmation retry horizon differs from exact recomputation")
+        if self.failed_execution_plan_sha256 == self.retry_execution_plan_sha256:
+            raise ValueError("confirmation retry must change the execution plan identity")
+
+    @property
+    def receipt_sha256(self) -> str:
+        return gtok_v2_bound_sha256("weft1_gtok_v2_confirmation_retry_join", self)
+
+
+@dataclass(frozen=True)
+class ConfirmationLifecycleEventEvidenceV2:
+    """Canonical lifecycle-event preimage carried into decision validation."""
+
+    logical_attempt_id: str
+    attempt_id: str
+    scope: str
+    kind: str
+    phase: str
+    charged_a100_microseconds: int
+    terminal_status: str | None
+    completion_payload: Mapping[str, Any] | None = None
+    gpu_uuid_provenance: str | None = None
+    offline_network_launch_receipt_sha256: str | None = None
+    heartbeat_interval_a100_microseconds: int = 30_000_000
+    checkpoint_retained: bool = False
+
+    def __post_init__(self) -> None:
+        for name in ("logical_attempt_id", "attempt_id"):
+            if not isinstance(getattr(self, name), str) or not getattr(self, name):
+                raise ValueError(f"{name} must be nonempty")
+        if self.scope != "confirmation" or self.kind != "full_run":
+            raise ValueError("confirmation closure lifecycle scope/kind drifted")
+        if self.phase not in ("START", "HEARTBEAT", "TERMINAL"):
+            raise ValueError("confirmation closure lifecycle phase is invalid")
+        _require_exact_int(
+            self.charged_a100_microseconds,
+            "charged_a100_microseconds",
+            minimum=1,
+        )
+        if self.phase == "TERMINAL":
+            if self.terminal_status not in (
+                "completed",
+                "failed",
+                "preempted",
+                "aborted_watchdog",
+            ):
+                raise ValueError("confirmation terminal lifecycle status is invalid")
+            if (self.terminal_status == "completed") != isinstance(
+                self.completion_payload,
+                Mapping,
+            ):
+                raise ValueError("confirmation completion payload/status mismatch")
+        elif self.terminal_status is not None or self.completion_payload is not None:
+            raise ValueError("nonterminal confirmation lifecycle evidence claims completion")
+        if self.heartbeat_interval_a100_microseconds != 30_000_000:
+            raise ValueError("confirmation lifecycle heartbeat cadence drifted")
+        if self.checkpoint_retained is not False:
+            raise ValueError("confirmation lifecycle evidence retained a checkpoint")
+        if self.gpu_uuid_provenance is not None and (
+            not isinstance(self.gpu_uuid_provenance, str)
+            or not self.gpu_uuid_provenance.startswith("GPU-")
+        ):
+            raise ValueError("confirmation lifecycle GPU provenance is invalid")
+        if self.offline_network_launch_receipt_sha256 is not None:
+            _require_sha256(
+                self.offline_network_launch_receipt_sha256,
+                "offline_network_launch_receipt_sha256",
+            )
+
+    @property
+    def receipt_sha256(self) -> str:
+        return gtok_v2_bound_sha256("weft1_gtok_v2_lifecycle_event", self)
+
+
+_CONFIRMATION_BINDING_SHA256_V2 = (
+    "1b2657cb0ad399bc7eaede8c5daa565edf3c0a02615ceedfd135f4c9ef8317d4"
+)
+_CONFIRMATION_EXECUTION_PLAN_FIELDS_V2 = frozenset(
+    {
+        "vocab_size",
+        "seed_slot",
+        "registry_key",
+        "seed",
+        "initialization_seed",
+        "data_order_seed",
+        "data_order_sha256",
+        "confirmation_order_receipt_sha256",
+        "physical_d6_evidence_sha256",
+        "document_multiset_sha256",
+        "framed_payload_sha256",
+        "order_document_count",
+        "order_retained_text_bytes",
+        "target_flops",
+        "arm_mean_flops",
+        "byte_matched_optimizer_steps",
+        "arm_flop_plan_sha256",
+        "training_plan",
+        "retry_of_realized_flops",
+        "retry_of_optimizer_steps",
+        "heldout_evaluation_steps",
+    }
+)
+_CONFIRMATION_TRAINING_PLAN_FIELDS_V2 = frozenset(
+    {
+        "confirmation_order_receipt_sha256",
+        "optimizer_steps",
+        "global_batch_sequences",
+        "sequence_length",
+        "compute_token_slots",
+        "valid_prediction_count",
+        "trained_bytes",
+        "trained_tokens",
+        "trained_docs_full",
+        "boundary_doc_id",
+        "boundary_doc_consumed_tokens",
+        "stream_bytes",
+        "stream_tokens",
+        "stream_docs",
+        "dropped_bytes",
+        "dropped_tokens",
+        "dropped_docs",
+        "packed_stream_sha256",
+        "calibration_prefix_compute_token_slots",
+        "calibration_prefix_valid_prediction_count",
+        "calibration_prefix_realized_raw_bytes",
+        "calibration_prefix_document_count",
+        "calibration_prefix_packed_stream_sha256",
+        "bpb_checkpoint_steps",
+        "packing_binding_sha256",
+        "calibration_prefix_steps",
+    }
+)
+_CONFIRMATION_RETRY_ARTIFACT_FIELDS_V2 = frozenset(
+    {
+        "attempt",
+        "attempt_receipt_sha256",
+        "binding_sha256",
+        "correction_ordinal",
+        "failed_execution_plan_sha256",
+        "failed_optimizer_steps",
+        "failed_projected_run_a100_microseconds",
+        "failed_terminal_lifecycle_event_sha256",
+        "invalid_physical_flop_ledger",
+        "invalid_physical_flop_ledger_sha256",
+        "invalid_flop_ledger_receipt_sha256",
+        "passed_burst_flop_receipt",
+        "passed_burst_receipt_sha256",
+        "passed_physical_burst_evidence_sha256",
+        "realized_flops",
+        "retry_execution_plan",
+        "retry_execution_plan_sha256",
+        "retry_projected_run_a100_microseconds",
+        "retry_steps",
+        "schema",
+        "target_flops",
+    }
+)
+_CONFIRMATION_ORDER_FIELDS_V4 = frozenset(
+    {
+        "confirmation_run_seed",
+        "data_order_seed",
+        "physical_d6_evidence_sha256",
+        "document_multiset_sha256",
+        "ordered_raw_content_ids_sha256",
+        "framed_payload_sha256",
+        "document_count",
+        "retained_text_bytes",
+        "order_key_domain",
+        "schema",
+    }
+)
+_CONFIRMATION_ORDER_SCHEMA_V4 = "weft1_gtok_confirmation_consumer_order_v4"
+_CONFIRMATION_ORDER_KEY_DOMAIN_V4 = "WEFT-1/gtok-training-order/raw-content-id/v4"
+_CONFIRMATION_BASE_FLOP_EVIDENCE_FIELDS_V2 = frozenset(
+    {
+        "vocab_size",
+        "seed",
+        "base_run_receipt_sha256",
+        "base_compute_attempt_id",
+        "flop_ledger_sha256",
+        "steps",
+        "measured_flops",
+    }
+)
+_CONFIRMATION_BASE_STEP_FLOP_FIELDS_V2 = frozenset(
+    {
+        "optimizer_step",
+        "batch_rows",
+        "sequence_length",
+        "optimizer_phase",
+        "measured_flops",
+    }
+)
+_CONFIRMATION_ARM_FLOP_PLAN_FIELDS_V2 = frozenset(
+    {
+        "vocab_size",
+        "seeds",
+        "base_flops",
+        "base_flop_evidence_sha256s",
+        "byte_matched_optimizer_steps",
+        "arm_mean_flops",
+        "target_flops",
+        "planned_optimizer_steps",
+    }
+)
+_CONFIRMATION_ATTEMPT_LAUNCH_FIELDS_V2 = frozenset(
+    {
+        "attempt_id",
+        "binding_sha256",
+        "calibration_projection_sha256",
+        "execution_plan_sha256",
+        "logical_attempt_id",
+        "planned_compute_token_slots",
+        "projected_run_a100_microseconds",
+        "schema",
+        "seed",
+        "vocab_size",
+        "watchdog_limit_a100_microseconds",
+    }
+)
+
+
+@dataclass(frozen=True)
+class ConfirmationOrderEnvelopeV2:
+    """Canonical V4 frozen-T order preimage for one fresh confirmation slot."""
+
+    payload: Mapping[str, Any]
+    receipt_sha256: str
+    physical_sha256: str
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.payload, Mapping) or set(self.payload) != (
+            _CONFIRMATION_ORDER_FIELDS_V4
+        ):
+            raise ValueError("confirmation order preimage fields drifted")
+        if (
+            self.payload.get("schema") != _CONFIRMATION_ORDER_SCHEMA_V4
+            or self.payload.get("order_key_domain")
+            != _CONFIRMATION_ORDER_KEY_DOMAIN_V4
+        ):
+            raise ValueError("confirmation order preimage authority drifted")
+        _require_sha256(self.receipt_sha256, "receipt_sha256")
+        expected = execution_authority_v4_bound_sha256(
+            _CONFIRMATION_ORDER_SCHEMA_V4,
+            self.payload,
+        )
+        if self.receipt_sha256 != expected:
+            raise ValueError("confirmation order SHA differs from its V4 preimage")
+        _require_sha256(self.physical_sha256, "physical_sha256")
+        artifact = {
+            "binding_sha256": _CONFIRMATION_BINDING_SHA256_V2,
+            "payload": self.payload,
+            "receipt_sha256": self.receipt_sha256,
+            "schema": _CONFIRMATION_ORDER_SCHEMA_V4,
+        }
+        expected_physical = hashlib.sha256(
+            canonical_json_bytes(artifact) + b"\n"
+        ).hexdigest()
+        if self.physical_sha256 != expected_physical:
+            raise ValueError("confirmation order physical SHA differs from durable bytes")
+
+
+@dataclass(frozen=True)
+class ConfirmationBaseRunFlopSourceEnvelopeV2:
+    """Raw base profiler ledger joined to its reconstructed per-step evidence."""
+
+    flop_ledger_payload: Mapping[str, Any]
+    flop_ledger_receipt_sha256: str
+    base_flop_evidence_payload: Mapping[str, Any]
+    base_flop_evidence_receipt_sha256: str
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.flop_ledger_payload, Mapping):
+            raise TypeError("base FLOP source requires a raw ledger mapping")
+        if not isinstance(self.base_flop_evidence_payload, Mapping) or set(
+            self.base_flop_evidence_payload
+        ) != _CONFIRMATION_BASE_FLOP_EVIDENCE_FIELDS_V2:
+            raise ValueError("base FLOP evidence preimage fields drifted")
+        _require_sha256(self.flop_ledger_receipt_sha256, "flop_ledger_receipt_sha256")
+        _require_sha256(
+            self.base_flop_evidence_receipt_sha256,
+            "base_flop_evidence_receipt_sha256",
+        )
+        if self.flop_ledger_receipt_sha256 != canonical_sha256(
+            self.flop_ledger_payload
+        ):
+            raise ValueError("base raw FLOP ledger SHA differs from its preimage")
+        if self.base_flop_evidence_receipt_sha256 != gtok_v2_bound_sha256(
+            "weft1_gtok_v2_base_run_flop_evidence",
+            self.base_flop_evidence_payload,
+        ):
+            raise ValueError("base FLOP evidence SHA differs from its preimage")
+        if (
+            self.base_flop_evidence_payload.get("flop_ledger_sha256")
+            != self.flop_ledger_receipt_sha256
+        ):
+            raise ValueError("base FLOP evidence points to a different raw ledger")
+
+
+@dataclass(frozen=True)
+class ConfirmationArmFlopSourceEnvelopeV2:
+    """One pair arm's exact S2-Q5 plan and both physical base sources."""
+
+    arm_plan_payload: Mapping[str, Any]
+    arm_plan_receipt_sha256: str
+    base_runs: tuple[
+        ConfirmationBaseRunFlopSourceEnvelopeV2,
+        ConfirmationBaseRunFlopSourceEnvelopeV2,
+    ]
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.arm_plan_payload, Mapping) or set(
+            self.arm_plan_payload
+        ) != _CONFIRMATION_ARM_FLOP_PLAN_FIELDS_V2:
+            raise ValueError("confirmation arm FLOP plan preimage fields drifted")
+        _require_sha256(self.arm_plan_receipt_sha256, "arm_plan_receipt_sha256")
+        if self.arm_plan_receipt_sha256 != gtok_v2_bound_sha256(
+            "weft1_gtok_v2_confirmation_arm_flop_plan",
+            self.arm_plan_payload,
+        ):
+            raise ValueError("confirmation arm FLOP plan SHA differs from its preimage")
+        if (
+            not isinstance(self.base_runs, tuple)
+            or len(self.base_runs) != GTOK_SEED_COUNT
+            or any(
+                not isinstance(row, ConfirmationBaseRunFlopSourceEnvelopeV2)
+                for row in self.base_runs
+            )
+        ):
+            raise TypeError("confirmation arm FLOP source requires two typed base runs")
+
+
+@dataclass(frozen=True)
+class ConfirmationAttemptLaunchEnvelopeV2:
+    """Physical pre-START binding from one attempt ID to its priced plan."""
+
+    payload: Mapping[str, Any]
+    physical_sha256: str
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.payload, Mapping) or set(self.payload) != (
+            _CONFIRMATION_ATTEMPT_LAUNCH_FIELDS_V2
+        ):
+            raise ValueError("confirmation attempt-launch fields drifted")
+        if (
+            self.payload.get("binding_sha256") != _CONFIRMATION_BINDING_SHA256_V2
+            or self.payload.get("schema")
+            != "weft1_gtok_v2_confirmation_attempt_launch"
+        ):
+            raise ValueError("confirmation attempt-launch authority drifted")
+        for name in ("calibration_projection_sha256", "execution_plan_sha256"):
+            _require_sha256(str(self.payload.get(name)), name)
+        for name in (
+            "planned_compute_token_slots",
+            "projected_run_a100_microseconds",
+            "watchdog_limit_a100_microseconds",
+        ):
+            _require_exact_int(self.payload.get(name), name, minimum=1)
+        for name in ("attempt_id", "logical_attempt_id"):
+            if not isinstance(self.payload.get(name), str) or not self.payload.get(name):
+                raise ValueError(f"confirmation attempt-launch {name} is empty")
+        _require_sha256(self.physical_sha256, "physical_sha256")
+        expected = hashlib.sha256(
+            canonical_json_bytes(self.payload) + b"\n"
+        ).hexdigest()
+        if self.physical_sha256 != expected:
+            raise ValueError("confirmation attempt-launch SHA differs from durable bytes")
+
+
+@dataclass(frozen=True)
+class ConfirmationExecutionPlanEnvelopeV2:
+    """Canonical plan preimage used to price every physical attempt."""
+
+    payload: Mapping[str, Any]
+    receipt_sha256: str
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.payload, Mapping):
+            raise TypeError("confirmation execution-plan payload must be a mapping")
+        if set(self.payload) != _CONFIRMATION_EXECUTION_PLAN_FIELDS_V2:
+            raise ValueError("confirmation execution-plan fields drifted")
+        training_plan = self.payload.get("training_plan")
+        if not isinstance(training_plan, Mapping) or set(training_plan) != (
+            _CONFIRMATION_TRAINING_PLAN_FIELDS_V2
+        ):
+            raise ValueError("confirmation execution-plan training fields drifted")
+        _require_sha256(self.receipt_sha256, "receipt_sha256")
+        expected = gtok_v2_bound_sha256(
+            "weft1_gtok_v2_confirmation_execution_plan",
+            self.payload,
+        )
+        if self.receipt_sha256 != expected:
+            raise ValueError("confirmation execution-plan SHA differs from its preimage")
+
+
+@dataclass(frozen=True)
+class ConfirmationRetryArtifactEnvelopeV2:
+    """Canonical on-disk invalid-band artifact and its physical byte hash."""
+
+    payload: Mapping[str, Any]
+    physical_sha256: str
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.payload, Mapping):
+            raise TypeError("confirmation retry artifact payload must be a mapping")
+        if set(self.payload) != _CONFIRMATION_RETRY_ARTIFACT_FIELDS_V2:
+            raise ValueError("confirmation retry artifact fields drifted")
+        if (
+            self.payload.get("binding_sha256") != _CONFIRMATION_BINDING_SHA256_V2
+            or self.payload.get("schema")
+            != "weft1_gtok_v2_invalid_confirmation_flop_band"
+        ):
+            raise ValueError("confirmation retry artifact authority drifted")
+        _require_sha256(self.physical_sha256, "physical_sha256")
+        expected = hashlib.sha256(canonical_json_bytes(self.payload) + b"\n").hexdigest()
+        if self.physical_sha256 != expected:
+            raise ValueError("confirmation retry artifact physical SHA differs from bytes")
+
+
+@dataclass(frozen=True)
+class ConfirmationEvidenceClosureV2:
+    """Complete evidence envelope required before a confirmation decision can mint."""
+
+    compute_event_ledger_sha256: str
+    lifecycle_ledger_sha256: str
+    lifecycle_events: tuple[ConfirmationLifecycleEventEvidenceV2, ...]
+    execution_plans: tuple[ConfirmationExecutionPlanEnvelopeV2, ...]
+    confirmation_orders: tuple[ConfirmationOrderEnvelopeV2, ...]
+    attempt_launches: tuple[ConfirmationAttemptLaunchEnvelopeV2, ...]
+    base_flop_sources: tuple[ConfirmationArmFlopSourceEnvelopeV2, ...]
+    fresh_joins: tuple[ConfirmationFreshEvidenceJoinV2, ...]
+    retry_joins: tuple[ConfirmationRetryEvidenceJoinV2, ...] = ()
+    retry_artifacts: tuple[ConfirmationRetryArtifactEnvelopeV2, ...] = ()
+
+    def __post_init__(self) -> None:
+        _require_sha256(self.compute_event_ledger_sha256, "compute_event_ledger_sha256")
+        _require_sha256(self.lifecycle_ledger_sha256, "lifecycle_ledger_sha256")
+        if not isinstance(self.lifecycle_events, tuple) or not self.lifecycle_events or any(
+            not isinstance(row, ConfirmationLifecycleEventEvidenceV2)
+            for row in self.lifecycle_events
+        ):
+            raise TypeError("confirmation closure requires typed lifecycle preimages")
+        expected_lifecycle_sha256 = gtok_v2_bound_sha256(
+            "weft1_gtok_v2_confirmation_lifecycle_ledger",
+            self.lifecycle_events,
+        )
+        if self.lifecycle_ledger_sha256 != expected_lifecycle_sha256:
+            raise ValueError("confirmation lifecycle ledger SHA differs from its preimages")
+        prior_by_attempt: dict[str, ConfirmationLifecycleEventEvidenceV2] = {}
+        for event in self.lifecycle_events:
+            previous = prior_by_attempt.get(event.attempt_id)
+            if previous is None:
+                if event.phase != "START":
+                    raise ValueError("confirmation lifecycle attempt lacks START")
+            elif (
+                previous.phase == "TERMINAL"
+                or event.phase == "START"
+                or event.charged_a100_microseconds
+                < previous.charged_a100_microseconds
+            ):
+                raise ValueError("confirmation lifecycle transition is invalid")
+            elif any(
+                getattr(event, name) != getattr(previous, name)
+                for name in (
+                    "logical_attempt_id",
+                    "scope",
+                    "kind",
+                    "gpu_uuid_provenance",
+                    "offline_network_launch_receipt_sha256",
+                    "heartbeat_interval_a100_microseconds",
+                    "checkpoint_retained",
+                )
+            ):
+                raise ValueError("confirmation lifecycle attempt identity drifted")
+            prior_by_attempt[event.attempt_id] = event
+        if any(event.phase != "TERMINAL" for event in prior_by_attempt.values()):
+            raise ValueError("confirmation lifecycle attempt lacks TERMINAL")
+        if (
+            not isinstance(self.execution_plans, tuple)
+            or not self.execution_plans
+            or any(
+                not isinstance(row, ConfirmationExecutionPlanEnvelopeV2)
+                for row in self.execution_plans
+            )
+        ):
+            raise TypeError("confirmation closure requires typed execution-plan preimages")
+        plan_sha256s = tuple(row.receipt_sha256 for row in self.execution_plans)
+        if len(set(plan_sha256s)) != len(plan_sha256s):
+            raise ValueError("confirmation closure repeats an execution-plan preimage")
+        if (
+            not isinstance(self.confirmation_orders, tuple)
+            or len(self.confirmation_orders) != GTOK_SEED_COUNT
+            or any(
+                not isinstance(row, ConfirmationOrderEnvelopeV2)
+                for row in self.confirmation_orders
+            )
+        ):
+            raise TypeError("confirmation closure requires two typed V4 order preimages")
+        if len({row.receipt_sha256 for row in self.confirmation_orders}) != GTOK_SEED_COUNT:
+            raise ValueError("confirmation closure order preimages collided")
+        if len({row.physical_sha256 for row in self.confirmation_orders}) != GTOK_SEED_COUNT:
+            raise ValueError("confirmation closure physical order artifacts collided")
+        if (
+            not isinstance(self.attempt_launches, tuple)
+            or not self.attempt_launches
+            or any(
+                not isinstance(row, ConfirmationAttemptLaunchEnvelopeV2)
+                for row in self.attempt_launches
+            )
+        ):
+            raise TypeError("confirmation closure requires typed attempt-launch preimages")
+        launch_ids = tuple(str(row.payload["attempt_id"]) for row in self.attempt_launches)
+        if len(set(launch_ids)) != len(launch_ids) or len(
+            {row.physical_sha256 for row in self.attempt_launches}
+        ) != len(self.attempt_launches):
+            raise ValueError("confirmation closure attempt-launch preimages collided")
+        if (
+            not isinstance(self.base_flop_sources, tuple)
+            or len(self.base_flop_sources) != 2
+            or any(
+                not isinstance(row, ConfirmationArmFlopSourceEnvelopeV2)
+                for row in self.base_flop_sources
+            )
+        ):
+            raise TypeError("confirmation closure requires both typed pair-arm FLOP sources")
+        source_vocabs = tuple(
+            row.arm_plan_payload["vocab_size"] for row in self.base_flop_sources
+        )
+        if source_vocabs != tuple(sorted(source_vocabs)) or len(set(source_vocabs)) != 2:
+            raise ValueError("confirmation pair-arm FLOP sources are not canonical")
+        if (
+            not isinstance(self.fresh_joins, tuple)
+            or len(self.fresh_joins) != GTOK_SEED_COUNT
+            or any(
+                not isinstance(row, ConfirmationFreshEvidenceJoinV2)
+                for row in self.fresh_joins
+            )
+        ):
+            raise TypeError("confirmation closure requires exactly two typed fresh joins")
+        if tuple(row.seed_slot for row in self.fresh_joins) != (0, 1):
+            raise ValueError("confirmation closure fresh joins must be ordered by seed slot")
+        if len({row.receipt_sha256 for row in self.fresh_joins}) != GTOK_SEED_COUNT:
+            raise ValueError("confirmation closure fresh joins must be distinct")
+        for name in (
+            "terminal_lifecycle_event_sha256",
+            "burst_receipt_sha256",
+            "physical_flop_ledger_sha256",
+        ):
+            if len({getattr(row, name) for row in self.fresh_joins}) != GTOK_SEED_COUNT:
+                raise ValueError(f"confirmation fresh-slot {name} identities collided")
+        if not isinstance(self.retry_joins, tuple) or any(
+            not isinstance(row, ConfirmationRetryEvidenceJoinV2)
+            for row in self.retry_joins
+        ):
+            raise TypeError("confirmation retry joins must be a typed tuple")
+        failed_ids = tuple(row.failed_attempt_id for row in self.retry_joins)
+        if len(set(failed_ids)) != len(failed_ids):
+            raise ValueError("confirmation retry joins repeat a failed attempt")
+        if not isinstance(self.retry_artifacts, tuple) or any(
+            not isinstance(row, ConfirmationRetryArtifactEnvelopeV2)
+            for row in self.retry_artifacts
+        ):
+            raise TypeError("confirmation retry artifacts must be typed envelopes")
+        if len(self.retry_artifacts) != len(self.retry_joins) or len(
+            {row.physical_sha256 for row in self.retry_artifacts}
+        ) != len(self.retry_artifacts) or {row.physical_sha256 for row in self.retry_artifacts} != {
+            row.retry_artifact_physical_sha256 for row in self.retry_joins
+        }:
+            raise ValueError("confirmation retry joins and artifact preimages differ")
+        ordered_retry_keys = tuple(
+            (row.seed_slot, row.correction_ordinal) for row in self.retry_joins
+        )
+        if ordered_retry_keys != tuple(sorted(ordered_retry_keys)):
+            raise ValueError("confirmation retry joins must use canonical slot/ordinal order")
+        for seed_slot in (0, 1):
+            ordinals = tuple(
+                row.correction_ordinal
+                for row in self.retry_joins
+                if row.seed_slot == seed_slot
+            )
+            if ordinals != tuple(range(len(ordinals))):
+                raise ValueError("confirmation correction ordinals must be contiguous per slot")
+
+    @property
+    def receipt_sha256(self) -> str:
+        return gtok_v2_bound_sha256("weft1_gtok_v2_confirmation_evidence_closure", self)
+
+
+def _confirmation_physical_burst_evidence_sha256_v2(
+    *,
+    compute_attempt_id: str,
+    execution_plan_sha256: str,
+    burst_receipt_sha256: str,
+) -> str:
+    return gtok_v2_bound_sha256(
+        "weft1_gtok_v2_confirmation_physical_burst_evidence",
+        {
+            "burst_receipt_sha256": burst_receipt_sha256,
+            "compute_attempt_id": compute_attempt_id,
+            "execution_plan_sha256": execution_plan_sha256,
+        },
+    )
+
+
+def _confirmation_physical_flop_evidence_sha256_v2(
+    *,
+    compute_attempt_id: str,
+    execution_plan_sha256: str,
+    flop_ledger_receipt_sha256: str,
+) -> str:
+    return gtok_v2_bound_sha256(
+        "weft1_gtok_v2_confirmation_physical_flop_ledger_evidence",
+        {
+            "compute_attempt_id": compute_attempt_id,
+            "execution_plan_sha256": execution_plan_sha256,
+            "flop_ledger_receipt_sha256": flop_ledger_receipt_sha256,
+        },
+    )
+
+
+def _validate_confirmation_flop_ledger_payload_v2(
+    payload: Mapping[str, Any],
+) -> tuple[str, int, int, int]:
+    """Validate a CompleteFlopLedgerV2 canonical preimage without an import cycle."""
+
+    required = {
+        "shapes",
+        "optimizer_steps",
+        "compute_token_slots",
+        "profiler_with_flops",
+        "flop_binding_sha256",
+    }
+    if set(payload) != required or payload.get("profiler_with_flops") is not True:
+        raise ValueError("confirmation FLOP ledger preimage fields drifted")
+    optimizer_steps = payload["optimizer_steps"]
+    compute_token_slots = payload["compute_token_slots"]
+    _require_exact_int(optimizer_steps, "flop optimizer_steps", minimum=1)
+    _require_exact_int(compute_token_slots, "flop compute_token_slots", minimum=1)
+    _require_sha256(str(payload["flop_binding_sha256"]), "flop_binding_sha256")
+    if payload["flop_binding_sha256"] != GTOK_PHYSICAL_FLOP_BINDING_SHA256_V2:
+        raise ValueError("confirmation FLOP ledger binding drifted")
+    raw_shapes = payload["shapes"]
+    if not isinstance(raw_shapes, (list, tuple)) or not raw_shapes:
+        raise ValueError("confirmation FLOP ledger requires physical shapes")
+    total_occurrences = 0
+    total_slots = 0
+    measured_flops = 0
+    initial_occurrences = 0
+    for raw_shape in raw_shapes:
+        if not isinstance(raw_shape, Mapping) or set(raw_shape) != {
+            "batch_rows",
+            "sequence_length",
+            "optimizer_phase",
+            "occurrences",
+            "profiler_rows",
+            "unsupported_rows",
+            "zero_flop_profiler_operators",
+        }:
+            raise ValueError("confirmation FLOP shape preimage fields drifted")
+        batch_rows = raw_shape["batch_rows"]
+        sequence_length = raw_shape["sequence_length"]
+        occurrences = raw_shape["occurrences"]
+        for name, value in (
+            ("batch_rows", batch_rows),
+            ("sequence_length", sequence_length),
+            ("occurrences", occurrences),
+        ):
+            _require_exact_int(value, name, minimum=1)
+        phase = raw_shape["optimizer_phase"]
+        if phase not in ("initial", "steady"):
+            raise ValueError("confirmation FLOP optimizer phase drifted")
+        if phase == "initial":
+            initial_occurrences += occurrences
+        shape_flops = 0
+        for rows_name in ("profiler_rows", "unsupported_rows"):
+            raw_rows = raw_shape[rows_name]
+            if not isinstance(raw_rows, (list, tuple)) or not raw_rows:
+                raise ValueError("confirmation FLOP operator evidence is absent")
+            for raw_row in raw_rows:
+                expected_row_fields = (
+                    {"operator", "flops_per_occurrence"}
+                    if rows_name == "profiler_rows"
+                    else {"family", "flops_per_occurrence", "derivation"}
+                )
+                if not isinstance(raw_row, Mapping) or set(raw_row) != expected_row_fields:
+                    raise ValueError("confirmation FLOP operator row is invalid")
+                flops = raw_row.get("flops_per_occurrence")
+                _require_exact_int(flops, "flops_per_occurrence", minimum=1)
+                shape_flops += flops
+                if rows_name == "unsupported_rows" and "=" not in str(
+                    raw_row.get("derivation", "")
+                ):
+                    raise ValueError("unsupported FLOP row lacks its derivation")
+        zero_rows = raw_shape["zero_flop_profiler_operators"]
+        if not isinstance(zero_rows, (list, tuple)) or tuple(
+            sorted(set(zero_rows))
+        ) != tuple(zero_rows):
+            raise ValueError("zero-FLOP operator inventory drifted")
+        total_occurrences += occurrences
+        total_slots += batch_rows * sequence_length * occurrences
+        measured_flops += shape_flops * occurrences
+    if (
+        total_occurrences != optimizer_steps
+        or total_slots != compute_token_slots
+        or initial_occurrences != 1
+    ):
+        raise ValueError("confirmation FLOP ledger totals do not close")
+    return (
+        canonical_sha256(payload),
+        measured_flops,
+        optimizer_steps,
+        compute_token_slots,
+    )
+
+
+def _expand_confirmation_base_flop_steps_v2(
+    payload: Mapping[str, Any],
+) -> tuple[Mapping[str, Any], ...]:
+    """Reconstruct the governed initial/steady base-step sequence from a raw ledger."""
+
+    _validate_confirmation_flop_ledger_payload_v2(payload)
+    shapes = tuple(payload["shapes"])
+    initial = tuple(row for row in shapes if row["optimizer_phase"] == "initial")
+    steady = tuple(row for row in shapes if row["optimizer_phase"] == "steady")
+    if len(initial) != 1 or initial[0]["occurrences"] != 1 or not steady:
+        raise ValueError("base FLOP ledger cannot reconstruct physical step order")
+    if len(steady) > 2:
+        raise ValueError("base FLOP ledger has an unregistered shape schedule")
+    if len(steady) == 2:
+        ordered_steady = tuple(
+            sorted(
+                steady,
+                key=lambda row: (row["batch_rows"], row["sequence_length"]),
+                reverse=True,
+            )
+        )
+        if ordered_steady[-1]["occurrences"] != 1:
+            raise ValueError("only the terminal base batch may be partial")
+    else:
+        ordered_steady = steady
+    expanded: list[Mapping[str, Any]] = []
+
+    def append_shape(shape: Mapping[str, Any], count: int) -> None:
+        per_step = sum(
+            row["flops_per_occurrence"]
+            for name in ("profiler_rows", "unsupported_rows")
+            for row in shape[name]
+        )
+        for _ in range(count):
+            expanded.append(
+                {
+                    "optimizer_step": len(expanded) + 1,
+                    "batch_rows": shape["batch_rows"],
+                    "sequence_length": shape["sequence_length"],
+                    "optimizer_phase": "initial" if not expanded else "steady",
+                    "measured_flops": per_step,
+                }
+            )
+
+    append_shape(initial[0], 1)
+    for shape in ordered_steady:
+        append_shape(shape, shape["occurrences"])
+    return tuple(expanded)
+
+
+@dataclass(frozen=True)
+class ConfirmationResultSlotV2:
+    """Uniform slot reference over one reused base or one fresh result."""
+
+    vocab_size: int
+    seed_slot: int
+    source: str
+    run_seed: int
+    registry_key: str
+    source_run_receipt_sha256: str
+    paired_base_run_receipt_sha256: str
+    compute_attempt_id: str | None
+    observations: tuple[BpbMilestoneReceiptV2, ...]
+    stream_bytes: int
+    stream_docs: int
+    stream_tokens: int
+    trained_tokens: int
+    dropped_tokens: int
+    trained_bytes: int
+    dropped_bytes: int
+    trained_docs_full: int
+    boundary_doc_id: str | None
+    boundary_doc_consumed_tokens: int | None
+    dropped_docs: int
+
+    def __post_init__(self) -> None:
+        if self.vocab_size not in GTOK_VOCABULARY_ARMS or self.seed_slot not in (0, 1):
+            raise ValueError("confirmation result slot identity is invalid")
+        if self.source not in ("reused_byte_matched", "fresh_confirmation"):
+            raise ValueError("confirmation result slot source is unregistered")
+        if type(self.run_seed) is not int:
+            raise TypeError("confirmation result run seed must be an exact integer")
+        _require_sha256(self.source_run_receipt_sha256, "source_run_receipt_sha256")
+        _require_sha256(
+            self.paired_base_run_receipt_sha256,
+            "paired_base_run_receipt_sha256",
+        )
+        if self.source == "fresh_confirmation":
+            expected_key = f"gtok.confirm.{self.vocab_size}.{self.seed_slot}"
+            if self.registry_key != expected_key or not self.compute_attempt_id:
+                raise ValueError("fresh confirmation result lacks its registry/attempt join")
+        elif self.registry_key or self.compute_attempt_id is not None:
+            raise ValueError("reused confirmation result may not consume a confirm root")
+        if tuple(item.label for item in self.observations) != GTOK_MILESTONE_LABELS:
+            raise ValueError("confirmation result slot requires all three curve points")
+        for name in (
+            "stream_bytes",
+            "stream_docs",
+            "stream_tokens",
+            "trained_tokens",
+            "dropped_tokens",
+            "trained_bytes",
+            "dropped_bytes",
+            "trained_docs_full",
+            "dropped_docs",
+        ):
+            value = getattr(self, name)
+            if type(value) is not int or value < 0:
+                raise ValueError(f"confirmation slot {name} is invalid")
+
+    @property
+    def terminal_bpb(self) -> float:
+        return self.observations[-1].pooled_bpb
+
+
 @dataclass(frozen=True, init=False)
 class ValidatedComputeConfirmationV2:
     selection_receipt_sha256: str
+    selection_confirmation_authority_sha256: str
     matrix_receipt_sha256: str
     compute_campaign_receipt_sha256: str
     pair: tuple[int, int]
+    winner_vocab_size: int
+    runner_up_vocab_size: int
+    reused_vocab_size: int
+    fresh_vocab_size: int
     common_flop_budget: int
     runs: tuple[ComputeConfirmationRunV2, ...]
+    evidence_closure: ConfirmationEvidenceClosureV2
+    evidence_closure_sha256: str
+    result_slots: tuple[ConfirmationResultSlotV2, ...]
+    rho_bpb_micros: tuple[tuple[int, int], tuple[int, int]]
+    sample_sd_bpb: tuple[tuple[int, float], tuple[int, float]]
+    s_hat_c_bpb: float
+    delta_bpb_micros: int
+    threshold_multiplier: int
+    threshold_bpb: float
+    slot_delta_bpb: tuple[float, float]
     cumulative_campaign_a100_microseconds: int
     status: str
 
@@ -1778,6 +3132,18 @@ class ValidatedComputeConfirmationV2:
         compute: CampaignComputeReceiptV2,
         common_flop_budget: int,
         runs: tuple[ComputeConfirmationRunV2, ...],
+        evidence_closure: ConfirmationEvidenceClosureV2,
+        reused_vocab_size: int,
+        fresh_vocab_size: int,
+        result_slots: tuple[ConfirmationResultSlotV2, ...],
+        rho_bpb_micros: tuple[tuple[int, int], tuple[int, int]],
+        sample_sd_bpb: tuple[tuple[int, float], tuple[int, float]],
+        s_hat_c_bpb: float,
+        delta_bpb_micros: int,
+        threshold_multiplier: int,
+        threshold_bpb: float,
+        slot_delta_bpb: tuple[float, float],
+        status: str,
         sentinel: object,
     ) -> "ValidatedComputeConfirmationV2":
         if sentinel is not _FACTORY_SENTINEL:
@@ -1785,15 +3151,32 @@ class ValidatedComputeConfirmationV2:
         value = object.__new__(cls)
         payload = {
             "selection_receipt_sha256": selection.receipt_sha256,
+            "selection_confirmation_authority_sha256": (
+                selection.selection_confirmation_authority_sha256
+            ),
             "matrix_receipt_sha256": matrix.receipt_sha256,
             "compute_campaign_receipt_sha256": compute.receipt_sha256,
             "pair": selection.compute_confirmation_pair,
+            "winner_vocab_size": selection.compute_confirmation_pair[0],
+            "runner_up_vocab_size": selection.compute_confirmation_pair[1],
+            "reused_vocab_size": reused_vocab_size,
+            "fresh_vocab_size": fresh_vocab_size,
             "common_flop_budget": common_flop_budget,
             "runs": runs,
+            "evidence_closure": evidence_closure,
+            "evidence_closure_sha256": evidence_closure.receipt_sha256,
+            "result_slots": result_slots,
+            "rho_bpb_micros": rho_bpb_micros,
+            "sample_sd_bpb": sample_sd_bpb,
+            "s_hat_c_bpb": s_hat_c_bpb,
+            "delta_bpb_micros": delta_bpb_micros,
+            "threshold_multiplier": threshold_multiplier,
+            "threshold_bpb": threshold_bpb,
+            "slot_delta_bpb": slot_delta_bpb,
             "cumulative_campaign_a100_microseconds": (
                 compute.consumed_a100_microseconds
             ),
-            "status": "GREEN_NO_REVERSAL",
+            "status": status,
         }
         for name, item in payload.items():
             object.__setattr__(value, name, item)
@@ -1810,14 +3193,70 @@ def validate_compute_confirmation_v2(
     matrix: ValidatedGTokMatrixV2,
     selection: GTokSelectionReceiptV2,
     compute: CampaignComputeReceiptV2,
+    evidence_closure: ConfirmationEvidenceClosureV2,
 ) -> ValidatedComputeConfirmationV2:
     """Validate the preregistered top-two equal-FLOP confirmation."""
 
     validate_selection_receipt_v2(selection, matrix=matrix)
     if not isinstance(compute, CampaignComputeReceiptV2):
         raise TypeError("confirmation requires a structured compute campaign receipt")
+    if not isinstance(evidence_closure, ConfirmationEvidenceClosureV2):
+        raise TypeError("confirmation requires a typed evidence closure")
+    # Frozen dataclasses do not make nested Mapping objects immutable.  Re-run
+    # every nested envelope constructor at the mint boundary so a post-build
+    # payload mutation cannot survive on a stale receipt SHA.
+    for row in evidence_closure.execution_plans:
+        ConfirmationExecutionPlanEnvelopeV2(
+            payload=row.payload,
+            receipt_sha256=row.receipt_sha256,
+        )
+    for row in evidence_closure.confirmation_orders:
+        ConfirmationOrderEnvelopeV2(
+            payload=row.payload,
+            receipt_sha256=row.receipt_sha256,
+            physical_sha256=row.physical_sha256,
+        )
+    for row in evidence_closure.attempt_launches:
+        ConfirmationAttemptLaunchEnvelopeV2(
+            payload=row.payload,
+            physical_sha256=row.physical_sha256,
+        )
+    for arm in evidence_closure.base_flop_sources:
+        reconstructed_base_runs = tuple(
+            ConfirmationBaseRunFlopSourceEnvelopeV2(
+                flop_ledger_payload=row.flop_ledger_payload,
+                flop_ledger_receipt_sha256=row.flop_ledger_receipt_sha256,
+                base_flop_evidence_payload=row.base_flop_evidence_payload,
+                base_flop_evidence_receipt_sha256=(
+                    row.base_flop_evidence_receipt_sha256
+                ),
+            )
+            for row in arm.base_runs
+        )
+        assert len(reconstructed_base_runs) == GTOK_SEED_COUNT
+        ConfirmationArmFlopSourceEnvelopeV2(
+            arm_plan_payload=arm.arm_plan_payload,
+            arm_plan_receipt_sha256=arm.arm_plan_receipt_sha256,
+            base_runs=(reconstructed_base_runs[0], reconstructed_base_runs[1]),
+        )
+    for row in evidence_closure.retry_artifacts:
+        ConfirmationRetryArtifactEnvelopeV2(
+            payload=row.payload,
+            physical_sha256=row.physical_sha256,
+        )
     if compute.scope != "confirmation":
         raise ValueError("confirmation requires a confirmation compute scope")
+    expected_event_ledger_sha256 = compute_event_ledger_sha256_v2(
+        compute.attempts
+    )
+    if compute.event_ledger_sha256 != expected_event_ledger_sha256:
+        raise ValueError("confirmation compute event ledger differs from ordered attempts")
+    if any(
+        isinstance(attempt, ComputeAttemptReceiptV2)
+        and attempt.status == "aborted_watchdog"
+        for attempt in compute.attempts
+    ):
+        raise GTokV2Stop("confirmation contains a watchdog abort; return to strategy")
     if compute.predecessor_campaign_sha256 != matrix.compute.receipt_sha256:
         raise ValueError("confirmation compute does not extend the base campaign receipt")
     if (
@@ -1828,36 +3267,408 @@ def validate_compute_confirmation_v2(
     ):
         raise ValueError("confirmation preflight does not begin at the base campaign meter")
     pair = selection.compute_confirmation_pair
-    if tuple(item.vocab_size for item in compute.preflight.calibrations) != tuple(
-        sorted(pair)
+    base_by_key = {(run.vocab_size, run.seed): run for run in matrix.runs}
+    if tuple(
+        row.arm_plan_payload["vocab_size"]
+        for row in evidence_closure.base_flop_sources
+    ) != tuple(sorted(pair)):
+        raise ValueError("confirmation base FLOP sources differ from the selected pair")
+    arm_source_by_vocab: dict[int, ConfirmationArmFlopSourceEnvelopeV2] = {}
+    for arm_source in evidence_closure.base_flop_sources:
+        arm_plan = arm_source.arm_plan_payload
+        vocab_size = arm_plan["vocab_size"]
+        arm_source_by_vocab[vocab_size] = arm_source
+        if tuple(arm_plan["seeds"]) != matrix.seeds:
+            raise ValueError("confirmation arm FLOP source seed order drifted")
+        evidence_sha256s: list[str] = []
+        base_flops: list[int] = []
+        base_steps: list[int] = []
+        for seed, source in zip(matrix.seeds, arm_source.base_runs, strict=True):
+            evidence = source.base_flop_evidence_payload
+            ledger_sha256, ledger_flops, ledger_steps, ledger_slots = (
+                _validate_confirmation_flop_ledger_payload_v2(
+                    source.flop_ledger_payload
+                )
+            )
+            expanded_steps = _expand_confirmation_base_flop_steps_v2(
+                source.flop_ledger_payload
+            )
+            raw_steps = evidence.get("steps")
+            if not isinstance(raw_steps, (list, tuple)) or any(
+                not isinstance(row, Mapping)
+                or set(row) != _CONFIRMATION_BASE_STEP_FLOP_FIELDS_V2
+                for row in raw_steps
+            ):
+                raise ValueError("base FLOP source step preimages drifted")
+            base_run = base_by_key.get((vocab_size, seed))
+            if (
+                ledger_sha256 != source.flop_ledger_receipt_sha256
+                or canonical_json_bytes(raw_steps)
+                != canonical_json_bytes(expanded_steps)
+                or evidence.get("vocab_size") != vocab_size
+                or evidence.get("seed") != seed
+                or base_run is None
+                or evidence.get("base_run_receipt_sha256")
+                != base_run.receipt_sha256
+                or evidence.get("base_compute_attempt_id")
+                != base_run.compute_attempt_id
+                or evidence.get("measured_flops") != ledger_flops
+                or ledger_flops != base_run.measured_flops
+                or ledger_steps != base_run.terminal.optimizer_step
+                or ledger_slots != base_run.trained_tokens
+            ):
+                raise ValueError("base FLOP source does not close to its physical matrix run")
+            evidence_sha256s.append(source.base_flop_evidence_receipt_sha256)
+            base_flops.append(ledger_flops)
+            base_steps.append(ledger_steps)
+        if len(set(base_steps)) != 1:
+            raise ValueError("confirmation arm base FLOP horizons disagree")
+        arm_mean = sum(base_flops) // GTOK_SEED_COUNT
+        if (
+            tuple(arm_plan["base_flop_evidence_sha256s"])
+            != tuple(evidence_sha256s)
+            or tuple(arm_plan["base_flops"]) != tuple(base_flops)
+            or arm_plan["byte_matched_optimizer_steps"] != base_steps[0]
+            or arm_plan["arm_mean_flops"] != arm_mean
+            or arm_plan["planned_optimizer_steps"]
+            != (
+                arm_plan["target_flops"]
+                * arm_plan["byte_matched_optimizer_steps"]
+            )
+            // arm_mean
+        ):
+            raise ValueError("confirmation arm FLOP plan differs from raw base evidence")
+    source_target_flops = min(
+        row.arm_plan_payload["arm_mean_flops"]
+        for row in evidence_closure.base_flop_sources
+    )
+    if any(
+        row.arm_plan_payload["target_flops"] != source_target_flops
+        for row in evidence_closure.base_flop_sources
     ):
-        raise ValueError("confirmation preflight requires one calibration per selected arm")
-    expected_keys = {(vocab, seed) for vocab in pair for seed in matrix.seeds}
-    if not isinstance(runs, tuple) or len(runs) != len(expected_keys):
-        raise ValueError("compute confirmation requires the top two arms at both seeds")
+        raise ValueError("confirmation F_star differs from the raw pair-arm evidence")
+    arm_mean_flops = {
+        vocab_size: sum(base_by_key[(vocab_size, seed)].measured_flops for seed in matrix.seeds)
+        // GTOK_SEED_COUNT
+        for vocab_size in pair
+    }
+    if len(set(arm_mean_flops.values())) != 2:
+        raise GTokV2Stop("confirmation pair has no unique min-FLOP arm; return to strategy")
+    reused_vocab_size = min(pair, key=lambda value: arm_mean_flops[value])
+    fresh_vocab_size = next(value for value in pair if value != reused_vocab_size)
+    common_flop_budget = arm_mean_flops[reused_vocab_size]
+    if common_flop_budget != source_target_flops or any(
+        arm_source_by_vocab[vocab_size].arm_plan_payload["arm_mean_flops"]
+        != arm_mean_flops[vocab_size]
+        for vocab_size in pair
+    ):
+        raise ValueError("confirmation raw FLOP sources differ from matrix totals")
+    if tuple(item.vocab_size for item in compute.preflight.calibrations) != (
+        fresh_vocab_size,
+    ):
+        raise ValueError("confirmation preflight requires only the fresh arm projection")
+    projection = compute.preflight.calibrations[0]
+    base_projection = next(
+        item
+        for item in matrix.compute.preflight.calibrations
+        if item.vocab_size == fresh_vocab_size
+    )
+    if (
+        projection.projection_source != "completed_base_calibration"
+        or projection.full_run_count != GTOK_SEED_COUNT
+        or projection.projection_source_receipt_sha256
+        != base_projection.receipt_sha256
+    ):
+        raise ValueError("confirmation fresh-arm projection must reuse completed base evidence")
+    inherited_fields = (
+        "calibration_steps",
+        "measured_tokens",
+        "measured_a100_microseconds",
+        "measured_heldout_evaluation_a100_microseconds",
+        "heldout_evaluations_per_full_run",
+        "measured_output_surface_a100_microseconds",
+        "output_surface_benchmarks_per_full_run",
+    )
+    if any(
+        getattr(projection, name) != getattr(base_projection, name)
+        for name in inherited_fields
+    ):
+        raise ValueError("confirmation projection changed inherited base measurements")
+    if not isinstance(runs, tuple) or len(runs) != GTOK_SEED_COUNT:
+        raise ValueError("compute confirmation requires exactly two fresh seed-slot runs")
     if any(not isinstance(run, ComputeConfirmationRunV2) for run in runs):
         raise TypeError("confirmation runs must be ComputeConfirmationRunV2 values")
-    keys = {(run.vocab_size, run.seed) for run in runs}
-    if keys != expected_keys or len(keys) != len(runs):
-        raise ValueError("compute confirmation run keys differ from the registered pair")
+    if {run.vocab_size for run in runs} != {fresh_vocab_size} or {
+        run.seed_slot for run in runs
+    } != {0, 1}:
+        raise ValueError("compute confirmation runs differ from the fresh arm/slot registry")
     flop_budgets = {run.common_flop_budget for run in runs}
-    if len(flop_budgets) != 1:
-        raise ValueError("confirmation runs must share one exact FLOP budget")
+    if flop_budgets != {common_flop_budget}:
+        raise ValueError("fresh confirmation runs must target exact F_star")
     denominator = matrix.corpus.heldout_denominator_signature
     if any(
         run.heldout_stream_sha256 != matrix.corpus.heldout_stream_sha256
-        or run.denominator_signature != denominator
+        or any(
+            observation.denominator_signature != denominator
+            for observation in run.observations
+        )
         for run in runs
     ):
-        raise ValueError("confirmation must use the same frozen H denominator")
-    by_key = {(run.vocab_size, run.seed): run for run in runs}
-    base_by_key = {(run.vocab_size, run.seed): run for run in matrix.runs}
+        raise ValueError("every confirmation H pass must use the frozen denominator")
+    if any(
+        run.physical_d6_evidence_sha256
+        != matrix.corpus.d6_physical_evidence_sha256
+        for run in runs
+    ):
+        raise ValueError("fresh confirmation Q3 evidence differs from frozen physical D6")
+    if len({run.document_multiset_sha256 for run in runs}) != 1:
+        raise ValueError("fresh confirmation slots name different frozen T multisets")
+    for name in (
+        "confirmation_order_receipt_sha256",
+        "data_order_sha256",
+        "framed_payload_sha256",
+        "execution_plan_sha256",
+        "training_plan_sha256",
+    ):
+        if len({getattr(run, name) for run in runs}) != GTOK_SEED_COUNT:
+            raise ValueError(f"fresh confirmation {name} identities collided")
+    by_slot = {run.seed_slot: run for run in runs}
+    plan_by_sha256 = {
+        row.receipt_sha256: row.payload for row in evidence_closure.execution_plans
+    }
+    order_by_receipt_sha256 = {
+        row.receipt_sha256: row.payload for row in evidence_closure.confirmation_orders
+    }
+    referenced_order_sha256s: set[str] = set()
+    byte_matched_steps = {
+        base_by_key[(fresh_vocab_size, seed)].terminal.optimizer_step
+        for seed in matrix.seeds
+    }
+    if len(byte_matched_steps) != 1:
+        raise ValueError("fresh base runs disagree on their byte-matched horizon")
+    governed_byte_matched_steps = next(iter(byte_matched_steps))
+    plan_training_sha256: dict[str, str] = {}
+    initial_plan_slots: list[int] = []
+    initial_plan_token_counts: list[int] = []
+    for plan_sha256, plan in plan_by_sha256.items():
+        training_plan = plan["training_plan"]
+        assert isinstance(training_plan, Mapping)
+        seed_slot = plan["seed_slot"]
+        _require_exact_int(seed_slot, "execution-plan seed_slot", minimum=0)
+        if seed_slot not in by_slot:
+            raise ValueError("confirmation execution plan has an unregistered seed slot")
+        slot_run = by_slot[seed_slot]
+        expected_registry_key = f"gtok.confirm.{fresh_vocab_size}.{seed_slot}"
+        expected_run_seed = int.from_bytes(
+            hashlib.sha256(expected_registry_key.encode("ascii")).digest()[:8],
+            byteorder="big",
+        )
+        expected_initialization_seed = derive_module_seed(
+            A2_CAMPAIGN_ROOT_SEED,
+            f"gtok.init.shared.{expected_run_seed}",
+        )
+        expected_data_order_seed = derive_module_seed(
+            A2_CAMPAIGN_ROOT_SEED,
+            f"gtok.data.shared.{expected_run_seed}",
+        )
+        expected_plan_identity = {
+            "vocab_size": fresh_vocab_size,
+            "registry_key": slot_run.registry_key,
+            "seed": slot_run.seed,
+            "initialization_seed": slot_run.initialization_seed,
+            "data_order_seed": slot_run.data_order_seed,
+            "data_order_sha256": slot_run.data_order_sha256,
+            "confirmation_order_receipt_sha256": (
+                slot_run.confirmation_order_receipt_sha256
+            ),
+            "physical_d6_evidence_sha256": slot_run.physical_d6_evidence_sha256,
+            "document_multiset_sha256": slot_run.document_multiset_sha256,
+            "framed_payload_sha256": slot_run.framed_payload_sha256,
+            "order_document_count": slot_run.stream_docs,
+            "order_retained_text_bytes": slot_run.stream_bytes,
+            "target_flops": common_flop_budget,
+            "arm_mean_flops": arm_mean_flops[fresh_vocab_size],
+            "byte_matched_optimizer_steps": governed_byte_matched_steps,
+        }
+        if (
+            plan.get("registry_key") != expected_registry_key
+            or plan.get("seed") != expected_run_seed
+            or plan.get("initialization_seed") != expected_initialization_seed
+            or plan.get("data_order_seed") != expected_data_order_seed
+            or any(
+                plan.get(name) != value
+                for name, value in expected_plan_identity.items()
+            )
+        ):
+            raise ValueError("confirmation execution-plan authority fields drifted")
+        if plan.get("arm_flop_plan_sha256") != arm_source_by_vocab[
+            fresh_vocab_size
+        ].arm_plan_receipt_sha256:
+            raise ValueError("confirmation execution plan lacks its raw arm-FLOP source")
+        order = order_by_receipt_sha256.get(
+            str(plan["confirmation_order_receipt_sha256"])
+        )
+        if order is None or any(
+            order.get(name) != value
+            for name, value in {
+                "confirmation_run_seed": plan["seed"],
+                "data_order_seed": plan["data_order_seed"],
+                "physical_d6_evidence_sha256": plan["physical_d6_evidence_sha256"],
+                "document_multiset_sha256": plan["document_multiset_sha256"],
+                "ordered_raw_content_ids_sha256": plan["data_order_sha256"],
+                "framed_payload_sha256": plan["framed_payload_sha256"],
+                "document_count": plan["order_document_count"],
+                "retained_text_bytes": plan["order_retained_text_bytes"],
+            }.items()
+        ):
+            raise ValueError("confirmation execution plan lacks its physical Q3 order preimage")
+        referenced_order_sha256s.add(str(plan["confirmation_order_receipt_sha256"]))
+        for name in (
+            "arm_flop_plan_sha256",
+            "packed_stream_sha256",
+            "calibration_prefix_packed_stream_sha256",
+            "packing_binding_sha256",
+        ):
+            _require_sha256(
+                plan[name] if name == "arm_flop_plan_sha256" else training_plan[name],
+                name,
+            )
+        for name in (
+            "optimizer_steps",
+            "global_batch_sequences",
+            "sequence_length",
+            "compute_token_slots",
+            "valid_prediction_count",
+            "trained_bytes",
+            "trained_tokens",
+            "stream_bytes",
+            "stream_tokens",
+            "stream_docs",
+            "calibration_prefix_compute_token_slots",
+            "calibration_prefix_valid_prediction_count",
+        ):
+            _require_exact_int(training_plan[name], name, minimum=1)
+        for name in (
+            "trained_docs_full",
+            "dropped_bytes",
+            "dropped_tokens",
+            "dropped_docs",
+            "calibration_prefix_realized_raw_bytes",
+            "calibration_prefix_document_count",
+        ):
+            _require_exact_int(training_plan[name], name, minimum=0)
+        if (
+            training_plan["confirmation_order_receipt_sha256"]
+            != plan["confirmation_order_receipt_sha256"]
+            or training_plan["stream_bytes"] != plan["order_retained_text_bytes"]
+            or training_plan["stream_docs"] != plan["order_document_count"]
+            or training_plan["compute_token_slots"]
+            != training_plan["optimizer_steps"]
+            * training_plan["global_batch_sequences"]
+            * training_plan["sequence_length"]
+            or training_plan["trained_tokens"]
+            != training_plan["compute_token_slots"]
+            or training_plan["stream_tokens"]
+            != training_plan["trained_tokens"] + training_plan["dropped_tokens"]
+            or training_plan["stream_bytes"]
+            != training_plan["trained_bytes"] + training_plan["dropped_bytes"]
+            or training_plan["calibration_prefix_steps"] != 100
+            or training_plan["optimizer_steps"] < 100
+            or training_plan["global_batch_sequences"] != 256
+            or training_plan["sequence_length"] != 2_048
+            or training_plan["calibration_prefix_compute_token_slots"]
+            != 100
+            * training_plan["global_batch_sequences"]
+            * training_plan["sequence_length"]
+        ):
+            raise ValueError("confirmation execution-plan accounting does not close")
+        has_boundary = training_plan["boundary_doc_id"] is not None
+        if has_boundary != (training_plan["boundary_doc_consumed_tokens"] is not None):
+            raise ValueError("confirmation execution-plan boundary fields drifted")
+        if training_plan["stream_docs"] != (
+            training_plan["trained_docs_full"]
+            + training_plan["dropped_docs"]
+            + int(has_boundary)
+        ):
+            raise ValueError("confirmation execution-plan document accounting does not close")
+        retry_realized = plan["retry_of_realized_flops"]
+        retry_prior_steps = plan["retry_of_optimizer_steps"]
+        if (retry_realized is None) != (retry_prior_steps is None):
+            raise ValueError("confirmation execution-plan retry fields drifted")
+        if retry_realized is None:
+            expected_optimizer_steps = (
+                common_flop_budget * governed_byte_matched_steps
+            ) // arm_mean_flops[fresh_vocab_size]
+            initial_plan_slots.append(seed_slot)
+            initial_plan_token_counts.append(training_plan["compute_token_slots"])
+        else:
+            _require_exact_int(retry_realized, "retry_of_realized_flops", minimum=1)
+            _require_exact_int(retry_prior_steps, "retry_of_optimizer_steps", minimum=1)
+            expected_optimizer_steps = (
+                common_flop_budget * retry_prior_steps
+            ) // retry_realized
+        if training_plan["optimizer_steps"] != expected_optimizer_steps:
+            raise ValueError("confirmation execution-plan FLOP horizon drifted")
+        checkpoints = tuple(plan["heldout_evaluation_steps"])
+        if (
+            checkpoints != tuple(training_plan["bpb_checkpoint_steps"])
+            or len(checkpoints) != 3
+            or tuple(sorted(set(checkpoints))) != checkpoints
+            or checkpoints[-1] != training_plan["optimizer_steps"]
+        ):
+            raise ValueError("confirmation execution-plan checkpoints drifted")
+        plan_training_sha256[plan_sha256] = canonical_sha256(training_plan)
+    if sorted(initial_plan_slots) != [0, 1]:
+        raise ValueError("confirmation closure requires one initial plan per seed slot")
+    if (
+        len(set(initial_plan_token_counts)) != 1
+        or projection.planned_tokens_per_run != initial_plan_token_counts[0]
+    ):
+        raise ValueError("confirmation preflight is not priced from initial plan horizons")
+    expected_initial_projection = _ceil_div(
+        projection.measured_a100_microseconds * initial_plan_token_counts[0],
+        projection.measured_tokens,
+    ) + (
+        projection.measured_heldout_evaluation_a100_microseconds
+        * projection.heldout_evaluations_per_full_run
+    ) + (
+        projection.measured_output_surface_a100_microseconds
+        * projection.output_surface_benchmarks_per_full_run
+    )
+    if projection.projected_run_a100_microseconds != expected_initial_projection:
+        raise ValueError("confirmation preflight run projection is underpriced")
+    if referenced_order_sha256s != set(order_by_receipt_sha256):
+        raise ValueError("confirmation closure carries an unreferenced Q3 order preimage")
     if any(
         run.base_run_receipt_sha256
-        != base_by_key[(run.vocab_size, run.seed)].receipt_sha256
+        != base_by_key[(fresh_vocab_size, matrix.seeds[run.seed_slot])].receipt_sha256
         for run in runs
     ):
-        raise ValueError("confirmation run is not joined to its base arm/seed receipt")
+        raise ValueError("fresh run is not joined to its paired base seed-slot receipt")
+    if any(
+        (
+            run.stream_bytes,
+            run.stream_docs,
+            run.stream_tokens,
+        )
+        != (
+            base_by_key[(fresh_vocab_size, matrix.seeds[run.seed_slot])].stream_bytes,
+            base_by_key[(fresh_vocab_size, matrix.seeds[run.seed_slot])].stream_docs,
+            base_by_key[(fresh_vocab_size, matrix.seeds[run.seed_slot])].stream_tokens,
+        )
+        for run in runs
+    ):
+        raise ValueError("fresh confirmation stream contents differ from the byte-matched arm")
+    base_order_identities = {
+        run.data_order_sha256
+        for run in matrix.runs
+        if run.vocab_size == fresh_vocab_size
+    }
+    if (
+        len({run.data_order_sha256 for run in runs}) != GTOK_SEED_COUNT
+        or any(run.data_order_sha256 in base_order_identities for run in runs)
+    ):
+        raise ValueError("fresh confirmation data orders were replayed or collided")
     if any(
         run.training_runtime_receipt_sha256
         != matrix.training_runtime_receipt_sha256
@@ -1883,26 +3694,604 @@ def validate_compute_confirmation_v2(
             or attempt.status != "completed"
             or attempt.consumed_a100_microseconds
             != run.measured_a100_microseconds
+            or attempt.execution_plan_sha256 != run.execution_plan_sha256
+            or attempt.planned_compute_token_slots != run.trained_tokens
             or attempt.hard_abort_issued
         ):
             raise ValueError("confirmation run is absent from the all-attempt ledger")
-    for seed in matrix.seeds:
-        first = by_key[(pair[0], seed)].pooled_bpb
-        second = by_key[(pair[1], seed)].pooled_bpb
-        if not first < second:
-            raise GTokV2Stop(
-                "compute-matched confirmation reversed or tied; return to strategy"
-            )
+    completed_attempt_ids = {
+        item.attempt_id
+        for item in compute.attempts
+        if isinstance(item, ComputeAttemptReceiptV2)
+        and item.kind == "full_run"
+        and item.status == "completed"
+    }
+    if completed_attempt_ids != {run.compute_attempt_id for run in runs}:
+        raise ValueError("confirmation ledger has missing or duplicate selected completions")
+    if any(
+        not isinstance(item, ComputeAttemptReceiptV2)
+        or item.kind != "full_run"
+        or item.vocab_size != fresh_vocab_size
+        for item in compute.attempts
+    ):
+        raise ValueError("confirmation ledger may charge only fresh-arm full-run attempts")
     selected_compute = sum(run.measured_a100_microseconds for run in runs)
     if compute.selected_run_a100_microseconds != selected_compute:
         raise ValueError("confirmation selected-run compute differs from its meter")
-    ordered = tuple(sorted(runs, key=lambda item: (item.vocab_size, item.seed)))
+    if evidence_closure.compute_event_ledger_sha256 != compute.event_ledger_sha256:
+        raise ValueError("confirmation closure differs from the compute event ledger")
+    launch_by_attempt_id = {
+        str(row.payload["attempt_id"]): row
+        for row in evidence_closure.attempt_launches
+    }
+    if set(launch_by_attempt_id) != {attempt.attempt_id for attempt in compute.attempts}:
+        raise ValueError("confirmation attempt-launch evidence does not cover the meter")
+    referenced_plan_sha256s: set[str] = set()
+    for attempt in compute.attempts:
+        plan = plan_by_sha256.get(str(attempt.execution_plan_sha256))
+        if plan is None:
+            raise ValueError("confirmation attempt lacks its execution-plan preimage")
+        training_plan = plan["training_plan"]
+        assert isinstance(training_plan, Mapping)
+        projected = _ceil_div(
+            projection.measured_a100_microseconds
+            * training_plan["compute_token_slots"],
+            projection.measured_tokens,
+        ) + (
+            projection.measured_heldout_evaluation_a100_microseconds
+            * projection.heldout_evaluations_per_full_run
+        ) + (
+            projection.measured_output_surface_a100_microseconds
+            * projection.output_surface_benchmarks_per_full_run
+        )
+        launch = launch_by_attempt_id[attempt.attempt_id].payload
+        if (
+            attempt.vocab_size != plan["vocab_size"]
+            or attempt.seed != plan["seed"]
+            or attempt.planned_compute_token_slots
+            != training_plan["compute_token_slots"]
+            or attempt.projected_run_a100_microseconds != projected
+            or attempt.watchdog_limit_a100_microseconds
+            != GTOK_PER_RUN_WATCHDOG_MULTIPLIER * projected
+            or launch["logical_attempt_id"] == ""
+            or launch["binding_sha256"] != _CONFIRMATION_BINDING_SHA256_V2
+            or launch["calibration_projection_sha256"]
+            != attempt.calibration_projection_sha256
+            or launch["execution_plan_sha256"] != attempt.execution_plan_sha256
+            or launch["planned_compute_token_slots"]
+            != attempt.planned_compute_token_slots
+            or launch["projected_run_a100_microseconds"]
+            != attempt.projected_run_a100_microseconds
+            or launch["watchdog_limit_a100_microseconds"]
+            != attempt.watchdog_limit_a100_microseconds
+            or launch["vocab_size"] != attempt.vocab_size
+            or launch["seed"] != attempt.seed
+        ):
+            raise ValueError("confirmation attempt differs from its priced execution plan")
+        referenced_plan_sha256s.add(str(attempt.execution_plan_sha256))
+    if referenced_plan_sha256s != set(plan_by_sha256):
+        raise ValueError("confirmation closure carries an unattempted execution plan")
+    lifecycle_terminal = tuple(
+        event
+        for event in evidence_closure.lifecycle_events
+        if event.phase == "TERMINAL"
+    )
+    if (
+        len(lifecycle_terminal) != len(compute.attempts)
+        or len({event.attempt_id for event in lifecycle_terminal})
+        != len(lifecycle_terminal)
+    ):
+        raise ValueError("confirmation lifecycle terminals do not cover every attempt once")
+    terminal_by_attempt = {event.attempt_id: event for event in lifecycle_terminal}
+    terminal_by_sha256 = {
+        event.receipt_sha256: event for event in lifecycle_terminal
+    }
+    for attempt in compute.attempts:
+        terminal = terminal_by_attempt.get(attempt.attempt_id)
+        if (
+            terminal is None
+            or terminal.terminal_status != attempt.status
+            or terminal.charged_a100_microseconds
+            != attempt.consumed_a100_microseconds
+            or terminal.logical_attempt_id
+            != launch_by_attempt_id[attempt.attempt_id].payload["logical_attempt_id"]
+        ):
+            raise ValueError("confirmation lifecycle terminal differs from compute meter")
+    failed_attempts = {
+        item.attempt_id: item
+        for item in compute.attempts
+        if isinstance(item, ComputeAttemptReceiptV2) and item.status == "failed"
+    }
+    retry_by_failed_id = {
+        row.failed_attempt_id: row for row in evidence_closure.retry_joins
+    }
+    retry_artifact_by_sha256 = {
+        row.physical_sha256: row for row in evidence_closure.retry_artifacts
+    }
+    if set(failed_attempts) != set(retry_by_failed_id):
+        raise ValueError("every failed confirmation attempt requires one retry evidence join")
+    attempt_position = {
+        item.attempt_id: index for index, item in enumerate(compute.attempts)
+    }
+    for failed_id, failed_attempt in failed_attempts.items():
+        retry = retry_by_failed_id[failed_id]
+        slot_run = by_slot[retry.seed_slot]
+        if (
+            retry.vocab_size != fresh_vocab_size
+            or failed_attempt.vocab_size != retry.vocab_size
+            or failed_attempt.seed != slot_run.seed
+            or retry.failed_attempt_receipt_sha256
+            != failed_attempt.receipt_sha256
+            or retry.failed_execution_plan_sha256
+            != failed_attempt.execution_plan_sha256
+            or retry.target_flops != common_flop_budget
+        ):
+            raise ValueError("confirmation retry join differs from its charged failed attempt")
+        successor_attempts = tuple(
+            item
+            for index, item in enumerate(compute.attempts)
+            if index > attempt_position[failed_id]
+            and isinstance(item, ComputeAttemptReceiptV2)
+            and item.kind == "full_run"
+            and item.vocab_size == retry.vocab_size
+            and item.seed == failed_attempt.seed
+            and item.execution_plan_sha256 == retry.retry_execution_plan_sha256
+        )
+        if not successor_attempts:
+            raise ValueError("confirmation retry plan was never attempted after correction")
+        failed_terminal = terminal_by_sha256.get(
+            retry.failed_terminal_lifecycle_event_sha256
+        )
+        artifact = retry_artifact_by_sha256.get(
+            retry.retry_artifact_physical_sha256
+        )
+        if (
+            failed_terminal is None
+            or failed_terminal.attempt_id != failed_id
+            or failed_terminal.terminal_status != "failed"
+            or failed_terminal.completion_payload is not None
+            or artifact is None
+        ):
+            raise ValueError("confirmation retry lacks failed lifecycle/artifact preimages")
+        retry_payload = artifact.payload
+        raw_attempt = retry_payload.get("attempt")
+        raw_invalid_ledger = retry_payload.get("invalid_physical_flop_ledger")
+        raw_passed_burst = retry_payload.get("passed_burst_flop_receipt")
+        raw_retry_plan = retry_payload.get("retry_execution_plan")
+        if (
+            not isinstance(raw_attempt, Mapping)
+            or canonical_json_bytes(raw_attempt)
+            != canonical_json_bytes(asdict(failed_attempt))
+            or not isinstance(raw_invalid_ledger, Mapping)
+            or not isinstance(raw_passed_burst, Mapping)
+            or not isinstance(raw_retry_plan, Mapping)
+        ):
+            raise ValueError("confirmation retry artifact typed preimages drifted")
+        (
+            invalid_ledger_sha256,
+            invalid_measured_flops,
+            invalid_optimizer_steps,
+            invalid_compute_token_slots,
+        ) = _validate_confirmation_flop_ledger_payload_v2(raw_invalid_ledger)
+        invalid_physical_sha256 = (
+            _confirmation_physical_flop_evidence_sha256_v2(
+                compute_attempt_id=failed_id,
+                execution_plan_sha256=str(failed_attempt.execution_plan_sha256),
+                flop_ledger_receipt_sha256=invalid_ledger_sha256,
+            )
+        )
+        if set(raw_passed_burst) != {
+            "ordered_step_flops",
+            "prelaunch_arm_mean_flops",
+            "byte_matched_optimizer_steps",
+        }:
+            raise ValueError("confirmation retry burst preimage fields drifted")
+        retry_burst_flops = raw_passed_burst["ordered_step_flops"]
+        retry_arm_mean = raw_passed_burst["prelaunch_arm_mean_flops"]
+        retry_byte_steps = raw_passed_burst["byte_matched_optimizer_steps"]
+        failed_plan = plan_by_sha256[str(failed_attempt.execution_plan_sha256)]
+        if (
+            not isinstance(retry_burst_flops, (list, tuple))
+            or len(retry_burst_flops) != 100
+            or any(type(value) is not int or value < 1 for value in retry_burst_flops)
+        ):
+            raise ValueError("confirmation retry burst preimage is invalid")
+        _require_exact_int(retry_arm_mean, "retry burst arm mean", minimum=1)
+        _require_exact_int(retry_byte_steps, "retry burst byte steps", minimum=1)
+        ordered_retry_burst = tuple(sorted(retry_burst_flops))
+        if (
+            200 * (ordered_retry_burst[-1] - ordered_retry_burst[0])
+            > ordered_retry_burst[49] + ordered_retry_burst[50]
+            or abs(sum(retry_burst_flops) * retry_byte_steps - 100 * retry_arm_mean)
+            > retry_arm_mean
+            or retry_arm_mean != failed_plan["arm_mean_flops"]
+            or retry_byte_steps != failed_plan["byte_matched_optimizer_steps"]
+        ):
+            raise ValueError("confirmation retry artifact carries a failed burst")
+        retry_burst_receipt_sha256 = gtok_v2_bound_sha256(
+            "weft1_gtok_v2_confirmation_burst_flops",
+            raw_passed_burst,
+        )
+        retry_physical_burst_sha256 = (
+            _confirmation_physical_burst_evidence_sha256_v2(
+                compute_attempt_id=failed_id,
+                execution_plan_sha256=str(failed_attempt.execution_plan_sha256),
+                burst_receipt_sha256=retry_burst_receipt_sha256,
+            )
+        )
+        retry_plan_sha256 = gtok_v2_bound_sha256(
+            "weft1_gtok_v2_confirmation_execution_plan",
+            raw_retry_plan,
+        )
+        raw_retry_training_plan = raw_retry_plan.get("training_plan")
+        if not isinstance(raw_retry_training_plan, Mapping):
+            raise ValueError("confirmation retry plan omits its training-plan preimage")
+        retry_slots = raw_retry_training_plan.get("compute_token_slots")
+        _require_exact_int(retry_slots, "retry compute_token_slots", minimum=1)
+        retry_projected = _ceil_div(
+            projection.measured_a100_microseconds * retry_slots,
+            projection.measured_tokens,
+        ) + (
+            projection.measured_heldout_evaluation_a100_microseconds
+            * projection.heldout_evaluations_per_full_run
+        ) + (
+            projection.measured_output_surface_a100_microseconds
+            * projection.output_surface_benchmarks_per_full_run
+        )
+        if (
+            retry_payload.get("schema")
+            != "weft1_gtok_v2_invalid_confirmation_flop_band"
+            or retry_payload.get("correction_ordinal")
+            != retry.correction_ordinal
+            or retry_payload.get("attempt_receipt_sha256")
+            != failed_attempt.receipt_sha256
+            or retry_payload.get("failed_execution_plan_sha256")
+            != failed_attempt.execution_plan_sha256
+            or retry_payload.get("failed_optimizer_steps")
+            != invalid_optimizer_steps
+            or retry_payload.get("failed_projected_run_a100_microseconds")
+            != failed_attempt.projected_run_a100_microseconds
+            or retry_payload.get("failed_terminal_lifecycle_event_sha256")
+            != failed_terminal.receipt_sha256
+            or retry_payload.get("invalid_flop_ledger_receipt_sha256")
+            != invalid_ledger_sha256
+            or retry_payload.get("invalid_physical_flop_ledger_sha256")
+            != invalid_physical_sha256
+            or retry_payload.get("passed_burst_receipt_sha256")
+            != retry_burst_receipt_sha256
+            or retry_payload.get("passed_physical_burst_evidence_sha256")
+            != retry_physical_burst_sha256
+            or retry.invalid_physical_flop_ledger_sha256
+            != invalid_physical_sha256
+            or invalid_measured_flops != retry.realized_flops
+            or invalid_compute_token_slots
+            != failed_attempt.planned_compute_token_slots
+            or retry_payload.get("realized_flops") != retry.realized_flops
+            or retry_payload.get("target_flops") != retry.target_flops
+            or retry_payload.get("retry_steps") != retry.retry_optimizer_steps
+            or retry_payload.get("retry_execution_plan_sha256")
+            != retry_plan_sha256
+            or retry.retry_execution_plan_sha256 != retry_plan_sha256
+            or raw_retry_plan.get("retry_of_realized_flops")
+            != retry.realized_flops
+            or raw_retry_plan.get("retry_of_optimizer_steps")
+            != retry.prior_optimizer_steps
+            or raw_retry_training_plan.get("optimizer_steps")
+            != retry.retry_optimizer_steps
+            or retry_payload.get("retry_projected_run_a100_microseconds")
+            != retry_projected
+        ):
+            raise ValueError("confirmation retry artifact evidence does not close")
+    for seed_slot, slot_run in by_slot.items():
+        slot_retries = tuple(
+            row
+            for row in evidence_closure.retry_joins
+            if row.seed_slot == seed_slot
+        )
+        if slot_retries:
+            for prior, successor in zip(slot_retries, slot_retries[1:]):
+                if (
+                    successor.failed_execution_plan_sha256
+                    != prior.retry_execution_plan_sha256
+                ):
+                    raise ValueError("confirmation correction plan chain is discontinuous")
+            if slot_retries[-1].retry_execution_plan_sha256 != slot_run.execution_plan_sha256:
+                raise ValueError("confirmation selected run did not use the final correction plan")
+    joins_by_slot = {row.seed_slot: row for row in evidence_closure.fresh_joins}
+    for run in runs:
+        join = joins_by_slot.get(run.seed_slot)
+        if join is None:
+            raise ValueError("confirmation closure omits a successful fresh slot")
+        expected = {
+            "vocab_size": run.vocab_size,
+            "fresh_run_receipt_sha256": run.receipt_sha256,
+            "confirmation_order_receipt_sha256": (
+                run.confirmation_order_receipt_sha256
+            ),
+            "physical_d6_evidence_sha256": run.physical_d6_evidence_sha256,
+            "document_multiset_sha256": run.document_multiset_sha256,
+            "ordered_raw_content_ids_sha256": run.data_order_sha256,
+            "framed_payload_sha256": run.framed_payload_sha256,
+            "order_document_count": run.stream_docs,
+            "order_retained_text_bytes": run.stream_bytes,
+            "execution_plan_sha256": run.execution_plan_sha256,
+            "training_plan_sha256": run.training_plan_sha256,
+            "compute_attempt_id": run.compute_attempt_id,
+        }
+        if any(getattr(join, name) != value for name, value in expected.items()):
+            raise ValueError("confirmation closure does not join Q3, plan, run, and attempt")
+        terminal = terminal_by_sha256.get(join.terminal_lifecycle_event_sha256)
+        if (
+            terminal is None
+            or terminal.attempt_id != run.compute_attempt_id
+            or terminal.terminal_status != "completed"
+            or terminal.gpu_uuid_provenance != run.gpu_uuid_provenance
+            or terminal.charged_a100_microseconds
+            != run.measured_a100_microseconds
+            or not isinstance(terminal.completion_payload, Mapping)
+        ):
+            raise ValueError("confirmation fresh join lacks its completed lifecycle preimage")
+        completion = terminal.completion_payload
+        successful_plan = plan_by_sha256[run.execution_plan_sha256]
+        successful_training_plan = successful_plan["training_plan"]
+        assert isinstance(successful_training_plan, Mapping)
+        q2_fields = (
+            "stream_bytes",
+            "stream_tokens",
+            "stream_docs",
+            "trained_bytes",
+            "trained_tokens",
+            "trained_docs_full",
+            "dropped_bytes",
+            "dropped_tokens",
+            "dropped_docs",
+            "boundary_doc_id",
+            "boundary_doc_consumed_tokens",
+        )
+        if any(
+            successful_training_plan[name] != getattr(run, name)
+            for name in q2_fields
+        ):
+            raise ValueError("confirmation Q2 execution plan differs from realized run")
+        required_completion_fields = {
+            "run",
+            "flop_ledger",
+            "execution_plan_sha256",
+            "base_flop_evidence_sha256",
+            "training_plan_sha256",
+            "heldout_evaluation_steps",
+            "burst_flop_receipt",
+            "physical_flop_ledger_sha256",
+            "physical_optimizer_steps",
+            "training_runtime_receipt_sha256",
+            "code_closure_receipt_sha256",
+            "checkpoint_retained",
+        }
+        if set(completion) != required_completion_fields:
+            raise ValueError("confirmation completion evidence fields drifted")
+        raw_run = completion["run"]
+        raw_burst = completion["burst_flop_receipt"]
+        raw_ledger = completion["flop_ledger"]
+        if (
+            not isinstance(raw_run, Mapping)
+            or canonical_json_bytes(raw_run) != canonical_json_bytes(asdict(run))
+            or not isinstance(raw_burst, Mapping)
+            or not isinstance(raw_ledger, Mapping)
+        ):
+            raise ValueError("confirmation completion preimages differ from the fresh run")
+        if set(raw_burst) != {
+            "ordered_step_flops",
+            "prelaunch_arm_mean_flops",
+            "byte_matched_optimizer_steps",
+        }:
+            raise ValueError("confirmation burst preimage fields drifted")
+        burst_flops = raw_burst["ordered_step_flops"]
+        arm_mean_flops = raw_burst["prelaunch_arm_mean_flops"]
+        byte_matched_steps = raw_burst["byte_matched_optimizer_steps"]
+        if (
+            not isinstance(burst_flops, (list, tuple))
+            or len(burst_flops) != 100
+            or any(type(value) is not int or value < 1 for value in burst_flops)
+        ):
+            raise ValueError("confirmation burst preimage requires 100 FLOP values")
+        _require_exact_int(arm_mean_flops, "prelaunch_arm_mean_flops", minimum=1)
+        _require_exact_int(byte_matched_steps, "byte_matched_optimizer_steps", minimum=1)
+        ordered_burst = tuple(sorted(burst_flops))
+        if (
+            200 * (ordered_burst[-1] - ordered_burst[0])
+            > ordered_burst[49] + ordered_burst[50]
+            or abs(sum(burst_flops) * byte_matched_steps - 100 * arm_mean_flops)
+            > arm_mean_flops
+        ):
+            raise ValueError("confirmation burst preimage fails its governed gates")
+        raw_burst_sha256 = gtok_v2_bound_sha256(
+            "weft1_gtok_v2_confirmation_burst_flops",
+            raw_burst,
+        )
+        expected_burst_evidence_sha256 = (
+            _confirmation_physical_burst_evidence_sha256_v2(
+                compute_attempt_id=run.compute_attempt_id,
+                execution_plan_sha256=run.execution_plan_sha256,
+                burst_receipt_sha256=raw_burst_sha256,
+            )
+        )
+        (
+            raw_ledger_sha256,
+            ledger_measured_flops,
+            ledger_optimizer_steps,
+            ledger_compute_token_slots,
+        ) = _validate_confirmation_flop_ledger_payload_v2(raw_ledger)
+        expected_flop_evidence_sha256 = (
+            _confirmation_physical_flop_evidence_sha256_v2(
+                compute_attempt_id=run.compute_attempt_id,
+                execution_plan_sha256=run.execution_plan_sha256,
+                flop_ledger_receipt_sha256=raw_ledger_sha256,
+            )
+        )
+        if (
+            join.burst_receipt_sha256 != expected_burst_evidence_sha256
+            or join.physical_flop_ledger_sha256
+            != expected_flop_evidence_sha256
+            or completion["physical_flop_ledger_sha256"]
+            != expected_flop_evidence_sha256
+            or ledger_measured_flops != run.measured_flops
+            or ledger_optimizer_steps != run.terminal.optimizer_step
+            or ledger_compute_token_slots != run.trained_tokens
+            or completion["physical_optimizer_steps"] != ledger_optimizer_steps
+            or completion["execution_plan_sha256"] != run.execution_plan_sha256
+            or completion["base_flop_evidence_sha256"]
+            != successful_plan["arm_flop_plan_sha256"]
+            or completion["training_plan_sha256"] != run.training_plan_sha256
+            or completion["training_plan_sha256"]
+            != plan_training_sha256[run.execution_plan_sha256]
+            or arm_mean_flops != successful_plan["arm_mean_flops"]
+            or byte_matched_steps
+            != successful_plan["byte_matched_optimizer_steps"]
+            or tuple(completion["heldout_evaluation_steps"])
+            != tuple(item.optimizer_step for item in run.observations)
+            or completion["training_runtime_receipt_sha256"]
+            != run.training_runtime_receipt_sha256
+            or completion["code_closure_receipt_sha256"]
+            != run.code_closure_receipt_sha256
+            or completion["checkpoint_retained"] is not False
+        ):
+            raise ValueError("confirmation physical burst/FLOP evidence does not close")
+    ordered = tuple(sorted(runs, key=lambda item: item.seed_slot))
+
+    slots: list[ConfirmationResultSlotV2] = []
+    for vocab_size in pair:
+        for seed_slot, base_seed in enumerate(matrix.seeds):
+            base_run = base_by_key[(vocab_size, base_seed)]
+            if vocab_size == reused_vocab_size:
+                source = base_run
+                slots.append(
+                    ConfirmationResultSlotV2(
+                        vocab_size=vocab_size,
+                        seed_slot=seed_slot,
+                        source="reused_byte_matched",
+                        run_seed=base_seed,
+                        registry_key="",
+                        source_run_receipt_sha256=base_run.receipt_sha256,
+                        paired_base_run_receipt_sha256=base_run.receipt_sha256,
+                        compute_attempt_id=None,
+                        observations=base_run.observations,
+                        stream_bytes=int(base_run.stream_bytes),
+                        stream_docs=int(base_run.stream_docs),
+                        stream_tokens=int(base_run.stream_tokens),
+                        trained_tokens=int(base_run.trained_tokens),
+                        dropped_tokens=int(base_run.dropped_tokens),
+                        trained_bytes=int(base_run.trained_bytes),
+                        dropped_bytes=int(base_run.dropped_bytes),
+                        trained_docs_full=int(base_run.trained_docs_full),
+                        boundary_doc_id=base_run.boundary_doc_id,
+                        boundary_doc_consumed_tokens=(
+                            base_run.boundary_doc_consumed_tokens
+                        ),
+                        dropped_docs=int(base_run.dropped_docs),
+                    )
+                )
+            else:
+                source = by_slot[seed_slot]
+                slots.append(
+                    ConfirmationResultSlotV2(
+                        vocab_size=vocab_size,
+                        seed_slot=seed_slot,
+                        source="fresh_confirmation",
+                        run_seed=source.seed,
+                        registry_key=source.registry_key,
+                        source_run_receipt_sha256=source.receipt_sha256,
+                        paired_base_run_receipt_sha256=(
+                            source.base_run_receipt_sha256
+                        ),
+                        compute_attempt_id=source.compute_attempt_id,
+                        observations=source.observations,
+                        stream_bytes=source.stream_bytes,
+                        stream_docs=source.stream_docs,
+                        stream_tokens=source.stream_tokens,
+                        trained_tokens=source.trained_tokens,
+                        dropped_tokens=source.dropped_tokens,
+                        trained_bytes=source.trained_bytes,
+                        dropped_bytes=source.dropped_bytes,
+                        trained_docs_full=source.trained_docs_full,
+                        boundary_doc_id=source.boundary_doc_id,
+                        boundary_doc_consumed_tokens=(
+                            source.boundary_doc_consumed_tokens
+                        ),
+                        dropped_docs=source.dropped_docs,
+                    )
+                )
+    result_slots = tuple(sorted(slots, key=lambda item: (item.vocab_size, item.seed_slot)))
+    if any(
+        observation.heldout_stream_sha256 != matrix.corpus.heldout_stream_sha256
+        or observation.denominator_signature != denominator
+        for slot in result_slots
+        for observation in slot.observations
+    ):
+        raise ValueError("confirmation result curves do not share the frozen H denominator")
+    values_by_vocab = {
+        vocab_size: tuple(
+            next(
+                item.terminal_bpb
+                for item in result_slots
+                if item.vocab_size == vocab_size and item.seed_slot == seed_slot
+            )
+            for seed_slot in (0, 1)
+        )
+        for vocab_size in pair
+    }
+    raw_means = {
+        vocab_size: math.fsum(values) / GTOK_SEED_COUNT
+        for vocab_size, values in values_by_vocab.items()
+    }
+    rho = {vocab_size: _rho_bpb_micros(value) for vocab_size, value in raw_means.items()}
+    sample_sd = {
+        vocab_size: math.sqrt(
+            math.fsum((value - raw_means[vocab_size]) ** 2 for value in values)
+        )
+        for vocab_size, values in values_by_vocab.items()
+    }
+    winner, runner_up = pair
+    s_hat_c = math.sqrt(
+        (sample_sd[winner] ** 2 + sample_sd[runner_up] ** 2) / 2.0
+    )
+    delta_micros = rho[winner] - rho[runner_up]
+    multiplier = 3 if runner_up > winner else 2
+    threshold = multiplier * s_hat_c
+    slot_delta = tuple(
+        values_by_vocab[winner][seed_slot] - values_by_vocab[runner_up][seed_slot]
+        for seed_slot in (0, 1)
+    )
+    if slot_delta[0] * slot_delta[1] < 0:
+        status = "ESCALATE_SEED_SPLIT"
+    elif (
+        slot_delta[0] > 0
+        and slot_delta[1] > 0
+        and delta_micros > threshold * GTOK_RHO_BPB_SCALE
+    ):
+        status = "ESCALATE_REVERSAL"
+    else:
+        status = "GREEN_NO_REVERSAL"
     return ValidatedComputeConfirmationV2._validated(
         selection=selection,
         matrix=matrix,
         compute=compute,
-        common_flop_budget=next(iter(flop_budgets)),
+        common_flop_budget=common_flop_budget,
         runs=ordered,
+        evidence_closure=evidence_closure,
+        reused_vocab_size=reused_vocab_size,
+        fresh_vocab_size=fresh_vocab_size,
+        result_slots=result_slots,
+        rho_bpb_micros=((winner, rho[winner]), (runner_up, rho[runner_up])),
+        sample_sd_bpb=(
+            (winner, sample_sd[winner]),
+            (runner_up, sample_sd[runner_up]),
+        ),
+        s_hat_c_bpb=s_hat_c,
+        delta_bpb_micros=delta_micros,
+        threshold_multiplier=multiplier,
+        threshold_bpb=threshold,
+        slot_delta_bpb=(slot_delta[0], slot_delta[1]),
+        status=status,
         sentinel=_FACTORY_SENTINEL,
     )
 
@@ -1987,7 +4376,7 @@ class VocabularyFreezeArtifactV2:
             "tokenizer_json_sha256": basis.tokenizer_json_sha256,
             "vocab_ext_basis": basis,
             "selector_literal_binding_sha256": (
-                GTOK_SELECTOR_LITERAL_BINDING_SHA256_V2
+                selection.selector_literal_binding_sha256
             ),
         }
         for name, item in payload.items():
@@ -2066,17 +4455,37 @@ __all__ = [
     "CampaignComputeReceiptV2",
     "ComputeAttemptReceiptV2",
     "ComputeConfirmationRunV2",
+    "ConfirmationArmFlopSourceEnvelopeV2",
+    "ConfirmationAttemptLaunchEnvelopeV2",
+    "ConfirmationBaseRunFlopSourceEnvelopeV2",
+    "ConfirmationEvidenceClosureV2",
+    "ConfirmationExecutionPlanEnvelopeV2",
+    "ConfirmationFreshEvidenceJoinV2",
+    "ConfirmationLifecycleEventEvidenceV2",
+    "ConfirmationOrderEnvelopeV2",
+    "ConfirmationRetryArtifactEnvelopeV2",
+    "ConfirmationRetryEvidenceJoinV2",
+    "ConfirmationResultSlotV2",
     "FrozenScreenCorpusV2",
     "GTOK_A2_BINDINGS_SHA256",
     "GTOK_AMENDMENT_A2_SHA256",
     "GTOK_AMENDMENT_A3_SHA256",
     "GTOK_CALIBRATION_MAX_STEPS",
     "GTOK_COMPUTE_SCOPES",
+    "GTOK_CONFIRMATION_SEMANTICS_SHA256",
     "GTOK_FIRST_BOUNDARY_BYTES",
     "GTOK_MILESTONE_LABELS",
     "GTOK_PER_RUN_WATCHDOG_MULTIPLIER",
     "GTOK_RELEASE_CLOSE_SHA256",
+    "GTOK_RHO_BPB_DECIMAL_PLACES",
+    "GTOK_RHO_BPB_SCALE",
     "GTOK_SECOND_BOUNDARY_BYTES",
+    "GTOK_SELECTION_CONFIRMATION_AUTHORITY_CHAIN",
+    "GTOK_SELECTION_CONFIRMATION_AUTHORITY_SHA256",
+    "GTOK_SELECTION_CONFIRMATION_LITERAL_BINDING_SHA256_V2",
+    "GTOK_SELECTION_CONFIRMATION_LITERAL_BINDING_V2",
+    "GTOK_SEMANTICS_AMENDMENT_S1_SHA256",
+    "GTOK_SEMANTICS_AMENDMENT_S2_SHA256",
     "GTOK_SELECTOR_LITERAL_BINDING_SHA256_V2",
     "GTOK_SELECTOR_LITERAL_BINDING_V2",
     "GTOK_TERMINAL_BUDGET",
@@ -2096,6 +4505,7 @@ __all__ = [
     "VocabExtBasisV2",
     "VocabularyAdmissibilityReceiptV2",
     "VocabularyFreezeArtifactV2",
+    "compute_event_ledger_sha256_v2",
     "enforce_runtime_tripwire_v2",
     "gtok_v2_bound_sha256",
     "mint_vocabulary_freeze_v2",

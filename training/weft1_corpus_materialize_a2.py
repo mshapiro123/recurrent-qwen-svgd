@@ -29,7 +29,7 @@ import sqlite3
 import socket
 import stat
 import tempfile
-from typing import BinaryIO, Callable, Protocol
+from typing import BinaryIO, Callable, Protocol, cast
 
 import zstandard
 
@@ -66,9 +66,17 @@ from training.weft1_corpus_pa import (
     sha256_file,
     write_jsonl_zstd_shards_v3,
 )
+from training.weft1_corpus_parsed_asset_cache_v1 import (
+    ParsedAssetRecoveryContextV1,
+    RecoveredSourceParseEventV1,
+    inspect_parsed_asset_segment_receipt_v1,
+    iter_parsed_asset_segment_v1,
+    write_parsed_asset_segment_v1,
+)
 from training.weft1_corpus_sources_a2 import (
     QUALITY_GATED_SOURCE_FAMILIES,
     SCORED_SOURCE_FAMILIES,
+    VerifiedLocalCacheAssetV3,
     VerifiedLocalCacheManifestV3,
 )
 from training.weft1_corpus_source_io_a2 import (
@@ -78,6 +86,8 @@ from training.weft1_corpus_source_io_a2 import (
     PRODUCTION_PARSER_COMPOSITE_IDENTITIES_V3,
     RETAIN,
     SourceCacheDownloadReceiptV3,
+    SourceParseEventV3,
+    SourceParserBindingV3,
     iter_source_asset_events_v3,
     plan_source_cache_assets_v3,
     resolve_production_parser_binding_v3,
@@ -2036,6 +2046,98 @@ class _Spool:
             )
 
 
+class _HashDigestV1(Protocol):
+    def update(self, value: bytes) -> None: ...
+
+    def hexdigest(self) -> str: ...
+
+
+@dataclass
+class _ProductionSourceApplyStateV1:
+    ledger_digest: _HashDigestV1
+    disposition_counts: Counter[str]
+    score_variance_digest: _HashDigestV1
+    event_ordinal: int = 0
+    duplicate_count: int = 0
+    score_variance_count: int = 0
+
+
+def prefill_production_parsed_asset_cache_v1(
+    *,
+    inputs: MaterializationInputV3,
+    parsed_asset_cache_root: Path,
+    parsed_asset_recovery_context: ParsedAssetRecoveryContextV1,
+    allow_writes: bool,
+) -> None:
+    """Fill only missing immutable parser segments without deriving corpus state."""
+
+    if not all(
+        hasattr(inputs, name)
+        for name in ("mode", "verified_cache", "cache_root")
+    ):
+        raise TypeError("parsed-asset prefill inputs are incomplete")
+    if inputs.mode != PRODUCTION_MODE:
+        raise CorpusMaterializationError(
+            "parsed-asset prefill is production-only"
+        )
+    if not isinstance(parsed_asset_cache_root, Path):
+        raise TypeError("parsed-asset prefill root must be pathlib.Path")
+    if not isinstance(
+        parsed_asset_recovery_context, ParsedAssetRecoveryContextV1
+    ):
+        raise TypeError("parsed-asset prefill context must be typed")
+    if type(allow_writes) is not bool:
+        raise TypeError("parsed-asset prefill allow_writes must be an exact boolean")
+    assert inputs.verified_cache is not None
+    assert inputs.cache_root is not None
+    assets_by_source = {
+        source: tuple(
+            asset
+            for asset in inputs.verified_cache.assets
+            if asset.expected.source_family == source
+        )
+        for source in SOURCE_FAMILIES
+    }
+    for source in SOURCE_FAMILIES:
+        next_event_ordinal = 0
+        for asset_order_ordinal, verified_asset in enumerate(
+            assets_by_source[source]
+        ):
+            binding = resolve_production_parser_binding_v3(verified_asset)
+            lexical_asset = inputs.cache_root.joinpath(
+                *PurePosixPath(verified_asset.expected.relative_path).parts
+            )
+            assert_no_symlink_ancestors(lexical_asset)
+            receipt = inspect_parsed_asset_segment_receipt_v1(
+                parsed_asset_cache_root,
+                context=parsed_asset_recovery_context,
+                verified_asset=verified_asset,
+                parser_binding=binding,
+                asset_order_ordinal=asset_order_ordinal,
+                expected_first_event_ordinal=next_event_ordinal,
+                allow_receiptless_orphan=allow_writes,
+            )
+            if receipt is None:
+                if not allow_writes:
+                    raise CorpusMaterializationError(
+                        "read-only parsed-asset cache is incomplete"
+                    )
+                receipt = write_parsed_asset_segment_v1(
+                    parsed_asset_cache_root,
+                    context=parsed_asset_recovery_context,
+                    verified_asset=verified_asset,
+                    parser_binding=binding,
+                    asset_order_ordinal=asset_order_ordinal,
+                    first_event_ordinal=next_event_ordinal,
+                    events=iter_source_asset_events_v3(
+                        verified_asset,
+                        inputs.cache_root,
+                        binding=binding,
+                    ),
+                ).receipt
+            next_event_ordinal = receipt.next_event_ordinal
+
+
 class _Materializer:
     def __init__(
         self,
@@ -2047,6 +2149,9 @@ class _Materializer:
         work_root: Path,
         global_execution_provenance: Mapping[str, object] | None,
         runtime_build_receipt: Mapping[str, object] | None,
+        parsed_asset_cache_root: Path | None = None,
+        parsed_asset_recovery_context: ParsedAssetRecoveryContextV1 | None = None,
+        parsed_asset_cache_read_only: bool = False,
     ) -> None:
         if inputs.mode != plan.mode:
             raise ValueError("input and plan modes differ")
@@ -2083,11 +2188,38 @@ class _Materializer:
         else:
             self.global_execution_provenance = None
             self.runtime_build_receipt = None
+        if (parsed_asset_cache_root is None) != (
+            parsed_asset_recovery_context is None
+        ):
+            raise CorpusMaterializationError(
+                "parsed-asset recovery root and context must be supplied together"
+            )
+        if parsed_asset_recovery_context is not None and not isinstance(
+            parsed_asset_recovery_context, ParsedAssetRecoveryContextV1
+        ):
+            raise TypeError("parsed-asset recovery context must be typed")
+        if parsed_asset_cache_root is not None and inputs.mode != PRODUCTION_MODE:
+            raise CorpusMaterializationError(
+                "fixture materialization may not carry parsed-asset recovery state"
+            )
+        if type(parsed_asset_cache_read_only) is not bool:
+            raise TypeError("parsed-asset cache read-only flag must be an exact boolean")
+        if parsed_asset_cache_read_only and parsed_asset_cache_root is None:
+            raise CorpusMaterializationError(
+                "parsed-asset cache read-only mode requires a cache assignment"
+            )
         self.inputs = inputs
         self.plan = plan
         self.classifier = language_classifier
         self.output_root = Path(output_root)
         self.work_root = Path(work_root)
+        self.parsed_asset_cache_root = (
+            None
+            if parsed_asset_cache_root is None
+            else Path(parsed_asset_cache_root)
+        )
+        self.parsed_asset_recovery_context = parsed_asset_recovery_context
+        self.parsed_asset_cache_read_only = parsed_asset_cache_read_only
         self.streams = {stream.source_family: stream for stream in inputs.streams}
         self._production_source_db: sqlite3.Connection | None = None
         self.source_parse_receipts: dict[str, dict[str, object]] = {
@@ -2172,9 +2304,152 @@ class _Materializer:
             raise CorpusMaterializationError(
                 "output and work roots must be disjoint"
             )
+        if self.parsed_asset_cache_root is not None:
+            assert self.parsed_asset_recovery_context is not None
+            cache_root = assert_no_symlink_ancestors(
+                self.parsed_asset_cache_root
+            )
+            if not cache_root.exists():
+                raise CorpusMaterializationError(
+                    "parsed-asset cache root must already exist"
+                )
+            cache_resolved = cache_root.resolve(strict=True)
+            if not cache_resolved.is_dir():
+                raise CorpusMaterializationError(
+                    "parsed-asset cache root must be a directory"
+                )
+            assert self.inputs.cache_root is not None
+            source_cache_resolved = assert_no_symlink_ancestors(
+                self.inputs.cache_root
+            ).resolve(strict=True)
+            for other, name in (
+                (output_resolved, "output root"),
+                (work_resolved, "work root"),
+                (source_cache_resolved, "source cache root"),
+            ):
+                if (
+                    cache_resolved == other
+                    or cache_resolved in other.parents
+                    or other in cache_resolved.parents
+                ):
+                    raise CorpusMaterializationError(
+                        f"parsed-asset cache root overlaps {name}"
+                    )
         self.output_root.mkdir(parents=True)
         self.work_root.mkdir(parents=True)
         (self.output_root / "_INCOMPLETE").write_bytes(b"P-A incomplete\n")
+
+    def _apply_production_source_event(
+        self,
+        *,
+        connection: sqlite3.Connection,
+        ledger: _DurableSourceParseLedgerV3,
+        state: _ProductionSourceApplyStateV1,
+        source: str,
+        verified_asset: VerifiedLocalCacheAssetV3,
+        binding: SourceParserBindingV3,
+        asset_order_ordinal: int,
+        recovered: RecoveredSourceParseEventV1,
+    ) -> None:
+        """Apply one fresh or recovered parser event through the same path."""
+
+        event = recovered.event
+        if (
+            recovered.event_ordinal != state.event_ordinal
+            or recovered.asset_order_ordinal != asset_order_ordinal
+            or recovered.source_asset_identity_sha256
+            != verified_asset.expected.asset_identity_sha256
+            or recovered.source_asset_sha256 != verified_asset.observed_sha256
+            or recovered.parser_binding_sha256 != binding.binding_sha256
+            or event.source_family != source
+        ):
+            raise CorpusMaterializationError(
+                "parsed-asset event projection differs from the active source asset"
+            )
+        payload = canonical_json_bytes(recovered.ledger_payload) + b"\n"
+        ledger.write(
+            payload,
+            event_ordinal=state.event_ordinal,
+            asset_order_ordinal=recovered.asset_order_ordinal,
+            source_record_ordinal=event.source_record_ordinal,
+        )
+        state.ledger_digest.update(payload)
+        state.event_ordinal += 1
+        state.disposition_counts[event.disposition] += 1
+        if event.disposition != RETAIN:
+            ledger.commit_event(state.event_ordinal - 1)
+            return
+
+        assert event.record is not None
+        parsed = event.record
+        canonical = parsed.canonical_record
+        if (
+            parsed.parser_binding_sha256 != binding.binding_sha256
+            or canonical.asset.asset_identity_sha256
+            != recovered.source_asset_identity_sha256
+        ):
+            raise CorpusMaterializationError(
+                "production parser emitted a foreign binding or source asset"
+            )
+        insert = recovered.sqlite_insert_fields
+        assert insert is not None
+        repeat_classification, repeat_evidence = _insert_parsed_record_v3(
+            connection,
+            source=cast(str, insert["source"]),
+            stable_source_record_id=cast(
+                str, insert["stable_source_record_id"]
+            ),
+            source_asset_identity_sha256=cast(
+                str, insert["source_asset_identity_sha256"]
+            ),
+            asset_order_ordinal=cast(int, insert["asset_order_ordinal"]),
+            asset_record_ordinal=cast(int, insert["asset_record_ordinal"]),
+            text_bytes=cast(bytes, insert["text_bytes"]),
+            retained_bytes=cast(int, insert["retained_bytes"]),
+            int_score=cast(int | None, insert["int_score"]),
+        )
+        if repeat_classification != "INSERTED":
+            state.duplicate_count += 1
+        if repeat_classification == "STACKEDU_SCORE_ONLY_VARIANCE":
+            assert repeat_evidence is not None
+            evidence_payload = canonical_json_bytes(repeat_evidence)
+            state.score_variance_digest.update(
+                len(evidence_payload).to_bytes(8, "big")
+            )
+            state.score_variance_digest.update(evidence_payload)
+            state.score_variance_count += 1
+        if state.event_ordinal % 4096 == 0:
+            connection.commit()
+            connection.execute("BEGIN IMMEDIATE")
+        ledger.commit_event(state.event_ordinal - 1)
+
+    def _prefill_production_parsed_asset_cache(self) -> None:
+        """Complete the immutable parse cache before rebuilding derived state.
+
+        A Colab backend can disappear before one production replay finishes.
+        Scanning canonical commit receipts is cheap, whereas replaying every
+        cached event into a fresh SQLite spool before reaching the first miss
+        makes retry cost grow with the cached prefix.  This pass therefore
+        skips completed assets using their validated receipts and parses only
+        misses.  The later materialization pass still validates every segment
+        in full before consuming its first event.
+        """
+
+        cache_root = getattr(self, "parsed_asset_cache_root", None)
+        recovery_context = getattr(
+            self, "parsed_asset_recovery_context", None
+        )
+        if cache_root is None:
+            return
+        assert recovery_context is not None
+        prefill_production_parsed_asset_cache_v1(
+            inputs=self.inputs,
+            parsed_asset_cache_root=cache_root,
+            parsed_asset_recovery_context=recovery_context,
+            allow_writes=not getattr(
+                self, "parsed_asset_cache_read_only", False
+            ),
+        )
 
     def _prepare_production_sources(self) -> None:
         """Re-read and parse the verified subset into a disk-backed canonical spool."""
@@ -2184,6 +2459,7 @@ class _Materializer:
         assert self.inputs.verified_cache is not None
         assert self.inputs.cache_root is not None
         assert self.inputs.source_cache_download_receipt is not None
+        self._prefill_production_parsed_asset_cache()
         parse_root = self.output_root / "source-parse"
         parse_root.mkdir()
         checkpoint_work_root = self.work_root / "source-parse-checkpoints"
@@ -2231,14 +2507,13 @@ class _Materializer:
                     PRODUCTION_PARSER_COMPOSITE_IDENTITIES_V3[source]
                 )
                 ledger_path = parse_root / f"{source}.jsonl"
-                ledger_digest = hashlib.sha256()
-                disposition_counts = Counter()
-                duplicate_count = 0
-                score_variance_count = 0
-                score_variance_digest = hashlib.sha256(
-                    _STABLE_ID_SCORE_VARIANCE_DIGEST_PREFIX_V3
+                state = _ProductionSourceApplyStateV1(
+                    ledger_digest=hashlib.sha256(),
+                    disposition_counts=Counter(),
+                    score_variance_digest=hashlib.sha256(
+                        _STABLE_ID_SCORE_VARIANCE_DIGEST_PREFIX_V3
+                    ),
                 )
-                event_ordinal = 0
                 with _DurableSourceParseLedgerV3(
                     final_path=ledger_path,
                     local_root=checkpoint_work_root,
@@ -2256,92 +2531,83 @@ class _Materializer:
                             ).parts
                         )
                         assert_no_symlink_ancestors(lexical_asset)
-                        for event in iter_source_asset_events_v3(
-                            verified_asset,
-                            self.inputs.cache_root,
-                            binding=binding,
-                        ):
-                            payload = canonical_json_bytes(
-                                {
-                                    "asset_order_ordinal": asset_order_ordinal,
-                                    "event_ordinal": event_ordinal,
-                                    "event_sha256": event.event_sha256,
-                                    "source_asset_identity_sha256": (
+                        cache_root = getattr(
+                            self, "parsed_asset_cache_root", None
+                        )
+                        recovery_context = getattr(
+                            self, "parsed_asset_recovery_context", None
+                        )
+                        if cache_root is None:
+                            events = iter_source_asset_events_v3(
+                                verified_asset,
+                                self.inputs.cache_root,
+                                binding=binding,
+                            )
+                            for event in events:
+                                recovered = RecoveredSourceParseEventV1(
+                                    asset_order_ordinal=asset_order_ordinal,
+                                    event_ordinal=state.event_ordinal,
+                                    source_asset_identity_sha256=(
                                         verified_asset.expected.asset_identity_sha256
                                     ),
-                                    "source_family": source,
-                                    "source_record_ordinal": (
-                                        event.source_record_ordinal
+                                    source_asset_sha256=(
+                                        verified_asset.observed_sha256
                                     ),
-                                    "disposition": event.disposition,
-                                }
-                            ) + b"\n"
-                            ledger.write(
-                                payload,
-                                event_ordinal=event_ordinal,
-                                asset_order_ordinal=asset_order_ordinal,
-                                source_record_ordinal=event.source_record_ordinal,
-                            )
-                            ledger_digest.update(payload)
-                            event_ordinal += 1
-                            disposition_counts[event.disposition] += 1
-                            if event.disposition != RETAIN:
-                                ledger.commit_event(event_ordinal - 1)
-                                continue
-                            assert event.record is not None
-                            parsed = event.record
-                            raw = parsed.raw_document
-                            canonical = parsed.canonical_record
-                            if parsed.parser_binding_sha256 != binding.binding_sha256:
-                                raise CorpusMaterializationError(
-                                    "production parser emitted a foreign binding"
+                                    parser_binding_sha256=binding.binding_sha256,
+                                    event=event,
                                 )
-                            if isinstance(raw.text, bytes):
-                                text_bytes = raw.text
-                            else:
-                                text_bytes = raw.text.encode("utf-8", errors="strict")
-                            repeat_classification, repeat_evidence = (
-                                _insert_parsed_record_v3(
-                                    connection,
+                                self._apply_production_source_event(
+                                    connection=connection,
+                                    ledger=ledger,
+                                    state=state,
                                     source=source,
-                                    stable_source_record_id=(
-                                        raw.stable_source_record_id
-                                    ),
-                                    source_asset_identity_sha256=(
-                                        canonical.asset.asset_identity_sha256
-                                    ),
+                                    verified_asset=verified_asset,
+                                    binding=binding,
                                     asset_order_ordinal=asset_order_ordinal,
-                                    asset_record_ordinal=(
-                                        event.source_record_ordinal
+                                    recovered=recovered,
+                                )
+                        else:
+                            assert recovery_context is not None
+                            first_event_ordinal = state.event_ordinal
+                            cached_receipt = (
+                                inspect_parsed_asset_segment_receipt_v1(
+                                    cache_root,
+                                    context=recovery_context,
+                                    verified_asset=verified_asset,
+                                    parser_binding=binding,
+                                    asset_order_ordinal=asset_order_ordinal,
+                                    expected_first_event_ordinal=(
+                                        first_event_ordinal
                                     ),
-                                    text_bytes=text_bytes,
-                                    retained_bytes=(
-                                        canonical.retained_byte_count
-                                    ),
-                                    int_score=canonical.int_score,
                                 )
                             )
-                            if repeat_classification != "INSERTED":
-                                duplicate_count += 1
-                            if repeat_classification == (
-                                "STACKEDU_SCORE_ONLY_VARIANCE"
+                            if cached_receipt is None:
+                                raise CorpusMaterializationError(
+                                    "parsed-asset cache prefill left an asset incomplete"
+                                )
+                            for recovered in iter_parsed_asset_segment_v1(
+                                cache_root,
+                                context=recovery_context,
+                                verified_asset=verified_asset,
+                                parser_binding=binding,
+                                asset_order_ordinal=asset_order_ordinal,
+                                expected_first_event_ordinal=(
+                                    first_event_ordinal
+                                ),
                             ):
-                                assert repeat_evidence is not None
-                                evidence_payload = canonical_json_bytes(
-                                    repeat_evidence
+                                self._apply_production_source_event(
+                                    connection=connection,
+                                    ledger=ledger,
+                                    state=state,
+                                    source=source,
+                                    verified_asset=verified_asset,
+                                    binding=binding,
+                                    asset_order_ordinal=asset_order_ordinal,
+                                    recovered=recovered,
                                 )
-                                score_variance_digest.update(
-                                    len(evidence_payload).to_bytes(8, "big")
-                                )
-                                score_variance_digest.update(evidence_payload)
-                                score_variance_count += 1
-                            if event_ordinal % 4096 == 0:
-                                connection.commit()
-                                connection.execute("BEGIN IMMEDIATE")
-                            ledger.commit_event(event_ordinal - 1)
                         ledger.seal_asset_boundary()
                     ledger_sha256 = ledger.finish()
-                if ledger_sha256 != ledger_digest.hexdigest():
+                if ledger_sha256 != state.ledger_digest.hexdigest():
                     raise CorpusMaterializationError(
                         "source-parse checkpoint ledger differs from its stream digest"
                     )
@@ -2353,27 +2619,31 @@ class _Materializer:
                     ),
                 )
                 self.source_parse_drop_counts[source] = {
-                    "empty_text": disposition_counts[DROP_EMPTY_TEXT],
-                    "invalid_utf8": disposition_counts[DROP_INVALID_UTF8],
-                    "quality_lt3": disposition_counts[DROP_QUALITY_LT3],
+                    "empty_text": state.disposition_counts[DROP_EMPTY_TEXT],
+                    "invalid_utf8": state.disposition_counts[DROP_INVALID_UTF8],
+                    "quality_lt3": state.disposition_counts[DROP_QUALITY_LT3],
                 }
-                self.invalid_utf8_by_source[source] = disposition_counts[
+                self.invalid_utf8_by_source[source] = state.disposition_counts[
                     DROP_INVALID_UTF8
                 ]
                 self.source_parse_receipts[source] = {
                     "asset_order_identity_sha256": asset_order_identity,
-                    "empty_text_drop_count": disposition_counts[DROP_EMPTY_TEXT],
-                    "invalid_utf8_drop_count": disposition_counts[DROP_INVALID_UTF8],
-                    "parse_event_count": event_ordinal,
+                    "empty_text_drop_count": state.disposition_counts[DROP_EMPTY_TEXT],
+                    "invalid_utf8_drop_count": state.disposition_counts[
+                        DROP_INVALID_UTF8
+                    ],
+                    "parse_event_count": state.event_ordinal,
                     "parse_event_ledger_path": f"source-parse/{source}.jsonl",
-                    "parse_event_ledger_sha256": ledger_digest.hexdigest(),
+                    "parse_event_ledger_sha256": (
+                        state.ledger_digest.hexdigest()
+                    ),
                     "parser_binding_sha256": parser_composite_identity,
-                    "quality_drop_count": disposition_counts[DROP_QUALITY_LT3],
+                    "quality_drop_count": state.disposition_counts[DROP_QUALITY_LT3],
                     "source_family": source,
-                    "stable_id_duplicate_count": duplicate_count,
-                    "stable_id_score_variance_count": score_variance_count,
+                    "stable_id_duplicate_count": state.duplicate_count,
+                    "stable_id_score_variance_count": state.score_variance_count,
                     "stable_id_score_variance_digest_sha256": (
-                        score_variance_digest.hexdigest()
+                        state.score_variance_digest.hexdigest()
                     ),
                 }
             connection.commit()
@@ -4014,6 +4284,9 @@ def materialize_corpus_pa_v3(
     work_root: Path,
     global_execution_provenance: Mapping[str, object] | None = None,
     runtime_build_receipt: Mapping[str, object] | None = None,
+    parsed_asset_cache_root: Path | None = None,
+    parsed_asset_recovery_context: ParsedAssetRecoveryContextV1 | None = None,
+    parsed_asset_cache_read_only: bool = False,
 ) -> MaterializationResultV3:
     """Materialize P-A offline; never freeze P-B or mint D1-D6/G-TOK gates."""
 
@@ -4029,6 +4302,9 @@ def materialize_corpus_pa_v3(
         work_root=Path(work_root),
         global_execution_provenance=global_execution_provenance,
         runtime_build_receipt=runtime_build_receipt,
+        parsed_asset_cache_root=parsed_asset_cache_root,
+        parsed_asset_recovery_context=parsed_asset_recovery_context,
+        parsed_asset_cache_read_only=parsed_asset_cache_read_only,
     ).run()
 
 
@@ -4425,6 +4701,7 @@ __all__ = [
     "PRODUCTION_FULL_POOL_TARGETS",
     "PRODUCTION_MODE",
     "materialize_corpus_pa_v3",
+    "prefill_production_parsed_asset_cache_v1",
     "injected_source_stream_from_parsed_records_v3",
     "iter_materialized_tokenizer_fit_texts_v3",
     "run_production_materialization_worker_v3",

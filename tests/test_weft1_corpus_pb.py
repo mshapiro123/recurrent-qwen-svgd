@@ -490,8 +490,10 @@ def _parent_replay_payload(pa: pb.PAInspectionV4, second_root: Path) -> dict[str
     second_root.mkdir(exist_ok=True)
     core = {
         "first_child_receipt_sha256": "1" * 64,
+        "first_parsed_asset_cache_context_sha256": "5" * 64,
         "input_identity_sha256": "2" * 64,
         "second_child_receipt_sha256": "3" * 64,
+        "second_parsed_asset_cache_context_sha256": "6" * 64,
         "worker_compatibility_sha256": "4" * 64,
     }
     typed = pb.ParentReplayVerificationV4(
@@ -511,6 +513,15 @@ def _parent_replay_payload(pa: pb.PAInspectionV4, second_root: Path) -> dict[str
         first_output_root=str(pa.root),
         second_output_root=str(second_root),
         durable_output_parent=str(pa.root.parent),
+        durable_parsed_asset_cache_parent=str(
+            pa.root.parent / "parsed-asset-cache"
+        ),
+        first_parsed_asset_cache_context_sha256=core[
+            "first_parsed_asset_cache_context_sha256"
+        ],
+        second_parsed_asset_cache_context_sha256=core[
+            "second_parsed_asset_cache_context_sha256"
+        ],
         local_work_parent=str(pa.root.parent / "work"),
         evidence_sha256=execution_authority_v4_bound_sha256(
             pb.PARENT_EVIDENCE_SCHEMA_V4, core

@@ -611,6 +611,50 @@ def test_production_offline_environment_routes_all_temp_to_local_work(
     assert "PYTHONUSERBASE" not in environment
 
 
+def test_production_offline_environment_binds_parsed_asset_recovery_as_one_set(
+    tmp_path: Path,
+) -> None:
+    local_work = tmp_path / "local-work"
+    local_work.mkdir()
+    parsed_cache = tmp_path / "parsed-cache"
+    parsed_cache.mkdir()
+    common = {
+        "guard_directory": tmp_path,
+        "guard_sha256": "1" * 64,
+        "run_id": "production-v4-replay-a",
+        "output_root": tmp_path / "durable-output",
+        "local_work_parent": local_work,
+        "input_identity_sha256": "2" * 64,
+        "worker_compatibility_sha256": "3" * 64,
+        "worker_import_root": tmp_path,
+        "extra_environment": None,
+    }
+    environment = replay._offline_environment(
+        **common,
+        parsed_asset_cache_root=parsed_cache,
+        parsed_asset_code_identity_sha256="4" * 64,
+        parsed_asset_durable_marker_sha256="5" * 64,
+        parsed_asset_input_identity_sha256="6" * 64,
+    )
+    assert environment["WEFT1_REPLAY_PARSED_ASSET_CACHE_ROOT"] == str(
+        parsed_cache.resolve(strict=True)
+    )
+    assert environment["WEFT1_REPLAY_PARSED_ASSET_CODE_IDENTITY_SHA256"] == (
+        "4" * 64
+    )
+    assert environment["WEFT1_REPLAY_PARSED_ASSET_DURABLE_MARKER_SHA256"] == (
+        "5" * 64
+    )
+    assert environment["WEFT1_REPLAY_PARSED_ASSET_INPUT_IDENTITY_SHA256"] == (
+        "6" * 64
+    )
+    with pytest.raises(ParentReplayError, match="one complete set"):
+        replay._offline_environment(
+            **common,
+            parsed_asset_cache_root=parsed_cache,
+        )
+
+
 def test_isolated_worker_ignores_hostile_pythonpath_and_usercustomize(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

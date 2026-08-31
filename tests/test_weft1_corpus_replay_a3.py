@@ -36,6 +36,19 @@ import shutil
 import socket
 import sys
 
+raw_parsed_cache_root = os.environ.get("WEFT1_REPLAY_PARSED_ASSET_CACHE_ROOT")
+if "--cache-fill-only" in sys.argv:
+    if raw_parsed_cache_root is None:
+        raise SystemExit("cache-fill worker lacks its parsed cache assignment")
+    parsed_cache_root = Path(raw_parsed_cache_root)
+    (parsed_cache_root / "test-fill-complete").write_bytes(b"complete\n")
+    raise SystemExit(0)
+if raw_parsed_cache_root is not None:
+    parsed_cache_root = Path(raw_parsed_cache_root)
+    cache_parent = parsed_cache_root.parent.parent
+    if len(tuple(cache_parent.glob("*/*/test-fill-complete"))) != 2:
+        raise SystemExit("both cache-fill lanes must precede materialization")
+
 template = Path(sys.argv[1]).resolve(strict=True)
 root = Path(os.environ["WEFT1_REPLAY_OUTPUT_ROOT"])
 receipt_path = Path(os.environ["WEFT1_REPLAY_RECEIPT_PATH"])
@@ -103,6 +116,85 @@ receipt = {
 }
 receipt_path.write_bytes(canonical(receipt))
 '''
+
+
+def test_v4_cli_default_watchdog_exceeds_observed_replay_projection() -> None:
+    arguments = cli_v4.build_parser().parse_args(
+        [
+            "full-pa-v4",
+            "--enumeration-receipt",
+            "enumeration.json",
+            "--cache-download-receipt",
+            "download.json",
+            "--source-cache-manifest",
+            "manifest.json",
+            "--source-cache",
+            "source-cache",
+            "--fasttext-model",
+            "lid.176.bin",
+            "--runtime-build-receipt",
+            "runtime.json",
+            "--durable-mount-root",
+            "drive",
+            "--durable-storage-marker",
+            "marker.json",
+            "--durable-output-parent",
+            "output",
+            "--durable-parsed-asset-cache-parent",
+            "parsed-cache",
+            "--local-work-parent",
+            "work",
+            "--receipt-out",
+            "output/receipt.json",
+        ]
+    )
+    assert (
+        arguments.timeout_seconds
+        == replay_v4.V4_DEFAULT_WORKER_TIMEOUT_SECONDS
+        == 14 * 24 * 60 * 60
+    )
+
+
+def test_v4_parent_fills_both_lanes_before_either_materialization() -> None:
+    assert replay_v4.V4_PARENT_LANE_OPERATION_ORDER == (
+        ("cache_fill", 0),
+        ("cache_fill", 1),
+        ("materialize", 0),
+        ("materialize", 1),
+    )
+
+
+@pytest.mark.parametrize(
+    "timeout_seconds",
+    [
+        True,
+        0.0,
+        float("inf"),
+        float("nan"),
+        replay_v4.V4_DEFAULT_WORKER_TIMEOUT_SECONDS + 1,
+    ],
+)
+def test_v4_parent_rejects_invalid_worker_timeout_before_io(
+    tmp_path: Path, timeout_seconds: object
+) -> None:
+    with pytest.raises(replay_v3.ParentReplayError, match="14-day per-worker"):
+        replay_v4.verify_production_materialization_replays_v4(
+            python_executable=Path(sys.executable),
+            enumeration_receipt_path=tmp_path / "enumeration.json",
+            cache_download_receipt_path=tmp_path / "download.json",
+            source_manifest_path=tmp_path / "manifest.json",
+            cache_root=tmp_path / "source-cache",
+            fasttext_model_path=tmp_path / "lid.176.bin",
+            runtime_build_receipt_path=tmp_path / "runtime.json",
+            durable_mount_root=tmp_path / "drive",
+            durable_storage_marker_path=tmp_path / "marker.json",
+            durable_output_parent=tmp_path / "output",
+            durable_parsed_asset_cache_parent=tmp_path / "parsed-cache",
+            local_work_parent=tmp_path / "work",
+            first_output_root=tmp_path / "output" / "a",
+            second_output_root=tmp_path / "output" / "b",
+            timeout_seconds=timeout_seconds,  # type: ignore[arg-type]
+        )
 
 
 def _rewrite_fixture_as_verified_v3_core(
@@ -295,7 +387,12 @@ def test_full_pa_v4_cli_writes_one_canonical_parent_receipt(
 ) -> None:
     local = tmp_path / "local"
     local.mkdir()
-    durable = tmp_path / "durable" / "run"
+    durable_root = tmp_path / "durable"
+    durable_root.mkdir()
+    durable = durable_root / "run"
+    parsed_asset_cache_parent = durable_root / "parsed-asset-cache"
+    source_cache = tmp_path / "cache"
+    source_cache.mkdir()
     receipt_path = durable / "parent-replay-v4.json"
     expected = replay_v4.ParentReplayVerificationV4(
         status="PASS",
@@ -314,6 +411,9 @@ def test_full_pa_v4_cli_writes_one_canonical_parent_receipt(
         first_output_root=str(durable / "production-v4-replay-a"),
         second_output_root=str(durable / "production-v4-replay-b"),
         durable_output_parent=str(durable),
+        durable_parsed_asset_cache_parent=str(parsed_asset_cache_parent),
+        first_parsed_asset_cache_context_sha256="6" * 64,
+        second_parsed_asset_cache_context_sha256="7" * 64,
         local_work_parent=str(local),
         evidence_sha256="5" * 64,
     )
@@ -336,12 +436,13 @@ def test_full_pa_v4_cli_writes_one_canonical_parent_receipt(
         enumeration_receipt=tmp_path / "enumeration.json",
         cache_download_receipt=tmp_path / "download.json",
         source_cache_manifest=tmp_path / "manifest.json",
-        source_cache=tmp_path / "cache",
+        source_cache=source_cache,
         fasttext_model=tmp_path / "lid.176.bin",
         runtime_build_receipt=tmp_path / "runtime.json",
         durable_mount_root=tmp_path / "drive",
         durable_storage_marker=tmp_path / "marker.json",
         durable_output_parent=durable,
+        durable_parsed_asset_cache_parent=parsed_asset_cache_parent,
         local_work_parent=local,
         receipt_out=receipt_path,
         timeout_seconds=123.0,
@@ -349,6 +450,9 @@ def test_full_pa_v4_cli_writes_one_canonical_parent_receipt(
     payload = cli_v4._run(arguments)
     assert captured["first_output_root"] == durable / "production-v4-replay-a"
     assert captured["second_output_root"] == durable / "production-v4-replay-b"
+    assert captured["durable_parsed_asset_cache_parent"] == (
+        parsed_asset_cache_parent
+    )
     assert captured["timeout_seconds"] == 123.0
     assert payload["receipt_sha256"] == expected.receipt_sha256
     assert receipt_path.read_bytes() == canonical_json_bytes(payload) + b"\n"

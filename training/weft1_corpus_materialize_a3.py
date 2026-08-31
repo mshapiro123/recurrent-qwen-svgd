@@ -60,6 +60,11 @@ from training.weft1_corpus_materialize_a2 import (
     MaterializationPlanV3,
     MaterializationResultV3,
     materialize_corpus_pa_v3,
+    prefill_production_parsed_asset_cache_v1,
+)
+from training.weft1_corpus_parsed_asset_cache_v1 import (
+    ParsedAssetRecoveryContextV1,
+    parsed_asset_runtime_identity_v1,
 )
 from training import weft1_corpus_pa as production_io
 from training.weft1_corpus_sources_a2 import VerifiedLocalCacheAssetV3
@@ -96,6 +101,10 @@ FULL_SHARD_MANIFEST_SCHEMA_V4 = "weft1_corpus_full_shard_manifest_v4"
 SCREEN_SUBMANIFEST_SCHEMA_V4 = "weft1_corpus_screen_submanifest_v4"
 D6_PHYSICAL_EVIDENCE_SCHEMA_V4 = "weft1_corpus_d6_physical_evidence_v4"
 CONSUMER_ORDER_SCHEMA_V4 = "weft1_corpus_consumer_order_receipt_v4"
+CONFIRMATION_CONSUMER_ORDER_SCHEMA_V4 = (
+    "weft1_gtok_confirmation_consumer_order_v4"
+)
+CONSUMER_ORDER_KEY_DOMAIN_V4 = "WEFT-1/gtok-training-order/raw-content-id/v4"
 TOKENIZER_FIT_INPUT_SCHEMA_V4 = "weft1_gtok_tokenizer_fit_input_v4"
 V4_READINESS = "AUTHORITATIVE_V4_INPUTS_D1_READY_NO_GATE_MINT"
 
@@ -128,6 +137,67 @@ GTOK_DATA_ORDER_SEED_BY_TRAINING_SEED_V4 = dict(
 
 class CorpusMaterializationV4Error(RuntimeError):
     """A V4 transport or forward-finalization invariant failed."""
+
+
+def _validate_confirmation_seed_pair_v4(
+    confirmation_run_seed: int,
+    data_order_seed: int,
+) -> None:
+    for name, value in (
+        ("confirmation_run_seed", confirmation_run_seed),
+        ("data_order_seed", data_order_seed),
+    ):
+        if type(value) is not int or not 0 <= value < 2**64:
+            raise ValueError(f"{name} must be an unsigned 64-bit exact integer")
+    expected_data_seed = derive_module_seed(
+        A2_CAMPAIGN_ROOT_SEED,
+        f"gtok.data.shared.{confirmation_run_seed}",
+    )
+    if data_order_seed != expected_data_seed:
+        raise ValueError("confirmation data-order seed left the A2 run-harness tree")
+
+
+@dataclass(frozen=True)
+class ConfirmationConsumerOrderV4:
+    """Read-only order proof over the frozen T multiset for one fresh run root."""
+
+    confirmation_run_seed: int
+    data_order_seed: int
+    physical_d6_evidence_sha256: str
+    document_multiset_sha256: str
+    ordered_raw_content_ids_sha256: str
+    framed_payload_sha256: str
+    document_count: int
+    retained_text_bytes: int
+    order_key_domain: str = CONSUMER_ORDER_KEY_DOMAIN_V4
+    schema: str = CONFIRMATION_CONSUMER_ORDER_SCHEMA_V4
+
+    def __post_init__(self) -> None:
+        _validate_confirmation_seed_pair_v4(
+            self.confirmation_run_seed,
+            self.data_order_seed,
+        )
+        for name in (
+            "physical_d6_evidence_sha256",
+            "document_multiset_sha256",
+            "ordered_raw_content_ids_sha256",
+            "framed_payload_sha256",
+        ):
+            value = getattr(self, name)
+            if not isinstance(value, str) or re.fullmatch(r"[0-9a-f]{64}", value) is None:
+                raise ValueError(f"{name} must be a lowercase SHA-256")
+        if type(self.document_count) is not int or self.document_count < 1:
+            raise ValueError("confirmation order requires at least one frozen T document")
+        if type(self.retained_text_bytes) is not int or self.retained_text_bytes < 1:
+            raise ValueError("confirmation order requires positive frozen T bytes")
+        if self.order_key_domain != CONSUMER_ORDER_KEY_DOMAIN_V4:
+            raise ValueError("confirmation order changed the frozen V4 order-key domain")
+        if self.schema != CONFIRMATION_CONSUMER_ORDER_SCHEMA_V4:
+            raise ValueError("confirmation order schema drifted")
+
+    @property
+    def receipt_sha256(self) -> str:
+        return execution_authority_v4_bound_sha256(self.schema, self)
 
 
 T = TypeVar("T")
@@ -385,6 +455,52 @@ def _verify_cache(
     return VerifiedCacheAdapterV4(typed_receipt=typed, assets=tuple(parser_assets))
 
 
+def _load_cache_adapter_for_fill_v4(
+    manifest: SourceCacheManifestV4,
+    cache_root: Path,
+) -> VerifiedCacheAdapterV4:
+    """Bind prior verification receipts; each MISS is rehashed by its parser.
+
+    A resumable fill must not rehash the entire multi-day source corpus before
+    it can reach the next missing asset.  Existing parsed segments already bind
+    the exact asset SHA.  For a MISS, ``iter_source_asset_events_v3`` hashes the
+    current source file through the same handle it parses, so no unverified byte
+    can enter a new segment.  Final materialization still uses ``_verify_cache``
+    and rehashes every source asset before consuming the completed cache.
+    """
+
+    assert_no_symlink_ancestors(cache_root)
+    root = cache_root.resolve(strict=True)
+    if not root.is_dir():
+        raise CorpusMaterializationV4Error("V4 cache root is not a real directory")
+    observations: list[tuple[str, int, str]] = []
+    parser_assets: list[VerifiedLocalCacheAssetV3] = []
+    for asset in manifest.assets:
+        path = _safe_cache_path(root, asset.relative_path)
+        if path.stat().st_size != asset.bytes:
+            raise CorpusMaterializationV4Error(
+                "V4 cache-fill asset size differs from its manifest"
+            )
+        observations.append((asset.relative_path, asset.bytes, asset.sha256))
+        parser_assets.append(
+            VerifiedLocalCacheAssetV3(
+                expected=asset,
+                observed_bytes=asset.bytes,
+                observed_sha256=asset.sha256,
+            )
+        )
+    typed = VerifiedLocalCacheV4(
+        execution_binding=manifest.execution_binding,
+        source_manifest=manifest,
+        cache_root_label=cache_root.name or ".",
+        observations=tuple(observations),
+    )
+    return VerifiedCacheAdapterV4(
+        typed_receipt=typed,
+        assets=tuple(parser_assets),
+    )
+
+
 def _verify_transport_composition(
     enumeration: UpstreamEnumerationReceiptV4,
     download: SourceCacheDownloadReceiptV4,
@@ -537,6 +653,40 @@ def load_materialization_input_v4(
         mode=PRODUCTION_MODE,
         upstream_enumeration=enumeration,  # type: ignore[arg-type]
         verified_cache=verified,  # type: ignore[arg-type]
+        source_cache_download_receipt=download,  # type: ignore[arg-type]
+        cache_root=cache_root,
+    )
+
+
+def load_cache_fill_input_v4(
+    *,
+    enumeration_receipt_path: Path,
+    cache_download_receipt_path: Path,
+    source_manifest_path: Path,
+    cache_root: Path,
+    breakdown_root: Path,
+) -> MaterializationInputV4:
+    """Load V4 fill inputs without an O(total source bytes) prefix rehash."""
+
+    enumeration = load_upstream_enumeration_artifact_v4(enumeration_receipt_path)
+    manifest = load_source_manifest_artifact_v4(source_manifest_path)
+    download = load_cache_download_artifact_v4(cache_download_receipt_path)
+    context = load_pa_source_execution_context_v4(breakdown_root=breakdown_root)
+    if (
+        enumeration.execution_binding != context.binding
+        or tuple(family.route for family in enumeration.families) != context.routes
+        or manifest.execution_binding != context.binding
+        or download.execution_binding != context.binding
+        or download.source_manifest != manifest
+    ):
+        raise CorpusMaterializationV4Error(
+            "V4 cache-fill transport differs from checked-in A3 authority"
+        )
+    adapter = _load_cache_adapter_for_fill_v4(manifest, cache_root)
+    return MaterializationInputV4(
+        mode=PRODUCTION_MODE,
+        upstream_enumeration=enumeration,  # type: ignore[arg-type]
+        verified_cache=adapter,  # type: ignore[arg-type]
         source_cache_download_receipt=download,  # type: ignore[arg-type]
         cache_root=cache_root,
     )
@@ -1376,6 +1526,248 @@ def iter_materialized_training_texts_v4(
             connection.close()
 
 
+def _confirmation_multiset_reference_v4(
+    evidence: Mapping[str, object],
+) -> tuple[str, int, int]:
+    rows = evidence.get("consumer_order_receipts")
+    if not isinstance(rows, list) or len(rows) != len(GTOK_TRAINING_SEEDS):
+        raise CorpusMaterializationV4Error(
+            "frozen D6 evidence lacks its two governed base consumer orders"
+        )
+    projections: set[tuple[str, int, int]] = set()
+    for row in rows:
+        if not isinstance(row, Mapping) or row.get("schema") != CONSUMER_ORDER_SCHEMA_V4:
+            raise CorpusMaterializationV4Error("frozen D6 consumer order drifted")
+        multiset = row.get("document_multiset_sha256")
+        count = row.get("document_count")
+        retained = row.get("retained_text_bytes")
+        if (
+            not isinstance(multiset, str)
+            or re.fullmatch(r"[0-9a-f]{64}", multiset) is None
+            or type(count) is not int
+            or count < 1
+            or type(retained) is not int
+            or retained < 1
+        ):
+            raise CorpusMaterializationV4Error(
+                "frozen D6 consumer multiset accounting drifted"
+            )
+        projections.add((multiset, count, retained))
+    if len(projections) != 1:
+        raise CorpusMaterializationV4Error(
+            "base consumer orders disagree on the frozen T multiset"
+        )
+    return next(iter(projections))
+
+
+def _populate_confirmation_order_database_v4(
+    *,
+    root: Path,
+    database_path: Path,
+    data_order_seed: int,
+    expected_multiset_sha256: str,
+    expected_document_count: int,
+    expected_retained_text_bytes: int,
+) -> sqlite3.Connection:
+    if database_path.exists() or database_path.is_symlink():
+        raise CorpusMaterializationV4Error(
+            "confirmation-order scratch database must be fresh"
+        )
+    connection = sqlite3.connect(database_path)
+    connection.row_factory = sqlite3.Row
+    try:
+        connection.execute(
+            "CREATE TABLE ordered (order_key BLOB NOT NULL, raw_content_id TEXT "
+            "PRIMARY KEY, text BLOB NOT NULL) WITHOUT ROWID, STRICT"
+        )
+        count = 0
+        retained = 0
+        for raw_id, payload in _iter_physical_stream_records_v4(root, stream="T"):
+            order_key = hashlib.sha256(
+                b"WEFT-1/gtok-training-order/raw-content-id/v4\x00"
+                + data_order_seed.to_bytes(8, "big")
+                + raw_id.encode("ascii")
+            ).digest()
+            connection.execute(
+                "INSERT INTO ordered VALUES (?, ?, ?)",
+                (order_key, raw_id, payload),
+            )
+            count += 1
+            retained += len(payload)
+        connection.commit()
+        multiset = hashlib.sha256()
+        for row in connection.execute(
+            "SELECT raw_content_id FROM ordered ORDER BY raw_content_id"
+        ):
+            _framed_ascii_digest_update(multiset, str(row["raw_content_id"]))
+        if (
+            count != expected_document_count
+            or retained != expected_retained_text_bytes
+            or multiset.hexdigest() != expected_multiset_sha256
+        ):
+            raise CorpusMaterializationV4Error(
+                "confirmation ordering changed the frozen T multiset"
+            )
+        return connection
+    except BaseException:
+        connection.close()
+        raise
+
+
+def _confirmation_order_receipt_from_database_v4(
+    connection: sqlite3.Connection,
+    *,
+    confirmation_run_seed: int,
+    data_order_seed: int,
+    physical_d6_evidence_sha256: str,
+    document_multiset_sha256: str,
+    document_count: int,
+    retained_text_bytes: int,
+) -> ConfirmationConsumerOrderV4:
+    ordered_ids = hashlib.sha256()
+    framed_payload = hashlib.sha256()
+    observed_count = 0
+    observed_bytes = 0
+    for row in connection.execute(
+        "SELECT raw_content_id, text FROM ordered ORDER BY order_key, raw_content_id"
+    ):
+        raw_id = str(row["raw_content_id"])
+        payload = bytes(row["text"])
+        _framed_ascii_digest_update(ordered_ids, raw_id)
+        _framed_ascii_digest_update(framed_payload, raw_id)
+        framed_payload.update(len(payload).to_bytes(8, "big"))
+        framed_payload.update(payload)
+        observed_count += 1
+        observed_bytes += len(payload)
+    if observed_count != document_count or observed_bytes != retained_text_bytes:
+        raise CorpusMaterializationV4Error(
+            "confirmation order traversal changed frozen T accounting"
+        )
+    return ConfirmationConsumerOrderV4(
+        confirmation_run_seed=confirmation_run_seed,
+        data_order_seed=data_order_seed,
+        physical_d6_evidence_sha256=physical_d6_evidence_sha256,
+        document_multiset_sha256=document_multiset_sha256,
+        ordered_raw_content_ids_sha256=ordered_ids.hexdigest(),
+        framed_payload_sha256=framed_payload.hexdigest(),
+        document_count=document_count,
+        retained_text_bytes=retained_text_bytes,
+    )
+
+
+def build_materialized_confirmation_order_v4(
+    root: Path,
+    *,
+    confirmation_run_seed: int,
+    data_order_seed: int,
+    expected_physical_d6_evidence_sha256: str,
+) -> ConfirmationConsumerOrderV4:
+    """Compute a read-only fresh order proof over the immutable physical T set."""
+
+    _validate_confirmation_seed_pair_v4(confirmation_run_seed, data_order_seed)
+    resolved = assert_no_symlink_ancestors(root).resolve(strict=True)
+    evidence = assert_current_physical_d6_identity_v4(
+        resolved,
+        expected_physical_sha256=expected_physical_d6_evidence_sha256,
+    )
+    multiset, document_count, retained_text_bytes = (
+        _confirmation_multiset_reference_v4(evidence)
+    )
+    with tempfile.TemporaryDirectory(prefix="weft1-v4-confirm-order-") as raw_work:
+        connection = _populate_confirmation_order_database_v4(
+            root=resolved,
+            database_path=Path(raw_work) / "consumer.sqlite",
+            data_order_seed=data_order_seed,
+            expected_multiset_sha256=multiset,
+            expected_document_count=document_count,
+            expected_retained_text_bytes=retained_text_bytes,
+        )
+        try:
+            return _confirmation_order_receipt_from_database_v4(
+                connection,
+                confirmation_run_seed=confirmation_run_seed,
+                data_order_seed=data_order_seed,
+                physical_d6_evidence_sha256=expected_physical_d6_evidence_sha256,
+                document_multiset_sha256=multiset,
+                document_count=document_count,
+                retained_text_bytes=retained_text_bytes,
+            )
+        finally:
+            connection.close()
+
+
+def iter_materialized_confirmation_training_texts_v4(
+    root: Path,
+    *,
+    order_receipt: ConfirmationConsumerOrderV4,
+) -> Iterator[str]:
+    """Yield and revalidate one fresh confirmation order without corpus writes."""
+
+    if not isinstance(order_receipt, ConfirmationConsumerOrderV4):
+        raise TypeError("confirmation training order requires its typed receipt")
+    resolved = assert_no_symlink_ancestors(root).resolve(strict=True)
+    evidence = assert_current_physical_d6_identity_v4(
+        resolved,
+        expected_physical_sha256=order_receipt.physical_d6_evidence_sha256,
+    )
+    multiset, document_count, retained_text_bytes = (
+        _confirmation_multiset_reference_v4(evidence)
+    )
+    if (
+        order_receipt.document_multiset_sha256 != multiset
+        or order_receipt.document_count != document_count
+        or order_receipt.retained_text_bytes != retained_text_bytes
+    ):
+        raise CorpusMaterializationV4Error(
+            "confirmation order receipt names a different frozen T multiset"
+        )
+    with tempfile.TemporaryDirectory(prefix="weft1-v4-confirm-iterate-") as raw_work:
+        connection = _populate_confirmation_order_database_v4(
+            root=resolved,
+            database_path=Path(raw_work) / "consumer.sqlite",
+            data_order_seed=order_receipt.data_order_seed,
+            expected_multiset_sha256=multiset,
+            expected_document_count=document_count,
+            expected_retained_text_bytes=retained_text_bytes,
+        )
+        try:
+            ordered_ids = hashlib.sha256()
+            framed_payload = hashlib.sha256()
+            observed_count = 0
+            observed_bytes = 0
+            for row in connection.execute(
+                "SELECT raw_content_id, text FROM ordered "
+                "ORDER BY order_key, raw_content_id"
+            ):
+                raw_id = str(row["raw_content_id"])
+                payload = bytes(row["text"])
+                _framed_ascii_digest_update(ordered_ids, raw_id)
+                _framed_ascii_digest_update(framed_payload, raw_id)
+                framed_payload.update(len(payload).to_bytes(8, "big"))
+                framed_payload.update(payload)
+                observed_count += 1
+                observed_bytes += len(payload)
+                yield payload.decode("utf-8")
+            observed = ConfirmationConsumerOrderV4(
+                confirmation_run_seed=order_receipt.confirmation_run_seed,
+                data_order_seed=order_receipt.data_order_seed,
+                physical_d6_evidence_sha256=(
+                    order_receipt.physical_d6_evidence_sha256
+                ),
+                document_multiset_sha256=multiset,
+                ordered_raw_content_ids_sha256=ordered_ids.hexdigest(),
+                framed_payload_sha256=framed_payload.hexdigest(),
+                document_count=observed_count,
+                retained_text_bytes=observed_bytes,
+            )
+            if observed != order_receipt:
+                raise CorpusMaterializationV4Error(
+                    "physical confirmation order differs from its read-only receipt"
+                )
+        finally:
+            connection.close()
+
+
 def _persist_full_corpus_v4(
     result: MaterializationResultV3,
     inputs: MaterializationInputV4,
@@ -1920,6 +2312,8 @@ def run_materialization_core_v4(
     work_root: Path,
     global_execution_provenance: Mapping[str, object],
     runtime_build_receipt: Mapping[str, object],
+    parsed_asset_cache_root: Path,
+    parsed_asset_recovery_context: ParsedAssetRecoveryContextV1,
 ) -> MaterializationResultV3:
     """Run the frozen algorithm once, then forward-finalize its fresh output."""
 
@@ -1931,6 +2325,9 @@ def run_materialization_core_v4(
         work_root=work_root,
         global_execution_provenance=global_execution_provenance,
         runtime_build_receipt=runtime_build_receipt,
+        parsed_asset_cache_root=parsed_asset_cache_root,
+        parsed_asset_recovery_context=parsed_asset_recovery_context,
+        parsed_asset_cache_read_only=True,
     )
     return finalize_materialization_output_v4(result, inputs)
 
@@ -1945,6 +2342,7 @@ def run_production_materialization_worker_v4(
     breakdown_root: Path,
     execution_provenance_path: Path,
     runtime_build_receipt_path: Path,
+    cache_fill_only: bool = False,
 ) -> str:
     """Concrete offline V4 worker under the existing parent replay guard.
 
@@ -1966,6 +2364,8 @@ def run_production_materialization_worker_v4(
     )
     if any(not isinstance(path, Path) for path in paths):
         raise TypeError("production V4 worker inputs must be pathlib.Path values")
+    if type(cache_fill_only) is not bool:
+        raise TypeError("cache_fill_only must be an exact boolean")
     for path in paths:
         assert_no_symlink_ancestors(path)
     if (
@@ -2014,14 +2414,18 @@ def run_production_materialization_worker_v4(
         core_v3.load_canonical_json_object(runtime_build_receipt_path),
         global_execution_provenance=global_execution_provenance,
     )
-    inputs = load_materialization_input_v4(
+    input_loader = (
+        load_cache_fill_input_v4
+        if cache_fill_only
+        else load_materialization_input_v4
+    )
+    inputs = input_loader(
         enumeration_receipt_path=enumeration_receipt_path,
         cache_download_receipt_path=cache_download_receipt_path,
         source_manifest_path=source_manifest_path,
         cache_root=cache_root,
         breakdown_root=breakdown_root,
     )
-    classifier = FastTextLanguageIdAdapterV3(fasttext_model_path)
     output_parent = assert_no_symlink_ancestors(output_root.parent).resolve(strict=True)
     raw_local_work_parent = os.environ.get("WEFT1_REPLAY_LOCAL_WORK_PARENT")
     if not raw_local_work_parent:
@@ -2039,6 +2443,76 @@ def run_production_materialization_worker_v4(
         raise CorpusMaterializationV4Error(
             "production V4 local work and durable output parents must be disjoint"
         )
+    recovery_environment = {
+        "cache_root": os.environ.get("WEFT1_REPLAY_PARSED_ASSET_CACHE_ROOT"),
+        "code_identity_sha256": os.environ.get(
+            "WEFT1_REPLAY_PARSED_ASSET_CODE_IDENTITY_SHA256"
+        ),
+        "durable_marker_physical_sha256": os.environ.get(
+            "WEFT1_REPLAY_PARSED_ASSET_DURABLE_MARKER_SHA256"
+        ),
+        "input_identity_sha256": os.environ.get(
+            "WEFT1_REPLAY_PARSED_ASSET_INPUT_IDENTITY_SHA256"
+        ),
+        "run_id": os.environ.get("WEFT1_REPLAY_RUN_ID"),
+    }
+    if any(not value for value in recovery_environment.values()):
+        raise CorpusMaterializationV4Error(
+            "production V4 worker lacks its parsed-asset recovery assignment"
+        )
+    parsed_asset_cache_root = assert_no_symlink_ancestors(
+        Path(str(recovery_environment["cache_root"]))
+    ).resolve(strict=True)
+    source_cache_root = assert_no_symlink_ancestors(cache_root).resolve(strict=True)
+    if not parsed_asset_cache_root.is_dir():
+        raise CorpusMaterializationV4Error(
+            "production V4 parsed-asset cache root must be a real directory"
+        )
+    recovery_roots = (
+        (parsed_asset_cache_root, output_parent),
+        (parsed_asset_cache_root, local_work_parent),
+        (parsed_asset_cache_root, source_cache_root),
+    )
+    if any(
+        left == right or left in right.parents or right in left.parents
+        for left, right in recovery_roots
+    ):
+        raise CorpusMaterializationV4Error(
+            "production V4 parsed-asset cache overlaps governed input or work roots"
+        )
+    try:
+        parsed_asset_recovery_context = ParsedAssetRecoveryContextV1(
+            run_id=str(recovery_environment["run_id"]),
+            durable_marker_physical_sha256=str(
+                recovery_environment["durable_marker_physical_sha256"]
+            ),
+            runtime_identity_sha256=parsed_asset_runtime_identity_v1(
+                runtime_attestation.environment_payload
+            ),
+            code_identity_sha256=str(
+                recovery_environment["code_identity_sha256"]
+            ),
+            input_identity_sha256=str(
+                recovery_environment["input_identity_sha256"]
+            ),
+        )
+    except (TypeError, ValueError) as error:
+        raise CorpusMaterializationV4Error(
+            "production V4 parsed-asset recovery identity is invalid"
+        ) from error
+    if cache_fill_only:
+        prefill_production_parsed_asset_cache_v1(
+            inputs=inputs,
+            parsed_asset_cache_root=parsed_asset_cache_root,
+            parsed_asset_recovery_context=parsed_asset_recovery_context,
+            allow_writes=True,
+        )
+        if output_root.exists():
+            raise CorpusMaterializationV4Error(
+                "cache-fill-only worker mutated its assigned output root"
+            )
+        return parsed_asset_recovery_context.identity_sha256
+    classifier = FastTextLanguageIdAdapterV3(fasttext_model_path)
     with tempfile.TemporaryDirectory(
         prefix=f".{output_root.name}-work-", dir=local_work_parent
     ) as raw_temporary:
@@ -2049,6 +2523,8 @@ def run_production_materialization_worker_v4(
             work_root=Path(raw_temporary) / "spool",
             global_execution_provenance=global_execution_provenance,
             runtime_build_receipt=runtime_build_receipt,
+            parsed_asset_cache_root=parsed_asset_cache_root,
+            parsed_asset_recovery_context=parsed_asset_recovery_context,
         )
         return core_v3._write_production_replay_child_receipt_v3(
             result,
@@ -2061,6 +2537,9 @@ def run_production_materialization_worker_v4(
 
 __all__ = [
     "BRIDGE_RELATIVE_PATH_V4",
+    "CONFIRMATION_CONSUMER_ORDER_SCHEMA_V4",
+    "CONSUMER_ORDER_KEY_DOMAIN_V4",
+    "ConfirmationConsumerOrderV4",
     "CorpusMaterializationV4Error",
     "CONSUMER_ORDER_SCHEMA_V4",
     "D1_READY_SCHEMA_V4",
@@ -2077,13 +2556,16 @@ __all__ = [
     "MaterializationInputV4",
     "VerifiedCacheAdapterV4",
     "assert_current_physical_d6_identity_v4",
+    "build_materialized_confirmation_order_v4",
     "finalize_materialization_output_v4",
     "build_physical_d6_evidence_v4",
     "load_cache_download_artifact_v4",
+    "load_cache_fill_input_v4",
     "load_materialization_input_v4",
     "load_source_manifest_artifact_v4",
     "load_upstream_enumeration_artifact_v4",
     "iter_materialized_tokenizer_fit_texts_v4",
+    "iter_materialized_confirmation_training_texts_v4",
     "iter_materialized_training_texts_v4",
     "run_materialization_core_v4",
     "run_production_materialization_worker_v4",

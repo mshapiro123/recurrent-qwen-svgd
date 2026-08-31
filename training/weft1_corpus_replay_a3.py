@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import hashlib
+import math
 import os
 from pathlib import Path
 import tempfile
@@ -39,6 +40,10 @@ from training.weft1_corpus_pa import (
     DEFAULT_REQUIREMENTS_LOCK_SHA256,
     attest_runtime_v3,
 )
+from training.weft1_corpus_parsed_asset_cache_v1 import (
+    ParsedAssetRecoveryContextV1,
+    parsed_asset_runtime_identity_v1,
+)
 from training.weft1_corpus_replay_a2 import (
     GLOBAL_EXECUTION_PROVENANCE_RELATIVE_PATH_V3,
     ParentReplayError,
@@ -70,6 +75,37 @@ PARENT_REPLAY_SCHEMA_V4 = "weft1_corpus_parent_replay_verification_v4"
 PARENT_INPUT_SCHEMA_V4 = "weft1_corpus_parent_replay_inputs_v4"
 WORKER_COMPATIBILITY_SCHEMA_V4 = "weft1_corpus_parent_worker_compatibility_v4"
 PARENT_EVIDENCE_SCHEMA_V4 = "weft1_corpus_parent_replay_evidence_v4"
+# The observed production projection is roughly seven days per replay.  Keep a
+# finite parent-side sanity limit, but do not let our own watchdog duplicate
+# Colab's shorter backend lifetime and kill an otherwise healthy worker first.
+V4_DEFAULT_WORKER_TIMEOUT_SECONDS = 14 * 24 * 60 * 60
+V4_PARENT_LANE_OPERATION_ORDER = (
+    ("cache_fill", 0),
+    ("cache_fill", 1),
+    ("materialize", 0),
+    ("materialize", 1),
+)
+PARSED_ASSET_CODE_IDENTITY_SCHEMA_V1 = (
+    "weft1_parsed_asset_cache_code_identity_v1"
+)
+PARSED_ASSET_INPUT_IDENTITY_SCHEMA_V1 = (
+    "weft1_parsed_asset_cache_input_identity_v1"
+)
+PARSED_ASSET_CODE_LOGICAL_NAMES_V1 = frozenset(
+    {
+        "production_io",
+        "training/weft1_corpus_a2.py",
+        "training/weft1_corpus_enumeration_a2.py",
+        "training/weft1_corpus_materialize_a2.py",
+        "training/weft1_corpus_materialize_a3.py",
+        "training/weft1_corpus_parsed_asset_cache_v1.py",
+        "training/weft1_corpus_source_io_a2.py",
+        "training/weft1_corpus_sources_a2.py",
+        "training/weft1_gtok_a1_contract.py",
+        "training/weft1_gtok_contract.py",
+        "training/weft1_strict_io.py",
+    }
+)
 
 
 def _sha256_file(path: Path) -> str:
@@ -618,6 +654,9 @@ class ParentReplayVerificationV4:
     first_output_root: str
     second_output_root: str
     durable_output_parent: str
+    durable_parsed_asset_cache_parent: str
+    first_parsed_asset_cache_context_sha256: str
+    second_parsed_asset_cache_context_sha256: str
     local_work_parent: str
     evidence_sha256: str
 
@@ -653,14 +692,27 @@ def verify_production_materialization_replays_v4(
     durable_mount_root: Path,
     durable_storage_marker_path: Path,
     durable_output_parent: Path,
+    durable_parsed_asset_cache_parent: Path,
     local_work_parent: Path,
     first_output_root: Path,
     second_output_root: Path,
     first_run_id: str = "production-v4-replay-a",
     second_run_id: str = "production-v4-replay-b",
-    timeout_seconds: float = 86_400.0,
+    timeout_seconds: float = V4_DEFAULT_WORKER_TIMEOUT_SECONDS,
 ) -> ParentReplayVerificationV4:
     """Run the V4 worker twice and mint only after all production gates pass."""
+
+    if (
+        isinstance(timeout_seconds, bool)
+        or not isinstance(timeout_seconds, (int, float))
+        or not math.isfinite(float(timeout_seconds))
+        or float(timeout_seconds) <= 0
+        or float(timeout_seconds) > V4_DEFAULT_WORKER_TIMEOUT_SECONDS
+    ):
+        raise ParentReplayError(
+            "V4 timeout_seconds must be finite, positive, and no more than "
+            "the 14-day per-worker watchdog"
+        )
 
     executable = replay_v3._resolve_python_executable(python_executable)
     if executable != replay_v3._resolve_python_executable(Path(os.sys.executable)):
@@ -675,6 +727,33 @@ def verify_production_materialization_replays_v4(
             local_work_parent=local_work_parent,
         )
     )
+    parsed_asset_cache_parent = assert_no_symlink_ancestors(
+        durable_parsed_asset_cache_parent
+    ).resolve(strict=True)
+    if not parsed_asset_cache_parent.is_dir():
+        raise ParentReplayError(
+            "V4 parsed-asset cache parent must be a real directory"
+        )
+    if (
+        parsed_asset_cache_parent == durable_parent
+        or parsed_asset_cache_parent in durable_parent.parents
+        or durable_parent in parsed_asset_cache_parent.parents
+        or parsed_asset_cache_parent == local_parent
+        or parsed_asset_cache_parent in local_parent.parents
+        or local_parent in parsed_asset_cache_parent.parents
+    ):
+        raise ParentReplayError(
+            "V4 parsed-asset cache, output, and local-work parents must be disjoint"
+        )
+    if replay_v3.attest_production_storage_v3(
+        durable_mount_root=durable_mount_root,
+        durable_storage_marker_path=durable_storage_marker_path,
+        durable_output_parent=parsed_asset_cache_parent,
+        local_work_parent=local_parent,
+    ) != storage_identity:
+        raise ParentReplayError(
+            "V4 parsed-asset cache is not on the registered durable storage"
+        )
     if _sha256_file(A3_AUTHORITY_PATH) != A3_AUTHORITY_SHA256:
         raise ParentReplayError("A3 authority artifact drifted")
     if verify_release_authority_artifact() != RELEASE_AUTHORITY_SHA256:
@@ -693,10 +772,33 @@ def verify_production_materialization_replays_v4(
     cache_resolved = assert_no_symlink_ancestors(cache_root).resolve(strict=True)
     if not cache_resolved.is_dir():
         raise ParentReplayError("V4 source cache must be a real directory")
+    if (
+        parsed_asset_cache_parent == cache_resolved
+        or parsed_asset_cache_parent in cache_resolved.parents
+        or cache_resolved in parsed_asset_cache_parent.parents
+    ):
+        raise ParentReplayError(
+            "V4 parsed-asset recovery cache must be disjoint from the source cache"
+        )
 
     compatibility_files = _compatibility_files_v4()
     compatibility_rows = replay_v3._logical_file_rows(
         compatibility_files, name="V4 production compatibility files"
+    )
+    parsed_asset_code_rows = tuple(
+        row
+        for row in compatibility_rows
+        if row["logical_name"] in PARSED_ASSET_CODE_LOGICAL_NAMES_V1
+    )
+    if {
+        str(row["logical_name"]) for row in parsed_asset_code_rows
+    } != PARSED_ASSET_CODE_LOGICAL_NAMES_V1:
+        raise ParentReplayError(
+            "V4 parsed-asset parser/cache code closure is incomplete"
+        )
+    parsed_asset_code_identity = execution_authority_v4_bound_sha256(
+        PARSED_ASSET_CODE_IDENTITY_SCHEMA_V1,
+        parsed_asset_code_rows,
     )
     compatibility_hashes = {
         str(row["logical_name"]): str(row["sha256"]) for row in compatibility_rows
@@ -796,10 +898,50 @@ def verify_production_materialization_replays_v4(
             "runtime_build_receipt": snapshots["runtime_build_receipt"],
             "source_manifest": snapshots["source_manifest"],
         }
+        parsed_asset_input_rows = replay_v3._logical_file_rows(
+            {
+                "cache_download_receipt": snapshots["cache_download"],
+                "enumeration_receipt": snapshots["enumeration"],
+                "source_manifest": snapshots["source_manifest"],
+            },
+            name="V4 parsed-asset recovery inputs",
+        )
+        parsed_asset_input_identity = execution_authority_v4_bound_sha256(
+            PARSED_ASSET_INPUT_IDENTITY_SCHEMA_V1,
+            parsed_asset_input_rows,
+        )
         input_rows = replay_v3._logical_file_rows(input_files, name="V4 replay inputs")
         input_identity = execution_authority_v4_bound_sha256(
             PARENT_INPUT_SCHEMA_V4, input_rows
         )
+        durable_marker_physical_sha256 = str(
+            storage_identity["durable_marker_sha256"]
+        )
+        parsed_asset_contexts = tuple(
+            ParsedAssetRecoveryContextV1(
+                run_id=run_id,
+                durable_marker_physical_sha256=(
+                    durable_marker_physical_sha256
+                ),
+                runtime_identity_sha256=parsed_asset_runtime_identity_v1(
+                    runtime_attestation.environment_payload
+                ),
+                code_identity_sha256=parsed_asset_code_identity,
+                input_identity_sha256=parsed_asset_input_identity,
+            )
+            for run_id in (first_run_id, second_run_id)
+        )
+        parsed_asset_cache_roots = []
+        for context in parsed_asset_contexts:
+            lane_parent = parsed_asset_cache_parent / context.run_id
+            assert_no_symlink_ancestors(lane_parent)
+            lane_parent.mkdir(exist_ok=True)
+            cache_lane_root = lane_parent / context.identity_sha256
+            assert_no_symlink_ancestors(cache_lane_root)
+            cache_lane_root.mkdir(exist_ok=True)
+            parsed_asset_cache_roots.append(
+                cache_lane_root.resolve(strict=True)
+            )
         arguments = (
             str(code_files["worker"]),
             "--enumeration-receipt",
@@ -819,10 +961,12 @@ def verify_production_materialization_replays_v4(
             "--runtime-build-receipt",
             str(snapshots["runtime_build_receipt"]),
         )
+        cache_fill_arguments = (*arguments, "--cache-fill-only")
         worker_compatibility = execution_authority_v4_bound_sha256(
             WORKER_COMPATIBILITY_SCHEMA_V4,
             {
-                "arguments": arguments,
+                "cache_fill_arguments": cache_fill_arguments,
+                "materialization_arguments": arguments,
                 "compatibility_files": replay_v3._logical_file_rows(
                     code_files, name="V4 production compatibility snapshots"
                 ),
@@ -840,9 +984,20 @@ def verify_production_materialization_replays_v4(
             guard_path.write_bytes(replay_v3._NETWORK_GUARD_SOURCE)
             if _sha256_file(guard_path) != guard_sha:
                 raise ParentReplayError("V4 network guard byte check failed")
-            for run_id, output_root in zip(
-                (first_run_id, second_run_id), roots, strict=True
-            ):
+            lanes = tuple(zip(
+                (first_run_id, second_run_id),
+                roots,
+                parsed_asset_cache_roots,
+                parsed_asset_contexts,
+                strict=True,
+            ))
+
+            def lane_environment(
+                run_id: str,
+                output_root: Path,
+                parsed_cache_root: Path,
+                parsed_context: ParsedAssetRecoveryContextV1,
+            ) -> dict[str, str]:
                 replay_v3._validate_exact_code_snapshot_tree_v3(code_root, code_files)
                 runtime_now = attest_runtime_v3(
                     requirements_lock=snapshots["dependency_lock"],
@@ -857,7 +1012,7 @@ def verify_production_materialization_replays_v4(
                     local_work_parent=local_parent,
                 ) != storage_identity:
                     raise ParentReplayError("V4 durable storage changed before launch")
-                environment = replay_v3._offline_environment(
+                return replay_v3._offline_environment(
                     guard_directory=guard_root,
                     guard_sha256=guard_sha,
                     run_id=run_id,
@@ -867,6 +1022,74 @@ def verify_production_materialization_replays_v4(
                     worker_compatibility_sha256=worker_compatibility,
                     worker_import_root=code_root,
                     extra_environment=None,
+                    parsed_asset_cache_root=parsed_cache_root,
+                    parsed_asset_code_identity_sha256=(
+                        parsed_context.code_identity_sha256
+                    ),
+                    parsed_asset_durable_marker_sha256=(
+                        parsed_context.durable_marker_physical_sha256
+                    ),
+                    parsed_asset_input_identity_sha256=(
+                        parsed_context.input_identity_sha256
+                    ),
+                )
+
+            # Complete both independent parser lanes before either expensive
+            # deterministic materialization.  On a replacement Colab backend,
+            # committed receipts are scanned in O(asset count) and only the
+            # active missing asset is reparsed.
+            for operation, lane_index in V4_PARENT_LANE_OPERATION_ORDER:
+                if operation != "cache_fill":
+                    continue
+                (
+                    run_id,
+                    output_root,
+                    parsed_cache_root,
+                    parsed_context,
+                ) = lanes[lane_index]
+                environment = lane_environment(
+                    run_id,
+                    output_root,
+                    parsed_cache_root,
+                    parsed_context,
+                )
+                replay_v3._run_worker(
+                    command=(
+                        str(unshare),
+                        "--net",
+                        "--",
+                        str(executable),
+                        "-I",
+                        "-B",
+                        "-c",
+                        replay_v3._ISOLATED_WORKER_BOOTSTRAP_SOURCE_V3,
+                        str(guard_path),
+                        str(code_root),
+                        *cache_fill_arguments,
+                    ),
+                    cwd=code_root,
+                    environment=environment,
+                    timeout_seconds=float(timeout_seconds),
+                )
+                if output_root.exists():
+                    raise ParentReplayError(
+                        "V4 cache-fill worker mutated a replay output root"
+                    )
+
+            for operation, lane_index in V4_PARENT_LANE_OPERATION_ORDER:
+                if operation != "materialize":
+                    continue
+                (
+                    run_id,
+                    output_root,
+                    parsed_cache_root,
+                    parsed_context,
+                ) = lanes[lane_index]
+                environment = lane_environment(
+                    run_id,
+                    output_root,
+                    parsed_cache_root,
+                    parsed_context,
                 )
                 pid, stdout, stderr = replay_v3._run_worker(
                     command=(
@@ -937,6 +1160,15 @@ def verify_production_materialization_replays_v4(
             local_work_parent=local_parent,
         ) != storage_identity:
             raise ParentReplayError("V4 durable storage changed before parent minting")
+        if replay_v3.attest_production_storage_v3(
+            durable_mount_root=durable_mount_root,
+            durable_storage_marker_path=durable_storage_marker_path,
+            durable_output_parent=parsed_asset_cache_parent,
+            local_work_parent=local_parent,
+        ) != storage_identity:
+            raise ParentReplayError(
+                "V4 parsed-asset cache storage changed before parent minting"
+            )
         for child in children:
             final_rows = replay_v3._validate_file_inventory(
                 output_root=Path(child.output_root),
@@ -949,8 +1181,14 @@ def verify_production_materialization_replays_v4(
                 raise ParentReplayError("V4 child receipt changed before parent minting")
         evidence_payload = {
             "first_child_receipt_sha256": first.child_receipt_sha256,
+            "first_parsed_asset_cache_context_sha256": (
+                parsed_asset_contexts[0].identity_sha256
+            ),
             "input_identity_sha256": input_identity,
             "second_child_receipt_sha256": second.child_receipt_sha256,
+            "second_parsed_asset_cache_context_sha256": (
+                parsed_asset_contexts[1].identity_sha256
+            ),
             "worker_compatibility_sha256": worker_compatibility,
         }
         evidence_sha = execution_authority_v4_bound_sha256(
@@ -973,6 +1211,15 @@ def verify_production_materialization_replays_v4(
             first_output_root=first.output_root,
             second_output_root=second.output_root,
             durable_output_parent=str(durable_parent),
+            durable_parsed_asset_cache_parent=str(
+                parsed_asset_cache_parent
+            ),
+            first_parsed_asset_cache_context_sha256=(
+                parsed_asset_contexts[0].identity_sha256
+            ),
+            second_parsed_asset_cache_context_sha256=(
+                parsed_asset_contexts[1].identity_sha256
+            ),
             local_work_parent=str(local_parent),
             evidence_sha256=evidence_sha,
         )
@@ -980,5 +1227,7 @@ def verify_production_materialization_replays_v4(
 
 __all__ = [
     "ParentReplayVerificationV4",
+    "V4_DEFAULT_WORKER_TIMEOUT_SECONDS",
+    "V4_PARENT_LANE_OPERATION_ORDER",
     "verify_production_materialization_replays_v4",
 ]

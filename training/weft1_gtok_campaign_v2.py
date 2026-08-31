@@ -102,6 +102,7 @@ from training.weft1_gtok_v2_contract import (
     RuntimeTripwireSnapshotV2,
     TokenizerArmReceiptV2,
     ValidatedGTokMatrixV2,
+    compute_event_ledger_sha256_v2,
     gtok_v2_bound_sha256,
     validate_complete_gtok_matrix_v2,
 )
@@ -127,8 +128,22 @@ GTOK_GOVERNED_SEED_ROWS_V2 = (
 )
 GTOK_MICROBATCH_SEQUENCES_V2 = 8
 GTOK_ACCUMULATION_SLICES_V2 = 256 // GTOK_MICROBATCH_SEQUENCES_V2
+CONFIRMATION_SEMANTICS_AUTHORITY_V2 = (
+    (
+        "docs/STRATEGY_GTOK_CONFIRMATION_SEMANTICS_20260831.md",
+        "2e42664d0062a119c9fadcb76bf227a91134914920116627f9244f650defe72d",
+    ),
+    (
+        "docs/STRATEGY_GTOK_SEMANTICS_AMENDMENT_S1_20260831.md",
+        "c37c4be064fe447e01182acc11b1713239c761ddd50583a8299972b4b340bd2a",
+    ),
+    (
+        "docs/STRATEGY_GTOK_SEMANTICS_AMENDMENT_S2_20260831.md",
+        "5420a4e57c080d09f5f924acc859a5579edd1ca1939c8bbdaf727e5afd55ac5e",
+    ),
+)
 CONFIRMATION_SEMANTICS_AUTHORITY_STATUS_V2 = (
-    "UNRESOLVED_EXACT_FLOP_AND_TOP_TWO_STRATEGY_RULING_REQUIRED"
+    "RESOLVED_PARENT_PLUS_S1_PLUS_S2_BUILD_AXIS;GPU_REMAINS_BEHIND_PB"
 )
 _DERIVED_SEED_ROWS_V2 = tuple(
     (
@@ -192,10 +207,150 @@ class GTokCampaignV2Error(RuntimeError):
     """Campaign assembly or durable evidence failed."""
 
 
-def require_resolved_confirmation_semantics_v2() -> None:
-    """Block authoritative P-C spend until the two strategy rulings arrive."""
+@dataclass(frozen=True)
+class ConfirmationSeedRowV2:
+    """One direct-SHA confirmation root and its existing harness role seeds."""
 
-    raise GTokV2Stop(CONFIRMATION_SEMANTICS_AUTHORITY_STATUS_V2)
+    vocab_size: int
+    seed_slot: int
+    registry_key: str
+    run_seed: int
+    initialization_seed: int
+    data_order_seed: int
+
+    def __post_init__(self) -> None:
+        if self.vocab_size not in GTOK_VOCABULARY_ARMS:
+            raise ValueError("confirmation seed row uses an unregistered vocabulary")
+        if self.seed_slot not in (0, 1):
+            raise ValueError("confirmation seed slot must be exactly 0 or 1")
+        expected_key = f"gtok.confirm.{self.vocab_size}.{self.seed_slot}"
+        if self.registry_key != expected_key:
+            raise ValueError("confirmation seed registry key drifted")
+        expected_run_seed = int.from_bytes(
+            hashlib.sha256(expected_key.encode("ascii")).digest()[:8],
+            byteorder="big",
+        )
+        if self.run_seed != expected_run_seed:
+            raise ValueError("confirmation run seed differs from its direct SHA root")
+        if self.initialization_seed != derive_module_seed(
+            A2_CAMPAIGN_ROOT_SEED,
+            f"gtok.init.shared.{self.run_seed}",
+        ):
+            raise ValueError("confirmation initialization seed left the A2 harness tree")
+        if self.data_order_seed != derive_module_seed(
+            A2_CAMPAIGN_ROOT_SEED,
+            f"gtok.data.shared.{self.run_seed}",
+        ):
+            raise ValueError("confirmation data-order seed left the A2 harness tree")
+
+
+GTOK_CONFIRMATION_SEED_ROWS_V2 = (
+    ConfirmationSeedRowV2(
+        16_384,
+        0,
+        "gtok.confirm.16384.0",
+        14_491_391_970_410_640_762,
+        9_795_669_991_320_448_035,
+        5_661_764_352_253_647_633,
+    ),
+    ConfirmationSeedRowV2(
+        16_384,
+        1,
+        "gtok.confirm.16384.1",
+        11_241_563_954_874_861_528,
+        9_570_886_761_854_853_841,
+        14_816_146_564_877_597_759,
+    ),
+    ConfirmationSeedRowV2(
+        24_576,
+        0,
+        "gtok.confirm.24576.0",
+        15_081_792_657_614_179_907,
+        15_743_199_735_367_215_842,
+        3_776_526_022_976_792_019,
+    ),
+    ConfirmationSeedRowV2(
+        24_576,
+        1,
+        "gtok.confirm.24576.1",
+        18_192_772_026_849_707_115,
+        2_021_585_118_383_190_373,
+        3_163_481_839_478_443_844,
+    ),
+    ConfirmationSeedRowV2(
+        32_768,
+        0,
+        "gtok.confirm.32768.0",
+        9_884_118_125_684_999_954,
+        14_235_658_862_294_536_352,
+        13_955_294_749_984_532_448,
+    ),
+    ConfirmationSeedRowV2(
+        32_768,
+        1,
+        "gtok.confirm.32768.1",
+        7_190_589_679_906_404_951,
+        15_657_659_664_079_684_071,
+        17_331_787_328_476_800_479,
+    ),
+    ConfirmationSeedRowV2(
+        49_152,
+        0,
+        "gtok.confirm.49152.0",
+        1_571_914_625_861_595_228,
+        11_848_942_369_704_090_741,
+        8_658_589_812_713_519_751,
+    ),
+    ConfirmationSeedRowV2(
+        49_152,
+        1,
+        "gtok.confirm.49152.1",
+        2_644_639_369_611_050_861,
+        11_702_759_481_078_020_720,
+        1_778_878_926_252_055_881,
+    ),
+)
+GTOK_CONFIRMATION_SEED_BINDING_V2 = {
+    "direct_root": "int.from_bytes(sha256(ascii_registry_key)[:8],big)",
+    "role_derivation_root": A2_CAMPAIGN_ROOT_SEED,
+    "role_keys": (
+        "gtok.init.shared.{run_seed}",
+        "gtok.data.shared.{run_seed}",
+    ),
+    "rows": GTOK_CONFIRMATION_SEED_ROWS_V2,
+    "slots": (0, 1),
+}
+GTOK_CONFIRMATION_SEED_BINDING_SHA256_V2 = hashlib.sha256(
+    canonical_json_bytes(GTOK_CONFIRMATION_SEED_BINDING_V2)
+).hexdigest()
+
+
+def confirmation_seed_rows_for_vocabulary_v2(
+    vocab_size: int,
+) -> tuple[ConfirmationSeedRowV2, ConfirmationSeedRowV2]:
+    """Return the immutable slot-0/slot-1 confirmation pair for one arm."""
+
+    if vocab_size not in GTOK_VOCABULARY_ARMS:
+        raise ValueError("confirmation seed lookup uses an unregistered vocabulary")
+    rows = tuple(
+        row for row in GTOK_CONFIRMATION_SEED_ROWS_V2 if row.vocab_size == vocab_size
+    )
+    if tuple(row.seed_slot for row in rows) != (0, 1):
+        raise RuntimeError("confirmation seed registry lost its paired slot order")
+    return rows  # type: ignore[return-value]
+
+
+def require_resolved_confirmation_semantics_v2() -> None:
+    """Assert that the complete confirmation authority chain is code-bound.
+
+    This releases implementation and CPU regression only.  The campaign
+    runner's independent P-B checks still own launch sequencing.
+    """
+
+    if CONFIRMATION_SEMANTICS_AUTHORITY_STATUS_V2 != (
+        "RESOLVED_PARENT_PLUS_S1_PLUS_S2_BUILD_AXIS;GPU_REMAINS_BEHIND_PB"
+    ) or len(CONFIRMATION_SEMANTICS_AUTHORITY_V2) != 3:
+        raise GTokV2Stop("confirmation semantics authority chain is incomplete")
 
 
 @dataclass(frozen=True)
@@ -842,6 +997,8 @@ class CampaignStopArtifactV2:
     return_to_strategy: bool
     calibration_projection_evidence_receipt_sha256: str | None = None
     calibration_projection_evidence_physical_sha256: str | None = None
+    decision_evidence_receipt_sha256: str | None = None
+    decision_evidence_physical_sha256: str | None = None
     campaign_binding_sha256: str = CAMPAIGN_BINDING_SHA256_V2
 
     def __post_init__(self) -> None:
@@ -856,6 +1013,17 @@ class CampaignStopArtifactV2:
             for value in references
         ):
             raise GTokCampaignV2Error("STOP projection evidence join is not SHA-256")
+        decision_references = (
+            self.decision_evidence_receipt_sha256,
+            self.decision_evidence_physical_sha256,
+        )
+        if (decision_references[0] is None) != (decision_references[1] is None):
+            raise GTokCampaignV2Error("STOP decision evidence join is incomplete")
+        if decision_references[0] is not None and any(
+            len(value) != 64 or any(character not in _HEX for character in value)
+            for value in decision_references
+        ):
+            raise GTokCampaignV2Error("STOP decision evidence join is not SHA-256")
 
 
 @dataclass(frozen=True)
@@ -1185,17 +1353,7 @@ def _event_ledger_sha256(
         ComputeAttemptReceiptV2 | PrecalibrationReplayAttemptReceiptV2, ...
     ],
 ) -> str:
-    return hashlib.sha256(
-        canonical_json_bytes(
-            tuple(
-                {
-                    "attempt_id": attempt.attempt_id,
-                    "receipt_sha256": attempt.receipt_sha256,
-                }
-                for attempt in attempts
-            )
-        )
-    ).hexdigest()
+    return compute_event_ledger_sha256_v2(attempts)
 
 
 def _lifecycle_ledger_path(root: Path) -> Path:
@@ -3143,6 +3301,8 @@ def _write_stop(
     running: tuple[str, ...],
     calibration_projection_evidence_receipt_sha256: str | None = None,
     calibration_projection_evidence_physical_sha256: str | None = None,
+    decision_evidence_receipt_sha256: str | None = None,
+    decision_evidence_physical_sha256: str | None = None,
 ) -> CampaignStopArtifactV2:
     if attempts:
         validate_sqlite_event_ledger_v2(root, attempts)
@@ -3162,6 +3322,8 @@ def _write_stop(
         calibration_projection_evidence_physical_sha256=(
             calibration_projection_evidence_physical_sha256
         ),
+        decision_evidence_receipt_sha256=decision_evidence_receipt_sha256,
+        decision_evidence_physical_sha256=decision_evidence_physical_sha256,
     )
     _exclusive_write(
         root / "campaign-stop.json",
@@ -4538,6 +4700,10 @@ __all__ = [
     "CAMPAIGN_BINDING_SHA256_V2",
     "CalibrationProjectionEvidenceV2",
     "CampaignStopArtifactV2",
+    "ConfirmationSeedRowV2",
+    "GTOK_CONFIRMATION_SEED_BINDING_SHA256_V2",
+    "GTOK_CONFIRMATION_SEED_BINDING_V2",
+    "GTOK_CONFIRMATION_SEED_ROWS_V2",
     "GTOK_GOVERNED_DATA_ORDER_SEEDS_V2",
     "GTOK_GOVERNED_INITIALIZATION_SEEDS_V2",
     "GTOK_GOVERNED_SEED_ROWS_V2",
@@ -4554,6 +4720,7 @@ __all__ = [
     "TokenizerExecutionArmV2",
     "build_preflight_projection_v2",
     "build_precalibration_cpu_evidence_v2",
+    "confirmation_seed_rows_for_vocabulary_v2",
     "load_precalibration_cpu_evidence_v2",
     "load_tokenizer_execution_panel_v2",
     "recover_orphaned_lifecycle_attempts_v2",

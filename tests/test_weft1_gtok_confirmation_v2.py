@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import fields, replace
 import hashlib
 import inspect
+import json
 from pathlib import Path
 import shutil
 import subprocess
@@ -16,6 +17,7 @@ import training.weft1_gtok_campaign_v2 as campaign
 import scripts.run_weft1_gtok_full_campaign_v2 as full_campaign_cli
 from tests.test_weft1_gtok_v2_contract import (
     _confirmation_compute,
+    _confirmation_evidence_closure,
     _confirmation_runs,
     _matrix,
     _strata,
@@ -28,8 +30,19 @@ from training.weft1_gtok_campaign_v2 import (
     GTOK_GOVERNED_TRAINING_SEEDS_V2,
     TokenizerExecutionArmV2,
 )
-from training.weft1_gtok_training_v2 import CalibrationMeasurementV2, TrainingPlanV2
+from training.weft1_corpus_materialize_a3 import ConfirmationConsumerOrderV4
+from training.weft1_gtok_training_v2 import (
+    AnalyticUnsupportedFlopRowV2,
+    CompleteFlopLedgerV2,
+    ConfirmationTrainingPlanV2,
+    PhysicalShapeFlopReceiptV2,
+    ProfilerOperatorFlopRowV2,
+)
 from training.weft1_gtok_v2_contract import (
+    ArmCalibrationProjectionV2,
+    BpbMilestoneReceiptV2,
+    ConfirmationEvidenceClosureV2,
+    ConfirmationFreshEvidenceJoinV2,
     ComputeConfirmationRunV2,
     GTokV2Stop,
     select_vocabulary_v2,
@@ -140,6 +153,7 @@ def _evidence(matrix, *, reachable: bool = True):
 
 class _Source:
     def __init__(self, matrix) -> None:
+        self.root = Path(".")
         self.physical_d6_evidence_sha256 = matrix.corpus.d6_physical_evidence_sha256
         self.training_raw_bytes = matrix.corpus.training_realized_bytes
         self.heldout_raw_bytes_by_stratum = matrix.corpus.heldout_denominator_signature
@@ -150,6 +164,9 @@ class _Source:
 
     def training_documents(self, seed: int):
         raise AssertionError("prefix planning is replaced by a bound synthetic plan")
+
+    def confirmation_training_documents(self, order_receipt):
+        raise AssertionError("physical training is replaced by a synthetic executor")
 
 
 def _arms(matrix, tmp_path: Path):
@@ -164,14 +181,225 @@ def _arms(matrix, tmp_path: Path):
     )
 
 
-def _plan() -> TrainingPlanV2:
-    return TrainingPlanV2(
-        optimizer_steps=100,
-        compute_token_slots=100 * 256 * 2_048,
+def _order(matrix, *, run_seed: int, data_order_seed: int) -> ConfirmationConsumerOrderV4:
+    return ConfirmationConsumerOrderV4(
+        confirmation_run_seed=run_seed,
+        data_order_seed=data_order_seed,
+        physical_d6_evidence_sha256=matrix.corpus.d6_physical_evidence_sha256,
+        document_multiset_sha256=_hash("confirmation-multiset"),
+        ordered_raw_content_ids_sha256=_hash(f"confirmation-order-{run_seed}"),
+        framed_payload_sha256=_hash(f"confirmation-payload-{run_seed}"),
+        document_count=10,
+        retained_text_bytes=matrix.corpus.training_realized_bytes,
+    )
+
+
+def _plan(matrix, order_receipt, *, optimizer_steps: int = 100) -> ConfirmationTrainingPlanV2:
+    trained_tokens = optimizer_steps * 256 * 2_048
+    trained_bytes = matrix.corpus.training_realized_bytes
+    return ConfirmationTrainingPlanV2(
+        confirmation_order_receipt_sha256=order_receipt.receipt_sha256,
+        optimizer_steps=optimizer_steps,
+        global_batch_sequences=256,
+        sequence_length=2_048,
+        compute_token_slots=trained_tokens,
         valid_prediction_count=1,
-        realized_raw_bytes=1,
-        document_count=1,
+        trained_bytes=trained_bytes,
+        trained_tokens=trained_tokens,
+        trained_docs_full=10,
+        boundary_doc_id=None,
+        boundary_doc_consumed_tokens=None,
+        stream_bytes=trained_bytes,
+        stream_tokens=trained_tokens,
+        stream_docs=10,
+        dropped_bytes=0,
+        dropped_tokens=0,
+        dropped_docs=0,
         packed_stream_sha256=_hash("prefix-plan"),
+        calibration_prefix_compute_token_slots=100 * 256 * 2_048,
+        calibration_prefix_valid_prediction_count=1,
+        calibration_prefix_realized_raw_bytes=trained_bytes // 4,
+        calibration_prefix_document_count=1,
+        calibration_prefix_packed_stream_sha256=_hash("calibration-prefix"),
+        bpb_checkpoint_steps=(25, 50, optimizer_steps),
+    )
+
+
+def _confirmation_observations(matrix, bpb: float, execution_plan):
+    total = execution_plan.training_plan.trained_bytes
+    quarter = (total + 3) // 4
+    half = (total + 1) // 2
+    points = (
+        ("after_1b", execution_plan.heldout_evaluation_steps[0], quarter - 1, quarter, bpb + 0.2),
+        ("after_2b", execution_plan.heldout_evaluation_steps[1], half - 1, half, bpb + 0.1),
+        (
+            "terminal_realized_T",
+            execution_plan.heldout_evaluation_steps[2],
+            total - 1,
+            total,
+            bpb,
+        ),
+    )
+    return tuple(
+        BpbMilestoneReceiptV2(
+            label=label,
+            optimizer_step=step,
+            previous_training_raw_bytes=previous,
+            training_raw_bytes=current,
+            heldout_stream_sha256=matrix.corpus.heldout_stream_sha256,
+            strata=_strata(matrix.corpus, point_bpb),
+        )
+        for label, step, previous, current, point_bpb in points
+    )
+
+
+def _burst_receipt(execution_plan):
+    attributed = (
+        execution_plan.arm_mean_flops
+        + execution_plan.byte_matched_optimizer_steps // 2
+    ) // execution_plan.byte_matched_optimizer_steps
+    return confirmation.ConfirmationBurstFlopReceiptV2(
+        ordered_step_flops=(attributed,) * 100,
+        prelaunch_arm_mean_flops=execution_plan.arm_mean_flops,
+        byte_matched_optimizer_steps=execution_plan.byte_matched_optimizer_steps,
+    )
+
+
+def _flop_ledger(
+    execution_plan,
+    *,
+    measured_flops: int | None = None,
+) -> CompleteFlopLedgerV2:
+    """Build exact synthetic FLOP evidence without weakening the production type."""
+
+    steps = execution_plan.training_plan.optimizer_steps
+    total = execution_plan.target_flops if measured_flops is None else measured_flops
+    steady_occurrences = steps - 1
+    initial_total = total - 2 * steady_occurrences
+    assert initial_total >= 2
+    common = {
+        "batch_rows": 256,
+        "sequence_length": 2_048,
+        "zero_flop_profiler_operators": (),
+    }
+    shapes = [
+        PhysicalShapeFlopReceiptV2(
+            **common,
+            optimizer_phase="initial",
+            occurrences=1,
+            profiler_rows=(
+                ProfilerOperatorFlopRowV2(
+                    operator="synthetic.initial",
+                    flops_per_occurrence=initial_total - 1,
+                ),
+            ),
+            unsupported_rows=(
+                AnalyticUnsupportedFlopRowV2(
+                    family="synthetic.initial.unsupported",
+                    flops_per_occurrence=1,
+                    derivation="synthetic=1",
+                ),
+            ),
+        )
+    ]
+    if steady_occurrences:
+        shapes.append(
+            PhysicalShapeFlopReceiptV2(
+                **common,
+                optimizer_phase="steady",
+                occurrences=steady_occurrences,
+                profiler_rows=(
+                    ProfilerOperatorFlopRowV2(
+                        operator="synthetic.steady",
+                        flops_per_occurrence=1,
+                    ),
+                ),
+                unsupported_rows=(
+                    AnalyticUnsupportedFlopRowV2(
+                        family="synthetic.steady.unsupported",
+                        flops_per_occurrence=1,
+                        derivation="synthetic=1",
+                    ),
+                ),
+            )
+        )
+    return CompleteFlopLedgerV2(
+        shapes=tuple(shapes),
+        optimizer_steps=steps,
+        compute_token_slots=execution_plan.training_plan.compute_token_slots,
+    )
+
+
+def _confirmation_closure(matrix, runs, compute) -> ConfirmationEvidenceClosureV2:
+    selection = select_vocabulary_v2(
+        matrix,
+        admissibility=confirmation.build_rung_b_admissibility_v2(),
+    )
+    return _confirmation_evidence_closure(matrix, selection, compute, runs)
+
+
+def _synthetic_measurement(matrix, pair, execution_plan, kwargs):
+    bpb = 0.90 + execution_plan.seed_slot * 0.01
+    if execution_plan.vocab_size == pair[1]:
+        bpb += 0.05
+    plan = execution_plan.training_plan
+    run = ComputeConfirmationRunV2(
+        vocab_size=execution_plan.vocab_size,
+        seed_slot=execution_plan.seed_slot,
+        registry_key=execution_plan.registry_key,
+        seed=execution_plan.seed,
+        initialization_seed=execution_plan.initialization_seed,
+        data_order_seed=execution_plan.data_order_seed,
+        data_order_sha256=execution_plan.data_order_sha256,
+        confirmation_order_receipt_sha256=(
+            execution_plan.confirmation_order_receipt_sha256
+        ),
+        physical_d6_evidence_sha256=execution_plan.physical_d6_evidence_sha256,
+        document_multiset_sha256=execution_plan.document_multiset_sha256,
+        framed_payload_sha256=execution_plan.framed_payload_sha256,
+        execution_plan_sha256=execution_plan.receipt_sha256,
+        training_plan_sha256=plan.receipt_sha256,
+        base_run_receipt_sha256=kwargs["base_run_receipt_sha256"],
+        compute_attempt_id=kwargs["compute_attempt_id"],
+        common_flop_budget=execution_plan.common_flop_budget,
+        measured_flops=execution_plan.common_flop_budget,
+        heldout_stream_sha256=matrix.corpus.heldout_stream_sha256,
+        observations=_confirmation_observations(matrix, bpb, execution_plan),
+        measured_a100_microseconds=100_000,
+        training_runtime_receipt_sha256=matrix.training_runtime_receipt_sha256,
+        code_closure_receipt_sha256=matrix.code_closure_receipt_sha256,
+        stream_bytes=plan.stream_bytes,
+        stream_docs=plan.stream_docs,
+        stream_tokens=plan.stream_tokens,
+        trained_tokens=plan.trained_tokens,
+        dropped_tokens=plan.dropped_tokens,
+        trained_bytes=plan.trained_bytes,
+        dropped_bytes=plan.dropped_bytes,
+        trained_docs_full=plan.trained_docs_full,
+        boundary_doc_id=plan.boundary_doc_id,
+        boundary_doc_consumed_tokens=plan.boundary_doc_consumed_tokens,
+        dropped_docs=plan.dropped_docs,
+        gpu_uuid_provenance=kwargs["gpu_uuid_provenance"],
+    )
+    ledger = _flop_ledger(execution_plan)
+    return confirmation.ConfirmationPhysicalMeasurementV2(
+        run=run,
+        flop_ledger=ledger,
+        execution_plan_sha256=execution_plan.receipt_sha256,
+        base_flop_evidence_sha256=execution_plan.base_flop_evidence_sha256,
+        training_plan_sha256=plan.receipt_sha256,
+        heldout_evaluation_steps=execution_plan.heldout_evaluation_steps,
+        burst_flop_receipt=_burst_receipt(execution_plan),
+        physical_flop_ledger_sha256=(
+            confirmation.confirmation_physical_flop_ledger_evidence_sha256_v2(
+                compute_attempt_id=run.compute_attempt_id,
+                execution_plan_sha256=execution_plan.receipt_sha256,
+                flop_ledger=ledger,
+            )
+        ),
+        physical_optimizer_steps=plan.optimizer_steps,
+        training_runtime_receipt_sha256=matrix.training_runtime_receipt_sha256,
+        code_closure_receipt_sha256=matrix.code_closure_receipt_sha256,
     )
 
 
@@ -188,22 +416,31 @@ def test_rung_b_admissibility_adjusts_total_parameters_per_vocabulary() -> None:
     assert all(row.admissible for row in rows)
 
 
-def test_reachability_uses_minimum_of_selected_four_base_runs_and_exact_prefix() -> None:
+def test_budget_uses_minimum_floor_arm_mean_and_exact_prelaunch_horizon() -> None:
     matrix = _matrix()
     selection = select_vocabulary_v2(
         matrix,
         admissibility=confirmation.build_rung_b_admissibility_v2(),
     )
     evidence = _evidence(matrix)
-    receipt = confirmation.build_confirmation_reachability_v2(
+    receipt = confirmation.build_confirmation_budget_v2(
         matrix=matrix,
         selection=selection,
         base_flop_evidence=evidence,
     )
-    assert receipt.common_flop_budget == min(row.measured_flops for row in evidence)
-    assert receipt.all_exact_reachable
-    assert {row.reached_optimizer_steps for row in receipt.rows} == {100}
-    assert all(row.nearest_lower_flops == receipt.common_flop_budget for row in receipt.rows)
+    expected_arm_means = {
+        vocab_size: sum(
+            row.measured_flops for row in evidence if row.vocab_size == vocab_size
+        )
+        // 2
+        for vocab_size in selection.compute_confirmation_pair
+    }
+    assert receipt.target_flops == min(expected_arm_means.values())
+    for row in receipt.rows:
+        assert row.arm_mean_flops == expected_arm_means[row.vocab_size]
+        assert row.planned_optimizer_steps == (
+            receipt.target_flops * row.byte_matched_optimizer_steps
+        ) // row.arm_mean_flops
 
 
 def test_confirmation_gpu_is_recorded_without_equality_binding_to_base_gpu() -> None:
@@ -222,6 +459,7 @@ def test_confirmation_gpu_is_recorded_without_equality_binding_to_base_gpu() -> 
         matrix=matrix,
         selection=selection,
         compute=compute,
+        evidence_closure=_confirmation_closure(matrix, runs, compute),
     )
     assert validated.status == "GREEN_NO_REVERSAL"
     assert _base(matrix).gpu_uuid_provenance_by_attempt == (
@@ -470,52 +708,44 @@ def test_full_cli_base_confirmation_v_receipt_is_idempotent(
     ]
 
 
-def test_unreachable_common_budget_stops_before_any_calibration_and_persists_stop(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+def test_nonexact_base_step_costs_do_not_restore_exact_reachability_gate() -> None:
     matrix = _matrix()
-    arms = _arms(matrix, tmp_path)
-    monkeypatch.setattr(TokenizerExecutionArmV2, "load", lambda self: object())
-    called = False
-
-    def calibrate(**kwargs):
-        nonlocal called
-        called = True
-        raise AssertionError("unreachable budget must stop before calibration")
-
-    with pytest.raises(GTokV2Stop, match="unreachable"):
-        confirmation.run_compute_confirmation_dry_run_v2(
-            base=_base(matrix),
-            source=_Source(matrix),  # type: ignore[arg-type]
-            tokenizer_arms=arms,
-            base_flop_evidence=_evidence(matrix, reachable=False),
-            output_root=tmp_path / "unreachable",
-            training_runtime_receipt_sha256=matrix.training_runtime_receipt_sha256,
-            code_closure_receipt_sha256=matrix.code_closure_receipt_sha256,
-            calibration_executor=calibrate,
-            full_run_executor=lambda **kwargs: None,  # type: ignore[arg-type]
-        )
-    assert not called
-    assert (tmp_path / "unreachable" / "campaign-stop.json").is_file()
-    assert not (tmp_path / "unreachable" / "campaign-events.sqlite3").exists()
-    with pytest.raises(GTokV2Stop, match="governed confirmation STOP"):
-        confirmation.run_compute_confirmation_dry_run_v2(
-            base=_base(matrix),
-            source=_Source(matrix),  # type: ignore[arg-type]
-            tokenizer_arms=arms,
-            base_flop_evidence=_evidence(matrix, reachable=False),
-            output_root=tmp_path / "unreachable",
-            training_runtime_receipt_sha256=matrix.training_runtime_receipt_sha256,
-            code_closure_receipt_sha256=matrix.code_closure_receipt_sha256,
-            calibration_executor=calibrate,
-            full_run_executor=lambda **kwargs: None,  # type: ignore[arg-type]
-        )
+    selection = select_vocabulary_v2(
+        matrix,
+        admissibility=confirmation.build_rung_b_admissibility_v2(),
+    )
+    receipt = confirmation.build_confirmation_budget_v2(
+        matrix=matrix,
+        selection=selection,
+        base_flop_evidence=_evidence(matrix, reachable=False),
+    )
+    assert all(row.planned_optimizer_steps >= 100 for row in receipt.rows)
 
 
-def test_selected_vocabulary_outside_raw_pair_stops_without_changing_pair(
-    tmp_path: Path,
+@pytest.mark.parametrize(
+    ("realized_numerator", "expected_direction"),
+    ((98, "longer"), (102, "shorter")),
+)
+def test_retry_horizon_recomputes_both_directions_exactly(
+    realized_numerator: int,
+    expected_direction: str,
 ) -> None:
+    target = 1_000_000_000_000
+    original_steps = 1_000
+    realized = realized_numerator * target // 100
+    retry_steps = confirmation.confirmation_retry_steps_v2(
+        target_flops=target,
+        realized_flops=realized,
+        optimizer_steps=original_steps,
+    )
+    assert retry_steps == target * original_steps // realized
+    if expected_direction == "longer":
+        assert retry_steps > original_steps
+    else:
+        assert retry_steps < original_steps
+
+
+def test_confirmation_pair_is_winner_and_raw_runner_up() -> None:
     offsets = {
         16_384: 0.90,
         24_576: 0.89,
@@ -534,31 +764,7 @@ def test_selected_vocabulary_outside_raw_pair_stops_without_changing_pair(
         admissibility=confirmation.build_rung_b_admissibility_v2(),
     )
     assert selection.selected_vocab_size == 16_384
-    assert selection.compute_confirmation_pair == (49_152, 32_768)
-    called = False
-
-    def calibrate(**kwargs):
-        nonlocal called
-        called = True
-        raise AssertionError("out-of-pair selection must stop before calibration")
-
-    root = tmp_path / "out-of-pair"
-    with pytest.raises(GTokV2Stop, match="outside the unchanged raw confirmation pair"):
-        confirmation.run_compute_confirmation_dry_run_v2(
-            base=_base(matrix),
-            source=_Source(matrix),  # type: ignore[arg-type]
-            tokenizer_arms=_arms(matrix, tmp_path),
-            base_flop_evidence=_evidence(matrix),
-            output_root=root,
-            training_runtime_receipt_sha256=matrix.training_runtime_receipt_sha256,
-            code_closure_receipt_sha256=matrix.code_closure_receipt_sha256,
-            calibration_executor=calibrate,
-            full_run_executor=lambda **kwargs: None,  # type: ignore[arg-type]
-        )
-    assert not called
-    assert b"SELECTED_VOCAB_OUTSIDE_RAW_CONFIRMATION_PAIR" in (
-        root / "campaign-stop.json"
-    ).read_bytes()
+    assert selection.compute_confirmation_pair == (16_384, 49_152)
 
 
 def test_injected_executors_end_in_non_authoritative_result_without_v_mint(
@@ -569,32 +775,27 @@ def test_injected_executors_end_in_non_authoritative_result_without_v_mint(
     arms = _arms(matrix, tmp_path)
     source = _Source(matrix)
     evidence = _evidence(matrix)
-    plan = _plan()
     monkeypatch.setattr(TokenizerExecutionArmV2, "load", lambda self: object())
     monkeypatch.setattr(
         confirmation,
-        "build_confirmation_prefix_plan_v2",
-        lambda **kwargs: plan,
+        "build_materialized_confirmation_order_v4",
+        lambda _root, confirmation_run_seed, data_order_seed, **_kwargs: _order(
+            matrix,
+            run_seed=confirmation_run_seed,
+            data_order_seed=data_order_seed,
+        ),
+    )
+    monkeypatch.setattr(
+        confirmation,
+        "plan_confirmation_training_prefix_v2",
+        lambda *args, **kwargs: _plan(
+            matrix,
+            kwargs["confirmation_order_receipt"],
+            optimizer_steps=kwargs["optimizer_steps"],
+        ),
     )
 
-    def calibrate(**kwargs):
-        calls["calibration"] += 1
-        return CalibrationMeasurementV2(
-            steps=100,
-            warmup_steps=20,
-            measured_steps=80,
-            measured_tokens=plan.compute_token_slots,
-            measured_a100_microseconds=1_000_000,
-            charged_a100_microseconds=1_200_000,
-            measured_heldout_evaluation_a100_microseconds=100_000,
-            heldout_evaluations_per_full_run=3,
-            measured_output_surface_a100_microseconds=100_000,
-            output_surface_benchmarks_per_full_run=1,
-            planned_tokens_per_run=plan.compute_token_slots,
-            shared_initial_state_sha256=_hash("shared-calibration"),
-        )
-
-    calls = {"calibration": 0, "full": 0}
+    calls = {"full": 0}
     pair = select_vocabulary_v2(
         matrix,
         admissibility=confirmation.build_rung_b_admissibility_v2(),
@@ -604,33 +805,67 @@ def test_injected_executors_end_in_non_authoritative_result_without_v_mint(
     def full(**kwargs):
         calls["full"] += 1
         execution_plan = kwargs["execution_plan"]
-        bpb = 0.90 + matrix.seeds.index(execution_plan.seed) * 0.01
+        bpb = 0.90 + execution_plan.seed_slot * 0.01
         if execution_plan.vocab_size == pair[1]:
             bpb += 0.05
+        plan = execution_plan.training_plan
         run = ComputeConfirmationRunV2(
             vocab_size=execution_plan.vocab_size,
+            seed_slot=execution_plan.seed_slot,
+            registry_key=execution_plan.registry_key,
             seed=execution_plan.seed,
+            initialization_seed=execution_plan.initialization_seed,
+            data_order_seed=execution_plan.data_order_seed,
+            data_order_sha256=execution_plan.data_order_sha256,
+            confirmation_order_receipt_sha256=(
+                execution_plan.confirmation_order_receipt_sha256
+            ),
+            physical_d6_evidence_sha256=(
+                execution_plan.physical_d6_evidence_sha256
+            ),
+            document_multiset_sha256=execution_plan.document_multiset_sha256,
+            framed_payload_sha256=execution_plan.framed_payload_sha256,
+            execution_plan_sha256=execution_plan.receipt_sha256,
+            training_plan_sha256=plan.receipt_sha256,
             base_run_receipt_sha256=kwargs["base_run_receipt_sha256"],
             compute_attempt_id=kwargs["compute_attempt_id"],
             common_flop_budget=execution_plan.common_flop_budget,
             measured_flops=execution_plan.common_flop_budget,
             heldout_stream_sha256=matrix.corpus.heldout_stream_sha256,
-            strata=_strata(matrix.corpus, bpb),
+            observations=_confirmation_observations(matrix, bpb, execution_plan),
             measured_a100_microseconds=100_000,
             training_runtime_receipt_sha256=matrix.training_runtime_receipt_sha256,
             code_closure_receipt_sha256=matrix.code_closure_receipt_sha256,
+            stream_bytes=plan.stream_bytes,
+            stream_docs=plan.stream_docs,
+            stream_tokens=plan.stream_tokens,
+            trained_tokens=plan.trained_tokens,
+            dropped_tokens=plan.dropped_tokens,
+            trained_bytes=plan.trained_bytes,
+            dropped_bytes=plan.dropped_bytes,
+            trained_docs_full=plan.trained_docs_full,
+            boundary_doc_id=plan.boundary_doc_id,
+            boundary_doc_consumed_tokens=plan.boundary_doc_consumed_tokens,
+            dropped_docs=plan.dropped_docs,
             gpu_uuid_provenance=kwargs["gpu_uuid_provenance"],
         )
+        ledger = _flop_ledger(execution_plan)
         return confirmation.ConfirmationPhysicalMeasurementV2(
             run=run,
+            flop_ledger=ledger,
             execution_plan_sha256=execution_plan.receipt_sha256,
             base_flop_evidence_sha256=execution_plan.base_flop_evidence_sha256,
             training_plan_sha256=execution_plan.training_plan.receipt_sha256,
-            heldout_evaluation_steps=(34, 67, 100),
-            physical_flop_ledger_sha256=_hash(
-                f"confirmation-ledger-{run.vocab_size}-{run.seed}"
+            heldout_evaluation_steps=execution_plan.heldout_evaluation_steps,
+            burst_flop_receipt=_burst_receipt(execution_plan),
+            physical_flop_ledger_sha256=(
+                confirmation.confirmation_physical_flop_ledger_evidence_sha256_v2(
+                    compute_attempt_id=run.compute_attempt_id,
+                    execution_plan_sha256=execution_plan.receipt_sha256,
+                    flop_ledger=ledger,
+                )
             ),
-            physical_optimizer_steps=100,
+            physical_optimizer_steps=execution_plan.training_plan.optimizer_steps,
             training_runtime_receipt_sha256=matrix.training_runtime_receipt_sha256,
             code_closure_receipt_sha256=matrix.code_closure_receipt_sha256,
         )
@@ -643,13 +878,12 @@ def test_injected_executors_end_in_non_authoritative_result_without_v_mint(
         output_root=tmp_path / "dry",
         training_runtime_receipt_sha256=matrix.training_runtime_receipt_sha256,
         code_closure_receipt_sha256=matrix.code_closure_receipt_sha256,
-        calibration_executor=calibrate,
         full_run_executor=full,
         gpu_uuid_provenance=_CONFIRMATION_GPU,
         offline_network_receipt_sha256=_OFFLINE_A,
     )
     assert dry.authority_status == "NON_AUTHORITATIVE_INJECTED_CONFIRMATION_EXECUTORS"
-    assert len(dry.run_receipt_sha256s) == 4
+    assert len(dry.run_receipt_sha256s) == 2
     assert "runs" not in {field.name for field in fields(dry)}
     assert "compute" not in {field.name for field in fields(dry)}
     assert "selection" not in {field.name for field in fields(dry)}
@@ -675,13 +909,12 @@ def test_injected_executors_end_in_non_authoritative_result_without_v_mint(
         output_root=tmp_path / "dry",
         training_runtime_receipt_sha256=matrix.training_runtime_receipt_sha256,
         code_closure_receipt_sha256=matrix.code_closure_receipt_sha256,
-        calibration_executor=calibrate,
         full_run_executor=full,
         gpu_uuid_provenance=_BASE_GPU,
         offline_network_receipt_sha256=_OFFLINE_B,
     )
     assert repeated == dry
-    assert calls == {"calibration": 2, "full": 4}
+    assert calls == {"full": 2}
     assert {
         path.relative_to(tmp_path / "dry").as_posix(): path.read_bytes()
         for path in (tmp_path / "dry").rglob("*.json")
@@ -700,7 +933,6 @@ def test_injected_executors_end_in_non_authoritative_result_without_v_mint(
             output_root=tampered,
             training_runtime_receipt_sha256=matrix.training_runtime_receipt_sha256,
             code_closure_receipt_sha256=matrix.code_closure_receipt_sha256,
-            calibration_executor=calibrate,
             full_run_executor=full,
             gpu_uuid_provenance=_CONFIRMATION_GPU,
             offline_network_receipt_sha256=_OFFLINE_B,
@@ -751,11 +983,435 @@ def test_injected_executors_end_in_non_authoritative_result_without_v_mint(
             output_root=duplicate,
             training_runtime_receipt_sha256=matrix.training_runtime_receipt_sha256,
             code_closure_receipt_sha256=matrix.code_closure_receipt_sha256,
-            calibration_executor=calibrate,
             full_run_executor=full,
             gpu_uuid_provenance=_CONFIRMATION_GPU,
             offline_network_receipt_sha256=_OFFLINE_B,
         )
+
+
+def test_invalid_flop_band_retries_fresh_and_resumes_corrected_plan(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    matrix = _matrix()
+    output = tmp_path / "flop-band-retry"
+    arms = _arms(matrix, tmp_path)
+    source = _Source(matrix)
+    evidence = _evidence(matrix)
+    pair = select_vocabulary_v2(
+        matrix,
+        admissibility=confirmation.build_rung_b_admissibility_v2(),
+    ).compute_confirmation_pair
+    monkeypatch.setattr(TokenizerExecutionArmV2, "load", lambda self: object())
+    monkeypatch.setattr(
+        confirmation,
+        "build_materialized_confirmation_order_v4",
+        lambda _root, confirmation_run_seed, data_order_seed, **_kwargs: _order(
+            matrix,
+            run_seed=confirmation_run_seed,
+            data_order_seed=data_order_seed,
+        ),
+    )
+    monkeypatch.setattr(
+        confirmation,
+        "plan_confirmation_training_prefix_v2",
+        lambda *args, **kwargs: _plan(
+            matrix,
+            kwargs["confirmation_order_receipt"],
+            optimizer_steps=kwargs["optimizer_steps"],
+        ),
+    )
+
+    seen_plans: list[confirmation.ConfirmationExecutionPlanV2] = []
+    failed_slot_zero = False
+
+    def full(**kwargs):
+        nonlocal failed_slot_zero
+        execution_plan = kwargs["execution_plan"]
+        seen_plans.append(execution_plan)
+        if execution_plan.seed_slot == 0 and not failed_slot_zero:
+            failed_slot_zero = True
+            realized = (98 * execution_plan.target_flops) // 100
+            ledger = _flop_ledger(execution_plan, measured_flops=realized)
+            raise confirmation.ConfirmationFlopBandViolationV2(
+                realized_flops=realized,
+                target_flops=execution_plan.target_flops,
+                retry_steps=confirmation.confirmation_retry_steps_v2(
+                    target_flops=execution_plan.target_flops,
+                    realized_flops=realized,
+                    optimizer_steps=execution_plan.training_plan.optimizer_steps,
+                ),
+                flop_ledger=ledger,
+                burst_flop_receipt=_burst_receipt(execution_plan),
+            )
+        bpb = 0.90 + execution_plan.seed_slot * 0.01
+        if execution_plan.vocab_size == pair[1]:
+            bpb += 0.05
+        plan = execution_plan.training_plan
+        run = ComputeConfirmationRunV2(
+            vocab_size=execution_plan.vocab_size,
+            seed_slot=execution_plan.seed_slot,
+            registry_key=execution_plan.registry_key,
+            seed=execution_plan.seed,
+            initialization_seed=execution_plan.initialization_seed,
+            data_order_seed=execution_plan.data_order_seed,
+            data_order_sha256=execution_plan.data_order_sha256,
+            confirmation_order_receipt_sha256=(
+                execution_plan.confirmation_order_receipt_sha256
+            ),
+            physical_d6_evidence_sha256=(
+                execution_plan.physical_d6_evidence_sha256
+            ),
+            document_multiset_sha256=execution_plan.document_multiset_sha256,
+            framed_payload_sha256=execution_plan.framed_payload_sha256,
+            execution_plan_sha256=execution_plan.receipt_sha256,
+            training_plan_sha256=plan.receipt_sha256,
+            base_run_receipt_sha256=kwargs["base_run_receipt_sha256"],
+            compute_attempt_id=kwargs["compute_attempt_id"],
+            common_flop_budget=execution_plan.common_flop_budget,
+            measured_flops=execution_plan.common_flop_budget,
+            heldout_stream_sha256=matrix.corpus.heldout_stream_sha256,
+            observations=_confirmation_observations(matrix, bpb, execution_plan),
+            measured_a100_microseconds=100_000,
+            training_runtime_receipt_sha256=matrix.training_runtime_receipt_sha256,
+            code_closure_receipt_sha256=matrix.code_closure_receipt_sha256,
+            stream_bytes=plan.stream_bytes,
+            stream_docs=plan.stream_docs,
+            stream_tokens=plan.stream_tokens,
+            trained_tokens=plan.trained_tokens,
+            dropped_tokens=plan.dropped_tokens,
+            trained_bytes=plan.trained_bytes,
+            dropped_bytes=plan.dropped_bytes,
+            trained_docs_full=plan.trained_docs_full,
+            boundary_doc_id=plan.boundary_doc_id,
+            boundary_doc_consumed_tokens=plan.boundary_doc_consumed_tokens,
+            dropped_docs=plan.dropped_docs,
+            gpu_uuid_provenance=kwargs["gpu_uuid_provenance"],
+        )
+        ledger = _flop_ledger(execution_plan)
+        return confirmation.ConfirmationPhysicalMeasurementV2(
+            run=run,
+            flop_ledger=ledger,
+            execution_plan_sha256=execution_plan.receipt_sha256,
+            base_flop_evidence_sha256=execution_plan.base_flop_evidence_sha256,
+            training_plan_sha256=plan.receipt_sha256,
+            heldout_evaluation_steps=execution_plan.heldout_evaluation_steps,
+            burst_flop_receipt=_burst_receipt(execution_plan),
+            physical_flop_ledger_sha256=(
+                confirmation.confirmation_physical_flop_ledger_evidence_sha256_v2(
+                    compute_attempt_id=run.compute_attempt_id,
+                    execution_plan_sha256=execution_plan.receipt_sha256,
+                    flop_ledger=ledger,
+                )
+            ),
+            physical_optimizer_steps=plan.optimizer_steps,
+            training_runtime_receipt_sha256=matrix.training_runtime_receipt_sha256,
+            code_closure_receipt_sha256=matrix.code_closure_receipt_sha256,
+        )
+
+    first = confirmation.run_compute_confirmation_dry_run_v2(
+        base=_base(matrix),
+        source=source,  # type: ignore[arg-type]
+        tokenizer_arms=arms,
+        base_flop_evidence=evidence,
+        output_root=output,
+        training_runtime_receipt_sha256=matrix.training_runtime_receipt_sha256,
+        code_closure_receipt_sha256=matrix.code_closure_receipt_sha256,
+        full_run_executor=full,
+        gpu_uuid_provenance=_CONFIRMATION_GPU,
+        offline_network_receipt_sha256=_OFFLINE_A,
+    )
+    assert first.authority_status.startswith("NON_AUTHORITATIVE")
+    assert len(seen_plans) == 3
+    initial, retry, other_slot = seen_plans
+    assert (initial.seed_slot, retry.seed_slot, other_slot.seed_slot) == (0, 0, 1)
+    assert retry.training_plan.optimizer_steps == (
+        initial.target_flops * initial.training_plan.optimizer_steps
+    ) // ((98 * initial.target_flops) // 100)
+    assert retry.training_plan.optimizer_steps != initial.training_plan.optimizer_steps
+    assert (
+        retry.registry_key,
+        retry.seed,
+        retry.initialization_seed,
+        retry.data_order_seed,
+        retry.data_order_sha256,
+        retry.confirmation_order_receipt_sha256,
+    ) == (
+        initial.registry_key,
+        initial.seed,
+        initial.initialization_seed,
+        initial.data_order_seed,
+        initial.data_order_sha256,
+        initial.confirmation_order_receipt_sha256,
+    )
+    attempts = campaign._load_persisted_attempts_v2(output)
+    assert [row.status for row in attempts] == ["failed", "completed", "completed"]
+    assert attempts[1].attempt_id == attempts[0].attempt_id + ".retry-1"
+    assert sum(row.status == "completed" for row in attempts) == 2
+    invalid_artifact = output / f"invalid-flop-band-{attempts[0].attempt_id}.json"
+    assert invalid_artifact.is_file()
+
+    calls_before_resume = len(seen_plans)
+    resumed = confirmation.run_compute_confirmation_dry_run_v2(
+        base=_base(matrix),
+        source=source,  # type: ignore[arg-type]
+        tokenizer_arms=arms,
+        base_flop_evidence=evidence,
+        output_root=output,
+        training_runtime_receipt_sha256=matrix.training_runtime_receipt_sha256,
+        code_closure_receipt_sha256=matrix.code_closure_receipt_sha256,
+        full_run_executor=full,
+        gpu_uuid_provenance=_CONFIRMATION_GPU,
+        offline_network_receipt_sha256=_OFFLINE_A,
+    )
+    assert resumed == first
+    assert len(seen_plans) == calls_before_resume
+
+    stored = json.loads(invalid_artifact.read_text(encoding="utf-8"))
+    persisted_burst = dict(stored["passed_burst_flop_receipt"])
+    persisted_burst["prelaunch_arm_mean_flops"] *= 2
+    persisted_burst["byte_matched_optimizer_steps"] *= 2
+    burst_receipt = confirmation.ConfirmationBurstFlopReceiptV2(
+        ordered_step_flops=tuple(persisted_burst["ordered_step_flops"]),
+        prelaunch_arm_mean_flops=persisted_burst["prelaunch_arm_mean_flops"],
+        byte_matched_optimizer_steps=persisted_burst[
+            "byte_matched_optimizer_steps"
+        ],
+    )
+    stored["passed_burst_flop_receipt"] = persisted_burst
+    stored["passed_burst_receipt_sha256"] = burst_receipt.receipt_sha256
+    stored["passed_physical_burst_evidence_sha256"] = (
+        confirmation.confirmation_physical_burst_evidence_sha256_v2(
+            compute_attempt_id=attempts[0].attempt_id,
+            execution_plan_sha256=seen_plans[0].receipt_sha256,
+            burst=burst_receipt,
+        )
+    )
+    invalid_artifact.write_bytes(confirmation.canonical_json_bytes(stored) + b"\n")
+    with pytest.raises(
+        confirmation.GTokConfirmationV2Error,
+        match="retry chain changed stable evidence",
+    ):
+        confirmation._load_retry_chain_v2(output, seen_plans[0])
+
+
+def test_multi_retry_chain_fails_closed_when_later_artifact_is_missing(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    matrix = _matrix()
+    output = tmp_path / "multi-retry-missing-artifact"
+    pair = select_vocabulary_v2(
+        matrix,
+        admissibility=confirmation.build_rung_b_admissibility_v2(),
+    ).compute_confirmation_pair
+    monkeypatch.setattr(TokenizerExecutionArmV2, "load", lambda self: object())
+    monkeypatch.setattr(
+        confirmation,
+        "build_materialized_confirmation_order_v4",
+        lambda _root, confirmation_run_seed, data_order_seed, **_kwargs: _order(
+            matrix,
+            run_seed=confirmation_run_seed,
+            data_order_seed=data_order_seed,
+        ),
+    )
+    monkeypatch.setattr(
+        confirmation,
+        "plan_confirmation_training_prefix_v2",
+        lambda *args, **kwargs: _plan(
+            matrix,
+            kwargs["confirmation_order_receipt"],
+            optimizer_steps=kwargs["optimizer_steps"],
+        ),
+    )
+    seen_plans: list[confirmation.ConfirmationExecutionPlanV2] = []
+    failed_slot_zero = 0
+
+    def full(**kwargs):
+        nonlocal failed_slot_zero
+        execution_plan = kwargs["execution_plan"]
+        seen_plans.append(execution_plan)
+        if execution_plan.seed_slot == 0 and failed_slot_zero < 2:
+            failed_slot_zero += 1
+            realized = 98 * execution_plan.target_flops // 100
+            ledger = _flop_ledger(execution_plan, measured_flops=realized)
+            raise confirmation.ConfirmationFlopBandViolationV2(
+                realized_flops=realized,
+                target_flops=execution_plan.target_flops,
+                retry_steps=confirmation.confirmation_retry_steps_v2(
+                    target_flops=execution_plan.target_flops,
+                    realized_flops=realized,
+                    optimizer_steps=execution_plan.training_plan.optimizer_steps,
+                ),
+                flop_ledger=ledger,
+                burst_flop_receipt=_burst_receipt(execution_plan),
+            )
+        return _synthetic_measurement(matrix, pair, execution_plan, kwargs)
+
+    result = confirmation.run_compute_confirmation_dry_run_v2(
+        base=_base(matrix),
+        source=_Source(matrix),  # type: ignore[arg-type]
+        tokenizer_arms=_arms(matrix, tmp_path),
+        base_flop_evidence=_evidence(matrix),
+        output_root=output,
+        training_runtime_receipt_sha256=matrix.training_runtime_receipt_sha256,
+        code_closure_receipt_sha256=matrix.code_closure_receipt_sha256,
+        full_run_executor=full,
+        gpu_uuid_provenance=_CONFIRMATION_GPU,
+        offline_network_receipt_sha256=_OFFLINE_A,
+    )
+    assert result.authority_status.startswith("NON_AUTHORITATIVE")
+    assert [(row.seed_slot, row.training_plan.optimizer_steps) for row in seen_plans] == [
+        (0, 100),
+        (0, 102),
+        (0, 104),
+        (1, 100),
+    ]
+    attempts = campaign._load_persisted_attempts_v2(output)
+    failed = [row for row in attempts if row.status == "failed"]
+    assert [row.attempt_id for row in failed] == [
+        failed[0].attempt_id,
+        failed[0].attempt_id + ".retry-1",
+    ]
+    artifacts = [
+        output / f"invalid-flop-band-{attempt.attempt_id}.json"
+        for attempt in failed
+    ]
+    assert all(path.is_file() for path in artifacts)
+    preflight = json.loads(
+        (output / "confirmation-preflight.json").read_text(encoding="utf-8")
+    )
+    projection = ArmCalibrationProjectionV2(
+        **preflight["payload"]["calibrations"][0]
+    )
+    chain, recovered_plan = confirmation._load_retry_chain_v2(
+        output,
+        seen_plans[0],
+        projection,
+    )
+    assert [row.ordinal for row in chain] == [0, 1]
+    assert recovered_plan.receipt_sha256 == seen_plans[2].receipt_sha256
+    for row, path in zip(chain, artifacts, strict=True):
+        stored = json.loads(path.read_text(encoding="utf-8"))
+        assert stored["retry_execution_plan_sha256"] == row.retry_plan.receipt_sha256
+        assert stored["retry_projected_run_a100_microseconds"] == (
+            confirmation._attempt_projection_a100_microseconds_v2(
+                projection,
+                row.retry_plan,
+            )
+        )
+    artifacts[1].unlink()
+    with pytest.raises(
+        confirmation.GTokConfirmationV2Error,
+        match="failed confirmation terminals and invalid-band artifacts differ",
+    ):
+        confirmation._load_retry_chain_v2(output, seen_plans[0])
+
+
+def test_q4_burst_gate_persists_ordered_evidence_and_stop_physical_join(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    matrix = _matrix()
+    output = tmp_path / "q4-burst-stop"
+    monkeypatch.setattr(TokenizerExecutionArmV2, "load", lambda self: object())
+    monkeypatch.setattr(
+        confirmation,
+        "build_materialized_confirmation_order_v4",
+        lambda _root, confirmation_run_seed, data_order_seed, **_kwargs: _order(
+            matrix,
+            run_seed=confirmation_run_seed,
+            data_order_seed=data_order_seed,
+        ),
+    )
+    monkeypatch.setattr(
+        confirmation,
+        "plan_confirmation_training_prefix_v2",
+        lambda *args, **kwargs: _plan(
+            matrix,
+            kwargs["confirmation_order_receipt"],
+            optimizer_steps=kwargs["optimizer_steps"],
+        ),
+    )
+    observed: dict[str, object] = {}
+
+    def full(**kwargs):
+        execution_plan = kwargs["execution_plan"]
+        nominal = (
+            execution_plan.arm_mean_flops
+            + execution_plan.byte_matched_optimizer_steps // 2
+        ) // execution_plan.byte_matched_optimizer_steps
+        ordered_step_flops = tuple(
+            nominal + index % 3 for index in range(99)
+        ) + (nominal + nominal // 50,)
+        gate = confirmation.ConfirmationBurstGateEvidenceV2(
+            ordered_step_flops=ordered_step_flops,
+            prelaunch_arm_mean_flops=execution_plan.arm_mean_flops,
+            byte_matched_optimizer_steps=(
+                execution_plan.byte_matched_optimizer_steps
+            ),
+        )
+        assert gate.status == "STOP_RANGE_OVER_MEDIAN_ABOVE_ONE_PERCENT"
+        observed["gate"] = gate
+        observed["attempt_id"] = kwargs["compute_attempt_id"]
+        observed["execution_plan_sha256"] = execution_plan.receipt_sha256
+        raise confirmation.ConfirmationBurstGateViolationV2(gate)
+
+    with pytest.raises(
+        GTokV2Stop,
+        match="confirmation Q4 burst gate fired; return to strategy",
+    ):
+        confirmation.run_compute_confirmation_dry_run_v2(
+            base=_base(matrix),
+            source=_Source(matrix),  # type: ignore[arg-type]
+            tokenizer_arms=_arms(matrix, tmp_path),
+            base_flop_evidence=_evidence(matrix),
+            output_root=output,
+            training_runtime_receipt_sha256=(
+                matrix.training_runtime_receipt_sha256
+            ),
+            code_closure_receipt_sha256=matrix.code_closure_receipt_sha256,
+            full_run_executor=full,
+            gpu_uuid_provenance=_CONFIRMATION_GPU,
+            offline_network_receipt_sha256=_OFFLINE_A,
+        )
+
+    gate = observed["gate"]
+    assert isinstance(gate, confirmation.ConfirmationBurstGateEvidenceV2)
+    evidence_path = next(output.glob("invalid-confirmation-burst-*.json"))
+    evidence_raw = evidence_path.read_bytes()
+    evidence = json.loads(evidence_raw)
+    assert tuple(evidence["burst_gate_evidence"]["ordered_step_flops"]) == (
+        gate.ordered_step_flops
+    )
+    assert evidence["burst_gate_evidence"] == {
+        "byte_matched_optimizer_steps": gate.byte_matched_optimizer_steps,
+        "ordered_step_flops": list(gate.ordered_step_flops),
+        "prelaunch_arm_mean_flops": gate.prelaunch_arm_mean_flops,
+    }
+    assert evidence["burst_gate_receipt_sha256"] == gate.receipt_sha256
+    assert evidence["status"] == gate.status
+    assert evidence["failed_execution_plan_sha256"] == observed[
+        "execution_plan_sha256"
+    ]
+    physical_sha256 = hashlib.sha256(evidence_raw).hexdigest()
+    stop = json.loads((output / "campaign-stop.json").read_bytes())["payload"]
+    assert stop["reason"] == gate.status
+    assert stop["decision_evidence_receipt_sha256"] == gate.receipt_sha256
+    assert stop["decision_evidence_physical_sha256"] == physical_sha256
+    attempts = campaign._load_persisted_attempts_v2(output)
+    assert len(attempts) == 1
+    assert attempts[0].attempt_id == observed["attempt_id"]
+    assert attempts[0].status == "failed"
+    terminal = next(
+        row
+        for row in campaign.validate_lifecycle_ledger_v2(output)
+        if row.attempt_id == observed["attempt_id"] and row.phase == "TERMINAL"
+    )
+    assert terminal.terminal_status == "failed"
+    assert evidence["failed_terminal_lifecycle_event_sha256"] == (
+        terminal.receipt_sha256
+    )
 
 
 def test_hard_kill_relaunch_charges_orphan_and_retries_fresh_attempt(
@@ -769,25 +1425,11 @@ import os
 from pathlib import Path
 import training.weft1_gtok_confirmation_v2 as c
 from training.weft1_gtok_campaign_v2 import TokenizerExecutionArmV2
-from training.weft1_gtok_training_v2 import CalibrationMeasurementV2
-from tests.test_weft1_gtok_confirmation_v2 import _arms, _base, _evidence, _hash, _matrix, _plan, _Source, _BASE_GPU, _OFFLINE_A
+from tests.test_weft1_gtok_confirmation_v2 import _arms, _base, _evidence, _hash, _matrix, _order, _plan, _Source, _BASE_GPU, _OFFLINE_A
 m = _matrix()
-p = _plan()
 TokenizerExecutionArmV2.load = lambda self: object()
-c.build_confirmation_prefix_plan_v2 = lambda **kwargs: p
-def calibrate(**kwargs):
-    return CalibrationMeasurementV2(
-        steps=100, warmup_steps=20, measured_steps=80,
-        measured_tokens=p.compute_token_slots,
-        measured_a100_microseconds=20000000,
-        charged_a100_microseconds=20200000,
-        measured_heldout_evaluation_a100_microseconds=100000,
-        heldout_evaluations_per_full_run=3,
-        measured_output_surface_a100_microseconds=100000,
-        output_surface_benchmarks_per_full_run=1,
-        planned_tokens_per_run=p.compute_token_slots,
-        shared_initial_state_sha256=_hash("shared-calibration"),
-    )
+c.build_materialized_confirmation_order_v4 = lambda root, confirmation_run_seed, data_order_seed, **kwargs: _order(m, run_seed=confirmation_run_seed, data_order_seed=data_order_seed)
+c.plan_confirmation_training_prefix_v2 = lambda *args, **kwargs: _plan(m, kwargs["confirmation_order_receipt"], optimizer_steps=kwargs["optimizer_steps"])
 def hard_kill(**kwargs):
     os._exit(77)
 c.run_compute_confirmation_dry_run_v2(
@@ -797,7 +1439,6 @@ c.run_compute_confirmation_dry_run_v2(
     output_root=Path({str(output)!r}),
     training_runtime_receipt_sha256=m.training_runtime_receipt_sha256,
     code_closure_receipt_sha256=m.code_closure_receipt_sha256,
-    calibration_executor=calibrate,
     full_run_executor=hard_kill,
     gpu_uuid_provenance=_BASE_GPU,
     offline_network_receipt_sha256=_OFFLINE_A,
@@ -818,56 +1459,112 @@ c.run_compute_confirmation_dry_run_v2(
     )
 
     matrix = _matrix()
-    plan = _plan()
     pair = select_vocabulary_v2(
         matrix,
         admissibility=confirmation.build_rung_b_admissibility_v2(),
     ).compute_confirmation_pair
     arms = _arms(matrix, tmp_path)
     source = _Source(matrix)
-    calls = {"calibration": 0, "full": 0, "attempt_ids": []}
+    calls = {"full": 0, "attempt_ids": []}
     monkeypatch.setattr(TokenizerExecutionArmV2, "load", lambda self: object())
     monkeypatch.setattr(
         confirmation,
-        "build_confirmation_prefix_plan_v2",
-        lambda **kwargs: plan,
+        "build_materialized_confirmation_order_v4",
+        lambda _root, confirmation_run_seed, data_order_seed, **_kwargs: _order(
+            matrix,
+            run_seed=confirmation_run_seed,
+            data_order_seed=data_order_seed,
+        ),
     )
-
-    def calibrate(**kwargs):
-        calls["calibration"] += 1
-        raise AssertionError("completed calibration must be skipped on relaunch")
+    monkeypatch.setattr(
+        confirmation,
+        "plan_confirmation_training_prefix_v2",
+        lambda *args, **kwargs: _plan(
+            matrix,
+            kwargs["confirmation_order_receipt"],
+            optimizer_steps=kwargs["optimizer_steps"],
+        ),
+    )
 
     def full(**kwargs):
         calls["full"] += 1
         calls["attempt_ids"].append(kwargs["compute_attempt_id"])
         execution_plan = kwargs["execution_plan"]
-        bpb = 0.90 + matrix.seeds.index(execution_plan.seed) * 0.01
+        if calls["full"] == 1:
+            realized = 98 * execution_plan.target_flops // 100
+            ledger = _flop_ledger(execution_plan, measured_flops=realized)
+            raise confirmation.ConfirmationFlopBandViolationV2(
+                realized_flops=realized,
+                target_flops=execution_plan.target_flops,
+                retry_steps=confirmation.confirmation_retry_steps_v2(
+                    target_flops=execution_plan.target_flops,
+                    realized_flops=realized,
+                    optimizer_steps=execution_plan.training_plan.optimizer_steps,
+                ),
+                flop_ledger=ledger,
+                burst_flop_receipt=_burst_receipt(execution_plan),
+            )
+        bpb = 0.90 + execution_plan.seed_slot * 0.01
         if execution_plan.vocab_size == pair[1]:
             bpb += 0.05
+        plan = execution_plan.training_plan
         run = ComputeConfirmationRunV2(
             vocab_size=execution_plan.vocab_size,
+            seed_slot=execution_plan.seed_slot,
+            registry_key=execution_plan.registry_key,
             seed=execution_plan.seed,
+            initialization_seed=execution_plan.initialization_seed,
+            data_order_seed=execution_plan.data_order_seed,
+            data_order_sha256=execution_plan.data_order_sha256,
+            confirmation_order_receipt_sha256=(
+                execution_plan.confirmation_order_receipt_sha256
+            ),
+            physical_d6_evidence_sha256=(
+                execution_plan.physical_d6_evidence_sha256
+            ),
+            document_multiset_sha256=execution_plan.document_multiset_sha256,
+            framed_payload_sha256=execution_plan.framed_payload_sha256,
+            execution_plan_sha256=execution_plan.receipt_sha256,
+            training_plan_sha256=plan.receipt_sha256,
             base_run_receipt_sha256=kwargs["base_run_receipt_sha256"],
             compute_attempt_id=kwargs["compute_attempt_id"],
             common_flop_budget=execution_plan.common_flop_budget,
             measured_flops=execution_plan.common_flop_budget,
             heldout_stream_sha256=matrix.corpus.heldout_stream_sha256,
-            strata=_strata(matrix.corpus, bpb),
+            observations=_confirmation_observations(matrix, bpb, execution_plan),
             measured_a100_microseconds=100_000,
             training_runtime_receipt_sha256=matrix.training_runtime_receipt_sha256,
             code_closure_receipt_sha256=matrix.code_closure_receipt_sha256,
+            stream_bytes=plan.stream_bytes,
+            stream_docs=plan.stream_docs,
+            stream_tokens=plan.stream_tokens,
+            trained_tokens=plan.trained_tokens,
+            dropped_tokens=plan.dropped_tokens,
+            trained_bytes=plan.trained_bytes,
+            dropped_bytes=plan.dropped_bytes,
+            trained_docs_full=plan.trained_docs_full,
+            boundary_doc_id=plan.boundary_doc_id,
+            boundary_doc_consumed_tokens=plan.boundary_doc_consumed_tokens,
+            dropped_docs=plan.dropped_docs,
             gpu_uuid_provenance=kwargs["gpu_uuid_provenance"],
         )
+        ledger = _flop_ledger(execution_plan)
         return confirmation.ConfirmationPhysicalMeasurementV2(
             run=run,
+            flop_ledger=ledger,
             execution_plan_sha256=execution_plan.receipt_sha256,
             base_flop_evidence_sha256=execution_plan.base_flop_evidence_sha256,
             training_plan_sha256=execution_plan.training_plan.receipt_sha256,
-            heldout_evaluation_steps=(34, 67, 100),
-            physical_flop_ledger_sha256=_hash(
-                f"resume-ledger-{{run.vocab_size}}-{{run.seed}}"
+            heldout_evaluation_steps=execution_plan.heldout_evaluation_steps,
+            burst_flop_receipt=_burst_receipt(execution_plan),
+            physical_flop_ledger_sha256=(
+                confirmation.confirmation_physical_flop_ledger_evidence_sha256_v2(
+                    compute_attempt_id=run.compute_attempt_id,
+                    execution_plan_sha256=execution_plan.receipt_sha256,
+                    flop_ledger=ledger,
+                )
             ),
-            physical_optimizer_steps=100,
+            physical_optimizer_steps=execution_plan.training_plan.optimizer_steps,
             training_runtime_receipt_sha256=matrix.training_runtime_receipt_sha256,
             code_closure_receipt_sha256=matrix.code_closure_receipt_sha256,
         )
@@ -880,23 +1577,29 @@ c.run_compute_confirmation_dry_run_v2(
         output_root=output,
         training_runtime_receipt_sha256=matrix.training_runtime_receipt_sha256,
         code_closure_receipt_sha256=matrix.code_closure_receipt_sha256,
-        calibration_executor=calibrate,
         full_run_executor=full,
         gpu_uuid_provenance=_CONFIRMATION_GPU,
         offline_network_receipt_sha256=_OFFLINE_B,
     )
     assert result.authority_status.startswith("NON_AUTHORITATIVE")
-    assert calls["calibration"] == 0
-    assert calls["full"] == 4
+    assert calls["full"] == 3
     assert calls["attempt_ids"][0] == orphan_start.attempt_id + ".retry-1"
+    assert calls["attempt_ids"][1] == orphan_start.attempt_id + ".retry-2"
     attempts = campaign._load_persisted_attempts_v2(output)
     orphan = next(row for row in attempts if row.attempt_id == orphan_start.attempt_id)
-    retry = next(
+    invalid_band = next(
         row for row in attempts if row.attempt_id == orphan_start.attempt_id + ".retry-1"
+    )
+    retry = next(
+        row for row in attempts if row.attempt_id == orphan_start.attempt_id + ".retry-2"
     )
     assert orphan.status == "preempted"
     assert orphan.consumed_a100_microseconds >= orphan_start.charged_a100_microseconds
+    assert invalid_band.status == "failed"
     assert retry.status == "completed"
+    retry_artifact = output / f"invalid-flop-band-{invalid_band.attempt_id}.json"
+    assert retry_artifact.is_file()
+    assert '"correction_ordinal":0' in retry_artifact.read_text(encoding="utf-8")
     lifecycle = campaign.validate_lifecycle_ledger_v2(output)
     assert {
         row.gpu_uuid_provenance

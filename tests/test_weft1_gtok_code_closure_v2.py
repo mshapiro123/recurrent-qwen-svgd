@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 from pathlib import Path
 import subprocess
 from types import SimpleNamespace
@@ -55,3 +56,23 @@ def test_every_behavior_bearing_path_is_forced_to_lf() -> None:
     rows = tuple(line for line in completed.stdout.splitlines() if line)
     assert len(rows) == len(paths)
     assert all(row.endswith(": eol: lf") for row in rows)
+
+
+def test_confirmation_semantics_authority_documents_are_exactly_closed() -> None:
+    root = Path(__file__).resolve().parents[1]
+    expected = {
+        "docs/STRATEGY_GTOK_CONFIRMATION_SEMANTICS_20260831.md": (
+            "2e42664d0062a119c9fadcb76bf227a91134914920116627f9244f650defe72d"
+        ),
+        "docs/STRATEGY_GTOK_SEMANTICS_AMENDMENT_S1_20260831.md": (
+            "c37c4be064fe447e01182acc11b1713239c761ddd50583a8299972b4b340bd2a"
+        ),
+        "docs/STRATEGY_GTOK_SEMANTICS_AMENDMENT_S2_20260831.md": (
+            "5420a4e57c080d09f5f924acc859a5579edd1ca1939c8bbdaf727e5afd55ac5e"
+        ),
+    }
+    assert set(expected).issubset(closure._behavior_paths(root))
+    for relative_path, expected_sha256 in expected.items():
+        assert hashlib.sha256((root / relative_path).read_bytes()).hexdigest() == (
+            expected_sha256
+        )

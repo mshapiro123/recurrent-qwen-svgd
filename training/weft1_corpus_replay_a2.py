@@ -129,6 +129,10 @@ _RESERVED_ENVIRONMENT_KEYS = frozenset(
         "WEFT1_REPLAY_INPUT_IDENTITY_SHA256",
         "WEFT1_REPLAY_LOCAL_WORK_PARENT",
         "WEFT1_REPLAY_OUTPUT_ROOT",
+        "WEFT1_REPLAY_PARSED_ASSET_CACHE_ROOT",
+        "WEFT1_REPLAY_PARSED_ASSET_CODE_IDENTITY_SHA256",
+        "WEFT1_REPLAY_PARSED_ASSET_DURABLE_MARKER_SHA256",
+        "WEFT1_REPLAY_PARSED_ASSET_INPUT_IDENTITY_SHA256",
         "WEFT1_REPLAY_RECEIPT_PATH",
         "WEFT1_REPLAY_RUN_ID",
         "WEFT1_REPLAY_WORKER_COMPATIBILITY_SHA256",
@@ -1887,6 +1891,10 @@ def _offline_environment(
     worker_compatibility_sha256: str,
     worker_import_root: Path,
     extra_environment: Mapping[str, str] | None,
+    parsed_asset_cache_root: Path | None = None,
+    parsed_asset_code_identity_sha256: str | None = None,
+    parsed_asset_durable_marker_sha256: str | None = None,
+    parsed_asset_input_identity_sha256: str | None = None,
 ) -> dict[str, str]:
     # Do not inherit Python startup paths or user-site controls.  The production
     # launcher uses ``-I`` and inserts only the hash-bound repository snapshot.
@@ -1939,6 +1947,51 @@ def _offline_environment(
             environment[key] = str(local_work_parent)
     else:
         environment.pop("WEFT1_REPLAY_LOCAL_WORK_PARENT", None)
+    parsed_asset_values = (
+        parsed_asset_cache_root,
+        parsed_asset_code_identity_sha256,
+        parsed_asset_durable_marker_sha256,
+        parsed_asset_input_identity_sha256,
+    )
+    if any(value is not None for value in parsed_asset_values):
+        if any(value is None for value in parsed_asset_values):
+            raise ParentReplayError(
+                "parsed-asset recovery environment must be supplied as one complete set"
+            )
+        assert parsed_asset_cache_root is not None
+        assert parsed_asset_code_identity_sha256 is not None
+        assert parsed_asset_durable_marker_sha256 is not None
+        assert parsed_asset_input_identity_sha256 is not None
+        _require_sha256(
+            parsed_asset_code_identity_sha256,
+            "parsed-asset code identity",
+        )
+        _require_sha256(
+            parsed_asset_durable_marker_sha256,
+            "parsed-asset durable marker SHA-256",
+        )
+        _require_sha256(
+            parsed_asset_input_identity_sha256,
+            "parsed-asset input identity",
+        )
+        environment.update(
+            {
+                "WEFT1_REPLAY_PARSED_ASSET_CACHE_ROOT": str(
+                    assert_no_symlink_ancestors(parsed_asset_cache_root).resolve(
+                        strict=True
+                    )
+                ),
+                "WEFT1_REPLAY_PARSED_ASSET_CODE_IDENTITY_SHA256": (
+                    parsed_asset_code_identity_sha256
+                ),
+                "WEFT1_REPLAY_PARSED_ASSET_DURABLE_MARKER_SHA256": (
+                    parsed_asset_durable_marker_sha256
+                ),
+                "WEFT1_REPLAY_PARSED_ASSET_INPUT_IDENTITY_SHA256": (
+                    parsed_asset_input_identity_sha256
+                ),
+            }
+        )
     return environment
 
 

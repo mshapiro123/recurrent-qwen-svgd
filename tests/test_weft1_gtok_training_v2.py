@@ -48,22 +48,36 @@ def _document(text: str, stratum: str = "general") -> TrainingDocumentV2:
     )
 
 
-def test_packer_is_causal_across_documents_and_credits_eos_batch() -> None:
+def test_heldout_nll_promotes_each_loss_before_reduction() -> None:
+    # Above 2**24, binary32 cannot preserve every unit increment.  This makes
+    # the regression observable without depending on a large held-out fixture.
+    losses = torch.tensor([float(2**24), 1.0, 1.0, 1.0], dtype=torch.float32)
+
+    total = training._sum_losses_float64_v2(losses)
+
+    assert total.dtype == torch.float64
+    assert total.item() == float(2**24 + 3)
+    assert total.item() != losses.sum(dtype=torch.float32).item()
+
+
+def test_packer_is_causal_across_documents_and_emits_only_full_batches() -> None:
     documents = (_document("a"), _document("b"))
     batches = tuple(
         iter_packed_global_batches_v2(
             documents,
             tokenizer=_tokenizer(),
-            global_batch_sequences=2,
+            global_batch_sequences=1,
             sequence_length=8,
         )
     )
     assert len(batches) == 1
     batch = batches[0]
-    # The terminal global batch executes only its physical sequence rows.
+    # Each one-content-token record has BOS/content/EOS/boundary, so the two
+    # documents exactly fill one 1x8 test batch without padding.
     assert batch.input_ids.shape == (1, 8)
     assert batch.completed_raw_bytes == len(b"a") + len(b"b")
     assert batch.completed_document_count == 2
+    assert bool(batch.attention_mask.all())
     boundaries = batch.document_ids[:, :-1].ne(batch.document_ids[:, 1:])
     assert not bool(
         (
@@ -75,19 +89,25 @@ def test_packer_is_causal_across_documents_and_credits_eos_batch() -> None:
     )
 
 
-def test_long_document_credit_waits_for_sequence_containing_eos() -> None:
-    document = _document("alpha " * 40)
+def test_long_document_source_bytes_are_credited_by_content_token_prefix() -> None:
+    tokenizer = _tokenizer()
+    text = "alpha " * 40
+    while (len(tokenizer.encode(text, add_special_tokens=False).ids) + 3) % 8:
+        text += "a"
+    document = _document(text)
     batches = tuple(
         iter_packed_global_batches_v2(
             (document,),
-            tokenizer=_tokenizer(),
+            tokenizer=tokenizer,
             global_batch_sequences=1,
             sequence_length=8,
         )
     )
     assert len(batches) > 1
-    assert all(batch.completed_raw_bytes == 0 for batch in batches[:-1])
-    assert batches[-1].completed_raw_bytes == len(document.raw_bytes)
+    assert sum(batch.completed_raw_bytes for batch in batches) == len(document.raw_bytes)
+    assert any(batch.completed_raw_bytes > 0 for batch in batches[:-1])
+    assert all(batch.completed_document_count == 0 for batch in batches[:-1])
+    assert batches[-1].completed_document_count == 1
     # Every non-boundary token keeps its physical next-token target, including
     # the final token of a row whose successor begins the next row.
     flattened_targets = torch.cat(tuple(batch.target_ids.flatten() for batch in batches))
@@ -98,7 +118,7 @@ def test_long_document_credit_waits_for_sequence_containing_eos() -> None:
     assert set(flattened_documents[flattened_documents.ge(0)].tolist()) == {0}
     for left, right in zip(batches, batches[1:]):
         assert int(left.target_ids[0, -1]) == int(right.input_ids[0, 0])
-    boundary_id = _tokenizer().token_to_id("<|doc_boundary|>")
+    boundary_id = tokenizer.token_to_id("<|doc_boundary|>")
     assert int(flattened_targets.ne(-100).sum()) == sum(
         batch.valid_prediction_count for batch in batches
     )
@@ -106,29 +126,189 @@ def test_long_document_credit_waits_for_sequence_containing_eos() -> None:
     assert boundary_id in flattened_targets.tolist()
 
 
-def test_plan_is_replay_stable_and_rejects_wrong_frozen_denominator() -> None:
-    tokenizer = _tokenizer()
-    documents = (_document("alpha"), _document("beta"))
+class _OneBytePerTokenTokenizer:
+    _specials = {
+        "<|pad|>": 0,
+        "<|bos|>": 1,
+        "<|eos|>": 2,
+        "<|doc_boundary|>": 3,
+    }
+
+    def token_to_id(self, value: str) -> int | None:
+        return self._specials.get(value)
+
+    def encode(self, text: str, *, add_special_tokens: bool) -> SimpleNamespace:
+        assert not add_special_tokens
+        raw = text.encode("ascii")
+        return SimpleNamespace(
+            ids=[64 + value for value in raw],
+            tokens=[chr(value) for value in raw],
+        )
+
+
+def test_plan_accounts_exact_full_batch_prefix_and_dropped_boundary_document(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # Exercise production full-batch semantics with a smaller physical test
+    # batch; the immutable production binding itself remains 256x2048.
+    monkeypatch.setitem(training.PACKING_BINDING_V2, "batch_sequences", 1)
+    tokenizer = _OneBytePerTokenTokenizer()
+    full_batch_tokens = 2_048
+    document = _document("a" * (3 * full_batch_tokens))
+    wholly_dropped = _document("tail")
+    documents = (document, wholly_dropped)
     factory = lambda: iter(documents)
     expected = sum(len(item.raw_bytes) for item in documents)
     first = plan_training_stream_v2(
         factory,
         tokenizer=tokenizer,
         expected_realized_raw_bytes=expected,
+        global_batch_sequences=1,
     )
     second = plan_training_stream_v2(
         factory,
         tokenizer=tokenizer,
         expected_realized_raw_bytes=expected,
+        global_batch_sequences=1,
     )
     assert first == second
     assert first.packing_binding_sha256 == PACKING_BINDING_SHA256_V2
+    assert first.optimizer_steps == 3
+    assert first.compute_token_slots == 3 * full_batch_tokens
+    assert first.stream_tokens == 3 * full_batch_tokens + 10
+    assert first.trained_tokens == 3 * full_batch_tokens
+    assert first.dropped_tokens == 10
+    assert first.stream_bytes == 3 * full_batch_tokens + 4
+    assert first.trained_bytes == 3 * full_batch_tokens - 1
+    assert first.realized_raw_bytes == first.trained_bytes
+    assert first.dropped_bytes == 5
+    assert first.stream_docs == 2
+    assert first.trained_docs_full == 0
+    assert first.document_count == 0
+    assert first.boundary_doc_id == document.raw_content_id
+    assert first.boundary_doc_consumed_tokens == 3 * full_batch_tokens
+    assert first.dropped_docs == 1
+    assert first.bpb_checkpoint_steps == (1, 2, 3)
+    assert first.dropped_token_fraction == pytest.approx(
+        10 / (3 * full_batch_tokens + 10)
+    )
     with pytest.raises(RuntimeError, match="differ from frozen"):
         plan_training_stream_v2(
             factory,
             tokenizer=tokenizer,
             expected_realized_raw_bytes=expected + 1,
+            global_batch_sequences=1,
         )
+
+
+def test_l6_checkpoint_planner_requires_three_distinct_byte_fraction_steps() -> None:
+    assert training._precompute_l6_bpb_checkpoint_steps_v2((25, 49, 50, 100)) == (
+        1,
+        3,
+        4,
+    )
+    with pytest.raises(training.GTokTrainingV2Error, match="three distinct"):
+        training._precompute_l6_bpb_checkpoint_steps_v2((1, 2))
+
+
+def test_full_run_evaluates_only_at_precomputed_l6_steps(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setitem(training.PACKING_BINDING_V2, "batch_sequences", 1)
+    base = _profile_batch(1, sequence=2_048)
+    batches = tuple(
+        replace(base, completed_raw_bytes=raw_bytes)
+        for raw_bytes in (25, 25, 50)
+    )
+    digest = hashlib.sha256()
+    for batch in batches:
+        training._update_training_plan_digest_v2(digest, batch)
+    token_slots = sum(batch.input_ids.numel() for batch in batches)
+    predictions = sum(batch.valid_prediction_count for batch in batches)
+    documents = sum(batch.completed_document_count for batch in batches)
+    plan = training.TrainingPlanV2(
+        optimizer_steps=3,
+        compute_token_slots=token_slots,
+        valid_prediction_count=predictions,
+        realized_raw_bytes=100,
+        document_count=documents,
+        packed_stream_sha256=digest.hexdigest(),
+        stream_bytes=100,
+        stream_docs=documents,
+        stream_tokens=token_slots,
+        trained_tokens=token_slots,
+        dropped_tokens=0,
+        trained_bytes=100,
+        dropped_bytes=0,
+        trained_docs_full=documents,
+        dropped_docs=0,
+        bpb_checkpoint_steps=(1, 2, 3),
+    )
+    executed_steps: list[int] = []
+    evaluated_steps: list[int] = []
+
+    class Model:
+        def to(self, _device: torch.device):
+            return self
+
+        def train(self):
+            return self
+
+    class Accountant:
+        def __init__(self, *_args: object, **_kwargs: object) -> None:
+            pass
+
+        def execute(self, *, step: int, operation, **_kwargs: object) -> None:
+            operation()
+            executed_steps.append(step)
+
+        def finalize(self, _plan: training.TrainingPlanV2) -> SimpleNamespace:
+            return SimpleNamespace(optimizer_steps=3)
+
+    def evaluate(*_args: object, **_kwargs: object) -> tuple[object, ...]:
+        evaluated_steps.append(executed_steps[-1])
+        return ()
+
+    monkeypatch.setattr(training, "build_flat_a1_adamw_v2", lambda _model: object())
+    monkeypatch.setattr(training, "_PhysicalFlopAccountantV2", Accountant)
+    monkeypatch.setattr(training, "_execute_optimizer_step_v2", lambda *_a, **_k: None)
+    monkeypatch.setattr(
+        training,
+        "iter_packed_global_batches_v2",
+        lambda *_a, **_k: iter(batches),
+    )
+    monkeypatch.setattr(training, "evaluate_heldout_v2", evaluate)
+    monkeypatch.setattr(
+        training,
+        "BpbMilestoneReceiptV2",
+        lambda **kwargs: SimpleNamespace(**kwargs),
+    )
+    monkeypatch.setattr(training, "_elapsed_microseconds", lambda *_a, **_k: 1)
+
+    steps, _elapsed, completed_documents, observations, _ledger = (
+        training._train_batches_v2(
+            Model(),  # type: ignore[arg-type]
+            tokenizer=_tokenizer(),
+            document_factory=lambda: iter(()),
+            plan=plan,
+            device=torch.device("cpu"),
+            microbatch_sequences=1,
+            maximum_steps=None,
+            watchdog_limit_a100_microseconds=None,
+            prior_campaign_a100_microseconds=0,
+            campaign_tripwire_a100_microseconds=None,
+            heldout_factory=lambda _stratum: iter(()),
+            heldout_stream_sha256="a" * 64,
+        )
+    )
+    assert steps == 3
+    assert completed_documents == documents
+    assert executed_steps == [1, 2, 3]
+    assert evaluated_steps == [1, 2, 3]
+    assert tuple(item.label for item in observations) == training.GTOK_MILESTONE_LABELS
+    assert tuple(item.optimizer_step for item in observations) == (1, 2, 3)
+    assert tuple(item.previous_training_raw_bytes for item in observations) == (0, 25, 50)
+    assert tuple(item.training_raw_bytes for item in observations) == (25, 50, 100)
 
 
 def test_v4_source_rejoins_current_d6_and_order_before_both_streams(

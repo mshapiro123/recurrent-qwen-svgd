@@ -18,6 +18,7 @@ from training.weft1_corpus_replay_a2 import (  # noqa: E402
     attest_production_storage_v3,
 )
 from training.weft1_corpus_replay_a3 import (  # noqa: E402
+    V4_DEFAULT_WORKER_TIMEOUT_SECONDS,
     verify_production_materialization_replays_v4,
 )
 from training.weft1_gtok_contract import canonical_json_bytes  # noqa: E402
@@ -37,15 +38,30 @@ def build_parser() -> argparse.ArgumentParser:
     full.add_argument("--durable-mount-root", required=True, type=Path)
     full.add_argument("--durable-storage-marker", required=True, type=Path)
     full.add_argument("--durable-output-parent", required=True, type=Path)
+    full.add_argument(
+        "--durable-parsed-asset-cache-parent", required=True, type=Path
+    )
     full.add_argument("--local-work-parent", required=True, type=Path)
     full.add_argument("--receipt-out", required=True, type=Path)
-    full.add_argument("--timeout-seconds", type=float, default=86_400.0)
+    full.add_argument(
+        "--timeout-seconds",
+        type=float,
+        default=V4_DEFAULT_WORKER_TIMEOUT_SECONDS,
+        help=(
+            "finite parent-side worker watchdog; defaults to 14 days (2x the "
+            "observed per-replay projection), while Colab backend loss is "
+            "handled by parsed-asset recovery"
+        ),
+    )
     return parser
 
 
 def _run(arguments: argparse.Namespace) -> dict[str, object]:
     output_parent = assert_no_symlink_ancestors(
         arguments.durable_output_parent
+    ).resolve(strict=False)
+    parsed_asset_cache_parent = assert_no_symlink_ancestors(
+        arguments.durable_parsed_asset_cache_parent
     ).resolve(strict=False)
     local_parent = assert_no_symlink_ancestors(
         arguments.local_work_parent
@@ -55,22 +71,53 @@ def _run(arguments: argparse.Namespace) -> dict[str, object]:
     )
     if output_parent.exists():
         raise ParentReplayError("V4 durable output parent must be fresh")
+    if parsed_asset_cache_parent.exists() and not parsed_asset_cache_parent.is_dir():
+        raise ParentReplayError(
+            "V4 parsed-asset cache parent must be absent or a directory"
+        )
+    if not parsed_asset_cache_parent.parent.resolve(strict=True).is_dir():
+        raise ParentReplayError(
+            "V4 parsed-asset cache parent requires an existing parent"
+        )
     if not local_parent.is_dir():
         raise ParentReplayError("V4 local work parent must be a real directory")
     if receipt_out.exists() or receipt_out.parent != output_parent:
         raise ParentReplayError("V4 receipt must be fresh inside the output parent")
-    if (
-        output_parent == local_parent
-        or output_parent in local_parent.parents
-        or local_parent in output_parent.parents
+    governed_roots = (
+        output_parent,
+        parsed_asset_cache_parent,
+        local_parent,
+        assert_no_symlink_ancestors(arguments.source_cache).resolve(strict=True),
+    )
+    if any(
+        left == right or left in right.parents or right in left.parents
+        for index, left in enumerate(governed_roots)
+        for right in governed_roots[index + 1 :]
     ):
-        raise ParentReplayError("V4 durable output and local work must be disjoint")
-    attest_production_storage_v3(
+        raise ParentReplayError(
+            "V4 output, parsed-asset cache, local work, and source cache must be disjoint"
+        )
+    output_storage_identity = attest_production_storage_v3(
         durable_mount_root=arguments.durable_mount_root,
         durable_storage_marker_path=arguments.durable_storage_marker,
         durable_output_parent=output_parent.parent,
         local_work_parent=local_parent,
     )
+    parsed_cache_attestation_root = (
+        parsed_asset_cache_parent
+        if parsed_asset_cache_parent.exists()
+        else parsed_asset_cache_parent.parent
+    )
+    if attest_production_storage_v3(
+        durable_mount_root=arguments.durable_mount_root,
+        durable_storage_marker_path=arguments.durable_storage_marker,
+        durable_output_parent=parsed_cache_attestation_root,
+        local_work_parent=local_parent,
+    ) != output_storage_identity:
+        raise ParentReplayError(
+            "V4 parsed-asset cache is not on the registered durable storage"
+        )
+    parsed_asset_cache_parent.mkdir(exist_ok=True)
     output_parent.mkdir(parents=True)
     result = verify_production_materialization_replays_v4(
         python_executable=Path(sys.executable),
@@ -83,6 +130,7 @@ def _run(arguments: argparse.Namespace) -> dict[str, object]:
         durable_mount_root=arguments.durable_mount_root,
         durable_storage_marker_path=arguments.durable_storage_marker,
         durable_output_parent=output_parent,
+        durable_parsed_asset_cache_parent=parsed_asset_cache_parent,
         local_work_parent=local_parent,
         first_output_root=output_parent / "production-v4-replay-a",
         second_output_root=output_parent / "production-v4-replay-b",

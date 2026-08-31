@@ -677,7 +677,8 @@ def test_production_prepare_reconstructs_legacy_ledgers_and_removes_checkpoints(
             source_family="wikipedia_wikibooks",
             relative_path="wikipedia/asset.jsonl",
             asset_identity_sha256=asset_identity,
-        )
+        ),
+        observed_sha256=_sha("wikipedia:asset-bytes"),
     )
     parsed = SimpleNamespace(
         parser_binding_sha256=expected_binding,
@@ -695,6 +696,7 @@ def test_production_prepare_reconstructs_legacy_ledgers_and_removes_checkpoints(
         disposition=materializer.RETAIN,
         event_sha256=_sha("wikipedia:event"),
         record=parsed,
+        source_family="wikipedia_wikibooks",
         source_record_ordinal=0,
     )
 
