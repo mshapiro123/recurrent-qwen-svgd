@@ -8,6 +8,7 @@ from pathlib import Path, PurePosixPath
 import pytest
 import zstandard
 
+from training.weft1_corpus_fetch_a3 import SourceCacheAssetV4
 from training.weft1_corpus_parsed_asset_cache_v1 import (
     ParsedAssetRecoveryContextV1,
     ParsedAssetRecoveryError,
@@ -163,6 +164,7 @@ def _verified_asset(
     *,
     source_family: str,
     payload: bytes,
+    v4_authority: bool = False,
 ) -> tuple[VerifiedLocalCacheAssetV3, Path]:
     route = next(
         route
@@ -178,17 +180,25 @@ def _verified_asset(
     asset_path = cache_root.joinpath(*PurePosixPath(relative).parts)
     asset_path.parent.mkdir(parents=True)
     asset_path.write_bytes(payload)
-    expected = SourceCacheAssetV3(
-        source_family=source_family,
-        repository=route.repository,
-        config=route.config,
-        revision=route.revision,
-        split=route.split,
-        asset_locator=locator,
-        relative_path=relative,
-        bytes=len(payload),
-        sha256=_sha(payload),
-    )
+    asset_fields = {
+        "source_family": source_family,
+        "repository": route.repository,
+        "config": route.config,
+        "revision": route.revision,
+        "split": route.split,
+        "asset_locator": locator,
+        "relative_path": relative,
+        "bytes": len(payload),
+        "sha256": _sha(payload),
+    }
+    if v4_authority:
+        expected = SourceCacheAssetV4(
+            **asset_fields,
+            effective_route_receipt_sha256="8" * 64,
+            execution_binding_sha256="9" * 64,
+        )
+    else:
+        expected = SourceCacheAssetV3(**asset_fields)
     return (
         VerifiedLocalCacheAssetV3(
             expected=expected,
@@ -199,7 +209,7 @@ def _verified_asset(
     )
 
 
-def _stackedu_events(tmp_path: Path):
+def _stackedu_events(tmp_path: Path, *, v4_authority: bool = False):
     logical = b"".join(
         json.dumps(row, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
         + b"\n"
@@ -210,6 +220,7 @@ def _stackedu_events(tmp_path: Path):
         tmp_path,
         source_family="stackedu",
         payload=payload,
+        v4_authority=v4_authority,
     )
     binding = resolve_production_parser_binding_v3(asset)
     events = tuple(
@@ -266,6 +277,42 @@ def test_parsed_asset_cache_round_trip_reconstructs_events_and_projections(
     assert insert["text_bytes"] == b"retained StackEdu text"
     assert insert["retained_bytes"] == len(b"retained StackEdu text")
     assert insert["int_score"] == 4
+
+
+def test_parsed_asset_cache_round_trip_preserves_v4_asset_authority(
+    tmp_path: Path,
+) -> None:
+    asset, binding, events = _stackedu_events(tmp_path, v4_authority=True)
+    assert type(asset.expected) is SourceCacheAssetV4
+    root = tmp_path / "parsed-cache"
+
+    published = write_parsed_asset_segment_v1(
+        root,
+        context=_context(),
+        verified_asset=asset,
+        parser_binding=binding,
+        asset_order_ordinal=0,
+        first_event_ordinal=0,
+        events=events,
+    )
+    recovered = tuple(
+        iter_parsed_asset_segment_v1(
+            root,
+            context=_context(),
+            verified_asset=asset,
+            parser_binding=binding,
+            asset_order_ordinal=0,
+            expected_first_event_ordinal=0,
+        )
+    )
+
+    retained = next(row.event.record for row in recovered if row.event.record is not None)
+    recovered_asset = retained.canonical_record.asset
+    assert published.receipt.retained_record_count == 1
+    assert type(recovered_asset) is SourceCacheAssetV4
+    assert recovered_asset == asset.expected
+    assert recovered_asset.effective_route_receipt_sha256 == "8" * 64
+    assert recovered_asset.execution_binding_sha256 == "9" * 64
 
 
 def test_parsed_asset_cache_reopen_hash_and_context_fail_closed(

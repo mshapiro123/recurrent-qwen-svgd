@@ -705,7 +705,7 @@ def _recovered_event_from_row(
             raise ParsedAssetRecoveryError("parsed-asset canonical-record fields are not exact")
         asset_value = _mapping(canonical_value["asset"], "parsed-asset source asset")
         try:
-            source_asset = SourceCacheAssetV3.from_mapping(asset_value)
+            source_asset = type(expected_asset).from_mapping(asset_value)
         except (TypeError, ValueError) as error:
             raise ParsedAssetRecoveryError("parsed-asset source asset is invalid") from error
         if source_asset != expected_asset:
