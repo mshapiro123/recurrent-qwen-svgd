@@ -2,11 +2,13 @@
 
 **Date:** 2026-09-02  
 **Status:** BUILD-AXIS RECEIPT · no training or sealed-data contact  
-**Snapshot base:** `04eb51373b35684d3f4865b6c50c78a9cb7a43e0`  
-**PF-1 implementation commit:** `4ca0236c6c31c1da3abf1cdf20a66ef859e452b9`
+**Snapshot base:** `926a77a2`
+
+**PF-2 implementation commit:** `5ebbefea36c13a8f86c5e78ed074efc6c91db12f`
+
 **Architecture authority:** full build handoff, 61,329 bytes, SHA-256 `498f34b5…eb02`, Drive `1XaE81mfqTOYEYGFMa-ZJwpLW-KQtMMC_`  
 **Ratification authority:** `STRATEGY_RATIFICATION_RECORD_20260826.md`, 13,908 bytes, SHA-256 `c5df74297594e75697ffb71d8d05d75efcf94f7857d55ddd357043200efb6d3a`, Drive `1Wb_FfEb-Sl-TgL23hcFOy58QcSurfaF3`  
-**Status authority:** PF-1, 12,285 bytes, SHA-256 `4e3186c432b57f71b9f32a444a269eec08557ca5181a6896b477078dbbb40861`, Drive `14czHXHXYMSx4zJKay7lCr0QmNCuWE1q4`
+**Status authorities:** PF-2, 13,097 bytes, SHA-256 `be11390c28ae36210a1571f7c6d358ee54e977d239f5344f7e6402212448eb05`; §8.1 amendment, 3,403 bytes, SHA-256 `dd79aaa6fd9bab15bf02aaef28f99f47c745d63eed6db2c9b929b4bb1cfbb418`
 
 ## 0. Outcome
 
@@ -31,7 +33,7 @@ No row in this snapshot qualifies for `integrated + OBS-INV-tested`. The dense a
 | ratified surface | status | implementation and test evidence | introducing / governing commit | precise limitation |
 |---|---|---|---|---|
 | Dense causal substrate: tied embedding/readout, pre-RMSNorm, QK norm, RoPE, GQA, SwiGLU, prelude/core/coda | `integrated` | `models/ablation_lm/model.py`; `test_t1_disabled_graph_is_exactly_the_dense_transformer` | `85bb8eae` | Existing anchor is zero-tolerance `assert_close`, not a registered bit-identical OBS-INV matrix. |
-| μP attention-logit scale `1/d_head` | `absent` | attention currently uses the ordinary square-root head-dimension scale | — | Width-transfer parameterization is incomplete until the ratified μP scale is implemented and checked. |
+| μP attention-logit base-shape scale `sqrt(d_head,base)/d_head`, `d_head,base=64` | `integrated` | existing inverse-square-root attention is the exact numerical realization at the ratified fixed `d_head=64`; named base constant and fused/math/reference assertions in `config.py`, layer tests and bicameral target-shape tests | PF-2 implementation return | No numerical behavior changed. A future WEFT configuration with `d_head != 64` requires the explicit base-shape implementation; ordinary non-WEFT toy configurations retain their prior inverse-square-root behavior. |
 | Shared recurrent core, inference-controllable `K`, `alpha_T=c/T`, requested/executed accounting | `integrated` | `AblationLM._run_recurrent_core`; K override and accounting tests | `85bb8eae`, `5c835c3c`, `83157bfb` | Current recurrent core is single-stream dense, not the full bicameral recurrent core. |
 | Fixed-anchor static K/V, live-state queries: current single-stream form | `integrated` | `models/ablation_lm/model.py`; T15 equivalence, projection-count, gradient and T14b regressions | `51c16443` | Full-sequence/reference path only; production autoregressive serving cache is not claimed. |
 | Production bicameral static K/V representation | `absent` | a standalone paired-block candidate exists, but C-S5-2 remains unresolved between paired-eigenmode and shared-consensus K/V | `0c95a7cc`, `e78692dd` (candidate only) | The need for a production representation is ratified; the paired representation is not. No choice or integrated recurrent call site exists. |
@@ -75,7 +77,17 @@ The current static/dense bring-up graph has independent direct future-gradient t
 
 The worktree contains typed exact-comparison and deferred-cell plumbing for A7, plus concrete counterexamples to two ambiguous literal readings. No A7 matrix is minted while catch #27 is open. In particular, no row above is promoted to `integrated + OBS-INV-tested` from a standalone certificate, a causality test, or zero-tolerance numerical equivalence.
 
-## 4. Queue implied by the evidence
+## 4. PF-2 PRE-FLIGHT status
+
+- **Jacobian panel:** the registered main panel is now `n=520`. The corrected power calculation meets both literal frontiers (`SE=0.05092447485214237 <= 0.051` and `SE=0.03578829611711741 <= 0.036`), and all four previously planted B1 calibration phases remain green.
+- **C1:** the PF-2 topology is bound and the amended attention coefficient is byte-verified. The width run remains fail-closed as **Catch #33** because §8 does not bind eight load-bearing μP literals: numeric `d_base`, numeric `sigma_base`, a complete per-tensor initialization map, numeric `eta_base`, a complete per-tensor learning-rate map, residual `alpha`, embedding multiplier, and residual multiplier. No model or optimizer was constructed.
+- **C2:** the terminal K=8 CPU check numerically passes the post-data PF-2 thresholds: hidden `0.002378677322798898`, lanes `0.016478415427698328`, logits `0.003659068615870767`, full-gradient vector `0.0071749515521762446`, and terminal worst module tensor `0.02583730846608379`. The complete receipt remains fail-closed as **Catch #34** because three visit-1 re-entry parameters are structurally disconnected with zero reference norm and PF-2 supplies no zero-reference/eligibility rule. The learned rotor-carrier decision and GPU evaluator identity remain deferred.
+- **C3/C6:** PF-2's typed complete-gate posture stands; no bounded CPU subset is promoted to the unavailable CUDA, dropout, STOCH-K, or absent-module cells.
+- **C7:** stage 1 emits the four present G-TOK families through the production matrix, selection, confirmation-budget and checkpoint-accounting builders from deterministic synthetic source receipts. The byte-matched base path is independently bound at `n=400`; the fresh confirmation path is joined to its selected budget row at `n=399`, with separate byte totals and first-crossing indices. Receipt SHA-256 is `04b9c1515a3902c2963eb1e13e5bfa42ede144549f88a44366953b76a422abd6`. Stage 2 remains open on the sidecar and Catch #26/C-JAC-1; the complete C7 gate remains incomplete and non-forgeable.
+- **Catch #26 disposition:** **OPEN.** Exact standalone adapter factors and an empirical core estimate exist, but no ratified joint-state metric or production nonlinear-visit certificate/alarm exists; C-JAC-1 still governs.
+- **Catch #27 disposition:** **OPEN.** Exact matched-background comparison plumbing exists, but A7's comparison graph and K/module eligibility remain unbound; no registered matrix is minted.
+
+## 5. Queue implied by the evidence
 
 The evidence supports this dependency order without choosing an unresolved design locally:
 
@@ -89,7 +101,7 @@ The evidence supports this dependency order without choosing an unresolved desig
 
 This matrix does not authorize coding through unresolved C-S5-1/2 or C-S6-1/2 semantics, and it does not convert an older-programme module into a WEFT-1 implementation by name similarity. Catch #26 also preserves the open C-JAC-1 joint-state metric rather than supplying one locally.
 
-## 5. Do-not-claim boundary
+## 6. Do-not-claim boundary
 
 - No integrated full-width bicameral recurrent result exists.
 - No selected production bicameral static-K/V representation exists.
