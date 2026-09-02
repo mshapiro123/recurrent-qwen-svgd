@@ -1,12 +1,21 @@
 # CODING → STRATEGY — WEFT-1 PRE-FLIGHT catches #28–#31
 
-**Date:** 2026-09-02  
-**Status:** FAIL-CLOSED WEEK-1 CONTINUATION RECEIPT · CPU evidence only  
-**Implementation base:** `f68be351af6e0a04ed4528158b8f838e5688cc81`  
-**Program authority:** `STRATEGY_PREFLIGHT_PROGRAM_20260902.md`, 15,575 bytes, SHA-256 `ceaa5338830307d3783296b8a4aef7bb87962eb35535d392f4c6d217dff88a5b`  
-**Ratification authority:** `STRATEGY_PREFLIGHT_RATIFICATION_20260902.md`, 2,233 bytes, SHA-256 `4a13054d38c68e5e9476330528649d445ff845e639e0a36bb01641b54ef66965`  
+**Date:** 2026-09-02
+
+**Status:** FAIL-CLOSED WEEK-1 CONTINUATION RECEIPT · CPU evidence only
+
+**Implementation base:** `f68be351af6e0a04ed4528158b8f838e5688cc81`
+
+**Implementation commit:** `3033901904462368dc1bcd1462b668f0916ddcaa`
+
+**Program authority:** `STRATEGY_PREFLIGHT_PROGRAM_20260902.md`, 15,575 bytes, SHA-256 `ceaa5338830307d3783296b8a4aef7bb87962eb35535d392f4c6d217dff88a5b`
+
+**Ratification authority:** `STRATEGY_PREFLIGHT_RATIFICATION_20260902.md`, 2,233 bytes, SHA-256 `4a13054d38c68e5e9476330528649d445ff845e639e0a36bb01641b54ef66965`
+
 **PF-1 authority:** `STRATEGY_PREFLIGHT_AMENDMENT_PF1_20260902.md`, 12,285 bytes, SHA-256 `4e3186c432b57f71b9f32a444a269eec08557ca5181a6896b477078dbbb40861`
+
 **Attention-scale authority:** `STRATEGY_TO_CODING_AGENT_LOOM1_HANDOFF_20260826.md` §8.1, 61,329 bytes, SHA-256 `498f34b5966f0879c7f0a15ca8be02a603558781c35f59f03fb29cc9edd3eb02`, Drive `1XaE81mfqTOYEYGFMa-ZJwpLW-KQtMMC_` (raw Drive bytes reverified for this receipt)
+
 **G-TOK semantics authority chain:** parent 13,975 bytes, SHA-256 `2e42664d0062a119c9fadcb76bf227a91134914920116627f9244f650defe72d`; S1 12,411 bytes, SHA-256 `c37c4be064fe447e01182acc11b1713239c761ddd50583a8299972b4b340bd2a`; S2 6,638 bytes, SHA-256 `5420a4e57c080d09f5f924acc859a5579edd1ca1939c8bbdaf727e5afd55ac5e` (all reverified locally by C7)
 
 ## 0. Outcome
