@@ -1,4 +1,4 @@
-"""CPU-valid portion of WEFT-1 PRE-FLIGHT C2 loop-precision measurement.
+"""CPU-valid portion of the WEFT-1 PRE-FLIGHT C2 precision gate.
 
 The governing C2 row asks for a K=8 bf16/full-toy comparison against fp32
 masters.  This module deliberately measures only the graph that exists today.
@@ -6,10 +6,12 @@ The learned rotor carrier, per-band callosum, and loop sidecar are not integrate
 so this receipt cannot decide rotor-carrier accumulation or claim that the full
 WEFT-1 toy chassis passed.
 
-The ratified ``1e-2 relative`` literal is preserved in the receipt.  It is not
-turned into a pass/fail gate because the authority does not bind the relative
-metric, denominator, tensor population, gradient target, or visit aggregation.
-Those missing literals are returned as a catch instead of being inferred here.
+PF-2.2 binds vector-relative L2 per tensor and per visit, with terminal K=8 as
+the decision value.  State/logits use a 1e-2 ceiling; lanes and gradients use a
+5e-2 ceiling.  Gradients cover both the concatenated trainable-parameter vector
+and the worst tensor in every parameter-owning module.  PF-2 expressly binds
+those thresholds after seeing the original diagnostic values, which remains a
+first-class disclosure in the receipt.
 """
 
 from __future__ import annotations
@@ -40,10 +42,21 @@ C2_RATIFICATION_SHA256 = (
     "4a13054d38c68e5e9476330528649d445ff845e639e0a36bb01641b54ef66965"
 )
 C2_RATIFICATION_BYTES = 2_233
+C2_PF2_AUTHORITY = "docs/STRATEGY_PREFLIGHT_AMENDMENT_PF2_20260902.md#2-PF-2.2"
+C2_PF2_AUTHORITY_SHA256 = (
+    "be11390c28ae36210a1571f7c6d358ee54e977d239f5344f7e6402212448eb05"
+)
+C2_PF2_AUTHORITY_BYTES = 13_097
 C2_RATIFIED_VISITS = 8
-C2_REGISTERED_RELATIVE_THRESHOLD = 1e-2
+C2_STATE_LOGIT_RELATIVE_L2_THRESHOLD = 1e-2
+C2_LANE_GRADIENT_RELATIVE_L2_THRESHOLD = 5e-2
 C2_ROOT_SEED = 20_260_902
-C2_GRADIENT_PARAMETER = "core_blocks.0.attention.q_proj.weight"
+C2_CATCH34_REASON = (
+    "PF-2.2 binds per-tensor per-visit gradient relative L2 but no "
+    "zero-reference or eligibility rule; the PF-1.5 structurally "
+    "ineligible visit-1 reentry gradients have zero fp32 norms, making "
+    "the maximum-over-visits population incomplete"
+)
 
 C2_CURRENT_INTEGRATED_MODULES = (
     "modified_hadamard_expert_bank",
@@ -61,19 +74,15 @@ C2_REPRESENTATIVE_MISSING_FULL_TOY_INTEGRATIONS = (
     "conditional_loop_sidecar",
     "final_post_loop_bridge_out",
 )
-C2_REQUIRED_METRIC_RULINGS = (
-    "bind the fixed toy weight state or synthetic-update protocol and input/loss panel",
-    "bind whether 1e-2 gates vector relative-L2, scalar norm drift, cosine loss, or another metric",
-    "bind the denominator or zero-reference policy for every relative metric",
-    "bind whether the gate is per visit, maximum over visits, or final K=8 only",
-    "bind the gradient loss, parameter/tensor population, and aggregation",
-    "bind the production bf16 backend; CPU autocast is not GPU evaluator identity",
-)
+
+
+class C2GateCatch(RuntimeError):
+    """Raised when a caller attempts to promote a non-passing C2 receipt."""
 
 
 @dataclass(frozen=True)
 class TensorDrift:
-    """Candidate descriptive metrics; none is silently promoted to the C2 gate."""
+    """PF-2.2 gate metric plus retained descriptive norm/cosine diagnostics."""
 
     reference_dtype: str
     bf16_compute_dtype: str
@@ -81,7 +90,43 @@ class TensorDrift:
     bf16_compute_l2: float
     relative_l2_error: float
     relative_norm_drift: float
-    cosine_similarity: float
+    cosine_similarity: float | None
+
+
+@dataclass(frozen=True)
+class ModuleGradientWorstTensor:
+    module_name: str
+    parameter_name: str | None
+    parameter_tensor_count: int
+    defined_tensor_count: int
+    undefined_parameter_names: tuple[str, ...]
+    drift: TensorDrift | None
+    complete: bool
+
+
+@dataclass(frozen=True)
+class UndefinedGradientCell:
+    visit: int
+    module_name: str
+    parameter_name: str
+    reason: str
+    fp32_autograd_connected: bool
+    bf16_autograd_connected: bool
+    fp32_l2: float
+    bf16_compute_l2: float
+
+
+@dataclass(frozen=True)
+class GradientVisitDrift:
+    full_parameter_vector: TensorDrift
+    per_module_worst_tensors: tuple[ModuleGradientWorstTensor, ...]
+    worst_module_name: str | None
+    worst_parameter_name: str | None
+    worst_tensor: TensorDrift | None
+    undefined_relative_l2_cells: tuple[UndefinedGradientCell, ...]
+    complete: bool
+    trainable_parameter_tensors: int
+    trainable_parameter_elements: int
 
 
 @dataclass(frozen=True)
@@ -90,7 +135,7 @@ class C2VisitDrift:
     hidden: TensorDrift
     scratch_lanes: TensorDrift
     logits: TensorDrift
-    gradient: TensorDrift
+    gradient: GradientVisitDrift
     fp32_loss: float
     bf16_compute_loss: float
     relative_loss_drift: float
@@ -104,6 +149,16 @@ class DeferredC2Cell:
 
 
 @dataclass(frozen=True)
+class ModuleGradientMaximum:
+    module_name: str
+    parameter_name: str | None
+    max_relative_l2: float | None
+    max_relative_l2_visit: int | None
+    undefined_visits: tuple[int, ...]
+    complete: bool
+
+
+@dataclass(frozen=True)
 class C2DriftSummary:
     max_hidden_relative_l2: float
     max_hidden_relative_l2_visit: int
@@ -111,12 +166,41 @@ class C2DriftSummary:
     max_scratch_lane_relative_l2_visit: int
     max_logit_relative_l2: float
     max_logit_relative_l2_visit: int
-    max_gradient_relative_l2: float
-    max_gradient_relative_l2_visit: int
+    max_full_gradient_relative_l2: float
+    max_full_gradient_relative_l2_visit: int
+    max_worst_module_gradient_relative_l2: float | None
+    max_worst_module_gradient_relative_l2_visit: int | None
+    max_worst_module_gradient_module: str | None
+    max_worst_module_gradient_parameter: str | None
+    per_module_gradient_maxima: tuple[ModuleGradientMaximum, ...]
+    undefined_gradient_cells: tuple[UndefinedGradientCell, ...]
+    gradient_maxima_complete: bool
     max_relative_loss_drift: float
     max_relative_loss_drift_visit: int
-    candidate_relative_l2_crossings_of_registered_literal: tuple[tuple[str, int], ...]
-    crossing_semantics: str
+
+
+@dataclass(frozen=True)
+class C2TerminalGateDecision:
+    visit: int
+    metric: str
+    hidden_relative_l2: float
+    scratch_lane_relative_l2: float
+    logit_relative_l2: float
+    full_gradient_relative_l2: float
+    worst_module_gradient_relative_l2: float | None
+    worst_module_gradient_module: str | None
+    worst_module_gradient_parameter: str | None
+    state_threshold: float
+    logit_threshold: float
+    lane_threshold: float
+    gradient_threshold: float
+    hidden_passed: bool
+    scratch_lanes_passed: bool
+    logits_passed: bool
+    full_gradient_passed: bool
+    gradient_population_complete: bool
+    every_module_worst_gradient_passed: bool
+    passed: bool
 
 
 @dataclass(frozen=True)
@@ -127,6 +211,9 @@ class C2PreflightReceipt:
     ratification_authority: str
     ratification_sha256: str
     ratification_bytes: int
+    pf2_authority: str
+    pf2_authority_sha256: str
+    pf2_authority_bytes: int
     authority_byte_verified: bool
     measurement_status: str
     current_composition: str
@@ -150,20 +237,91 @@ class C2PreflightReceipt:
     d_model: int
     scratch_shape: tuple[int, int]
     model_parameters: int
-    gradient_parameter: str
+    gradient_population: str
+    relative_l2_denominator_policy: str
     trace_matches_main_forward_fp32: bool
     per_visit: tuple[C2VisitDrift, ...]
     summary: C2DriftSummary
-    registered_relative_threshold: float
-    threshold_source_ratified: bool
+    terminal_gate: C2TerminalGateDecision
+    state_logit_relative_l2_threshold: float
+    lane_gradient_relative_l2_threshold: float
+    threshold_source_authority: str
+    thresholds_bound_after_data: bool
+    thresholds_preregistered: bool
+    threshold_binding_disclosure: str
     threshold_metric_binding_status: str
     threshold_applied: bool
-    threshold_passed: None
-    required_metric_rulings: tuple[str, ...]
+    threshold_passed: bool
+    catch_number: int | None
+    catch_reason: str | None
     deferred_gpu_cells: tuple[DeferredC2Cell, ...]
     cpu_runtime: str
     torch_version: str
     a100_hours: float = 0.0
+
+    def __post_init__(self) -> None:
+        self._validate_invariants()
+
+    def _validate_invariants(self) -> None:
+        if not self.authority_byte_verified:
+            raise ValueError("C2 authority_byte_verified must be true")
+        if (
+            self.authority_sha256 != C2_AUTHORITY_SHA256
+            or self.authority_bytes != C2_AUTHORITY_BYTES
+            or self.ratification_sha256 != C2_RATIFICATION_SHA256
+            or self.ratification_bytes != C2_RATIFICATION_BYTES
+            or self.pf2_authority_sha256 != C2_PF2_AUTHORITY_SHA256
+            or self.pf2_authority_bytes != C2_PF2_AUTHORITY_BYTES
+        ):
+            raise ValueError("C2 authority metadata is inconsistent")
+        if (
+            self.state_logit_relative_l2_threshold
+            != C2_STATE_LOGIT_RELATIVE_L2_THRESHOLD
+            or self.lane_gradient_relative_l2_threshold
+            != C2_LANE_GRADIENT_RELATIVE_L2_THRESHOLD
+            or self.threshold_source_authority != C2_PF2_AUTHORITY
+            or not self.threshold_applied
+            or not self.thresholds_bound_after_data
+            or self.thresholds_preregistered
+        ):
+            raise ValueError("C2 PF-2.2 threshold binding is inconsistent")
+        if (
+            self.visits != C2_RATIFIED_VISITS
+            or len(self.per_visit) != C2_RATIFIED_VISITS
+            or tuple(item.visit for item in self.per_visit)
+            != tuple(range(1, C2_RATIFIED_VISITS + 1))
+        ):
+            raise ValueError("C2 visit population is inconsistent")
+
+        expected_summary = _summarize_drift(self.per_visit)
+        if self.summary != expected_summary:
+            raise ValueError("C2 summary is inconsistent with per-visit measurements")
+        expected_terminal = _terminal_gate_decision(self.per_visit)
+        if self.terminal_gate != expected_terminal:
+            raise ValueError("C2 terminal gate is inconsistent with per-visit measurements")
+
+        expected_passed = expected_terminal.passed and expected_summary.gradient_maxima_complete
+        expected_catch = 34 if not expected_summary.gradient_maxima_complete else None
+        expected_reason = C2_CATCH34_REASON if expected_catch == 34 else None
+        if self.threshold_passed is not expected_passed:
+            raise ValueError("C2 threshold_passed is inconsistent with the complete gate")
+        if self.catch_number != expected_catch or self.catch_reason != expected_reason:
+            raise ValueError("C2 catch disposition is inconsistent with the complete gate")
+        expected_status = _measurement_status(
+            terminal_gate=expected_terminal,
+            complete_gate_passed=expected_passed,
+            catch_number=expected_catch,
+        )
+        if self.measurement_status != expected_status:
+            raise ValueError("C2 measurement_status is inconsistent with the complete gate")
+
+    def require_passed(self) -> None:
+        self._validate_invariants()
+        if self.threshold_passed:
+            return
+        if self.catch_number is not None:
+            raise C2GateCatch(f"CATCH #{self.catch_number}: {self.catch_reason}")
+        raise C2GateCatch("C2 PF-2.2 complete gate did not pass")
 
     def to_dict(self) -> dict[str, object]:
         return asdict(self)
@@ -175,7 +333,14 @@ class _VisitTrace:
     lanes: torch.Tensor
     logits: torch.Tensor
     loss: torch.Tensor
-    gradient: torch.Tensor
+    gradients: tuple["_GradientTraceTensor", ...]
+
+
+@dataclass(frozen=True)
+class _GradientTraceTensor:
+    parameter_name: str
+    value: torch.Tensor
+    autograd_connected: bool
 
 
 def _verify_authority_bytes() -> None:
@@ -190,6 +355,11 @@ def _verify_authority_bytes() -> None:
             root / "docs" / "STRATEGY_PREFLIGHT_RATIFICATION_20260902.md",
             C2_RATIFICATION_BYTES,
             C2_RATIFICATION_SHA256,
+        ),
+        (
+            root / "docs" / "STRATEGY_PREFLIGHT_AMENDMENT_PF2_20260902.md",
+            C2_PF2_AUTHORITY_BYTES,
+            C2_PF2_AUTHORITY_SHA256,
         ),
     )
     for path, expected_bytes, expected_sha256 in expected:
@@ -312,14 +482,17 @@ def _precision_context(policy: str) -> Iterator[None]:
     raise ValueError(f"unsupported C2 precision policy: {policy}")
 
 
-def _gradient_parameter(model: AblationLM) -> torch.nn.Parameter:
-    parameters = dict(model.named_parameters())
-    if C2_GRADIENT_PARAMETER not in parameters:
-        raise RuntimeError(f"missing C2 gradient parameter {C2_GRADIENT_PARAMETER}")
-    parameter = parameters[C2_GRADIENT_PARAMETER]
-    if not parameter.requires_grad:
-        raise RuntimeError("C2 gradient parameter is not trainable")
-    return parameter
+def _gradient_parameters(
+    model: AblationLM,
+) -> tuple[tuple[str, torch.nn.Parameter], ...]:
+    parameters = tuple(
+        (name, parameter)
+        for name, parameter in model.named_parameters()
+        if parameter.requires_grad
+    )
+    if not parameters:
+        raise RuntimeError("C2 gradient population has no trainable parameters")
+    return parameters
 
 
 def _trace_visits(
@@ -338,7 +511,8 @@ def _trace_visits(
         raise ValueError("C2 current-composition trace expects the materialized static-K/V arm")
     if model.scratch is None or model.long_term_memory is None:
         raise ValueError("C2 current-composition trace requires materialized scratch and memory")
-    parameter = _gradient_parameter(model)
+    gradient_parameters = _gradient_parameters(model)
+    parameter_values = tuple(parameter for _name, parameter in gradient_parameters)
     model.zero_grad(set_to_none=True)
 
     with _precision_context(policy):
@@ -385,15 +559,32 @@ def _trace_visits(
             logits_by_visit.append(logits)
             losses.append(loss)
 
-        gradients = tuple(
-            torch.autograd.grad(
+        gradients_by_visit: list[tuple[_GradientTraceTensor, ...]] = []
+        for visit_index, loss in enumerate(losses):
+            gradients = torch.autograd.grad(
                 loss,
-                parameter,
+                parameter_values,
                 retain_graph=visit_index + 1 < C2_RATIFIED_VISITS,
-                allow_unused=False,
-            )[0]
-            for visit_index, loss in enumerate(losses)
-        )
+                allow_unused=True,
+            )
+            gradients_by_visit.append(
+                tuple(
+                    _GradientTraceTensor(
+                        parameter_name=name,
+                        value=(
+                            torch.zeros_like(_parameter)
+                            if gradient is None
+                            else gradient.detach().clone()
+                        ),
+                        autograd_connected=gradient is not None,
+                    )
+                    for (name, _parameter), gradient in zip(
+                        gradient_parameters,
+                        gradients,
+                        strict=True,
+                    )
+                )
+            )
 
     return tuple(
         _VisitTrace(
@@ -401,14 +592,14 @@ def _trace_visits(
             lanes=lane_state.detach().clone(),
             logits=logits.detach().clone(),
             loss=loss.detach().clone(),
-            gradient=gradient.detach().clone(),
+            gradients=gradients,
         )
-        for hidden_state, lane_state, logits, loss, gradient in zip(
+        for hidden_state, lane_state, logits, loss, gradients in zip(
             states,
             lane_states,
             logits_by_visit,
             losses,
-            gradients,
+            gradients_by_visit,
             strict=True,
         )
     )
@@ -423,10 +614,17 @@ def _tensor_drift(reference: torch.Tensor, observed: torch.Tensor) -> TensorDrif
         raise ValueError("C2 drift tensors must be finite")
     reference_l2 = torch.linalg.vector_norm(reference64)
     observed_l2 = torch.linalg.vector_norm(observed64)
-    if reference_l2.item() == 0.0 or observed_l2.item() == 0.0:
-        raise ValueError("C2 relative/cosine metrics require nonzero reference and observed tensors")
+    if reference_l2.item() == 0.0:
+        raise ValueError(
+            "C2 vector-relative L2 requires a nonzero fp32 reference tensor; "
+            "PF-2.2 binds no zero-denominator fallback"
+        )
     difference = torch.linalg.vector_norm(observed64 - reference64)
-    cosine = torch.dot(reference64, observed64) / (reference_l2 * observed_l2)
+    cosine = (
+        None
+        if observed_l2.item() == 0.0
+        else float(torch.dot(reference64, observed64) / (reference_l2 * observed_l2))
+    )
     return TensorDrift(
         reference_dtype=str(reference.dtype).removeprefix("torch."),
         bf16_compute_dtype=str(observed.dtype).removeprefix("torch."),
@@ -434,7 +632,149 @@ def _tensor_drift(reference: torch.Tensor, observed: torch.Tensor) -> TensorDrif
         bf16_compute_l2=float(observed_l2),
         relative_l2_error=float(difference / reference_l2),
         relative_norm_drift=float((observed_l2 - reference_l2).abs() / reference_l2),
-        cosine_similarity=float(cosine),
+        cosine_similarity=cosine,
+    )
+
+
+def _parameter_module_name(parameter_name: str) -> str:
+    module_name, separator, _leaf_name = parameter_name.rpartition(".")
+    return module_name if separator else "<root>"
+
+
+def _defined_module_worst_relative_l2(item: ModuleGradientWorstTensor) -> float:
+    if item.drift is None:
+        raise ValueError("C2 internal error: expected a defined module gradient")
+    return item.drift.relative_l2_error
+
+
+def _defined_module_maximum_relative_l2(item: ModuleGradientMaximum) -> float:
+    if item.max_relative_l2 is None:
+        raise ValueError("C2 internal error: expected a defined module maximum")
+    return item.max_relative_l2
+
+
+def _gradient_drift(
+    reference: tuple[_GradientTraceTensor, ...],
+    observed: tuple[_GradientTraceTensor, ...],
+    *,
+    visit: int,
+) -> GradientVisitDrift:
+    reference_names = tuple(item.parameter_name for item in reference)
+    observed_names = tuple(item.parameter_name for item in observed)
+    if reference_names != observed_names:
+        raise ValueError("C2 fp32 and bf16 gradient populations differ")
+    if not reference:
+        raise ValueError("C2 gradient population must not be empty")
+
+    per_tensor: list[tuple[str, str, TensorDrift | None]] = []
+    undefined_cells: list[UndefinedGradientCell] = []
+    for reference_item, observed_item in zip(reference, observed, strict=True):
+        module_name = _parameter_module_name(reference_item.parameter_name)
+        fp32_l2 = float(
+            torch.linalg.vector_norm(reference_item.value.detach().double().reshape(-1))
+        )
+        bf16_l2 = float(
+            torch.linalg.vector_norm(observed_item.value.detach().double().reshape(-1))
+        )
+        if fp32_l2 == 0.0:
+            per_tensor.append((module_name, reference_item.parameter_name, None))
+            undefined_cells.append(
+                UndefinedGradientCell(
+                    visit=visit,
+                    module_name=module_name,
+                    parameter_name=reference_item.parameter_name,
+                    reason=(
+                        "fp32_reference_l2_zero_"
+                        + (
+                            "autograd_disconnected"
+                            if not reference_item.autograd_connected
+                            else "connected_exact_zero"
+                        )
+                        + "; PF-2.2_binds_no_"
+                        "zero_denominator_or_eligibility_rule"
+                    ),
+                    fp32_autograd_connected=reference_item.autograd_connected,
+                    bf16_autograd_connected=observed_item.autograd_connected,
+                    fp32_l2=fp32_l2,
+                    bf16_compute_l2=bf16_l2,
+                )
+            )
+        else:
+            per_tensor.append(
+                (
+                    module_name,
+                    reference_item.parameter_name,
+                    _tensor_drift(reference_item.value, observed_item.value),
+                )
+            )
+    modules = tuple(
+        dict.fromkeys(module_name for module_name, _name, _drift in per_tensor)
+    )
+    per_module_worst: list[ModuleGradientWorstTensor] = []
+    for module_name in modules:
+        module_tensors = tuple(
+            (parameter_name, drift)
+            for tensor_module, parameter_name, drift in per_tensor
+            if tensor_module == module_name
+        )
+        defined_tensors = tuple(
+            (parameter_name, drift)
+            for parameter_name, drift in module_tensors
+            if drift is not None
+        )
+        undefined_names = tuple(
+            parameter_name
+            for parameter_name, drift in module_tensors
+            if drift is None
+        )
+        if defined_tensors:
+            worst_parameter, worst_drift = max(
+                defined_tensors,
+                key=lambda item: item[1].relative_l2_error,
+            )
+        else:
+            worst_parameter, worst_drift = None, None
+        per_module_worst.append(
+            ModuleGradientWorstTensor(
+                module_name=module_name,
+                parameter_name=worst_parameter,
+                parameter_tensor_count=len(module_tensors),
+                defined_tensor_count=len(defined_tensors),
+                undefined_parameter_names=undefined_names,
+                drift=worst_drift,
+                complete=not undefined_names,
+            )
+        )
+
+    defined_module_worst = tuple(
+        item for item in per_module_worst if item.drift is not None
+    )
+    worst_module = (
+        max(
+            defined_module_worst,
+            key=_defined_module_worst_relative_l2,
+        )
+        if defined_module_worst
+        else None
+    )
+    reference_vector = torch.cat(
+        tuple(item.value.detach().reshape(-1) for item in reference)
+    )
+    observed_vector = torch.cat(
+        tuple(item.value.detach().reshape(-1) for item in observed)
+    )
+    return GradientVisitDrift(
+        full_parameter_vector=_tensor_drift(reference_vector, observed_vector),
+        per_module_worst_tensors=tuple(per_module_worst),
+        worst_module_name=None if worst_module is None else worst_module.module_name,
+        worst_parameter_name=(
+            None if worst_module is None else worst_module.parameter_name
+        ),
+        worst_tensor=None if worst_module is None else worst_module.drift,
+        undefined_relative_l2_cells=tuple(undefined_cells),
+        complete=not undefined_cells,
+        trainable_parameter_tensors=len(reference),
+        trainable_parameter_elements=reference_vector.numel(),
     )
 
 
@@ -467,19 +807,86 @@ def _summarize_drift(per_visit: tuple[C2VisitDrift, ...]) -> C2DriftSummary:
     hidden, hidden_visit = maximum("hidden")
     lanes, lanes_visit = maximum("scratch_lanes")
     logits, logits_visit = maximum("logits")
-    gradient, gradient_visit = maximum("gradient")
     loss, loss_visit = maximum("relative_loss_drift")
-    crossings = tuple(
-        (name, visit.visit)
+    full_gradient_values = tuple(
+        visit.gradient.full_parameter_vector.relative_l2_error
         for visit in per_visit
-        for name, value in (
-            ("hidden", visit.hidden.relative_l2_error),
-            ("scratch_lanes", visit.scratch_lanes.relative_l2_error),
-            ("logits", visit.logits.relative_l2_error),
-            ("gradient", visit.gradient.relative_l2_error),
-            ("loss", visit.relative_loss_drift),
+    )
+    full_gradient_index = max(
+        range(len(full_gradient_values)),
+        key=full_gradient_values.__getitem__,
+    )
+    full_gradient = full_gradient_values[full_gradient_index]
+    full_gradient_visit = per_visit[full_gradient_index].visit
+
+    module_names = tuple(
+        item.module_name
+        for item in per_visit[0].gradient.per_module_worst_tensors
+    )
+    if any(
+        tuple(item.module_name for item in visit.gradient.per_module_worst_tensors)
+        != module_names
+        for visit in per_visit[1:]
+    ):
+        raise ValueError("C2 per-module gradient population differs across visits")
+    module_maxima: list[ModuleGradientMaximum] = []
+    for module_index, module_name in enumerate(module_names):
+        candidates = tuple(
+            visit.gradient.per_module_worst_tensors[module_index]
+            for visit in per_visit
         )
-        if value > C2_REGISTERED_RELATIVE_THRESHOLD
+        defined_candidate_indices = tuple(
+            index for index, item in enumerate(candidates) if item.drift is not None
+        )
+        undefined_visits = tuple(
+            per_visit[index].visit
+            for index, item in enumerate(candidates)
+            if not item.complete
+        )
+        maximum_index = (
+            max(
+                defined_candidate_indices,
+                key=lambda index: _defined_module_worst_relative_l2(
+                    candidates[index]
+                ),
+            )
+            if defined_candidate_indices
+            else None
+        )
+        maximum_item = None if maximum_index is None else candidates[maximum_index]
+        module_maxima.append(
+            ModuleGradientMaximum(
+                module_name=module_name,
+                parameter_name=(
+                    None if maximum_item is None else maximum_item.parameter_name
+                ),
+                max_relative_l2=(
+                    None
+                    if maximum_item is None or maximum_item.drift is None
+                    else maximum_item.drift.relative_l2_error
+                ),
+                max_relative_l2_visit=(
+                    None if maximum_index is None else per_visit[maximum_index].visit
+                ),
+                undefined_visits=undefined_visits,
+                complete=not undefined_visits,
+            )
+        )
+    defined_module_maxima = tuple(
+        item for item in module_maxima if item.max_relative_l2 is not None
+    )
+    worst_module_maximum = (
+        max(
+            defined_module_maxima,
+            key=_defined_module_maximum_relative_l2,
+        )
+        if defined_module_maxima
+        else None
+    )
+    undefined_cells = tuple(
+        cell
+        for visit in per_visit
+        for cell in visit.gradient.undefined_relative_l2_cells
     )
     return C2DriftSummary(
         max_hidden_relative_l2=hidden,
@@ -488,19 +895,104 @@ def _summarize_drift(per_visit: tuple[C2VisitDrift, ...]) -> C2DriftSummary:
         max_scratch_lane_relative_l2_visit=lanes_visit,
         max_logit_relative_l2=logits,
         max_logit_relative_l2_visit=logits_visit,
-        max_gradient_relative_l2=gradient,
-        max_gradient_relative_l2_visit=gradient_visit,
+        max_full_gradient_relative_l2=full_gradient,
+        max_full_gradient_relative_l2_visit=full_gradient_visit,
+        max_worst_module_gradient_relative_l2=(
+            None if worst_module_maximum is None else worst_module_maximum.max_relative_l2
+        ),
+        max_worst_module_gradient_relative_l2_visit=(
+            None
+            if worst_module_maximum is None
+            else worst_module_maximum.max_relative_l2_visit
+        ),
+        max_worst_module_gradient_module=(
+            None if worst_module_maximum is None else worst_module_maximum.module_name
+        ),
+        max_worst_module_gradient_parameter=(
+            None
+            if worst_module_maximum is None
+            else worst_module_maximum.parameter_name
+        ),
+        per_module_gradient_maxima=tuple(module_maxima),
+        undefined_gradient_cells=undefined_cells,
+        gradient_maxima_complete=not undefined_cells,
         max_relative_loss_drift=loss,
         max_relative_loss_drift_visit=loss_visit,
-        candidate_relative_l2_crossings_of_registered_literal=crossings,
-        crossing_semantics=(
-            "descriptive_only_until_strategy_binds_relative_l2_and_tensor_population"
+    )
+
+
+def _terminal_gate_decision(
+    per_visit: tuple[C2VisitDrift, ...],
+) -> C2TerminalGateDecision:
+    if len(per_visit) != C2_RATIFIED_VISITS or per_visit[-1].visit != C2_RATIFIED_VISITS:
+        raise ValueError("C2 terminal decision requires the complete K=8 visit trace")
+    terminal = per_visit[-1]
+    hidden = terminal.hidden.relative_l2_error
+    lanes = terminal.scratch_lanes.relative_l2_error
+    logits = terminal.logits.relative_l2_error
+    full_gradient = terminal.gradient.full_parameter_vector.relative_l2_error
+    worst_module_gradient = (
+        None
+        if terminal.gradient.worst_tensor is None
+        else terminal.gradient.worst_tensor.relative_l2_error
+    )
+    hidden_passed = hidden <= C2_STATE_LOGIT_RELATIVE_L2_THRESHOLD
+    lanes_passed = lanes <= C2_LANE_GRADIENT_RELATIVE_L2_THRESHOLD
+    logits_passed = logits <= C2_STATE_LOGIT_RELATIVE_L2_THRESHOLD
+    full_gradient_passed = full_gradient <= C2_LANE_GRADIENT_RELATIVE_L2_THRESHOLD
+    module_gradients_passed = terminal.gradient.complete and all(
+        item.drift is not None
+        and item.drift.relative_l2_error <= C2_LANE_GRADIENT_RELATIVE_L2_THRESHOLD
+        for item in terminal.gradient.per_module_worst_tensors
+    )
+    return C2TerminalGateDecision(
+        visit=terminal.visit,
+        metric="vector_relative_l2_per_tensor",
+        hidden_relative_l2=hidden,
+        scratch_lane_relative_l2=lanes,
+        logit_relative_l2=logits,
+        full_gradient_relative_l2=full_gradient,
+        worst_module_gradient_relative_l2=worst_module_gradient,
+        worst_module_gradient_module=terminal.gradient.worst_module_name,
+        worst_module_gradient_parameter=terminal.gradient.worst_parameter_name,
+        state_threshold=C2_STATE_LOGIT_RELATIVE_L2_THRESHOLD,
+        logit_threshold=C2_STATE_LOGIT_RELATIVE_L2_THRESHOLD,
+        lane_threshold=C2_LANE_GRADIENT_RELATIVE_L2_THRESHOLD,
+        gradient_threshold=C2_LANE_GRADIENT_RELATIVE_L2_THRESHOLD,
+        hidden_passed=hidden_passed,
+        scratch_lanes_passed=lanes_passed,
+        logits_passed=logits_passed,
+        full_gradient_passed=full_gradient_passed,
+        gradient_population_complete=terminal.gradient.complete,
+        every_module_worst_gradient_passed=module_gradients_passed,
+        passed=(
+            hidden_passed
+            and lanes_passed
+            and logits_passed
+            and full_gradient_passed
+            and module_gradients_passed
         ),
     )
 
 
+def _measurement_status(
+    *,
+    terminal_gate: C2TerminalGateDecision,
+    complete_gate_passed: bool,
+    catch_number: int | None,
+) -> str:
+    if catch_number == 34:
+        prefix = "catch_34_pf2_2_zero_reference_population_incomplete_"
+    elif complete_gate_passed:
+        prefix = "cpu_current_integrated_composition_pf2_2_complete_gate_passed_"
+    else:
+        prefix = "cpu_current_integrated_composition_pf2_2_terminal_gate_failed_"
+    terminal = "terminal_k8_passed_" if terminal_gate.passed else "terminal_k8_failed_"
+    return prefix + terminal + "full_weft1_and_carrier_deferred"
+
+
 def run_preflight_c2() -> C2PreflightReceipt:
-    """Measure CPU fp32-master/bf16-autocast drift without minting missing gates."""
+    """Apply PF-2.2 to the pinned CPU composition without promoting deferred cells."""
 
     _verify_authority_bytes()
     previous_determinism = torch.are_deterministic_algorithms_enabled()
@@ -537,7 +1029,11 @@ def run_preflight_c2() -> C2PreflightReceipt:
             hidden=_tensor_drift(reference.hidden, observed.hidden),
             scratch_lanes=_tensor_drift(reference.lanes, observed.lanes),
             logits=_tensor_drift(reference.logits, observed.logits),
-            gradient=_tensor_drift(reference.gradient, observed.gradient),
+            gradient=_gradient_drift(
+                reference.gradients,
+                observed.gradients,
+                visit=index,
+            ),
             fp32_loss=float(reference.loss),
             bf16_compute_loss=float(observed.loss),
             relative_loss_drift=_relative_scalar_drift(reference.loss, observed.loss),
@@ -545,6 +1041,11 @@ def run_preflight_c2() -> C2PreflightReceipt:
         for index, (reference, observed) in enumerate(zip(fp32, bf16, strict=True), start=1)
     )
     config = model.config
+    summary = _summarize_drift(per_visit)
+    terminal_gate = _terminal_gate_decision(per_visit)
+    complete_gate_passed = terminal_gate.passed and summary.gradient_maxima_complete
+    catch_number = 34 if not summary.gradient_maxima_complete else None
+    catch_reason = C2_CATCH34_REASON if catch_number == 34 else None
     return C2PreflightReceipt(
         authority=C2_AUTHORITY,
         authority_sha256=C2_AUTHORITY_SHA256,
@@ -552,10 +1053,14 @@ def run_preflight_c2() -> C2PreflightReceipt:
         ratification_authority=C2_RATIFICATION_AUTHORITY,
         ratification_sha256=C2_RATIFICATION_SHA256,
         ratification_bytes=C2_RATIFICATION_BYTES,
+        pf2_authority=C2_PF2_AUTHORITY,
+        pf2_authority_sha256=C2_PF2_AUTHORITY_SHA256,
+        pf2_authority_bytes=C2_PF2_AUTHORITY_BYTES,
         authority_byte_verified=True,
-        measurement_status=(
-            "cpu_current_integrated_composition_measured_"
-            "full_weft1_and_threshold_gate_deferred"
+        measurement_status=_measurement_status(
+            terminal_gate=terminal_gate,
+            complete_gate_passed=complete_gate_passed,
+            catch_number=catch_number,
         ),
         current_composition="ablation_lm_materialized_current_4_2_4_k8",
         current_integrated_modules=C2_CURRENT_INTEGRATED_MODULES,
@@ -580,8 +1085,10 @@ def run_preflight_c2() -> C2PreflightReceipt:
             "current_read_only_long_term_memory_then_four_coda_blocks_then_tied_lm_head"
         ),
         gradient_definition=(
-            "per_visit_shifted_cross_entropy_gradient_of_"
-            "core_blocks.0.attention.q_proj.weight"
+            "per_visit_shifted_cross_entropy_gradients_of_all_trainable_"
+            "named_parameters; concatenated_full_vector_plus_each_leaf_"
+            "parameter_module_worst_tensor; autograd_disconnected_parameters_"
+            "are_exact_zero_entries_in_the_full_vector_only"
         ),
         visits=C2_RATIFIED_VISITS,
         block_split=(
@@ -592,18 +1099,39 @@ def run_preflight_c2() -> C2PreflightReceipt:
         d_model=config.d_model,
         scratch_shape=(config.scratch_lanes, config.scratch_width),
         model_parameters=sum(parameter.numel() for parameter in model.parameters()),
-        gradient_parameter=C2_GRADIENT_PARAMETER,
+        gradient_population=(
+            "all_requires_grad_named_parameters_in_model_named_parameters_order"
+        ),
+        relative_l2_denominator_policy=(
+            "fp32_tensor_l2_must_be_nonzero; fail_closed_if_zero; "
+            "per_tensor_zero_reference_cells_are_undefined; "
+            "PF-2.2_binds_no_zero_denominator_or_eligibility_fallback"
+        ),
         trace_matches_main_forward_fp32=trace_matches,
         per_visit=per_visit,
-        summary=_summarize_drift(per_visit),
-        registered_relative_threshold=C2_REGISTERED_RELATIVE_THRESHOLD,
-        threshold_source_ratified=True,
-        threshold_metric_binding_status=(
-            "underspecified_metric_population_denominator_gradient_and_visit_aggregation"
+        summary=summary,
+        terminal_gate=terminal_gate,
+        state_logit_relative_l2_threshold=(
+            C2_STATE_LOGIT_RELATIVE_L2_THRESHOLD
         ),
-        threshold_applied=False,
-        threshold_passed=None,
-        required_metric_rulings=C2_REQUIRED_METRIC_RULINGS,
+        lane_gradient_relative_l2_threshold=(
+            C2_LANE_GRADIENT_RELATIVE_L2_THRESHOLD
+        ),
+        threshold_source_authority=C2_PF2_AUTHORITY,
+        thresholds_bound_after_data=True,
+        thresholds_preregistered=False,
+        threshold_binding_disclosure=(
+            "PF-2.2_bound_thresholds_after_observing_the_original_C2_"
+            "diagnostic_values; future_runs_inherit_them"
+        ),
+        threshold_metric_binding_status=(
+            "bound_by_PF-2.2_vector_relative_l2_per_tensor_per_visit_"
+            "terminal_K8_decision; zero_reference_eligibility_unbound"
+        ),
+        threshold_applied=True,
+        threshold_passed=complete_gate_passed,
+        catch_number=catch_number,
+        catch_reason=catch_reason,
         deferred_gpu_cells=(
             DeferredC2Cell(
                 cell="cuda_fp32_vs_bf16_forward_k8",

@@ -1,41 +1,24 @@
-"""CPU PRE-FLIGHT C1 width-coordinate audit for the materialized WEFT-1 graph.
+"""Fail-closed PF-2.1 binding gate for the WEFT-1 C1 width check.
 
-C1 is a bug-catching check, not S2 calibration.  This module therefore keeps
-the registered width axis and pass threshold literal, records every otherwise
-discretionary toy-protocol choice, and refuses to hide a ratified attention
-scale mismatch behind aggregate activation statistics.
-
-The production model is not modified here.  In particular, the attention
-probe compares the executed graph against both ``1 / d_head`` (ratified muP)
-and the ordinary ``1 / sqrt(d_head)`` reference and reports which coordinate
-the current implementation actually follows.
+PF-2.1 replaces the original discretionary C1 diagnostic with a fixed width
+axis and chassis. It also requires ten AdamW steps to use exactly the muP
+initialization, multiplier, and per-tensor learning-rate rules in build-handoff
+section 8. Section 8 does not bind that complete protocol. Consequently this
+module verifies the two local amendment authorities and the bound topology,
+then returns Catch #33 before any model, optimizer, batch, or activation is
+materialized. It deliberately contains no fallback initializer or optimizer
+recipe.
 """
 
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
+from hashlib import sha256
 import json
 import math
-from typing import Callable
+from pathlib import Path
 
-import torch
-from torch import nn
-
-from models.ablation_lm.bicameral_core import BicameralTransformerBlock
-from models.ablation_lm.config import AblationLMConfig
-from models.ablation_lm.engram import CausalTokenEngram
-from models.ablation_lm.layers import (
-    GroupedQueryAttention,
-    ModifiedHadamardExpertBank,
-    RMSNorm,
-    SwiGLU,
-    TransformerBlock,
-)
-from models.ablation_lm.liveness import PF1_NOT_MATERIALIZED_INTEGRATIONS
-from models.ablation_lm.memory import ReadOnlyLatentMemory
-from models.ablation_lm.model import AblationLM
-from models.ablation_lm.reentry import AnchoredReentryBridge
-from models.ablation_lm.scratch import TwoLaneBirkhoffMixer
+from models.ablation_lm.config import MUP_D_HEAD_BASE
 
 
 PREFLIGHT_PROGRAM_SHA256 = (
@@ -44,656 +27,380 @@ PREFLIGHT_PROGRAM_SHA256 = (
 PREFLIGHT_RATIFICATION_SHA256 = (
     "4a13054d38c68e5e9476330528649d445ff845e639e0a36bb01641b54ef66965"
 )
-ATTENTION_SCALE_AUTHORITY = (
-    "STRATEGY_TO_CODING_AGENT_LOOM1_HANDOFF_20260826.md#8.1"
+
+PF2_AUTHORITY_FILE = "STRATEGY_PREFLIGHT_AMENDMENT_PF2_20260902.md"
+PF2_AUTHORITY_BYTES = 13_097
+PF2_AUTHORITY_SHA256 = (
+    "be11390c28ae36210a1571f7c6d358ee54e977d239f5344f7e6402212448eb05"
 )
-ATTENTION_SCALE_AUTHORITY_BYTES = 61_329
-ATTENTION_SCALE_AUTHORITY_SHA256 = (
+S81_AUTHORITY_FILE = "STRATEGY_HANDOFF_S81_AMENDMENT_20260902.md"
+S81_AUTHORITY_BYTES = 3_403
+S81_AUTHORITY_SHA256 = (
+    "dd79aaa6fd9bab15bf02aaef28f99f47c745d63eed6db2c9b929b4bb1cfbb418"
+)
+BUILD_HANDOFF_AUTHORITY = "STRATEGY_TO_CODING_AGENT_LOOM1_HANDOFF_20260826.md#8.1"
+BUILD_HANDOFF_AUTHORITY_FILE = "STRATEGY_TO_CODING_AGENT_LOOM1_HANDOFF_20260826.md"
+BUILD_HANDOFF_AUTHORITY_BYTES = 61_329
+BUILD_HANDOFF_AUTHORITY_SHA256 = (
     "498f34b5966f0879c7f0a15ca8be02a603558781c35f59f03fb29cc9edd3eb02"
 )
-ATTENTION_SCALE_AUTHORITY_DRIVE_ID = "1XaE81mfqTOYEYGFMa-ZJwpLW-KQtMMC_"
-C1_CPU_WIDTHS = (64, 128, 256)
-C1_DEFERRED_GPU_WIDTHS = (512,)
-C1_WIDTH_DRIFT_LIMIT = 2.0
-C1_TRAINING_STEPS = 10
-C1_CATCH_NUMBER = 28
+BUILD_HANDOFF_AUTHORITY_DRIVE_ID = "1XaE81mfqTOYEYGFMa-ZJwpLW-KQtMMC_"
 
-_TOY_VOCAB_SIZE = 128
-_TOY_BATCH_SIZE = 2
-_TOY_SEQUENCE_LENGTH = 8
-_TOY_N_HEADS = 8
-_TOY_N_KV_HEADS = 4
-_TOY_RECURRENT_STEPS = 4
-_TOY_MAX_RECURRENT_STEPS = 8
-_TOY_LEARNING_RATE = 3.0e-4
-_TOY_BETAS = (0.9, 0.95)
-_TOY_EPSILON = 1.0e-8
-_TOY_WEIGHT_DECAY = 0.0
-_TOY_SEED = 20_260_902
-_ATTENTION_MATCH_ATOL = 1.0e-5
+C1_CPU_WIDTHS = (128, 256, 512)
+C1_DEFERRED_GPU_WIDTHS = (1_024,)
+C1_HEAD_DIM = 64
+C1_BATCH_SIZE = 2
+C1_SEQUENCE_LENGTH = 64
+C1_TRAINING_STEPS = 10
+C1_WIDTH_DRIFT_LIMIT = 2.0
+C1_CATCH_NUMBER = 33
+C1_EXECUTION_STATUS = "blocked_before_model_initialization"
+S81_FUTURE_HEAD_DIM_POLICY = (
+    "future_WEFT_d_head_not_64_requires_explicit_base_shape_implementation"
+)
 
 
 class C1CoordinateCatch(RuntimeError):
-    """Raised when a caller attempts to promote a failed C1 receipt."""
+    """Raised when a caller attempts to promote a blocked C1 receipt."""
+
+
+class C1AuthorityIntegrityError(RuntimeError):
+    """Raised when a local PF-2 authority is absent or is not byte-exact."""
 
 
 @dataclass(frozen=True)
-class AttentionScaleEvidence:
-    surface: str
+class AuthorityVerification:
+    filename: str
+    expected_bytes: int
+    actual_bytes: int
+    expected_sha256: str
+    actual_sha256: str
+    verified: bool
+
+
+@dataclass(frozen=True)
+class C1WidthTopology:
     width: int
     head_dim: int
-    ratified_scale: float
-    ordinary_scale: float
-    ordinary_to_ratified_ratio: float
-    sdpa_error_to_ratified: float
-    sdpa_error_to_ordinary: float
-    math_error_to_ratified: float
-    math_error_to_ordinary: float
-    sdpa_matches: str
-    math_matches: str
-    passed: bool
+    q_heads: int
+    kv_heads: int
+    d_ff: int
+    scratch_lanes: int
+    scratch_width_per_lane: int
+    n_prelude_layers: int
+    n_core_blocks: int
+    n_coda_layers: int
+    recurrent_steps: int
+    attention_logit_scale: float
+
+    @property
+    def total_scratch_width(self) -> int:
+        return self.scratch_lanes * self.scratch_width_per_lane
+
+    @property
+    def unique_decoder_blocks(self) -> int:
+        return self.n_prelude_layers + self.n_core_blocks + self.n_coda_layers
+
+    @property
+    def executed_decoder_block_passes(self) -> int:
+        return (
+            self.n_prelude_layers
+            + self.recurrent_steps * self.n_core_blocks
+            + self.n_coda_layers
+        )
+
+    def is_pf2_bound(self) -> bool:
+        return (
+            self.width in C1_CPU_WIDTHS
+            and self.head_dim == C1_HEAD_DIM == MUP_D_HEAD_BASE
+            and self.q_heads == self.width // 64
+            and self.kv_heads == self.width // 128
+            and self.q_heads == 2 * self.kv_heads
+            and self.d_ff == 11 * self.width // 4
+            and self.scratch_lanes == 2
+            and self.scratch_width_per_lane == self.width // 4
+            and (self.n_prelude_layers, self.n_core_blocks, self.n_coda_layers)
+            == (4, 2, 4)
+            and self.recurrent_steps == 4
+            and self.attention_logit_scale
+            == math.sqrt(MUP_D_HEAD_BASE) / self.head_dim
+        )
 
 
 @dataclass(frozen=True)
-class ActivationCoordinate:
-    module_name: str
-    phase: str
-    rms_by_width: tuple[tuple[int, float], ...]
-    maximum_to_minimum_ratio: float
-    all_zero: bool
-    passed: bool
-
-
-@dataclass(frozen=True)
-class WidthRun:
-    width: int
-    head_dim: int
-    unique_parameters: int
-    unique_decoder_blocks: int
-    executed_decoder_block_passes: int
-    initial_loss: float
-    final_training_loss: float
-    activation_rms_at_init: tuple[tuple[str, float], ...]
-    activation_rms_after_steps: tuple[tuple[str, float], ...]
+class MUPBinding:
+    component: str
+    status: str
+    authority_rule: str
+    missing_requirement: str | None
 
 
 @dataclass(frozen=True)
 class C1PreflightReceipt:
     program_sha256: str
     ratification_sha256: str
-    attention_scale_authority: str
-    attention_scale_authority_bytes: int
-    attention_scale_authority_sha256: str
-    attention_scale_authority_drive_id: str
+    pf2_authority: AuthorityVerification
+    s81_authority: AuthorityVerification
+    build_handoff_verification: AuthorityVerification
+    build_handoff_authority: str
+    build_handoff_authority_bytes: int
+    build_handoff_authority_sha256: str
+    build_handoff_authority_drive_id: str
     cpu_widths: tuple[int, ...]
     deferred_gpu_widths: tuple[int, ...]
-    width_drift_limit: float
+    batch_size: int
+    sequence_length: int
     training_steps: int
-    chassis: str
-    toy_protocol: str
-    not_materialized_integrations: tuple[str, ...]
-    attention_scale_evidence: tuple[AttentionScaleEvidence, ...]
-    width_runs: tuple[WidthRun, ...]
-    activation_coordinates: tuple[ActivationCoordinate, ...]
-    failed_activation_coordinates: tuple[tuple[str, str], ...]
-    attention_scale_passed: bool
-    activation_coordinate_passed: bool
+    width_drift_limit: float
+    width_topologies: tuple[C1WidthTopology, ...]
+    mup_bindings: tuple[MUPBinding, ...]
+    unbound_mup_components: tuple[str, ...]
+    authority_verified: bool
+    topology_verified: bool
+    attention_contract_bound: bool
+    future_head_dim_policy: str
+    mup_protocol_complete: bool
+    execution_status: str
+    model_initialized: bool
+    optimizer_constructed: bool
+    training_performed: bool
+    activation_coordinate_passed: bool | None
     passed: bool
-    catch_number: int | None
+    catch_number: int
     disposition: str
     a100_hours: float = 0.0
+
+    def __post_init__(self) -> None:
+        self._validate_invariants()
+
+    def _validate_invariants(self) -> None:
+        verified = (
+            self.pf2_authority.verified
+            and self.s81_authority.verified
+            and self.build_handoff_verification.verified
+        )
+        if self.authority_verified is not verified:
+            raise ValueError("C1 authority_verified is inconsistent with byte verification")
+        if (
+            self.build_handoff_verification.filename != BUILD_HANDOFF_AUTHORITY_FILE
+            or self.build_handoff_verification.expected_bytes
+            != self.build_handoff_authority_bytes
+            or self.build_handoff_verification.expected_sha256
+            != self.build_handoff_authority_sha256
+        ):
+            raise ValueError("C1 build-handoff verification metadata is inconsistent")
+
+        topology_verified = (
+            self.cpu_widths == C1_CPU_WIDTHS
+            and len(self.width_topologies) == len(C1_CPU_WIDTHS)
+            and tuple(item.width for item in self.width_topologies) == C1_CPU_WIDTHS
+            and all(item.is_pf2_bound() for item in self.width_topologies)
+        )
+        if self.topology_verified is not topology_verified:
+            raise ValueError("C1 topology_verified is inconsistent with the bound topology")
+        attention_bound = (
+            MUP_D_HEAD_BASE == C1_HEAD_DIM
+            and all(item.attention_logit_scale == 0.125 for item in self.width_topologies)
+        )
+        if self.attention_contract_bound is not attention_bound:
+            raise ValueError("C1 attention_contract_bound is inconsistent")
+
+        derived_unbound = tuple(
+            binding.component for binding in self.mup_bindings if binding.status != "bound"
+        )
+        if self.unbound_mup_components != derived_unbound:
+            raise ValueError("C1 unbound muP component list is inconsistent")
+        protocol_complete = not derived_unbound
+        if self.mup_protocol_complete is not protocol_complete:
+            raise ValueError("C1 mup_protocol_complete is inconsistent")
+
+        if not protocol_complete:
+            blocked_state = (
+                self.execution_status == C1_EXECUTION_STATUS
+                and not self.model_initialized
+                and not self.optimizer_constructed
+                and not self.training_performed
+                and self.activation_coordinate_passed is None
+                and not self.passed
+                and self.catch_number == C1_CATCH_NUMBER
+                and self.disposition
+                == "catch_33_return_to_strategy_mup_protocol_unbound"
+                and self.a100_hours == 0.0
+            )
+            if not blocked_state:
+                raise ValueError("C1 blocked Catch #33 state is inconsistent")
+        elif self.passed and not (
+            self.model_initialized
+            and self.optimizer_constructed
+            and self.training_performed
+            and self.activation_coordinate_passed is True
+        ):
+            raise ValueError("C1 cannot pass without a complete executed width check")
 
     def to_dict(self) -> dict[str, object]:
         return asdict(self)
 
     def require_passed(self) -> None:
+        self._validate_invariants()
         if self.passed:
             return
+        missing = ", ".join(self.unbound_mup_components)
         raise C1CoordinateCatch(
-            f"CATCH #{self.catch_number}: C1 muP coordinate check failed; "
-            f"attention_scale_passed={self.attention_scale_passed}, "
-            f"failed_activation_coordinates={self.failed_activation_coordinates}"
+            f"CATCH #{self.catch_number}: PF-2.1 stopped before model "
+            f"initialization; unbound section 8 muP components: {missing}"
         )
 
 
-@dataclass
-class _RMSAccumulator:
-    sum_of_squares: float = 0.0
-    element_count: int = 0
+def _verify_authority_file(
+    docs_dir: Path,
+    *,
+    filename: str,
+    expected_bytes: int,
+    expected_sha256: str,
+) -> AuthorityVerification:
+    path = docs_dir / filename
+    try:
+        payload = path.read_bytes()
+    except FileNotFoundError as error:
+        raise C1AuthorityIntegrityError(f"missing C1 authority: {path}") from error
+    actual_sha256 = sha256(payload).hexdigest()
+    verification = AuthorityVerification(
+        filename=filename,
+        expected_bytes=expected_bytes,
+        actual_bytes=len(payload),
+        expected_sha256=expected_sha256,
+        actual_sha256=actual_sha256,
+        verified=(
+            len(payload) == expected_bytes
+            and actual_sha256 == expected_sha256
+        ),
+    )
+    if not verification.verified:
+        raise C1AuthorityIntegrityError(
+            f"C1 authority mismatch for {filename}: "
+            f"bytes={verification.actual_bytes}/{expected_bytes}, "
+            f"sha256={actual_sha256}/{expected_sha256}"
+        )
+    return verification
 
-    def add(self, values: torch.Tensor) -> None:
-        values_float = values.detach().float()
-        self.sum_of_squares += float(values_float.square().sum().item())
-        self.element_count += values_float.numel()
 
-    def rms(self) -> float:
-        if self.element_count == 0:
-            raise RuntimeError("activation coordinate was registered but never executed")
-        return math.sqrt(self.sum_of_squares / self.element_count)
+def verify_c1_authorities(
+    docs_dir: Path | None = None,
+) -> tuple[AuthorityVerification, AuthorityVerification, AuthorityVerification]:
+    """Verify the byte-exact PF-2 and S81 amendments before interpreting them."""
+
+    authority_dir = (
+        Path(__file__).resolve().parents[1] / "docs"
+        if docs_dir is None
+        else Path(docs_dir)
+    )
+    pf2 = _verify_authority_file(
+        authority_dir,
+        filename=PF2_AUTHORITY_FILE,
+        expected_bytes=PF2_AUTHORITY_BYTES,
+        expected_sha256=PF2_AUTHORITY_SHA256,
+    )
+    s81 = _verify_authority_file(
+        authority_dir,
+        filename=S81_AUTHORITY_FILE,
+        expected_bytes=S81_AUTHORITY_BYTES,
+        expected_sha256=S81_AUTHORITY_SHA256,
+    )
+    build_handoff = _verify_authority_file(
+        authority_dir,
+        filename=BUILD_HANDOFF_AUTHORITY_FILE,
+        expected_bytes=BUILD_HANDOFF_AUTHORITY_BYTES,
+        expected_sha256=BUILD_HANDOFF_AUTHORITY_SHA256,
+    )
+    return pf2, s81, build_handoff
 
 
-def _toy_config(width: int) -> AblationLMConfig:
-    if type(width) is not int or width not in (*C1_CPU_WIDTHS, *C1_DEFERRED_GPU_WIDTHS):
-        raise ValueError("width must be one of the registered C1 widths")
-    return AblationLMConfig(
-        vocab_size=_TOY_VOCAB_SIZE,
-        d_model=width,
-        n_heads=_TOY_N_HEADS,
-        n_kv_heads=_TOY_N_KV_HEADS,
+def _bound_width_topology(width: int) -> C1WidthTopology:
+    if type(width) is not int or width not in C1_CPU_WIDTHS:
+        raise ValueError("width must be one of the PF-2.1 CPU widths")
+    topology = C1WidthTopology(
+        width=width,
+        head_dim=C1_HEAD_DIM,
+        q_heads=width // 64,
+        kv_heads=width // 128,
         d_ff=11 * width // 4,
+        scratch_lanes=2,
+        scratch_width_per_lane=width // 4,
         n_prelude_layers=4,
         n_core_blocks=2,
         n_coda_layers=4,
-        use_recurrence=True,
-        recurrent_steps=_TOY_RECURRENT_STEPS,
-        max_recurrent_steps=_TOY_MAX_RECURRENT_STEPS,
-        use_static_kv_core=True,
-        max_sequence_length=16,
-        use_front_hadamard_experts=True,
-        hadamard_experts=4,
-        use_reentry_bridge=True,
-        use_scratch=True,
-        use_lane_carrier=True,
-        scratch_width=width // 8,
-        use_engram=True,
-        engram_hashes_per_order=2,
-        engram_table_size=127,
-        engram_row_dim=8,
-        use_long_term_memory=True,
-        long_term_memory_slots=32,
-        long_term_memory_width=width // 8,
-        initialization_seed=_TOY_SEED,
-        run_seed=_TOY_SEED,
-        hadamard_seed=_TOY_SEED,
-        engram_hash_seed=_TOY_SEED,
-        jet_plane_probe_seed=_TOY_SEED,
+        recurrent_steps=4,
+        attention_logit_scale=math.sqrt(MUP_D_HEAD_BASE) / C1_HEAD_DIM,
     )
+    if not topology.is_pf2_bound():
+        raise RuntimeError(f"PF-2.1 topology construction failed at d={width}")
+    return topology
 
 
-def _toy_memory(config: AblationLMConfig) -> ReadOnlyLatentMemory:
-    generator = torch.Generator(device="cpu").manual_seed(_TOY_SEED + 1)
-    return ReadOnlyLatentMemory(
-        config.d_model,
-        keys=torch.randn(
-            config.long_term_memory_slots,
-            config.long_term_memory_width,
-            generator=generator,
-        ),
-        values=torch.randn(
-            config.long_term_memory_slots,
-            config.long_term_memory_width,
-            generator=generator,
-        ),
-        provenance_ids=torch.arange(config.long_term_memory_slots),
-        layer_scale=config.long_term_memory_layer_scale,
-        norm_eps=config.norm_eps,
-        initialization_seed=config.initialization_seed,
-    )
+def _section8_mup_bindings() -> tuple[MUPBinding, ...]:
+    """Return only literal section 8/S81 bindings; never fill a missing value locally."""
 
-
-def _toy_model(config: AblationLMConfig) -> AblationLM:
-    return AblationLM(config, long_term_memory=_toy_memory(config))
-
-
-def _toy_batch(config: AblationLMConfig) -> tuple[torch.Tensor, torch.Tensor]:
-    generator = torch.Generator(device="cpu").manual_seed(_TOY_SEED + 2)
-    tokens = torch.randint(
-        1,
-        config.vocab_size,
-        (_TOY_BATCH_SIZE, _TOY_SEQUENCE_LENGTH),
-        generator=generator,
-    )
-    record_ids = torch.arange(_TOY_BATCH_SIZE).view(-1, 1).expand_as(tokens).clone()
-    return tokens, record_ids
-
-
-def _semantic_activation_modules(
-    model: AblationLM,
-) -> tuple[tuple[str, nn.Module, Callable[[object], torch.Tensor]], ...]:
-    """Return comparable, executed module boundaries for every materialized arm."""
-
-    first_tensor = lambda output: output[0] if isinstance(output, tuple) else output
-    identity = lambda output: output
-    modules: list[tuple[str, nn.Module, Callable[[object], torch.Tensor]]] = [
-        ("token_embedding", model.token_embedding, identity),
-    ]
-    if model.front_hadamard is not None:
-        assert isinstance(model.front_hadamard, ModifiedHadamardExpertBank)
-        modules.append(("front_hadamard", model.front_hadamard, first_tensor))
-    for stage, blocks in (
-        ("prelude", model.prelude_blocks),
-        ("core", model.core_blocks),
-        ("coda", model.coda_blocks),
-    ):
-        for index, block in enumerate(blocks):
-            assert isinstance(block, TransformerBlock)
-            assert isinstance(block.attention, GroupedQueryAttention)
-            assert isinstance(block.feed_forward, SwiGLU)
-            modules.extend(
-                (
-                    (f"{stage}.{index}.attention", block.attention, identity),
-                    (f"{stage}.{index}.feed_forward", block.feed_forward, identity),
-                    (f"{stage}.{index}.block_output", block, identity),
-                )
-            )
-    if model.engram is not None:
-        assert isinstance(model.engram, CausalTokenEngram)
-        modules.append(("engram", model.engram, first_tensor))
-    if model.reentry_bridge is not None:
-        assert isinstance(model.reentry_bridge, AnchoredReentryBridge)
-        modules.append(("reentry_bridge", model.reentry_bridge, identity))
-    if model.scratch is not None:
-        modules.extend(
-            (
-                ("scratch.initializer", model.scratch.initializer, identity),
-                ("scratch.context_projection", model.scratch.context_projection, identity),
-                ("scratch.update_out", model.scratch.update_out, identity),
-                ("scratch.readout", model.scratch.readout, identity),
-            )
-        )
-        if model.scratch.carrier is not None:
-            assert isinstance(model.scratch.carrier, TwoLaneBirkhoffMixer)
-            modules.append(("scratch.carrier", model.scratch.carrier, identity))
-    if model.long_term_memory is not None:
-        assert isinstance(model.long_term_memory, ReadOnlyLatentMemory)
-        modules.append(("long_term_memory", model.long_term_memory, first_tensor))
-    assert isinstance(model.final_norm, RMSNorm)
-    modules.extend(
-        (
-            ("final_norm", model.final_norm, identity),
-            ("lm_head", model.lm_head, identity),
-        )
-    )
-    return tuple(modules)
-
-
-def _activation_snapshot(
-    model: AblationLM,
-    tokens: torch.Tensor,
-    record_ids: torch.Tensor,
-) -> tuple[tuple[str, float], ...]:
-    accumulators: dict[str, _RMSAccumulator] = {}
-    handles: list[torch.utils.hooks.RemovableHandle] = []
-    for name, module, selector in _semantic_activation_modules(model):
-        if name in accumulators:
-            raise RuntimeError(f"duplicate activation coordinate {name}")
-        accumulators[name] = _RMSAccumulator()
-
-        def hook(
-            _module: nn.Module,
-            _inputs: tuple[object, ...],
-            output: object,
-            *,
-            coordinate: str = name,
-            select: Callable[[object], torch.Tensor] = selector,
-        ) -> None:
-            selected = select(output)
-            if not isinstance(selected, torch.Tensor) or not selected.is_floating_point():
-                raise TypeError(
-                    f"activation coordinate {coordinate} did not return a float tensor"
-                )
-            accumulators[coordinate].add(selected)
-
-        handles.append(module.register_forward_hook(hook))
-    was_training = model.training
-    try:
-        model.eval()
-        with torch.no_grad():
-            model(
-                tokens,
-                memory_record_ids=record_ids,
-                recurrent_steps=_TOY_RECURRENT_STEPS,
-            )
-    finally:
-        for handle in handles:
-            handle.remove()
-        model.train(was_training)
-    if model.loop_embedding is None:
-        raise RuntimeError("C1 chassis requires the recurrent loop embedding")
-    loop_update = (
-        model.loop_embedding.weight[:_TOY_RECURRENT_STEPS]
-        * model.config.recurrence_scale(_TOY_RECURRENT_STEPS)
-    )
-    accumulators["loop_embedding.applied_update"] = _RMSAccumulator()
-    accumulators["loop_embedding.applied_update"].add(loop_update)
-    return tuple(
-        (name, accumulators[name].rms())
-        for name in sorted(accumulators)
-    )
-
-
-def _reference_attention(
-    attention: GroupedQueryAttention,
-    hidden: torch.Tensor,
-    position_ids: torch.Tensor,
-    *,
-    scale: float,
-) -> torch.Tensor:
-    query = attention.query_norm(
-        attention._split_heads(attention.q_proj(hidden), attention.n_heads)
-    )
-    query = attention.rope.apply_rotary(query, position_ids)
-    projected = attention.project_kv(hidden, position_ids=position_ids)
-    key = projected.key.repeat_interleave(
-        attention.n_heads // attention.n_kv_heads,
-        dim=1,
-    )
-    value = projected.value.repeat_interleave(
-        attention.n_heads // attention.n_kv_heads,
-        dim=1,
-    )
-    scores = torch.matmul(query, key.transpose(-2, -1)) * float(scale)
-    length = hidden.shape[1]
-    causal = torch.ones(length, length, dtype=torch.bool).tril()
-    scores = scores.masked_fill(~causal.view(1, 1, length, length), float("-inf"))
-    probabilities = torch.softmax(scores.float(), dim=-1).to(query.dtype)
-    attended = probabilities @ value
-    merged = attended.transpose(1, 2).contiguous().view(
-        hidden.shape[0],
-        length,
-        attention.d_model,
-    )
-    return attention.output_proj(merged)
-
-
-def _maximum_error(left: torch.Tensor, right: torch.Tensor) -> float:
-    return float((left.float() - right.float()).abs().max().item())
-
-
-def _scale_match_label(ratified_error: float, ordinary_error: float) -> str:
-    if ratified_error <= _ATTENTION_MATCH_ATOL and ratified_error < ordinary_error:
-        return "ratified_inverse_head_dim"
-    if ordinary_error <= _ATTENTION_MATCH_ATOL and ordinary_error < ratified_error:
-        return "ordinary_inverse_sqrt_head_dim"
-    return "neither_registered_scale"
-
-
-def _attention_scale_evidence(
-    model: AblationLM,
-    tokens: torch.Tensor,
-) -> AttentionScaleEvidence:
-    attention = model.prelude_blocks[0].attention
-    hidden = model.token_embedding(tokens)
-    positions = torch.arange(tokens.shape[1]).view(1, -1).expand(tokens.shape[0], -1)
-    ratified_scale = 1.0 / attention.head_dim
-    ordinary_scale = 1.0 / math.sqrt(attention.head_dim)
-    with torch.no_grad():
-        sdpa = attention(hidden, position_ids=positions)
-        math_path = attention(hidden, position_ids=positions, force_math_attention=True)
-        ratified = _reference_attention(
-            attention,
-            hidden,
-            positions,
-            scale=ratified_scale,
-        )
-        ordinary = _reference_attention(
-            attention,
-            hidden,
-            positions,
-            scale=ordinary_scale,
-        )
-    sdpa_ratified = _maximum_error(sdpa, ratified)
-    sdpa_ordinary = _maximum_error(sdpa, ordinary)
-    math_ratified = _maximum_error(math_path, ratified)
-    math_ordinary = _maximum_error(math_path, ordinary)
-    sdpa_matches = _scale_match_label(sdpa_ratified, sdpa_ordinary)
-    math_matches = _scale_match_label(math_ratified, math_ordinary)
-    return AttentionScaleEvidence(
-        surface="integrated_grouped_query_attention",
-        width=model.config.d_model,
-        head_dim=attention.head_dim,
-        ratified_scale=ratified_scale,
-        ordinary_scale=ordinary_scale,
-        ordinary_to_ratified_ratio=ordinary_scale / ratified_scale,
-        sdpa_error_to_ratified=sdpa_ratified,
-        sdpa_error_to_ordinary=sdpa_ordinary,
-        math_error_to_ratified=math_ratified,
-        math_error_to_ordinary=math_ordinary,
-        sdpa_matches=sdpa_matches,
-        math_matches=math_matches,
-        passed=(
-            sdpa_matches == "ratified_inverse_head_dim"
-            and math_matches == "ratified_inverse_head_dim"
-        ),
-    )
-
-
-def _reference_bicameral_attention(
-    block: BicameralTransformerBlock,
-    hidden: torch.Tensor,
-    key: torch.Tensor,
-    value: torch.Tensor,
-    position_ids: torch.Tensor,
-    *,
-    hemi: int,
-    scale: float,
-) -> torch.Tensor:
-    query = block.query_norm(
-        block._split_heads(
-            block.q_proj(block.attention_norm(hidden), hemi),
-            block.n_heads,
-        )
-    )
-    query = block.rope.apply_rotary(query, position_ids)
-    key = key.repeat_interleave(block.n_heads // block.n_kv_heads, dim=1)
-    value = value.repeat_interleave(block.n_heads // block.n_kv_heads, dim=1)
-    scores = torch.matmul(query, key.transpose(-2, -1)) * float(scale)
-    length = hidden.shape[1]
-    causal = torch.ones(length, length, dtype=torch.bool).tril()
-    scores = scores.masked_fill(~causal.view(1, 1, length, length), float("-inf"))
-    probabilities = torch.softmax(scores.float(), dim=-1).to(query.dtype)
-    attended = probabilities @ value
-    merged = attended.transpose(1, 2).contiguous().view(
-        hidden.shape[0],
-        length,
-        block.d_model,
-    )
-    return block.o_proj(merged, hemi)
-
-
-def _bicameral_attention_scale_evidence(width: int) -> AttentionScaleEvidence:
-    block = BicameralTransformerBlock(
-        width,
-        n_heads=_TOY_N_HEADS,
-        n_kv_heads=_TOY_N_KV_HEADS,
-        d_ff=11 * width // 4,
-        max_sequence_length=16,
-        rank=8,
-        initialization_seed=_TOY_SEED,
-        module_path=f"preflight.c1.bicameral.d{width}",
-    ).eval()
-    generator = torch.Generator(device="cpu").manual_seed(_TOY_SEED + width)
-    hidden = 0.02 * torch.randn(
-        _TOY_BATCH_SIZE,
-        _TOY_SEQUENCE_LENGTH,
-        width,
-        generator=generator,
-    )
-    anchor = 0.02 * torch.randn(
-        _TOY_BATCH_SIZE,
-        _TOY_SEQUENCE_LENGTH,
-        width,
-        generator=generator,
-    )
-    positions = torch.arange(_TOY_SEQUENCE_LENGTH).view(1, -1).expand(_TOY_BATCH_SIZE, -1)
-    ratified_scale = 1.0 / block.head_dim
-    ordinary_scale = 1.0 / math.sqrt(block.head_dim)
-    with torch.no_grad():
-        cache = block.project_kv(anchor, position_ids=positions)
-        sdpa = block._attention(
-            hidden,
-            hemi=+1,
-            key=cache.key_a,
-            value=cache.value_a,
-            position_ids=positions,
-            attention_mask=None,
-            document_ids=None,
-            force_math_attention=False,
-        )
-        math_path = block._attention(
-            hidden,
-            hemi=+1,
-            key=cache.key_a,
-            value=cache.value_a,
-            position_ids=positions,
-            attention_mask=None,
-            document_ids=None,
-            force_math_attention=True,
-        )
-        ratified = _reference_bicameral_attention(
-            block,
-            hidden,
-            cache.key_a,
-            cache.value_a,
-            positions,
-            hemi=+1,
-            scale=ratified_scale,
-        )
-        ordinary = _reference_bicameral_attention(
-            block,
-            hidden,
-            cache.key_a,
-            cache.value_a,
-            positions,
-            hemi=+1,
-            scale=ordinary_scale,
-        )
-    sdpa_ratified = _maximum_error(sdpa, ratified)
-    sdpa_ordinary = _maximum_error(sdpa, ordinary)
-    math_ratified = _maximum_error(math_path, ratified)
-    math_ordinary = _maximum_error(math_path, ordinary)
-    sdpa_matches = _scale_match_label(sdpa_ratified, sdpa_ordinary)
-    math_matches = _scale_match_label(math_ratified, math_ordinary)
-    return AttentionScaleEvidence(
-        surface="standalone_bicameral_transformer_block",
-        width=width,
-        head_dim=block.head_dim,
-        ratified_scale=ratified_scale,
-        ordinary_scale=ordinary_scale,
-        ordinary_to_ratified_ratio=ordinary_scale / ratified_scale,
-        sdpa_error_to_ratified=sdpa_ratified,
-        sdpa_error_to_ordinary=sdpa_ordinary,
-        math_error_to_ratified=math_ratified,
-        math_error_to_ordinary=math_ordinary,
-        sdpa_matches=sdpa_matches,
-        math_matches=math_matches,
-        passed=(
-            sdpa_matches == "ratified_inverse_head_dim"
-            and math_matches == "ratified_inverse_head_dim"
-        ),
-    )
-
-
-def _run_width(
-    width: int,
-    *,
-    training_steps: int,
-) -> tuple[WidthRun, tuple[AttentionScaleEvidence, ...]]:
-    config = _toy_config(width)
-    model = _toy_model(config)
-    tokens, record_ids = _toy_batch(config)
-    attention_evidence = (
-        _attention_scale_evidence(model, tokens),
-        _bicameral_attention_scale_evidence(width),
-    )
-    initial_activations = _activation_snapshot(model, tokens, record_ids)
-    model.train()
-    optimizer = torch.optim.AdamW(
-        model.parameters(),
-        lr=_TOY_LEARNING_RATE,
-        betas=_TOY_BETAS,
-        eps=_TOY_EPSILON,
-        weight_decay=_TOY_WEIGHT_DECAY,
-    )
-    initial_loss = math.nan
-    final_loss = math.nan
-    for step in range(training_steps):
-        optimizer.zero_grad(set_to_none=True)
-        output = model(
-            tokens,
-            labels=tokens,
-            memory_record_ids=record_ids,
-            recurrent_steps=_TOY_RECURRENT_STEPS,
-        )
-        if output.loss is None or not bool(torch.isfinite(output.loss)):
-            raise RuntimeError(f"non-finite C1 toy loss at width={width}, step={step}")
-        loss_value = float(output.loss.detach().item())
-        if step == 0:
-            initial_loss = loss_value
-        final_loss = loss_value
-        output.loss.backward()
-        optimizer.step()
-    final_activations = _activation_snapshot(model, tokens, record_ids)
     return (
-        WidthRun(
-            width=width,
-            head_dim=config.head_dim,
-            unique_parameters=sum(parameter.numel() for parameter in model.parameters()),
-            unique_decoder_blocks=(
-                config.n_prelude_layers
-                + config.n_core_blocks
-                + config.n_coda_layers
-            ),
-            executed_decoder_block_passes=(
-                config.n_prelude_layers
-                + config.recurrent_steps * config.n_core_blocks
-                + config.n_coda_layers
-            ),
-            initial_loss=initial_loss,
-            final_training_loss=final_loss,
-            activation_rms_at_init=initial_activations,
-            activation_rms_after_steps=final_activations,
+        MUPBinding(
+            component="attention_logit_scale",
+            status="bound",
+            authority_rule="sqrt(d_head_base) / d_head with d_head_base=64",
+            missing_requirement=None,
         ),
-        attention_evidence,
-    )
-
-
-def _coordinate_ratio(values: tuple[float, ...]) -> tuple[float, bool]:
-    if any(not math.isfinite(value) or value < 0.0 for value in values):
-        return math.inf, False
-    if all(value == 0.0 for value in values):
-        return 1.0, True
-    minimum = min(values)
-    if minimum == 0.0:
-        return math.inf, False
-    return max(values) / minimum, False
-
-
-def _activation_coordinates(width_runs: tuple[WidthRun, ...]) -> tuple[ActivationCoordinate, ...]:
-    if not width_runs:
-        raise ValueError("at least one width run is required")
-    phase_rows = (
-        ("init", tuple(dict(run.activation_rms_at_init) for run in width_runs)),
-        (
-            "after_steps",
-            tuple(dict(run.activation_rms_after_steps) for run in width_runs),
+        MUPBinding(
+            component="model_base_width_d_base",
+            status="unbound",
+            authority_rule="m_width = d_model / d_base",
+            missing_requirement="numeric d_base",
+        ),
+        MUPBinding(
+            component="internal_base_initialization_sigma_base",
+            status="unbound",
+            authority_rule="sigma_internal = sigma_base / sqrt(m_width)",
+            missing_requirement="numeric sigma_base",
+        ),
+        MUPBinding(
+            component="complete_per_tensor_initialization_map",
+            status="unbound",
+            authority_rule="verify input/output taxonomy; do not assume",
+            missing_requirement=(
+                "exhaustive tensor taxonomy and initialization rule for every "
+                "trainable tensor"
+            ),
+        ),
+        MUPBinding(
+            component="internal_base_learning_rate_eta_base",
+            status="unbound",
+            authority_rule="eta_internal = eta_base / m_width",
+            missing_requirement="numeric eta_base",
+        ),
+        MUPBinding(
+            component="complete_per_tensor_learning_rate_map",
+            status="unbound",
+            authority_rule="per-tensor learning-rate rules exactly as section 8",
+            missing_requirement=(
+                "exhaustive tensor-to-learning-rate or multiplier mapping"
+            ),
+        ),
+        MUPBinding(
+            component="residual_branch_alpha",
+            status="unbound",
+            authority_rule="h <- h + alpha F_theta(h); alpha found on proxy",
+            missing_requirement="numeric alpha or a ratified selection receipt",
+        ),
+        MUPBinding(
+            component="embedding_multiplier",
+            status="unbound",
+            authority_rule="embedding multiplier is first-class",
+            missing_requirement="numeric embedding multiplier",
+        ),
+        MUPBinding(
+            component="residual_multiplier",
+            status="unbound",
+            authority_rule="residual multiplier is first-class",
+            missing_requirement="numeric residual multiplier",
         ),
     )
-    expected_names = set(phase_rows[0][1][0])
-    for _phase, rows in phase_rows:
-        if any(set(row) != expected_names for row in rows):
-            raise RuntimeError("activation coordinate names differ across widths or phases")
-    coordinates: list[ActivationCoordinate] = []
-    for phase, rows in phase_rows:
-        for name in sorted(expected_names):
-            rms_by_width = tuple(
-                (run.width, rows[index][name])
-                for index, run in enumerate(width_runs)
-            )
-            ratio, all_zero = _coordinate_ratio(
-                tuple(value for _width, value in rms_by_width)
-            )
-            coordinates.append(
-                ActivationCoordinate(
-                    module_name=name,
-                    phase=phase,
-                    rms_by_width=rms_by_width,
-                    maximum_to_minimum_ratio=ratio,
-                    all_zero=all_zero,
-                    passed=ratio < C1_WIDTH_DRIFT_LIMIT,
-                )
-            )
-    return tuple(coordinates)
 
 
 def run_preflight_c1(
@@ -701,64 +408,63 @@ def run_preflight_c1(
     widths: tuple[int, ...] = C1_CPU_WIDTHS,
     training_steps: int = C1_TRAINING_STEPS,
 ) -> C1PreflightReceipt:
-    """Run the deterministic CPU slice and return a fail-closed C1 receipt."""
+    """Audit PF-2.1 bindings and stop before executing an underbound C1 run."""
 
-    if not widths or len(set(widths)) != len(widths):
-        raise ValueError("widths must be a non-empty unique tuple")
-    if any(width not in C1_CPU_WIDTHS for width in widths):
-        raise ValueError("this runner is CPU-scoped to d in {64,128,256}")
-    if type(training_steps) is not int or training_steps < 1:
-        raise ValueError("training_steps must be a positive integer")
-    width_runs: list[WidthRun] = []
-    attention_evidence: list[AttentionScaleEvidence] = []
-    for width in widths:
-        run, evidence = _run_width(width, training_steps=training_steps)
-        width_runs.append(run)
-        attention_evidence.extend(evidence)
-    runs = tuple(width_runs)
-    coordinates = _activation_coordinates(runs)
-    failed_coordinates = tuple(
-        (coordinate.phase, coordinate.module_name)
-        for coordinate in coordinates
-        if not coordinate.passed
+    if widths != C1_CPU_WIDTHS:
+        raise ValueError("widths must equal the complete PF-2.1 CPU axis (128,256,512)")
+    if type(training_steps) is not int or training_steps != C1_TRAINING_STEPS:
+        raise ValueError("training_steps must equal the PF-2.1 literal 10")
+
+    pf2, s81, build_handoff = verify_c1_authorities()
+    topologies = tuple(_bound_width_topology(width) for width in widths)
+    bindings = _section8_mup_bindings()
+    unbound = tuple(
+        binding.component for binding in bindings if binding.status != "bound"
     )
-    attention_passed = all(item.passed for item in attention_evidence)
-    activation_passed = not failed_coordinates
-    passed = attention_passed and activation_passed
+    if not unbound:
+        raise RuntimeError(
+            "PF-2.1 binding audit unexpectedly became complete; implement and "
+            "review the model/optimizer execution path before running it"
+        )
+
     return C1PreflightReceipt(
         program_sha256=PREFLIGHT_PROGRAM_SHA256,
         ratification_sha256=PREFLIGHT_RATIFICATION_SHA256,
-        attention_scale_authority=ATTENTION_SCALE_AUTHORITY,
-        attention_scale_authority_bytes=ATTENTION_SCALE_AUTHORITY_BYTES,
-        attention_scale_authority_sha256=ATTENTION_SCALE_AUTHORITY_SHA256,
-        attention_scale_authority_drive_id=ATTENTION_SCALE_AUTHORITY_DRIVE_ID,
+        pf2_authority=pf2,
+        s81_authority=s81,
+        build_handoff_verification=build_handoff,
+        build_handoff_authority=BUILD_HANDOFF_AUTHORITY,
+        build_handoff_authority_bytes=BUILD_HANDOFF_AUTHORITY_BYTES,
+        build_handoff_authority_sha256=BUILD_HANDOFF_AUTHORITY_SHA256,
+        build_handoff_authority_drive_id=BUILD_HANDOFF_AUTHORITY_DRIVE_ID,
         cpu_widths=widths,
         deferred_gpu_widths=C1_DEFERRED_GPU_WIDTHS,
-        width_drift_limit=C1_WIDTH_DRIFT_LIMIT,
+        batch_size=C1_BATCH_SIZE,
+        sequence_length=C1_SEQUENCE_LENGTH,
         training_steps=training_steps,
-        chassis=(
-            "materialized_AblationLM_d_variable_heads8_kv4_ff11d_over4_"
-            "prelude4_core2_coda4_K4_lanes2xd_over8"
+        width_drift_limit=C1_WIDTH_DRIFT_LIMIT,
+        width_topologies=topologies,
+        mup_bindings=bindings,
+        unbound_mup_components=unbound,
+        authority_verified=pf2.verified and s81.verified and build_handoff.verified,
+        topology_verified=all(topology.is_pf2_bound() for topology in topologies),
+        attention_contract_bound=(
+            MUP_D_HEAD_BASE == C1_HEAD_DIM
+            and all(
+                topology.attention_logit_scale == 0.125
+                for topology in topologies
+            )
         ),
-        toy_protocol=(
-            "cpu_fp32_synthetic_fixed_token_batch_b2_s8_v128; AdamW(lr=3e-4,"
-            "betas=(0.9,0.95),eps=1e-8,weight_decay=0); "
-            "diagnostic_only_not_S2_calibration"
-        ),
-        not_materialized_integrations=PF1_NOT_MATERIALIZED_INTEGRATIONS,
-        attention_scale_evidence=tuple(attention_evidence),
-        width_runs=runs,
-        activation_coordinates=coordinates,
-        failed_activation_coordinates=failed_coordinates,
-        attention_scale_passed=attention_passed,
-        activation_coordinate_passed=activation_passed,
-        passed=passed,
-        catch_number=None if passed else C1_CATCH_NUMBER,
-        disposition=(
-            "c1_cpu_pass_widest_gpu_deferred"
-            if passed
-            else "catch_28_return_to_strategy_no_model_patch"
-        ),
+        future_head_dim_policy=S81_FUTURE_HEAD_DIM_POLICY,
+        mup_protocol_complete=False,
+        execution_status=C1_EXECUTION_STATUS,
+        model_initialized=False,
+        optimizer_constructed=False,
+        training_performed=False,
+        activation_coordinate_passed=None,
+        passed=False,
+        catch_number=C1_CATCH_NUMBER,
+        disposition="catch_33_return_to_strategy_mup_protocol_unbound",
     )
 
 
@@ -771,20 +477,35 @@ if __name__ == "__main__":
 
 
 __all__ = [
-    "ATTENTION_SCALE_AUTHORITY",
-    "ATTENTION_SCALE_AUTHORITY_BYTES",
-    "ATTENTION_SCALE_AUTHORITY_DRIVE_ID",
-    "ATTENTION_SCALE_AUTHORITY_SHA256",
-    "ActivationCoordinate",
-    "AttentionScaleEvidence",
+    "AuthorityVerification",
+    "BUILD_HANDOFF_AUTHORITY",
+    "BUILD_HANDOFF_AUTHORITY_BYTES",
+    "BUILD_HANDOFF_AUTHORITY_FILE",
+    "BUILD_HANDOFF_AUTHORITY_DRIVE_ID",
+    "BUILD_HANDOFF_AUTHORITY_SHA256",
+    "C1AuthorityIntegrityError",
     "C1CoordinateCatch",
     "C1PreflightReceipt",
+    "C1WidthTopology",
+    "C1_BATCH_SIZE",
+    "C1_CATCH_NUMBER",
     "C1_CPU_WIDTHS",
     "C1_DEFERRED_GPU_WIDTHS",
+    "C1_EXECUTION_STATUS",
+    "C1_HEAD_DIM",
+    "C1_SEQUENCE_LENGTH",
     "C1_TRAINING_STEPS",
     "C1_WIDTH_DRIFT_LIMIT",
+    "MUPBinding",
+    "PF2_AUTHORITY_BYTES",
+    "PF2_AUTHORITY_FILE",
+    "PF2_AUTHORITY_SHA256",
     "PREFLIGHT_PROGRAM_SHA256",
     "PREFLIGHT_RATIFICATION_SHA256",
-    "WidthRun",
+    "S81_AUTHORITY_BYTES",
+    "S81_AUTHORITY_FILE",
+    "S81_AUTHORITY_SHA256",
+    "S81_FUTURE_HEAD_DIM_POLICY",
     "run_preflight_c1",
+    "verify_c1_authorities",
 ]

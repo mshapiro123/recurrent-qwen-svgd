@@ -9,6 +9,11 @@ from dataclasses import dataclass, replace
 TOKENIZER_VOCAB_CANDIDATES = (16_384, 24_576, 32_768, 49_152)
 REGISTERED_PROXY_BLOCK_SPLITS = ((4, 2, 4), (3, 4, 3), (2, 6, 2))
 REGISTERED_TARGET_BLOCK_SPLITS = ((9, 4, 9), (8, 6, 8))
+# D-PF-3 is numerically realized by the existing square-root attention at
+# d_head=64. A future WEFT shape with another head dimension requires an
+# explicit base-shape implementation; non-WEFT toy configurations retain their
+# existing square-root behavior.
+MUP_D_HEAD_BASE = 64
 REGISTERED_CORE_BLOCK_COUNTS = tuple(
     core for _prelude, core, _coda in REGISTERED_TARGET_BLOCK_SPLITS
 )

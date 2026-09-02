@@ -1,9 +1,9 @@
 """PF-1.2 rerun of the registered WEFT-1 Jacobian power arithmetic.
 
-The constants are the literal values in ``STRATEGY_JACOBIAN_POWER_20260826``.
-PF-1 changes only the depth coordinate and therefore ``Sxx``.  This module
-reports the resulting arithmetic without silently deciding whether an
-approximately stated frontier is close enough to count as unchanged.
+The frontier constants are the literal values in
+``STRATEGY_JACOBIAN_POWER_20260826``. PF-1 changes the depth coordinate and
+therefore ``Sxx``; PF-2 then adopts the resulting recommendation of 520
+examples without a rounding band.
 """
 
 from __future__ import annotations
@@ -15,7 +15,7 @@ from dataclasses import asdict, dataclass
 from analysis.weft1_jacobian_panel import REGISTERED_DESIGN_SXX
 
 
-REGISTERED_N = 512
+REGISTERED_N = 520
 REFERENCE_SXX_BASE2 = 5.0
 SIGMA_W = 0.25
 PRIMARY_TARGET_SE = 0.051
@@ -146,4 +146,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

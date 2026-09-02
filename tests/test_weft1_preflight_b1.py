@@ -44,7 +44,7 @@ def test_pf1_physical_power_law_plant_recovers_base_independent_p(
     assert observed.sigma_w_hat <= 1e-12
 
 
-def test_pf1_power_rerun_exposes_literal_n_branch_without_rounding() -> None:
+def test_pf2_adopted_n_meets_both_literal_frontiers_without_rounding() -> None:
     receipt = rerun_registered_power()
 
     assert receipt.sxx == pytest.approx(REGISTERED_DESIGN_SXX, rel=0, abs=1e-15)
@@ -53,13 +53,12 @@ def test_pf1_power_rerun_exposes_literal_n_branch_without_rounding() -> None:
         rel=0,
         abs=1e-15,
     )
-    assert receipt.primary_realized_se_at_registered_n == pytest.approx(
-        0.051320780244339934
-    )
+    assert receipt.registered_n == 520
+    assert receipt.primary_realized_se_at_registered_n <= receipt.primary_target_se
     assert receipt.primary_minimum_n_for_literal_frontier == 519
     assert receipt.secondary_minimum_n_for_literal_frontier == 514
-    assert receipt.literal_frontiers_both_met is False
-    assert receipt.disposition == "return_to_strategy_for_registered_n"
+    assert receipt.literal_frontiers_both_met is True
+    assert receipt.disposition == "registered_n_stands_on_literal_frontiers"
 
 
 def test_preflight_b1_two_phase_coverage_and_pilot_semantics() -> None:

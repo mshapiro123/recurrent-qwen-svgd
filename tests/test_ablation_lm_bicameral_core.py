@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import copy
 from dataclasses import replace
+import math
 from unittest.mock import patch
 
 import pytest
@@ -12,7 +13,7 @@ from models.ablation_lm.bicameral_core import (
     BicameralProjectedKeyValue,
     BicameralTransformerBlock,
 )
-from models.ablation_lm.config import AblationLMConfig
+from models.ablation_lm.config import MUP_D_HEAD_BASE, AblationLMConfig
 from models.ablation_lm.layers import RMSNorm, TransformerBlock
 
 
@@ -89,6 +90,12 @@ def test_structure_initialization_and_exact_d512_parameter_delta() -> None:
         module_path="model.bicameral_core.0",
     )
 
+    assert block.head_dim == MUP_D_HEAD_BASE == 64
+    assert (
+        1.0 / math.sqrt(block.head_dim)
+        == math.sqrt(MUP_D_HEAD_BASE) / block.head_dim
+        == 0.125
+    )
     assert torch.equal(torch.random.get_rng_state(), ambient_state)
     assert len(block.swap_linears) == 7
     assert all(isinstance(layer, SwapLinear) for layer in block.swap_linears)

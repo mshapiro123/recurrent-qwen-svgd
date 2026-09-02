@@ -7,7 +7,7 @@ import math
 import pytest
 import torch
 
-from models.ablation_lm.config import AblationLMConfig
+from models.ablation_lm.config import MUP_D_HEAD_BASE, AblationLMConfig
 from models.ablation_lm.hadamard import sequency_permutation, wht
 from models.ablation_lm.layers import (
     GroupedQueryAttention,
@@ -112,6 +112,16 @@ def _attention_config() -> AblationLMConfig:
     )
 
 
+def _base_head_attention_config() -> AblationLMConfig:
+    return replace(
+        _attention_config(),
+        d_model=128,
+        d_ff=256,
+        scratch_width=32,
+        long_term_memory_width=32,
+    )
+
+
 def test_rotary_embedding_is_orthogonal_and_has_no_loop_coordinate() -> None:
     rope = RotaryEmbedding(4, theta=10_000.0, max_sequence_length=16)
     query = torch.randn(2, 3, 5, 4)
@@ -125,27 +135,37 @@ def test_rotary_embedding_is_orthogonal_and_has_no_loop_coordinate() -> None:
     assert set(rope.forward.__annotations__) == {"query", "key", "position_ids", "return"}
 
 
-def test_gqa_sdpa_matches_explicit_float32_causal_attention() -> None:
+def test_gqa_sdpa_matches_explicit_base_shape_mup_causal_attention() -> None:
     torch.manual_seed(7)
-    config = _attention_config()
+    config = _base_head_attention_config()
     attention = GroupedQueryAttention(config, module_path="model.test.sdpa").eval()
     hidden = torch.randn(2, 4, config.d_model)
     positions = torch.arange(4).view(1, -1).expand(2, -1)
 
     actual = attention(hidden, position_ids=positions)
+    actual_math = attention(
+        hidden,
+        position_ids=positions,
+        force_math_attention=True,
+    )
     query = attention.query_norm(attention._split_heads(attention.q_proj(hidden), config.n_heads))
     key = attention.key_norm(attention._split_heads(attention.k_proj(hidden), config.n_kv_heads))
     value = attention._split_heads(attention.v_proj(hidden), config.n_kv_heads)
     query, key = attention.rope(query, key, positions)
     key = key.repeat_interleave(config.n_heads // config.n_kv_heads, dim=1)
     value = value.repeat_interleave(config.n_heads // config.n_kv_heads, dim=1)
-    scores = query @ key.transpose(-1, -2) / math.sqrt(config.head_dim)
+    assert MUP_D_HEAD_BASE == 64
+    assert config.head_dim == MUP_D_HEAD_BASE
+    expected_scale = math.sqrt(MUP_D_HEAD_BASE) / config.head_dim
+    assert expected_scale == 1.0 / math.sqrt(config.head_dim) == 0.125
+    scores = query @ key.transpose(-1, -2) * expected_scale
     scores.masked_fill_(torch.ones(4, 4, dtype=torch.bool).triu(1), float("-inf"))
     reference = torch.softmax(scores.float(), dim=-1) @ value.float()
     reference = reference.transpose(1, 2).contiguous().view(2, 4, config.d_model)
     reference = attention.output_proj(reference)
 
     torch.testing.assert_close(actual, reference, rtol=2e-5, atol=2e-6)
+    torch.testing.assert_close(actual_math, reference, rtol=2e-5, atol=2e-6)
 
 
 def test_attention_dropout_is_fail_closed_until_a_generator_aware_fused_kernel() -> None:

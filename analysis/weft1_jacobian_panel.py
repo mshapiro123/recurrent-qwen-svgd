@@ -30,7 +30,7 @@ from models.ablation_lm.rng import ModuleRNGStream
 
 REGISTERED_DEPTHS = (1, 2, 4, 8)
 REGISTERED_DESIGN_SXX = 2.4022650695910066
-MAIN_PANEL_EXAMPLES = 512
+MAIN_PANEL_EXAMPLES = 520
 MAIN_PANEL_PROBES = 4
 NORM_PANEL_EXAMPLES = 64
 NORM_POWER_ITERATIONS = 10
@@ -859,7 +859,7 @@ def cluster_bootstrap_ci(
     rng = np.random.default_rng(seed)
     count = values.size
     statistics = np.empty(replicates, dtype=np.float64)
-    # Bound transient allocation for the registered 10k x 512 bootstrap.
+    # Bound transient allocation for the registered 10k x 520 bootstrap.
     chunk_size = min(replicates, max(1, 2_000_000 // count))
     cursor = 0
     while cursor < replicates:
@@ -1008,7 +1008,7 @@ def build_panel_report(
     bootstrap_replicates: int = FULL_BOOTSTRAP_REPLICATES,
     bootstrap_seed: int = 0,
 ) -> JacobianPanelReport:
-    """Assemble the registered 512 x 4 main-tier receipt payload.
+    """Assemble the registered 520 x 4 main-tier receipt payload.
 
     Norm and rank both use the same 64-example subsample but the governing
     handoff does not yet define whether they share one receipt or how the rank
@@ -1038,7 +1038,7 @@ def build_panel_report(
     if type(log_gains) is not torch.Tensor or log_gains.ndim != 3:
         raise ValueError("log_gains must be [example, depth, probe]")
     if slopes.numel() != MAIN_PANEL_EXAMPLES:
-        raise ValueError("registered main reports require exactly n=512 examples")
+        raise ValueError("registered main reports require exactly n=520 examples")
     if log_gains.shape[-1] != MAIN_PANEL_PROBES:
         raise ValueError("registered main reports require exactly n_probe=4")
     depth_tuple = tuple(depths)

@@ -41,6 +41,7 @@ from .certificates import (
     make_loop_lipschitz_receipt,
 )
 from .config import (
+    MUP_D_HEAD_BASE,
     RATIFIED_TARGET_AUTHORITY,
     RATIFIED_TARGET_AUTHORITY_SHA256,
     RATIFIED_TARGET_D_MODEL,
@@ -122,6 +123,7 @@ __all__ = [
     "InstrumentTier",
     "LaneModeState",
     "LoopLipschitzReceipt",
+    "MUP_D_HEAD_BASE",
     "ModuleRNGStream",
     "ObservatoryBlocked",
     "ObservatoryEvent",

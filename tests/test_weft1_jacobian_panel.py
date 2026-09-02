@@ -503,7 +503,7 @@ def test_autocast_is_rejected_and_probe_path_stays_fp32() -> None:
 
 
 def test_reporting_contract_and_registered_rejection_conditions() -> None:
-    slopes, log_gains, directions = _report_inputs(512)
+    slopes, log_gains, directions = _report_inputs(520)
 
     report = build_panel_report(
         slopes,
@@ -525,7 +525,7 @@ def test_reporting_contract_and_registered_rejection_conditions() -> None:
     assert payload["Sxx"] == pytest.approx(REGISTERED_DESIGN_SXX)
     assert payload["instrument_tier"] == 1
     assert payload["tier"] == "main"
-    assert payload["n"] == 512
+    assert payload["n"] == 520
     assert payload["n_probe"] == 4
     assert payload["depths"] == [1, 2, 4, 8]
     assert payload["conditioning_flag"] is True
@@ -565,7 +565,7 @@ def test_reporting_contract_and_registered_rejection_conditions() -> None:
 
 def test_pilot_is_explicitly_non_admissible_and_cannot_be_main() -> None:
     slopes, log_gains, directions = _report_inputs(32)
-    with pytest.raises(ValueError, match="n=512"):
+    with pytest.raises(ValueError, match="n=520"):
         build_panel_report(
             slopes,
             log_gains,
@@ -601,7 +601,7 @@ def test_pilot_is_explicitly_non_admissible_and_cannot_be_main() -> None:
 
 @pytest.mark.parametrize("tier", ("norm", "rank"))
 def test_norm_and_rank_report_assembly_is_fail_closed(tier: str) -> None:
-    slopes, log_gains, directions = _report_inputs(512)
+    slopes, log_gains, directions = _report_inputs(520)
     assert NORM_RANK_REPORTING_STATUS == "blocked_pending_shared_subsample_schema"
     with pytest.raises(RuntimeError, match="shared-subsample schema"):
         build_panel_report(
@@ -620,7 +620,7 @@ def test_norm_and_rank_report_assembly_is_fail_closed(tier: str) -> None:
 
 
 def test_main_bootstrap_contract_is_fixed_and_receipted() -> None:
-    slopes, log_gains, directions = _report_inputs(512)
+    slopes, log_gains, directions = _report_inputs(520)
     with pytest.raises(ValueError, match="10,000 bootstrap"):
         build_panel_report(
             slopes,
@@ -659,7 +659,7 @@ def test_clipped_variance_and_tier_comparison_are_fail_closed() -> None:
     assert clipped is True
     assert rejection_conditions((1, 1, 1, 1), (0.2, 0.1, 0.08, 0.07)) == ()
 
-    slopes, log_gains, directions = _report_inputs(512)
+    slopes, log_gains, directions = _report_inputs(520)
     main = build_panel_report(
         slopes,
         log_gains,
