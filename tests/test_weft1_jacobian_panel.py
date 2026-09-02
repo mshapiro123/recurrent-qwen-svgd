@@ -15,6 +15,7 @@ from torch import nn
 from analysis.weft1_jacobian_panel import (
     DIRECTION_CLASSES,
     NORM_RANK_REPORTING_STATUS,
+    REGISTERED_DESIGN_SXX,
     REGISTERED_DEPTHS,
     StochasticStateSnapshot,
     build_pilot_diagnostics,
@@ -22,10 +23,12 @@ from analysis.weft1_jacobian_panel import (
     cluster_bootstrap_ci,
     compare_main_and_norm_tiers,
     derive_example_probe_seed,
+    design_sxx,
     draw_example_probe_directions,
     loop_log_gains,
     measure_example_depths,
     operator_norm,
+    paired_probe_jackknife,
     p_hat,
     participation_ratio,
     rejection_conditions,
@@ -118,11 +121,12 @@ def _dense_jacobian(model: nn.Module, primal: torch.Tensor) -> torch.Tensor:
 def _report_inputs(
     example_count: int,
 ) -> tuple[torch.Tensor, torch.Tensor, dict[str, tuple[float, ...]]]:
-    slopes = torch.linspace(-1.2, -0.8, example_count)
-    grid = torch.arange(example_count * 4 * 4, dtype=torch.float32).reshape(
-        example_count, 4, 4
-    )
-    log_gains = 0.001 * grid.sin()
+    p_values = torch.linspace(0.8, 1.2, example_count, dtype=torch.float64)
+    c_values = torch.linspace(0.2, 0.4, example_count, dtype=torch.float64)
+    depths = torch.tensor(REGISTERED_DEPTHS, dtype=torch.float64)
+    lambda_t = -c_values[:, None] * depths[None, :].pow(-p_values[:, None])
+    log_gains = (depths[None, :] * lambda_t)[:, :, None].expand(-1, -1, 4).clone()
+    slopes = paired_probe_jackknife(log_gains).slopes
     directions = {
         name: tuple(0.1 * (index + 1) for index in range(4))
         for name in DIRECTION_CLASSES
@@ -131,10 +135,14 @@ def _report_inputs(
 
 
 def test_pt1_golden_theil_sen_slope() -> None:
-    x = torch.log2(torch.tensor(REGISTERED_DEPTHS, dtype=torch.float64))
-    intercept = torch.linspace(-0.7, 0.9, 23, dtype=torch.float64)
+    depths = torch.tensor(REGISTERED_DEPTHS, dtype=torch.float64)
+    x = torch.log(depths)
+    c = torch.linspace(0.2, 0.8, 23, dtype=torch.float64)
     true_p = 1.137
-    y = intercept[:, None] - true_p * x[None, :]
+    # PF-1.1 physical plant: lambda_T = -c * T**(-p).  The response
+    # comes from the planted law, not from the regression coordinate.
+    lambda_t = -c[:, None] * depths[None, :].pow(-true_p)
+    y = torch.log(lambda_t.abs())
 
     slopes = theil_sen_slopes(x, y)
 
@@ -145,6 +153,11 @@ def test_pt1_golden_theil_sen_slope() -> None:
         atol=1e-12,
     )
     assert abs(p_hat(x, y) - true_p) < 1e-6
+    assert design_sxx(REGISTERED_DEPTHS) == pytest.approx(
+        REGISTERED_DESIGN_SXX,
+        rel=0,
+        abs=1e-15,
+    )
 
 
 def test_pt2_forward_jvp_matches_dense_jacobian_for_sixteen_directions() -> None:
@@ -422,6 +435,44 @@ def test_pt6_cluster_bootstrap_has_registered_synthetic_coverage() -> None:
     assert 0.93 <= coverage <= 0.97
 
 
+def test_pf1_paired_leave_one_probe_out_jackknife_is_exact() -> None:
+    depths = torch.tensor(REGISTERED_DEPTHS, dtype=torch.float64)
+    p_values = torch.tensor([0.8, 1.0, 1.2], dtype=torch.float64)
+    c_values = torch.tensor([0.2, 0.3, 0.4], dtype=torch.float64)
+    probe_offsets = torch.tensor(
+        [
+            [-0.06, -0.02, 0.02, 0.06],
+            [-0.04, -0.01, 0.01, 0.04],
+            [-0.08, -0.03, 0.03, 0.08],
+        ],
+        dtype=torch.float64,
+    )
+    exponent = p_values[:, None, None] + probe_offsets[:, None, :]
+    lambda_t = -c_values[:, None, None] * depths[None, :, None].pow(-exponent)
+    log_gains = depths[None, :, None] * lambda_t
+
+    observed = paired_probe_jackknife(log_gains)
+    manual_leave_one_out = []
+    for omitted in range(4):
+        retained = [probe for probe in range(4) if probe != omitted]
+        lambda_subset = log_gains[:, :, retained].mean(dim=-1) / depths[None, :]
+        manual_leave_one_out.append(
+            theil_sen_slopes(torch.log(depths), torch.log(lambda_subset.abs()))
+        )
+    manual = torch.stack(manual_leave_one_out, dim=1)
+    manual_mean = manual.mean(dim=1, keepdim=True)
+    manual_variance = 0.75 * (manual - manual_mean).square().sum(dim=1)
+
+    torch.testing.assert_close(observed.leave_one_out_slopes, manual, rtol=0, atol=1e-12)
+    torch.testing.assert_close(
+        observed.measurement_variance_by_example,
+        manual_variance,
+        rtol=0,
+        atol=1e-12,
+    )
+    assert observed.sigma_w_hat == pytest.approx(manual_variance.mean().sqrt().item())
+
+
 def test_autocast_is_rejected_and_probe_path_stays_fp32() -> None:
     model = _TinyTwoBlock()
     primal = torch.linspace(-0.4, 0.6, 8, dtype=torch.float32)
@@ -471,7 +522,7 @@ def test_reporting_contract_and_registered_rejection_conditions() -> None:
     payload = report.to_dict()
 
     assert payload["p_hat"] == pytest.approx(1.0)
-    assert payload["Sxx"] == pytest.approx(5.0)
+    assert payload["Sxx"] == pytest.approx(REGISTERED_DESIGN_SXX)
     assert payload["instrument_tier"] == 1
     assert payload["tier"] == "main"
     assert payload["n"] == 512
@@ -487,6 +538,8 @@ def test_reporting_contract_and_registered_rejection_conditions() -> None:
     assert payload["jacobian_semantics"] == "fixed_routing_branch"
     assert payload["routing_flip_derivative_included"] is False
     assert payload["probe_seed_scope"] == "example"
+    assert payload["depth_coordinate"] == "natural_log"
+    assert payload["sigma_w_semantics"] == "paired_leave_one_probe_out_slope_sd"
     assert payload["provenance_sha256"] == PROVENANCE_SHA256
     assert payload["bootstrap_replicates"] == 10_000
     assert payload["bootstrap_seed"] == 79
@@ -601,7 +654,7 @@ def test_main_bootstrap_contract_is_fixed_and_receipted() -> None:
 
 
 def test_clipped_variance_and_tier_comparison_are_fail_closed() -> None:
-    sigma, clipped = sigma_slope_hat(torch.ones(8), 1.0, sxx=5.0)
+    sigma, clipped = sigma_slope_hat(torch.ones(8), torch.ones(8))
     assert sigma == 0.0
     assert clipped is True
     assert rejection_conditions((1, 1, 1, 1), (0.2, 0.1, 0.08, 0.07)) == ()

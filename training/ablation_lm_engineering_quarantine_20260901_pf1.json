@@ -1,0 +1,62 @@
+{
+  "kind": "ablation_lm_engineering_quarantine_v13",
+  "date": "2026-09-01",
+  "status": "exact_node_quarantine_build_only",
+  "reviewed_at_commit": "04eb51373b35684d3f4865b6c50c78a9cb7a43e0",
+  "review_due_on": "2026-09-04",
+  "review_trigger": "Review before the next repository-wide engineering receipt or 2026-09-04, whichever comes first.",
+  "scope": "ablation_lm_engineering_gate_only",
+  "supersedes": {
+    "path": "training/ablation_lm_engineering_quarantine_20260831_pa_v4_asset_reader.json",
+    "sha256": "9dbe5ce383bbcd32d94873452e3c45b6986f0c63e06878062bffadb1b337a657"
+  },
+  "repo_wide_green_claim_permitted": false,
+  "build_and_unit_test_work_authorized": true,
+  "tokenizer_fit_or_freeze_authorized": false,
+  "optimizer_construction_authorized": false,
+  "training_authorized": false,
+  "authorization_note": "This engineering quarantine does not grant or revoke separately governed run-axis authority. PF-1 consumed CPU build-axis work only.",
+  "evaluation_panel_contact_authorized": false,
+  "sealed_partition_contact_authorized": false,
+  "sealed_files_touched": [],
+  "full_suite_expected_exit_code": 1,
+  "last_observed_full_suite": {
+    "passed": 3986,
+    "failed": 1,
+    "warnings": 19,
+    "duration_seconds": 227.21,
+    "observed_at": "2026-09-01T22:20:07-04:00"
+  },
+  "review_execution": {
+    "command": "python scripts/run_ablation_lm_engineering_gate.py",
+    "result": "gate PASS; underlying suite 1 failed, 3986 passed, 19 warnings in 178.36s",
+    "reviewed_on": "2026-09-01"
+  },
+  "expected_failures": [
+    {
+      "node_id": "tests/test_paper2_claim_evidence_ledger.py::test_paper2_claim_evidence_paths_exist",
+      "cause": "Two legacy Paper 2 evidence-ledger output paths are absent and gitignored; one aggregate exists in an archive under a different path and one banked analysis hash has no archived file.",
+      "resolution_owner": "paper2_claim_evidence_ledger",
+      "scope_stop": "Paper and publication evidence audit remains red; no repo-wide green claim.",
+      "unblock_condition": "Restore the exact receipted outputs under written evidence-governance authority or amend the ledger through its governed process.",
+      "sealed_failure": false
+    }
+  ],
+  "resolved_since_prior": [],
+  "remaining_failure_evidence": {
+    "archive_aggregate_path": "artifacts/stage2a_t3_20260818/receipts/summary.json",
+    "archive_aggregate_bytes": 40847,
+    "archive_aggregate_receipted_sha256_abbrev": "3e4eaa7...f7bb",
+    "missing_analysis_summary": true
+  },
+  "d5_stop_authority": [
+    "docs/STRATEGY_2BS_RECON_ADJ_DEPTH_STUDY_20260822.md",
+    "docs/STRATEGY_2BS_DEPTH_STUDY_HANDOFF_20260822.md",
+    "docs/STRATEGY_2BS_FINAL_CELL_AUTHORIZATION_20260823.md",
+    "docs/STRATEGY_BICAMERAL_W2P_D4_RULINGS_20260825.md",
+    "docs/CODING_TO_STRATEGY_TM0_RESULT_HANDOFF_20260825.md",
+    "training/paper2_bicameral_w2p_lock.json",
+    "training/paper2_stage2bs_depth_study_lock.json"
+  ],
+  "new_lineage_stop_authority": "docs/ABLATION_LM_SUBSTRATE_CONTRACT_20260826.md"
+}

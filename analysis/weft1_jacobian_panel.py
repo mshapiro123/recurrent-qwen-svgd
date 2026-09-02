@@ -29,6 +29,7 @@ from models.ablation_lm.rng import ModuleRNGStream
 
 
 REGISTERED_DEPTHS = (1, 2, 4, 8)
+REGISTERED_DESIGN_SXX = 2.4022650695910066
 MAIN_PANEL_EXAMPLES = 512
 MAIN_PANEL_PROBES = 4
 NORM_PANEL_EXAMPLES = 64
@@ -672,7 +673,7 @@ def _median(values: torch.Tensor, *, dim: int | None = None) -> torch.Tensor:
 def theil_sen_slopes(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
     """Return one paired Theil-Sen slope for every example.
 
-    ``x`` is ``[depth]`` (normally ``log2(T)``) and ``y`` is
+    ``x`` is ``[depth]`` (canonically ``ln(T)``) and ``y`` is
     ``[example, depth]`` (normally ``log(abs(lambda_T))``).
     """
 
@@ -702,26 +703,16 @@ def p_hat(x: torch.Tensor, y: torch.Tensor) -> float:
     return -_median(theil_sen_slopes(x, y)).item()
 
 
-def pooled_sigma_w(log_gains: torch.Tensor) -> float:
-    """Pool within-example, within-depth probe spread across panel cells."""
-
-    if type(log_gains) is not torch.Tensor:
-        raise TypeError("log_gains must be an exact tensor")
-    if log_gains.ndim != 3 or log_gains.shape[-1] < 2:
-        raise ValueError("log_gains must be [example, depth, at least 2 probes]")
-    if not log_gains.is_floating_point() or not bool(torch.isfinite(log_gains).all()):
-        raise ValueError("log_gains must be finite floating-point values")
-    per_cell_variance = log_gains.float().var(dim=-1, unbiased=True)
-    return per_cell_variance.mean().sqrt().item()
-
-
 def sigma_slope_hat(
     slopes: torch.Tensor | np.ndarray,
-    sigma_w: float,
-    *,
-    sxx: float = 5.0,
+    measurement_variance_by_example: torch.Tensor | np.ndarray,
 ) -> tuple[float, bool]:
-    """Estimate between-example slope SD after removing measurement variance."""
+    """Estimate between-example slope SD after jackknife-noise removal.
+
+    PF-1.3 forbids substituting raw probe spread for slope measurement noise.
+    The second argument must therefore contain one paired leave-one-probe-out
+    jackknife variance per example, already expressed in slope coordinates.
+    """
 
     if isinstance(slopes, torch.Tensor):
         values = slopes.detach().cpu().numpy().astype(np.float64, copy=False)
@@ -731,16 +722,111 @@ def sigma_slope_hat(
         raise TypeError("slopes must be a tensor or numpy array")
     if values.ndim != 1 or values.size < 2 or not np.isfinite(values).all():
         raise ValueError("slopes must contain at least two finite values")
-    if type(sigma_w) not in {float, int} or not math.isfinite(float(sigma_w)):
-        raise TypeError("sigma_w must be a finite real number")
-    if float(sigma_w) < 0:
-        raise ValueError("sigma_w must be non-negative")
-    if type(sxx) not in {float, int} or not math.isfinite(float(sxx)):
-        raise TypeError("sxx must be a finite real number")
-    if float(sxx) <= 0:
-        raise ValueError("sxx must be positive")
-    variance = float(np.var(values, ddof=1)) - float(sigma_w) ** 2 / float(sxx)
+    if isinstance(measurement_variance_by_example, torch.Tensor):
+        measurement = (
+            measurement_variance_by_example.detach()
+            .cpu()
+            .numpy()
+            .astype(np.float64, copy=False)
+        )
+    elif isinstance(measurement_variance_by_example, np.ndarray):
+        measurement = measurement_variance_by_example.astype(np.float64, copy=False)
+    else:
+        raise TypeError("measurement variances must be a tensor or numpy array")
+    if (
+        measurement.ndim != 1
+        or measurement.shape != values.shape
+        or not np.isfinite(measurement).all()
+        or np.any(measurement < 0.0)
+    ):
+        raise ValueError(
+            "measurement variances must be one finite non-negative value per slope"
+        )
+    variance = float(np.var(values, ddof=1)) - float(np.mean(measurement))
     return math.sqrt(max(variance, 0.0)), variance < 0.0
+
+
+@dataclass(frozen=True)
+class PairedProbeJackknife:
+    """PF-1.3 paired leave-one-probe-out slope-noise decomposition."""
+
+    slopes: torch.Tensor
+    leave_one_out_slopes: torch.Tensor
+    measurement_variance_by_example: torch.Tensor
+    sigma_w_hat: float
+    sigma_slope_hat: float
+    sigma_slope_clipped: bool
+
+
+def _slopes_from_probe_subset(
+    log_gains: torch.Tensor,
+    depths: tuple[int, ...],
+    probe_indexes: torch.Tensor,
+) -> torch.Tensor:
+    depth_tensor = torch.tensor(depths, dtype=torch.float64, device=log_gains.device)
+    lambda_hat = log_gains.index_select(-1, probe_indexes).double().mean(dim=-1)
+    lambda_hat = lambda_hat / depth_tensor.unsqueeze(0)
+    if not bool(torch.isfinite(lambda_hat).all()):
+        raise ValueError("probe-derived lambda estimates must be finite")
+    if bool(lambda_hat.eq(0.0).any()):
+        raise ValueError("probe-derived lambda estimates must be non-zero")
+    response = torch.log(lambda_hat.abs())
+    coordinate = torch.log(depth_tensor)
+    return theil_sen_slopes(coordinate, response)
+
+
+def paired_probe_jackknife(
+    log_gains: torch.Tensor,
+    *,
+    depths: Sequence[int] = REGISTERED_DEPTHS,
+) -> PairedProbeJackknife:
+    """Apply PF-1.3 exactly in paired probe coordinates.
+
+    Probe index ``j`` denotes the same example-owned direction at every depth.
+    Each leave-one-out replicate therefore removes that direction from every
+    depth before recomputing ``lambda_hat`` and the nonlinear log response.
+    """
+
+    if type(log_gains) is not torch.Tensor:
+        raise TypeError("log_gains must be an exact tensor")
+    if log_gains.ndim != 3 or log_gains.shape[-1] < 2:
+        raise ValueError("log_gains must be [example, depth, at least 2 probes]")
+    if not log_gains.is_floating_point() or not bool(torch.isfinite(log_gains).all()):
+        raise ValueError("log_gains must be finite floating-point values")
+    depth_tuple = tuple(depths)
+    if log_gains.shape[1] != len(depth_tuple):
+        raise ValueError("log-gain depth axis must align with depths")
+    for depth in depth_tuple:
+        _validate_exact_int(depth, name="depth", minimum=1)
+    probe_count = log_gains.shape[-1]
+    all_indexes = torch.arange(probe_count, device=log_gains.device)
+    slopes = _slopes_from_probe_subset(log_gains, depth_tuple, all_indexes)
+    leave_one_out = torch.stack(
+        [
+            _slopes_from_probe_subset(
+                log_gains,
+                depth_tuple,
+                all_indexes[all_indexes.ne(omitted)],
+            )
+            for omitted in range(probe_count)
+        ],
+        dim=1,
+    )
+    leave_one_out_mean = leave_one_out.mean(dim=1, keepdim=True)
+    measurement_variance = (
+        (probe_count - 1.0)
+        / probe_count
+        * (leave_one_out - leave_one_out_mean).square().sum(dim=1)
+    )
+    sigma_slope, clipped = sigma_slope_hat(slopes, measurement_variance)
+    return PairedProbeJackknife(
+        slopes=slopes,
+        leave_one_out_slopes=leave_one_out,
+        measurement_variance_by_example=measurement_variance,
+        sigma_w_hat=measurement_variance.mean().sqrt().item(),
+        sigma_slope_hat=sigma_slope,
+        sigma_slope_clipped=clipped,
+    )
 
 
 def cluster_bootstrap_ci(
@@ -789,14 +875,14 @@ def cluster_bootstrap_ci(
 
 
 def design_sxx(depths: Sequence[int]) -> float:
-    """Return ``sum((log2(T) - mean(log2(T)))**2)`` for a depth ladder."""
+    """Return ``sum((ln(T) - mean(ln(T)))**2)`` for a depth ladder."""
 
     depth_tuple = tuple(depths)
     if len(depth_tuple) < 2:
         raise ValueError("at least two depths are required")
     for depth in depth_tuple:
         _validate_exact_int(depth, name="depth", minimum=1)
-    x = np.log2(np.asarray(depth_tuple, dtype=np.float64))
+    x = np.log(np.asarray(depth_tuple, dtype=np.float64))
     return float(np.square(x - x.mean()).sum())
 
 
@@ -856,6 +942,8 @@ class JacobianPanelReport:
     differentiation: str = "forward_mode_jvp"
     jacobian_semantics: str = "fixed_routing_branch"
     probe_seed_scope: str = "example"
+    depth_coordinate: str = "natural_log"
+    sigma_w_semantics: str = "paired_leave_one_probe_out_slope_sd"
     provenance_semantics: str = PANEL_PROVENANCE_SEMANTICS
     reporting_status: str = "registered_main_pending_evidence_linkage"
     branch_evidence_status: str = "unlinked_caller_assertion"
@@ -897,6 +985,8 @@ class JacobianPanelReport:
             "jacobian_semantics": self.jacobian_semantics,
             "routing_flip_derivative_included": False,
             "probe_seed_scope": self.probe_seed_scope,
+            "depth_coordinate": self.depth_coordinate,
+            "sigma_w_semantics": self.sigma_w_semantics,
             "reporting_status": self.reporting_status,
             "branch_evidence_status": self.branch_evidence_status,
         }
@@ -976,8 +1066,14 @@ def build_panel_report(
             raise ValueError("direction-class gains must be finite")
         direction_rows.append((name, values))
     sxx = design_sxx(depth_tuple)
-    sigma_w = pooled_sigma_w(log_gains)
-    sigma_slope, clipped = sigma_slope_hat(slopes, sigma_w, sxx=sxx)
+    jackknife = paired_probe_jackknife(log_gains, depths=depth_tuple)
+    supplied_slopes = slopes.detach().to(dtype=torch.float64, device="cpu")
+    derived_slopes = jackknife.slopes.detach().to(dtype=torch.float64, device="cpu")
+    if not torch.allclose(supplied_slopes, derived_slopes, rtol=1e-6, atol=1e-7):
+        raise ValueError(
+            "slopes must match the PF-1.3 all-probe estimator derived from log_gains"
+        )
+    slopes = jackknife.slopes
     estimate, ci_lo, ci_hi = cluster_bootstrap_ci(
         slopes,
         replicates=bootstrap_replicates,
@@ -991,9 +1087,9 @@ def build_panel_report(
         p_hat=estimate,
         ci_lo=ci_lo,
         ci_hi=ci_hi,
-        sigma_slope_hat=sigma_slope,
-        sigma_slope_clipped=clipped,
-        sigma_w_hat=sigma_w,
+        sigma_slope_hat=jackknife.sigma_slope_hat,
+        sigma_slope_clipped=jackknife.sigma_slope_clipped,
+        sigma_w_hat=jackknife.sigma_w_hat,
         c_l_by_depth=c_l,
         r_pr_by_depth=r_pr,
         lambda_sign_by_depth=signs,
@@ -1042,6 +1138,8 @@ class JacobianPilotDiagnostics:
     admissible_panel_result: bool = False
     reporting_status: str = "pilot_diagnostic_only"
     provenance_semantics: str = PANEL_PROVENANCE_SEMANTICS
+    depth_coordinate: str = "natural_log"
+    sigma_w_semantics: str = "paired_leave_one_probe_out_slope_sd"
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -1065,6 +1163,8 @@ class JacobianPilotDiagnostics:
             "fixed_branch_verified": self.fixed_branch_verified,
             "admissible_panel_result": False,
             "reporting_status": self.reporting_status,
+            "depth_coordinate": self.depth_coordinate,
+            "sigma_w_semantics": self.sigma_w_semantics,
         }
 
 
@@ -1105,18 +1205,24 @@ def build_pilot_diagnostics(
     if len(c_l) != len(depth_tuple) or len(signs) != len(depth_tuple):
         raise ValueError("pilot sign and cL vectors must align with depths")
     reasons = rejection_conditions(signs, c_l)
-    sigma_w = pooled_sigma_w(log_gains)
     sxx = design_sxx(depth_tuple)
-    sigma_slope, clipped = sigma_slope_hat(slopes, sigma_w, sxx=sxx)
+    jackknife = paired_probe_jackknife(log_gains, depths=depth_tuple)
+    supplied_slopes = slopes.detach().to(dtype=torch.float64, device="cpu")
+    derived_slopes = jackknife.slopes.detach().to(dtype=torch.float64, device="cpu")
+    if not torch.allclose(supplied_slopes, derived_slopes, rtol=1e-6, atol=1e-7):
+        raise ValueError(
+            "pilot slopes must match the PF-1.3 all-probe estimator derived from log_gains"
+        )
+    slopes = jackknife.slopes
     # This diagnostic is intentionally not named p_hat and carries no CI.
     p_diagnostic = -_median(slopes.float()).item()
     return JacobianPilotDiagnostics(
         run_seed=run_seed,
         provenance_sha256=provenance_sha256,
         p_diagnostic=p_diagnostic,
-        sigma_slope_hat=sigma_slope,
-        sigma_slope_clipped=clipped,
-        sigma_w_hat=sigma_w,
+        sigma_slope_hat=jackknife.sigma_slope_hat,
+        sigma_slope_clipped=jackknife.sigma_slope_clipped,
+        sigma_w_hat=jackknife.sigma_w_hat,
         c_l_by_depth=c_l,
         lambda_sign_by_depth=signs,
         conditioning_flag="conditioning_failure" in reasons,
@@ -1203,9 +1309,11 @@ __all__ = [
     "NORM_POWER_ITERATIONS",
     "NORM_RANK_REPORTING_STATUS",
     "PANEL_PROVENANCE_SEMANTICS",
+    "PairedProbeJackknife",
     "PILOT_EXAMPLES",
     "RANK_PANEL_EXAMPLES",
     "RANK_PANEL_PROBES",
+    "REGISTERED_DESIGN_SXX",
     "REGISTERED_DEPTHS",
     "StochasticStateSnapshot",
     "TierComparison",
@@ -1219,9 +1327,9 @@ __all__ = [
     "loop_log_gains",
     "measure_example_depths",
     "operator_norm",
+    "paired_probe_jackknife",
     "p_hat",
     "participation_ratio",
-    "pooled_sigma_w",
     "probe_bank_sha256",
     "rejection_conditions",
     "sigma_slope_hat",
