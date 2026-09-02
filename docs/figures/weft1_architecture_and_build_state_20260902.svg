@@ -1,0 +1,356 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1500" viewBox="0 0 1800 1500" role="img" aria-labelledby="title desc">
+  <title id="title">WEFT-1 recurrent bicameral language model: target architecture and current construction state</title>
+  <desc id="desc">A full-page architecture diagram showing the ratified WEFT-1 target dataflow, the current executable AblationLM path, standalone tested components, absent or open components, PF-3 evidence, and five unresolved decisions including Catch 35.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <path d="M0,0 L10,3 L0,6 Z" fill="#30424d"/>
+    </marker>
+    <marker id="arrowA" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <path d="M0,0 L10,3 L0,6 Z" fill="#2f6f8f"/>
+    </marker>
+    <marker id="arrowB" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <path d="M0,0 L10,3 L0,6 Z" fill="#9b5a3c"/>
+    </marker>
+    <marker id="arrowPurple" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <path d="M0,0 L10,3 L0,6 Z" fill="#6b5876"/>
+    </marker>
+    <pattern id="amberHatch" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <rect width="10" height="10" fill="#fbf6e9"/>
+      <line x1="0" y1="0" x2="0" y2="10" stroke="#ead7a2" stroke-width="3"/>
+    </pattern>
+    <style>
+      .title{font:700 42px Arial,Helvetica,sans-serif;fill:#1f2428}
+      .subtitle{font:400 18px Arial,Helvetica,sans-serif;fill:#4b5963}
+      .eyebrow{font:700 12px Arial,Helvetica,sans-serif;letter-spacing:1.6px;fill:#68747c}
+      .section{font:700 18px Arial,Helvetica,sans-serif;fill:#1f2428}
+      .label{font:700 18px Arial,Helvetica,sans-serif;fill:#1f2428}
+      .labelSmall{font:700 15px Arial,Helvetica,sans-serif;fill:#1f2428}
+      .body{font:400 14px Arial,Helvetica,sans-serif;fill:#465660}
+      .bodyDark{font:400 14px Arial,Helvetica,sans-serif;fill:#263239}
+      .small{font:400 12px Arial,Helvetica,sans-serif;fill:#53636d}
+      .tiny{font:400 11px Arial,Helvetica,sans-serif;fill:#596871}
+      .mono{font:600 13px Consolas,"Courier New",monospace;fill:#27343c}
+      .monoSmall{font:600 11px Consolas,"Courier New",monospace;fill:#33434c}
+      .integrated{fill:#e8f2ef;stroke:#14635e;stroke-width:2.5}
+      .standalone{fill:url(#amberHatch);stroke:#a6761d;stroke-width:2.5}
+      .open{fill:#fbf4ed;stroke:#a34b2a;stroke-width:2.5;stroke-dasharray:8 6}
+      .neutral{fill:#fffefd;stroke:#81909a;stroke-width:2}
+      .panel{fill:#fffefd;stroke:#c0c9cd;stroke-width:2}
+      .loopPanel{fill:#fffdf9;stroke:#526873;stroke-width:2.5}
+      .arrow{fill:none;stroke:#30424d;stroke-width:2.7;marker-end:url(#arrow)}
+      .arrowThin{fill:none;stroke:#51636d;stroke-width:2;marker-end:url(#arrow)}
+      .arrowA{fill:none;stroke:#2f6f8f;stroke-width:3;marker-end:url(#arrowA)}
+      .arrowB{fill:none;stroke:#9b5a3c;stroke-width:3;marker-end:url(#arrowB)}
+      .diagnostic{fill:none;stroke:#6b5876;stroke-width:2.2;stroke-dasharray:7 5;marker-end:url(#arrowPurple)}
+      .feedback{fill:none;stroke:#30424d;stroke-width:2.5;stroke-dasharray:9 6;marker-end:url(#arrow)}
+      .statusText{font:700 10px Arial,Helvetica,sans-serif;letter-spacing:.7px}
+      .hemA{font:700 13px Arial,Helvetica,sans-serif;fill:#2f6f8f}
+      .hemB{font:700 13px Arial,Helvetica,sans-serif;fill:#9b5a3c}
+    </style>
+  </defs>
+
+  <rect width="1800" height="1500" fill="#fbfaf6"/>
+
+  <!-- Header -->
+  <text x="60" y="58" class="title">WEFT-1: recurrent bicameral language model</text>
+  <text x="60" y="91" class="subtitle">Ratified target architecture, overlaid with what is actually constructed today</text>
+  <rect x="1455" y="28" width="285" height="67" rx="10" fill="#ffffff" stroke="#b6c0c5" stroke-width="2"/>
+  <text x="1597" y="52" text-anchor="middle" class="eyebrow">BUILD SNAPSHOT</text>
+  <text x="1597" y="77" text-anchor="middle" class="mono">6d00b1fc · 2026-09-02</text>
+
+  <!-- Status legend -->
+  <text x="60" y="127" class="eyebrow">STATUS OF EACH SURFACE</text>
+  <rect x="245" y="106" width="155" height="31" rx="15" class="integrated"/>
+  <text x="322" y="126" text-anchor="middle" class="statusText" fill="#14635e">IN FORWARD NOW</text>
+  <rect x="417" y="106" width="180" height="31" rx="15" class="standalone"/>
+  <text x="507" y="126" text-anchor="middle" class="statusText" fill="#835b12">STANDALONE / TESTED</text>
+  <rect x="614" y="106" width="174" height="31" rx="15" class="open"/>
+  <text x="701" y="126" text-anchor="middle" class="statusText" fill="#963f22">TARGET OPEN / ABSENT</text>
+  <path d="M815 121 H875" class="diagnostic"/>
+  <text x="890" y="126" class="small">diagnostic or receipt path</text>
+  <rect x="1080" y="106" width="172" height="31" rx="15" fill="#eef0f2" stroke="#65727a" stroke-width="1.5"/>
+  <text x="1166" y="126" text-anchor="middle" class="statusText" fill="#4e5b63">STRUCTURAL OFF CONTROL</text>
+  <text x="1280" y="126" class="small">Status means code reachability - not scientific validation.</text>
+
+  <!-- Target configuration band -->
+  <rect x="60" y="154" width="1680" height="82" rx="10" fill="#ffffff" stroke="#b7c0c5" stroke-width="2"/>
+  <text x="82" y="177" class="eyebrow">RATIFIED TARGET · 22 UNIQUE DECODER BLOCKS</text>
+  <rect x="82" y="187" width="245" height="35" rx="8" class="neutral"/>
+  <text x="204" y="210" text-anchor="middle" class="labelSmall">Rung A · 9 / 4 / 9 · 302.9M</text>
+  <rect x="340" y="187" width="245" height="35" rx="8" class="neutral"/>
+  <text x="462" y="210" text-anchor="middle" class="labelSmall">Rung B · 8 / 6 / 8 · 305.8M</text>
+  <text x="618" y="190" class="monoSmall">d=1024 · head=64 · GQA 16Q/8KV · FFN=2816 · disagreement rank=32 · scratch=2x256</text>
+  <text x="618" y="213" class="monoSmall">K curriculum 1→2→4; max 8 · residual scale αK=c/K · context 2048→4096 · tied V pending G-TOK</text>
+  <text x="1460" y="190" text-anchor="middle" class="small">N_active-eval at K=6</text>
+  <text x="1460" y="215" text-anchor="middle" class="labelSmall">555M / 689M</text>
+  <text x="1660" y="190" text-anchor="middle" class="small">Output vocabulary screen</text>
+  <text x="1660" y="215" text-anchor="middle" class="monoSmall">16K · 24K · 32K · 48K</text>
+
+  <!-- Input spine connectors -->
+  <path d="M220 315 H270" class="arrow"/>
+  <path d="M455 315 H490" class="arrow"/>
+  <path d="M720 315 H755" class="arrow"/>
+  <path d="M995 315 H1042" class="arrow"/>
+  <path d="M875 395 V364" class="arrowThin"/>
+
+  <!-- Input spine -->
+  <text x="60" y="268" class="eyebrow">INPUT AND PROMPT ANCHOR</text>
+  <rect x="60" y="279" width="160" height="72" rx="9" class="open"/>
+  <text x="140" y="307" text-anchor="middle" class="labelSmall">Corpus bytes</text>
+  <text x="140" y="329" text-anchor="middle" class="small">G-TOK + BPE freeze</text>
+
+  <rect x="270" y="271" width="185" height="88" rx="9" class="integrated"/>
+  <text x="362" y="303" text-anchor="middle" class="label">Tied embedding</text>
+  <text x="362" y="329" text-anchor="middle" class="mono">E[token] ∈ R^d</text>
+  <text x="362" y="347" text-anchor="middle" class="small">same weights at readout</text>
+
+  <rect x="490" y="263" width="230" height="104" rx="9" class="integrated"/>
+  <text x="605" y="292" text-anchor="middle" class="labelSmall">Upfront modified</text>
+  <text x="605" y="314" text-anchor="middle" class="labelSmall">Hadamard challenger</text>
+  <text x="605" y="338" text-anchor="middle" class="small">fixed transforms · learned gains</text>
+  <text x="605" y="356" text-anchor="middle" class="small">dense soft router today</text>
+  <rect x="490" y="376" width="230" height="46" rx="7" class="open"/>
+  <text x="605" y="395" text-anchor="middle" class="statusText" fill="#963f22">CATCH #35</text>
+  <text x="605" y="413" text-anchor="middle" class="small">E x d router μP class unbound</text>
+
+  <rect x="755" y="263" width="240" height="104" rx="9" class="integrated"/>
+  <text x="875" y="292" text-anchor="middle" class="label">Prelude × P</text>
+  <text x="875" y="318" text-anchor="middle" class="small">pre-RMSNorm · QK norm · RoPE</text>
+  <text x="875" y="338" text-anchor="middle" class="small">causal GQA · SwiGLU · bias-free</text>
+  <text x="875" y="358" text-anchor="middle" class="monoSmall">P=9 (A) or 8 (B)</text>
+
+  <rect x="755" y="382" width="240" height="62" rx="9" class="integrated"/>
+  <text x="875" y="406" text-anchor="middle" class="labelSmall">M_lex lexical engram</text>
+  <text x="875" y="426" text-anchor="middle" class="small">token-ID {2,3}-grams after block 1</text>
+  <text x="875" y="441" text-anchor="middle" class="tiny" fill="#963f22">byte-span address remains an ablation</text>
+
+  <rect x="1042" y="277" width="160" height="76" rx="38" fill="#eef0f5" stroke="#3a4a55" stroke-width="3"/>
+  <text x="1122" y="307" text-anchor="middle" class="label">h₀ anchor</text>
+  <text x="1122" y="331" text-anchor="middle" class="small">fixed causal prompt state</text>
+
+  <rect x="1240" y="270" width="500" height="92" rx="9" fill="#ffffff" stroke="#b7c0c5" stroke-width="2"/>
+  <text x="1262" y="289" class="eyebrow">PROTECTED SUBSTRATE CONTRACT</text>
+  <text x="1262" y="312" class="bodyDark">Full-width causal carrier; target recurrence transforms it through</text>
+  <text x="1262" y="332" class="bodyDark">core residuals, orthogonal rotors, and bounded callosal mixing;</text>
+  <text x="1262" y="352" class="bodyDark">one rank-8 lane write; optional arms retain structural OFF.</text>
+
+  <!-- Recurrent loom outer panel -->
+  <rect x="230" y="466" width="1510" height="458" rx="14" class="loopPanel"/>
+  <rect x="230" y="466" width="1510" height="48" rx="14" fill="#eef2f2"/>
+  <text x="255" y="497" class="section">SHARED RECURRENT LOOM · repeat k = 1…K over C unique core blocks</text>
+  <rect x="1365" y="477" width="150" height="27" rx="13" fill="#eef0f5" stroke="#64717a" stroke-width="1.3"/>
+  <text x="1440" y="495" text-anchor="middle" class="monoSmall">αK = c / K</text>
+  <rect x="1527" y="477" width="188" height="27" rx="13" fill="#eef0f5" stroke="#64717a" stroke-width="1.3"/>
+  <text x="1621" y="495" text-anchor="middle" class="monoSmall">executed K receipted</text>
+
+  <!-- h0 fanout -->
+  <path d="M1122 353 V450 H365 V530" class="arrowThin"/>
+  <path d="M1122 353 V454 H610 V532" class="arrowA"/>
+  <path d="M1122 353 V458 H610 V616" class="arrowB"/>
+  <path d="M1122 353 V462 H365 V733" class="arrowThin"/>
+
+  <!-- Left rail -->
+  <rect x="255" y="530" width="220" height="170" rx="9" class="open"/>
+  <text x="365" y="558" text-anchor="middle" class="labelSmall">Static K/V from h₀</text>
+  <text x="365" y="582" text-anchor="middle" class="small">project once per core block</text>
+  <text x="365" y="602" text-anchor="middle" class="small">reuse across K; no K multiplier</text>
+  <rect x="278" y="615" width="174" height="20" rx="10" fill="#e8f2ef" stroke="#14635e" stroke-width="1"/>
+  <text x="365" y="629" text-anchor="middle" class="statusText" fill="#14635e">SINGLE-STREAM INTEGRATED</text>
+  <text x="365" y="651" text-anchor="middle" class="tiny">paired vs consensus cache OPEN</text>
+  <text x="365" y="674" text-anchor="middle" class="tiny">full-sequence/reference path only;</text>
+  <text x="365" y="690" text-anchor="middle" class="tiny">no autoregressive serving-cache claim</text>
+
+  <rect x="255" y="715" width="220" height="116" rx="9" class="integrated"/>
+  <text x="365" y="743" text-anchor="middle" class="labelSmall">bridge_in + scratch init</text>
+  <text x="365" y="767" text-anchor="middle" class="small">position-aligned [B,T,2,w]</text>
+  <text x="365" y="788" text-anchor="middle" class="small">no cross-position lane mixing</text>
+  <text x="365" y="811" text-anchor="middle" class="monoSmall">w=256 target · 128 proxy</text>
+
+  <!-- Main paired block connectors -->
+  <path d="M475 590 H505" class="arrowThin"/>
+  <path d="M475 774 H505" class="arrowThin"/>
+  <path d="M1025 594 H1050" class="arrow"/>
+  <path d="M1310 594 H1335" class="arrow"/>
+  <path d="M880 675 V715" class="arrowThin"/>
+  <path d="M1025 760 H1050" class="arrowThin"/>
+  <path d="M1335 760 H1310" class="diagnostic"/>
+  <path d="M900 845 V872 H1510 V845" class="diagnostic"/>
+  <path d="M1050 814 C1015 862 930 871 865 845" class="arrowThin"/>
+  <path d="M870 715 C920 680 970 650 1050 626" class="arrowThin"/>
+
+  <!-- Full-width paired core -->
+  <rect x="505" y="532" width="520" height="143" rx="10" class="standalone"/>
+  <rect x="522" y="545" width="112" height="22" rx="11" fill="#fff4d8" stroke="#a6761d" stroke-width="1"/>
+  <text x="578" y="560" text-anchor="middle" class="statusText" fill="#835b12">STANDALONE SEAM</text>
+  <text x="820" y="561" text-anchor="middle" class="label">Paired full-width Transformer block × C</text>
+  <text x="536" y="591" class="hemA">A · h_A ─ current Q ─┐</text>
+  <text x="536" y="620" class="hemB">B · h_B ─ current Q ─┘</text>
+  <rect x="690" y="578" width="309" height="54" rx="7" fill="#ffffff" stroke="#7b8890" stroke-width="1.5"/>
+  <text x="844" y="598" text-anchor="middle" class="bodyDark">causal GQA attention → SwiGLU FFN</text>
+  <text x="844" y="618" text-anchor="middle" class="monoSmall">Q K V O gate up down: stored (μ, δ=UVᵀ)</text>
+  <text x="536" y="649" class="small">Dense FFN is executable; target sequency expert alternative + fixed occupancy router is absent.</text>
+  <text x="536" y="666" class="tiny">Rotor-QK J_att=2 and T12 parameter/FLOP-matched dense control are also not built.</text>
+
+  <!-- Rotor/write -->
+  <rect x="1050" y="532" width="260" height="143" rx="10" class="open"/>
+  <text x="1180" y="559" text-anchor="middle" class="labelSmall">Carrier rotor + one write</text>
+  <text x="1180" y="584" text-anchor="middle" class="mono">R_A(θ), R_B(θ) · J=8</text>
+  <text x="1180" y="607" text-anchor="middle" class="small">Euclidean Cl(2,0) rotor is orthogonal</text>
+  <text x="1180" y="628" text-anchor="middle" class="small">plus one residual rank-8 lane write / hemi</text>
+  <rect x="1080" y="640" width="200" height="22" rx="11" fill="#fff4d8" stroke="#a6761d" stroke-width="1"/>
+  <text x="1180" y="655" text-anchor="middle" class="statusText" fill="#835b12">ROTOR OPERATOR TESTED ONLY</text>
+
+  <!-- Callosum -->
+  <rect x="1335" y="532" width="350" height="143" rx="10" class="standalone"/>
+  <text x="1510" y="559" text-anchor="middle" class="label">Per-band corpus callosum</text>
+  <text x="1510" y="586" text-anchor="middle" class="mono">A(ρ_b) = (1-ρ_b)I + ρ_b P</text>
+  <text x="1510" y="610" text-anchor="middle" class="bodyDark">WHT sequency bands · ρ_b ∈ [0, 1/2]</text>
+  <text x="1510" y="633" text-anchor="middle" class="monoSmall">μ → μ · δ → (1-2ρ_b)δ · ||A||₂ ≤ 1</text>
+  <text x="1510" y="656" text-anchor="middle" class="tiny">primitive and closed-form T16 pass; not in forward</text>
+
+  <!-- Feedback path -->
+  <path d="M1685 594 H1710 V522 H765 V532" class="feedback"/>
+  <text x="1220" y="520" text-anchor="middle" class="tiny">next visit; same unique weights; caller-owned cache reused (production representation open)</text>
+
+  <!-- Scratch -->
+  <rect x="505" y="715" width="520" height="130" rx="10" class="integrated"/>
+  <text x="765" y="744" text-anchor="middle" class="label">Causal position-aligned scratch lanes</text>
+  <text x="765" y="770" text-anchor="middle" class="mono">s[t,k] ∈ R^(2 x w)</text>
+  <text x="765" y="792" text-anchor="middle" class="bodyDark">prior scratch + causal h_A/h_B + engram values → position-local update</text>
+  <text x="765" y="814" text-anchor="middle" class="small">current narrow two-lane Birkhoff mixer is integrated; it is not the full-width callosum</text>
+  <text x="765" y="835" text-anchor="middle" class="tiny">lanes persist across visits and never read a future token directly</text>
+
+  <!-- Sidecar -->
+  <rect x="1050" y="715" width="260" height="130" rx="10" class="open"/>
+  <text x="1180" y="744" text-anchor="middle" class="labelSmall">Conditional shared sidecar</text>
+  <text x="1180" y="768" text-anchor="middle" class="small">512 experts · rank 4 · top-3</text>
+  <text x="1180" y="789" text-anchor="middle" class="small">shared over all C×K visits</text>
+  <text x="1180" y="810" text-anchor="middle" class="small">fires on trajectory pivot; writes lanes only</text>
+  <text x="1180" y="831" text-anchor="middle" class="tiny">width/accounting + hard gate semantics OPEN</text>
+
+  <!-- Jets/controllers -->
+  <rect x="1335" y="715" width="350" height="130" rx="10" class="open"/>
+  <text x="1510" y="743" text-anchor="middle" class="labelSmall">2-jet geometry + controllers</text>
+  <text x="1510" y="768" text-anchor="middle" class="monoSmall">v=z_k-z_(k-1) · a=z_k-2z_(k-1)+z_(k-2)</text>
+  <text x="1510" y="790" text-anchor="middle" class="small">now: full-hidden jet + frozen-random probes</text>
+  <text x="1510" y="812" text-anchor="middle" class="small">target: pooled-lane jet + learned probes; controllers absent</text>
+  <rect x="1365" y="820" width="290" height="18" rx="9" fill="#e8f2ef" stroke="#14635e" stroke-width="1"/>
+  <text x="1510" y="833" text-anchor="middle" class="statusText" fill="#14635e">HIDDEN JET NOW · POOLED-LANE TARGET OPEN</text>
+
+  <!-- Loop-to-output connectors -->
+  <path d="M1685 650 H1720 V880 H390 V957" class="arrow"/>
+  <path d="M520 1007 H550" class="arrow"/>
+  <path d="M650 845 V910 H675 V957" class="arrowThin"/>
+  <text x="1190" y="866" text-anchor="middle" class="tiny" fill="#6b5876">pooled lane trajectory</text>
+  <text x="657" y="904" class="tiny">lane state</text>
+  <path d="M800 1007 H830" class="arrow"/>
+  <path d="M1080 1007 H1110" class="arrow"/>
+  <path d="M1340 1007 H1370" class="arrow"/>
+  <path d="M1685 610 H1698 V905 H1225 V957" class="diagnostic"/>
+  <rect x="1252" y="883" width="414" height="21" rx="5" fill="#fbfaf6"/>
+  <text x="1459" y="898" text-anchor="middle" class="tiny" fill="#6b5876">per-visit combine → shared coda for step logits / L_stage (both unbuilt)</text>
+
+  <!-- Output spine -->
+  <text x="60" y="965" class="eyebrow">TERMINAL READOUT</text>
+  <rect x="260" y="957" width="260" height="100" rx="9" class="open"/>
+  <text x="390" y="984" text-anchor="middle" class="labelSmall">Final per-band combine</text>
+  <text x="390" y="1009" text-anchor="middle" class="monoSmall">proposed: y_b=cosθ_b μ_b+sinθ_b δ_b</text>
+  <text x="390" y="1032" text-anchor="middle" class="small">exact rule + initialization OPEN</text>
+  <text x="390" y="1048" text-anchor="middle" class="tiny">C-S5-1</text>
+
+  <rect x="550" y="957" width="250" height="100" rx="9" class="open"/>
+  <text x="675" y="987" text-anchor="middle" class="label">bridge_out</text>
+  <text x="675" y="1013" text-anchor="middle" class="small">recombined carrier + lane state</text>
+  <text x="675" y="1036" text-anchor="middle" class="small">post-loop coda bridge absent</text>
+
+  <rect x="830" y="957" width="250" height="100" rx="9" class="integrated"/>
+  <text x="955" y="984" text-anchor="middle" class="labelSmall">Read-only long-term memory</text>
+  <text x="955" y="1010" text-anchor="middle" class="small">frozen store · leave-one-record-out</text>
+  <text x="955" y="1034" text-anchor="middle" class="small">current late residual before coda</text>
+
+  <rect x="1110" y="957" width="230" height="100" rx="9" class="integrated"/>
+  <text x="1225" y="986" text-anchor="middle" class="label">Shared Coda × D</text>
+  <text x="1225" y="1012" text-anchor="middle" class="small">final path now · per-visit decode target</text>
+  <text x="1225" y="1036" text-anchor="middle" class="monoSmall">D=9 (A) or 8 (B)</text>
+
+  <rect x="1370" y="957" width="320" height="100" rx="9" class="integrated"/>
+  <text x="1530" y="985" text-anchor="middle" class="labelSmall">Final RMSNorm + tied readout</text>
+  <text x="1530" y="1011" text-anchor="middle" class="mono">logits ∈ R^V</text>
+  <text x="1530" y="1035" text-anchor="middle" class="small">CE + z-loss; V freezes only after G-TOK</text>
+
+  <!-- Current executable graph -->
+  <rect x="60" y="1094" width="1040" height="235" rx="12" class="panel"/>
+  <text x="82" y="1122" class="eyebrow">WHAT ACTUALLY RUNS IN AblationLM.forward TODAY</text>
+  <text x="82" y="1147" class="body">A causally tested single-stream recurrent bring-up graph. Optional green modules remain independently switchable.</text>
+
+  <path d="M183 1195 H205" class="arrowThin"/>
+  <path d="M318 1195 H340" class="arrowThin"/>
+  <path d="M448 1195 H470" class="arrowThin"/>
+  <path d="M583 1195 H605" class="arrowThin"/>
+  <path d="M830 1195 H852" class="arrowThin"/>
+  <path d="M950 1195 H972" class="arrowThin"/>
+
+  <rect x="82" y="1170" width="101" height="50" rx="7" class="integrated"/>
+  <text x="132" y="1200" text-anchor="middle" class="labelSmall">Embed</text>
+  <rect x="205" y="1170" width="113" height="50" rx="7" class="integrated"/>
+  <text x="261" y="1192" text-anchor="middle" class="labelSmall">Front WHT*</text>
+  <text x="261" y="1210" text-anchor="middle" class="tiny">soft router</text>
+  <rect x="340" y="1158" width="243" height="74" rx="7" class="integrated"/>
+  <text x="395" y="1187" text-anchor="middle" class="labelSmall">Prelude</text>
+  <line x1="447" y1="1168" x2="447" y2="1222" stroke="#8db3ae" stroke-width="1.3"/>
+  <text x="515" y="1182" text-anchor="middle" class="labelSmall">M_lex*</text>
+  <text x="515" y="1201" text-anchor="middle" class="tiny">injects after first block</text>
+  <text x="461" y="1220" text-anchor="middle" class="tiny">then remaining Prelude blocks</text>
+  <rect x="605" y="1152" width="225" height="82" rx="7" class="integrated"/>
+  <text x="717" y="1181" text-anchor="middle" class="labelSmall">Single-stream recurrent loop</text>
+  <text x="717" y="1203" text-anchor="middle" class="tiny">static h₀ K/V · c/K · midpoint</text>
+  <text x="717" y="1222" text-anchor="middle" class="tiny">scratch* + mixer* + re-entry* per visit</text>
+  <rect x="852" y="1170" width="98" height="50" rx="7" class="integrated"/>
+  <text x="901" y="1192" text-anchor="middle" class="labelSmall">LTM*</text>
+  <text x="901" y="1210" text-anchor="middle" class="tiny">read-only</text>
+  <rect x="972" y="1170" width="116" height="50" rx="7" class="integrated"/>
+  <text x="1030" y="1192" text-anchor="middle" class="labelSmall">Coda</text>
+  <text x="1030" y="1210" text-anchor="middle" class="tiny">final norm + head</text>
+
+  <text x="82" y="1252" class="small">* Optional. With every optional arm structurally OFF, the registered CPU anchor is bit-identical to the plain dense transformer.</text>
+  <text x="82" y="1276" class="bodyDark">Not in forward:</text>
+  <text x="183" y="1276" class="small">paired core/seam · learned rotor/write · per-band callosum · final combine · bridge_out · sidecar.</text>
+  <text x="82" y="1301" class="small">The target 9/4/9 and 8/6/8 constructors exist; this green path is not yet the integrated full-width bicameral production model.</text>
+
+  <!-- Open decisions -->
+  <rect x="1130" y="1094" width="610" height="235" rx="12" fill="#fffaf4" stroke="#a34b2a" stroke-width="2"/>
+  <text x="1152" y="1122" class="eyebrow" fill="#963f22">OPEN QUESTIONS THAT BLOCK THE NEXT INTEGRATION</text>
+  <text x="1152" y="1151" class="labelSmall">C-S5-1</text>
+  <text x="1232" y="1151" class="bodyDark">Ratify the unit-circle final combiner, or bind another exact map + init.</text>
+  <text x="1152" y="1182" class="labelSmall">C-S5-2</text>
+  <text x="1232" y="1182" class="bodyDark">Paired-eigenmode K/V, or shared-consensus cache without K/V disagreement?</text>
+  <text x="1152" y="1213" class="labelSmall">C-S6-1</text>
+  <text x="1232" y="1213" class="bodyDark">Lane-native sidecar, or exact full-width lift/project maps + accounting?</text>
+  <text x="1152" y="1244" class="labelSmall">C-S6-2</text>
+  <text x="1232" y="1244" class="bodyDark">Bind STE, τ, initial eligible firing rate, and calibration/freeze rule.</text>
+  <text x="1152" y="1275" class="labelSmall" fill="#963f22">Catch #35</text>
+  <text x="1250" y="1275" class="bodyDark">Classify E×d Hadamard router init/LR/decay, or change topology.</text>
+  <text x="1152" y="1306" class="small">Run-axis still pending: P-A/P-B → G-TOK vocabulary freeze. No model training result exists.</text>
+
+  <!-- PF-3 evidence ribbon -->
+  <rect x="60" y="1350" width="1680" height="92" rx="10" fill="#ffffff" stroke="#b7c0c5" stroke-width="2"/>
+  <text x="82" y="1376" class="eyebrow">PF-3 EVIDENCE · CURRENT GRAPH ONLY</text>
+  <line x1="330" y1="1362" x2="330" y2="1428" stroke="#d1d7da" stroke-width="1.5"/>
+  <line x1="715" y1="1362" x2="715" y2="1428" stroke="#d1d7da" stroke-width="1.5"/>
+  <line x1="1135" y1="1362" x2="1135" y2="1428" stroke="#d1d7da" stroke-width="1.5"/>
+  <line x1="1455" y1="1362" x2="1455" y2="1428" stroke="#d1d7da" stroke-width="1.5"/>
+  <text x="82" y="1402" class="labelSmall" fill="#14635e">C2 CPU precision · PASS</text>
+  <text x="82" y="1423" class="small">governed terminal K=8 bands</text>
+  <text x="352" y="1402" class="labelSmall">C-JAC on z=[h;scratch]</text>
+  <text x="352" y="1423" class="monoSmall">Λ_adapters=1.0 · Λ_hat_core=1.042048</text>
+  <text x="737" y="1402" class="labelSmall">A7 structural-OFF matrix</text>
+  <text x="737" y="1423" class="monoSmall">54 CPU pass · 54 CUDA pending · 48 absent · 4 ineligible</text>
+  <text x="1157" y="1402" class="labelSmall">Focused regression</text>
+  <text x="1157" y="1423" class="monoSmall">194 passed · no PF-3 failures</text>
+  <text x="1477" y="1402" class="labelSmall" fill="#963f22">Not claimed</text>
+  <text x="1477" y="1423" class="small">GPU · training · sealed data · production receipt</text>
+
+  <!-- Footer -->
+  <text x="60" y="1472" class="tiny">Authority: STRATEGY_TO_CODING_AGENT_LOOM1_HANDOFF_20260826 · Status: CODING_TO_STRATEGY_WEFT1_BUILD_STATUS_MATRIX_20260902</text>
+  <text x="1740" y="1472" text-anchor="end" class="tiny">One page · architecture and construction state · structural controls preserved</text>
+</svg>
