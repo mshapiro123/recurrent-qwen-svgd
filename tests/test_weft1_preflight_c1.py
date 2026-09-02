@@ -23,64 +23,63 @@ from analysis.weft1_preflight_c1 import (
     PF2_AUTHORITY_BYTES,
     PF2_AUTHORITY_FILE,
     PF2_AUTHORITY_SHA256,
+    PF3_AUTHORITY_BYTES,
+    PF3_AUTHORITY_FILE,
+    PF3_AUTHORITY_SHA256,
+    PREFLIGHT_PROGRAM_BYTES,
+    PREFLIGHT_PROGRAM_FILE,
+    PREFLIGHT_PROGRAM_SHA256,
+    PREFLIGHT_RATIFICATION_BYTES,
+    PREFLIGHT_RATIFICATION_FILE,
+    PREFLIGHT_RATIFICATION_SHA256,
     S81_AUTHORITY_BYTES,
     S81_AUTHORITY_FILE,
     S81_AUTHORITY_SHA256,
-    S81_FUTURE_HEAD_DIM_POLICY,
     run_preflight_c1,
     verify_c1_authorities,
 )
 from models.ablation_lm.config import MUP_D_HEAD_BASE
+from models.ablation_lm.mup import MuPParameterClass
 
 
-EXPECTED_UNBOUND_MUP_COMPONENTS = (
-    "model_base_width_d_base",
-    "internal_base_initialization_sigma_base",
-    "complete_per_tensor_initialization_map",
-    "internal_base_learning_rate_eta_base",
-    "complete_per_tensor_learning_rate_map",
-    "residual_branch_alpha",
-    "embedding_multiplier",
-    "residual_multiplier",
-)
+@pytest.fixture(scope="module")
+def receipt():
+    return run_preflight_c1()
 
 
-def test_pf2_s81_and_build_handoff_authorities_are_byte_exact() -> None:
-    pf2, s81, build_handoff = verify_c1_authorities()
+def test_pf3_chain_and_build_handoff_are_byte_exact() -> None:
+    verified = {item.filename: item for item in verify_c1_authorities()}
+    expected = {
+        PREFLIGHT_PROGRAM_FILE: (PREFLIGHT_PROGRAM_BYTES, PREFLIGHT_PROGRAM_SHA256),
+        PREFLIGHT_RATIFICATION_FILE: (
+            PREFLIGHT_RATIFICATION_BYTES,
+            PREFLIGHT_RATIFICATION_SHA256,
+        ),
+        BUILD_HANDOFF_AUTHORITY_FILE: (BUILD_HANDOFF_AUTHORITY_BYTES, BUILD_HANDOFF_AUTHORITY_SHA256),
+        PF2_AUTHORITY_FILE: (PF2_AUTHORITY_BYTES, PF2_AUTHORITY_SHA256),
+        S81_AUTHORITY_FILE: (S81_AUTHORITY_BYTES, S81_AUTHORITY_SHA256),
+        PF3_AUTHORITY_FILE: (PF3_AUTHORITY_BYTES, PF3_AUTHORITY_SHA256),
+    }
+    assert expected[BUILD_HANDOFF_AUTHORITY_FILE][0] == 61_329
+    assert expected[PREFLIGHT_PROGRAM_FILE][0] == 15_575
+    assert expected[PREFLIGHT_RATIFICATION_FILE][0] == 2_233
+    assert expected[PF2_AUTHORITY_FILE][0] == 13_097
+    assert expected[S81_AUTHORITY_FILE][0] == 3_403
+    assert expected[PF3_AUTHORITY_FILE][0] == 14_632
+    assert set(verified) == set(expected)
+    for filename, (size, digest) in expected.items():
+        row = verified[filename]
+        assert row.expected_bytes == row.actual_bytes == size
+        assert row.expected_sha256 == row.actual_sha256 == digest
+        assert row.verified is True
 
-    assert pf2.filename == PF2_AUTHORITY_FILE
-    assert pf2.expected_bytes == pf2.actual_bytes == PF2_AUTHORITY_BYTES == 13_097
-    assert pf2.expected_sha256 == pf2.actual_sha256 == PF2_AUTHORITY_SHA256
-    assert pf2.verified is True
-    assert s81.filename == S81_AUTHORITY_FILE
-    assert s81.expected_bytes == s81.actual_bytes == S81_AUTHORITY_BYTES == 3_403
-    assert s81.expected_sha256 == s81.actual_sha256 == S81_AUTHORITY_SHA256
-    assert s81.verified is True
-    assert build_handoff.filename == BUILD_HANDOFF_AUTHORITY_FILE
-    assert (
-        build_handoff.expected_bytes
-        == build_handoff.actual_bytes
-        == BUILD_HANDOFF_AUTHORITY_BYTES
-        == 61_329
-    )
-    assert (
-        build_handoff.expected_sha256
-        == build_handoff.actual_sha256
-        == BUILD_HANDOFF_AUTHORITY_SHA256
-    )
-    assert build_handoff.verified is True
 
-
-def test_authority_verification_fails_closed_when_files_are_absent(
-    tmp_path: Path,
-) -> None:
+def test_authority_verification_fails_closed_when_files_are_absent(tmp_path: Path) -> None:
     with pytest.raises(C1AuthorityIntegrityError, match="missing C1 authority"):
         verify_c1_authorities(tmp_path)
 
 
-def test_pf21_topology_is_bound_on_the_real_width_axis() -> None:
-    receipt = run_preflight_c1()
-
+def test_pf31_topology_is_bound_on_the_real_width_axis(receipt) -> None:
     assert receipt.cpu_widths == C1_CPU_WIDTHS == (128, 256, 512)
     assert receipt.deferred_gpu_widths == C1_DEFERRED_GPU_WIDTHS == (1_024,)
     assert receipt.batch_size == C1_BATCH_SIZE == 2
@@ -89,68 +88,76 @@ def test_pf21_topology_is_bound_on_the_real_width_axis() -> None:
     assert receipt.width_drift_limit == C1_WIDTH_DRIFT_LIMIT == 2.0
     assert receipt.authority_verified is True
     assert receipt.topology_verified is True
-    assert receipt.attention_contract_bound is True
-    assert receipt.future_head_dim_policy == S81_FUTURE_HEAD_DIM_POLICY
-    assert receipt.future_head_dim_policy == (
-        "future_WEFT_d_head_not_64_requires_explicit_base_shape_implementation"
-    )
-    assert BUILD_HANDOFF_AUTHORITY_BYTES == 61_329
-    assert BUILD_HANDOFF_AUTHORITY_SHA256 == (
-        "498f34b5966f0879c7f0a15ca8be02a603558781c35f59f03fb29cc9edd3eb02"
-    )
     assert MUP_D_HEAD_BASE == C1_HEAD_DIM == 64
-
-    for topology in receipt.width_topologies:
-        width = topology.width
+    for row in receipt.width_classifications:
+        topology = row.topology
         assert topology.head_dim == 64
-        assert topology.q_heads == width // 64
-        assert topology.kv_heads == width // 128
+        assert topology.q_heads == row.width // 64
+        assert topology.kv_heads == row.width // 128
         assert topology.q_heads == 2 * topology.kv_heads
-        assert topology.d_ff == 11 * width // 4
+        assert topology.d_ff == 11 * row.width // 4
         assert topology.scratch_lanes == 2
-        assert topology.scratch_width_per_lane == width // 4
-        assert topology.total_scratch_width == width // 2
-        assert (
-            topology.n_prelude_layers,
-            topology.n_core_blocks,
-            topology.n_coda_layers,
-        ) == (4, 2, 4)
-        assert topology.recurrent_steps == 4
+        assert topology.scratch_width_per_lane == row.width // 4
+        assert topology.total_scratch_width == row.width // 2
         assert topology.unique_decoder_blocks == 10
         assert topology.executed_decoder_block_passes == 16
         assert topology.attention_logit_scale == 0.125
-        assert topology.is_pf2_bound()
+        assert topology.is_bound()
 
 
-def test_pf21_returns_catch_33_before_model_or_optimizer_construction() -> None:
-    receipt = run_preflight_c1()
-    bindings = {binding.component: binding for binding in receipt.mup_bindings}
-
-    assert bindings["attention_logit_scale"].status == "bound"
-    assert bindings["attention_logit_scale"].missing_requirement is None
-    assert receipt.unbound_mup_components == EXPECTED_UNBOUND_MUP_COMPONENTS
-    assert all(
-        bindings[name].status == "unbound"
-        for name in EXPECTED_UNBOUND_MUP_COMPONENTS
+def test_pf31_echoes_every_tensor_and_only_router_is_unclassified(receipt) -> None:
+    assert receipt.unclassified_tensor_shapes == (
+        ("front_hadamard.router.weight", (8, 128)),
+        ("front_hadamard.router.weight", (8, 256)),
+        ("front_hadamard.router.weight", (8, 512)),
     )
-    assert all(
-        bindings[name].missing_requirement
-        for name in EXPECTED_UNBOUND_MUP_COMPONENTS
-    )
+    for row in receipt.width_classifications:
+        assert row.unique_trainable_tensors == 147
+        assert len(row.classified_tensors) == 146
+        assert len(row.unclassified_tensors) == 1
+        assert row.unclassified_tensors[0].canonical_name == "front_hadamard.router.weight"
+        assert row.unclassified_tensors[0].shape == (8, row.width)
+        assert "unclassifiable trainable tensor" in row.unclassified_tensors[0].reason
+        assert len({item.canonical_name for item in row.classified_tensors}) == 146
+        assert len(row.classified_map_sha256) == 64
+
+
+def test_ltm_and_engram_classes_prove_actual_scaling_dimensions(receipt) -> None:
+    for row in receipt.width_classifications:
+        items = {item.canonical_name: item for item in row.classified_tensors}
+        assert items["long_term_memory.query.weight"].shape == (row.width // 4, row.width)
+        assert items["long_term_memory.output.weight"].shape == (row.width, row.width // 4)
+        assert items["long_term_memory.query.weight"].parameter_class is MuPParameterClass.HIDDEN
+        assert items["long_term_memory.output.weight"].parameter_class is MuPParameterClass.HIDDEN
+        assert items["engram.query_proj.weight"].shape == (row.width, row.width)
+        assert items["engram.query_proj.weight"].parameter_class is MuPParameterClass.HIDDEN
+        for name in ("engram.key_proj.weight", "engram.value_proj.weight"):
+            assert items[name].shape == (row.width, 64)
+            assert items[name].parameter_class is MuPParameterClass.INPUT
+            assert items[name].learning_rate == 3.0e-4
+            assert items[name].weight_decay == 0.0
+        gains = items["front_hadamard.expert_gains"]
+        assert gains.shape == (8, row.width)
+        assert gains.parameter_class is MuPParameterClass.VECTOR
+        assert gains.initialization_rule == "module_design_state_preserved"
+
+
+def test_pf31_catch_35_prevents_initialization_optimizer_forward_and_rms(receipt) -> None:
+    assert receipt.tensor_class_map_complete is False
     assert receipt.mup_protocol_complete is False
     assert receipt.execution_status == C1_EXECUTION_STATUS
-    assert receipt.model_initialized is False
+    assert receipt.model_constructed_for_inventory is True
+    assert receipt.pf3_initialization_applied is False
     assert receipt.optimizer_constructed is False
+    assert receipt.forward_executed is False
     assert receipt.training_performed is False
+    assert receipt.activation_rms_measured is False
     assert receipt.activation_coordinate_passed is None
-    assert receipt.a100_hours == 0.0
     assert receipt.passed is False
-    assert receipt.catch_number == C1_CATCH_NUMBER == 33
-    assert receipt.disposition == "catch_33_return_to_strategy_mup_protocol_unbound"
-    with pytest.raises(
-        C1CoordinateCatch,
-        match=r"CATCH #33: PF-2\.1 stopped before model initialization",
-    ):
+    assert receipt.catch_number == C1_CATCH_NUMBER == 35
+    assert receipt.disposition == "catch_35_hadamard_router_mup_class_unbound"
+    assert receipt.a100_hours == 0.0
+    with pytest.raises(C1CoordinateCatch, match=r"CATCH #35: front_hadamard\.router\.weight"):
         receipt.require_passed()
 
 
@@ -158,26 +165,38 @@ def test_pf21_returns_catch_33_before_model_or_optimizer_construction() -> None:
     "updates",
     (
         {"passed": True},
+        {"tensor_class_map_complete": True},
         {"mup_protocol_complete": True},
-        {"unbound_mup_components": ()},
+        {"unclassified_tensor_shapes": ()},
+        {"pf3_initialization_applied": True},
+        {"optimizer_constructed": True},
+        {"training_performed": True},
+        {"activation_rms_measured": True},
         {"catch_number": 0},
         {"authority_verified": False},
         {"topology_verified": False},
+        {"program_sha256": "0" * 64},
+        {"ratification_sha256": "0" * 64},
+        {"build_handoff_authority": "forged"},
+        {"build_handoff_authority_drive_id": "forged"},
+        {"deferred_gpu_widths": ()},
+        {"batch_size": 1},
+        {"sequence_length": 63},
+        {"training_steps": 11},
+        {"width_drift_limit": 3.0},
+        {"provisional_base_shape": "forged"},
+        {"provisional_numerics": "forged"},
+        {"decay_implementation": "forged"},
+        {"disposition": "forged"},
     ),
 )
-def test_c1_receipt_rejects_forged_promotion_or_derived_state(
-    updates: dict[str, object],
-) -> None:
-    receipt = run_preflight_c1()
-
+def test_c1_receipt_rejects_forged_promotion_or_derived_state(receipt, updates) -> None:
     with pytest.raises(ValueError, match="C1"):
         replace(receipt, **updates)
 
 
-def test_pf21_harness_rejects_discretionary_width_or_step_overrides() -> None:
-    with pytest.raises(ValueError, match="complete PF-2.1 CPU axis"):
-        run_preflight_c1(widths=())
-    with pytest.raises(ValueError, match="complete PF-2.1 CPU axis"):
+def test_pf31_harness_rejects_discretionary_width_or_step_overrides() -> None:
+    with pytest.raises(ValueError, match="complete PF-3.1 CPU axis"):
         run_preflight_c1(widths=(128, 256))
     with pytest.raises(ValueError, match="literal 10"):
         run_preflight_c1(training_steps=9)

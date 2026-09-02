@@ -11,7 +11,9 @@ the decision value.  State/logits use a 1e-2 ceiling; lanes and gradients use a
 5e-2 ceiling.  Gradients cover both the concatenated trainable-parameter vector
 and the worst tensor in every parameter-owning module.  PF-2 expressly binds
 those thresholds after seeing the original diagnostic values, which remains a
-first-class disclosure in the receipt.
+first-class disclosure in the receipt. PF-3.2 classifies an exact-zero reference
+through the structural eligibility matrix: a valid ineligible zero is reported
+and excluded, while an eligible zero or a precision mismatch fails the gate.
 """
 
 from __future__ import annotations
@@ -47,15 +49,17 @@ C2_PF2_AUTHORITY_SHA256 = (
     "be11390c28ae36210a1571f7c6d358ee54e977d239f5344f7e6402212448eb05"
 )
 C2_PF2_AUTHORITY_BYTES = 13_097
+C2_PF3_AUTHORITY = "docs/STRATEGY_PREFLIGHT_AMENDMENT_PF3_20260902.md#2-PF-3.2"
+C2_PF3_AUTHORITY_SHA256 = (
+    "7f0081e504366ce98f8bf183b7e14c0bed47647aa381196a9d5e9540b5334cef"
+)
+C2_PF3_AUTHORITY_BYTES = 14_632
 C2_RATIFIED_VISITS = 8
 C2_STATE_LOGIT_RELATIVE_L2_THRESHOLD = 1e-2
 C2_LANE_GRADIENT_RELATIVE_L2_THRESHOLD = 5e-2
 C2_ROOT_SEED = 20_260_902
-C2_CATCH34_REASON = (
-    "PF-2.2 binds per-tensor per-visit gradient relative L2 but no "
-    "zero-reference or eligibility rule; the PF-1.5 structurally "
-    "ineligible visit-1 reentry gradients have zero fp32 norms, making "
-    "the maximum-over-visits population incomplete"
+C2_REENTRY_VISIT_ZERO_INELIGIBILITY_REASON = (
+    "reentry_bridge_is_not_executed_on_recurrent_visit_zero"
 )
 
 C2_CURRENT_INTEGRATED_MODULES = (
@@ -99,21 +103,86 @@ class ModuleGradientWorstTensor:
     parameter_name: str | None
     parameter_tensor_count: int
     defined_tensor_count: int
-    undefined_parameter_names: tuple[str, ...]
+    excluded_zero_reference_parameter_names: tuple[str, ...]
+    failed_zero_reference_parameter_names: tuple[str, ...]
     drift: TensorDrift | None
     complete: bool
 
+    def __post_init__(self) -> None:
+        classified = (
+            self.defined_tensor_count
+            + len(self.excluded_zero_reference_parameter_names)
+            + len(self.failed_zero_reference_parameter_names)
+        )
+        if self.parameter_tensor_count < 1 or classified != self.parameter_tensor_count:
+            raise ValueError("C2 module gradient tensor counts are inconsistent")
+        if set(self.excluded_zero_reference_parameter_names).intersection(
+            self.failed_zero_reference_parameter_names
+        ):
+            raise ValueError("C2 module zero-reference classes must be disjoint")
+        if (self.drift is None) is not (self.defined_tensor_count == 0):
+            raise ValueError("C2 module gradient drift presence is inconsistent")
+        if (self.parameter_name is None) is not (self.drift is None):
+            raise ValueError("C2 module worst parameter identity is inconsistent")
+        if self.complete is not (not self.failed_zero_reference_parameter_names):
+            raise ValueError("C2 module gradient completeness is inconsistent")
+
 
 @dataclass(frozen=True)
-class UndefinedGradientCell:
+class ZeroReferenceGradientCell:
     visit: int
     module_name: str
     parameter_name: str
-    reason: str
+    structurally_eligible: bool
+    structural_reason: str
+    disposition: str
+    excluded_from_relative_error_population: bool
     fp32_autograd_connected: bool
     bf16_autograd_connected: bool
     fp32_l2: float
     bf16_compute_l2: float
+    passed: bool
+
+    def __post_init__(self) -> None:
+        if self.visit < 1 or not self.module_name or not self.parameter_name:
+            raise ValueError("C2 zero-reference cell identity is invalid")
+        if self.fp32_l2 != 0.0:
+            raise ValueError("C2 zero-reference cell requires an exact-zero fp32 norm")
+        if not math.isfinite(self.bf16_compute_l2) or self.bf16_compute_l2 < 0.0:
+            raise ValueError("C2 zero-reference bf16 norm must be finite and non-negative")
+        expected_eligible, expected_reason = _gradient_structural_eligibility(
+            self.parameter_name,
+            visit=self.visit,
+        )
+        if self.structurally_eligible is not expected_eligible:
+            raise ValueError("C2 zero-reference structural eligibility is inconsistent")
+        if expected_eligible:
+            expected_disposition = "fail (eligible zero reference)"
+            expected_excluded = False
+            expected_passed = False
+        elif self.bf16_compute_l2 != 0.0:
+            expected_reason = C2_REENTRY_VISIT_ZERO_INELIGIBILITY_REASON
+            expected_disposition = "fail (ineligible precision mismatch)"
+            expected_excluded = False
+            expected_passed = False
+        elif self.fp32_autograd_connected or self.bf16_autograd_connected:
+            expected_reason = C2_REENTRY_VISIT_ZERO_INELIGIBILITY_REASON
+            expected_disposition = "fail (ineligible autograd connectivity mismatch)"
+            expected_excluded = False
+            expected_passed = False
+        else:
+            expected_reason = C2_REENTRY_VISIT_ZERO_INELIGIBILITY_REASON
+            expected_disposition = "ineligible (zero reference)"
+            expected_excluded = True
+            expected_passed = True
+        if self.structural_reason != expected_reason:
+            raise ValueError("C2 zero-reference structural reason is inconsistent")
+        if (
+            self.disposition != expected_disposition
+            or self.excluded_from_relative_error_population is not expected_excluded
+            or self.passed is not expected_passed
+        ):
+            raise ValueError("C2 zero-reference disposition is inconsistent")
 
 
 @dataclass(frozen=True)
@@ -123,10 +192,39 @@ class GradientVisitDrift:
     worst_module_name: str | None
     worst_parameter_name: str | None
     worst_tensor: TensorDrift | None
-    undefined_relative_l2_cells: tuple[UndefinedGradientCell, ...]
+    zero_reference_cells: tuple[ZeroReferenceGradientCell, ...]
     complete: bool
     trainable_parameter_tensors: int
     trainable_parameter_elements: int
+
+    def __post_init__(self) -> None:
+        expected_complete = all(cell.passed for cell in self.zero_reference_cells)
+        if self.complete is not expected_complete:
+            raise ValueError("C2 visit gradient completeness is inconsistent")
+        if self.trainable_parameter_tensors < 1 or self.trainable_parameter_elements < 1:
+            raise ValueError("C2 visit gradient population must be non-empty")
+        classified_tensors = sum(
+            item.parameter_tensor_count for item in self.per_module_worst_tensors
+        )
+        if classified_tensors != self.trainable_parameter_tensors:
+            raise ValueError("C2 visit gradient module population is inconsistent")
+        defined = tuple(
+            item for item in self.per_module_worst_tensors if item.drift is not None
+        )
+        expected_worst = (
+            max(defined, key=_defined_module_worst_relative_l2) if defined else None
+        )
+        expected_name = None if expected_worst is None else expected_worst.module_name
+        expected_parameter = (
+            None if expected_worst is None else expected_worst.parameter_name
+        )
+        expected_drift = None if expected_worst is None else expected_worst.drift
+        if (
+            self.worst_module_name != expected_name
+            or self.worst_parameter_name != expected_parameter
+            or self.worst_tensor != expected_drift
+        ):
+            raise ValueError("C2 visit worst module gradient is inconsistent")
 
 
 @dataclass(frozen=True)
@@ -154,8 +252,19 @@ class ModuleGradientMaximum:
     parameter_name: str | None
     max_relative_l2: float | None
     max_relative_l2_visit: int | None
-    undefined_visits: tuple[int, ...]
+    excluded_zero_reference_visits: tuple[int, ...]
+    failed_zero_reference_visits: tuple[int, ...]
     complete: bool
+
+    def __post_init__(self) -> None:
+        if self.complete is not (not self.failed_zero_reference_visits):
+            raise ValueError("C2 module maximum completeness is inconsistent")
+        if (self.max_relative_l2 is None) is not (
+            self.max_relative_l2_visit is None
+        ):
+            raise ValueError("C2 module maximum value and visit are inconsistent")
+        if (self.max_relative_l2 is None) is not (self.parameter_name is None):
+            raise ValueError("C2 module maximum parameter identity is inconsistent")
 
 
 @dataclass(frozen=True)
@@ -173,7 +282,8 @@ class C2DriftSummary:
     max_worst_module_gradient_module: str | None
     max_worst_module_gradient_parameter: str | None
     per_module_gradient_maxima: tuple[ModuleGradientMaximum, ...]
-    undefined_gradient_cells: tuple[UndefinedGradientCell, ...]
+    zero_reference_cells: tuple[ZeroReferenceGradientCell, ...]
+    zero_reference_failures: tuple[ZeroReferenceGradientCell, ...]
     gradient_maxima_complete: bool
     max_relative_loss_drift: float
     max_relative_loss_drift_visit: int
@@ -214,6 +324,9 @@ class C2PreflightReceipt:
     pf2_authority: str
     pf2_authority_sha256: str
     pf2_authority_bytes: int
+    pf3_authority: str
+    pf3_authority_sha256: str
+    pf3_authority_bytes: int
     authority_byte_verified: bool
     measurement_status: str
     current_composition: str
@@ -266,14 +379,91 @@ class C2PreflightReceipt:
         if not self.authority_byte_verified:
             raise ValueError("C2 authority_byte_verified must be true")
         if (
-            self.authority_sha256 != C2_AUTHORITY_SHA256
+            self.authority != C2_AUTHORITY
+            or self.authority_sha256 != C2_AUTHORITY_SHA256
             or self.authority_bytes != C2_AUTHORITY_BYTES
+            or self.ratification_authority != C2_RATIFICATION_AUTHORITY
             or self.ratification_sha256 != C2_RATIFICATION_SHA256
             or self.ratification_bytes != C2_RATIFICATION_BYTES
+            or self.pf2_authority != C2_PF2_AUTHORITY
             or self.pf2_authority_sha256 != C2_PF2_AUTHORITY_SHA256
             or self.pf2_authority_bytes != C2_PF2_AUTHORITY_BYTES
+            or self.pf3_authority_sha256 != C2_PF3_AUTHORITY_SHA256
+            or self.pf3_authority_bytes != C2_PF3_AUTHORITY_BYTES
+            or self.pf3_authority != C2_PF3_AUTHORITY
         ):
             raise ValueError("C2 authority metadata is inconsistent")
+        expected_deferred_gpu_cells = (
+            DeferredC2Cell(
+                cell="cuda_fp32_vs_bf16_forward_k8",
+                status="deferred",
+                reason="requires the separately metered deterministic GPU backend",
+            ),
+            DeferredC2Cell(
+                cell="cuda_fp32_vs_bf16_backward_k8",
+                status="deferred",
+                reason="CPU autocast is not GPU backward evaluator identity",
+            ),
+            DeferredC2Cell(
+                cell="cuda_same_seed_bit_replay",
+                status="deferred",
+                reason="belongs to the GPU-deterministic C2/C3 runtime cells",
+            ),
+        )
+        provenance_and_scope_bound = (
+            self.current_composition == "ablation_lm_materialized_current_4_2_4_k8"
+            and self.current_integrated_modules == C2_CURRENT_INTEGRATED_MODULES
+            and self.representative_missing_full_toy_integrations
+            == C2_REPRESENTATIVE_MISSING_FULL_TOY_INTEGRATIONS
+            and not self.full_weft1_toy_step_claim
+            and self.carrier_accumulation_decision
+            == (
+                "deferred_integrated_learned_rotor_carrier_absent; "
+                "two_lane_birkhoff_scratch_carrier_is_not_a_rotor"
+            )
+            and self.weight_state
+            == "deterministic_current_code_initialization_not_a_learned_checkpoint"
+            and self.root_seed == C2_ROOT_SEED
+            and self.config_identity_sha256
+            == "57ef01bbaa4aa89ea18b098cbb51ece021fc0849f9b958435f7f534f2f6d8e28"
+            and self.input_panel_sha256
+            == "1bce335742f00f14c7e9abd88396776dc4d473fb955f60a923868618bf1d15f6"
+            and self.initial_model_state_sha256
+            == "52b993089afe982dd4027eb16500f761b0ed8cfc49a938de7f00e2e102831aac"
+            and not self.training_performed
+            and not self.checkpoint_used
+            and self.reference_policy == "cpu_fp32_parameters_and_compute"
+            and self.bf16_policy
+            == "cpu_fp32_master_parameters_with_bf16_autocast_compute"
+            and self.per_visit_readout_definition
+            == "current_read_only_long_term_memory_then_four_coda_blocks_then_tied_lm_head"
+            and self.gradient_definition
+            == (
+                "per_visit_shifted_cross_entropy_gradients_of_all_trainable_"
+                "named_parameters; concatenated_full_vector_plus_each_leaf_"
+                "parameter_module_worst_tensor; PF-3.2_structurally_ineligible_"
+                "exact_zero_parameters_are_reported_and_excluded_from_relative_error"
+            )
+            and self.block_split == (4, 2, 4)
+            and self.d_model == 64
+            and self.scratch_shape == (2, 8)
+            and self.model_parameters == 488_859
+            and self.gradient_population
+            == "all_requires_grad_named_parameters_in_model_named_parameters_order"
+            and self.relative_l2_denominator_policy
+            == (
+                "relative_error_only_where_fp32_l2_is_nonzero; PF-3.2_valid_"
+                "structurally_ineligible_exact_zero_cells_are_reported_and_excluded; "
+                "eligible_zero_or_precision_mismatch_fails"
+            )
+            and self.trace_matches_main_forward_fp32
+            and self.deferred_gpu_cells == expected_deferred_gpu_cells
+            and self.cpu_runtime == platform.platform()
+            and self.torch_version == torch.__version__
+            and self.a100_hours == 0.0
+        )
+        if not provenance_and_scope_bound:
+            raise ValueError("C2 topology, provenance, or execution scope is inconsistent")
         if (
             self.state_logit_relative_l2_threshold
             != C2_STATE_LOGIT_RELATIVE_L2_THRESHOLD
@@ -283,8 +473,18 @@ class C2PreflightReceipt:
             or not self.threshold_applied
             or not self.thresholds_bound_after_data
             or self.thresholds_preregistered
+            or self.threshold_binding_disclosure
+            != (
+                "PF-2.2_bound_thresholds_after_observing_the_original_C2_"
+                "diagnostic_values; future_runs_inherit_them"
+            )
         ):
             raise ValueError("C2 PF-2.2 threshold binding is inconsistent")
+        if self.threshold_metric_binding_status != (
+            "bound_by_PF-2.2_vector_relative_l2_per_tensor_per_visit_"
+            "terminal_K8_decision_and_PF-3.2_zero_reference_eligibility"
+        ):
+            raise ValueError("C2 PF-3.2 metric binding status is inconsistent")
         if (
             self.visits != C2_RATIFIED_VISITS
             or len(self.per_visit) != C2_RATIFIED_VISITS
@@ -301,8 +501,8 @@ class C2PreflightReceipt:
             raise ValueError("C2 terminal gate is inconsistent with per-visit measurements")
 
         expected_passed = expected_terminal.passed and expected_summary.gradient_maxima_complete
-        expected_catch = 34 if not expected_summary.gradient_maxima_complete else None
-        expected_reason = C2_CATCH34_REASON if expected_catch == 34 else None
+        expected_catch = None
+        expected_reason = None
         if self.threshold_passed is not expected_passed:
             raise ValueError("C2 threshold_passed is inconsistent with the complete gate")
         if self.catch_number != expected_catch or self.catch_reason != expected_reason:
@@ -310,7 +510,6 @@ class C2PreflightReceipt:
         expected_status = _measurement_status(
             terminal_gate=expected_terminal,
             complete_gate_passed=expected_passed,
-            catch_number=expected_catch,
         )
         if self.measurement_status != expected_status:
             raise ValueError("C2 measurement_status is inconsistent with the complete gate")
@@ -360,6 +559,11 @@ def _verify_authority_bytes() -> None:
             root / "docs" / "STRATEGY_PREFLIGHT_AMENDMENT_PF2_20260902.md",
             C2_PF2_AUTHORITY_BYTES,
             C2_PF2_AUTHORITY_SHA256,
+        ),
+        (
+            root / "docs" / "STRATEGY_PREFLIGHT_AMENDMENT_PF3_20260902.md",
+            C2_PF3_AUTHORITY_BYTES,
+            C2_PF3_AUTHORITY_SHA256,
         ),
     )
     for path, expected_bytes, expected_sha256 in expected:
@@ -653,6 +857,30 @@ def _defined_module_maximum_relative_l2(item: ModuleGradientMaximum) -> float:
     return item.max_relative_l2
 
 
+def _gradient_structural_eligibility(
+    parameter_name: str,
+    *,
+    visit: int,
+) -> tuple[bool, str]:
+    """Return the PF-1.5/PF-3.2 eligibility of one gradient tensor.
+
+    Visits are one-indexed in the C2 receipt. The re-entry bridge is skipped by
+    construction at recurrent visit zero, which is receipt visit one. Every
+    materialized parameter outside that exact module is eligible at every C2
+    visit; future module exceptions must be added to the registered matrix
+    rather than inferred from an observed zero.
+    """
+
+    if visit < 1:
+        raise ValueError("C2 structural eligibility requires a positive visit")
+    if parameter_name == "reentry_bridge" or parameter_name.startswith(
+        "reentry_bridge."
+    ):
+        if visit == 1:
+            return False, C2_REENTRY_VISIT_ZERO_INELIGIBILITY_REASON
+    return True, "parameter_is_structurally_eligible_at_this_visit"
+
+
 def _gradient_drift(
     reference: tuple[_GradientTraceTensor, ...],
     observed: tuple[_GradientTraceTensor, ...],
@@ -666,8 +894,8 @@ def _gradient_drift(
     if not reference:
         raise ValueError("C2 gradient population must not be empty")
 
-    per_tensor: list[tuple[str, str, TensorDrift | None]] = []
-    undefined_cells: list[UndefinedGradientCell] = []
+    per_tensor: list[tuple[str, str, TensorDrift | None, ZeroReferenceGradientCell | None]] = []
+    zero_reference_cells: list[ZeroReferenceGradientCell] = []
     for reference_item, observed_item in zip(reference, observed, strict=True):
         module_name = _parameter_module_name(reference_item.parameter_name)
         fp32_l2 = float(
@@ -677,55 +905,78 @@ def _gradient_drift(
             torch.linalg.vector_norm(observed_item.value.detach().double().reshape(-1))
         )
         if fp32_l2 == 0.0:
-            per_tensor.append((module_name, reference_item.parameter_name, None))
-            undefined_cells.append(
-                UndefinedGradientCell(
-                    visit=visit,
-                    module_name=module_name,
-                    parameter_name=reference_item.parameter_name,
-                    reason=(
-                        "fp32_reference_l2_zero_"
-                        + (
-                            "autograd_disconnected"
-                            if not reference_item.autograd_connected
-                            else "connected_exact_zero"
-                        )
-                        + "; PF-2.2_binds_no_"
-                        "zero_denominator_or_eligibility_rule"
-                    ),
-                    fp32_autograd_connected=reference_item.autograd_connected,
-                    bf16_autograd_connected=observed_item.autograd_connected,
-                    fp32_l2=fp32_l2,
-                    bf16_compute_l2=bf16_l2,
-                )
+            eligible, structural_reason = _gradient_structural_eligibility(
+                reference_item.parameter_name,
+                visit=visit,
             )
+            if eligible:
+                disposition = "fail (eligible zero reference)"
+                excluded = False
+                passed = False
+            elif bf16_l2 != 0.0:
+                disposition = "fail (ineligible precision mismatch)"
+                excluded = False
+                passed = False
+            elif reference_item.autograd_connected or observed_item.autograd_connected:
+                disposition = "fail (ineligible autograd connectivity mismatch)"
+                excluded = False
+                passed = False
+            else:
+                disposition = "ineligible (zero reference)"
+                excluded = True
+                passed = True
+            zero_cell = ZeroReferenceGradientCell(
+                visit=visit,
+                module_name=module_name,
+                parameter_name=reference_item.parameter_name,
+                structurally_eligible=eligible,
+                structural_reason=structural_reason,
+                disposition=disposition,
+                excluded_from_relative_error_population=excluded,
+                fp32_autograd_connected=reference_item.autograd_connected,
+                bf16_autograd_connected=observed_item.autograd_connected,
+                fp32_l2=fp32_l2,
+                bf16_compute_l2=bf16_l2,
+                passed=passed,
+            )
+            per_tensor.append(
+                (module_name, reference_item.parameter_name, None, zero_cell)
+            )
+            zero_reference_cells.append(zero_cell)
         else:
             per_tensor.append(
                 (
                     module_name,
                     reference_item.parameter_name,
                     _tensor_drift(reference_item.value, observed_item.value),
+                    None,
                 )
             )
     modules = tuple(
-        dict.fromkeys(module_name for module_name, _name, _drift in per_tensor)
+        dict.fromkeys(module_name for module_name, _name, _drift, _zero in per_tensor)
     )
     per_module_worst: list[ModuleGradientWorstTensor] = []
     for module_name in modules:
         module_tensors = tuple(
-            (parameter_name, drift)
-            for tensor_module, parameter_name, drift in per_tensor
+            (parameter_name, drift, zero_cell)
+            for tensor_module, parameter_name, drift, zero_cell in per_tensor
             if tensor_module == module_name
         )
         defined_tensors = tuple(
             (parameter_name, drift)
-            for parameter_name, drift in module_tensors
+            for parameter_name, drift, _zero_cell in module_tensors
             if drift is not None
         )
-        undefined_names = tuple(
+        excluded_names = tuple(
             parameter_name
-            for parameter_name, drift in module_tensors
-            if drift is None
+            for parameter_name, _drift, zero_cell in module_tensors
+            if zero_cell is not None
+            and zero_cell.excluded_from_relative_error_population
+        )
+        failed_names = tuple(
+            parameter_name
+            for parameter_name, _drift, zero_cell in module_tensors
+            if zero_cell is not None and not zero_cell.passed
         )
         if defined_tensors:
             worst_parameter, worst_drift = max(
@@ -740,9 +991,10 @@ def _gradient_drift(
                 parameter_name=worst_parameter,
                 parameter_tensor_count=len(module_tensors),
                 defined_tensor_count=len(defined_tensors),
-                undefined_parameter_names=undefined_names,
+                excluded_zero_reference_parameter_names=excluded_names,
+                failed_zero_reference_parameter_names=failed_names,
                 drift=worst_drift,
-                complete=not undefined_names,
+                complete=not failed_names,
             )
         )
 
@@ -771,8 +1023,8 @@ def _gradient_drift(
             None if worst_module is None else worst_module.parameter_name
         ),
         worst_tensor=None if worst_module is None else worst_module.drift,
-        undefined_relative_l2_cells=tuple(undefined_cells),
-        complete=not undefined_cells,
+        zero_reference_cells=tuple(zero_reference_cells),
+        complete=all(cell.passed for cell in zero_reference_cells),
         trainable_parameter_tensors=len(reference),
         trainable_parameter_elements=reference_vector.numel(),
     )
@@ -838,10 +1090,15 @@ def _summarize_drift(per_visit: tuple[C2VisitDrift, ...]) -> C2DriftSummary:
         defined_candidate_indices = tuple(
             index for index, item in enumerate(candidates) if item.drift is not None
         )
-        undefined_visits = tuple(
+        excluded_visits = tuple(
             per_visit[index].visit
             for index, item in enumerate(candidates)
-            if not item.complete
+            if item.excluded_zero_reference_parameter_names
+        )
+        failed_visits = tuple(
+            per_visit[index].visit
+            for index, item in enumerate(candidates)
+            if item.failed_zero_reference_parameter_names
         )
         maximum_index = (
             max(
@@ -868,8 +1125,9 @@ def _summarize_drift(per_visit: tuple[C2VisitDrift, ...]) -> C2DriftSummary:
                 max_relative_l2_visit=(
                     None if maximum_index is None else per_visit[maximum_index].visit
                 ),
-                undefined_visits=undefined_visits,
-                complete=not undefined_visits,
+                excluded_zero_reference_visits=excluded_visits,
+                failed_zero_reference_visits=failed_visits,
+                complete=not failed_visits,
             )
         )
     defined_module_maxima = tuple(
@@ -883,10 +1141,13 @@ def _summarize_drift(per_visit: tuple[C2VisitDrift, ...]) -> C2DriftSummary:
         if defined_module_maxima
         else None
     )
-    undefined_cells = tuple(
+    zero_reference_cells = tuple(
         cell
         for visit in per_visit
-        for cell in visit.gradient.undefined_relative_l2_cells
+        for cell in visit.gradient.zero_reference_cells
+    )
+    zero_reference_failures = tuple(
+        cell for cell in zero_reference_cells if not cell.passed
     )
     return C2DriftSummary(
         max_hidden_relative_l2=hidden,
@@ -914,8 +1175,9 @@ def _summarize_drift(per_visit: tuple[C2VisitDrift, ...]) -> C2DriftSummary:
             else worst_module_maximum.parameter_name
         ),
         per_module_gradient_maxima=tuple(module_maxima),
-        undefined_gradient_cells=undefined_cells,
-        gradient_maxima_complete=not undefined_cells,
+        zero_reference_cells=zero_reference_cells,
+        zero_reference_failures=zero_reference_failures,
+        gradient_maxima_complete=not zero_reference_failures,
         max_relative_loss_drift=loss,
         max_relative_loss_drift_visit=loss_visit,
     )
@@ -941,8 +1203,12 @@ def _terminal_gate_decision(
     logits_passed = logits <= C2_STATE_LOGIT_RELATIVE_L2_THRESHOLD
     full_gradient_passed = full_gradient <= C2_LANE_GRADIENT_RELATIVE_L2_THRESHOLD
     module_gradients_passed = terminal.gradient.complete and all(
-        item.drift is not None
-        and item.drift.relative_l2_error <= C2_LANE_GRADIENT_RELATIVE_L2_THRESHOLD
+        item.complete
+        and (
+            item.drift is None
+            or item.drift.relative_l2_error
+            <= C2_LANE_GRADIENT_RELATIVE_L2_THRESHOLD
+        )
         for item in terminal.gradient.per_module_worst_tensors
     )
     return C2TerminalGateDecision(
@@ -979,20 +1245,17 @@ def _measurement_status(
     *,
     terminal_gate: C2TerminalGateDecision,
     complete_gate_passed: bool,
-    catch_number: int | None,
 ) -> str:
-    if catch_number == 34:
-        prefix = "catch_34_pf2_2_zero_reference_population_incomplete_"
-    elif complete_gate_passed:
-        prefix = "cpu_current_integrated_composition_pf2_2_complete_gate_passed_"
+    if complete_gate_passed:
+        prefix = "cpu_current_integrated_composition_pf3_2_complete_gate_passed_"
     else:
-        prefix = "cpu_current_integrated_composition_pf2_2_terminal_gate_failed_"
+        prefix = "cpu_current_integrated_composition_pf3_2_terminal_gate_failed_"
     terminal = "terminal_k8_passed_" if terminal_gate.passed else "terminal_k8_failed_"
     return prefix + terminal + "full_weft1_and_carrier_deferred"
 
 
 def run_preflight_c2() -> C2PreflightReceipt:
-    """Apply PF-2.2 to the pinned CPU composition without promoting deferred cells."""
+    """Apply PF-2.2/PF-3.2 to the pinned CPU composition."""
 
     _verify_authority_bytes()
     previous_determinism = torch.are_deterministic_algorithms_enabled()
@@ -1044,8 +1307,8 @@ def run_preflight_c2() -> C2PreflightReceipt:
     summary = _summarize_drift(per_visit)
     terminal_gate = _terminal_gate_decision(per_visit)
     complete_gate_passed = terminal_gate.passed and summary.gradient_maxima_complete
-    catch_number = 34 if not summary.gradient_maxima_complete else None
-    catch_reason = C2_CATCH34_REASON if catch_number == 34 else None
+    catch_number = None
+    catch_reason = None
     return C2PreflightReceipt(
         authority=C2_AUTHORITY,
         authority_sha256=C2_AUTHORITY_SHA256,
@@ -1056,11 +1319,13 @@ def run_preflight_c2() -> C2PreflightReceipt:
         pf2_authority=C2_PF2_AUTHORITY,
         pf2_authority_sha256=C2_PF2_AUTHORITY_SHA256,
         pf2_authority_bytes=C2_PF2_AUTHORITY_BYTES,
+        pf3_authority=C2_PF3_AUTHORITY,
+        pf3_authority_sha256=C2_PF3_AUTHORITY_SHA256,
+        pf3_authority_bytes=C2_PF3_AUTHORITY_BYTES,
         authority_byte_verified=True,
         measurement_status=_measurement_status(
             terminal_gate=terminal_gate,
             complete_gate_passed=complete_gate_passed,
-            catch_number=catch_number,
         ),
         current_composition="ablation_lm_materialized_current_4_2_4_k8",
         current_integrated_modules=C2_CURRENT_INTEGRATED_MODULES,
@@ -1087,8 +1352,8 @@ def run_preflight_c2() -> C2PreflightReceipt:
         gradient_definition=(
             "per_visit_shifted_cross_entropy_gradients_of_all_trainable_"
             "named_parameters; concatenated_full_vector_plus_each_leaf_"
-            "parameter_module_worst_tensor; autograd_disconnected_parameters_"
-            "are_exact_zero_entries_in_the_full_vector_only"
+            "parameter_module_worst_tensor; PF-3.2_structurally_ineligible_"
+            "exact_zero_parameters_are_reported_and_excluded_from_relative_error"
         ),
         visits=C2_RATIFIED_VISITS,
         block_split=(
@@ -1103,9 +1368,9 @@ def run_preflight_c2() -> C2PreflightReceipt:
             "all_requires_grad_named_parameters_in_model_named_parameters_order"
         ),
         relative_l2_denominator_policy=(
-            "fp32_tensor_l2_must_be_nonzero; fail_closed_if_zero; "
-            "per_tensor_zero_reference_cells_are_undefined; "
-            "PF-2.2_binds_no_zero_denominator_or_eligibility_fallback"
+            "relative_error_only_where_fp32_l2_is_nonzero; PF-3.2_valid_"
+            "structurally_ineligible_exact_zero_cells_are_reported_and_excluded; "
+            "eligible_zero_or_precision_mismatch_fails"
         ),
         trace_matches_main_forward_fp32=trace_matches,
         per_visit=per_visit,
@@ -1126,7 +1391,7 @@ def run_preflight_c2() -> C2PreflightReceipt:
         ),
         threshold_metric_binding_status=(
             "bound_by_PF-2.2_vector_relative_l2_per_tensor_per_visit_"
-            "terminal_K8_decision; zero_reference_eligibility_unbound"
+            "terminal_K8_decision_and_PF-3.2_zero_reference_eligibility"
         ),
         threshold_applied=True,
         threshold_passed=complete_gate_passed,

@@ -14,6 +14,11 @@ from .accounting import (
 )
 from .bicameral import SwapLinear
 from .bicameral_core import BicameralProjectedKeyValue, BicameralTransformerBlock
+from .bicameral_recurrent import (
+    BicameralRecurrenceReceipt,
+    BicameralRecurrentCore,
+    BicameralRecurrentOutput,
+)
 from .callosum import (
     CALLOSUM_RETENTION_TRIPWIRE,
     DeltaModePredictionReceipt,
@@ -108,6 +113,9 @@ __all__ = [
     "AdapterCertificateReceipt",
     "AdapterFactorPlaceholder",
     "BicameralProjectedKeyValue",
+    "BicameralRecurrenceReceipt",
+    "BicameralRecurrentCore",
+    "BicameralRecurrentOutput",
     "BicameralTransformerBlock",
     "CALLOSUM_RETENTION_TRIPWIRE",
     "CertifiedAdapterFactor",

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+from dataclasses import replace
 
 import pytest
 import torch
@@ -16,7 +17,10 @@ from models.ablation_lm.certificates import (
     certify_sidecar_factor,
     compose_adapter_certificate,
     estimate_empirical_core_factor,
+    estimate_empirical_joint_state_core_factor,
+    make_joint_state_loop_lipschitz_receipt,
     make_loop_lipschitz_receipt,
+    pack_joint_state,
 )
 from models.ablation_lm.geometry import cl20_rotate, lanes_to_modes
 
@@ -61,6 +65,18 @@ def test_pf1_sidecar_records_nonnegative_top_k_l1_and_true_factor_bound() -> Non
     with pytest.raises(ValueError, match="top_k_limit"):
         certify_sidecar_factor(left + (left[0],), right + (right[0],), (0.25,) * 4, gate=gate)
 
+    for updates in (
+        {"selected_weights": (0.6, -0.25, 0.1)},
+        {"weight_l1": 2.0},
+        {"absolute_gate": -0.4},
+        {"per_expert_product_bounds": (1.0,)},
+        {"pre_gate_mixture_norm_bound": 0.0},
+        {"pre_gate_mixture_exact_norm": float("inf")},
+        {"factor": replace(receipt.factor, bound=1.0)},
+    ):
+        with pytest.raises(ValueError, match="sidecar"):
+            replace(receipt, **updates)
+
 
 def test_pf1_adapter_product_excludes_named_absent_module_placeholders() -> None:
     live = (
@@ -94,7 +110,12 @@ def test_pf1_adapter_product_excludes_named_absent_module_placeholders() -> None
 
 
 def test_pf1_rotor_and_callosum_bound_sources_are_explicit() -> None:
+    rotor_operator = cl20_rotate(
+        torch.eye(2, dtype=torch.float64),
+        torch.tensor(0.37, dtype=torch.float64),
+    )
     exact_rotor = certify_rotor_factor(
+        rotor_operator,
         orthogonality_certified_by_construction=True
     )
     generic_rotor = certify_rotor_factor(
@@ -106,6 +127,8 @@ def test_pf1_rotor_and_callosum_bound_sources_are_explicit() -> None:
     assert "orthogonality_by_construction" in exact_rotor.bound_source
     assert generic_rotor.bound == pytest.approx(2.0)
     assert "exact_svd" in generic_rotor.bound_source
+    with pytest.raises(ValueError, match="explicit operator witness"):
+        certify_rotor_factor(orthogonality_certified_by_construction=True)
     with pytest.raises(ValueError, match="conflicts"):
         certify_rotor_factor(
             torch.diag(torch.tensor([2.0, 0.5])),
@@ -168,6 +191,105 @@ def test_pf1_loop_receipt_keeps_certified_and_empirical_numbers_separate() -> No
     assert receipt.production_claim == (
         "standalone_utility_production_integration_not_asserted"
     )
+
+
+def test_pf3_joint_state_pack_is_plain_euclidean_with_no_reweighting() -> None:
+    hidden = torch.tensor([[3.0, 4.0]], dtype=torch.float64)
+    scratch = torch.tensor([[[[0.0, 12.0]]]], dtype=torch.float64)
+
+    packed, layout = pack_joint_state((("h", hidden), ("scratch", scratch)))
+
+    assert layout.component_names == ("h", "scratch")
+    assert layout.metric == "plain_euclidean_concatenation_no_per_block_reweighting"
+    assert packed.norm().item() == pytest.approx(13.0)
+    unpacked = layout.unpack(packed)
+    assert torch.equal(unpacked[0], hidden)
+    assert torch.equal(unpacked[1], scratch)
+    with pytest.raises(ValueError, match="begin with h"):
+        pack_joint_state((("scratch", scratch),))
+    with pytest.raises(ValueError, match="ratified order"):
+        pack_joint_state((("h", hidden), ("carrier", scratch), ("lanes", scratch)))
+
+
+def test_pf3_joint_state_jvp_vjp_estimate_matches_dense_full_visit() -> None:
+    hidden = torch.tensor([0.25, -0.75], dtype=torch.float64)
+    scratch = torch.tensor([0.5], dtype=torch.float64)
+    matrix = torch.tensor(
+        ((2.0, 0.5, 0.25), (0.0, 1.5, -0.5), (0.75, 0.0, 1.0)),
+        dtype=torch.float64,
+    )
+
+    def full_visit(values: tuple[torch.Tensor, ...]) -> tuple[torch.Tensor, ...]:
+        h, s = values
+        output = matrix @ torch.cat((h, s))
+        return output[:2], output[2:]
+
+    receipt = estimate_empirical_joint_state_core_factor(
+        full_visit,
+        (("h", hidden), ("scratch", scratch)),
+        max_iterations=64,
+        minimum_iterations=3,
+        convergence_tolerance=1e-6,
+        randomized_probe_pairs=4,
+        seed=13,
+    )
+    expected = torch.linalg.matrix_norm(matrix, ord=2).item()
+
+    assert receipt.core_estimate.converged
+    assert receipt.lambda_hat_core == pytest.approx(expected, rel=1e-5)
+    assert receipt.current_graph_components == ("h", "scratch")
+    assert receipt.absent_ratified_components == ("lanes", "carrier")
+    assert receipt.production_certificate_authorized is False
+    assert receipt.production_alarm_authorized is False
+    assert receipt.topology_complete is False
+
+
+def test_pf3_jacobian_estimators_reject_nonfinite_primal_outputs() -> None:
+    primal = torch.ones(2, dtype=torch.float64)
+
+    def scalar_nan_output(value: torch.Tensor) -> torch.Tensor:
+        return value + torch.full_like(value, float("nan")).detach()
+
+    with pytest.raises(ValueError, match="output must be finite"):
+        estimate_empirical_core_factor(scalar_nan_output, primal)
+
+    def joint_nan_output(
+        values: tuple[torch.Tensor, ...],
+    ) -> tuple[torch.Tensor, ...]:
+        return (values[0] + torch.full_like(values[0], float("nan")).detach(),)
+
+    with pytest.raises(ValueError, match="output components must be finite"):
+        estimate_empirical_joint_state_core_factor(
+            joint_nan_output,
+            (("h", primal),),
+        )
+
+
+def test_pf3_joint_state_receipts_are_nonforgeable_and_legacy_probe_is_non_governing() -> None:
+    core = estimate_empirical_joint_state_core_factor(
+        lambda values: tuple(2.0 * value for value in values),
+        (("h", torch.ones(2, dtype=torch.float64)),),
+        seed=19,
+    )
+    adapter = compose_adapter_certificate(())
+    receipt = make_joint_state_loop_lipschitz_receipt(adapter, core)
+
+    assert core.legacy_model_diagnostic_status == (
+        "non_governing_pre_pf3_dimension_reweighted_hidden_scratch_probe"
+    )
+    assert receipt.two_number_line == (
+        ("Lambda_adapters", 1.0),
+        ("Lambda_hat_core", core.lambda_hat_core),
+    )
+    assert receipt.alarm_threshold is None and receipt.alarm_fired is None
+    with pytest.raises(ValueError, match="legacy Jacobian"):
+        replace(core, legacy_model_diagnostic_status="governing")
+    with pytest.raises(ValueError, match="cannot mint"):
+        replace(core, production_certificate_authorized=True)
+    with pytest.raises(ValueError, match="two-number"):
+        replace(receipt, two_number_line=(("Lambda_hat_core", 0.0),))
+    with pytest.raises(ValueError, match="prohibits an alarm"):
+        replace(receipt, alarm_threshold=1.0)
 
 
 @pytest.mark.parametrize("dtype, tolerance", ((torch.float32, 1e-6), (torch.bfloat16, 1e-2)))

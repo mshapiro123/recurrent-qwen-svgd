@@ -166,17 +166,35 @@ def _manual_static_visit_logits(
     return embedded, visit_logits
 
 
-def test_t1_disabled_graph_is_exactly_the_dense_transformer() -> None:
+@pytest.mark.parametrize("dtype", (torch.float32, torch.bfloat16))
+def test_t1_disabled_graph_is_exactly_the_dense_transformer(
+    dtype: torch.dtype,
+) -> None:
     torch.manual_seed(3)
-    model = _model(_tiny_config()).eval()
+    model = _model(
+        _tiny_config(
+            n_prelude_layers=4,
+            n_core_blocks=2,
+            n_coda_layers=4,
+        )
+    ).eval().to(dtype=dtype)
     tokens = torch.randint(0, 64, (2, 7))
+    labels = torch.randint(0, 64, (2, 7))
 
-    actual = model(tokens).logits
-    reference = _manual_dense_forward(model, tokens)
+    actual = model(tokens, labels=labels)
+    reference_logits = _manual_dense_forward(model, tokens)
+    reference_loss = model._language_model_loss(
+        reference_logits,
+        labels,
+        None,
+        None,
+    )
 
     assert model.lm_head.weight is model.token_embedding.weight
     assert model.loop_embedding is None
-    torch.testing.assert_close(actual, reference, rtol=0, atol=0)
+    assert torch.equal(actual.logits, reference_logits)
+    assert actual.loss is not None
+    assert torch.equal(actual.loss, reference_loss)
 
     with pytest.raises(ValueError, match="structural recurrence"):
         model(tokens, recurrent_steps=2)

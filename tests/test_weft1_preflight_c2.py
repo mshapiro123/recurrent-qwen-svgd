@@ -11,11 +11,14 @@ from analysis.weft1_preflight_c2 import (
     C2_LANE_GRADIENT_RELATIVE_L2_THRESHOLD,
     C2_PF2_AUTHORITY_BYTES,
     C2_PF2_AUTHORITY_SHA256,
+    C2_PF3_AUTHORITY_BYTES,
+    C2_PF3_AUTHORITY_SHA256,
     C2_REPRESENTATIVE_MISSING_FULL_TOY_INTEGRATIONS,
     C2_RATIFIED_VISITS,
     C2_STATE_LOGIT_RELATIVE_L2_THRESHOLD,
-    C2GateCatch,
     C2PreflightReceipt,
+    _GradientTraceTensor,
+    _gradient_drift,
     c2_current_toy_config,
     run_preflight_c2,
 )
@@ -38,6 +41,10 @@ def test_c2_current_toy_configuration_is_exactly_4_2_4_d64_k8() -> None:
     assert C2_PF2_AUTHORITY_SHA256 == (
         "be11390c28ae36210a1571f7c6d358ee54e977d239f5344f7e6402212448eb05"
     )
+    assert C2_PF3_AUTHORITY_BYTES == 14_632
+    assert C2_PF3_AUTHORITY_SHA256 == (
+        "7f0081e504366ce98f8bf183b7e14c0bed47647aa381196a9d5e9540b5334cef"
+    )
     assert C2_RATIFIED_VISITS == 8
     assert (config.n_prelude_layers, config.n_core_blocks, config.n_coda_layers) == (
         4,
@@ -51,7 +58,7 @@ def test_c2_current_toy_configuration_is_exactly_4_2_4_d64_k8() -> None:
     assert config.use_scratch and config.use_lane_carrier
 
 
-def test_c2_pf2_gate_reports_defined_metrics_and_returns_zero_denominator_catch(
+def test_c2_pf3_gate_excludes_valid_ineligible_zeros_and_passes(
     c2_receipt: C2PreflightReceipt,
 ) -> None:
     previous_determinism = torch.are_deterministic_algorithms_enabled()
@@ -65,6 +72,9 @@ def test_c2_pf2_gate_reports_defined_metrics_and_returns_zero_denominator_catch(
     assert receipt.pf2_authority.endswith("#2-PF-2.2")
     assert receipt.pf2_authority_bytes == C2_PF2_AUTHORITY_BYTES
     assert receipt.pf2_authority_sha256 == C2_PF2_AUTHORITY_SHA256
+    assert receipt.pf3_authority.endswith("#2-PF-3.2")
+    assert receipt.pf3_authority_bytes == C2_PF3_AUTHORITY_BYTES
+    assert receipt.pf3_authority_sha256 == C2_PF3_AUTHORITY_SHA256
     assert receipt.visits == 8
     assert len(receipt.per_visit) == 8
     assert tuple(item.visit for item in receipt.per_visit) == tuple(range(1, 9))
@@ -72,7 +82,9 @@ def test_c2_pf2_gate_reports_defined_metrics_and_returns_zero_denominator_catch(
     assert receipt.d_model == 64
     assert receipt.scratch_shape == (2, 8)
     assert "all_requires_grad_named_parameters" in receipt.gradient_population
-    assert "fail_closed_if_zero" in receipt.relative_l2_denominator_policy
+    assert "eligible_zero_or_precision_mismatch_fails" in (
+        receipt.relative_l2_denominator_policy
+    )
     assert receipt.training_performed is False
     assert receipt.checkpoint_used is False
     assert "not_a_learned_checkpoint" in receipt.weight_state
@@ -93,13 +105,16 @@ def test_c2_pf2_gate_reports_defined_metrics_and_returns_zero_denominator_catch(
     assert receipt.thresholds_preregistered is False
     assert "after_observing" in receipt.threshold_binding_disclosure
     assert receipt.threshold_applied is True
-    assert receipt.threshold_passed is False
-    assert receipt.catch_number == 34
-    assert receipt.measurement_status.startswith("catch_34_")
+    assert receipt.threshold_passed is True
+    assert receipt.catch_number is None
+    assert receipt.catch_reason is None
+    assert receipt.measurement_status.startswith(
+        "cpu_current_integrated_composition_pf3_2_complete_gate_passed_"
+    )
     assert "terminal_k8_passed" in receipt.measurement_status
-    assert receipt.catch_reason is not None
-    assert "zero-reference" in receipt.catch_reason
-    assert "zero_reference_eligibility_unbound" in receipt.threshold_metric_binding_status
+    assert "PF-3.2_zero_reference_eligibility" in (
+        receipt.threshold_metric_binding_status
+    )
     assert receipt.full_weft1_toy_step_claim is False
     assert (
         receipt.representative_missing_full_toy_integrations
@@ -112,8 +127,7 @@ def test_c2_pf2_gate_reports_defined_metrics_and_returns_zero_denominator_catch(
     assert "Birkhoff".lower() in receipt.carrier_accumulation_decision.lower()
     assert all(cell.status == "deferred" for cell in receipt.deferred_gpu_cells)
     assert receipt.a100_hours == 0.0
-    with pytest.raises(C2GateCatch, match=r"CATCH #34"):
-        receipt.require_passed()
+    assert receipt.require_passed() is None
     assert receipt.summary.max_hidden_relative_l2 >= 0.0
     assert receipt.summary.max_scratch_lane_relative_l2 >= 0.0
     assert receipt.summary.max_logit_relative_l2 >= 0.0
@@ -151,11 +165,12 @@ def test_c2_pf2_gate_reports_defined_metrics_and_returns_zero_denominator_catch(
     )
     assert receipt.summary.max_relative_loss_drift_visit == 4
 
-    assert receipt.summary.gradient_maxima_complete is False
-    undefined = receipt.summary.undefined_gradient_cells
+    assert receipt.summary.gradient_maxima_complete is True
+    assert receipt.summary.zero_reference_failures == ()
+    excluded = receipt.summary.zero_reference_cells
     assert tuple(
         (cell.visit, cell.module_name, cell.parameter_name)
-        for cell in undefined
+        for cell in excluded
     ) == (
         (1, "reentry_bridge", "reentry_bridge.layer_scale"),
         (
@@ -174,7 +189,11 @@ def test_c2_pf2_gate_reports_defined_metrics_and_returns_zero_denominator_catch(
         and not cell.bf16_autograd_connected
         and cell.fp32_l2 == 0.0
         and cell.bf16_compute_l2 == 0.0
-        for cell in undefined
+        and cell.disposition == "ineligible (zero reference)"
+        and cell.excluded_from_relative_error_population
+        and not cell.structurally_eligible
+        and cell.passed
+        for cell in excluded
     )
     module_maxima = {
         item.module_name: item for item in receipt.summary.per_module_gradient_maxima
@@ -185,8 +204,9 @@ def test_c2_pf2_gate_reports_defined_metrics_and_returns_zero_denominator_catch(
         "reentry_bridge.prelude_norm",
         "reentry_bridge.projection",
     ):
-        assert module_maxima[module_name].complete is False
-        assert module_maxima[module_name].undefined_visits == (1,)
+        assert module_maxima[module_name].complete is True
+        assert module_maxima[module_name].excluded_zero_reference_visits == (1,)
+        assert module_maxima[module_name].failed_zero_reference_visits == ()
         assert module_maxima[module_name].max_relative_l2 is not None
 
     final_visit = receipt.per_visit[-1]
@@ -209,7 +229,7 @@ def test_c2_pf2_gate_reports_defined_metrics_and_returns_zero_denominator_catch(
     assert final_visit.gradient.trainable_parameter_tensors == 143
     assert final_visit.gradient.trainable_parameter_elements == 488_859
     assert final_visit.gradient.complete is True
-    assert final_visit.gradient.undefined_relative_l2_cells == ()
+    assert final_visit.gradient.zero_reference_cells == ()
     assert final_visit.gradient.worst_module_name == "engram"
     assert (
         final_visit.gradient.worst_parameter_name
@@ -270,25 +290,107 @@ def test_c2_receipt_rejects_forged_promotion_and_derived_state(
 ) -> None:
     receipt = c2_receipt
     mutations = (
-        {"threshold_passed": True},
-        {"catch_number": None},
-        {"catch_reason": None},
+        {"threshold_passed": False},
+        {"catch_number": 34},
+        {"catch_reason": "forged"},
         {
             "measurement_status": (
-                "cpu_current_integrated_composition_pf2_2_complete_gate_passed_"
+                "catch_34_pf2_2_zero_reference_population_incomplete_"
                 "terminal_k8_passed_full_weft1_and_carrier_deferred"
             )
         },
         {
             "summary": replace(
                 receipt.summary,
-                gradient_maxima_complete=True,
+                gradient_maxima_complete=False,
             )
         },
         {"terminal_gate": replace(receipt.terminal_gate, passed=False)},
         {"authority_byte_verified": False},
+        {"pf3_authority_sha256": "0" * 64},
+        {"full_weft1_toy_step_claim": True},
+        {"training_performed": True},
+        {"checkpoint_used": True},
+        {"trace_matches_main_forward_fp32": False},
+        {"deferred_gpu_cells": ()},
+        {"a100_hours": 999.0},
+        {"current_composition": "full WEFT-1 integrated"},
+        {"current_integrated_modules": ()},
+        {"representative_missing_full_toy_integrations": ()},
+        {"root_seed": -1},
+        {"config_identity_sha256": "0" * 64},
+        {"input_panel_sha256": "0" * 64},
+        {"initial_model_state_sha256": "0" * 64},
+        {"block_split": (9, 4, 9)},
+        {"cpu_runtime": "forged"},
+        {"torch_version": "forged"},
     )
 
     for updates in mutations:
         with pytest.raises(ValueError, match="C2"):
             replace(receipt, **updates)
+
+
+def test_c2_pf3_zero_reference_cell_invariants_reject_forgery(
+    c2_receipt: C2PreflightReceipt,
+) -> None:
+    cell = c2_receipt.summary.zero_reference_cells[0]
+
+    for updates in (
+        {"passed": False},
+        {"disposition": "fail (eligible zero reference)"},
+        {"excluded_from_relative_error_population": False},
+        {"structurally_eligible": True},
+        {"bf16_compute_l2": 1.0},
+    ):
+        with pytest.raises(ValueError, match="C2 zero-reference"):
+            replace(cell, **updates)
+
+
+def test_c2_pf3_eligible_zero_and_ineligible_precision_mismatch_fail() -> None:
+    nonzero_reference = _GradientTraceTensor(
+        parameter_name="core_blocks.0.weight",
+        value=torch.ones(1),
+        autograd_connected=True,
+    )
+    nonzero_observed = replace(nonzero_reference, value=torch.ones(1))
+    eligible_zero_reference = _GradientTraceTensor(
+        parameter_name="core_blocks.0.bias",
+        value=torch.zeros(1),
+        autograd_connected=True,
+    )
+    eligible_zero_observed = replace(
+        eligible_zero_reference,
+        value=torch.zeros(1),
+    )
+    eligible_failure = _gradient_drift(
+        (nonzero_reference, eligible_zero_reference),
+        (nonzero_observed, eligible_zero_observed),
+        visit=1,
+    )
+
+    assert eligible_failure.complete is False
+    assert eligible_failure.zero_reference_cells[0].disposition == (
+        "fail (eligible zero reference)"
+    )
+    assert not eligible_failure.zero_reference_cells[0].passed
+
+    ineligible_zero_reference = _GradientTraceTensor(
+        parameter_name="reentry_bridge.layer_scale",
+        value=torch.zeros(1),
+        autograd_connected=False,
+    )
+    ineligible_nonzero_observed = replace(
+        ineligible_zero_reference,
+        value=torch.ones(1),
+    )
+    mismatch_failure = _gradient_drift(
+        (nonzero_reference, ineligible_zero_reference),
+        (nonzero_observed, ineligible_nonzero_observed),
+        visit=1,
+    )
+
+    assert mismatch_failure.complete is False
+    assert mismatch_failure.zero_reference_cells[0].disposition == (
+        "fail (ineligible precision mismatch)"
+    )

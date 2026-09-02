@@ -70,6 +70,64 @@ class SidecarFactorReceipt:
     pre_gate_mixture_norm_bound: float
     pre_gate_mixture_exact_norm: float
 
+    def __post_init__(self) -> None:
+        if not 1 <= len(self.selected_weights) <= 3:
+            raise ValueError("sidecar receipt requires one to three selected experts")
+        if len(self.per_expert_product_bounds) != len(self.selected_weights):
+            raise ValueError("sidecar receipt weights and expert bounds must align")
+        if not all(
+            math.isfinite(value) and value >= 0.0
+            for value in self.selected_weights
+        ):
+            raise ValueError("sidecar receipt weights must be finite and non-negative")
+        if not all(
+            math.isfinite(value) and value >= 0.0
+            for value in self.per_expert_product_bounds
+        ):
+            raise ValueError("sidecar expert product bounds must be finite and non-negative")
+        if not math.isfinite(self.absolute_gate) or self.absolute_gate < 0.0:
+            raise ValueError("sidecar absolute gate must be finite and non-negative")
+        expected_l1 = sum(self.selected_weights)
+        if not math.isclose(self.weight_l1, expected_l1, rel_tol=1e-12, abs_tol=1e-12):
+            raise ValueError("sidecar weight_l1 is inconsistent")
+        expected_mixture_bound = sum(
+            weight * bound
+            for weight, bound in zip(
+                self.selected_weights,
+                self.per_expert_product_bounds,
+                strict=True,
+            )
+        )
+        if not math.isclose(
+            self.pre_gate_mixture_norm_bound,
+            expected_mixture_bound,
+            rel_tol=1e-12,
+            abs_tol=1e-12,
+        ):
+            raise ValueError("sidecar pre-gate mixture bound is inconsistent")
+        if (
+            not math.isfinite(self.pre_gate_mixture_exact_norm)
+            or self.pre_gate_mixture_exact_norm < 0.0
+            or self.pre_gate_mixture_exact_norm
+            > self.pre_gate_mixture_norm_bound + 1e-12
+        ):
+            raise ValueError("sidecar exact mixture norm exceeds its certified bound")
+        expected_factor_bound = 1.0 + self.absolute_gate * expected_mixture_bound
+        if not math.isclose(
+            self.factor.bound,
+            expected_factor_bound,
+            rel_tol=1e-12,
+            abs_tol=1e-12,
+        ):
+            raise ValueError("sidecar residual factor bound is inconsistent")
+        if (
+            self.factor.bound_source
+            != "triangle_inequality_over_exact_factor_svd_norms"
+            or self.factor.formula
+            != "1 + |g| * sum_e w_e ||A_e||_2 ||B_e||_2"
+        ):
+            raise ValueError("sidecar factor source or formula is inconsistent")
+
 
 @dataclass(frozen=True)
 class AdapterCertificateReceipt:
@@ -105,6 +163,7 @@ class CoreEstimateReceipt:
     rayleigh_quotient_sequence: tuple[float, ...]
     last_relative_change: float | None
     iterations: int
+    minimum_iterations: int
     convergence_tolerance: float
     converged: bool
     randomized_probe_pair_gains: tuple[tuple[float, float], ...]
@@ -123,6 +182,8 @@ class CoreEstimateReceipt:
             raise ValueError("core estimate values must be finite and non-negative")
         if self.iterations != len(self.rayleigh_quotient_sequence) or self.iterations < 1:
             raise ValueError("iteration count must match the Rayleigh sequence")
+        if not 1 <= self.minimum_iterations <= self.iterations:
+            raise ValueError("minimum iteration count is inconsistent")
         if self.convergence_tolerance <= 0.0:
             raise ValueError("convergence tolerance must be positive")
         if self.last_relative_change is not None and (
@@ -131,6 +192,228 @@ class CoreEstimateReceipt:
             raise ValueError("last relative change must be finite and non-negative")
         if self.semantics != "empirical_local_lower_estimate_not_a_certificate":
             raise ValueError("core estimate semantics are fixed and fail-closed")
+        if not all(
+            math.isfinite(value) and value >= 0.0
+            for value in self.rayleigh_quotient_sequence
+        ):
+            raise ValueError("Rayleigh quotient sequence must be finite and non-negative")
+        expected_power = math.sqrt(self.rayleigh_quotient_sequence[-1])
+        if not math.isclose(
+            self.power_iteration_estimate,
+            expected_power,
+            rel_tol=1e-12,
+            abs_tol=1e-12,
+        ):
+            raise ValueError("power estimate must equal the final Rayleigh square root")
+        if not self.randomized_probe_pair_gains:
+            raise ValueError("at least one randomized probe pair is required")
+        flat_probe_gains = tuple(
+            gain for pair in self.randomized_probe_pair_gains for gain in pair
+        )
+        if any(len(pair) != 2 for pair in self.randomized_probe_pair_gains) or not all(
+            math.isfinite(gain) and gain >= 0.0 for gain in flat_probe_gains
+        ):
+            raise ValueError("randomized probe gains must be finite non-negative pairs")
+        expected_probe_bound = max(flat_probe_gains)
+        if not math.isclose(
+            self.paired_randomized_lower_bound,
+            expected_probe_bound,
+            rel_tol=1e-12,
+            abs_tol=1e-12,
+        ):
+            raise ValueError("paired randomized lower bound is inconsistent")
+        expected_lambda_hat = max(expected_power, expected_probe_bound)
+        if not math.isclose(
+            self.lambda_hat_core,
+            expected_lambda_hat,
+            rel_tol=1e-12,
+            abs_tol=1e-12,
+        ):
+            raise ValueError("lambda_hat_core must equal the strongest empirical lower estimate")
+        if self.iterations >= 2:
+            previous = self.rayleigh_quotient_sequence[-2]
+            expected_change = abs(
+                self.rayleigh_quotient_sequence[-1] - previous
+            ) / max(abs(previous), 1e-30)
+            if self.last_relative_change is None or not math.isclose(
+                self.last_relative_change,
+                expected_change,
+                rel_tol=1e-12,
+                abs_tol=1e-12,
+            ):
+                raise ValueError("last relative change is inconsistent")
+        expected_converged = (
+            self.iterations >= self.minimum_iterations
+            and self.last_relative_change is not None
+            and self.last_relative_change < self.convergence_tolerance
+            and expected_probe_bound
+            <= expected_power * (1.0 + self.convergence_tolerance)
+        )
+        if self.converged is not expected_converged:
+            raise ValueError("core convergence disposition is inconsistent")
+
+
+_JOINT_STATE_COMPONENT_ORDER = ("h", "lanes", "scratch", "carrier")
+_JOINT_STATE_METRIC = "plain_euclidean_concatenation_no_per_block_reweighting"
+
+
+@dataclass(frozen=True)
+class JointStateLayout:
+    """Shape receipt for ``z=[h; lanes; scratch; carrier-when-integrated]``.
+
+    Components that are absent from the current graph are omitted, never
+    represented by fabricated zeros. Packing is a literal flatten-and-concatenate
+    operation, so the packed Euclidean norm is exactly the Euclidean norm on the
+    direct-sum state with no component weighting.
+    """
+
+    component_names: tuple[str, ...]
+    component_shapes: tuple[tuple[int, ...], ...]
+    component_numels: tuple[int, ...]
+    total_numel: int
+    metric: str = _JOINT_STATE_METRIC
+
+    def __post_init__(self) -> None:
+        count = len(self.component_names)
+        if count < 1 or count != len(self.component_shapes) or count != len(
+            self.component_numels
+        ):
+            raise ValueError("joint-state layout fields must have equal nonzero length")
+        if self.component_names[0] != "h":
+            raise ValueError("joint-state layout must begin with h")
+        if len(set(self.component_names)) != count:
+            raise ValueError("joint-state component names must be unique")
+        order_indices: list[int] = []
+        for name in self.component_names:
+            if name not in _JOINT_STATE_COMPONENT_ORDER:
+                raise ValueError(f"unknown joint-state component: {name}")
+            order_indices.append(_JOINT_STATE_COMPONENT_ORDER.index(name))
+        if order_indices != sorted(order_indices):
+            raise ValueError("joint-state components must follow the ratified order")
+        expected_numels: list[int] = []
+        for shape in self.component_shapes:
+            if not shape or any(type(size) is not int or size < 1 for size in shape):
+                raise ValueError("joint-state component shapes must be positive")
+            expected_numels.append(math.prod(shape))
+        if tuple(expected_numels) != self.component_numels:
+            raise ValueError("joint-state component numels do not match their shapes")
+        if self.total_numel != sum(expected_numels):
+            raise ValueError("joint-state total numel is inconsistent")
+        if self.metric != _JOINT_STATE_METRIC:
+            raise ValueError("joint-state metric is fixed to plain Euclidean concatenation")
+
+    def unpack(self, packed: torch.Tensor) -> tuple[torch.Tensor, ...]:
+        """Unpack one rank-one joint vector without changing any scale."""
+
+        if packed.ndim != 1 or packed.numel() != self.total_numel:
+            raise ValueError("packed joint state does not match its layout")
+        values: list[torch.Tensor] = []
+        offset = 0
+        for shape, numel in zip(
+            self.component_shapes,
+            self.component_numels,
+            strict=True,
+        ):
+            values.append(packed[offset : offset + numel].reshape(shape))
+            offset += numel
+        return tuple(values)
+
+    def pack(self, values: Sequence[torch.Tensor]) -> torch.Tensor:
+        """Pack values against this exact layout with no component weighting."""
+
+        value_tuple = tuple(values)
+        if len(value_tuple) != len(self.component_names):
+            raise ValueError("joint-state output component count changed")
+        reference = value_tuple[0]
+        if not reference.is_floating_point():
+            raise TypeError("joint-state components must be floating point")
+        flattened: list[torch.Tensor] = []
+        for value, shape in zip(value_tuple, self.component_shapes, strict=True):
+            if tuple(value.shape) != shape:
+                raise ValueError("joint-state output component shape changed")
+            if (
+                not value.is_floating_point()
+                or value.device != reference.device
+                or value.dtype != reference.dtype
+            ):
+                raise TypeError("joint-state components must share device and dtype")
+            if not bool(torch.isfinite(value).all()):
+                raise ValueError("joint-state output components must be finite")
+            flattened.append(value.reshape(-1))
+        return torch.cat(flattened)
+
+
+@dataclass(frozen=True)
+class JointStateCoreEstimateReceipt:
+    """PF-3.3 local estimate on a complete current-graph joint-state visit."""
+
+    layout: JointStateLayout
+    core_estimate: CoreEstimateReceipt
+    lambda_hat_core: float
+    visit_scope: str
+    current_graph_components: tuple[str, ...]
+    absent_ratified_components: tuple[str, ...]
+    legacy_model_diagnostic_status: str
+    production_certificate_authorized: bool = False
+    production_alarm_authorized: bool = False
+    topology_complete: bool = False
+
+    def __post_init__(self) -> None:
+        if self.lambda_hat_core != self.core_estimate.lambda_hat_core:
+            raise ValueError("joint-state lambda_hat_core must come from the core estimate")
+        if self.current_graph_components != self.layout.component_names:
+            raise ValueError("joint-state component receipt does not match its layout")
+        expected_absent = tuple(
+            name
+            for name in _JOINT_STATE_COMPONENT_ORDER
+            if name not in self.current_graph_components
+        )
+        if self.absent_ratified_components != expected_absent:
+            raise ValueError("joint-state absent-component receipt is inconsistent")
+        if self.visit_scope != "full_current_graph_recurrent_visit":
+            raise ValueError("joint-state estimate scope is fixed")
+        if self.legacy_model_diagnostic_status != (
+            "non_governing_pre_pf3_dimension_reweighted_hidden_scratch_probe"
+        ):
+            raise ValueError("legacy Jacobian diagnostic status is fixed and fail-closed")
+        if (
+            self.production_certificate_authorized
+            or self.production_alarm_authorized
+            or self.topology_complete
+        ):
+            raise ValueError(
+                "incomplete PF-3.3 topology cannot mint a production certificate or alarm"
+            )
+
+
+@dataclass(frozen=True)
+class JointStateLoopLipschitzReceipt:
+    """PF-3.3 two-number line with certified and empirical roles separated."""
+
+    adapter_certificate: AdapterCertificateReceipt
+    joint_core_estimate: JointStateCoreEstimateReceipt
+    lambda_adapters: float
+    lambda_hat_core: float
+    two_number_line: tuple[tuple[str, float], ...]
+    production_claim: str = "current_graph_measurement_only_topology_incomplete"
+    alarm_threshold: float | None = None
+    alarm_fired: bool | None = None
+
+    def __post_init__(self) -> None:
+        if self.lambda_adapters != self.adapter_certificate.lambda_adapters:
+            raise ValueError("joint loop lambda_adapters must come from certified factors")
+        if self.lambda_hat_core != self.joint_core_estimate.lambda_hat_core:
+            raise ValueError("joint loop lambda_hat_core must come from the joint estimate")
+        expected_line = (
+            ("Lambda_adapters", self.lambda_adapters),
+            ("Lambda_hat_core", self.lambda_hat_core),
+        )
+        if self.two_number_line != expected_line:
+            raise ValueError("joint loop two-number line is inconsistent")
+        if self.production_claim != "current_graph_measurement_only_topology_incomplete":
+            raise ValueError("joint loop production claim is fixed and fail-closed")
+        if self.alarm_threshold is not None or self.alarm_fired is not None:
+            raise ValueError("PF-3.3 prohibits an alarm while topology is incomplete")
 
 
 @dataclass(frozen=True)
@@ -270,24 +553,27 @@ def certify_rotor_factor(
     orthogonality_certified_by_construction: bool,
     name: str = "rotor",
 ) -> CertifiedAdapterFactor:
-    """Use one only for a construction certificate; otherwise use exact SVD."""
+    """Require an explicit operator witness for every rotor certificate."""
 
     if orthogonality_certified_by_construction:
-        if operator is not None:
-            _spectral_norm(operator, name="rotor operator")
-            if operator.shape[0] != operator.shape[1]:
-                raise ValueError("a certified orthogonal rotor operator must be square")
-            operator64 = operator.detach().double()
-            gram = operator64.T @ operator64
-            identity = torch.eye(
-                operator64.shape[1],
-                device=operator64.device,
-                dtype=operator64.dtype,
+        if operator is None:
+            raise ValueError(
+                "an orthogonality-by-construction rotor requires its explicit operator witness"
             )
-            if not bool(torch.allclose(gram, identity, rtol=1e-6, atol=1e-6)):
-                raise ValueError(
-                    "operator conflicts with its orthogonality-by-construction claim"
-                )
+        _spectral_norm(operator, name="rotor operator")
+        if operator.shape[0] != operator.shape[1]:
+            raise ValueError("a certified orthogonal rotor operator must be square")
+        operator64 = operator.detach().double()
+        gram = operator64.T @ operator64
+        identity = torch.eye(
+            operator64.shape[1],
+            device=operator64.device,
+            dtype=operator64.dtype,
+        )
+        if not bool(torch.allclose(gram, identity, rtol=1e-6, atol=1e-6)):
+            raise ValueError(
+                "operator conflicts with its orthogonality-by-construction claim"
+            )
         return CertifiedAdapterFactor(
             name=name,
             bound=1.0,
@@ -326,6 +612,17 @@ def certify_linear_factor(
     )
 
 
+def certify_state_translation_factor(*, name: str) -> CertifiedAdapterFactor:
+    """Certify ``z -> z + c`` when ``c`` is fixed with respect to state."""
+
+    return CertifiedAdapterFactor(
+        name=name,
+        bound=1.0,
+        bound_source="analytic_state_translation_jacobian_identity",
+        formula="||d(z + c)/dz||_2 = ||I||_2 = 1",
+    )
+
+
 def absent_weft1_adapter_placeholders() -> tuple[AdapterFactorPlaceholder, ...]:
     """Named PF-1.4 formulas for modules not yet in the production graph."""
 
@@ -333,7 +630,9 @@ def absent_weft1_adapter_placeholders() -> tuple[AdapterFactorPlaceholder, ...]:
         AdapterFactorPlaceholder(
             name="integrated_rotor_carrier",
             formula="||R||_2 = 1 when orthogonality is certified; else exact ||R||_2",
-            required_bound_source="Cl(2,0) construction certificate or exact structured SVD",
+            required_bound_source=(
+                "explicit Cl(2,0) operator construction witness or exact structured SVD"
+            ),
         ),
         AdapterFactorPlaceholder(
             name="per_band_callosum",
@@ -414,6 +713,8 @@ def estimate_empirical_core_factor(
     output, vjp = torch.func.vjp(function, primal)
     if not isinstance(output, torch.Tensor) or not output.is_floating_point():
         raise TypeError("core function must return one floating-point tensor")
+    if not bool(torch.isfinite(output).all()):
+        raise ValueError("core function output must be finite at the primal")
 
     rayleigh: list[float] = []
     last_relative_change: float | None = None
@@ -467,11 +768,109 @@ def estimate_empirical_core_factor(
         rayleigh_quotient_sequence=tuple(rayleigh),
         last_relative_change=last_relative_change,
         iterations=len(rayleigh),
+        minimum_iterations=minimum_iterations,
         convergence_tolerance=convergence_tolerance,
         converged=converged,
         randomized_probe_pair_gains=tuple(pair_gains),
         paired_randomized_lower_bound=randomized_lower_bound,
         seed=int(seed),
+    )
+
+
+def pack_joint_state(
+    components: Sequence[tuple[str, torch.Tensor]],
+) -> tuple[torch.Tensor, JointStateLayout]:
+    """Pack a named PF-3.3 state and return its immutable shape receipt."""
+
+    component_tuple = tuple(components)
+    if not component_tuple:
+        raise ValueError("joint state requires at least h")
+    names = tuple(name for name, _value in component_tuple)
+    values = tuple(value for _name, value in component_tuple)
+    reference = values[0]
+    if not reference.is_floating_point():
+        raise TypeError("joint-state components must be floating point")
+    for name, value in component_tuple:
+        if not isinstance(name, str) or not name:
+            raise ValueError("joint-state names must be non-empty strings")
+        if (
+            not value.is_floating_point()
+            or value.device != reference.device
+            or value.dtype != reference.dtype
+        ):
+            raise TypeError("joint-state components must share device and dtype")
+        if not bool(torch.isfinite(value).all()):
+            raise ValueError("joint-state components must be finite")
+    shapes = tuple(tuple(value.shape) for value in values)
+    numels = tuple(value.numel() for value in values)
+    layout = JointStateLayout(
+        component_names=names,
+        component_shapes=shapes,
+        component_numels=numels,
+        total_numel=sum(numels),
+    )
+    return layout.pack(values), layout
+
+
+def estimate_empirical_joint_state_core_factor(
+    function: Callable[[tuple[torch.Tensor, ...]], tuple[torch.Tensor, ...]],
+    components: Sequence[tuple[str, torch.Tensor]],
+    *,
+    max_iterations: int = 32,
+    minimum_iterations: int = 3,
+    convergence_tolerance: float = 1e-3,
+    randomized_probe_pairs: int = 4,
+    seed: int = 0,
+) -> JointStateCoreEstimateReceipt:
+    """Estimate ``J`` for a full visit on the plain-Euclidean joint state."""
+
+    packed, layout = pack_joint_state(components)
+
+    def packed_transition(state: torch.Tensor) -> torch.Tensor:
+        output = function(layout.unpack(state))
+        if not isinstance(output, tuple):
+            raise TypeError("joint-state transition must return an exact tuple")
+        return layout.pack(output)
+
+    estimate = estimate_empirical_core_factor(
+        packed_transition,
+        packed,
+        max_iterations=max_iterations,
+        minimum_iterations=minimum_iterations,
+        convergence_tolerance=convergence_tolerance,
+        randomized_probe_pairs=randomized_probe_pairs,
+        seed=seed,
+    )
+    return JointStateCoreEstimateReceipt(
+        layout=layout,
+        core_estimate=estimate,
+        lambda_hat_core=estimate.lambda_hat_core,
+        visit_scope="full_current_graph_recurrent_visit",
+        current_graph_components=layout.component_names,
+        absent_ratified_components=tuple(
+            name for name in _JOINT_STATE_COMPONENT_ORDER if name not in layout.component_names
+        ),
+        legacy_model_diagnostic_status=(
+            "non_governing_pre_pf3_dimension_reweighted_hidden_scratch_probe"
+        ),
+    )
+
+
+def make_joint_state_loop_lipschitz_receipt(
+    adapter_certificate: AdapterCertificateReceipt,
+    joint_core_estimate: JointStateCoreEstimateReceipt,
+) -> JointStateLoopLipschitzReceipt:
+    """Emit PF-3.3's two numbers without promoting either one's role."""
+
+    return JointStateLoopLipschitzReceipt(
+        adapter_certificate=adapter_certificate,
+        joint_core_estimate=joint_core_estimate,
+        lambda_adapters=adapter_certificate.lambda_adapters,
+        lambda_hat_core=joint_core_estimate.lambda_hat_core,
+        two_number_line=(
+            ("Lambda_adapters", adapter_certificate.lambda_adapters),
+            ("Lambda_hat_core", joint_core_estimate.lambda_hat_core),
+        ),
     )
 
 
