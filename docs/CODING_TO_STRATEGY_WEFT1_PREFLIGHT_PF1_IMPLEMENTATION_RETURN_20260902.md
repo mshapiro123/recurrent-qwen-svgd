@@ -3,6 +3,7 @@
 **Date:** 2026-09-02  
 **Status:** FAIL-CLOSED CPU RECEIPT · PF-1.1–1.5 implemented where executable · no PRE-FLIGHT GPU spend  
 **Authority:** `STRATEGY_PREFLIGHT_AMENDMENT_PF1_20260902.md`, 12,285 bytes, SHA-256 `4e3186c432b57f71b9f32a444a269eec08557ca5181a6896b477078dbbb40861`, Drive `14czHXHXYMSx4zJKay7lCr0QmNCuWE1q4`
+**Implementation commit:** `4ca0236c6c31c1da3abf1cdf20a66ef859e452b9`
 
 ## 0. Outcome
 

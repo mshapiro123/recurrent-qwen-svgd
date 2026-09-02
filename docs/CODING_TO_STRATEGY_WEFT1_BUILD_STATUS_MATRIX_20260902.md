@@ -3,7 +3,7 @@
 **Date:** 2026-09-02  
 **Status:** BUILD-AXIS RECEIPT · no training or sealed-data contact  
 **Snapshot base:** `04eb51373b35684d3f4865b6c50c78a9cb7a43e0`  
-**PF-1 implementation commit:** recorded after the implementation commit is minted; no worktree-only result will be published without that identity  
+**PF-1 implementation commit:** `4ca0236c6c31c1da3abf1cdf20a66ef859e452b9`
 **Architecture authority:** full build handoff, 61,329 bytes, SHA-256 `498f34b5…eb02`, Drive `1XaE81mfqTOYEYGFMa-ZJwpLW-KQtMMC_`  
 **Ratification authority:** `STRATEGY_RATIFICATION_RECORD_20260826.md`, 13,908 bytes, SHA-256 `c5df74297594e75697ffb71d8d05d75efcf94f7857d55ddd357043200efb6d3a`, Drive `1Wb_FfEb-Sl-TgL23hcFOy58QcSurfaF3`  
 **Status authority:** PF-1, 12,285 bytes, SHA-256 `4e3186c432b57f71b9f32a444a269eec08557ca5181a6896b477078dbbb40861`, Drive `14czHXHXYMSx4zJKay7lCr0QmNCuWE1q4`
