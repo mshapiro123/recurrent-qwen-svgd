@@ -1,4 +1,4 @@
-"""Standalone full-width bicameral Transformer core with fixed-context K/V."""
+"""Standalone full-width bicameral Transformer core with policy-owned K/V."""
 
 from __future__ import annotations
 
@@ -12,10 +12,27 @@ from torch import nn
 
 from .bicameral import SwapLinear
 from .layers import RMSNorm, RotaryEmbedding
+from .optim import mark_muon_eligible
 from .rng import derive_module_seed
 
 
-_PROJECTION_NAMES = ("q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj")
+_PAIRED_PROJECTION_NAMES = (
+    "q_proj",
+    "o_proj",
+    "gate_proj",
+    "up_proj",
+    "down_proj",
+)
+_SHARED_KV_PROJECTION_NAMES = ("k_proj", "v_proj")
+_PROJECTION_NAMES = (
+    "q_proj",
+    "k_proj",
+    "v_proj",
+    "o_proj",
+    "gate_proj",
+    "up_proj",
+    "down_proj",
+)
 
 
 def _positive_integer(value: int, *, name: str) -> int:
@@ -36,10 +53,11 @@ def _finite_real_above(value: float, *, name: str, floor: float) -> float:
 
 @dataclass(frozen=True)
 class BicameralProjectedKeyValue:
-    """One block-owned fixed-context cache for both hemispheres.
+    """One block-owned K/V payload for both hemispheres.
 
     Keys remain in grouped-query form.  The position receipt is cloned when the
-    cache is built and shared by all four payload tensors through this envelope.
+    payload is built and shared by all four tensors through this envelope.  The
+    K/V weights are shared; A/B tensors differ only when their source states do.
     """
 
     key_a: torch.Tensor
@@ -53,10 +71,11 @@ class BicameralProjectedKeyValue:
 class BicameralTransformerBlock(nn.Module):
     """Full-width paired Transformer block in swap-eigenmode coordinates.
 
-    All seven dense projections are :class:`SwapLinear` modules.  RMSNorms and
-    RoPE are shared between hemispheres.  Queries are projected from the live
-    ``h_A``/``h_B`` states, while both hemispheres consume one block-owned K/V
-    cache projected from the same fixed ``h_0`` source.
+    Q/O/gate/up/down are :class:`SwapLinear` modules. K/V are ordinary shared-
+    weight, mean-mode-only dense maps. RMSNorms and RoPE are shared between
+    hemispheres. The recurrence owner chooses whether the K/V source is live,
+    static, or refreshed at the midpoint; this block only projects and validates
+    the source states it is given.
 
     Attention dropout is structurally fixed at zero.  The block therefore
     consumes no dropout draws and cannot shift any other module's RNG stream.
@@ -158,18 +177,14 @@ class BicameralTransformerBlock(nn.Module):
             sigma_delta0=sigma_delta0,
             seed=projection_seeds["q_proj"],
         )
-        self.k_proj = SwapLinear(
+        self.k_proj = self._shared_dense_projection(
             self.d_model,
             self.kv_width,
-            rank=self.rank,
-            sigma_delta0=sigma_delta0,
             seed=projection_seeds["k_proj"],
         )
-        self.v_proj = SwapLinear(
+        self.v_proj = self._shared_dense_projection(
             self.d_model,
             self.kv_width,
-            rank=self.rank,
-            sigma_delta0=sigma_delta0,
             seed=projection_seeds["v_proj"],
         )
         self.o_proj = SwapLinear(
@@ -203,15 +218,43 @@ class BicameralTransformerBlock(nn.Module):
 
     @property
     def swap_linears(self) -> tuple[SwapLinear, ...]:
-        """Return the seven coupled projections in execution order."""
+        """Return the five ratified paired projections in execution order."""
 
-        return tuple(getattr(self, name) for name in _PROJECTION_NAMES)
+        return tuple(getattr(self, name) for name in _PAIRED_PROJECTION_NAMES)
+
+    @property
+    def shared_kv_linears(self) -> tuple[nn.Linear, nn.Linear]:
+        """Return the two shared-weight, mean-mode-only K/V projections."""
+
+        return self.k_proj, self.v_proj
 
     @property
     def disagreement_parameter_count(self) -> int:
-        """Return the exact parameter delta over seven ordinary dense maps."""
+        """Return the exact parameter delta over the five paired dense maps."""
 
         return sum(layer.dU.numel() + layer.dV.numel() for layer in self.swap_linears)
+
+    @staticmethod
+    def _shared_dense_projection(d_in: int, d_out: int, *, seed: int) -> nn.Linear:
+        """Build a deterministic ordinary dense map without advancing global RNG."""
+
+        ambient_state = torch.random.get_rng_state()
+        try:
+            projection = nn.Linear(d_in, d_out, bias=False)
+        finally:
+            torch.random.set_rng_state(ambient_state)
+        generator = torch.Generator(device="cpu").manual_seed(seed)
+        initialized = torch.randn(
+            d_out,
+            d_in,
+            generator=generator,
+            dtype=torch.float32,
+        ) * d_in**-0.5
+        with torch.no_grad():
+            projection.weight.copy_(initialized)
+        if not bool(torch.isfinite(projection.weight.detach()).all()):
+            raise FloatingPointError("shared K/V initialization is not finite")
+        return mark_muon_eligible(projection)
 
     def _split_heads(self, values: torch.Tensor, heads: int) -> torch.Tensor:
         batch, length, _ = values.shape
@@ -259,21 +302,40 @@ class BicameralTransformerBlock(nn.Module):
 
     def project_kv(
         self,
-        h0: torch.Tensor,
+        h_a: torch.Tensor,
+        h_b: torch.Tensor | None = None,
         *,
         position_ids: torch.Tensor | None = None,
     ) -> BicameralProjectedKeyValue:
-        """Project one reusable paired K/V cache from the fixed ``h0`` stream."""
+        """Project shared-weight K/V from one or two hemisphere-owned states.
 
-        self._validate_hidden(h0, name="h0")
-        positions = self._positions_for(h0, position_ids, clone=True)
-        normalized = self.attention_norm(h0)
-        key_a = self.key_norm(self._split_heads(self.k_proj(normalized, +1), self.n_kv_heads))
-        key_b = self.key_norm(self._split_heads(self.k_proj(normalized, -1), self.n_kv_heads))
-        key_a = self.rope.apply_rotary(key_a, positions)
-        key_b = self.rope.apply_rotary(key_b, positions)
-        value_a = self._split_heads(self.v_proj(normalized, +1), self.n_kv_heads)
-        value_b = self._split_heads(self.v_proj(normalized, -1), self.n_kv_heads)
+        Omitting ``h_b`` is the static shared-anchor form and projects only once;
+        both envelope entries then reference the same tensor. Supplying ``h_b``
+        is the live/midpoint form: each hemisphere is projected independently by
+        the same K/V weights, with no read from the other hemisphere.
+        """
+
+        self._validate_hidden(h_a, name="h_a")
+        if h_b is not None:
+            self._validate_hidden(h_b, name="h_b")
+            if h_a.shape != h_b.shape:
+                raise ValueError("h_a and h_b must have identical shapes")
+        positions = self._positions_for(h_a, position_ids, clone=True)
+
+        def project_one(hidden: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+            normalized = self.attention_norm(hidden)
+            key = self.key_norm(
+                self._split_heads(self.k_proj(normalized), self.n_kv_heads)
+            )
+            key = self.rope.apply_rotary(key, positions)
+            value = self._split_heads(self.v_proj(normalized), self.n_kv_heads)
+            return key, value
+
+        key_a, value_a = project_one(h_a)
+        if h_b is None:
+            key_b, value_b = key_a, value_a
+        else:
+            key_b, value_b = project_one(h_b)
         return BicameralProjectedKeyValue(
             key_a=key_a,
             value_a=value_a,
@@ -416,7 +478,11 @@ class BicameralTransformerBlock(nn.Module):
             row_has_key = sdpa_mask.any(dim=-1, keepdim=True)
             scores = torch.where(row_has_key, scores, torch.zeros_like(scores))
             probabilities = torch.softmax(scores.float(), dim=-1).to(query.dtype)
-            probabilities = torch.where(row_has_key, probabilities, torch.zeros_like(probabilities))
+            probabilities = torch.where(
+                row_has_key,
+                probabilities,
+                torch.zeros_like(probabilities),
+            )
             attended = probabilities @ value
         else:
             attended = F.scaled_dot_product_attention(
@@ -447,6 +513,8 @@ class BicameralTransformerBlock(nn.Module):
         document_ids: torch.Tensor | None = None,
         residual_scale: float = 1.0,
         force_math_attention: bool = False,
+        execution_events: list[str] | None = None,
+        execution_prefix: str | None = None,
     ) -> tuple[torch.Tensor, torch.Tensor]:
         """Apply one full-width paired pass using a caller-owned static cache."""
 
@@ -459,6 +527,14 @@ class BicameralTransformerBlock(nn.Module):
         scale = float(residual_scale)
         if not math.isfinite(scale):
             raise ValueError("residual_scale must be finite")
+        if (execution_events is None) != (execution_prefix is None):
+            raise ValueError(
+                "execution_events and execution_prefix must be supplied together"
+            )
+        if execution_events is not None and not isinstance(execution_events, list):
+            raise TypeError("execution_events must be a list or None")
+        if execution_prefix is not None and not execution_prefix:
+            raise ValueError("execution_prefix must be nonempty")
         attention_a = self._attention(
             h_a,
             hemi=+1,
@@ -481,6 +557,10 @@ class BicameralTransformerBlock(nn.Module):
         )
         h_a = h_a + scale * attention_a
         h_b = h_b + scale * attention_b
+        if execution_events is not None:
+            execution_events.append(f"{execution_prefix}.attention")
         h_a = h_a + scale * self._ffn(h_a, hemi=+1)
         h_b = h_b + scale * self._ffn(h_b, hemi=-1)
+        if execution_events is not None:
+            execution_events.append(f"{execution_prefix}.feed_forward")
         return h_a, h_b

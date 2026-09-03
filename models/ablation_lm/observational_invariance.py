@@ -57,6 +57,20 @@ OBS_INV_MODULE_SPECS: Final = (
         "projects every core block's K/V from the fixed prelude anchor",
     ),
     ObservationalInvarianceModuleSpec(
+        "bicameral_core", True, 1, ("recurrence",),
+        (
+            "the paired core executes at every visit; structural OFF zeros all "
+            "five delta factorizations"
+        ),
+    ),
+    ObservationalInvarianceModuleSpec(
+        "bicameral_combiner", True, 1, ("recurrence", "bicameral_core"),
+        (
+            "the terminal S-2 read executes once; structural OFF is theta=0 "
+            "consensus read"
+        ),
+    ),
+    ObservationalInvarianceModuleSpec(
         "reentry_bridge", True, 2, ("recurrence",),
         "visit zero deliberately bypasses recurrent re-entry",
     ),

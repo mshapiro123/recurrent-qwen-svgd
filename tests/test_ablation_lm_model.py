@@ -647,6 +647,16 @@ def test_full_active_graph_is_causal_under_future_token_perturbation() -> None:
     torch.testing.assert_close(original_logits[:, :5], changed_logits[:, :5], rtol=0, atol=0)
 
 
+def test_diagnostic_forward_receipts_the_ratified_engram_gate_form() -> None:
+    config = _tiny_config(use_engram=True)
+    model = _model(config).eval()
+    tokens = torch.tensor([[1, 2, 3, 4]])
+
+    diagnostics = model(tokens, return_diagnostics=True).diagnostics
+
+    assert diagnostics["engram"]["gate_form"] == "EG-1"
+
+
 def test_packed_document_boundaries_isolate_attention_engram_and_scratch() -> None:
     torch.manual_seed(9)
     config = _tiny_config(

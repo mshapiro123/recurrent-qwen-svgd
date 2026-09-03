@@ -7,6 +7,7 @@ import math
 
 from torch import nn
 
+from .bicameral_recurrent import expected_bicameral_visit_schedules
 from .config import (
     RATIFIED_TARGET_AUTHORITY,
     RATIFIED_TARGET_D_MODEL,
@@ -67,6 +68,9 @@ class CompositionReceipt:
     sidecar_firing_fraction_by_step: tuple[float, ...]
     coda_decodes_per_step: int
     lstage_sampled_visit: int | None
+    kv_policy: str
+    kv_cache_multiplier_at_serving: int | None
+    visit_schedule: tuple[str, ...]
 
     def as_dict(self) -> dict[str, object]:
         """Return a JSON-serializable machine receipt."""
@@ -347,6 +351,9 @@ def composition_receipt(
     sidecar_firing_fraction_by_step: tuple[float, ...] = (),
     coda_decodes_per_step: int = 1,
     lstage_sampled_visit: int | None = None,
+    kv_policy: str | None = None,
+    kv_cache_multiplier_at_serving: int | None = None,
+    visit_schedule: tuple[str, ...] = (),
 ) -> CompositionReceipt:
     """Derive the binding WEFT-1 capacity receipt without double-counting ties.
 
@@ -393,6 +400,12 @@ def composition_receipt(
             raise ValueError(
                 "a sampled L_stage visit requires exactly two coda decodes"
             )
+    if kv_policy is not None and not isinstance(kv_policy, str):
+        raise TypeError("kv_policy must be a string or None")
+    if not isinstance(visit_schedule, tuple) or any(
+        not isinstance(item, str) or not item for item in visit_schedule
+    ):
+        raise TypeError("visit_schedule must be a tuple of nonempty strings")
 
     root = _capacity_root(model)
     sidecar = getattr(root, "sidecar", None)
@@ -412,6 +425,80 @@ def composition_receipt(
 
     recurrent_ids: set[int] = set()
     config = getattr(root, "config", None)
+    configured_bicameral = bool(
+        config is not None and getattr(config, "use_bicameral_core", False)
+    )
+    if configured_bicameral:
+        configured_kv_policy = str(getattr(config, "kv_policy"))
+    elif config is not None and getattr(config, "use_static_kv_core", False):
+        configured_kv_policy = (
+            "legacy_midpoint"
+            if getattr(config, "static_kv_midpoint_refresh", False)
+            else "legacy_static"
+        )
+    else:
+        configured_kv_policy = "not_applicable"
+    if kv_policy is None:
+        kv_policy = configured_kv_policy
+    allowed_kv_policies = {
+        "not_applicable",
+        "live",
+        "static",
+        "midpoint",
+        "legacy_static",
+        "legacy_midpoint",
+    }
+    if kv_policy not in allowed_kv_policies:
+        raise ValueError("kv_policy is not a recognized composition-receipt value")
+    expected_cache_multiplier = {
+        "not_applicable": None,
+        "live": 2 * requested_visits,
+        "static": 1,
+        "midpoint": 2,
+        "legacy_static": 1,
+        "legacy_midpoint": 2,
+    }[kv_policy]
+    if kv_cache_multiplier_at_serving is None:
+        kv_cache_multiplier_at_serving = expected_cache_multiplier
+    if kv_cache_multiplier_at_serving != expected_cache_multiplier:
+        raise ValueError(
+            "kv_cache_multiplier_at_serving disagrees with kv_policy and requested visits"
+        )
+    if kv_policy != configured_kv_policy:
+        raise ValueError("composition kv_policy disagrees with the configured model graph")
+    if configured_bicameral and not visit_schedule:
+        raise ValueError("the bicameral composition receipt requires a visit_schedule")
+    if not configured_bicameral and visit_schedule:
+        raise ValueError("a non-bicameral composition receipt forbids a visit_schedule")
+    if configured_bicameral:
+        assert config is not None
+        if getattr(root, "bicameral_combiner", None) is None:
+            raise ValueError("the bicameral composition receipt requires the S-2 combiner")
+        after_block_modules: tuple[str, ...] = ()
+        if bool(getattr(config, "use_scratch", False)):
+            after_block_modules = ("PositionAlignedScratch.step_bicameral",)
+            if bool(getattr(config, "use_lane_carrier", False)):
+                after_block_modules = (*after_block_modules, "TwoLaneBirkhoffMixer")
+        core_schedules = expected_bicameral_visit_schedules(
+            recurrent_steps=requested_visits,
+            unique_core_blocks=int(getattr(config, "n_core_blocks")),
+            kv_policy=kv_policy,
+            after_block_modules=after_block_modules,
+        )
+        # ``AblationLM.forward`` always lets the recurrence seam project its
+        # static/midpoint anchor.  The lower-level seam also supports a
+        # caller-preprojected cache, but accepting that alternate trace here
+        # would let a direct caller mint a composition receipt for an execution
+        # path this integrated graph cannot take.
+        expected_composition_schedule = (
+            *core_schedules[0],
+            "terminal.PerBandUnitCircleCombiner",
+        )
+        if visit_schedule != expected_composition_schedule:
+            raise ValueError(
+                "the bicameral composition visit_schedule is not the exact "
+                "Step-2 recurrence trace followed by terminal S-2"
+            )
     if config is not None and bool(getattr(config, "use_recurrence", False)):
         for name in (
             "core_blocks",
@@ -480,6 +567,9 @@ def composition_receipt(
         ),
         coda_decodes_per_step=coda_decodes_per_step,
         lstage_sampled_visit=lstage_sampled_visit,
+        kv_policy=kv_policy,
+        kv_cache_multiplier_at_serving=kv_cache_multiplier_at_serving,
+        visit_schedule=visit_schedule,
     )
 
 
@@ -497,6 +587,7 @@ def estimate_dense_unique_parameters(config: AblationLMConfig) -> int:
     if any(
         (
             config.use_front_hadamard_experts,
+            config.use_bicameral_core,
             config.use_reentry_bridge,
             config.use_scratch,
             config.use_lane_carrier,

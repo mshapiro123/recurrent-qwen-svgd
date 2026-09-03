@@ -228,7 +228,7 @@ class CausalTokenEngram(nn.Module):
         *,
         document_ids: torch.Tensor | None = None,
         enabled: bool | None = None,
-    ) -> tuple[torch.Tensor, dict[str, torch.Tensor]]:
+    ) -> tuple[torch.Tensor, dict[str, object]]:
         """Read causal memory and add its gated, bounded residual.
 
         ``document_ids`` may use any nonnegative integer labels.  Negative IDs
@@ -245,12 +245,13 @@ class CausalTokenEngram(nn.Module):
         is_enabled = self.config.enabled if enabled is None else bool(enabled)
         if not is_enabled:
             return hidden_states, {
-                "enabled": torch.tensor(False, device=hidden_states.device)
+                "enabled": torch.tensor(False, device=hidden_states.device),
             }
 
         retrieved: list[torch.Tensor] = []
-        audit: dict[str, torch.Tensor] = {
-            "enabled": torch.tensor(True, device=hidden_states.device)
+        audit: dict[str, object] = {
+            "enabled": torch.tensor(True, device=hidden_states.device),
+            "gate_form": "EG-1",
         }
         validity: list[torch.Tensor] = []
         for order in self.ngram_orders:

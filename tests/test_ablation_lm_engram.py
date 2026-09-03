@@ -67,6 +67,7 @@ def test_document_boundaries_invalidate_cross_document_suffixes() -> None:
     documents = torch.tensor([[0, 0, 1, 1, 1, -1]])
 
     output, audit = module(hidden, tokens, document_ids=documents)
+    assert audit["gate_form"] == "EG-1"
 
     assert audit["valid_n2"].tolist() == [[False, True, False, True, True, False]]
     assert audit["valid_n3"].tolist() == [[False, False, False, False, True, False]]

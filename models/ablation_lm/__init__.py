@@ -13,11 +13,16 @@ from .accounting import (
     tokenizer_screen_accounting,
 )
 from .bicameral import SwapLinear
+from .bicameral_combiner import PerBandUnitCircleCombiner
 from .bicameral_core import BicameralProjectedKeyValue, BicameralTransformerBlock
 from .bicameral_recurrent import (
+    AfterBlockHook,
+    AfterBlockResult,
     BicameralRecurrenceReceipt,
     BicameralRecurrentCore,
     BicameralRecurrentOutput,
+    execute_bicameral_recurrence,
+    expected_bicameral_visit_schedules,
 )
 from .callosum import (
     CALLOSUM_RETENTION_TRIPWIRE,
@@ -56,6 +61,7 @@ from .config import (
     REGISTERED_PROXY_BLOCK_SPLITS,
     REGISTERED_TARGET_BLOCK_SPLITS,
     TOKENIZER_VOCAB_CANDIDATES,
+    WEFT1_KV_POLICIES,
     AblationLMConfig,
     registered_mu_r_configs,
     registered_proxy_reallocation_configs,
@@ -112,6 +118,8 @@ __all__ = [
     "AblationLMOutput",
     "AdapterCertificateReceipt",
     "AdapterFactorPlaceholder",
+    "AfterBlockHook",
+    "AfterBlockResult",
     "BicameralProjectedKeyValue",
     "BicameralRecurrenceReceipt",
     "BicameralRecurrentCore",
@@ -137,6 +145,7 @@ __all__ = [
     "ObservatoryEvent",
     "ObservatoryGuard",
     "ParameterAccounting",
+    "PerBandUnitCircleCombiner",
     "PerBandBirkhoffCallosum",
     "PrecisionRecord",
     "RATIFIED_TARGET_AUTHORITY",
@@ -150,6 +159,7 @@ __all__ = [
     "REGISTERED_PROXY_BLOCK_SPLITS",
     "REGISTERED_TARGET_BLOCK_SPLITS",
     "TOKENIZER_VOCAB_CANDIDATES",
+    "WEFT1_KV_POLICIES",
     "SwapLinear",
     "SidecarFactorReceipt",
     "T14B_MEASUREMENT_ALGORITHM_SHA256",
@@ -171,6 +181,8 @@ __all__ = [
     "delta_mode_prediction_receipt",
     "estimate_dense_unique_parameters",
     "estimate_empirical_core_factor",
+    "execute_bicameral_recurrence",
+    "expected_bicameral_visit_schedules",
     "emit_observatory_event",
     "lexical_parameter_share",
     "measure_t14b_future_gradients",

@@ -670,7 +670,22 @@ def _named_tensor_sha256(items: tuple[tuple[str, torch.Tensor], ...]) -> str:
 
 
 def _config_identity_sha256(config: AblationLMConfig) -> str:
-    payload = json.dumps(asdict(config), sort_keys=True, separators=(",", ":"))
+    """Hash the historical pre-Step-2 C2 configuration schema.
+
+    C2 is an immutable measurement of the legacy bring-up graph, not a moving
+    description of the production graph.  The later bicameral switch and its
+    K/V-policy selector are structurally absent from this measurement.  Project
+    those two additive, inactive fields out so extending ``AblationLMConfig``
+    cannot silently rename the historical receipt; fail closed if either ever
+    becomes active in the C2 generator.
+    """
+
+    values = asdict(config)
+    if values.pop("use_bicameral_core") is not False:
+        raise ValueError("historical C2 forbids the bicameral production graph")
+    if values.pop("kv_policy") != "live":
+        raise ValueError("historical C2 requires the inactive default K/V-policy value")
+    payload = json.dumps(values, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 

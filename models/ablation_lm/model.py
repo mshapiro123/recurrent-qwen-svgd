@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from typing import Any
 
 import torch
@@ -10,6 +10,13 @@ import torch.nn.functional as F
 from torch import nn
 
 from .accounting import composition_receipt
+from .bicameral_combiner import PerBandUnitCircleCombiner
+from .bicameral_core import BicameralTransformerBlock
+from .bicameral_recurrent import (
+    AfterBlockResult,
+    BicameralRecurrenceReceipt,
+    execute_bicameral_recurrence,
+)
 from .config import AblationLMConfig
 from .engram import CausalTokenEngram, TokenEngramConfig
 from .geometry import lanes_to_modes
@@ -62,6 +69,13 @@ class AblationLM(nn.Module):
     ) -> None:
         super().__init__()
         self.config = config
+        if config.use_bicameral_core and (
+            config.use_front_hadamard_experts or config.use_reentry_bridge
+        ):
+            raise ValueError(
+                "the production bicameral path structurally retires front-WHT "
+                "and the legacy h0 re-entry bridge"
+            )
         if config.use_long_term_memory != (long_term_memory is not None):
             raise ValueError(
                 "use_long_term_memory must exactly match an explicitly supplied frozen store"
@@ -135,19 +149,46 @@ class AblationLM(nn.Module):
         self.core_blocks = nn.ModuleList(
             construct(
                 f"model.core.{index}.constructor",
-                lambda index=index: TransformerBlock(
-                    config,
-                    module_path=f"model.core.{index}",
+                (
+                    (
+                        lambda index=index: BicameralTransformerBlock(
+                            config.d_model,
+                            n_heads=config.n_heads,
+                            n_kv_heads=config.n_kv_heads,
+                            d_ff=config.d_ff,
+                            max_sequence_length=config.max_sequence_length,
+                            rope_theta=config.rope_theta,
+                            norm_eps=config.norm_eps,
+                            initialization_seed=config.initialization_seed,
+                            module_path=f"model.core.{index}",
+                            attention_dropout=config.attention_dropout,
+                        )
+                    )
+                    if config.use_bicameral_core
+                    else (
+                        lambda index=index: TransformerBlock(
+                            config,
+                            module_path=f"model.core.{index}",
+                        )
+                    )
                 ),
             )
             for index in range(config.n_core_blocks)
+        )
+        self.bicameral_combiner = (
+            construct(
+                "model.bicameral_combiner.constructor",
+                lambda: PerBandUnitCircleCombiner(config.d_model, num_bands=8),
+            )
+            if config.use_bicameral_core
+            else None
         )
         self.loop_embedding = (
             construct(
                 "model.loop_embedding.constructor",
                 lambda: nn.Embedding(config.max_recurrent_steps, config.d_model),
             )
-            if config.use_recurrence
+            if config.use_recurrence and not config.use_bicameral_core
             else None
         )
         self.reentry_bridge = (
@@ -272,11 +313,15 @@ class AblationLM(nn.Module):
             + self.config.n_coda_layers
         )
         residual_std = 0.02 / (2 * physical_blocks) ** 0.5
-        staged_blocks = (
+        staged_blocks = [
             ("prelude", self.prelude_blocks),
-            ("core", self.core_blocks),
-            ("coda", self.coda_blocks),
-        )
+        ]
+        # Bicameral blocks own isolated, mode-aware initialization.  Applying
+        # the inherited dense reset here would both access nonexistent dense
+        # attributes and erase the nonzero disagreement initialization.
+        if not self.config.use_bicameral_core:
+            staged_blocks.append(("core", self.core_blocks))
+        staged_blocks.append(("coda", self.coda_blocks))
         for stage, blocks in staged_blocks:
             for index, block in enumerate(blocks):
                 block_generator = generator(
@@ -386,6 +431,118 @@ class AblationLM(nn.Module):
                 raise TypeError("position_ids must use an integer dtype")
             if position_ids.numel() and int(position_ids.min()) < 0:
                 raise ValueError("position_ids must be non-negative")
+
+    def _run_bicameral_core(
+        self,
+        prelude: torch.Tensor,
+        *,
+        lanes: torch.Tensor | None,
+        steps: int,
+        alpha: float,
+        attention_mask: torch.Tensor | None,
+        position_ids: torch.Tensor | None,
+        document_ids: torch.Tensor | None,
+        capture_trajectory: bool,
+    ) -> tuple[
+        torch.Tensor,
+        torch.Tensor,
+        torch.Tensor | None,
+        BicameralRecurrenceReceipt,
+        tuple[torch.Tensor, ...],
+        int,
+        int,
+        tuple[str, ...],
+    ]:
+        """Execute the ratified Step-2 separated-state recurrence.
+
+        A live visit snapshots both hemispheres once at visit entry and builds
+        every block's K/V from that same pair.  This is intentionally not a
+        block-local refresh: the visit-entry rule is what makes live and static
+        exactly identical at ``K=1`` for a multi-block core.
+        """
+
+        if not self.config.use_bicameral_core:
+            raise RuntimeError("the bicameral core is structurally disabled")
+        if self.loop_embedding is not None or self.front_hadamard is not None:
+            raise RuntimeError("a retired legacy module entered the bicameral graph")
+        if self.reentry_bridge is not None:
+            raise RuntimeError("the legacy h0 re-entry bridge entered the bicameral graph")
+        policy = self.config.kv_policy
+        visit_consensus_states: list[torch.Tensor] = []
+        after_block_modules: tuple[str, ...] = ()
+        if lanes is not None:
+            assert self.scratch is not None
+            after_block_modules = ("PositionAlignedScratch.step_bicameral",)
+            if self.scratch.carrier is not None:
+                after_block_modules = (*after_block_modules, "TwoLaneBirkhoffMixer")
+
+        def after_block(
+            h_a: torch.Tensor,
+            h_b: torch.Tensor,
+            *,
+            visit: int,
+            block_index: int,
+            residual_scale: float,
+        ) -> AfterBlockResult:
+            nonlocal lanes
+            executed_modules: list[str] = []
+            if lanes is not None:
+                assert self.scratch is not None
+                lanes = self.scratch.step_bicameral(
+                    lanes,
+                    h_a,
+                    h_b,
+                    step_index=visit,
+                    residual_scale=residual_scale,
+                )
+                executed_modules.append("PositionAlignedScratch.step_bicameral")
+                if self.scratch.carrier is not None:
+                    executed_modules.append("TwoLaneBirkhoffMixer")
+            if capture_trajectory and block_index == len(self.core_blocks) - 1:
+                visit_consensus_states.append((h_a + h_b) * 0.5)
+            return AfterBlockResult(
+                h_a=h_a,
+                h_b=h_b,
+                executed_modules=tuple(executed_modules),
+            )
+
+        recurrent = execute_bicameral_recurrence(
+            self.core_blocks,
+            prelude,
+            prelude,
+            recurrent_steps=steps,
+            recurrence_c=self.config.recurrence_coefficient,
+            projected_kv=None,
+            kv_policy=policy,
+            attention_mask=attention_mask,
+            position_ids=position_ids,
+            document_ids=document_ids,
+            after_block=after_block,
+            expected_after_block_modules=after_block_modules,
+        )
+        receipt = recurrent.receipt
+        if receipt.residual_scale != alpha:
+            raise RuntimeError("bicameral recurrence scale disagrees with the model schedule")
+        block_count = len(self.core_blocks)
+        if policy == "live":
+            cache_generation_events = steps
+            linear_projection_calls = 4 * block_count * steps
+        elif policy == "static" or steps == 1:
+            cache_generation_events = 1
+            linear_projection_calls = 2 * block_count
+        else:
+            cache_generation_events = 2
+            linear_projection_calls = 6 * block_count
+        return (
+            recurrent.h_a,
+            recurrent.h_b,
+            lanes,
+            receipt,
+            tuple(visit_consensus_states),
+            cache_generation_events,
+            linear_projection_calls,
+            receipt.visit_schedule,
+        )
 
     def _run_recurrent_visit(
         self,
@@ -773,6 +930,13 @@ class AblationLM(nn.Module):
             raise ValueError("loop gradient/Jacobian probes require return_diagnostics=True")
         if jacobian_probe_iterations and not self.config.use_recurrence:
             raise ValueError("Jacobian visit probes require structural recurrence")
+        if self.config.use_bicameral_core and (
+            capture_loop_gradients or jacobian_probe_iterations
+        ):
+            raise NotImplementedError(
+                "separated-state loop-gradient and Jacobian probes remain gated "
+                "until the Step-7 live-K/V instrument integration"
+            )
         if labels is not None and self.training and self.long_term_memory is not None:
             if memory_record_ids is None:
                 raise ValueError(
@@ -813,7 +977,7 @@ class AblationLM(nn.Module):
             else:
                 hidden = self.front_hadamard(hidden)
 
-        engram_audit: dict[str, torch.Tensor] | None = None
+        engram_audit: dict[str, object] | None = None
         for index, block in enumerate(self.prelude_blocks):
             hidden = block(
                 hidden,
@@ -831,45 +995,14 @@ class AblationLM(nn.Module):
 
         prelude = hidden
         lanes = self.scratch.initialize(prelude) if self.scratch is not None else None
-        core_kv_cache = (
-            self._project_core_kv(prelude, position_ids=position_ids)
-            if self.config.use_static_kv_core
-            else None
-        )
-        if core_kv_cache is not None:
-            position_ids = core_kv_cache[0].position_ids
-        core_kv_projection_events = 1 if core_kv_cache is not None else 0
-        static_kv_elements_per_generation = (
-            sum(
-                entry.key.numel() + entry.value.numel()
-                for entry in core_kv_cache
-            )
-            if core_kv_cache is not None
-            else 0
-        )
-        static_kv_bytes_per_generation = (
-            sum(
-                entry.key.numel() * entry.key.element_size()
-                + entry.value.numel() * entry.value.element_size()
-                for entry in core_kv_cache
-            )
-            if core_kv_cache is not None
-            else 0
-        )
-        static_kv_position_metadata_elements = (
-            core_kv_cache[0].position_ids.numel()
-            if core_kv_cache is not None
-            else 0
-        )
-        static_kv_position_metadata_bytes = (
-            core_kv_cache[0].position_ids.numel()
-            * core_kv_cache[0].position_ids.element_size()
-            if core_kv_cache is not None
-            else 0
-        )
-        midpoint_refresh_executed = (
-            self.config.static_kv_midpoint_refresh and steps >= 2
-        )
+        core_kv_cache: tuple[ProjectedKeyValue, ...] | None = None
+        core_kv_projection_events = 0
+        core_kv_linear_projection_calls = 0
+        static_kv_elements_per_generation = 0
+        static_kv_bytes_per_generation = 0
+        static_kv_position_metadata_elements = 0
+        static_kv_position_metadata_bytes = 0
+        midpoint_refresh_executed = False
         loop_rms: list[torch.Tensor] = []
         loop_update_rms: list[torch.Tensor] = []
         trajectory_states: list[torch.Tensor] = [prelude.detach()] if return_diagnostics else []
@@ -877,83 +1010,179 @@ class AblationLM(nn.Module):
         jacobian_norms: list[torch.Tensor] = []
         jacobian_cache_semantics: list[tuple[int, str]] = []
         horizon_jacobian_norm: torch.Tensor | None = None
-        if jacobian_probe_iterations:
-            horizon_jacobian_norm = self._horizon_jacobian_spectral_norm(
+        bicameral_recurrence_receipt: BicameralRecurrenceReceipt | None = None
+        bicameral_visit_schedule: tuple[str, ...] = ()
+        bicameral_terminal_a: torch.Tensor | None = None
+        bicameral_terminal_b: torch.Tensor | None = None
+        bicameral_scratch_update_events = 0
+        if self.config.use_bicameral_core:
+            (
+                bicameral_terminal_a,
+                bicameral_terminal_b,
+                lanes,
+                bicameral_recurrence_receipt,
+                visit_consensus_states,
+                core_kv_projection_events,
+                core_kv_linear_projection_calls,
+                bicameral_visit_schedule,
+            ) = self._run_bicameral_core(
                 prelude,
+                lanes=lanes,
                 steps=steps,
                 alpha=alpha,
                 attention_mask=attention_mask,
                 position_ids=position_ids,
                 document_ids=effective_document_ids,
-                valid_token_mask=valid_token_mask,
-                iterations=jacobian_probe_iterations,
-            ).detach()
-        for step_index in range(steps):
-            hidden_before_visit = hidden
+                capture_trajectory=return_diagnostics,
+            )
+            assert self.bicameral_combiner is not None
+            hidden = self.bicameral_combiner(
+                bicameral_terminal_a,
+                bicameral_terminal_b,
+            )
+            bicameral_visit_schedule = (
+                *bicameral_visit_schedule,
+                "terminal.PerBandUnitCircleCombiner",
+            )
+            bicameral_scratch_update_events = (
+                steps * len(self.core_blocks) if lanes is not None else 0
+            )
+            if return_diagnostics:
+                prior_state = prelude
+                for visit_state in visit_consensus_states:
+                    loop_rms.append(
+                        self._valid_token_rms(visit_state, valid_token_mask).detach()
+                    )
+                    loop_update_rms.append(
+                        self._valid_token_rms(
+                            visit_state.float() - prior_state.float(),
+                            valid_token_mask,
+                        ).detach()
+                    )
+                    trajectory_states.append(visit_state.detach())
+                    prior_state = visit_state
+        else:
+            core_kv_cache = (
+                self._project_core_kv(prelude, position_ids=position_ids)
+                if self.config.use_static_kv_core
+                else None
+            )
+            if core_kv_cache is not None:
+                position_ids = core_kv_cache[0].position_ids
+            core_kv_projection_events = 1 if core_kv_cache is not None else 0
+            static_kv_elements_per_generation = (
+                sum(
+                    entry.key.numel() + entry.value.numel()
+                    for entry in core_kv_cache
+                )
+                if core_kv_cache is not None
+                else 0
+            )
+            static_kv_bytes_per_generation = (
+                sum(
+                    entry.key.numel() * entry.key.element_size()
+                    + entry.value.numel() * entry.value.element_size()
+                    for entry in core_kv_cache
+                )
+                if core_kv_cache is not None
+                else 0
+            )
+            static_kv_position_metadata_elements = (
+                core_kv_cache[0].position_ids.numel()
+                if core_kv_cache is not None
+                else 0
+            )
+            static_kv_position_metadata_bytes = (
+                core_kv_cache[0].position_ids.numel()
+                * core_kv_cache[0].position_ids.element_size()
+                if core_kv_cache is not None
+                else 0
+            )
+            midpoint_refresh_executed = (
+                self.config.static_kv_midpoint_refresh and steps >= 2
+            )
             if jacobian_probe_iterations:
-                if not self.config.use_static_kv_core:
-                    cache_semantics = "dynamic_kv_total_derivative"
-                elif (
+                horizon_jacobian_norm = self._horizon_jacobian_spectral_norm(
+                    prelude,
+                    steps=steps,
+                    alpha=alpha,
+                    attention_mask=attention_mask,
+                    position_ids=position_ids,
+                    document_ids=effective_document_ids,
+                    valid_token_mask=valid_token_mask,
+                    iterations=jacobian_probe_iterations,
+                ).detach()
+            for step_index in range(steps):
+                hidden_before_visit = hidden
+                if jacobian_probe_iterations:
+                    if not self.config.use_static_kv_core:
+                        cache_semantics = "dynamic_kv_total_derivative"
+                    elif (
+                        self.config.static_kv_midpoint_refresh
+                        and steps >= 2
+                        and step_index == steps // 2
+                    ):
+                        cache_semantics = "refresh_cache_total_derivative"
+                    else:
+                        cache_semantics = "fixed_cache_partial_derivative"
+                    jacobian_cache_semantics.append((step_index, cache_semantics))
+                    jacobian_norms.append(
+                        self._visit_jacobian_spectral_norm(
+                            hidden,
+                            prelude=prelude,
+                            lanes=lanes,
+                            core_kv_cache=core_kv_cache,
+                            step_index=step_index,
+                            total_steps=steps,
+                            alpha=alpha,
+                            attention_mask=attention_mask,
+                            position_ids=position_ids,
+                            document_ids=effective_document_ids,
+                            valid_token_mask=valid_token_mask,
+                            iterations=jacobian_probe_iterations,
+                        ).detach()
+                    )
+                if (
                     self.config.static_kv_midpoint_refresh
                     and steps >= 2
                     and step_index == steps // 2
                 ):
-                    cache_semantics = "refresh_cache_total_derivative"
-                else:
-                    cache_semantics = "fixed_cache_partial_derivative"
-                jacobian_cache_semantics.append((step_index, cache_semantics))
-                jacobian_norms.append(
-                    self._visit_jacobian_spectral_norm(
+                    core_kv_cache = self._project_core_kv(
                         hidden,
-                        prelude=prelude,
-                        lanes=lanes,
-                        core_kv_cache=core_kv_cache,
-                        step_index=step_index,
-                        total_steps=steps,
-                        alpha=alpha,
-                        attention_mask=attention_mask,
                         position_ids=position_ids,
-                        document_ids=effective_document_ids,
-                        valid_token_mask=valid_token_mask,
-                        iterations=jacobian_probe_iterations,
-                    ).detach()
-                )
-            if (
-                self.config.static_kv_midpoint_refresh
-                and steps >= 2
-                and step_index == steps // 2
-            ):
-                core_kv_cache = self._project_core_kv(
+                    )
+                    position_ids = core_kv_cache[0].position_ids
+                    core_kv_projection_events += 1
+                hidden, lanes = self._run_recurrent_visit(
                     hidden,
+                    prelude=prelude,
+                    lanes=lanes,
+                    core_kv_cache=core_kv_cache,
+                    step_index=step_index,
+                    alpha=alpha,
+                    attention_mask=attention_mask,
                     position_ids=position_ids,
+                    document_ids=effective_document_ids,
                 )
-                position_ids = core_kv_cache[0].position_ids
-                core_kv_projection_events += 1
-            hidden, lanes = self._run_recurrent_visit(
-                hidden,
-                prelude=prelude,
-                lanes=lanes,
-                core_kv_cache=core_kv_cache,
-                step_index=step_index,
-                alpha=alpha,
-                attention_mask=attention_mask,
-                position_ids=position_ids,
-                document_ids=effective_document_ids,
+                if return_diagnostics:
+                    loop_rms.append(self._valid_token_rms(hidden, valid_token_mask).detach())
+                    loop_update_rms.append(
+                        self._valid_token_rms(
+                            hidden.float() - hidden_before_visit.float(),
+                            valid_token_mask,
+                        ).detach()
+                    )
+                    trajectory_states.append(hidden.detach())
+                if capture_loop_gradients:
+                    if not hidden.requires_grad:
+                        raise RuntimeError(
+                            "loop gradient capture requires autograd-enabled execution"
+                        )
+                    hidden.retain_grad()
+                    gradient_states.append(hidden)
+            core_kv_linear_projection_calls = (
+                core_kv_projection_events * len(self.core_blocks) * 2
             )
-            if return_diagnostics:
-                loop_rms.append(self._valid_token_rms(hidden, valid_token_mask).detach())
-                loop_update_rms.append(
-                    self._valid_token_rms(
-                        hidden.float() - hidden_before_visit.float(),
-                        valid_token_mask,
-                    ).detach()
-                )
-                trajectory_states.append(hidden.detach())
-            if capture_loop_gradients:
-                if not hidden.requires_grad:
-                    raise RuntimeError("loop gradient capture requires autograd-enabled execution")
-                hidden.retain_grad()
-                gradient_states.append(hidden)
 
         memory_audit: dict[str, torch.Tensor] | None = None
         if self.long_term_memory is not None:
@@ -985,6 +1214,17 @@ class AblationLM(nn.Module):
                 self,
                 requested_visits=steps,
                 executed_visits=steps,
+                kv_policy=(
+                    self.config.kv_policy
+                    if self.config.use_bicameral_core
+                    else None
+                ),
+                kv_cache_multiplier_at_serving=(
+                    bicameral_recurrence_receipt.kv_cache_multiplier_at_serving
+                    if bicameral_recurrence_receipt is not None
+                    else None
+                ),
+                visit_schedule=bicameral_visit_schedule,
             ).as_dict()
         }
         if return_diagnostics:
@@ -999,6 +1239,39 @@ class AblationLM(nn.Module):
             )
             diagnostics["executed_core_visits"] = steps
             diagnostics["executed_core_block_passes"] = steps * len(self.core_blocks)
+            diagnostics["bicameral_core_enabled"] = self.config.use_bicameral_core
+            diagnostics["loop_state_basis"] = (
+                "bicameral_consensus_step2"
+                if self.config.use_bicameral_core
+                else "single_hidden_stream"
+            )
+            diagnostics["kv_policy"] = (
+                self.config.kv_policy
+                if self.config.use_bicameral_core
+                else diagnostics["composition_receipt"]["kv_policy"]
+            )
+            diagnostics["kv_cache_multiplier_at_serving"] = diagnostics[
+                "composition_receipt"
+            ]["kv_cache_multiplier_at_serving"]
+            diagnostics["visit_schedule"] = bicameral_visit_schedule
+            diagnostics["bicameral_scratch_update_events"] = (
+                bicameral_scratch_update_events
+            )
+            diagnostics["terminal_s2_combiner_executed"] = (
+                bicameral_recurrence_receipt is not None
+            )
+            if bicameral_recurrence_receipt is not None:
+                diagnostics["bicameral_recurrence_receipt"] = asdict(
+                    bicameral_recurrence_receipt
+                )
+                assert bicameral_terminal_a is not None
+                assert bicameral_terminal_b is not None
+                diagnostics["terminal_hemisphere_disagreement_rms"] = (
+                    self._valid_token_rms(
+                        bicameral_terminal_a.float() - bicameral_terminal_b.float(),
+                        valid_token_mask,
+                    ).detach()
+                )
             diagnostics["reentry_bridge_requested"] = self.config.use_reentry_bridge
             diagnostics["reentry_bridge_executed_visits"] = (
                 max(steps - 1, 0) if self.reentry_bridge is not None else 0
@@ -1008,7 +1281,7 @@ class AblationLM(nn.Module):
                 core_kv_projection_events
             )
             diagnostics["main_graph_core_kv_linear_projection_calls"] = (
-                core_kv_projection_events * len(self.core_blocks) * 2
+                core_kv_linear_projection_calls
             )
             diagnostics["static_kv_midpoint_refresh_requested"] = (
                 self.config.static_kv_midpoint_refresh

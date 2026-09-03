@@ -15,6 +15,11 @@ from models.ablation_lm.bicameral_core import (
 )
 from models.ablation_lm.config import MUP_D_HEAD_BASE, AblationLMConfig
 from models.ablation_lm.layers import RMSNorm, TransformerBlock
+from models.ablation_lm.optim import (
+    OptimizerTarget,
+    ParameterRole,
+    partition_optimizer_parameters,
+)
 
 
 def _tiny_block(**updates: object) -> BicameralTransformerBlock:
@@ -67,14 +72,14 @@ def _dense_hemisphere(
         dense.attention.key_norm.weight.copy_(paired.key_norm.weight)
         for target, source in (
             (dense.attention.q_proj, paired.q_proj),
-            (dense.attention.k_proj, paired.k_proj),
-            (dense.attention.v_proj, paired.v_proj),
             (dense.attention.output_proj, paired.o_proj),
             (dense.feed_forward.gate_proj, paired.gate_proj),
             (dense.feed_forward.up_proj, paired.up_proj),
             (dense.feed_forward.down_proj, paired.down_proj),
         ):
             target.weight.copy_(_realized_weight(source, hemi))
+        dense.attention.k_proj.weight.copy_(paired.k_proj.weight)
+        dense.attention.v_proj.weight.copy_(paired.v_proj.weight)
     return dense.eval()
 
 
@@ -97,8 +102,12 @@ def test_structure_initialization_and_exact_d512_parameter_delta() -> None:
         == 0.125
     )
     assert torch.equal(torch.random.get_rng_state(), ambient_state)
-    assert len(block.swap_linears) == 7
+    assert len(block.swap_linears) == 5
     assert all(isinstance(layer, SwapLinear) for layer in block.swap_linears)
+    assert all(isinstance(layer, torch.nn.Linear) for layer in block.shared_kv_linears)
+    assert all(not isinstance(layer, SwapLinear) for layer in block.shared_kv_linears)
+    assert all(not hasattr(layer, "dU") for layer in block.shared_kv_linears)
+    assert all(not hasattr(layer, "dV") for layer in block.shared_kv_linears)
     assert len({seed for _name, seed in block.projection_initialization_seeds}) == 7
     assert all(bool(layer.dU.ne(0).any()) for layer in block.swap_linears)
     assert all(bool(layer.dV.ne(0).any()) for layer in block.swap_linears)
@@ -119,8 +128,8 @@ def test_structure_initialization_and_exact_d512_parameter_delta() -> None:
     )
     paired_parameters = sum(parameter.numel() for parameter in block.parameters())
     dense_parameters = sum(parameter.numel() for parameter in dense.parameters())
-    assert block.disagreement_parameter_count == 299_008
-    assert paired_parameters - dense_parameters == 299_008
+    assert block.disagreement_parameter_count == 249_856
+    assert paired_parameters - dense_parameters == 249_856
 
 
 def test_parameter_initialization_is_replica_invariant_and_path_namespaced() -> None:
@@ -154,6 +163,22 @@ def test_parameter_initialization_is_replica_invariant_and_path_namespaced() -> 
             strict=True,
         )
     )
+
+
+def test_shared_kv_and_paired_modes_keep_distinct_optimizer_provenance() -> None:
+    block = _tiny_block()
+    partition = partition_optimizer_parameters(block)
+    for name in ("k_proj.weight", "v_proj.weight"):
+        assignment = partition.assignment_for(name)
+        assert assignment.role is ParameterRole.DENSE_HIDDEN_WEIGHT
+        assert assignment.target is OptimizerTarget.MUON_ELIGIBLE
+    for projection_name in ("q_proj", "o_proj", "gate_proj", "up_proj", "down_proj"):
+        for parameter_name in ("mu", "dU", "dV"):
+            assignment = partition.assignment_for(
+                f"{projection_name}.{parameter_name}"
+            )
+            assert assignment.role is ParameterRole.COUPLED_MODE
+            assert assignment.target is OptimizerTarget.AUXILIARY_ADAMW
 
 
 def test_each_hemisphere_matches_its_realized_dense_static_kv_block() -> None:
@@ -213,13 +238,15 @@ def test_one_paired_cache_removes_the_recurrent_visit_multiplier() -> None:
                 position_ids=positions,
             )
 
-    assert project_k.call_count == 2
-    assert project_v.call_count == 2
+    assert project_k.call_count == 1
+    assert project_v.call_count == 1
     assert project_q.call_count == 8
+    assert cache.key_a.data_ptr() == cache.key_b.data_ptr()
+    assert cache.value_a.data_ptr() == cache.value_b.data_ptr()
     assert cache.position_ids.data_ptr() != positions.data_ptr()
 
 
-def test_all_seven_mu_and_disagreement_factors_have_live_gradients() -> None:
+def test_five_paired_modes_and_two_shared_kv_weights_have_live_gradients() -> None:
     torch.manual_seed(41)
     block = _tiny_block().train()
     h0 = torch.randn(2, 5, 16, requires_grad=True)
@@ -231,21 +258,41 @@ def test_all_seven_mu_and_disagreement_factors_have_live_gradients() -> None:
     loss = output_a.square().mean() + 0.37 * output_b.square().mean()
     loss.backward()
 
-    for name in (
-        "q_proj",
-        "k_proj",
-        "v_proj",
-        "o_proj",
-        "gate_proj",
-        "up_proj",
-        "down_proj",
-    ):
+    for name in ("q_proj", "o_proj", "gate_proj", "up_proj", "down_proj"):
         layer = getattr(block, name)
         for parameter_name in ("mu", "dU", "dV"):
             gradient = getattr(layer, parameter_name).grad
             assert gradient is not None, f"{name}.{parameter_name} has no gradient"
             assert bool(torch.isfinite(gradient).all())
             assert bool(gradient.ne(0).any()), f"{name}.{parameter_name} gradient is zero"
+    for name in ("k_proj", "v_proj"):
+        gradient = getattr(block, name).weight.grad
+        assert gradient is not None, f"{name}.weight has no gradient"
+        assert bool(torch.isfinite(gradient).all())
+        assert bool(gradient.ne(0).any()), f"{name}.weight gradient is zero"
+
+
+def test_live_kv_uses_shared_weights_but_each_hemispheres_own_state() -> None:
+    block = _tiny_block().eval()
+    h_a = torch.randn(1, 4, 16, requires_grad=True)
+    h_b = torch.randn(1, 4, 16, requires_grad=True)
+    cache = block.project_kv(h_a, h_b)
+
+    grad_a = torch.autograd.grad(
+        cache.key_a.square().sum() + cache.value_a.square().sum(),
+        (h_a, h_b),
+        allow_unused=True,
+        retain_graph=True,
+    )
+    grad_b = torch.autograd.grad(
+        cache.key_b.square().sum() + cache.value_b.square().sum(),
+        (h_a, h_b),
+        allow_unused=True,
+    )
+    assert grad_a[0] is not None and bool(grad_a[0].ne(0).any())
+    assert grad_a[1] is None
+    assert grad_b[0] is None
+    assert grad_b[1] is not None and bool(grad_b[1].ne(0).any())
 
 
 def test_paired_static_kv_is_exactly_causal_across_packing_and_padding() -> None:

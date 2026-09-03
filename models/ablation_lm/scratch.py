@@ -153,12 +153,51 @@ class PositionAlignedScratch(nn.Module):
         step_index: int,
         residual_scale: float,
     ) -> torch.Tensor:
+        """Advance both lanes from one shared bring-up hidden stream."""
+
         self._validate_alignment(hidden, lanes)
         if step_index < 0 or step_index >= self.max_steps:
             raise ValueError("step_index exceeds the configured recurrence cap")
         context = self.context_projection(self.hidden_norm(hidden)).unsqueeze(-2)
         context = context + self.step_embedding.weight[step_index].view(1, 1, 1, -1)
         context = context.expand_as(lanes)
+        features = torch.cat((self.lane_norm(lanes), context), dim=-1)
+        update = self.update_out(F.silu(self.update_in(features)))
+        updated = lanes + float(residual_scale) * update
+        return self.carrier(updated) if self.carrier is not None else updated
+
+    def step_bicameral(
+        self,
+        lanes: torch.Tensor,
+        h_a: torch.Tensor,
+        h_b: torch.Tensor,
+        *,
+        step_index: int,
+        residual_scale: float,
+    ) -> torch.Tensor:
+        """Advance lane A from ``h_a`` and lane B from ``h_b`` position-wise.
+
+        The projection weights remain shared; only the already-causal source
+        state differs.  This is the full-width bicameral lane update and adds no
+        cross-position or cross-hemisphere read.
+        """
+
+        if h_a.shape != h_b.shape:
+            raise ValueError("bicameral hidden states must have identical shapes")
+        self._validate_alignment(h_a, lanes)
+        self._validate_alignment(h_b, lanes)
+        if h_a.device != h_b.device or h_a.dtype != h_b.dtype:
+            raise ValueError("bicameral hidden states must share one dtype and device")
+        if step_index < 0 or step_index >= self.max_steps:
+            raise ValueError("step_index exceeds the configured recurrence cap")
+        context = torch.stack(
+            (
+                self.context_projection(self.hidden_norm(h_a)),
+                self.context_projection(self.hidden_norm(h_b)),
+            ),
+            dim=-2,
+        )
+        context = context + self.step_embedding.weight[step_index].view(1, 1, 1, -1)
         features = torch.cat((self.lane_norm(lanes), context), dim=-1)
         update = self.update_out(F.silu(self.update_in(features)))
         updated = lanes + float(residual_scale) * update

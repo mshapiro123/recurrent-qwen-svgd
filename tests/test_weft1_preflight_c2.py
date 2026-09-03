@@ -18,6 +18,7 @@ from analysis.weft1_preflight_c2 import (
     C2_STATE_LOGIT_RELATIVE_L2_THRESHOLD,
     C2PreflightReceipt,
     _GradientTraceTensor,
+    _config_identity_sha256,
     _gradient_drift,
     c2_current_toy_config,
     run_preflight_c2,
@@ -55,7 +56,25 @@ def test_c2_current_toy_configuration_is_exactly_4_2_4_d64_k8() -> None:
     assert config.scratch_lanes == 2 and config.scratch_width == 8
     assert config.recurrent_steps == config.max_recurrent_steps == 8
     assert config.use_recurrence and config.use_static_kv_core
+    assert config.use_bicameral_core is False
+    assert config.kv_policy == "live"
     assert config.use_scratch and config.use_lane_carrier
+
+
+def test_historical_c2_identity_rejects_active_or_nondefault_step2_fields() -> None:
+    config = c2_current_toy_config()
+    assert len(_config_identity_sha256(config)) == 64
+    with pytest.raises(ValueError, match="forbids the bicameral"):
+        _config_identity_sha256(
+            replace(
+                config,
+                use_bicameral_core=True,
+                use_static_kv_core=False,
+                static_kv_midpoint_refresh=False,
+            )
+        )
+    with pytest.raises(ValueError, match="inactive default K/V-policy"):
+        _config_identity_sha256(replace(config, kv_policy="static"))
 
 
 def test_c2_pf3_gate_excludes_valid_ineligible_zeros_and_passes(

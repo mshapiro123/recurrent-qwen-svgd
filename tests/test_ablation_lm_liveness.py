@@ -70,6 +70,53 @@ def _active_model() -> AblationLM:
     return AblationLM(config, long_term_memory=memory)
 
 
+def _bicameral_config(
+    *,
+    kv_policy: str = "live",
+    recurrent_steps: int = 4,
+    use_scratch: bool = False,
+) -> AblationLMConfig:
+    return AblationLMConfig(
+        vocab_size=64,
+        d_model=64,
+        n_heads=2,
+        n_kv_heads=1,
+        d_ff=64,
+        n_prelude_layers=1,
+        n_core_blocks=2,
+        n_coda_layers=1,
+        use_recurrence=True,
+        recurrent_steps=recurrent_steps,
+        max_recurrent_steps=4,
+        use_bicameral_core=True,
+        kv_policy=kv_policy,
+        use_scratch=use_scratch,
+        scratch_width=8,
+        max_sequence_length=16,
+    )
+
+
+def _bicameral_backward_receipt(
+    *,
+    recurrent_steps: int,
+    use_scratch: bool,
+):
+    model = AblationLM(
+        _bicameral_config(
+            recurrent_steps=recurrent_steps,
+            use_scratch=use_scratch,
+        )
+    ).train()
+    tokens = torch.tensor([[1, 7, 12, 19], [5, 11, 18, 22]])
+    output = model(tokens, labels=tokens, recurrent_steps=recurrent_steps)
+    assert output.loss is not None
+    output.loss.backward()
+    return model, gradient_liveness_receipt(
+        model,
+        recurrent_steps=recurrent_steps,
+    )
+
+
 def _backward_receipt(recurrent_steps: int) -> tuple[AblationLM, object]:
     model = _active_model().train()
     tokens = torch.tensor(
@@ -195,3 +242,102 @@ def test_pf1_nonrecurrent_model_rejects_k4_matrix() -> None:
 
     with pytest.raises(ValueError, match="K > 1 requires structural recurrence"):
         parameter_eligibility_matrix(model, recurrent_steps=4)
+
+
+@pytest.mark.parametrize(
+    ("kv_policy", "expected_visits"),
+    [
+        ("live", {0, 1, 2, 3}),
+        ("static", {None}),
+        ("midpoint", {None, 2}),
+    ],
+)
+def test_pf1_bicameral_kv_and_combiner_follow_the_executed_schedule(
+    kv_policy: str,
+    expected_visits: set[int | None],
+) -> None:
+    model = AblationLM(_bicameral_config(kv_policy=kv_policy))
+    matrix = parameter_eligibility_matrix(model, recurrent_steps=4)
+
+    kv_names = {
+        name
+        for name, _parameter in model.named_parameters()
+        if name.endswith(".k_proj.weight")
+        or name.endswith(".v_proj.weight")
+        or name.endswith(".key_norm.weight")
+        if name.startswith("core_blocks.")
+    }
+    assert kv_names
+    for name in kv_names:
+        rows = tuple(row for row in matrix if row.parameter_name == name)
+        assert {row.visit_index for row in rows} == expected_visits
+        assert all(row.eligible and row.executed and not row.deferred for row in rows)
+
+    combiner_rows = tuple(
+        row for row in matrix if row.parameter_name == "bicameral_combiner.theta"
+    )
+    assert len(combiner_rows) == 1
+    assert combiner_rows[0].visit_index is None
+    assert combiner_rows[0].eligible and combiner_rows[0].executed
+    assert not combiner_rows[0].deferred
+
+
+def test_pf1_bicameral_midpoint_k1_records_only_the_initial_projection() -> None:
+    model = AblationLM(
+        _bicameral_config(kv_policy="midpoint", recurrent_steps=1)
+    )
+    matrix = parameter_eligibility_matrix(model, recurrent_steps=1)
+    kv_rows = tuple(
+        row
+        for row in matrix
+        if row.parameter_name.startswith("core_blocks.")
+        and (
+            row.parameter_name.endswith(".k_proj.weight")
+            or row.parameter_name.endswith(".v_proj.weight")
+            or row.parameter_name.endswith(".key_norm.weight")
+        )
+    )
+    assert kv_rows
+    assert {row.visit_index for row in kv_rows} == {None}
+
+
+def test_pf1_step2_scratch_is_a_typed_deferred_nonpass_until_it_reaches_logits() -> None:
+    _model_k1, k1 = _bicameral_backward_receipt(
+        recurrent_steps=1,
+        use_scratch=True,
+    )
+    model_k4, k4 = _bicameral_backward_receipt(
+        recurrent_steps=4,
+        use_scratch=True,
+    )
+
+    expected = tuple(
+        sorted(
+            name
+            for name, _parameter in model_k4.named_parameters()
+            if name.startswith("scratch.")
+        )
+    )
+    assert tuple(item.parameter_name for item in k4.deferred_parameters) == expected
+    assert all(item.deferred for item in k4.deferred_parameters)
+    assert not set(expected).intersection(k4.eligible_parameter_names)
+    assert not k4.eligible_missing_gradients
+    assert not k4.eligible_zero_gradients
+    assert not k4.passed
+    with pytest.raises(GradientLivenessBlocked, match="deferred=.*scratch"):
+        k4.require_passed()
+
+    inverse = inverse_k1_k4_liveness(k1, k4)
+    assert not inverse.k1_ineligible_parameter_names
+    inverse.require_passed()
+
+
+def test_pf1_bicameral_step2_without_scratch_has_live_core_and_combiner() -> None:
+    _model, receipt = _bicameral_backward_receipt(
+        recurrent_steps=4,
+        use_scratch=False,
+    )
+    receipt.require_passed()
+    assert not receipt.deferred_parameters
+    assert "bicameral_combiner.theta" in receipt.live_parameter_names
+    assert "core_blocks.0.k_proj.weight" in receipt.live_parameter_names

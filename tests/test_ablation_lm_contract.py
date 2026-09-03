@@ -139,6 +139,17 @@ def test_active_layer_scales_and_callosum_cannot_be_initialized_dead() -> None:
         replace(config, recurrence_exponent=0.5)
     with pytest.raises(ValueError, match="requires structural recurrence"):
         replace(config, use_reentry_bridge=True)
+    with pytest.raises(ValueError, match="bicameral core requires structural recurrence"):
+        replace(config, use_bicameral_core=True)
+    with pytest.raises(ValueError, match="kv_policy must be one of"):
+        replace(config, kv_policy="first")
+    with pytest.raises(ValueError, match="mutually exclusive"):
+        replace(
+            config,
+            use_recurrence=True,
+            use_bicameral_core=True,
+            use_static_kv_core=True,
+        )
     with pytest.raises(ValueError, match="static core KV requires structural recurrence"):
         replace(config, use_static_kv_core=True)
     with pytest.raises(ValueError, match="midpoint KV refresh"):
@@ -166,7 +177,12 @@ def test_full_bringup_profile_enables_recurrence_and_separate_lane_carrier() -> 
 
     assert active.use_recurrence is True
     assert active.recurrent_steps == 4
-    assert active.use_static_kv_core is True
+    assert active.use_bicameral_core is True
+    assert active.kv_policy == "live"
+    assert active.use_static_kv_core is False
+    assert active.use_front_hadamard_experts is False
+    assert active.use_reentry_bridge is False
+    assert active.use_long_term_memory is False
     assert active.use_scratch is True
     assert active.use_lane_carrier is True
 
@@ -178,6 +194,17 @@ def test_proxy_execution_accounting_matches_allocated_dense_model() -> None:
     assert estimate_dense_unique_parameters(config) == sum(
         parameter.numel() for parameter in model.parameters()
     )
+
+
+def test_dense_estimator_rejects_the_bicameral_graph() -> None:
+    config = replace(
+        _small_config(),
+        use_recurrence=True,
+        use_bicameral_core=True,
+    )
+
+    with pytest.raises(ValueError, match="pillar-free dense graph"):
+        estimate_dense_unique_parameters(config)
 
 
 def test_composition_receipt_partitions_fixed_and_recurrent_capacity() -> None:
@@ -197,6 +224,9 @@ def test_composition_receipt_partitions_fixed_and_recurrent_capacity() -> None:
     assert baseline_receipt.active_eval_exact is True
     assert baseline_receipt.coda_decodes_per_step == 1
     assert baseline_receipt.lstage_sampled_visit is None
+    assert baseline_receipt.kv_policy == "not_applicable"
+    assert baseline_receipt.kv_cache_multiplier_at_serving is None
+    assert baseline_receipt.visit_schedule == ()
     json.dumps(baseline_receipt.as_dict())
 
     recurrent = AblationLM(replace(_small_config(), use_recurrence=True))
@@ -210,6 +240,22 @@ def test_composition_receipt_partitions_fixed_and_recurrent_capacity() -> None:
     assert receipt.n_active_eval is None
     assert receipt.composition_exact is False
     assert receipt.active_eval_exact is False
+    assert receipt.kv_policy == "not_applicable"
+    with pytest.raises(ValueError, match="configured model graph"):
+        composition_receipt(
+            recurrent,
+            requested_visits=4,
+            executed_visits=4,
+            kv_policy="live",
+            kv_cache_multiplier_at_serving=8,
+        )
+    with pytest.raises(ValueError, match="forbids a visit_schedule"):
+        composition_receipt(
+            recurrent,
+            requested_visits=4,
+            executed_visits=4,
+            visit_schedule=("fabricated bicameral schedule",),
+        )
     with pytest.raises(ValueError, match="materialized sidecar"):
         composition_receipt(
             recurrent,

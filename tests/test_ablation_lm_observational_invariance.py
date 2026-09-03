@@ -102,6 +102,14 @@ def _background_config(module_name: str, recurrent_steps: int) -> AblationLMConf
     updates: dict[str, object] = {}
     if module_name in ("static_kv_core", "reentry_bridge"):
         updates["use_recurrence"] = True
+    if module_name in ("bicameral_core", "bicameral_combiner"):
+        updates.update(
+            use_recurrence=True,
+            use_bicameral_core=True,
+            d_model=64,
+            d_ff=64,
+            scratch_width=8,
+        )
     if module_name == "lane_carrier":
         updates["use_scratch"] = True
     return _config(recurrent_steps, **updates)
@@ -112,6 +120,8 @@ def _active_config(module_name: str, recurrent_steps: int) -> AblationLMConfig:
     switches: dict[str, object] = {
         "front_hadamard_experts": {"use_front_hadamard_experts": True},
         "static_kv_core": {"use_static_kv_core": True},
+        "bicameral_core": {},
+        "bicameral_combiner": {},
         "reentry_bridge": {"use_reentry_bridge": True},
         "scratch": {"use_scratch": True},
         "lane_carrier": {"use_lane_carrier": True},
@@ -130,6 +140,25 @@ def _delete_attached_module(model: AblationLM, module_name: str) -> None:
         updates = {"use_front_hadamard_experts": False}
     elif module_name == "static_kv_core":
         updates = {"use_static_kv_core": False}
+    elif module_name == "bicameral_core":
+        with torch.no_grad():
+            for block in model.core_blocks:
+                for projection_name in (
+                    "q_proj",
+                    "o_proj",
+                    "gate_proj",
+                    "up_proj",
+                    "down_proj",
+                ):
+                    projection = getattr(block, projection_name)
+                    projection.dU.zero_()
+                    projection.dV.zero_()
+        updates = {}
+    elif module_name == "bicameral_combiner":
+        assert model.bicameral_combiner is not None
+        with torch.no_grad():
+            model.bicameral_combiner.theta.zero_()
+        updates = {}
     elif module_name == "reentry_bridge":
         model.reentry_bridge = None
         updates = {"use_reentry_bridge": False}
@@ -149,6 +178,24 @@ def _delete_attached_module(model: AblationLM, module_name: str) -> None:
     else:  # pragma: no cover - guarded by the registry in every caller
         raise AssertionError(f"no integrated A7 deletion rule for {module_name}")
     model.config = replace(model.config, **updates)
+
+
+def _activate_attached_module(model: AblationLM, module_name: str) -> None:
+    """Plant the A7 positive control when the default is structural OFF."""
+
+    if module_name != "bicameral_combiner":
+        return
+    assert model.bicameral_combiner is not None
+    with torch.no_grad():
+        model.bicameral_combiner.theta.copy_(
+            torch.linspace(
+                0.125,
+                0.5,
+                model.bicameral_combiner.num_bands,
+                dtype=model.bicameral_combiner.theta.dtype,
+                device=model.bicameral_combiner.theta.device,
+            )
+        )
 
 
 def _cpu_anchor_cells() -> list[DenseAnchorCell]:
@@ -196,11 +243,14 @@ def _cpu_module_cells():
                 active = _model(
                     _active_config(spec.module_name, recurrent_steps)
                 )
+                _activate_attached_module(active, spec.module_name)
                 off_after_on = copy.deepcopy(active)
                 _delete_attached_module(off_after_on, spec.module_name)
                 all_off = _model(
                     _background_config(spec.module_name, recurrent_steps)
                 )
+                if spec.module_name in ("bicameral_core", "bicameral_combiner"):
+                    _delete_attached_module(all_off, spec.module_name)
                 assert off_after_on.config == all_off.config
                 active.to(dtype=dtype)
                 off_after_on.to(dtype=dtype)
@@ -276,7 +326,7 @@ def test_a7_every_eligible_integrated_cpu_cell_is_exact_and_nontrivial(
         for cell in cpu_a7_matrix.cells
         if cell.backend == "cpu" and cell.integrated and cell.eligible
     )
-    assert len(passed) == 54
+    assert len(passed) == 70
     assert all(cell.status == "passed" for cell in passed)
     assert all(cell.off_logits_bit_identical is True for cell in passed)
     assert all(cell.off_loss_bit_identical is True for cell in passed)
@@ -292,6 +342,8 @@ def test_a7_eligibility_and_absence_are_typed_nonpasses(cpu_a7_matrix) -> None:
     assert OBS_INV_MATERIALIZED_MODULES == (
         "front_hadamard_experts",
         "static_kv_core",
+        "bicameral_core",
+        "bicameral_combiner",
         "reentry_bridge",
         "scratch",
         "lane_carrier",
@@ -305,15 +357,15 @@ def test_a7_eligibility_and_absence_are_typed_nonpasses(cpu_a7_matrix) -> None:
         "per_band_callosum",
         "sidecar",
     )
-    assert len(cpu_a7_matrix.cells) == 160
+    assert len(cpu_a7_matrix.cells) == 192
     statuses = {}
     for cell in cpu_a7_matrix.cells:
         statuses[cell.status] = statuses.get(cell.status, 0) + 1
     assert statuses == {
         "absent": 48,
         "ineligible": 4,
-        "passed": 54,
-        "pending": 54,
+        "passed": 70,
+        "pending": 70,
     }
 
     by_coordinate = {cell.coordinate: cell for cell in cpu_a7_matrix.cells}
@@ -334,7 +386,7 @@ def test_a7_cuda_cells_remain_pending_and_block_complete_promotion(
     cpu_a7_matrix,
 ) -> None:
     assert not cpu_a7_matrix.complete
-    assert len(cpu_a7_matrix.deferred_cells) == 54
+    assert len(cpu_a7_matrix.deferred_cells) == 70
     assert all(
         cell.backend == "cuda_deterministic"
         for cell in cpu_a7_matrix.deferred_cells
@@ -488,3 +540,29 @@ def test_a7_recurrence_is_background_and_static_kv_is_live_at_k1() -> None:
     )
     assert static_spec.eligible_at(1)
     assert static_spec.eligible_at(2)
+
+
+def test_a7_bicameral_core_and_s2_combiner_have_explicit_off_surfaces(
+    cpu_a7_matrix,
+) -> None:
+    by_coordinate = {cell.coordinate: cell for cell in cpu_a7_matrix.cells}
+    for module_name in ("bicameral_core", "bicameral_combiner"):
+        spec = next(
+            spec for spec in OBS_INV_MODULE_SPECS if spec.module_name == module_name
+        )
+        assert spec.integrated
+        assert spec.eligible_at(1)
+        assert spec.eligible_at(8)
+        for recurrent_steps in OBS_INV_K_VALUES:
+            for dtype in OBS_INV_DTYPES:
+                cpu_cell = by_coordinate[
+                    (module_name, recurrent_steps, dtype, "cpu")
+                ]
+                assert cpu_cell.status == "passed"
+                assert cpu_cell.off_logits_bit_identical is True
+                assert cpu_cell.off_loss_bit_identical is True
+                assert cpu_cell.on_logits_nontrivial is True
+                assert cpu_cell.on_loss_nontrivial is True
+                assert by_coordinate[
+                    (module_name, recurrent_steps, dtype, "cuda_deterministic")
+                ].status == "pending"

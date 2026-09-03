@@ -76,6 +76,32 @@ def _tiny_ablation_lm() -> nn.Module:
     )
 
 
+def _tiny_bicameral_ablation_lm() -> nn.Module:
+    from models.ablation_lm import AblationLM, AblationLMConfig
+
+    return AblationLM(
+        AblationLMConfig(
+            vocab_size=64,
+            d_model=64,
+            n_heads=4,
+            n_kv_heads=2,
+            d_ff=128,
+            n_prelude_layers=1,
+            n_core_blocks=1,
+            n_coda_layers=1,
+            use_recurrence=True,
+            recurrent_steps=2,
+            max_recurrent_steps=2,
+            use_bicameral_core=True,
+            kv_policy="live",
+            max_sequence_length=16,
+            use_scratch=True,
+            use_lane_carrier=True,
+            scratch_width=16,
+        )
+    )
+
+
 def test_partition_covers_every_trainable_exactly_once_by_semantic_role() -> None:
     model = _RoleFixture()
     partition = partition_optimizer_parameters(model)
@@ -159,6 +185,100 @@ def test_dense_mu_and_factored_delta_pair_cannot_split_optimizer_families() -> N
         assignment = partition.assignment_for(name)
         assert assignment.role is ParameterRole.COUPLED_MODE
         assert assignment.target is OptimizerTarget.AUXILIARY_ADAMW
+
+
+def test_integrated_bicameral_optimizer_roles_preserve_the_closed_allowlist() -> None:
+    from models.ablation_lm.accounting import composition_receipt, parameter_accounting
+    from models.ablation_lm.bicameral_recurrent import (
+        expected_bicameral_visit_schedules,
+    )
+
+    model = _tiny_bicameral_ablation_lm()
+    partition = partition_optimizer_parameters(model)
+    block = model.core_blocks[0]
+
+    for name in ("k_proj.weight", "v_proj.weight"):
+        assignment = partition.assignment_for(f"core_blocks.0.{name}")
+        assert assignment.role is ParameterRole.DENSE_HIDDEN_WEIGHT
+        assert assignment.target is OptimizerTarget.MUON_ELIGIBLE
+    for projection_name in ("q_proj", "o_proj", "gate_proj", "up_proj", "down_proj"):
+        for parameter_name in ("mu", "dU", "dV"):
+            assignment = partition.assignment_for(
+                f"core_blocks.0.{projection_name}.{parameter_name}"
+            )
+            assert assignment.role is ParameterRole.COUPLED_MODE
+            assert assignment.target is OptimizerTarget.AUXILIARY_ADAMW
+
+    theta = partition.assignment_for("bicameral_combiner.theta")
+    assert theta.role is ParameterRole.GATE
+    assert theta.target is OptimizerTarget.AUXILIARY_ADAMW
+    for name in (
+        "scratch.initializer.weight",
+        "scratch.context_projection.weight",
+        "scratch.update_in.weight",
+        "scratch.update_out.weight",
+        "scratch.readout.weight",
+    ):
+        assignment = partition.assignment_for(name)
+        assert assignment.role is ParameterRole.COUPLED_MODE
+        assert assignment.target is OptimizerTarget.AUXILIARY_ADAMW
+    for name in ("scratch.layer_scale", "scratch.carrier.raw_rho"):
+        assignment = partition.assignment_for(name)
+        assert assignment.role is ParameterRole.GATE
+        assert assignment.target is OptimizerTarget.AUXILIARY_ADAMW
+
+    partition_ids = [
+        id(parameter)
+        for group in partition.groups
+        for parameter in group.parameters
+    ]
+    assert len(partition_ids) == len(set(partition_ids))
+    assert set(partition_ids) == _unique_trainables(model)
+    accounting = parameter_accounting(model)
+    assert accounting.total == sum(
+        parameter.numel() for parameter in model.parameters()
+    )
+    assert accounting.total == sum(
+        parameter.numel()
+        for parameter in (*partition.muon_parameters, *partition.auxiliary_adamw_parameters)
+    )
+
+    core_schedule = expected_bicameral_visit_schedules(
+        recurrent_steps=2,
+        unique_core_blocks=1,
+        kv_policy="live",
+        after_block_modules=(
+            "PositionAlignedScratch.step_bicameral",
+            "TwoLaneBirkhoffMixer",
+        ),
+    )[0]
+    execution_schedule = (*core_schedule, "terminal.PerBandUnitCircleCombiner")
+    receipt = composition_receipt(
+        model,
+        requested_visits=2,
+        executed_visits=2,
+        kv_policy="live",
+        kv_cache_multiplier_at_serving=4,
+        visit_schedule=execution_schedule,
+    )
+    assert receipt.n_unique == accounting.total
+    expected_recurrent_ids = {
+        id(parameter): parameter
+        for module in (model.core_blocks, model.scratch)
+        for parameter in module.parameters()
+    }
+    for parameter in model.scratch.initializer.parameters():
+        expected_recurrent_ids.pop(id(parameter))
+    assert receipt.n_recurrent == sum(
+        parameter.numel() for parameter in expected_recurrent_ids.values()
+    )
+    assert receipt.n_fixed + receipt.n_recurrent == receipt.n_body
+    assert id(model.bicameral_combiner.theta) not in expected_recurrent_ids
+    assert receipt.kv_policy == "live"
+    assert receipt.kv_cache_multiplier_at_serving == 4
+    assert receipt.visit_schedule == execution_schedule
+    assert any(parameter is block.k_proj.weight for parameter in partition.muon_parameters)
+    assert any(parameter is block.v_proj.weight for parameter in partition.muon_parameters)
 
 
 def test_closed_ablation_allowlist_rejects_a_new_muon_hypothesis() -> None:

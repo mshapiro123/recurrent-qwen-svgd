@@ -10,6 +10,10 @@ The integrated rotor carrier, per-band callosum, and sidecar are not part of
 ``AblationLM`` at this checkpoint.  They are disclosed below rather than
 invented as liveness rows.  Their standalone primitive tests do not imply that
 the production graph has passed this instrument.
+
+Step 2 does execute the position-aligned lane update, but the lanes do not yet
+write back to either hemisphere.  Those tensors are typed as gradient-deferred
+and keep an integrated T2 receipt from passing until the Step-3 path exists.
 """
 
 from __future__ import annotations
@@ -61,6 +65,7 @@ class ParameterEligibility:
     visit_index: int | None
     eligible: bool
     executed: bool
+    deferred: bool
     reason: str
 
 
@@ -70,6 +75,7 @@ class IneligibleParameter:
 
     parameter_name: str
     module_name: str
+    deferred: bool
     reason: str
 
 
@@ -90,6 +96,7 @@ class GradientLivenessReceipt:
     eligibility_matrix: tuple[ParameterEligibility, ...]
     module_minimums: tuple[ModuleGradientMinimum, ...]
     ineligible_parameters: tuple[IneligibleParameter, ...]
+    deferred_parameters: tuple[IneligibleParameter, ...]
     eligible_missing_gradients: tuple[str, ...]
     eligible_zero_gradients: tuple[str, ...]
     eligible_nonfinite_gradients: tuple[str, ...]
@@ -119,7 +126,8 @@ class GradientLivenessReceipt:
     @property
     def passed(self) -> bool:
         return not (
-            self.eligible_missing_gradients
+            self.deferred_parameters
+            or self.eligible_missing_gradients
             or self.eligible_zero_gradients
             or self.eligible_nonfinite_gradients
         )
@@ -131,6 +139,7 @@ class GradientLivenessReceipt:
             return
         raise GradientLivenessBlocked(
             "eligible gradient liveness failed: "
+            f"deferred={tuple(item.parameter_name for item in self.deferred_parameters)}, "
             f"missing={self.eligible_missing_gradients}, "
             f"zero={self.eligible_zero_gradients}, "
             f"nonfinite={self.eligible_nonfinite_gradients}"
@@ -177,6 +186,7 @@ def _eligibility_rows_for_parameter(
         *,
         eligible: bool,
         executed: bool,
+        deferred: bool = False,
         reason: str,
     ) -> ParameterEligibility:
         return ParameterEligibility(
@@ -186,6 +196,7 @@ def _eligibility_rows_for_parameter(
             visit_index=visit_index,
             eligible=eligible,
             executed=executed,
+            deferred=deferred,
             reason=reason,
         )
 
@@ -200,11 +211,11 @@ def _eligibility_rows_for_parameter(
         )
 
     if module_name == "core_blocks":
-        static_projection = model.config.use_static_kv_core and (
+        legacy_static_projection = model.config.use_static_kv_core and (
             ".attention.k_proj." in parameter_name
             or ".attention.v_proj." in parameter_name
         )
-        if static_projection:
+        if legacy_static_projection:
             return (
                 row(
                     None,
@@ -213,6 +224,45 @@ def _eligibility_rows_for_parameter(
                     reason="static K/V anchor projection executes once before recurrence",
                 ),
             )
+        bicameral_kv_projection = model.config.use_bicameral_core and (
+            parameter_name.endswith(".k_proj.weight")
+            or parameter_name.endswith(".v_proj.weight")
+            or parameter_name.endswith(".key_norm.weight")
+        )
+        if bicameral_kv_projection and model.config.kv_policy == "static":
+            return (
+                row(
+                    None,
+                    eligible=True,
+                    executed=True,
+                    reason=(
+                        "bicameral static K/V projects the prelude anchor once "
+                        "for this core block"
+                    ),
+                ),
+            )
+        if bicameral_kv_projection and model.config.kv_policy == "midpoint":
+            rows = [
+                row(
+                    None,
+                    eligible=True,
+                    executed=True,
+                    reason=(
+                        "bicameral midpoint K/V projects the prelude anchor once "
+                        "for this core block"
+                    ),
+                )
+            ]
+            if recurrent_steps >= 2:
+                rows.append(
+                    row(
+                        recurrent_steps // 2,
+                        eligible=True,
+                        executed=True,
+                        reason="bicameral midpoint K/V refresh executes at floor(K/2)",
+                    )
+                )
+            return tuple(rows)
         return tuple(
             row(
                 visit,
@@ -221,6 +271,16 @@ def _eligibility_rows_for_parameter(
                 reason="shared recurrent core executes at every requested visit",
             )
             for visit in range(recurrent_steps)
+        )
+
+    if module_name == "bicameral_combiner":
+        return (
+            row(
+                None,
+                eligible=True,
+                executed=True,
+                reason="terminal S-2 combiner executes once after the final visit",
+            ),
         )
 
     if module_name == "loop_embedding":
@@ -250,6 +310,59 @@ def _eligibility_rows_for_parameter(
         )
 
     if module_name == "scratch":
+        if model.config.use_bicameral_core:
+            deferred_reason = (
+                "Step-2 lanes are updated but do not yet reach either hemisphere "
+                "or the logits; gradient liveness is deferred until the Step-3 "
+                "carrier/write path is integrated"
+            )
+            if parameter_name.startswith("scratch.initializer."):
+                return (
+                    row(
+                        None,
+                        eligible=False,
+                        executed=True,
+                        deferred=True,
+                        reason=deferred_reason,
+                    ),
+                )
+            if parameter_name in ("scratch.layer_scale",) or parameter_name.startswith(
+                "scratch.readout."
+            ):
+                return (
+                    row(
+                        None,
+                        eligible=False,
+                        executed=False,
+                        deferred=True,
+                        reason=(
+                            "legacy scratch injection is not executed by the Step-2 "
+                            "bicameral graph; the Step-3 write path is absent"
+                        ),
+                    ),
+                )
+            rows: list[ParameterEligibility] = []
+            if parameter_name.startswith("scratch.hidden_norm."):
+                rows.append(
+                    row(
+                        None,
+                        eligible=False,
+                        executed=True,
+                        deferred=True,
+                        reason=deferred_reason,
+                    )
+                )
+            rows.extend(
+                row(
+                    visit,
+                    eligible=False,
+                    executed=True,
+                    deferred=True,
+                    reason=deferred_reason,
+                )
+                for visit in range(recurrent_steps)
+            )
+            return tuple(rows)
         if parameter_name.startswith("scratch.initializer."):
             return (
                 row(
@@ -348,10 +461,12 @@ def gradient_liveness_receipt(
         if any(row.eligible and row.executed for row in rows):
             continue
         reasons = tuple(dict.fromkeys(row.reason for row in rows))
+        deferred = bool(rows) and all(row.deferred for row in rows)
         ineligible.append(
             IneligibleParameter(
                 parameter_name=name,
                 module_name=_module_name(name),
+                deferred=deferred,
                 reason="; ".join(reasons),
             )
         )
@@ -401,6 +516,7 @@ def gradient_liveness_receipt(
         eligibility_matrix=matrix,
         module_minimums=module_minimums,
         ineligible_parameters=tuple(ineligible),
+        deferred_parameters=tuple(item for item in ineligible if item.deferred),
         eligible_missing_gradients=tuple(missing),
         eligible_zero_gradients=tuple(zero),
         eligible_nonfinite_gradients=tuple(nonfinite),
@@ -417,7 +533,11 @@ def inverse_k1_k4_liveness(
     if k1_receipt.recurrent_steps != 1 or k4_receipt.recurrent_steps != 4:
         raise ValueError("inverse liveness requires K=1 and K=4 receipts")
     k1_ineligible = tuple(
-        sorted(item.parameter_name for item in k1_receipt.ineligible_parameters)
+        sorted(
+            item.parameter_name
+            for item in k1_receipt.ineligible_parameters
+            if not item.deferred
+        )
     )
     k4_eligible = set(k4_receipt.eligible_parameter_names)
     k4_live = set(k4_receipt.live_parameter_names)

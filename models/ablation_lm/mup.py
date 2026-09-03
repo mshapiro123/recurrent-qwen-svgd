@@ -135,6 +135,15 @@ _TRANSFORMER_HIDDEN_RE: Final[re.Pattern[str]] = re.compile(
     r"(?:attention\.(?:q_proj|k_proj|v_proj|output_proj)|"
     r"feed_forward\.(?:gate_proj|up_proj|down_proj))\.weight$"
 )
+_BICAMERAL_SWAP_RE: Final[re.Pattern[str]] = re.compile(
+    r"^core_blocks\.\d+\."
+    r"(?P<projection>q_proj|o_proj|gate_proj|up_proj|down_proj)\."
+    r"(?P<component>mu|dU|dV)$"
+)
+_BICAMERAL_SHARED_KV_RE: Final[re.Pattern[str]] = re.compile(
+    r"^core_blocks\.\d+\.(?P<projection>k_proj|v_proj)\.weight$"
+)
+_BICAMERAL_COMBINER_THETA: Final[str] = "bicameral_combiner.theta"
 _EXPLICIT_HIDDEN_NAMES: Final[frozenset[str]] = frozenset(
     {
         "engram.query_proj.weight",
@@ -242,6 +251,29 @@ def _is_normalization(module: nn.Module) -> bool:
     return isinstance(module, _NORMALIZATION_TYPES) or type(module).__name__ == "RMSNorm"
 
 
+def _all_bicameral_component(
+    owners: tuple[_Owner, ...],
+    *,
+    component: str,
+) -> bool:
+    return bool(owners) and all(
+        type(owner.module).__name__ == "SwapLinear"
+        and owner.local_name == component
+        and (match := _BICAMERAL_SWAP_RE.fullmatch(owner.alias)) is not None
+        and match.group("component") == component
+        for owner in owners
+    )
+
+
+def _all_bicameral_shared_kv(owners: tuple[_Owner, ...]) -> bool:
+    return bool(owners) and all(
+        isinstance(owner.module, nn.Linear)
+        and owner.local_name == "weight"
+        and _BICAMERAL_SHARED_KV_RE.fullmatch(owner.alias) is not None
+        for owner in owners
+    )
+
+
 def _classify(owners: tuple[_Owner, ...]) -> MuPParameterClass:
     aliases = tuple(sorted(owner.alias for owner in owners))
     alias_set = set(aliases)
@@ -274,6 +306,30 @@ def _classify(owners: tuple[_Owner, ...]) -> MuPParameterClass:
     if alias_set and alias_set <= _EXPLICIT_VECTOR_NAMES:
         return MuPParameterClass.VECTOR
 
+    if alias_set == {_BICAMERAL_COMBINER_THETA}:
+        owner = owners[0]
+        if (
+            len(owners) != 1
+            or type(owner.module).__name__ != "PerBandUnitCircleCombiner"
+            or owner.local_name != "theta"
+        ):
+            raise MuPClassificationError(
+                f"bicameral combiner theta alias has the wrong owner: {aliases!r}"
+            )
+        return MuPParameterClass.VECTOR
+
+    if _all_bicameral_component(owners, component="dV"):
+        raise MuPClassificationError(
+            "PF-3 catch clause: SwapLinear dV has width-scaling fan-in and "
+            "fixed-rank fan-out; PF-3.1 binds no stored parameter class for "
+            f"this shape: {aliases!r}"
+        )
+
+    if _all_bicameral_component(owners, component="dU"):
+        # dU maps from the fixed disagreement rank to a width-scaled output.
+        # It therefore follows PF-3.1's width-independent-fan-in input rule.
+        return MuPParameterClass.INPUT
+
     if alias_set and alias_set <= _FIXED_FAN_IN_NAMES:
         if not all(isinstance(owner.module, nn.Linear) for owner in owners):
             raise MuPClassificationError(
@@ -282,11 +338,24 @@ def _classify(owners: tuple[_Owner, ...]) -> MuPParameterClass:
         return MuPParameterClass.INPUT
 
     if alias_set and all(
-        alias in _EXPLICIT_HIDDEN_NAMES or _TRANSFORMER_HIDDEN_RE.fullmatch(alias)
+        alias in _EXPLICIT_HIDDEN_NAMES
+        or _TRANSFORMER_HIDDEN_RE.fullmatch(alias)
+        or (
+            (match := _BICAMERAL_SWAP_RE.fullmatch(alias)) is not None
+            and match.group("component") == "mu"
+        )
+        or _BICAMERAL_SHARED_KV_RE.fullmatch(alias)
         for alias in alias_set
     ):
         if not all(
-            isinstance(owner.module, nn.Linear) and owner.local_name == "weight"
+            (
+                isinstance(owner.module, nn.Linear)
+                and owner.local_name == "weight"
+            )
+            or (
+                type(owner.module).__name__ == "SwapLinear"
+                and owner.local_name == "mu"
+            )
             for owner in owners
         ):
             raise MuPClassificationError(
@@ -306,6 +375,7 @@ def _validate_bound_shape(
     aliases: tuple[str, ...],
     parameter: nn.Parameter,
     width: int,
+    owners: tuple[_Owner, ...],
 ) -> None:
     """Prove that each mapped matrix has the scaling property its class claims."""
 
@@ -326,6 +396,25 @@ def _validate_bound_shape(
         return
 
     if assignment_class is MuPParameterClass.INPUT:
+        if _all_bicameral_component(owners, component="dU"):
+            owner = owners[0]
+            projection = _BICAMERAL_SWAP_RE.fullmatch(owner.alias)
+            assert projection is not None
+            expected_output = {
+                "q_proj": width,
+                "o_proj": width,
+                "gate_proj": 11 * width // 4,
+                "up_proj": 11 * width // 4,
+                "down_proj": width,
+            }[projection.group("projection")]
+            expected = (expected_output, owner.module.rank)  # type: ignore[attr-defined]
+            if shape != expected:
+                raise MuPClassificationError(
+                    "SwapLinear dU no longer maps from its fixed rank to the "
+                    f"bound width-scaled output: {aliases!r}, shape={shape!r}, "
+                    f"expected={expected!r}"
+                )
+            return
         if alias_set <= _FIXED_FAN_IN_NAMES:
             # The regular engram has two orders, four hash heads and row width
             # eight: a fixed 64-coordinate address independent of model width.
@@ -339,13 +428,30 @@ def _validate_bound_shape(
     assert assignment_class is MuPParameterClass.HIDDEN
     alias = aliases[0]
     expected: tuple[int, int] | None = None
+    bicameral_swap_match = _BICAMERAL_SWAP_RE.fullmatch(alias)
+    bicameral_kv_match = _BICAMERAL_SHARED_KV_RE.fullmatch(alias)
+    if bicameral_swap_match:
+        projection = bicameral_swap_match.group("projection")
+        if bicameral_swap_match.group("component") != "mu":
+            raise MuPClassificationError(
+                f"only SwapLinear mu may enter the hidden class: {aliases!r}"
+            )
+        expected = {
+            "q_proj": (width, width),
+            "o_proj": (width, width),
+            "gate_proj": (11 * width // 4, width),
+            "up_proj": (11 * width // 4, width),
+            "down_proj": (width, 11 * width // 4),
+        }[projection]
+    elif bicameral_kv_match:
+        expected = (width // 2, width)
     transformer_match = re.fullmatch(
         r"(?:prelude_blocks|core_blocks|coda_blocks)\.\d+\."
         r"(?:attention\.(q_proj|k_proj|v_proj|output_proj)|"
         r"feed_forward\.(gate_proj|up_proj|down_proj))\.weight",
         alias,
     )
-    if transformer_match:
+    if transformer_match and expected is None:
         projection = transformer_match.group(1) or transformer_match.group(2)
         expected = {
             "q_proj": (width, width),
@@ -356,7 +462,7 @@ def _validate_bound_shape(
             "up_proj": (11 * width // 4, width),
             "down_proj": (width, 11 * width // 4),
         }[projection]
-    else:
+    elif expected is None:
         expected = {
             # PF-3 keeps the memory-space query in the hidden class even
             # though its fixed 64-coordinate output does not widen with d.
@@ -399,6 +505,7 @@ def audit_mup_parameters(model: nn.Module, *, width: int) -> MuPClassificationAu
                 aliases=aliases,
                 parameter=parameter,
                 width=width,
+                owners=owners,
             )
         except MuPClassificationError as error:
             issues.append(

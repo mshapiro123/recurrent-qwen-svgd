@@ -43,9 +43,10 @@ RANK_ONLY_MUON_PROHIBITED_ATTR: Final[str] = (
 """Parameter marker consumed by the legacy rank-only splitter's fail-closed guard."""
 
 _ABLATION_LM_MUON_NAME_PATTERN: Final[re.Pattern[str]] = re.compile(
-    r"^(?:prelude_blocks|core_blocks|coda_blocks)\.\d+\."
+    r"^(?:(?:prelude_blocks|core_blocks|coda_blocks)\.\d+\."
     r"(?:attention\.(?:q_proj|k_proj|v_proj|output_proj)|"
-    r"feed_forward\.(?:gate_proj|up_proj|down_proj))\.weight$"
+    r"feed_forward\.(?:gate_proj|up_proj|down_proj))\.weight|"
+    r"core_blocks\.\d+\.(?:k_proj|v_proj)\.weight)$"
 )
 
 

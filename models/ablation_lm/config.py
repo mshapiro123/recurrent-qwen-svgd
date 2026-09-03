@@ -7,6 +7,7 @@ from dataclasses import dataclass, replace
 
 
 TOKENIZER_VOCAB_CANDIDATES = (16_384, 24_576, 32_768, 49_152)
+WEFT1_KV_POLICIES = ("live", "static", "midpoint")
 REGISTERED_PROXY_BLOCK_SPLITS = ((4, 2, 4), (3, 4, 3), (2, 6, 2))
 REGISTERED_TARGET_BLOCK_SPLITS = ((9, 4, 9), (8, 6, 8))
 # D-PF-3 is numerically realized by the existing square-root attention at
@@ -52,6 +53,8 @@ class AblationLMConfig:
     max_recurrent_steps: int = 8
     recurrence_coefficient: float = 1.0
     recurrence_exponent: float = 1.0
+    use_bicameral_core: bool = False
+    kv_policy: str = "live"
     use_static_kv_core: bool = False
     static_kv_midpoint_refresh: bool = False
     max_sequence_length: int = 2_048
@@ -125,11 +128,14 @@ class AblationLMConfig:
         if self.recurrent_steps > self.max_recurrent_steps:
             raise ValueError("recurrent_steps exceeds max_recurrent_steps")
         for name, value in {
+            "use_bicameral_core": self.use_bicameral_core,
             "use_static_kv_core": self.use_static_kv_core,
             "static_kv_midpoint_refresh": self.static_kv_midpoint_refresh,
         }.items():
             if type(value) is not bool:
                 raise TypeError(f"{name} must be an exact bool")
+        if not isinstance(self.kv_policy, str) or self.kv_policy not in WEFT1_KV_POLICIES:
+            raise ValueError(f"kv_policy must be one of {WEFT1_KV_POLICIES!r}")
         if not math.isfinite(self.recurrence_coefficient) or self.recurrence_coefficient <= 0:
             raise ValueError("recurrence_coefficient must be finite and positive")
         if self.recurrence_exponent != 1.0:
@@ -169,6 +175,13 @@ class AblationLMConfig:
             raise ValueError("the lane carrier requires the position-aligned scratch arm")
         if self.use_reentry_bridge and not self.use_recurrence:
             raise ValueError("the re-entry bridge requires structural recurrence")
+        if self.use_bicameral_core and not self.use_recurrence:
+            raise ValueError("the bicameral core requires structural recurrence")
+        if self.use_bicameral_core and self.use_static_kv_core:
+            raise ValueError(
+                "the production bicameral kv_policy and legacy single-stream "
+                "static-KV arm are mutually exclusive"
+            )
         if self.use_static_kv_core and not self.use_recurrence:
             raise ValueError("static core KV requires structural recurrence")
         if self.static_kv_midpoint_refresh and not self.use_static_kv_core:
@@ -234,19 +247,29 @@ class AblationLMConfig:
         return self.recurrence_coefficient / actual_steps**self.recurrence_exponent
 
     def with_innovations(self) -> "AblationLMConfig":
-        """Return full switches; model construction still requires a frozen LTM store."""
+        """Return the current WEFT-1 production posture.
+
+        The historical method name is retained for API compatibility. Legacy
+        FRONT-WHT/H0-REENTRY and the registered LTM-RO arm remain structural
+        OFF; the narrow lane carrier remains live only until Step 4.
+        """
 
         return replace(
             self,
-            use_front_hadamard_experts=True,
+            # R-1/R-2 retire the inherited front-WHT and h0-reentry paths from
+            # the production graph.  They remain directly constructible legacy
+            # arms, but the all-innovation WEFT profile must not enable them.
+            use_front_hadamard_experts=False,
             use_recurrence=True,
             recurrent_steps=4,
-            use_static_kv_core=True,
-            use_reentry_bridge=True,
+            use_bicameral_core=True,
+            kv_policy="live",
+            use_static_kv_core=False,
+            use_reentry_bridge=False,
             use_scratch=True,
             use_lane_carrier=True,
             use_engram=True,
-            use_long_term_memory=True,
+            use_long_term_memory=False,
         )
 
 

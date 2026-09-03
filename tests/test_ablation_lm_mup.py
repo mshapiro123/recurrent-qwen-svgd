@@ -41,6 +41,29 @@ def _minimal_model(width: int = 128) -> AblationLM:
     )
 
 
+def _integrated_bicameral_model(width: int = 128) -> AblationLM:
+    return AblationLM(
+        AblationLMConfig(
+            vocab_size=MUP_BASE_VOCAB_SIZE,
+            d_model=width,
+            n_heads=width // 64,
+            n_kv_heads=width // 128,
+            d_ff=11 * width // 4,
+            n_prelude_layers=4,
+            n_core_blocks=2,
+            n_coda_layers=4,
+            use_recurrence=True,
+            recurrent_steps=1,
+            max_recurrent_steps=8,
+            use_bicameral_core=True,
+            kv_policy="live",
+            max_sequence_length=8,
+            initialization_seed=20_260_902,
+            run_seed=20_260_902,
+        )
+    )
+
+
 def test_closed_map_is_complete_duplicate_free_and_preserves_tied_alias() -> None:
     model = _minimal_model()
     parameterization = classify_mup_parameters(model, width=128)
@@ -132,3 +155,46 @@ def test_ltm_shape_that_does_not_scale_both_axes_fails_closed() -> None:
 
     with pytest.raises(MuPClassificationError, match="does not prove both fan-in and fan-out"):
         classify_mup_parameters(Holder(), width=128)
+
+
+def test_integrated_bicameral_audit_classifies_every_bound_tensor_and_isolates_dv() -> None:
+    audit = audit_mup_parameters(_integrated_bicameral_model(), width=128)
+    assignments = {item.canonical_name: item for item in audit.assignments}
+
+    theta = assignments["bicameral_combiner.theta"]
+    assert theta.parameter_class is MuPParameterClass.VECTOR
+    assert theta.learning_rate == MUP_ETA_BASE
+    assert theta.weight_decay == 0.0
+
+    for block_index in range(2):
+        for projection in ("k_proj", "v_proj"):
+            shared = assignments[f"core_blocks.{block_index}.{projection}.weight"]
+            assert shared.parameter_class is MuPParameterClass.HIDDEN
+        for projection in ("q_proj", "o_proj", "gate_proj", "up_proj", "down_proj"):
+            prefix = f"core_blocks.{block_index}.{projection}"
+            mean = assignments[f"{prefix}.mu"]
+            factor_u = assignments[f"{prefix}.dU"]
+            assert mean.parameter_class is MuPParameterClass.HIDDEN
+            assert factor_u.parameter_class is MuPParameterClass.INPUT
+            assert factor_u.learning_rate == MUP_ETA_BASE
+            assert factor_u.weight_decay == 0.0
+
+    expected_dv = {
+        f"core_blocks.{block_index}.{projection}.dV"
+        for block_index in range(2)
+        for projection in ("q_proj", "o_proj", "gate_proj", "up_proj", "down_proj")
+    }
+    assert {issue.canonical_name for issue in audit.issues} == expected_dv
+    assert all(
+        "width-scaling fan-in and fixed-rank fan-out" in issue.reason
+        and "binds no stored parameter class" in issue.reason
+        for issue in audit.issues
+    )
+
+
+def test_integrated_bicameral_promotion_fails_closed_only_on_unbound_dv() -> None:
+    with pytest.raises(
+        MuPClassificationError,
+        match=r"core_blocks\.0\.q_proj\.dV.*width-scaling fan-in and fixed-rank fan-out",
+    ):
+        classify_mup_parameters(_integrated_bicameral_model(), width=128)
