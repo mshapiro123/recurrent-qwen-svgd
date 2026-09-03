@@ -74,7 +74,13 @@ class CausalTokenEngram(nn.Module):
         self.query_proj = nn.Linear(self.hidden_dim, self.memory_dim, bias=False)
         self.value_proj = nn.Linear(self.memory_dim, self.hidden_dim, bias=False)
         self.query_norm = nn.RMSNorm(
-            self.memory_dim, eps=1.0e-6, elementwise_affine=False
+            self.memory_dim, eps=1.0e-6, elementwise_affine=True
+        )
+        # EG-1 / Catch #39 keeps unit-initialized, trainable gains on both
+        # gate operands so the row-as-key form can learn its temperature.  A
+        # distinct gate-only norm leaves the value path exactly unchanged.
+        self.key_norm = nn.RMSNorm(
+            self.memory_dim, eps=1.0e-6, elementwise_affine=True
         )
         self.gate_bias = nn.Parameter(torch.zeros(()))
 
@@ -268,8 +274,9 @@ class CausalTokenEngram(nn.Module):
         normalized_memory = self.memory_norm(memory)
         query = self.query_norm(self.query_proj(hidden_states))
         value = self.value_proj(normalized_memory)
+        key = self.key_norm(memory)
         gate = torch.sigmoid(
-            (query.float() * normalized_memory.float()).sum(dim=-1, keepdim=True)
+            (query.float() * key.float()).sum(dim=-1, keepdim=True)
             / math.sqrt(self.memory_dim)
             + self.gate_bias.float()
         )

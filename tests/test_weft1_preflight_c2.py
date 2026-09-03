@@ -96,7 +96,7 @@ def test_c2_pf3_gate_excludes_valid_ineligible_zeros_and_passes(
         "1bce335742f00f14c7e9abd88396776dc4d473fb955f60a923868618bf1d15f6"
     )
     assert receipt.initial_model_state_sha256 == (
-        "699fd7d782b7d8bd652b8ddfe552a1fb89e61ff02b901d737d54f19d1e7e6a73"
+        "8420c11aa7746c2191206cb061bd9bcbecf217fe264e0fc24cdb1761ee2dc2fb"
     )
     assert receipt.state_logit_relative_l2_threshold == 1e-2
     assert receipt.lane_gradient_relative_l2_threshold == 5e-2
@@ -143,7 +143,7 @@ def test_c2_pf3_gate_excludes_valid_ineligible_zeros_and_passes(
         0.0038046872811950652, abs=5e-10
     )
     assert receipt.summary.max_full_gradient_relative_l2 == pytest.approx(
-        0.007183102231887862, abs=5e-10
+        0.0071831022367519065, abs=5e-10
     )
     assert receipt.summary.max_worst_module_gradient_relative_l2 == pytest.approx(
         0.026736695789816682, abs=5e-10
@@ -201,7 +201,7 @@ def test_c2_pf3_gate_excludes_valid_ineligible_zeros_and_passes(
     module_maxima = {
         item.module_name: item for item in receipt.summary.per_module_gradient_maxima
     }
-    assert len(module_maxima) == 140
+    assert len(module_maxima) == 142
     for module_name in (
         "reentry_bridge",
         "reentry_bridge.prelude_norm",
@@ -223,14 +223,14 @@ def test_c2_pf3_gate_excludes_valid_ineligible_zeros_and_passes(
         0.00366168723457278, abs=5e-10
     )
     assert final_visit.gradient.full_parameter_vector.relative_l2_error == pytest.approx(
-        0.007065333907931817, abs=5e-10
+        0.007065333916557898, abs=5e-10
     )
     assert final_visit.relative_loss_drift == pytest.approx(
         4.892405245362929e-05, abs=5e-10
     )
 
-    assert final_visit.gradient.trainable_parameter_tensors == 142
-    assert final_visit.gradient.trainable_parameter_elements == 484_763
+    assert final_visit.gradient.trainable_parameter_tensors == 144
+    assert final_visit.gradient.trainable_parameter_elements == 484_795
     assert final_visit.gradient.complete is True
     assert final_visit.gradient.zero_reference_cells == ()
     assert final_visit.gradient.worst_module_name == "core_blocks.0.attention.key_norm"

@@ -6,6 +6,11 @@ import pytest
 import torch
 
 from models.ablation_lm.engram import CausalTokenEngram, TokenEngramConfig
+from models.ablation_lm.optim import (
+    OptimizerTarget,
+    ParameterRole,
+    partition_optimizer_parameters,
+)
 
 
 def _tiny_engram(*, seed: int = 17) -> CausalTokenEngram:
@@ -78,7 +83,7 @@ def test_document_boundaries_invalidate_cross_document_suffixes() -> None:
     torch.testing.assert_close(output[:, 2:], changed_output[:, 2:], rtol=0, atol=0)
 
 
-def test_active_arm_has_small_nonzero_scale_and_live_gradients() -> None:
+def test_t2_active_arm_has_small_nonzero_scale_and_live_gradients() -> None:
     module = _tiny_engram()
     hidden = torch.randn(
         2, 6, 8, generator=torch.Generator().manual_seed(31), requires_grad=True
@@ -104,6 +109,9 @@ def test_active_arm_has_small_nonzero_scale_and_live_gradients() -> None:
     for projection in (module.query_proj, module.value_proj):
         assert projection.weight.grad is not None
         assert projection.weight.grad.abs().sum().item() > 0
+    for gain in (module.query_norm.weight, module.key_norm.weight):
+        assert gain is not None and gain.grad is not None
+        assert gain.grad.abs().sum().item() > 0
 
     for name, table in module.tables.items():
         assert table.weight.grad is not None
@@ -128,12 +136,18 @@ def test_gate_is_exact_memory_space_dot_with_memory_width_divisor() -> None:
     module = _tiny_engram()
     hidden = torch.randn(1, 5, 8, generator=torch.Generator().manual_seed(43))
     tokens = torch.tensor([[2, 3, 5, 7, 11]])
+    with torch.no_grad():
+        module.query_norm.weight.copy_(torch.linspace(0.75, 1.25, module.memory_dim))
+        module.key_norm.weight.copy_(torch.linspace(1.25, 0.75, module.memory_dim))
 
-    _, audit = module(hidden, tokens)
+    output, audit = module(hidden, tokens)
 
     assert module.memory_dim == 12
     assert module.query_proj.weight.shape == (module.memory_dim, module.hidden_dim)
     assert not hasattr(module, "key_proj")
+    assert module.query_norm.weight is not None
+    assert module.key_norm.weight is not None
+    assert module.memory_norm.weight is None
     retrieved = []
     for order in module.ngram_orders:
         for head in range(module.num_hash_heads):
@@ -142,15 +156,57 @@ def test_gate_is_exact_memory_space_dot_with_memory_width_divisor() -> None:
             valid = indices.ge(0)
             rows = module.tables[name](indices.masked_fill(~valid, 0))
             retrieved.append(rows * valid.unsqueeze(-1).to(rows.dtype))
-    normalized_memory = module.memory_norm(torch.cat(retrieved, dim=-1))
+    memory = torch.cat(retrieved, dim=-1)
+    normalized_memory = module.memory_norm(memory)
+    key = module.key_norm(memory)
     query = module.query_norm(module.query_proj(hidden))
     expected_gate = torch.sigmoid(
-        (query.float() * normalized_memory.float()).sum(dim=-1, keepdim=True)
+        (query.float() * key.float()).sum(dim=-1, keepdim=True)
         / math.sqrt(module.memory_dim)
         + module.gate_bias.float()
     )
     expected_gate = expected_gate * audit["has_memory"].to(expected_gate.dtype)
     torch.testing.assert_close(audit["gate"], expected_gate, rtol=0, atol=0)
+    expected_value = module.value_proj(normalized_memory)
+    expected_delta = expected_gate * expected_value
+    expected_output = hidden + module.residual_scale() * expected_delta.to(hidden.dtype)
+    torch.testing.assert_close(output, expected_output, rtol=0, atol=0)
+
+
+def test_gate_gains_are_normalization_vectors_in_auxiliary_adamw() -> None:
+    module = _tiny_engram()
+
+    partition = partition_optimizer_parameters(module)
+
+    for name in ("query_norm.weight", "key_norm.weight"):
+        assignment = partition.assignment_for(name)
+        assert assignment.role is ParameterRole.NORMALIZATION
+        assert assignment.target is OptimizerTarget.AUXILIARY_ADAMW
+
+
+def test_key_side_gate_gain_cannot_change_value_projection_input() -> None:
+    module = _tiny_engram()
+    hidden = torch.randn(1, 5, 8, generator=torch.Generator().manual_seed(47))
+    tokens = torch.tensor([[2, 3, 5, 7, 11]])
+    value_inputs: list[torch.Tensor] = []
+
+    def capture_value_input(
+        _module: torch.nn.Module, inputs: tuple[torch.Tensor, ...]
+    ) -> None:
+        value_inputs.append(inputs[0].detach().clone())
+
+    handle = module.value_proj.register_forward_pre_hook(capture_value_input)
+    try:
+        _, before = module(hidden, tokens)
+        with torch.no_grad():
+            module.key_norm.weight.mul_(2.0)
+        _, after = module(hidden, tokens)
+    finally:
+        handle.remove()
+
+    assert len(value_inputs) == 2
+    torch.testing.assert_close(value_inputs[0], value_inputs[1], rtol=0, atol=0)
+    assert not torch.equal(before["gate"], after["gate"])
 
 
 @pytest.mark.parametrize(
