@@ -20,7 +20,7 @@ ROOT = Path(__file__).resolve().parents[1]
 RECEIPT = (
     ROOT
     / "training"
-    / "ablation_lm_engineering_quarantine_20260903_eg1.json"
+    / "ablation_lm_engineering_quarantine_20260903_step2.json"
 )
 FAILED_NODE = re.compile(r"^FAILED\s+(\S+)", re.MULTILINE)
 
