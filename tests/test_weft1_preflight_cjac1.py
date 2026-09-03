@@ -43,7 +43,7 @@ def test_pf3_cjac1_current_graph_emits_converged_two_number_receipt(
     assert receipt.terminal_visit == 8
     assert receipt.visits_materialized_before_primal == 7
     assert receipt.lambda_adapters == pytest.approx(1.0)
-    assert receipt.lambda_hat_core == pytest.approx(1.0420480479402405, abs=1e-12)
+    assert receipt.lambda_hat_core == pytest.approx(1.041439431237759, abs=1e-12)
     assert receipt.loop_receipt.two_number_line == (
         ("Lambda_adapters", receipt.lambda_adapters),
         ("Lambda_hat_core", receipt.lambda_hat_core),
@@ -53,7 +53,7 @@ def test_pf3_cjac1_current_graph_emits_converged_two_number_receipt(
     assert core.iterations == 47
     assert core.minimum_iterations == 3
     assert core.last_relative_change == pytest.approx(
-        0.0009388240523025795,
+        0.0009611520575406325,
         abs=1e-15,
     )
     assert core.last_relative_change < core.convergence_tolerance == 1e-3

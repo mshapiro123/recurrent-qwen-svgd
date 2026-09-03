@@ -195,6 +195,8 @@ def test_composition_receipt_partitions_fixed_and_recurrent_capacity() -> None:
     assert baseline_receipt.n_active_eval == baseline_receipt.n_body
     assert baseline_receipt.composition_exact is True
     assert baseline_receipt.active_eval_exact is True
+    assert baseline_receipt.coda_decodes_per_step == 1
+    assert baseline_receipt.lstage_sampled_visit is None
     json.dumps(baseline_receipt.as_dict())
 
     recurrent = AblationLM(replace(_small_config(), use_recurrence=True))
@@ -216,6 +218,40 @@ def test_composition_receipt_partitions_fixed_and_recurrent_capacity() -> None:
             sidecar_firing_fraction_by_step=(0.0, 0.25, 0.5, 0.75),
         )
 
+    sampled = composition_receipt(
+        recurrent,
+        requested_visits=4,
+        executed_visits=4,
+        coda_decodes_per_step=2,
+        lstage_sampled_visit=1,
+    )
+    assert sampled.coda_decodes_per_step == 2
+    assert sampled.lstage_sampled_visit == 1
+    json.dumps(sampled.as_dict())
+    with pytest.raises(ValueError, match="earlier visit"):
+        composition_receipt(
+            recurrent,
+            requested_visits=4,
+            executed_visits=4,
+            coda_decodes_per_step=2,
+            lstage_sampled_visit=3,
+        )
+    with pytest.raises(ValueError, match="exactly two coda decodes"):
+        composition_receipt(
+            recurrent,
+            requested_visits=4,
+            executed_visits=4,
+            coda_decodes_per_step=1,
+            lstage_sampled_visit=0,
+        )
+    with pytest.raises(ValueError, match=r"\[1, requested_visits\]"):
+        composition_receipt(
+            recurrent,
+            requested_visits=1,
+            executed_visits=1,
+            coda_decodes_per_step=2,
+        )
+
     wrapper = nn.Module()
     wrapper.model = baseline
     wrapper.extra = nn.Parameter(torch.ones(7))
@@ -233,6 +269,8 @@ def test_diagnostic_forward_emits_the_composition_receipt() -> None:
     receipt = output.diagnostics["composition_receipt"]
     assert receipt["requested_visits"] == 1
     assert receipt["executed_visits"] == 1.0
+    assert receipt["coda_decodes_per_step"] == 1
+    assert receipt["lstage_sampled_visit"] is None
     assert receipt["n_unique"] == sum(parameter.numel() for parameter in model.parameters())
     json.dumps(receipt)
 

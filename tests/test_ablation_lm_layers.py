@@ -85,8 +85,9 @@ def test_t3f_wht_is_deterministic_and_forces_fp32_under_autocast() -> None:
     assert torch.equal(first, second)
 
 
-def test_t4_sequency_row_k_has_exactly_k_sign_changes() -> None:
-    for width in (1, 2, 4, 8, 16, 32):
+def test_t4_bitrev_gray_permutation_has_exact_sequency() -> None:
+    assert sequency_permutation(8).tolist() == [0, 4, 6, 2, 3, 7, 5, 1]
+    for width in (1, 2, 4, 8, 16, 32, 512, 1_024):
         matrix = wht(torch.eye(width, dtype=torch.float32))
         ordered = matrix[sequency_permutation(width)]
         sign_changes = ordered[:, 1:].ne(ordered[:, :-1]).sum(dim=-1)

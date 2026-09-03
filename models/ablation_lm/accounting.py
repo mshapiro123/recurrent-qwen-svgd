@@ -65,6 +65,8 @@ class CompositionReceipt:
     composition_exact: bool
     active_eval_exact: bool
     sidecar_firing_fraction_by_step: tuple[float, ...]
+    coda_decodes_per_step: int
+    lstage_sampled_visit: int | None
 
     def as_dict(self) -> dict[str, object]:
         """Return a JSON-serializable machine receipt."""
@@ -343,6 +345,8 @@ def composition_receipt(
     requested_visits: int,
     executed_visits: float,
     sidecar_firing_fraction_by_step: tuple[float, ...] = (),
+    coda_decodes_per_step: int = 1,
+    lstage_sampled_visit: int | None = None,
 ) -> CompositionReceipt:
     """Derive the binding WEFT-1 capacity receipt without double-counting ties.
 
@@ -367,6 +371,28 @@ def composition_receipt(
         for value in sidecar_firing_fraction_by_step
     ):
         raise ValueError("sidecar firing fractions must be finite values in [0, 1]")
+    if (
+        type(coda_decodes_per_step) is not int
+        or not 1 <= coda_decodes_per_step <= requested_visits
+    ):
+        raise ValueError(
+            "coda_decodes_per_step must be an integer in [1, requested_visits]"
+        )
+    if lstage_sampled_visit is not None:
+        if type(lstage_sampled_visit) is not int:
+            raise TypeError("lstage_sampled_visit must be an integer or None")
+        if (
+            requested_visits < 2
+            or not 0 <= lstage_sampled_visit <= requested_visits - 2
+        ):
+            raise ValueError(
+                "lstage_sampled_visit must identify an earlier visit in "
+                "[0, requested_visits - 2]"
+            )
+        if coda_decodes_per_step != 2:
+            raise ValueError(
+                "a sampled L_stage visit requires exactly two coda decodes"
+            )
 
     root = _capacity_root(model)
     sidecar = getattr(root, "sidecar", None)
@@ -452,6 +478,8 @@ def composition_receipt(
         sidecar_firing_fraction_by_step=tuple(
             float(value) for value in sidecar_firing_fraction_by_step
         ),
+        coda_decodes_per_step=coda_decodes_per_step,
+        lstage_sampled_visit=lstage_sampled_visit,
     )
 
 

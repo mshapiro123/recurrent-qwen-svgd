@@ -429,7 +429,7 @@ class C2PreflightReceipt:
             and self.input_panel_sha256
             == "1bce335742f00f14c7e9abd88396776dc4d473fb955f60a923868618bf1d15f6"
             and self.initial_model_state_sha256
-            == "52b993089afe982dd4027eb16500f761b0ed8cfc49a938de7f00e2e102831aac"
+            == "699fd7d782b7d8bd652b8ddfe552a1fb89e61ff02b901d737d54f19d1e7e6a73"
             and not self.training_performed
             and not self.checkpoint_used
             and self.reference_policy == "cpu_fp32_parameters_and_compute"
@@ -447,7 +447,7 @@ class C2PreflightReceipt:
             and self.block_split == (4, 2, 4)
             and self.d_model == 64
             and self.scratch_shape == (2, 8)
-            and self.model_parameters == 488_859
+            and self.model_parameters == 484_763
             and self.gradient_population
             == "all_requires_grad_named_parameters_in_model_named_parameters_order"
             and self.relative_l2_denominator_policy

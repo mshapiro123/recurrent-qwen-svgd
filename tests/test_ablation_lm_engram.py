@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import math
+
 import pytest
 import torch
 
@@ -14,7 +16,6 @@ def _tiny_engram(*, seed: int = 17) -> CausalTokenEngram:
             ngram_orders=(2, 3),
             num_hash_heads=2,
             head_dim=3,
-            gate_dim=6,
             initial_scale=1.0e-3,
             max_scale=0.1,
             seed=seed,
@@ -100,7 +101,7 @@ def test_active_arm_has_small_nonzero_scale_and_live_gradients() -> None:
     assert module.raw_residual_scale.grad is not None
     assert module.raw_residual_scale.grad.abs().item() > 0
     assert module.gate_bias.grad is not None and module.gate_bias.grad.abs().item() > 0
-    for projection in (module.query_proj, module.key_proj, module.value_proj):
+    for projection in (module.query_proj, module.value_proj):
         assert projection.weight.grad is not None
         assert projection.weight.grad.abs().sum().item() > 0
 
@@ -121,6 +122,35 @@ def test_seed_controls_all_table_and_projection_initialization() -> None:
     ):
         assert first_name == second_name
         torch.testing.assert_close(first_parameter, second_parameter, rtol=0, atol=0)
+
+
+def test_gate_is_exact_memory_space_dot_with_memory_width_divisor() -> None:
+    module = _tiny_engram()
+    hidden = torch.randn(1, 5, 8, generator=torch.Generator().manual_seed(43))
+    tokens = torch.tensor([[2, 3, 5, 7, 11]])
+
+    _, audit = module(hidden, tokens)
+
+    assert module.memory_dim == 12
+    assert module.query_proj.weight.shape == (module.memory_dim, module.hidden_dim)
+    assert not hasattr(module, "key_proj")
+    retrieved = []
+    for order in module.ngram_orders:
+        for head in range(module.num_hash_heads):
+            name = module._table_name(order, head)
+            indices = audit[f"indices_{name}"]
+            valid = indices.ge(0)
+            rows = module.tables[name](indices.masked_fill(~valid, 0))
+            retrieved.append(rows * valid.unsqueeze(-1).to(rows.dtype))
+    normalized_memory = module.memory_norm(torch.cat(retrieved, dim=-1))
+    query = module.query_norm(module.query_proj(hidden))
+    expected_gate = torch.sigmoid(
+        (query.float() * normalized_memory.float()).sum(dim=-1, keepdim=True)
+        / math.sqrt(module.memory_dim)
+        + module.gate_bias.float()
+    )
+    expected_gate = expected_gate * audit["has_memory"].to(expected_gate.dtype)
+    torch.testing.assert_close(audit["gate"], expected_gate, rtol=0, atol=0)
 
 
 @pytest.mark.parametrize(

@@ -41,7 +41,7 @@ def test_swap_linear_matches_explicit_dense_hemisphere_maps() -> None:
     assert not hasattr(layer, "weight_b")
 
 
-def test_deterministic_initialization_breaks_hemisphere_symmetry() -> None:
+def test_t2_deterministic_initialization_breaks_hemisphere_symmetry() -> None:
     torch.manual_seed(1)
     first = SwapLinear(8, 6, rank=2, sigma_delta0=0.02, seed=29)
     torch.manual_seed(9_999)
@@ -60,7 +60,7 @@ def test_deterministic_initialization_breaks_hemisphere_symmetry() -> None:
     assert not torch.equal(first(inputs, +1), first(inputs, -1))
 
 
-def test_all_stored_modes_have_live_gradients() -> None:
+def test_t2_both_disagreement_factors_have_live_gradients() -> None:
     torch.manual_seed(12)
     layer = SwapLinear(6, 4, rank=2, seed=7)
     inputs = torch.randn(5, 6, requires_grad=True)

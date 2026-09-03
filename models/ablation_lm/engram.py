@@ -27,7 +27,6 @@ class TokenEngramConfig:
     ngram_orders: tuple[int, ...] = (2, 3)
     num_hash_heads: int = 4
     head_dim: int = 8
-    gate_dim: int | None = None
     initial_scale: float = 1.0e-3
     max_scale: float = 0.1
     seed: int = 20_260_826
@@ -53,7 +52,6 @@ class CausalTokenEngram(nn.Module):
         self.ngram_orders = tuple(int(order) for order in config.ngram_orders)
         self.num_hash_heads = int(config.num_hash_heads)
         self.head_dim = int(config.head_dim)
-        self.gate_dim = int(config.gate_dim or config.hidden_dim)
         self.memory_dim = (
             len(self.ngram_orders) * self.num_hash_heads * self.head_dim
         )
@@ -67,20 +65,16 @@ class CausalTokenEngram(nn.Module):
                 for head in range(self.num_hash_heads)
             }
         )
-        self.hidden_norm = nn.RMSNorm(
-            self.hidden_dim, eps=1.0e-6, elementwise_affine=False
-        )
         self.memory_norm = nn.RMSNorm(
             self.memory_dim, eps=1.0e-6, elementwise_affine=False
         )
-        self.query_proj = nn.Linear(self.hidden_dim, self.gate_dim, bias=False)
-        self.key_proj = nn.Linear(self.memory_dim, self.gate_dim, bias=False)
+        # Catch #37: addressing is performed in the memory space itself.  The
+        # retrieved row is the key; there is no learned key projection that
+        # could silently move the dot product back to hidden width.
+        self.query_proj = nn.Linear(self.hidden_dim, self.memory_dim, bias=False)
         self.value_proj = nn.Linear(self.memory_dim, self.hidden_dim, bias=False)
         self.query_norm = nn.RMSNorm(
-            self.gate_dim, eps=1.0e-6, elementwise_affine=False
-        )
-        self.key_norm = nn.RMSNorm(
-            self.gate_dim, eps=1.0e-6, elementwise_affine=False
+            self.memory_dim, eps=1.0e-6, elementwise_affine=False
         )
         self.gate_bias = nn.Parameter(torch.zeros(()))
 
@@ -90,7 +84,7 @@ class CausalTokenEngram(nn.Module):
         )
         for table in self.tables.values():
             tag_optimizer_role(table, "weight", ParameterRole.ENGRAM)
-        for projection in (self.query_proj, self.key_proj, self.value_proj):
+        for projection in (self.query_proj, self.value_proj):
             tag_optimizer_role(projection, "weight", ParameterRole.ENGRAM)
         tag_optimizer_role(self, "gate_bias", ParameterRole.GATE)
         tag_optimizer_role(self, "raw_residual_scale", ParameterRole.GATE)
@@ -114,10 +108,6 @@ class CausalTokenEngram(nn.Module):
             or config.head_dim < 1
         ):
             raise ValueError("num_hash_heads and head_dim must be positive")
-        if config.gate_dim is not None and (
-            type(config.gate_dim) is not int or config.gate_dim < 1
-        ):
-            raise ValueError("gate_dim must be positive when provided")
         initial_scale = float(config.initial_scale)
         max_scale = float(config.max_scale)
         if (
@@ -141,7 +131,7 @@ class CausalTokenEngram(nn.Module):
         generator = torch.Generator(device="cpu").manual_seed(int(self.config.seed))
         for table in self.tables.values():
             nn.init.normal_(table.weight, mean=0.0, std=0.02, generator=generator)
-        for projection in (self.query_proj, self.key_proj, self.value_proj):
+        for projection in (self.query_proj, self.value_proj):
             nn.init.xavier_uniform_(projection.weight, generator=generator)
 
     def residual_scale(self) -> torch.Tensor:
@@ -276,12 +266,11 @@ class CausalTokenEngram(nn.Module):
 
         memory = torch.cat(retrieved, dim=-1)
         normalized_memory = self.memory_norm(memory)
-        query = self.query_norm(self.query_proj(self.hidden_norm(hidden_states)))
-        key = self.key_norm(self.key_proj(normalized_memory))
+        query = self.query_norm(self.query_proj(hidden_states))
         value = self.value_proj(normalized_memory)
         gate = torch.sigmoid(
-            (query.float() * key.float()).sum(dim=-1, keepdim=True)
-            / math.sqrt(self.gate_dim)
+            (query.float() * normalized_memory.float()).sum(dim=-1, keepdim=True)
+            / math.sqrt(self.memory_dim)
             + self.gate_bias.float()
         )
         has_memory = torch.stack(validity, dim=0).any(dim=0).unsqueeze(-1)

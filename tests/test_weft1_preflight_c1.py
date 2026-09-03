@@ -112,13 +112,13 @@ def test_pf31_echoes_every_tensor_and_only_router_is_unclassified(receipt) -> No
         ("front_hadamard.router.weight", (8, 512)),
     )
     for row in receipt.width_classifications:
-        assert row.unique_trainable_tensors == 147
-        assert len(row.classified_tensors) == 146
+        assert row.unique_trainable_tensors == 146
+        assert len(row.classified_tensors) == 145
         assert len(row.unclassified_tensors) == 1
         assert row.unclassified_tensors[0].canonical_name == "front_hadamard.router.weight"
         assert row.unclassified_tensors[0].shape == (8, row.width)
         assert "unclassifiable trainable tensor" in row.unclassified_tensors[0].reason
-        assert len({item.canonical_name for item in row.classified_tensors}) == 146
+        assert len({item.canonical_name for item in row.classified_tensors}) == 145
         assert len(row.classified_map_sha256) == 64
 
 
@@ -129,13 +129,14 @@ def test_ltm_and_engram_classes_prove_actual_scaling_dimensions(receipt) -> None
         assert items["long_term_memory.output.weight"].shape == (row.width, row.width // 4)
         assert items["long_term_memory.query.weight"].parameter_class is MuPParameterClass.HIDDEN
         assert items["long_term_memory.output.weight"].parameter_class is MuPParameterClass.HIDDEN
-        assert items["engram.query_proj.weight"].shape == (row.width, row.width)
+        assert items["engram.query_proj.weight"].shape == (64, row.width)
         assert items["engram.query_proj.weight"].parameter_class is MuPParameterClass.HIDDEN
-        for name in ("engram.key_proj.weight", "engram.value_proj.weight"):
-            assert items[name].shape == (row.width, 64)
-            assert items[name].parameter_class is MuPParameterClass.INPUT
-            assert items[name].learning_rate == 3.0e-4
-            assert items[name].weight_decay == 0.0
+        value = items["engram.value_proj.weight"]
+        assert value.shape == (row.width, 64)
+        assert value.parameter_class is MuPParameterClass.INPUT
+        assert value.learning_rate == 3.0e-4
+        assert value.weight_decay == 0.0
+        assert "engram.key_proj.weight" not in items
         gains = items["front_hadamard.expert_gains"]
         assert gains.shape == (8, row.width)
         assert gains.parameter_class is MuPParameterClass.VECTOR

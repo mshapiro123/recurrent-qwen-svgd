@@ -96,7 +96,7 @@ def test_c2_pf3_gate_excludes_valid_ineligible_zeros_and_passes(
         "1bce335742f00f14c7e9abd88396776dc4d473fb955f60a923868618bf1d15f6"
     )
     assert receipt.initial_model_state_sha256 == (
-        "52b993089afe982dd4027eb16500f761b0ed8cfc49a938de7f00e2e102831aac"
+        "699fd7d782b7d8bd652b8ddfe552a1fb89e61ff02b901d737d54f19d1e7e6a73"
     )
     assert receipt.state_logit_relative_l2_threshold == 1e-2
     assert receipt.lane_gradient_relative_l2_threshold == 5e-2
@@ -134,19 +134,19 @@ def test_c2_pf3_gate_excludes_valid_ineligible_zeros_and_passes(
     assert receipt.summary.max_full_gradient_relative_l2 >= 0.0
     assert receipt.summary.max_worst_module_gradient_relative_l2 is not None
     assert receipt.summary.max_hidden_relative_l2 == pytest.approx(
-        0.002378677322798898, abs=5e-10
+        0.002343670477777934, abs=5e-10
     )
     assert receipt.summary.max_scratch_lane_relative_l2 == pytest.approx(
-        0.016478415427698328, abs=5e-10
+        0.016916588480255675, abs=5e-10
     )
     assert receipt.summary.max_logit_relative_l2 == pytest.approx(
-        0.0037359662511258457, abs=5e-10
+        0.0038046872811950652, abs=5e-10
     )
     assert receipt.summary.max_full_gradient_relative_l2 == pytest.approx(
-        0.0071749515521762446, abs=5e-10
+        0.007183102231887862, abs=5e-10
     )
     assert receipt.summary.max_worst_module_gradient_relative_l2 == pytest.approx(
-        0.06243657691629686, abs=5e-10
+        0.026736695789816682, abs=5e-10
     )
     assert (
         receipt.summary.max_hidden_relative_l2_visit,
@@ -154,16 +154,19 @@ def test_c2_pf3_gate_excludes_valid_ineligible_zeros_and_passes(
         receipt.summary.max_logit_relative_l2_visit,
         receipt.summary.max_full_gradient_relative_l2_visit,
         receipt.summary.max_worst_module_gradient_relative_l2_visit,
-    ) == (8, 8, 6, 8, 4)
-    assert receipt.summary.max_worst_module_gradient_module == "engram"
+    ) == (8, 8, 5, 7, 2)
+    assert (
+        receipt.summary.max_worst_module_gradient_module
+        == "core_blocks.0.attention.key_norm"
+    )
     assert (
         receipt.summary.max_worst_module_gradient_parameter
-        == "engram.gate_bias"
+        == "core_blocks.0.attention.key_norm.weight"
     )
     assert receipt.summary.max_relative_loss_drift == pytest.approx(
-        6.992828237628056e-05, abs=5e-10
+        7.33063034306664e-05, abs=5e-10
     )
-    assert receipt.summary.max_relative_loss_drift_visit == 4
+    assert receipt.summary.max_relative_loss_drift_visit == 1
 
     assert receipt.summary.gradient_maxima_complete is True
     assert receipt.summary.zero_reference_failures == ()
@@ -198,7 +201,7 @@ def test_c2_pf3_gate_excludes_valid_ineligible_zeros_and_passes(
     module_maxima = {
         item.module_name: item for item in receipt.summary.per_module_gradient_maxima
     }
-    assert len(module_maxima) == 141
+    assert len(module_maxima) == 140
     for module_name in (
         "reentry_bridge",
         "reentry_bridge.prelude_norm",
@@ -211,33 +214,33 @@ def test_c2_pf3_gate_excludes_valid_ineligible_zeros_and_passes(
 
     final_visit = receipt.per_visit[-1]
     assert final_visit.hidden.relative_l2_error == pytest.approx(
-        0.002378677322798898, abs=5e-10
+        0.002343670477777934, abs=5e-10
     )
     assert final_visit.scratch_lanes.relative_l2_error == pytest.approx(
-        0.016478415427698328, abs=5e-10
+        0.016916588480255675, abs=5e-10
     )
     assert final_visit.logits.relative_l2_error == pytest.approx(
-        0.003659068615870767, abs=5e-10
+        0.00366168723457278, abs=5e-10
     )
     assert final_visit.gradient.full_parameter_vector.relative_l2_error == pytest.approx(
-        0.0071749515521762446, abs=5e-10
+        0.007065333907931817, abs=5e-10
     )
     assert final_visit.relative_loss_drift == pytest.approx(
-        1.4189866282529046e-05, abs=5e-10
+        4.892405245362929e-05, abs=5e-10
     )
 
-    assert final_visit.gradient.trainable_parameter_tensors == 143
-    assert final_visit.gradient.trainable_parameter_elements == 488_859
+    assert final_visit.gradient.trainable_parameter_tensors == 142
+    assert final_visit.gradient.trainable_parameter_elements == 484_763
     assert final_visit.gradient.complete is True
     assert final_visit.gradient.zero_reference_cells == ()
-    assert final_visit.gradient.worst_module_name == "engram"
+    assert final_visit.gradient.worst_module_name == "core_blocks.0.attention.key_norm"
     assert (
         final_visit.gradient.worst_parameter_name
-        == "engram.raw_residual_scale"
+        == "core_blocks.0.attention.key_norm.weight"
     )
     assert final_visit.gradient.worst_tensor is not None
     assert final_visit.gradient.worst_tensor.relative_l2_error == pytest.approx(
-        0.02583730846608379, abs=5e-10
+        0.023292915877290394, abs=5e-10
     )
 
     terminal = receipt.terminal_gate
@@ -250,7 +253,6 @@ def test_c2_pf3_gate_excludes_valid_ineligible_zeros_and_passes(
     assert terminal.gradient_population_complete
     assert terminal.every_module_worst_gradient_passed
     assert terminal.passed
-    assert receipt.summary.max_worst_module_gradient_relative_l2 > 5e-2
     assert terminal.worst_module_gradient_relative_l2 is not None
     assert terminal.worst_module_gradient_relative_l2 <= 5e-2
 

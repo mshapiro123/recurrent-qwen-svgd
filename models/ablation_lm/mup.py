@@ -150,7 +150,6 @@ _EXPLICIT_HIDDEN_NAMES: Final[frozenset[str]] = frozenset(
 )
 _FIXED_FAN_IN_NAMES: Final[frozenset[str]] = frozenset(
     {
-        "engram.key_proj.weight",
         "engram.value_proj.weight",
     }
 )
@@ -359,7 +358,9 @@ def _validate_bound_shape(
         }[projection]
     else:
         expected = {
-            "engram.query_proj.weight": (width, width),
+            # PF-3 keeps the memory-space query in the hidden class even
+            # though its fixed 64-coordinate output does not widen with d.
+            "engram.query_proj.weight": (64, width),
             "reentry_bridge.projection.weight": (width, width),
             "scratch.initializer.weight": (width // 2, width),
             "scratch.context_projection.weight": (width // 4, width),
@@ -371,9 +372,14 @@ def _validate_bound_shape(
             "long_term_memory.output.weight": (width, width // 4),
         }.get(alias)
     if expected is None or shape != expected:
+        if alias == "engram.query_proj.weight":
+            raise MuPClassificationError(
+                "hidden tensor does not match the authorized fixed-output "
+                f"memory-query rule: {aliases!r}, shape={shape!r}, expected={expected!r}"
+            )
         raise MuPClassificationError(
             "hidden tensor does not prove both fan-in and fan-out scale with "
-            f"width: {aliases!r}, shape={shape!r}, expected={expected!r}"
+            f"{aliases!r}, shape={shape!r}, expected={expected!r}"
         )
 
 
