@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1600" viewBox="0 0 1800 1600" role="img" aria-labelledby="title desc">
   <title id="title">WEFT-1 recurrent bicameral language model: post-reconciliation target and construction state</title>
-  <desc id="desc">A full-page post-reconciliation diagram of the from-scratch WEFT-1 target, the current executable AblationLM bring-up path, standalone tested components, pending integrations, ratified S2 through S5 semantics, retired legacy arms, and PF-3 evidence.</desc>
-  <metadata id="provenance">S5/S6 rulings: SHA-256 cfd499a248dbf68739e28d72caa457a74d2090bc6f1c918ea2a89bbc14d9d131, Drive 1PTCa04E-vS0140SiPB393P62YoEyHRXU. S5/S6 Amendment A1: SHA-256 228d60468cf0211fc72187e896f65a344555e0ba3bc1056ab6517c517b3062d8, Drive 1XyUGhky913IY577DJDpC_fTKQJziSDph. Architecture reconciliation: SHA-256 0d81e9ab63d21720fecfbfcb629aaa5eeae6693eabbd9682b82adc7e3792ea8e, Drive 1_2OLc0i7weKolHP2PSdQ_7P8o65N44Q4. Math check: SHA-256 509cac8c7f5f82a6a70d0bcc8494b02967d3f545e4e875e9bbfcdc2b93dedcff. D-MC-1: SHA-256 9c5822daef5dbb0609bc3e46019cc4b1e332991c30e8a42c1b4432800a747ab1. Build snapshot audited at commit 9137ea7e.</metadata>
+  <desc id="desc">A full-page post-reconciliation diagram of the from-scratch WEFT-1 target, the EG-1 lexical engram, the current executable AblationLM bring-up path, standalone tested components, pending integrations, ratified S2 through S5 semantics, retired legacy arms, and current-graph pre-flight evidence.</desc>
+  <metadata id="provenance">S5/S6 rulings: SHA-256 cfd499a248dbf68739e28d72caa457a74d2090bc6f1c918ea2a89bbc14d9d131, Drive 1PTCa04E-vS0140SiPB393P62YoEyHRXU. S5/S6 Amendment A1: SHA-256 228d60468cf0211fc72187e896f65a344555e0ba3bc1056ab6517c517b3062d8, Drive 1XyUGhky913IY577DJDpC_fTKQJziSDph. Architecture reconciliation: SHA-256 0d81e9ab63d21720fecfbfcb629aaa5eeae6693eabbd9682b82adc7e3792ea8e, Drive 1_2OLc0i7weKolHP2PSdQ_7P8o65N44Q4. Math check: SHA-256 509cac8c7f5f82a6a70d0bcc8494b02967d3f545e4e875e9bbfcdc2b93dedcff. D-MC-1: SHA-256 9c5822daef5dbb0609bc3e46019cc4b1e332991c30e8a42c1b4432800a747ab1. EG-1: 4,398 bytes, SHA-256 36f0255c1cc0e61b2d9019ce86b3b1e7446b0a2c3445a42ce20334213deae780. Build snapshot audited at commit 28935e5d6ce7fb1578a95ddfb49442177425cc34.</metadata>
   <defs>
     <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
       <path d="M0,0 L10,3 L0,6 Z" fill="#30424d"/>
@@ -54,10 +54,10 @@
 
   <!-- Header -->
   <text x="60" y="58" class="title">WEFT-1: recurrent bicameral language model</text>
-  <text x="60" y="91" class="subtitle">Post-reconciliation r2 · ratified from-scratch target overlaid with current code reachability</text>
+  <text x="60" y="91" class="subtitle">Post-reconciliation r2 + EG-1 · ratified from-scratch target overlaid with current code reachability</text>
   <rect x="1455" y="28" width="285" height="67" rx="10" fill="#ffffff" stroke="#b6c0c5" stroke-width="2"/>
   <text x="1597" y="52" text-anchor="middle" class="eyebrow">BUILD SNAPSHOT</text>
-  <text x="1597" y="77" text-anchor="middle" class="monoSmall">code 9137ea7e · r2 2026-09-03</text>
+  <text x="1597" y="77" text-anchor="middle" class="monoSmall">code 28935e5d · r2 2026-09-03</text>
 
   <!-- Status legend -->
   <text x="60" y="127" class="eyebrow">STATUS OF EACH SURFACE</text>
@@ -121,8 +121,9 @@
   <text x="875" y="307" text-anchor="middle" class="tiny">pre-norm · causal GQA · dense FFN</text>
 
   <rect x="755" y="330" width="240" height="54" rx="9" class="integrated"/>
-  <text x="875" y="352" text-anchor="middle" class="labelSmall">M_lex lexical engram</text>
-  <text x="875" y="371" text-anchor="middle" class="tiny">{2,3}-gram · q:d→64 · memory dot / √64</text>
+  <text x="875" y="349" text-anchor="middle" class="labelSmall">M_lex {2,3}-gram · EG-1</text>
+  <text x="875" y="366" text-anchor="middle" class="tiny">RNγq(WQh) · RNγk(e) · dot / √64</text>
+  <text x="875" y="379" text-anchor="middle" class="tiny">γq,γk trainable/init 1 · no WK · V path fixed</text>
 
   <rect x="755" y="395" width="240" height="49" rx="9" class="integrated"/>
   <text x="875" y="416" text-anchor="middle" class="labelSmall">Remaining Prelude blocks</text>
@@ -301,7 +302,7 @@
   <!-- Current executable graph -->
   <rect x="60" y="1130" width="1040" height="270" rx="12" class="panel"/>
   <text x="82" y="1158" class="eyebrow">CURRENT BRING-UP GRAPH · NOT PRODUCTION · BEFORE BUILD STEP 2</text>
-  <text x="82" y="1182" class="body">Exact forward order audited at commit 9137ea7e. Asterisks are optional; raw defaults are OFF.</text>
+  <text x="82" y="1182" class="body">Exact forward order audited at commit 28935e5d. Asterisks are optional; raw defaults are OFF.</text>
 
   <path d="M164 1220 H180" class="arrowThin"/>
   <path d="M275 1220 H293" class="arrowThin"/>
@@ -322,7 +323,7 @@
   <text x="343" y="1234" text-anchor="middle" class="tiny">block 1</text>
   <rect x="411" y="1198" width="100" height="44" rx="7" class="integrated"/>
   <text x="461" y="1217" text-anchor="middle" class="labelSmall">M_lex*</text>
-  <text x="461" y="1234" text-anchor="middle" class="tiny">gated write</text>
+  <text x="461" y="1234" text-anchor="middle" class="tiny">EG-1 · no key map</text>
   <rect x="529" y="1198" width="115" height="44" rx="7" class="integrated"/>
   <text x="586" y="1217" text-anchor="middle" class="labelSmall">Prelude[1…]</text>
   <text x="586" y="1234" text-anchor="middle" class="tiny">remaining blocks</text>
@@ -364,7 +365,7 @@
 
   <!-- PF-3 evidence ribbon -->
   <rect x="60" y="1420" width="1680" height="92" rx="10" fill="#ffffff" stroke="#b7c0c5" stroke-width="2"/>
-  <text x="82" y="1446" class="eyebrow">PF-3 EVIDENCE · CURRENT GRAPH ONLY</text>
+  <text x="82" y="1446" class="eyebrow">PF-3 + EG-1 EVIDENCE · CURRENT GRAPH ONLY</text>
   <line x1="330" y1="1432" x2="330" y2="1498" stroke="#d1d7da" stroke-width="1.5"/>
   <line x1="715" y1="1432" x2="715" y2="1498" stroke="#d1d7da" stroke-width="1.5"/>
   <line x1="1135" y1="1432" x2="1135" y2="1498" stroke="#d1d7da" stroke-width="1.5"/>
@@ -376,12 +377,12 @@
   <text x="737" y="1472" class="labelSmall">A7 structural-OFF matrix</text>
   <text x="737" y="1493" class="monoSmall">54 CPU pass · 54 CUDA pending · 48 absent · 4 ineligible</text>
   <text x="1157" y="1472" class="labelSmall">Math-return regression</text>
-  <text x="1157" y="1493" class="monoSmall">129 focused pass · 95 receipt pass</text>
+  <text x="1157" y="1493" class="monoSmall">EG-1 T2 live · C1/C2/C-JAC replayed</text>
   <text x="1477" y="1472" class="labelSmall" fill="#963f22">Not claimed</text>
   <text x="1477" y="1493" class="small">GPU · training · sealed data · production receipt</text>
 
   <!-- Footer -->
-  <text x="60" y="1542" class="tiny">Authority: S5/S6 cfd499a2… · A1 228d6046… · reconciliation 0d81e9ab… · math 509cac8c… · D-MC-1 9c5822da…</text>
-  <text x="60" y="1558" class="tiny">Status source: live code audit at 9137ea7e · exact accounting remint follows integrated S-3/S-4′ graph</text>
+  <text x="60" y="1542" class="tiny">Authority: S5/S6 cfd499a2… · reconciliation 0d81e9ab… · math 509cac8c… · D-MC-1 9c5822da… · EG-1 36f0255c…</text>
+  <text x="60" y="1558" class="tiny">Status source: live code and receipt audit at 28935e5d · exact accounting remint follows integrated S-3/S-4′ graph</text>
   <text x="1740" y="1552" text-anchor="end" class="tiny">One page · design + build state · structural controls preserved</text>
 </svg>
