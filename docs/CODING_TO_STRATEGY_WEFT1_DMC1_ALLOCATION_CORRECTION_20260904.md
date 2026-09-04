@@ -1,8 +1,8 @@
 # Coding to Strategy — WEFT-1 D-MC-1 Allocation Correction
 
-**Date:** 2026-09-04  
+**Date:** 2026-09-04
 **Status:** fail-closed planning correction; no run removed, no compute consumed,
-and no existing governed receipt modified  
+and no existing governed receipt modified
 **Scope:** re-derive the D-MC-1 final-plus-one-sampled-coda cost against the
 ratified D-CUR-4 Scenario C allocation
 
