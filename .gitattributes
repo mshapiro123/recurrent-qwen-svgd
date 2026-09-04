@@ -158,3 +158,5 @@ training/ablation_lm_engineering_quarantine_20260830_gtok.json text eol=lf
 training/ablation_lm_engineering_quarantine_20260831_gtok_s2.json text eol=lf
 training/ablation_lm_engineering_quarantine_20260830_pa_recovery.json text eol=lf
 training/ablation_lm_engineering_quarantine_20260830_pa_durability.json text eol=lf
+training/ablation_lm_engineering_quarantine_20260904_packet_r8.json text eol=lf
+docs/receipts/weft1_pa_fineweb_schema_remediation_prelaunch_20260904.json text eol=lf

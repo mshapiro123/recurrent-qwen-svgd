@@ -29,15 +29,15 @@
   "sealed_files_touched": [],
   "full_suite_expected_exit_code": 1,
   "last_observed_full_suite": {
-    "passed": 4164,
+    "passed": 4171,
     "failed": 1,
     "warnings": 20,
-    "duration_seconds": 225.45,
-    "observed_at": "2026-09-04T13:09:47-04:00"
+    "duration_seconds": 238.43,
+    "observed_at": "2026-09-04T13:46:04-04:00"
   },
   "review_execution": {
     "command": "python -X utf8 scripts/run_ablation_lm_engineering_gate.py",
-    "result": "gate PASS; underlying suite 1 failed, 4164 passed, 20 warnings in 224.61s; the sole failure is unchanged",
+    "result": "gate PASS; underlying suite 1 failed, 4171 passed, 20 warnings in 203.24s; the sole failure is unchanged",
     "reviewed_on": "2026-09-04",
     "note": "Next-receipt count refresh only; the sole quarantined failure and all authority and scope remain unchanged."
   },

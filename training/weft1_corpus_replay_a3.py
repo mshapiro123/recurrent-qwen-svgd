@@ -100,9 +100,11 @@ V4_PARENT_LANE_OPERATION_ORDER = (
 )
 V4_WRITE_ENABLED_CHILD_POLICY = "SINGLE_PARENT_ONE_WRITE_ENABLED_CHILD"
 V4_MAX_CONCURRENT_WRITE_ENABLED_CHILDREN = 1
-PARSED_ASSET_CODE_IDENTITY_SCHEMA_V4 = (
-    "weft1_parsed_asset_cache_code_identity_v4"
+PARSED_ASSET_CODE_IDENTITY_SCHEMA_V5 = (
+    "weft1_parsed_asset_cache_semantic_code_identity_v5"
 )
+PARSED_ASSET_PYTHON_NORMALIZATION_V5 = "PYTHON_CRLF_CR_TO_LF"
+PARSED_ASSET_EXACT_NORMALIZATION_V5 = "PHYSICAL_BYTES_EXACT"
 PARSED_ASSET_INPUT_IDENTITY_SCHEMA_V4 = (
     "weft1_parsed_asset_cache_input_identity_v4"
 )
@@ -163,6 +165,72 @@ def _compatibility_files_v4() -> dict[str, Path]:
     files["runtime_builder"] = RUNTIME_BUILDER_PATH_V4
     files["worker"] = PRODUCTION_WORKER_PATH_V4
     return files
+
+
+def _parsed_asset_semantic_file_rows_v5(
+    files: Mapping[str, Path], *, name: str
+) -> tuple[dict[str, object], ...]:
+    """Hash parser-code semantics portably without weakening physical custody.
+
+    Git may materialize the same Python blob with LF or CRLF in different
+    checkouts.  Only Python source line endings are normalized here.  JSON
+    authority artifacts and every other non-Python dependency retain their
+    exact physical byte count and SHA-256.  The parent worker-compatibility
+    receipt continues to use ``replay_v3._logical_file_rows`` directly and is
+    therefore still a byte-exact snapshot of the executing checkout.
+    """
+
+    physical_rows = replay_v3._logical_file_rows(files, name=name)
+    physical_by_name = {
+        str(row["logical_name"]): row for row in physical_rows
+    }
+    rows: list[dict[str, object]] = []
+    for logical_name, raw_path in sorted(files.items()):
+        path = Path(raw_path).resolve(strict=True)
+        if path.suffix == ".py":
+            raw = path.read_bytes()
+            semantic = raw.replace(b"\r\n", b"\n").replace(b"\r", b"\n")
+            rows.append(
+                {
+                    "bytes": len(semantic),
+                    "logical_name": logical_name,
+                    "normalization": PARSED_ASSET_PYTHON_NORMALIZATION_V5,
+                    "sha256": hashlib.sha256(semantic).hexdigest(),
+                }
+            )
+        else:
+            physical = physical_by_name[logical_name]
+            rows.append(
+                {
+                    "bytes": physical["bytes"],
+                    "logical_name": logical_name,
+                    "normalization": PARSED_ASSET_EXACT_NORMALIZATION_V5,
+                    "sha256": physical["sha256"],
+                }
+            )
+    return tuple(rows)
+
+
+def parsed_asset_code_identity_sha256_v5(
+    rows: tuple[dict[str, object], ...],
+) -> str:
+    """Bind the portable parser closure under its one explicit V5 schema.
+
+    This intentionally does not broaden ``execution_authority_v4_bound_sha256``:
+    every existing V4 receipt, including the physical worker-compatibility
+    snapshot, keeps its byte-exact V4 contract.  Only this parsed-cache semantic
+    identity is allowed to use the V5 schema.
+    """
+
+    return hashlib.sha256(
+        canonical_json_bytes(
+            {
+                "authority_chain": GTOK_EXECUTION_AUTHORITY_CHAIN_V4,
+                "payload": rows,
+                "schema": PARSED_ASSET_CODE_IDENTITY_SCHEMA_V5,
+            }
+        )
+    ).hexdigest()
 
 
 @dataclass(frozen=True)
@@ -1006,10 +1074,14 @@ def verify_production_materialization_replays_v4(
     compatibility_rows = replay_v3._logical_file_rows(
         compatibility_files, name="V4 production compatibility files"
     )
-    parsed_asset_code_rows = tuple(
-        row
-        for row in compatibility_rows
-        if row["logical_name"] in PARSED_ASSET_CODE_LOGICAL_NAMES_V1
+    parsed_asset_code_files = {
+        logical_name: path
+        for logical_name, path in compatibility_files.items()
+        if logical_name in PARSED_ASSET_CODE_LOGICAL_NAMES_V1
+    }
+    parsed_asset_code_rows = _parsed_asset_semantic_file_rows_v5(
+        parsed_asset_code_files,
+        name="V5 parsed-asset semantic code closure",
     )
     if {
         str(row["logical_name"]) for row in parsed_asset_code_rows
@@ -1017,9 +1089,8 @@ def verify_production_materialization_replays_v4(
         raise ParentReplayError(
             "V4 parsed-asset parser/cache code closure is incomplete"
         )
-    parsed_asset_code_identity = execution_authority_v4_bound_sha256(
-        PARSED_ASSET_CODE_IDENTITY_SCHEMA_V4,
-        parsed_asset_code_rows,
+    parsed_asset_code_identity = parsed_asset_code_identity_sha256_v5(
+        parsed_asset_code_rows
     )
     compatibility_hashes = {
         str(row["logical_name"]): str(row["sha256"]) for row in compatibility_rows

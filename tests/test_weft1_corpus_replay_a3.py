@@ -110,18 +110,17 @@ def test_checked_in_incident_policy_matches_current_parser_code_closure() -> Non
             INCIDENT_COMPATIBILITY_AUTHORITY
         )
     )
-    rows = replay_v3._logical_file_rows(
-        replay_v4._compatibility_files_v4(),
-        name="checked-in parsed-asset code closure",
+    files = replay_v4._compatibility_files_v4()
+    parsed_rows = replay_v4._parsed_asset_semantic_file_rows_v5(
+        {
+            logical_name: path
+            for logical_name, path in files.items()
+            if logical_name in replay_v4.PARSED_ASSET_CODE_LOGICAL_NAMES_V1
+        },
+        name="checked-in parsed-asset semantic code closure",
     )
-    parsed_rows = tuple(
-        row
-        for row in rows
-        if row["logical_name"] in replay_v4.PARSED_ASSET_CODE_LOGICAL_NAMES_V1
-    )
-    observed_code_identity = replay_v4.execution_authority_v4_bound_sha256(
-        replay_v4.PARSED_ASSET_CODE_IDENTITY_SCHEMA_V4,
-        parsed_rows,
+    observed_code_identity = replay_v4.parsed_asset_code_identity_sha256_v5(
+        parsed_rows
     )
     assert policy.eligible_run_id == "production-v4-replay-a"
     assert policy.predecessor_code_identity_sha256 == (
@@ -132,7 +131,7 @@ def test_checked_in_incident_policy_matches_current_parser_code_closure() -> Non
     assert policy.expected_current_asset_count == 3
     assert physical_bytes == 1_273
     assert physical_sha256 == (
-        "a78a50c8bd2f1acf2c92a40f7374bedd4da9793218a15055b5c0b05ffe170174"
+        "7869aec4036c0e073ac0b1d87f7059f378e1104f2d2ba678cdf0af2a279b64bd"
     )
 
 
@@ -367,18 +366,112 @@ def test_v4_write_enabled_child_guard_rejects_overlap(
 
 def test_v4_parsed_asset_identity_schemas_are_authority_bound() -> None:
     payload = ({"logical_name": "component", "sha256": "a" * 64},)
-    for schema in (
-        replay_v4.PARSED_ASSET_CODE_IDENTITY_SCHEMA_V4,
-        replay_v4.PARSED_ASSET_INPUT_IDENTITY_SCHEMA_V4,
-    ):
-        assert schema.endswith("_v4")
-        assert len(
-            replay_v4.execution_authority_v4_bound_sha256(schema, payload)
-        ) == 64
+    assert len(replay_v4.parsed_asset_code_identity_sha256_v5(payload)) == 64
+    assert len(
+        replay_v4.execution_authority_v4_bound_sha256(
+            replay_v4.PARSED_ASSET_INPUT_IDENTITY_SCHEMA_V4, payload
+        )
+    ) == 64
+    with pytest.raises(ValueError, match="explicit v4 schema"):
+        replay_v4.execution_authority_v4_bound_sha256(
+            replay_v4.PARSED_ASSET_CODE_IDENTITY_SCHEMA_V5, payload
+        )
+    assert replay_v4.PARSED_ASSET_CODE_IDENTITY_SCHEMA_V5.endswith("_v5")
+    assert replay_v4.PARSED_ASSET_INPUT_IDENTITY_SCHEMA_V4.endswith("_v4")
     assert (
         "training/weft1_fineweb_selected_parquet_schema_census_20260904.json"
         in replay_v4.PARSED_ASSET_CODE_LOGICAL_NAMES_V1
     )
+
+
+@pytest.mark.parametrize(
+    ("lf_bytes", "alternate_bytes"),
+    (
+        (b"first\nsecond\n", b"first\r\nsecond\r\n"),
+        (b"first\nsecond\n", b"first\rsecond\r"),
+        (b"first\nsecond\nthird\n", b"first\r\nsecond\rthird\n"),
+    ),
+)
+def test_v5_python_semantic_identity_is_newline_portable_without_weakening_physical_rows(
+    tmp_path: Path, lf_bytes: bytes, alternate_bytes: bytes
+) -> None:
+    lf = tmp_path / "lf.py"
+    alternate = tmp_path / "alternate.py"
+    lf.write_bytes(lf_bytes)
+    alternate.write_bytes(alternate_bytes)
+    lf_files = {"component": lf}
+    alternate_files = {"component": alternate}
+    lf_rows = replay_v4._parsed_asset_semantic_file_rows_v5(
+        lf_files, name="LF Python fixture"
+    )
+    alternate_rows = replay_v4._parsed_asset_semantic_file_rows_v5(
+        alternate_files, name="alternate-newline Python fixture"
+    )
+    assert lf_rows == alternate_rows
+    assert lf_rows[0]["normalization"] == (
+        replay_v4.PARSED_ASSET_PYTHON_NORMALIZATION_V5
+    )
+    assert replay_v4.parsed_asset_code_identity_sha256_v5(
+        lf_rows
+    ) == replay_v4.parsed_asset_code_identity_sha256_v5(alternate_rows)
+    lf_physical_rows = replay_v3._logical_file_rows(
+        lf_files, name="physical LF Python fixture"
+    )
+    alternate_physical_rows = replay_v3._logical_file_rows(
+        alternate_files, name="physical alternate-newline Python fixture"
+    )
+    assert lf_physical_rows != alternate_physical_rows
+    assert replay_v4.execution_authority_v4_bound_sha256(
+        replay_v4.WORKER_COMPATIBILITY_SCHEMA_V4, lf_physical_rows
+    ) != replay_v4.execution_authority_v4_bound_sha256(
+        replay_v4.WORKER_COMPATIBILITY_SCHEMA_V4,
+        alternate_physical_rows,
+    )
+
+
+@pytest.mark.parametrize(
+    "changed_bytes",
+    (b"first", b"fIrst\n"),
+)
+def test_v5_python_semantic_identity_preserves_non_newline_changes(
+    tmp_path: Path, changed_bytes: bytes
+) -> None:
+    baseline = tmp_path / "baseline.py"
+    changed = tmp_path / "changed.py"
+    baseline.write_bytes(b"first\n")
+    changed.write_bytes(changed_bytes)
+    baseline_rows = replay_v4._parsed_asset_semantic_file_rows_v5(
+        {"component": baseline}, name="baseline Python fixture"
+    )
+    changed_rows = replay_v4._parsed_asset_semantic_file_rows_v5(
+        {"component": changed}, name="changed Python fixture"
+    )
+    assert baseline_rows != changed_rows
+    assert replay_v4.parsed_asset_code_identity_sha256_v5(
+        baseline_rows
+    ) != replay_v4.parsed_asset_code_identity_sha256_v5(changed_rows)
+
+
+def test_v5_non_python_authority_bytes_remain_physically_exact(
+    tmp_path: Path,
+) -> None:
+    lf = tmp_path / "authority-lf.json"
+    crlf = tmp_path / "authority-crlf.json"
+    lf.write_bytes(b'{"authority":true}\n')
+    crlf.write_bytes(b'{"authority":true}\r\n')
+    lf_rows = replay_v4._parsed_asset_semantic_file_rows_v5(
+        {"authority": lf}, name="LF authority fixture"
+    )
+    crlf_rows = replay_v4._parsed_asset_semantic_file_rows_v5(
+        {"authority": crlf}, name="CRLF authority fixture"
+    )
+    assert lf_rows != crlf_rows
+    assert lf_rows[0]["normalization"] == (
+        replay_v4.PARSED_ASSET_EXACT_NORMALIZATION_V5
+    )
+    assert replay_v4.parsed_asset_code_identity_sha256_v5(
+        lf_rows
+    ) != replay_v4.parsed_asset_code_identity_sha256_v5(crlf_rows)
 
 
 def test_v4_parsed_asset_code_identity_covers_exact_local_semantic_closure() -> None:
@@ -410,14 +503,34 @@ def test_v4_parsed_asset_code_identity_covers_exact_local_semantic_closure() -> 
         }
     )
     assert replay_v4.PARSED_ASSET_CODE_LOGICAL_NAMES_V1 == required
-    all_rows = replay_v3._logical_file_rows(
-        replay_v4._compatibility_files_v4(), name="parsed-cache closure"
+    all_files = replay_v4._compatibility_files_v4()
+    files = {
+        logical_name: path
+        for logical_name, path in all_files.items()
+        if logical_name in required
+    }
+    rows = replay_v4._parsed_asset_semantic_file_rows_v5(
+        files, name="parsed-cache semantic closure"
     )
-    rows = tuple(row for row in all_rows if row["logical_name"] in required)
+    assert len(rows) == 23
     assert {str(row["logical_name"]) for row in rows} == required
-    baseline = replay_v4.execution_authority_v4_bound_sha256(
-        replay_v4.PARSED_ASSET_CODE_IDENTITY_SCHEMA_V4, rows
-    )
+    assert sum(
+        row["normalization"] == replay_v4.PARSED_ASSET_PYTHON_NORMALIZATION_V5
+        for row in rows
+    ) == 21
+    assert sum(
+        row["normalization"] == replay_v4.PARSED_ASSET_EXACT_NORMALIZATION_V5
+        for row in rows
+    ) == 2
+    assert {
+        row["logical_name"]
+        for row in rows
+        if row["normalization"] == replay_v4.PARSED_ASSET_EXACT_NORMALIZATION_V5
+    } == {
+        "training/weft1_fineweb_selected_parquet_schema_census_20260904.json",
+        "training/weft1_pa_schema_remediation_incident_authority_20260904.json",
+    }
+    baseline = replay_v4.parsed_asset_code_identity_sha256_v5(rows)
     for logical_name in required:
         mutated = tuple(
             {
@@ -433,9 +546,78 @@ def test_v4_parsed_asset_code_identity_covers_exact_local_semantic_closure() -> 
             }
             for row in rows
         )
-        assert replay_v4.execution_authority_v4_bound_sha256(
-            replay_v4.PARSED_ASSET_CODE_IDENTITY_SCHEMA_V4, mutated
-        ) != baseline
+        assert replay_v4.parsed_asset_code_identity_sha256_v5(mutated) != baseline
+
+
+def test_v5_full_closure_is_portable_while_physical_custody_stays_exact(
+    tmp_path: Path,
+) -> None:
+    all_files = replay_v4._compatibility_files_v4()
+    closure = {
+        logical_name: path
+        for logical_name, path in all_files.items()
+        if logical_name in replay_v4.PARSED_ASSET_CODE_LOGICAL_NAMES_V1
+    }
+    lf_files: dict[str, Path] = {}
+    crlf_files: dict[str, Path] = {}
+    for index, (logical_name, source_path) in enumerate(sorted(closure.items())):
+        suffix = source_path.suffix
+        lf_path = tmp_path / "lf" / f"{index:02d}{suffix}"
+        crlf_path = tmp_path / "crlf" / f"{index:02d}{suffix}"
+        lf_path.parent.mkdir(parents=True, exist_ok=True)
+        crlf_path.parent.mkdir(parents=True, exist_ok=True)
+        raw = source_path.read_bytes()
+        if suffix == ".py":
+            semantic = raw.replace(b"\r\n", b"\n").replace(b"\r", b"\n")
+            lf_path.write_bytes(semantic)
+            crlf_path.write_bytes(semantic.replace(b"\n", b"\r\n"))
+        else:
+            lf_path.write_bytes(raw)
+            crlf_path.write_bytes(raw)
+        lf_files[logical_name] = lf_path
+        crlf_files[logical_name] = crlf_path
+
+    lf_semantic = replay_v4._parsed_asset_semantic_file_rows_v5(
+        lf_files, name="full LF semantic closure"
+    )
+    crlf_semantic = replay_v4._parsed_asset_semantic_file_rows_v5(
+        crlf_files, name="full CRLF semantic closure"
+    )
+    assert len(lf_semantic) == len(crlf_semantic) == 23
+    assert sum(
+        row["normalization"] == replay_v4.PARSED_ASSET_PYTHON_NORMALIZATION_V5
+        for row in lf_semantic
+    ) == 21
+    assert sum(
+        row["normalization"] == replay_v4.PARSED_ASSET_EXACT_NORMALIZATION_V5
+        for row in lf_semantic
+    ) == 2
+    assert {
+        row["logical_name"]
+        for row in lf_semantic
+        if row["normalization"] == replay_v4.PARSED_ASSET_EXACT_NORMALIZATION_V5
+    } == {
+        "training/weft1_fineweb_selected_parquet_schema_census_20260904.json",
+        "training/weft1_pa_schema_remediation_incident_authority_20260904.json",
+    }
+    assert replay_v4.parsed_asset_code_identity_sha256_v5(
+        lf_semantic
+    ) == replay_v4.parsed_asset_code_identity_sha256_v5(crlf_semantic)
+
+    lf_physical = replay_v3._logical_file_rows(
+        lf_files, name="full LF physical closure"
+    )
+    crlf_physical = replay_v3._logical_file_rows(
+        crlf_files, name="full CRLF physical closure"
+    )
+    assert lf_physical != crlf_physical
+    assert replay_v4.execution_authority_v4_bound_sha256(
+        replay_v4.WORKER_COMPATIBILITY_SCHEMA_V4,
+        {"compatibility_files": lf_physical},
+    ) != replay_v4.execution_authority_v4_bound_sha256(
+        replay_v4.WORKER_COMPATIBILITY_SCHEMA_V4,
+        {"compatibility_files": crlf_physical},
+    )
 
 
 def test_v4_worker_compatibility_assignment_is_complete_and_exact(
