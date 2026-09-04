@@ -425,7 +425,7 @@ class C2PreflightReceipt:
             == "deterministic_current_code_initialization_not_a_learned_checkpoint"
             and self.root_seed == C2_ROOT_SEED
             and self.config_identity_sha256
-            == "57ef01bbaa4aa89ea18b098cbb51ece021fc0849f9b958435f7f534f2f6d8e28"
+            == "c7d06a475230e03e7ac104d51f25f768ddff6b476fce1dc94935bf995be3a0fb"
             and self.input_panel_sha256
             == "1bce335742f00f14c7e9abd88396776dc4d473fb955f60a923868618bf1d15f6"
             and self.initial_model_state_sha256

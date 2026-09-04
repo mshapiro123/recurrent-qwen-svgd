@@ -19,6 +19,7 @@ from .bicameral_recurrent import (
     execute_bicameral_recurrence,
 )
 from .config import AblationLMConfig
+from .diagnostics import final_to_earlier_visit_kl_bits
 from .engram import CausalTokenEngram, TokenEngramConfig
 from .geometry import lanes_to_modes
 from .jets import (
@@ -1310,6 +1311,29 @@ class AblationLM(nn.Module):
                 visit_schedule=bicameral_visit_schedule,
             ).as_dict()
         }
+        if sampled_lstage_logits is not None:
+            visit_kl_mask = torch.ones_like(input_ids[:, 1:], dtype=torch.bool)
+            if attention_mask is not None:
+                visit_kl_mask &= (
+                    attention_mask[:, :-1].bool() & attention_mask[:, 1:].bool()
+                )
+            if effective_document_ids is not None:
+                visit_kl_mask &= effective_document_ids[:, 1:].eq(
+                    effective_document_ids[:, :-1]
+                )
+                visit_kl_mask &= effective_document_ids[:, 1:].ge(0)
+            if labels is not None:
+                visit_kl_mask &= labels[:, 1:].ne(-100)
+            diagnostics["visit_kl"] = final_to_earlier_visit_kl_bits(
+                logits[:, :-1],
+                sampled_lstage_logits[:, :-1],
+                visit_kl_mask,
+            )
+            diagnostics["visit_kl_sampled_visit"] = lstage_sampled_visit
+            diagnostics["visit_kl_valid_tokens"] = int(visit_kl_mask.sum().item())
+            diagnostics["visit_kl_direction"] = "KL(p_final||p_sampled_earlier)"
+            diagnostics["visit_kl_units"] = "bits_per_valid_token"
+            diagnostics["visit_kl_support"] = "valid_next_token_positions"
         if return_diagnostics:
             diagnostics["alpha_t"] = alpha
             diagnostics["recurrence_enabled"] = self.config.use_recurrence

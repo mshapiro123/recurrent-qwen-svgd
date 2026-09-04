@@ -8,10 +8,62 @@ import math
 from typing import Any
 
 import torch
+import torch.nn.functional as F
 
 
 SYM_COLLAPSE_WINDOW = 1_000
 _SYM_COLLAPSE_STATE_KIND = "weft1.sym_collapse_tracker.v1"
+
+
+def final_to_earlier_visit_kl_bits(
+    final_logits: torch.Tensor,
+    earlier_logits: torch.Tensor,
+    valid_token_mask: torch.Tensor,
+) -> torch.Tensor:
+    """Return ``KL(p_final || p_earlier)`` in bits per valid token.
+
+    D-EP-1 makes the final executed visit the self-teacher for the one earlier
+    visit already decoded by D-MC-1.  This is a receipt-only diagnostic: it is
+    evaluated in FP32 under ``no_grad`` so logging cannot retain or alter the
+    training graph.
+    """
+
+    if not isinstance(final_logits, torch.Tensor) or not isinstance(
+        earlier_logits, torch.Tensor
+    ):
+        raise TypeError("visit KL logits must be tensors")
+    if final_logits.shape != earlier_logits.shape:
+        raise ValueError("final and earlier visit logits must have identical shapes")
+    if final_logits.ndim != 3:
+        raise ValueError("visit KL logits must have shape [batch, sequence, vocabulary]")
+    if final_logits.device != earlier_logits.device:
+        raise ValueError("final and earlier visit logits must share a device")
+    if not isinstance(valid_token_mask, torch.Tensor):
+        raise TypeError("visit KL valid_token_mask must be a tensor")
+    if valid_token_mask.shape != final_logits.shape[:2]:
+        raise ValueError("visit KL valid_token_mask must match [batch, sequence]")
+    if valid_token_mask.device != final_logits.device:
+        raise ValueError("visit KL valid_token_mask must share the logits device")
+    if valid_token_mask.dtype is not torch.bool:
+        raise TypeError("visit KL valid_token_mask must be boolean")
+    if not bool(valid_token_mask.any()):
+        raise ValueError("visit KL requires at least one valid token")
+
+    with torch.no_grad():
+        final_log_prob = F.log_softmax(final_logits.float(), dim=-1)
+        earlier_log_prob = F.log_softmax(earlier_logits.float(), dim=-1)
+        per_token_nats = (
+            final_log_prob.exp() * (final_log_prob - earlier_log_prob)
+        ).sum(dim=-1)
+        # Clamp only tiny negative round-off after the exact KL sum.  A material
+        # negative value indicates non-finite/corrupt inputs and fails closed.
+        selected = per_token_nats.masked_select(valid_token_mask)
+        if not bool(torch.isfinite(selected).all()):
+            raise ValueError("visit KL logits produced a non-finite divergence")
+        minimum = float(selected.min().item())
+        if minimum < -1e-6:
+            raise ValueError("visit KL produced a materially negative divergence")
+        return selected.clamp_min(0.0).mean().div(math.log(2.0)).detach()
 
 
 class SymmetryCollapseBlocked(RuntimeError):

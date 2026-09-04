@@ -109,7 +109,7 @@ def test_c2_pf3_gate_excludes_valid_ineligible_zeros_and_passes(
     assert "not_a_learned_checkpoint" in receipt.weight_state
     assert receipt.root_seed == 20_260_902
     assert receipt.config_identity_sha256 == (
-        "57ef01bbaa4aa89ea18b098cbb51ece021fc0849f9b958435f7f534f2f6d8e28"
+        "c7d06a475230e03e7ac104d51f25f768ddff6b476fce1dc94935bf995be3a0fb"
     )
     assert receipt.input_panel_sha256 == (
         "1bce335742f00f14c7e9abd88396776dc4d473fb955f60a923868618bf1d15f6"

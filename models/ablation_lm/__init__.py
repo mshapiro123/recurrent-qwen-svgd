@@ -74,6 +74,7 @@ from .diagnostics import (
     SymmetryCollapseBlocked,
     SymmetryCollapseStepReceipt,
     SymmetryCollapseTracker,
+    final_to_earlier_visit_kl_bits,
     router_calibration_stability,
 )
 from .geometry import Cl20Rotor, LaneModeState, cl20_rotate, lanes_to_modes
@@ -219,4 +220,5 @@ __all__ = [
     "gradient_liveness_receipt",
     "inverse_k1_k4_liveness",
     "parameter_eligibility_matrix",
+    "final_to_earlier_visit_kl_bits",
 ]

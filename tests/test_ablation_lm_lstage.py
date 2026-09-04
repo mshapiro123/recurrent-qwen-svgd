@@ -5,10 +5,12 @@ from unittest.mock import patch
 
 import pytest
 import torch
+import torch.nn.functional as F
 
 from models.ablation_lm.accounting import composition_receipt
 from models.ablation_lm.config import AblationLMConfig
 from models.ablation_lm.model import AblationLM
+from models.ablation_lm.diagnostics import final_to_earlier_visit_kl_bits
 from models.ablation_lm.rng import ModuleRNGStream, derive_draw_seed
 
 
@@ -234,6 +236,14 @@ def test_dmc1_decodes_serially_and_exposes_direct_sampled_loss_gradient() -> Non
     sampled_visit = receipt["lstage_sampled_visit"]
     assert sampled_visit is not None
     assert output.sampled_lstage_logits is not None
+    assert "visit_kl" in output.diagnostics
+    assert output.diagnostics["visit_kl_units"] == "bits_per_valid_token"
+    assert output.diagnostics["visit_kl_support"] == "valid_next_token_positions"
+    assert output.diagnostics["visit_kl_sampled_visit"] == sampled_visit
+    assert output.diagnostics["visit_kl_valid_tokens"] > 0
+    assert output.diagnostics["visit_kl_direction"] == "KL(p_final||p_sampled_earlier)"
+    assert output.diagnostics["visit_kl"].dtype is torch.float32
+    assert not output.diagnostics["visit_kl"].requires_grad
 
     visit_states = _single_stream_visit_states(model, tokens)
     direct_logits = model._decode_with_shared_coda(
@@ -306,6 +316,67 @@ def test_dmc1_k1_and_inference_decode_once_and_consume_no_sample_draw() -> None:
     assert inference_output.sampled_lstage_logits is None
     assert inference_receipt["coda_decodes_per_step"] == 1
     assert inference_receipt["lstage_sampled_visit"] is None
+    assert "visit_kl" not in inference_output.diagnostics
+    assert not any(
+        key.startswith("visit_kl_") for key in inference_output.diagnostics
+    )
+
+
+def test_dep1_visit_kl_uses_final_to_earlier_direction_and_valid_tokens() -> None:
+    final = torch.tensor(
+        [[[3.0, -1.0], [0.0, 0.0]], [[-2.0, 2.0], [1.0, -1.0]]],
+        requires_grad=True,
+    )
+    earlier = torch.tensor(
+        [[[0.0, 0.0], [9.0, -9.0]], [[1.0, -1.0], [-8.0, 8.0]]],
+        requires_grad=True,
+    )
+    valid = torch.tensor([[True, False], [True, False]])
+
+    actual = final_to_earlier_visit_kl_bits(final, earlier, valid)
+    final_log_prob = F.log_softmax(final.float(), dim=-1)
+    earlier_log_prob = F.log_softmax(earlier.float(), dim=-1)
+    expected = (
+        final_log_prob.exp() * (final_log_prob - earlier_log_prob)
+    ).sum(dim=-1).masked_select(valid).mean() / torch.log(torch.tensor(2.0))
+    reverse = (
+        earlier_log_prob.exp() * (earlier_log_prob - final_log_prob)
+    ).sum(dim=-1).masked_select(valid).mean() / torch.log(torch.tensor(2.0))
+
+    torch.testing.assert_close(actual, expected.detach())
+    assert not torch.isclose(actual, reverse.detach())
+    assert actual.dtype is torch.float32
+    assert not actual.requires_grad
+
+
+def test_dep1_model_visit_kl_uses_the_language_model_prediction_support() -> None:
+    tokens, labels = _batch()
+    attention_mask = torch.tensor([[1, 1, 1, 1, 0], [1, 1, 1, 1, 1]])
+    document_ids = torch.tensor([[0, 0, 1, 1, -1], [2, 2, 2, 3, 3]])
+    labels = labels.clone()
+    labels[1, 2] = -100
+    model = AblationLM(_config()).train()
+
+    output = model(
+        tokens,
+        labels=labels,
+        attention_mask=attention_mask,
+        document_ids=document_ids,
+    )
+    assert output.sampled_lstage_logits is not None
+    support = torch.tensor([[True, False, True, False], [True, False, False, True]])
+    final_log_prob = F.log_softmax(output.logits[:, :-1].float(), dim=-1)
+    earlier_log_prob = F.log_softmax(
+        output.sampled_lstage_logits[:, :-1].float(), dim=-1
+    )
+    expected = (
+        final_log_prob.exp() * (final_log_prob - earlier_log_prob)
+    ).sum(dim=-1).masked_select(support).clamp_min(0.0).mean() / torch.log(
+        torch.tensor(2.0)
+    )
+
+    torch.testing.assert_close(output.diagnostics["visit_kl"], expected.detach())
+    assert output.diagnostics["visit_kl_valid_tokens"] == int(support.sum().item())
 
 
 def test_dmc1_bicameral_sample_uses_s2_and_active_train_counts_extra_coda() -> None:
