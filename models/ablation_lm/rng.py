@@ -61,6 +61,20 @@ def _derive_draw_seed(module_seed: int, coordinate: int, draw_index: int) -> int
     return int.from_bytes(hashlib.sha256(payload).digest()[:8], byteorder="big")
 
 
+def derive_draw_seed(
+    base_seed: int,
+    source_key: str,
+    replica: int = 0,
+    *,
+    coordinate: int = 0,
+    draw_index: int = 0,
+) -> int:
+    """Pure O-9 derivation for one namespaced, coordinate-indexed draw."""
+
+    module_seed = derive_module_seed(base_seed, source_key, replica)
+    return _derive_draw_seed(module_seed, coordinate, draw_index)
+
+
 def _checkpoint_identity(base_seed: int, source_key: str) -> torch.Tensor:
     """Return a rank-agnostic tensor identity for strict checkpoint loading.
 
@@ -176,6 +190,25 @@ class ModuleRNGStream(nn.Module):
     ) -> torch.Generator:
         """Return a generator for one coordinate and advance only its counter."""
 
+        generator, _seed = self.next_generator_with_seed(
+            device,
+            coordinate=coordinate,
+        )
+        return generator
+
+    def next_generator_with_seed(
+        self,
+        device: torch.device,
+        *,
+        coordinate: int = 0,
+    ) -> tuple[torch.Generator, int]:
+        """Return one generator and its receiptable derived draw seed.
+
+        The draw schedule is identical to :meth:`next_generator`; this form is
+        for governed stochastic decisions whose exact seed must be written to
+        an execution receipt rather than reconstructed from mutable counters.
+        """
+
         requested_device = _validate_device(device)
         if type(coordinate) is not int:
             raise TypeError("coordinate must be an exact integer")
@@ -184,15 +217,17 @@ class ModuleRNGStream(nn.Module):
         draw_index = self._draw_indices[coordinate]
         if draw_index == _MAX_COUNTER:
             raise OverflowError("module RNG draw counter is exhausted")
-        module_seed = derive_module_seed(
+        draw_seed = derive_draw_seed(
             self.base_seed,
             self.source_key,
             self.replica,
+            coordinate=coordinate,
+            draw_index=draw_index,
         )
         generator = torch.Generator(device=requested_device)
-        generator.manual_seed(_derive_draw_seed(module_seed, coordinate, draw_index))
+        generator.manual_seed(draw_seed)
         self._draw_indices[coordinate] = draw_index + 1
-        return generator
+        return generator, draw_seed
 
     def _save_to_state_dict(self, destination, prefix, keep_vars) -> None:
         super()._save_to_state_dict(destination, prefix, keep_vars)

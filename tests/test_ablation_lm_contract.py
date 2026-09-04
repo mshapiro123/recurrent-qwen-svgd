@@ -16,6 +16,7 @@ from models.ablation_lm.accounting import (
     tokenizer_screen_accounting,
 )
 from models.ablation_lm.model import AblationLM
+from models.ablation_lm.rng import derive_draw_seed
 from models.ablation_lm.config import (
     REGISTERED_CORE_BLOCK_COUNTS,
     REGISTERED_PROXY_BLOCK_SPLITS,
@@ -139,6 +140,8 @@ def test_active_layer_scales_and_callosum_cannot_be_initialized_dead() -> None:
         replace(config, recurrence_exponent=0.5)
     with pytest.raises(ValueError, match="requires structural recurrence"):
         replace(config, use_reentry_bridge=True)
+    with pytest.raises(ValueError, match="sampled L_stage decode requires structural recurrence"):
+        replace(config, use_lstage_sampled_decode=True)
     with pytest.raises(ValueError, match="bicameral core requires structural recurrence"):
         replace(config, use_bicameral_core=True)
     with pytest.raises(ValueError, match="kv_policy must be one of"):
@@ -156,6 +159,8 @@ def test_active_layer_scales_and_callosum_cannot_be_initialized_dead() -> None:
         replace(config, static_kv_midpoint_refresh=True)
     with pytest.raises(TypeError, match="exact bool"):
         replace(config, use_static_kv_core=1)
+    with pytest.raises(TypeError, match="exact bool"):
+        replace(config, use_lstage_sampled_decode=1)
     with pytest.raises(ValueError, match="positive suffix"):
         replace(config, engram_orders=(2.5, 3))
     with pytest.raises(ValueError, match="exact integer"):
@@ -219,11 +224,22 @@ def test_composition_receipt_partitions_fixed_and_recurrent_capacity() -> None:
     )
     assert baseline_receipt.n_recurrent == 0
     assert baseline_receipt.n_fixed == baseline_receipt.n_body
+    assert baseline_receipt.n_coda == sum(
+        parameter.numel()
+        for module in (baseline.coda_blocks, baseline.final_norm)
+        for parameter in module.parameters()
+    )
     assert baseline_receipt.n_active_eval == baseline_receipt.n_body
+    assert baseline_receipt.n_active_train == baseline_receipt.n_body
     assert baseline_receipt.composition_exact is True
     assert baseline_receipt.active_eval_exact is True
+    assert baseline_receipt.active_train_exact is True
     assert baseline_receipt.coda_decodes_per_step == 1
     assert baseline_receipt.lstage_sampled_visit is None
+    assert baseline_receipt.lstage_sample_source_key is None
+    assert baseline_receipt.lstage_sample_rng_coordinate is None
+    assert baseline_receipt.lstage_sample_draw_index is None
+    assert baseline_receipt.lstage_sample_seed is None
     assert baseline_receipt.kv_policy == "not_applicable"
     assert baseline_receipt.kv_cache_multiplier_at_serving is None
     assert baseline_receipt.visit_schedule == ()
@@ -240,8 +256,10 @@ def test_composition_receipt_partitions_fixed_and_recurrent_capacity() -> None:
     assert receipt.n_fixed + receipt.n_recurrent == receipt.n_body
     assert receipt.n_recurrent > 0
     assert receipt.n_active_eval is None
+    assert receipt.n_active_train is None
     assert receipt.composition_exact is False
     assert receipt.active_eval_exact is False
+    assert receipt.active_train_exact is False
     assert receipt.kv_policy == "not_applicable"
     with pytest.raises(ValueError, match="configured model graph"):
         composition_receipt(
@@ -266,16 +284,53 @@ def test_composition_receipt_partitions_fixed_and_recurrent_capacity() -> None:
             sidecar_firing_fraction_by_step=(0.0, 0.25, 0.5, 0.75),
         )
 
+    sampled_model = AblationLM(
+        replace(
+            _small_config(),
+            use_recurrence=True,
+            use_lstage_sampled_decode=True,
+        )
+    )
+    sampled_draw_index = 7
+    sampled_seed = derive_draw_seed(
+        sampled_model.config.run_seed,
+        "weft.lstage.sample",
+        sampled_model.config.rng_replica,
+        coordinate=0,
+        draw_index=sampled_draw_index,
+    )
+    sampled_generator = torch.Generator(device="cpu").manual_seed(sampled_seed)
+    sampled_visit = int(torch.randint(3, (1,), generator=sampled_generator).item())
     sampled = composition_receipt(
-        recurrent,
+        sampled_model,
         requested_visits=4,
         executed_visits=4,
         coda_decodes_per_step=2,
-        lstage_sampled_visit=1,
+        lstage_sampled_visit=sampled_visit,
+        lstage_sample_source_key="weft.lstage.sample",
+        lstage_sample_rng_coordinate=0,
+        lstage_sample_draw_index=sampled_draw_index,
+        lstage_sample_seed=sampled_seed,
     )
     assert sampled.coda_decodes_per_step == 2
-    assert sampled.lstage_sampled_visit == 1
+    assert sampled.lstage_sampled_visit == sampled_visit
+    assert sampled.lstage_sample_source_key == "weft.lstage.sample"
+    assert sampled.lstage_sample_rng_coordinate == 0
+    assert sampled.lstage_sample_draw_index == sampled_draw_index
+    assert sampled.lstage_sample_seed == sampled_seed
     json.dumps(sampled.as_dict())
+    with pytest.raises(ValueError, match="configured D-MC-1 mechanism"):
+        composition_receipt(
+            recurrent,
+            requested_visits=4,
+            executed_visits=4,
+            coda_decodes_per_step=2,
+            lstage_sampled_visit=sampled_visit,
+            lstage_sample_source_key="weft.lstage.sample",
+            lstage_sample_rng_coordinate=0,
+            lstage_sample_draw_index=sampled_draw_index,
+            lstage_sample_seed=sampled_seed,
+        )
     with pytest.raises(ValueError, match="earlier visit"):
         composition_receipt(
             recurrent,
@@ -319,6 +374,10 @@ def test_diagnostic_forward_emits_the_composition_receipt() -> None:
     assert receipt["executed_visits"] == 1.0
     assert receipt["coda_decodes_per_step"] == 1
     assert receipt["lstage_sampled_visit"] is None
+    assert receipt["lstage_sample_source_key"] is None
+    assert receipt["lstage_sample_rng_coordinate"] is None
+    assert receipt["lstage_sample_draw_index"] is None
+    assert receipt["lstage_sample_seed"] is None
     assert receipt["rho_hat_free"] is None
     assert receipt["lateralization_index"] == ()
     assert receipt["n_unique"] == sum(parameter.numel() for parameter in model.parameters())

@@ -45,6 +45,7 @@ class AblationLMOutput:
     logits: torch.Tensor
     loss: torch.Tensor | None
     diagnostics: dict[str, Any]
+    sampled_lstage_logits: torch.Tensor | None = None
 
 
 class AblationLM(nn.Module):
@@ -231,6 +232,15 @@ class AblationLM(nn.Module):
                 ),
             )
             for index in range(config.n_coda_layers)
+        )
+        self.lstage_sample_rng = (
+            ModuleRNGStream(
+                config.run_seed,
+                "weft.lstage.sample",
+                config.rng_replica,
+            )
+            if config.use_lstage_sampled_decode
+            else None
         )
         self.final_norm = RMSNorm(config.d_model, config.norm_eps)
         self.lm_head = construct(
@@ -444,12 +454,14 @@ class AblationLM(nn.Module):
         position_ids: torch.Tensor | None,
         document_ids: torch.Tensor | None,
         capture_trajectory: bool,
+        sampled_visit: int | None,
     ) -> tuple[
         torch.Tensor,
         torch.Tensor,
         torch.Tensor | None,
         BicameralRecurrenceReceipt,
         tuple[torch.Tensor, ...],
+        tuple[torch.Tensor, torch.Tensor] | None,
         int,
         int,
         tuple[str, ...],
@@ -470,6 +482,7 @@ class AblationLM(nn.Module):
             raise RuntimeError("the legacy h0 re-entry bridge entered the bicameral graph")
         policy = self.config.kv_policy
         visit_consensus_states: list[torch.Tensor] = []
+        sampled_hemisphere_states: tuple[torch.Tensor, torch.Tensor] | None = None
         after_block_modules: tuple[str, ...] = ()
         if lanes is not None:
             assert self.scratch is not None
@@ -485,7 +498,7 @@ class AblationLM(nn.Module):
             block_index: int,
             residual_scale: float,
         ) -> AfterBlockResult:
-            nonlocal lanes
+            nonlocal lanes, sampled_hemisphere_states
             executed_modules: list[str] = []
             if lanes is not None:
                 assert self.scratch is not None
@@ -499,8 +512,11 @@ class AblationLM(nn.Module):
                 executed_modules.append("PositionAlignedScratch.step_bicameral")
                 if self.scratch.carrier is not None:
                     executed_modules.append("TwoLaneBirkhoffMixer")
-            if capture_trajectory and block_index == len(self.core_blocks) - 1:
-                visit_consensus_states.append((h_a + h_b) * 0.5)
+            if block_index == len(self.core_blocks) - 1:
+                if capture_trajectory:
+                    visit_consensus_states.append(((h_a + h_b) * 0.5).detach())
+                if visit == sampled_visit:
+                    sampled_hemisphere_states = (h_a, h_b)
             return AfterBlockResult(
                 h_a=h_a,
                 h_b=h_b,
@@ -540,6 +556,7 @@ class AblationLM(nn.Module):
             lanes,
             receipt,
             tuple(visit_consensus_states),
+            sampled_hemisphere_states,
             cache_generation_events,
             linear_projection_calls,
             receipt.visit_schedule,
@@ -827,6 +844,25 @@ class AblationLM(nn.Module):
         per_token_square = values.float().square().mean(dim=-1)
         return per_token_square.masked_select(valid_token_mask).mean().sqrt()
 
+    def _decode_with_shared_coda(
+        self,
+        hidden: torch.Tensor,
+        *,
+        attention_mask: torch.Tensor | None,
+        position_ids: torch.Tensor | None,
+        document_ids: torch.Tensor | None,
+    ) -> torch.Tensor:
+        """Decode one retained state through the shared coda and tied readout."""
+
+        for block in self.coda_blocks:
+            hidden = block(
+                hidden,
+                attention_mask=attention_mask,
+                position_ids=position_ids,
+                document_ids=document_ids,
+            )
+        return self.lm_head(self.final_norm(hidden))
+
     def _language_model_loss(
         self,
         logits: torch.Tensor,
@@ -996,6 +1032,28 @@ class AblationLM(nn.Module):
 
         prelude = hidden
         lanes = self.scratch.initialize(prelude) if self.scratch is not None else None
+        lstage_sampled_visit: int | None = None
+        lstage_sample_source_key: str | None = None
+        lstage_sample_rng_coordinate: int | None = None
+        lstage_sample_draw_index: int | None = None
+        lstage_sample_seed: int | None = None
+        if self.training and self.config.use_lstage_sampled_decode and steps > 1:
+            if self.lstage_sample_rng is None:
+                raise RuntimeError("the D-MC-1 sampler is missing from an active graph")
+            lstage_sample_source_key = self.lstage_sample_rng.source_key
+            lstage_sample_rng_coordinate = 0
+            lstage_sample_draw_index = self.lstage_sample_rng.draw_index
+            generator, lstage_sample_seed = (
+                self.lstage_sample_rng.next_generator_with_seed(torch.device("cpu"))
+            )
+            lstage_sampled_visit = int(
+                torch.randint(
+                    steps - 1,
+                    (1,),
+                    generator=generator,
+                    device="cpu",
+                ).item()
+            )
         core_kv_cache: tuple[ProjectedKeyValue, ...] | None = None
         core_kv_projection_events = 0
         core_kv_linear_projection_calls = 0
@@ -1015,6 +1073,7 @@ class AblationLM(nn.Module):
         bicameral_visit_schedule: tuple[str, ...] = ()
         bicameral_terminal_a: torch.Tensor | None = None
         bicameral_terminal_b: torch.Tensor | None = None
+        sampled_recurrent_state: torch.Tensor | None = None
         bicameral_scratch_update_events = 0
         if self.config.use_bicameral_core:
             (
@@ -1023,6 +1082,7 @@ class AblationLM(nn.Module):
                 lanes,
                 bicameral_recurrence_receipt,
                 visit_consensus_states,
+                sampled_hemisphere_states,
                 core_kv_projection_events,
                 core_kv_linear_projection_calls,
                 bicameral_visit_schedule,
@@ -1035,12 +1095,18 @@ class AblationLM(nn.Module):
                 position_ids=position_ids,
                 document_ids=effective_document_ids,
                 capture_trajectory=return_diagnostics,
+                sampled_visit=lstage_sampled_visit,
             )
             assert self.bicameral_combiner is not None
             hidden = self.bicameral_combiner(
                 bicameral_terminal_a,
                 bicameral_terminal_b,
             )
+            if sampled_hemisphere_states is not None:
+                sampled_recurrent_state = self.bicameral_combiner(
+                    sampled_hemisphere_states[0],
+                    sampled_hemisphere_states[1],
+                )
             bicameral_visit_schedule = (
                 *bicameral_visit_schedule,
                 "terminal.PerBandUnitCircleCombiner",
@@ -1165,6 +1231,8 @@ class AblationLM(nn.Module):
                     position_ids=position_ids,
                     document_ids=effective_document_ids,
                 )
+                if step_index == lstage_sampled_visit:
+                    sampled_recurrent_state = hidden
                 if return_diagnostics:
                     loop_rms.append(self._valid_token_rms(hidden, valid_token_mask).detach())
                     loop_update_rms.append(
@@ -1191,14 +1259,22 @@ class AblationLM(nn.Module):
                 hidden,
                 record_ids=memory_record_ids,
             )
-        for block in self.coda_blocks:
-            hidden = block(
-                hidden,
+        logits = self._decode_with_shared_coda(
+            hidden,
+            attention_mask=attention_mask,
+            position_ids=position_ids,
+            document_ids=effective_document_ids,
+        )
+        sampled_lstage_logits: torch.Tensor | None = None
+        if lstage_sampled_visit is not None:
+            if sampled_recurrent_state is None:
+                raise RuntimeError("the sampled recurrent visit was not retained")
+            sampled_lstage_logits = self._decode_with_shared_coda(
+                sampled_recurrent_state,
                 attention_mask=attention_mask,
                 position_ids=position_ids,
                 document_ids=effective_document_ids,
             )
-        logits = self.lm_head(self.final_norm(hidden))
         loss: torch.Tensor | None = None
         cross_entropy_loss: torch.Tensor | None = None
         z_loss: torch.Tensor | None = None
@@ -1215,6 +1291,12 @@ class AblationLM(nn.Module):
                 self,
                 requested_visits=steps,
                 executed_visits=steps,
+                coda_decodes_per_step=(2 if sampled_lstage_logits is not None else 1),
+                lstage_sampled_visit=lstage_sampled_visit,
+                lstage_sample_source_key=lstage_sample_source_key,
+                lstage_sample_rng_coordinate=lstage_sample_rng_coordinate,
+                lstage_sample_draw_index=lstage_sample_draw_index,
+                lstage_sample_seed=lstage_sample_seed,
                 kv_policy=(
                     self.config.kv_policy
                     if self.config.use_bicameral_core
@@ -1426,4 +1508,9 @@ class AblationLM(nn.Module):
                     diagnostics["lane_carrier_retention_floor"] = (
                         self.config.lane_carrier_retention_floor
                     )
-        return AblationLMOutput(logits=logits, loss=loss, diagnostics=diagnostics)
+        return AblationLMOutput(
+            logits=logits,
+            loss=loss,
+            diagnostics=diagnostics,
+            sampled_lstage_logits=sampled_lstage_logits,
+        )

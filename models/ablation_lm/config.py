@@ -95,6 +95,10 @@ class AblationLMConfig:
     long_term_memory_layer_scale: float = 1e-3
 
     z_loss_coefficient: float = 0.0
+    # D-MC-1 execution mechanism only.  The staged-state target and
+    # lambda_stage remain curriculum bindings, so the production-safe default
+    # must stay structural OFF until those literals are ratified.
+    use_lstage_sampled_decode: bool = False
     jet_plane_probe_count: int = 32
     jet_plane_probe_seed: int = 20_260_826
 
@@ -131,6 +135,7 @@ class AblationLMConfig:
             "use_bicameral_core": self.use_bicameral_core,
             "use_static_kv_core": self.use_static_kv_core,
             "static_kv_midpoint_refresh": self.static_kv_midpoint_refresh,
+            "use_lstage_sampled_decode": self.use_lstage_sampled_decode,
         }.items():
             if type(value) is not bool:
                 raise TypeError(f"{name} must be an exact bool")
@@ -175,6 +180,8 @@ class AblationLMConfig:
             raise ValueError("the lane carrier requires the position-aligned scratch arm")
         if self.use_reentry_bridge and not self.use_recurrence:
             raise ValueError("the re-entry bridge requires structural recurrence")
+        if self.use_lstage_sampled_decode and not self.use_recurrence:
+            raise ValueError("the sampled L_stage decode requires structural recurrence")
         if self.use_bicameral_core and not self.use_recurrence:
             raise ValueError("the bicameral core requires structural recurrence")
         if self.use_bicameral_core and self.use_static_kv_core:

@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass
 import math
 
+import torch
 from torch import nn
 
 from .bicameral_recurrent import expected_bicameral_visit_schedules
@@ -20,6 +21,7 @@ from .config import (
 )
 from .engram import CausalTokenEngram
 from .memory import ReadOnlyLatentMemory
+from .rng import derive_draw_seed
 
 
 @dataclass(frozen=True)
@@ -57,17 +59,24 @@ class CompositionReceipt:
     n_body: int
     n_fixed: int
     n_recurrent: int
+    n_coda: int
     n_sparse_addressed: int
     vocabulary_parameters: int
     vocabulary_fraction: float
     recurrent_fraction: float
     fixed_to_recurrent: float | None
     n_active_eval: float | None
+    n_active_train: float | None
     composition_exact: bool
     active_eval_exact: bool
+    active_train_exact: bool
     sidecar_firing_fraction_by_step: tuple[float, ...]
     coda_decodes_per_step: int
     lstage_sampled_visit: int | None
+    lstage_sample_source_key: str | None
+    lstage_sample_rng_coordinate: int | None
+    lstage_sample_draw_index: int | None
+    lstage_sample_seed: int | None
     kv_policy: str
     kv_cache_multiplier_at_serving: int | None
     visit_schedule: tuple[str, ...]
@@ -353,6 +362,10 @@ def composition_receipt(
     sidecar_firing_fraction_by_step: tuple[float, ...] = (),
     coda_decodes_per_step: int = 1,
     lstage_sampled_visit: int | None = None,
+    lstage_sample_source_key: str | None = None,
+    lstage_sample_rng_coordinate: int | None = None,
+    lstage_sample_draw_index: int | None = None,
+    lstage_sample_seed: int | None = None,
     kv_policy: str | None = None,
     kv_cache_multiplier_at_serving: int | None = None,
     visit_schedule: tuple[str, ...] = (),
@@ -391,18 +404,75 @@ def composition_receipt(
     if lstage_sampled_visit is not None:
         if type(lstage_sampled_visit) is not int:
             raise TypeError("lstage_sampled_visit must be an integer or None")
+        if not float(executed_visits).is_integer():
+            raise ValueError(
+                "an aggregate or fractional execution receipt must leave "
+                "lstage_sampled_visit null"
+            )
+        executed_visit_count = int(executed_visits)
         if (
-            requested_visits < 2
-            or not 0 <= lstage_sampled_visit <= requested_visits - 2
+            executed_visit_count < 2
+            or not 0 <= lstage_sampled_visit <= executed_visit_count - 2
         ):
             raise ValueError(
                 "lstage_sampled_visit must identify an earlier visit in "
-                "[0, requested_visits - 2]"
+                "[0, executed_visits - 2]"
             )
         if coda_decodes_per_step != 2:
             raise ValueError(
                 "a sampled L_stage visit requires exactly two coda decodes"
             )
+        if lstage_sample_source_key != "weft.lstage.sample":
+            raise ValueError(
+                "the D-MC-1 L_stage RNG source key must be weft.lstage.sample"
+            )
+        if (
+            type(lstage_sample_rng_coordinate) is not int
+            or lstage_sample_rng_coordinate != 0
+        ):
+            raise ValueError("the D-MC-1 L_stage RNG coordinate must be exactly zero")
+        if (
+            type(lstage_sample_draw_index) is not int
+            or lstage_sample_draw_index < 0
+        ):
+            raise ValueError(
+                "lstage_sample_draw_index must be a non-negative exact integer"
+            )
+        if (
+            type(lstage_sample_seed) is not int
+            or lstage_sample_seed < 0
+            or lstage_sample_seed >= 2**64
+        ):
+            raise ValueError("lstage_sample_seed must be an unsigned 64-bit exact integer")
+        replay_generator = torch.Generator(device="cpu").manual_seed(
+            lstage_sample_seed
+        )
+        replayed_visit = int(
+            torch.randint(
+                executed_visit_count - 1,
+                (1,),
+                generator=replay_generator,
+                device="cpu",
+            ).item()
+        )
+        if replayed_visit != lstage_sampled_visit:
+            raise ValueError(
+                "lstage_sampled_visit does not replay from lstage_sample_seed"
+            )
+    elif any(
+        value is not None
+        for value in (
+            lstage_sample_source_key,
+            lstage_sample_rng_coordinate,
+            lstage_sample_draw_index,
+            lstage_sample_seed,
+        )
+    ):
+        raise ValueError("L_stage RNG metadata requires a sampled visit")
+    elif coda_decodes_per_step != 1:
+        raise ValueError(
+            "multiple coda decodes require a sampled L_stage visit"
+        )
     if kv_policy is not None and not isinstance(kv_policy, str):
         raise TypeError("kv_policy must be a string or None")
     if not isinstance(visit_schedule, tuple) or any(
@@ -437,6 +507,39 @@ def composition_receipt(
 
     recurrent_ids: set[int] = set()
     config = getattr(root, "config", None)
+    configured_lstage_sampled_decode = bool(
+        config is not None and getattr(config, "use_lstage_sampled_decode", False)
+    )
+    has_lstage_execution_receipt = coda_decodes_per_step > 1 or any(
+        value is not None
+        for value in (
+            lstage_sampled_visit,
+            lstage_sample_source_key,
+            lstage_sample_rng_coordinate,
+            lstage_sample_draw_index,
+            lstage_sample_seed,
+        )
+    )
+    if has_lstage_execution_receipt and not configured_lstage_sampled_decode:
+        raise ValueError(
+            "sampled L_stage execution metadata requires the configured D-MC-1 mechanism"
+        )
+    if lstage_sampled_visit is not None:
+        assert config is not None
+        assert lstage_sample_rng_coordinate is not None
+        assert lstage_sample_draw_index is not None
+        assert lstage_sample_seed is not None
+        expected_lstage_seed = derive_draw_seed(
+            config.run_seed,
+            "weft.lstage.sample",
+            config.rng_replica,
+            coordinate=lstage_sample_rng_coordinate,
+            draw_index=lstage_sample_draw_index,
+        )
+        if lstage_sample_seed != expected_lstage_seed:
+            raise ValueError(
+                "lstage_sample_seed does not match the configured O-9 derivation"
+            )
     configured_bicameral = bool(
         config is not None and getattr(config, "use_bicameral_core", False)
     )
@@ -545,7 +648,26 @@ def composition_receipt(
 
     body_ids = set(inventory) - vocabulary_ids - sparse_ids
     recurrent_ids &= body_ids
+    # ``n_coda`` is the exact non-vocabulary parameter union re-executed by a
+    # second D-MC-1 decode.  Besides the named coda blocks this includes the
+    # final normalization and, on the bicameral graph, the S-2 combine that
+    # produces the retained visit's decodable state.  The tied LM head remains
+    # in the separately reported vocabulary partition and is never counted a
+    # second time here.
+    coda_ids = _trainable_parameter_ids(getattr(root, "coda_blocks", None))
+    coda_ids.update(_trainable_parameter_ids(getattr(root, "final_norm", None)))
+    if configured_bicameral:
+        coda_ids.update(
+            _trainable_parameter_ids(getattr(root, "bicameral_combiner", None))
+        )
+    if not coda_ids.issubset(body_ids):
+        raise RuntimeError(
+            "coda parameters must be an exact subset of the body partition"
+        )
+    if coda_ids.intersection(recurrent_ids):
+        raise RuntimeError("coda and recurrent parameter partitions must be disjoint")
     n_recurrent = sum(inventory[index].numel() for index in recurrent_ids)
+    n_coda = sum(inventory[index].numel() for index in coda_ids)
     n_body = sum(inventory[index].numel() for index in body_ids)
     n_fixed = n_body - n_recurrent
     n_sparse = sum(inventory[index].numel() for index in sparse_ids)
@@ -571,6 +693,14 @@ def composition_receipt(
         if active_eval_exact
         else None
     )
+    active_train_exact = active_eval_exact
+    n_active_train = (
+        n_fixed
+        + float(executed_visits) * n_recurrent
+        + (coda_decodes_per_step - 1) * n_coda
+        if active_train_exact
+        else None
+    )
     return CompositionReceipt(
         requested_visits=requested_visits,
         executed_visits=float(executed_visits),
@@ -578,19 +708,26 @@ def composition_receipt(
         n_body=n_body,
         n_fixed=n_fixed,
         n_recurrent=n_recurrent,
+        n_coda=n_coda,
         n_sparse_addressed=n_sparse,
         vocabulary_parameters=accounting.vocabulary,
         vocabulary_fraction=vocabulary_fraction,
         recurrent_fraction=recurrent_fraction,
         fixed_to_recurrent=fixed_to_recurrent,
         n_active_eval=n_active_eval,
+        n_active_train=n_active_train,
         composition_exact=active_eval_exact,
         active_eval_exact=active_eval_exact,
+        active_train_exact=active_train_exact,
         sidecar_firing_fraction_by_step=tuple(
             float(value) for value in sidecar_firing_fraction_by_step
         ),
         coda_decodes_per_step=coda_decodes_per_step,
         lstage_sampled_visit=lstage_sampled_visit,
+        lstage_sample_source_key=lstage_sample_source_key,
+        lstage_sample_rng_coordinate=lstage_sample_rng_coordinate,
+        lstage_sample_draw_index=lstage_sample_draw_index,
+        lstage_sample_seed=lstage_sample_seed,
         kv_policy=kv_policy,
         kv_cache_multiplier_at_serving=kv_cache_multiplier_at_serving,
         visit_schedule=visit_schedule,
