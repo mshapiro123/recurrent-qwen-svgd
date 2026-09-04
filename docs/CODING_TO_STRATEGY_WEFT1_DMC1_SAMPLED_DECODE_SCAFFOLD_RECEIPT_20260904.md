@@ -1,8 +1,11 @@
 # CODING TO STRATEGY — WEFT-1 D-MC-1 Sampled-Decode Scaffold Receipt
 
-**Date:** 2026-09-04  
-**Status:** build-axis mechanism and accounting ready; structural OFF by default  
-**Implementation commit:** `677c706c94a26532bed42a3ce4c6b8fbbbd7eafe`  
+**Date:** 2026-09-04
+
+**Status:** build-axis mechanism and accounting ready; structural OFF by default
+
+**Implementation commit:** `677c706c94a26532bed42a3ce4c6b8fbbbd7eafe`
+
 **Run-axis effect:** none; no corpus, checkpoint, sealed data, or GPU cell consumed
 
 ## 1. Authority used
