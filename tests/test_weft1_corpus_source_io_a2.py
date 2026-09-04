@@ -13,6 +13,7 @@ import pyarrow.parquet as pq
 import pytest
 import zstandard
 
+from training import weft1_corpus_source_io_a2 as source_io
 from training.weft1_corpus_enumeration_a2 import (
     FIXTURE_MODE,
     ExternalLocatorAssetV3,
@@ -20,6 +21,7 @@ from training.weft1_corpus_enumeration_a2 import (
     UpstreamAssetV3,
     enumerate_upstream_assets_v3,
 )
+from training.weft1_corpus_fetch_a3 import SourceCacheAssetV4
 from training.weft1_corpus_source_io_a2 import (
     DROP_INVALID_UTF8,
     DROP_QUALITY_LT3,
@@ -178,6 +180,47 @@ def _asset_for_bytes(
             observed_sha256=_sha(payload),
         ),
         root,
+    )
+
+
+_FINEWEB_CENSUS_V4_ASSETS = (
+    (
+        "data/CC-MAIN-2018-30/train-00013-of-00017.parquet",
+        2_289_354_131,
+        "47ef8acbe973f15fe58ee2fabe8de8c10172378e5f6a0c668a2e8e1491056419",
+    ),
+    (
+        "data/CC-MAIN-2023-40/train-00003-of-00031.parquet",
+        2_295_347_141,
+        "d1429ae4cca67f8e8d629da9b69726e1ad55076c773a7725ba3d4c7217d20e16",
+    ),
+    (
+        "data/CC-MAIN-2017-13/train-00012-of-00022.parquet",
+        2_279_677_242,
+        "220c8ad2ba1418c507f0a6459cdd0d0c35b898561bf6a117b18cdbace7bf9b8a",
+    ),
+)
+
+
+def _fineweb_census_v4_asset(index: int) -> SourceCacheAssetV4:
+    route = next(
+        item
+        for item in load_exact_source_routes_v3()
+        if item.source_family == "fineweb_edu"
+    )
+    locator, byte_count, sha256 = _FINEWEB_CENSUS_V4_ASSETS[index]
+    return SourceCacheAssetV4(
+        source_family=route.source_family,
+        repository=route.repository,
+        config=route.config,
+        revision=route.revision,
+        split=route.split,
+        asset_locator=locator,
+        relative_path=f"assets/fineweb_edu/{sha256}.parquet",
+        bytes=byte_count,
+        sha256=sha256,
+        effective_route_receipt_sha256=route.a1_route_receipt_sha256,
+        execution_binding_sha256="e" * 64,
     )
 
 
@@ -737,6 +780,142 @@ def test_fineweb_production_binding_rejects_same_projection_noncensus_asset(
         match="full Arrow schema identity|absent from the selected-schema census",
     ):
         tuple(iter_source_asset_events_v3(asset, root))
+
+
+@pytest.mark.parametrize("index", range(3))
+def test_fineweb_census_projects_real_v4_asset_shape_to_frozen_v3_identity(
+    index: int,
+) -> None:
+    asset = _fineweb_census_v4_asset(index)
+    v3_asset = SourceCacheAssetV3(
+        source_family=asset.source_family,
+        repository=asset.repository,
+        config=asset.config,
+        revision=asset.revision,
+        split=asset.split,
+        asset_locator=asset.asset_locator,
+        relative_path=asset.relative_path,
+        bytes=asset.bytes,
+        sha256=asset.sha256,
+    )
+    census_row = source_io._fineweb_selected_census_rows_v1()[index]
+    census_identity = str(census_row["source_asset_identity_sha256"])
+
+    assert asset.asset_identity_sha256 != census_identity
+    assert v3_asset.asset_identity_sha256 == census_identity
+    assert (
+        source_io._fineweb_selected_census_asset_identity_v3(asset)
+        == census_identity
+    )
+    verified = VerifiedLocalCacheAssetV3(
+        expected=asset,
+        observed_bytes=asset.bytes,
+        observed_sha256=asset.sha256,
+    )
+    assert source_io._fineweb_selected_census_row_for_asset_v1(verified) == (
+        census_row
+    )
+
+
+def test_fineweb_census_v3_projection_rejects_changed_transport() -> None:
+    original = _fineweb_census_v4_asset(0)
+    changed = replace(original, bytes=original.bytes + 1, sha256="0" * 64)
+    assert source_io._fineweb_selected_census_asset_identity_v3(changed) != (
+        source_io._fineweb_selected_census_asset_identity_v3(original)
+    )
+    verified = VerifiedLocalCacheAssetV3(
+        expected=changed,
+        observed_bytes=changed.bytes,
+        observed_sha256=changed.sha256,
+    )
+    with pytest.raises(SourceSchemaError, match="absent from the selected-schema census"):
+        source_io._fineweb_selected_census_row_for_asset_v1(verified)
+
+
+def test_fineweb_census_v3_projection_rejects_changed_asset_order(
+    tmp_path: Path,
+) -> None:
+    verified = tuple(
+        VerifiedLocalCacheAssetV3(
+            expected=asset,
+            observed_bytes=asset.bytes,
+            observed_sha256=asset.sha256,
+        )
+        for asset in (_fineweb_census_v4_asset(index) for index in range(3))
+    )
+    with pytest.raises(
+        SourceSchemaError,
+        match="selected asset identity or order differs from census",
+    ):
+        source_io.validate_fineweb_selected_schema_census_assets_v1(
+            (verified[1], verified[0], verified[2]),
+            tmp_path,
+        )
+
+
+def test_fineweb_census_lookup_preserves_v4_parsed_observation_identity(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    scratch = tmp_path / "fineweb-v4-observation.parquet"
+    payload = _parquet_payload(scratch, "fineweb_edu")
+    v3_verified, root = _asset_for_bytes(tmp_path, "fineweb_edu", payload)
+    base = v3_verified.expected
+    asset = SourceCacheAssetV4(
+        source_family=base.source_family,
+        repository=base.repository,
+        config=base.config,
+        revision=base.revision,
+        split=base.split,
+        asset_locator=base.asset_locator,
+        relative_path=base.relative_path,
+        bytes=base.bytes,
+        sha256=base.sha256,
+        effective_route_receipt_sha256="d" * 64,
+        execution_binding_sha256="e" * 64,
+    )
+    census_identity = source_io._fineweb_selected_census_asset_identity_v3(asset)
+    assert census_identity != asset.asset_identity_sha256
+    monkeypatch.setattr(
+        source_io,
+        "_fineweb_selected_census_rows_v1",
+        lambda: (
+            {
+                "row_count": 1,
+                "source_asset_bytes": asset.bytes,
+                "source_asset_identity_sha256": census_identity,
+                "source_asset_sha256": asset.sha256,
+            },
+        ),
+    )
+    binding = replace(
+        PRODUCTION_PARSER_BINDINGS_V3["fineweb_edu"],
+        declared_parquet_schema_ipc_sha256=_sha(
+            pq.ParquetFile(scratch).schema_arrow.serialize().to_pybytes()
+        ),
+    )
+    monkeypatch.setattr(
+        source_io,
+        "resolve_production_parser_binding_v3",
+        lambda _asset: binding,
+    )
+    verified = VerifiedLocalCacheAssetV3(
+        expected=asset,
+        observed_bytes=asset.bytes,
+        observed_sha256=asset.sha256,
+    )
+
+    events = tuple(iter_source_asset_events_v3(verified, root))
+    assert len(events) == 1
+    assert events[0].record is not None
+    assert type(events[0].record.canonical_record.asset) is SourceCacheAssetV4
+    assert events[0].record.canonical_record.asset.asset_identity_sha256 == (
+        asset.asset_identity_sha256
+    )
+    assert events[0].observation is not None
+    assert events[0].observation.source_cache_asset_identity_sha256 == (
+        asset.asset_identity_sha256
+    )
 
 
 def test_parquet_full_schema_binding_detects_metadata_only_drift(

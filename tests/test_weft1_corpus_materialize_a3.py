@@ -471,6 +471,27 @@ def test_fineweb_schema_census_preflight_rejects_wrong_manifest_same_projection(
         )
 
 
+def test_fineweb_v3_census_projection_does_not_weaken_v4_manifest_authority(
+    tmp_path: Path,
+) -> None:
+    _, _, manifest, _, _, _, _, _ = _fixture(tmp_path)
+    fineweb_index, original = next(
+        (index, asset)
+        for index, asset in enumerate(manifest.assets)
+        if asset.source_family == "fineweb_edu"
+    )
+    mutated = replace(original, execution_binding_sha256="0" * 64)
+    assert (
+        bridge.source_io._fineweb_selected_census_asset_identity_v3(mutated)
+        == bridge.source_io._fineweb_selected_census_asset_identity_v3(original)
+    )
+    assert mutated.asset_identity_sha256 != original.asset_identity_sha256
+    assets = list(manifest.assets)
+    assets[fineweb_index] = mutated
+    with pytest.raises(ValueError, match="asset authority drifted"):
+        replace(manifest, assets=tuple(assets))
+
+
 def test_v4_bridge_fails_closed_on_cache_mutation(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

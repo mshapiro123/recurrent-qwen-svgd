@@ -35,6 +35,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 import zstandard
 
+from training.weft1_corpus_a2 import execution_authority_v3_bound_sha256
 from training.weft1_corpus_enumeration_a2 import (
     AUTHORITATIVE_MODE,
     FIXTURE_MODE,
@@ -1296,6 +1297,38 @@ def _fineweb_selected_census_rows_v1() -> tuple[Mapping[str, object], ...]:
     return tuple(rows)  # type: ignore[arg-type]
 
 
+def _fineweb_selected_census_asset_identity_v3(
+    expected: SourceCacheAssetV3,
+) -> str:
+    """Project a cache asset onto the V3 identity frozen by the census.
+
+    Production A3 manifests carry :class:`SourceCacheAssetV4`, whose dynamic
+    ``asset_identity_sha256`` also binds the effective route and execution
+    context.  The earlier, immutable schema census was minted from the V3
+    source identity.  Reconstruct that exact legacy payload explicitly here;
+    V4 manifest and route validation remains the responsibility of the A3
+    bridge before this narrow schema-census check runs.
+    """
+
+    if not isinstance(expected, SourceCacheAssetV3):
+        raise TypeError("FineWeb census identity requires a typed cache asset")
+    if expected.source_family != "fineweb_edu":
+        raise SourceSchemaError("FineWeb census identity received another family")
+    return execution_authority_v3_bound_sha256(
+        "weft1_source_cache_asset_v3",
+        {
+            "asset_locator": expected.asset_locator,
+            "bytes": expected.bytes,
+            "config": expected.config,
+            "repository": expected.repository,
+            "revision": expected.revision,
+            "sha256": expected.sha256,
+            "source_family": expected.source_family,
+            "split": expected.split,
+        },
+    )
+
+
 def _fineweb_selected_census_row_for_asset_v1(
     verified_asset: VerifiedLocalCacheAssetV3,
 ) -> Mapping[str, object]:
@@ -1313,7 +1346,8 @@ def _fineweb_selected_census_row_for_asset_v1(
     matches = tuple(
         row
         for row in _fineweb_selected_census_rows_v1()
-        if row["source_asset_identity_sha256"] == expected.asset_identity_sha256
+        if row["source_asset_identity_sha256"]
+        == _fineweb_selected_census_asset_identity_v3(expected)
     )
     if len(matches) != 1:
         raise SourceSchemaError(
@@ -1352,7 +1386,8 @@ def validate_fineweb_selected_schema_census_assets_v1(
         raise TypeError("FineWeb census assets contain an untyped value")
     expected_rows = _fineweb_selected_census_rows_v1()
     observed_identities = tuple(
-        asset.expected.asset_identity_sha256 for asset in assets
+        _fineweb_selected_census_asset_identity_v3(asset.expected)
+        for asset in assets
     )
     expected_identities = tuple(
         str(row["source_asset_identity_sha256"]) for row in expected_rows

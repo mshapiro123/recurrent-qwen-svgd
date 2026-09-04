@@ -2,7 +2,7 @@
   "kind": "ablation_lm_engineering_quarantine_v20",
   "date": "2026-09-04",
   "status": "exact_node_quarantine_build_only",
-  "reviewed_at_commit": "7140a827cde7f90f54a1a1071da96d348f6687ef",
+  "reviewed_at_commit": "ce2f55779d0573e8fd7974a6ca12a47ff1cc2607",
   "review_due_on": "2026-09-11",
   "review_trigger": "Review before the next repository-wide engineering receipt or 2026-09-11, whichever comes first.",
   "scope": "ablation_lm_engineering_gate_only",
@@ -29,15 +29,15 @@
   "sealed_files_touched": [],
   "full_suite_expected_exit_code": 1,
   "last_observed_full_suite": {
-    "passed": 4171,
+    "passed": 4179,
     "failed": 1,
     "warnings": 20,
-    "duration_seconds": 238.43,
-    "observed_at": "2026-09-04T13:46:04-04:00"
+    "duration_seconds": 206.91,
+    "observed_at": "2026-09-04T14:36:05-04:00"
   },
   "review_execution": {
     "command": "python -X utf8 scripts/run_ablation_lm_engineering_gate.py",
-    "result": "gate PASS; underlying suite 1 failed, 4171 passed, 20 warnings in 203.24s; the sole failure is unchanged",
+    "result": "gate PASS; underlying suite 1 failed, 4179 passed, 20 warnings in 194.12s; the sole failure is unchanged",
     "reviewed_on": "2026-09-04",
     "note": "Next-receipt count refresh only; the sole quarantined failure and all authority and scope remain unchanged."
   },

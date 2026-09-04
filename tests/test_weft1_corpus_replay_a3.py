@@ -30,6 +30,7 @@ from training.weft1_corpus_parsed_asset_cache_v1 import (
     PARSED_ASSET_COMPATIBILITY_POLICY_SCHEMA_V1,
     PARSED_ASSET_COMPOSITE_BRIDGE_SCHEMA_V1,
     PARSED_ASSET_INCIDENT_AUTHORITY_PHYSICAL_SHA256_V1,
+    PARSED_ASSET_INCIDENT_AUTHORITY_V1,
     ParsedAssetCompatibilityPolicyV1,
     ParsedAssetCompositeBridgeRowV1,
     ParsedAssetCompositeBridgeV1,
@@ -131,8 +132,37 @@ def test_checked_in_incident_policy_matches_current_parser_code_closure() -> Non
     assert policy.expected_current_asset_count == 3
     assert physical_bytes == 1_273
     assert physical_sha256 == (
-        "7869aec4036c0e073ac0b1d87f7059f378e1104f2d2ba678cdf0af2a279b64bd"
+        "c9fade99ee00d683500235e010b3807772e86c4738146ec470f4a979fc30f327"
     )
+
+
+def test_checked_in_incident_authority_records_frozen_census_identity_failure() -> None:
+    failure = PARSED_ASSET_INCIDENT_AUTHORITY_V1[
+        "fineweb_census_identity_projection_failure"
+    ]
+    assert failure == {
+        "attempt_count": 3,
+        "durable_termination_receipt": {
+            "bytes": 2_910,
+            "path": (
+                "launch-receipts/"
+                "pa-v4-ce2f5577-r6-portable-v3-supervisor.termination-v1.json"
+            ),
+            "sha256": (
+                "705c993b8b181410b25bf8709813884c9d0dc3ac05fc52d5f5036c8bff5d5c2d"
+            ),
+        },
+        "gate_minted": False,
+        "rejection": "FINEWEB_SELECTED_ASSET_IDENTITY_OR_ORDER_DIFFERS_FROM_CENSUS",
+        "repository_commit": "ce2f55779d0573e8fd7974a6ca12a47ff1cc2607",
+        "root_cause": (
+            "FROZEN_V3_CENSUS_IDENTITY_COMPARED_TO_CURRENT_V4_ASSET_OVERRIDE_IDENTITY"
+        ),
+        "successor_gate_count": 0,
+        "successor_receipt_count": 0,
+        "successor_write_count": 0,
+        "supervisor_disposition": "EXHAUSTED_AND_STOPPED_AT_ZERO",
+    }
 
 
 @pytest.mark.parametrize(
