@@ -71,6 +71,8 @@ class CompositionReceipt:
     kv_policy: str
     kv_cache_multiplier_at_serving: int | None
     visit_schedule: tuple[str, ...]
+    rho_hat_free: float | None = None
+    lateralization_index: tuple[float, ...] = ()
 
     def as_dict(self) -> dict[str, object]:
         """Return a JSON-serializable machine receipt."""
@@ -354,6 +356,7 @@ def composition_receipt(
     kv_policy: str | None = None,
     kv_cache_multiplier_at_serving: int | None = None,
     visit_schedule: tuple[str, ...] = (),
+    rho_hat_free: float | None = None,
 ) -> CompositionReceipt:
     """Derive the binding WEFT-1 capacity receipt without double-counting ties.
 
@@ -406,6 +409,15 @@ def composition_receipt(
         not isinstance(item, str) or not item for item in visit_schedule
     ):
         raise TypeError("visit_schedule must be a tuple of nonempty strings")
+    if rho_hat_free is not None:
+        if isinstance(rho_hat_free, bool):
+            raise TypeError("rho_hat_free must be a real scalar or None")
+        try:
+            rho_hat_free = float(rho_hat_free)
+        except (TypeError, ValueError) as error:
+            raise TypeError("rho_hat_free must be a real scalar or None") from error
+        if not math.isfinite(rho_hat_free) or not -1.0 <= rho_hat_free <= 1.0:
+            raise ValueError("rho_hat_free must be a finite correlation in [-1, 1]")
 
     root = _capacity_root(model)
     sidecar = getattr(root, "sidecar", None)
@@ -472,7 +484,8 @@ def composition_receipt(
         raise ValueError("a non-bicameral composition receipt forbids a visit_schedule")
     if configured_bicameral:
         assert config is not None
-        if getattr(root, "bicameral_combiner", None) is None:
+        combiner = getattr(root, "bicameral_combiner", None)
+        if combiner is None:
             raise ValueError("the bicameral composition receipt requires the S-2 combiner")
         after_block_modules: tuple[str, ...] = ()
         if bool(getattr(config, "use_scratch", False)):
@@ -499,6 +512,17 @@ def composition_receipt(
                 "the bicameral composition visit_schedule is not the exact "
                 "Step-2 recurrence trace followed by terminal S-2"
             )
+        lateralization_tensor = combiner.lateralization_index().detach().float().cpu()
+        lateralization_index = tuple(float(value) for value in lateralization_tensor)
+        if len(lateralization_index) != int(combiner.num_bands) or any(
+            not math.isfinite(value) or not -1.0 <= value <= 1.0
+            for value in lateralization_index
+        ):
+            raise ValueError("invalid per-band lateralization_index receipt")
+    else:
+        lateralization_index = ()
+        if rho_hat_free is not None:
+            raise ValueError("rho_hat_free requires a bicameral model graph")
     if config is not None and bool(getattr(config, "use_recurrence", False)):
         for name in (
             "core_blocks",
@@ -570,6 +594,8 @@ def composition_receipt(
         kv_policy=kv_policy,
         kv_cache_multiplier_at_serving=kv_cache_multiplier_at_serving,
         visit_schedule=visit_schedule,
+        rho_hat_free=rho_hat_free,
+        lateralization_index=lateralization_index,
     )
 
 

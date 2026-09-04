@@ -70,6 +70,10 @@ from .config import (
 from .diagnostics import (
     RouterCalibrationDecision,
     RouterMomentSnapshot,
+    SYM_COLLAPSE_WINDOW,
+    SymmetryCollapseBlocked,
+    SymmetryCollapseStepReceipt,
+    SymmetryCollapseTracker,
     router_calibration_stability,
 )
 from .geometry import Cl20Rotor, LaneModeState, cl20_rotate, lanes_to_modes
@@ -155,6 +159,10 @@ __all__ = [
     "RATIFIED_TARGET_REFERENCE_VOCAB_SIZE",
     "RouterCalibrationDecision",
     "RouterMomentSnapshot",
+    "SYM_COLLAPSE_WINDOW",
+    "SymmetryCollapseBlocked",
+    "SymmetryCollapseStepReceipt",
+    "SymmetryCollapseTracker",
     "REGISTERED_CORE_BLOCK_COUNTS",
     "REGISTERED_PROXY_BLOCK_SPLITS",
     "REGISTERED_TARGET_BLOCK_SPLITS",

@@ -77,6 +77,39 @@ def test_t2_both_disagreement_factors_have_live_gradients() -> None:
         assert bool(parameter.grad.ne(0).any())
 
 
+def test_delta_ratio_matches_dense_frobenius_definition_without_grad_state() -> None:
+    layer = SwapLinear(5, 4, rank=2, seed=7)
+    with torch.no_grad():
+        layer.mu.copy_(torch.arange(1, 21, dtype=torch.float32).reshape(4, 5))
+        layer.dU.copy_(
+            torch.tensor(
+                [[1.0, -2.0], [0.5, 3.0], [-1.0, 0.25], [2.0, 1.5]]
+            )
+        )
+        layer.dV.copy_(
+            torch.tensor(
+                [[0.5, 1.0], [-1.0, 2.0], [3.0, -0.5], [0.25, 4.0], [2.0, 1.0]]
+            )
+        )
+
+    expected = torch.linalg.matrix_norm(layer.dU @ layer.dV.T) / torch.linalg.matrix_norm(
+        layer.mu
+    )
+    observed = layer.delta_ratio()
+
+    torch.testing.assert_close(observed, expected)
+    assert observed.dtype is torch.float32
+    assert observed.requires_grad is False
+    with torch.autocast(device_type="cpu", dtype=torch.bfloat16):
+        autocast_observed = layer.delta_ratio()
+    assert autocast_observed.dtype is torch.float32
+    torch.testing.assert_close(autocast_observed, expected, rtol=1e-6, atol=1e-7)
+    with torch.no_grad():
+        layer.mu.zero_()
+    with pytest.raises(ValueError, match="nonzero mu norm"):
+        layer.delta_ratio()
+
+
 def test_coupled_optimizer_provenance_is_adamw_and_rank_splitter_prohibited() -> None:
     layer = SwapLinear(8, 8, rank=2, seed=5)
     partition = partition_optimizer_parameters(layer)

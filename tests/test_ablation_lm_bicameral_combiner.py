@@ -36,6 +36,28 @@ def test_s2_unit_circle_coefficients_and_joint_state_nonexpansiveness() -> None:
     assert output.norm() <= joint_norm * (1.0 + 2e-6)
 
 
+def test_s2_lateralization_index_has_ratified_band_semantics() -> None:
+    combiner = PerBandUnitCircleCombiner(16, num_bands=4)
+    with torch.no_grad():
+        combiner.theta.copy_(
+            torch.tensor((0.0, torch.pi / 4, -torch.pi / 4, torch.pi / 8))
+        )
+
+    index = combiner.lateralization_index()
+
+    torch.testing.assert_close(
+        index,
+        torch.tensor((0.0, 1.0, -1.0, 2.0**-0.5)),
+        atol=2e-7,
+        rtol=0.0,
+    )
+    assert index.requires_grad
+    with torch.no_grad():
+        combiner.theta[0] = torch.nan
+    with pytest.raises(ValueError, match="finite combiner angles"):
+        combiner.lateralization_index()
+
+
 def test_s2_preserves_dense_identity_when_hemispheres_coincide() -> None:
     combiner = PerBandUnitCircleCombiner(16, num_bands=4)
     hidden = torch.randn(2, 4, 16)

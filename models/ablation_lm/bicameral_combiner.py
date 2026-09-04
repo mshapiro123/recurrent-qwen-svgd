@@ -48,6 +48,21 @@ class PerBandUnitCircleCombiner(nn.Module):
 
         return self.theta.cos(), self.theta.sin()
 
+    def lateralization_index(self) -> torch.Tensor:
+        """Return the D-HD-1 per-band index ``sin(2 * theta_b)``.
+
+        At the registered initialization, zero is the consensus read; at the
+        principal points ``theta=+/-pi/4``, ``+/-1`` identify the pure
+        hemisphere-A/B directions under the S-2 coefficient convention.  The
+        raw index is periodic, so interpreting other trained angles requires a
+        separately governed principal-domain or canonicalization rule.
+        """
+
+        index = torch.sin(2.0 * self.theta)
+        if not bool(torch.isfinite(index.detach()).all()):
+            raise ValueError("lateralization_index requires finite combiner angles")
+        return index
+
     def _validate_pair(self, h_a: torch.Tensor, h_b: torch.Tensor) -> None:
         if not isinstance(h_a, torch.Tensor) or not isinstance(h_b, torch.Tensor):
             raise TypeError("h_a and h_b must be tensors")

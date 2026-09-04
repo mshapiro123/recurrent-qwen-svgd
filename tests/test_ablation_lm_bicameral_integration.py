@@ -7,6 +7,7 @@ import pytest
 import torch
 
 from models.ablation_lm.accounting import composition_receipt
+from models.ablation_lm.bicameral import SwapLinear
 from models.ablation_lm.bicameral_combiner import PerBandUnitCircleCombiner
 from models.ablation_lm.bicameral_core import BicameralTransformerBlock
 from models.ablation_lm.bicameral_recurrent import expected_bicameral_visit_schedules
@@ -303,6 +304,42 @@ def test_integrated_live_receipt_and_after_each_block_lane_schedule() -> None:
     assert any("TwoLaneBirkhoffMixer" in item for item in receipt["visit_schedule"])
     assert receipt["coda_decodes_per_step"] == 1
     assert receipt["lstage_sampled_visit"] is None
+    assert receipt["rho_hat_free"] is None
+    assert receipt["lateralization_index"] == (0.0,) * 8
+    expected_delta_ratio_names = tuple(
+        name
+        for name, module in model.named_modules()
+        if isinstance(module, SwapLinear)
+    )
+    assert tuple(name for name, _value in diagnostics["delta_ratio"]) == (
+        expected_delta_ratio_names
+    )
+    assert all(value > 0.0 for _name, value in diagnostics["delta_ratio"])
+
+    with torch.no_grad():
+        model.bicameral_combiner.theta[0] = torch.pi / 4
+    dynamic_receipt = composition_receipt(
+        model,
+        requested_visits=3,
+        executed_visits=3,
+        kv_policy="live",
+        kv_cache_multiplier_at_serving=6,
+        visit_schedule=receipt["visit_schedule"],
+        rho_hat_free=0.25,
+    )
+    assert dynamic_receipt.rho_hat_free == 0.25
+    assert dynamic_receipt.lateralization_index[0] == pytest.approx(1.0)
+
+    with pytest.raises(ValueError, match=r"correlation in \[-1, 1\]"):
+        composition_receipt(
+            model,
+            requested_visits=3,
+            executed_visits=3,
+            kv_policy="live",
+            kv_cache_multiplier_at_serving=6,
+            visit_schedule=receipt["visit_schedule"],
+            rho_hat_free=1.1,
+        )
 
 
 @pytest.mark.parametrize(

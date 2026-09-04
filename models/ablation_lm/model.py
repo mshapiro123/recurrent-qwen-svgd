@@ -10,6 +10,7 @@ import torch.nn.functional as F
 from torch import nn
 
 from .accounting import composition_receipt
+from .bicameral import SwapLinear
 from .bicameral_combiner import PerBandUnitCircleCombiner
 from .bicameral_core import BicameralTransformerBlock
 from .bicameral_recurrent import (
@@ -1261,6 +1262,11 @@ class AblationLM(nn.Module):
                 bicameral_recurrence_receipt is not None
             )
             if bicameral_recurrence_receipt is not None:
+                diagnostics["delta_ratio"] = tuple(
+                    (name, float(module.delta_ratio().cpu().item()))
+                    for name, module in self.named_modules()
+                    if isinstance(module, SwapLinear)
+                )
                 diagnostics["bicameral_recurrence_receipt"] = asdict(
                     bicameral_recurrence_receipt
                 )

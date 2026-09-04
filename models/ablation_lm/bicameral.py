@@ -149,6 +149,54 @@ class SwapLinear(nn.Module):
             (inputs @ self.dV) @ self.dU.T
         )
 
+    def delta_ratio(self) -> torch.Tensor:
+        """Return ``||dU dV.T||_F / ||mu||_F`` without densifying ``delta``.
+
+        This is the D-HD-1 per-paired-matrix receipt value.  The factored
+        Frobenius identity
+
+        ``||U V.T||_F^2 = tr((U.T U) (V.T V))``
+
+        keeps the diagnostic proportional to the stored rank rather than
+        allocating a full physical hemisphere matrix.  Receipt arithmetic is
+        detached FP32, matching the other WEFT-1 diagnostics.
+        """
+
+        self._validate_parameter_contract()
+        if self.mu.device.type == "meta":
+            raise ValueError("meta SwapLinear parameters cannot produce receipts")
+        with torch.no_grad(), torch.autocast(
+            device_type=self.mu.device.type,
+            enabled=False,
+        ):
+            mu = self.mu.detach().float()
+            delta_u = self.dU.detach().float()
+            delta_v = self.dV.detach().float()
+            if not bool(torch.isfinite(mu).all()) or not bool(
+                torch.isfinite(delta_u).all()
+            ) or not bool(torch.isfinite(delta_v).all()):
+                raise ValueError("delta_ratio requires finite SwapLinear parameters")
+            mu_norm = torch.linalg.vector_norm(mu)
+            if not bool(torch.isfinite(mu_norm)) or bool(mu_norm.le(0)):
+                raise ValueError("delta_ratio requires a finite nonzero mu norm")
+            gram_u = delta_u.T @ delta_u
+            gram_v = delta_v.T @ delta_v
+            delta_norm_squared = (gram_u * gram_v).sum()
+            if not bool(torch.isfinite(delta_norm_squared)):
+                raise ValueError("delta_ratio disagreement norm is not finite")
+            # Roundoff can only make this slightly negative; a materially
+            # negative value means the receipt arithmetic is not trustworthy.
+            tolerance = 32.0 * torch.finfo(torch.float32).eps * (
+                gram_u.abs() * gram_v.abs()
+            ).sum()
+            if bool(delta_norm_squared.lt(-tolerance)):
+                raise ValueError("delta_ratio disagreement norm squared is negative")
+            delta_norm = delta_norm_squared.clamp_min(0.0).sqrt()
+            ratio = delta_norm / mu_norm
+            if not bool(torch.isfinite(ratio)) or bool(ratio.lt(0)):
+                raise ValueError("delta_ratio is not a finite non-negative scalar")
+            return ratio
+
     def _validate_parameter_contract(self) -> None:
         expected_shapes = {
             "mu": (self.d_out, self.d_in),

@@ -227,6 +227,8 @@ def test_composition_receipt_partitions_fixed_and_recurrent_capacity() -> None:
     assert baseline_receipt.kv_policy == "not_applicable"
     assert baseline_receipt.kv_cache_multiplier_at_serving is None
     assert baseline_receipt.visit_schedule == ()
+    assert baseline_receipt.rho_hat_free is None
+    assert baseline_receipt.lateralization_index == ()
     json.dumps(baseline_receipt.as_dict())
 
     recurrent = AblationLM(replace(_small_config(), use_recurrence=True))
@@ -317,6 +319,8 @@ def test_diagnostic_forward_emits_the_composition_receipt() -> None:
     assert receipt["executed_visits"] == 1.0
     assert receipt["coda_decodes_per_step"] == 1
     assert receipt["lstage_sampled_visit"] is None
+    assert receipt["rho_hat_free"] is None
+    assert receipt["lateralization_index"] == ()
     assert receipt["n_unique"] == sum(parameter.numel() for parameter in model.parameters())
     json.dumps(receipt)
 
