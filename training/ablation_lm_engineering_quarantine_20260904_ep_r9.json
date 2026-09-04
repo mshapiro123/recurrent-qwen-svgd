@@ -1,0 +1,74 @@
+{
+  "kind": "ablation_lm_engineering_quarantine_v21",
+  "date": "2026-09-04",
+  "status": "exact_node_quarantine_build_only",
+  "reviewed_at_commit": "54642489137f8ce85bb7a3f87b89c15ff2bb9595",
+  "review_due_on": "2026-09-11",
+  "review_trigger": "Review before the next repository-wide engineering receipt or 2026-09-11, whichever comes first.",
+  "scope": "ablation_lm_engineering_gate_only",
+  "supersedes": {
+    "path": "training/ablation_lm_engineering_quarantine_20260904_packet_r8.json",
+    "sha256": "1b583c914f8d8f2b639b0cc781ac07e3700d1fc8ec537b66f934198c2cb4ff9e"
+  },
+  "ep_r9_authority": {
+    "adjudication_path": "docs/Claude outputs/STRATEGY_EPIPLEXITY_ADJUDICATION_20260903.md",
+    "adjudication_bytes": 24723,
+    "adjudication_sha256": "7b5786185aebdd2388fa01a8db5522a2ce58e09a5c027947807ac0a2aebd3730",
+    "ratification_path": "docs/Claude outputs/STRATEGY_EP_RATIFICATION_20260903.md",
+    "ratification_bytes": 3848,
+    "ratification_sha256": "c9ecfa58f57c6904380f3edd895e92aada5efb3da77735c4d4e3d288197730ee",
+    "reference_script_path": "docs/Claude outputs/eca_latent_loop_20260903.py",
+    "reference_script_bytes": 4137,
+    "reference_script_sha256": "457045eef6c5eaabde7f9d0571e62caed4cb1b0dc944ac57ece0343a512e9ee1"
+  },
+  "repo_wide_green_claim_permitted": false,
+  "build_and_unit_test_work_authorized": true,
+  "tokenizer_fit_or_freeze_authorized": false,
+  "optimizer_construction_authorized": false,
+  "training_authorized": false,
+  "authorization_note": "This engineering quarantine does not grant or revoke separately governed run-axis authority. R9 receipt instrumentation, deterministic ECA-LATENT CPU work, and seam-null validation are PRE-FLIGHT/build-axis work only.",
+  "evaluation_panel_contact_authorized": false,
+  "sealed_partition_contact_authorized": false,
+  "sealed_files_touched": [],
+  "full_suite_expected_exit_code": 1,
+  "last_observed_full_suite": {
+    "passed": 4218,
+    "failed": 1,
+    "warnings": 20,
+    "duration_seconds": 243.35,
+    "observed_at": "2026-09-04T18:03:00-04:00"
+  },
+  "review_execution": {
+    "command": "python -X utf8 scripts/run_ablation_lm_engineering_gate.py",
+    "result": "gate PASS; underlying suite 1 failed, 4218 passed, 20 warnings in 243.01s; the sole failure is unchanged",
+    "reviewed_on": "2026-09-04",
+    "note": "The raw full suite ran every node: 1 unchanged governed failure, 4218 passes, 20 warnings. The earlier C2 setup errors were traced to a stale structural-OFF config SHA, corrected, and replayed before this count was recorded."
+  },
+  "expected_failures": [
+    {
+      "node_id": "tests/test_paper2_claim_evidence_ledger.py::test_paper2_claim_evidence_paths_exist",
+      "cause": "Two legacy Paper 2 evidence-ledger output paths are absent and gitignored; one aggregate exists in an archive under a different path and one banked analysis hash has no archived file.",
+      "resolution_owner": "paper2_claim_evidence_ledger",
+      "scope_stop": "Paper and publication evidence audit remains red; no repo-wide green claim.",
+      "unblock_condition": "Restore the exact receipted outputs under written evidence-governance authority or amend the ledger through its governed process.",
+      "sealed_failure": false
+    }
+  ],
+  "resolved_since_prior": [],
+  "remaining_failure_evidence": {
+    "archive_aggregate_path": "artifacts/stage2a_t3_20260818/receipts/summary.json",
+    "archive_aggregate_bytes": 40847,
+    "archive_aggregate_receipted_sha256_abbrev": "3e4eaa7...f7bb",
+    "missing_analysis_summary": true
+  },
+  "d5_stop_authority": [
+    "docs/STRATEGY_2BS_RECON_ADJ_DEPTH_STUDY_20260822.md",
+    "docs/STRATEGY_2BS_DEPTH_STUDY_HANDOFF_20260822.md",
+    "docs/STRATEGY_2BS_FINAL_CELL_AUTHORIZATION_20260823.md",
+    "docs/STRATEGY_BICAMERAL_W2P_D4_RULINGS_20260825.md",
+    "docs/CODING_TO_STRATEGY_TM0_RESULT_HANDOFF_20260825.md",
+    "training/paper2_bicameral_w2p_lock.json",
+    "training/paper2_stage2bs_depth_study_lock.json"
+  ],
+  "new_lineage_stop_authority": "docs/ABLATION_LM_SUBSTRATE_CONTRACT_20260826.md"
+}
