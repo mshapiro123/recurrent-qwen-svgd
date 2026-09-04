@@ -23,6 +23,10 @@ from training.weft1_corpus_enumeration_a2 import (
 from training.weft1_corpus_source_io_a2 import (
     DROP_INVALID_UTF8,
     DROP_QUALITY_LT3,
+    FINEWEB_SELECTED_SCHEMA_CENSUS_PATH_V1,
+    FINEWEB_SELECTED_SCHEMA_CENSUS_PHYSICAL_BYTES_V1,
+    FINEWEB_SELECTED_SCHEMA_CENSUS_PHYSICAL_SHA256_V1,
+    FINEWEB_SELECTED_SCHEMA_CENSUS_RECEIPT_SHA256_V1,
     PRODUCTION_PARSER_COMPOSITE_IDENTITIES_V3,
     PRODUCTION_PARSER_BINDINGS_V3,
     RETAIN,
@@ -681,7 +685,29 @@ def test_exact_production_parquet_schemas_emit_typed_records(
     scratch = tmp_path / f"make-{family}.parquet"
     payload = _parquet_payload(scratch, family)
     asset, root = _asset_for_bytes(tmp_path, family, payload)
-    events = tuple(iter_source_asset_events_v3(asset, root))
+    binding = PRODUCTION_PARSER_BINDINGS_V3[family]
+    allow_fixture = False
+    if family == "fineweb_edu":
+        # A synthetic same-projection file is not one of the three censused
+        # production assets.  Bind its complete Arrow schema explicitly as a
+        # non-production fixture instead of weakening the production census.
+        binding = replace(
+            binding,
+            authority="FIXTURE_ONLY",
+            authority_sha256=_sha(b"fixture:fineweb-full-schema"),
+            declared_parquet_schema_ipc_sha256=_sha(
+                pq.ParquetFile(scratch).schema_arrow.serialize().to_pybytes()
+            ),
+        )
+        allow_fixture = True
+    events = tuple(
+        iter_source_asset_events_v3(
+            asset,
+            root,
+            binding=binding,
+            allow_fixture_binding=allow_fixture,
+        )
+    )
     assert [event.disposition for event in events] == [RETAIN]
     record = events[0].record
     assert record is not None
@@ -698,6 +724,64 @@ def test_exact_production_parquet_schemas_emit_typed_records(
         pa.BufferReader(bytes.fromhex(observation.observed_arrow_schema_ipc_hex))
     )
     assert observed_schema == pq.ParquetFile(scratch).schema_arrow
+
+
+def test_fineweb_production_binding_rejects_same_projection_noncensus_asset(
+    tmp_path: Path,
+) -> None:
+    scratch = tmp_path / "same-projection.parquet"
+    payload = _parquet_payload(scratch, "fineweb_edu")
+    asset, root = _asset_for_bytes(tmp_path, "fineweb_edu", payload)
+    with pytest.raises(
+        SourceSchemaError,
+        match="full Arrow schema identity|absent from the selected-schema census",
+    ):
+        tuple(iter_source_asset_events_v3(asset, root))
+
+
+def test_parquet_full_schema_binding_detects_metadata_only_drift(
+    tmp_path: Path,
+) -> None:
+    clean_path = tmp_path / "clean.parquet"
+    clean_payload = _parquet_payload(clean_path, "fineweb_edu")
+    clean_schema = pq.ParquetFile(clean_path).schema_arrow
+    fixture_binding = replace(
+        PRODUCTION_PARSER_BINDINGS_V3["fineweb_edu"],
+        authority="FIXTURE_ONLY",
+        authority_sha256=_sha(b"fixture:fineweb-metadata"),
+        declared_parquet_schema_ipc_sha256=_sha(
+            clean_schema.serialize().to_pybytes()
+        ),
+    )
+    clean_asset, clean_root = _asset_for_bytes(
+        tmp_path / "clean", "fineweb_edu", clean_payload
+    )
+    assert tuple(
+        iter_source_asset_events_v3(
+            clean_asset,
+            clean_root,
+            binding=fixture_binding,
+            allow_fixture_binding=True,
+        )
+    )
+
+    changed_table = pq.read_table(clean_path).replace_schema_metadata(
+        {b"schema-version": b"changed"}
+    )
+    changed_path = tmp_path / "changed.parquet"
+    pq.write_table(changed_table, changed_path, compression="NONE")
+    changed_asset, changed_root = _asset_for_bytes(
+        tmp_path / "changed", "fineweb_edu", changed_path.read_bytes()
+    )
+    with pytest.raises(SourceSchemaError, match="full Arrow schema identity drifted"):
+        tuple(
+            iter_source_asset_events_v3(
+                changed_asset,
+                changed_root,
+                binding=fixture_binding,
+                allow_fixture_binding=True,
+            )
+        )
 
 
 def test_factory_parsed_spool_binds_receipts_events_and_text_bytes(
@@ -975,6 +1059,23 @@ def test_production_bindings_cover_all_families_and_pin_quality_paths() -> None:
     assert STACKEDU_PYTHON_PARSER_BINDING_V3.int_score_path == ("int_score",)
     assert PRODUCTION_PARSER_BINDINGS_V3["finemath_3plus"].native_id_path is None
     assert PRODUCTION_PARSER_BINDINGS_V3["fineweb_edu"].native_id_path == ("id",)
+    census_bytes = FINEWEB_SELECTED_SCHEMA_CENSUS_PATH_V1.read_bytes()
+    assert len(census_bytes) == FINEWEB_SELECTED_SCHEMA_CENSUS_PHYSICAL_BYTES_V1
+    assert _sha(census_bytes) == FINEWEB_SELECTED_SCHEMA_CENSUS_PHYSICAL_SHA256_V1
+    census = json.loads(census_bytes)
+    assert census["receipt_sha256"] == (
+        FINEWEB_SELECTED_SCHEMA_CENSUS_RECEIPT_SHA256_V1
+    )
+    assert census["selected_asset_count"] == 3
+    assert census["claim_scope"] == (
+        "THREE_SELECTED_FINEWEB_EDU_ASSETS_ONLY_NOT_UPSTREAM_FAMILY"
+    )
+    assert PRODUCTION_PARSER_BINDINGS_V3["fineweb_edu"].authority == (
+        "PINNED_ASSET_DECLARATION"
+    )
+    assert PRODUCTION_PARSER_BINDINGS_V3["fineweb_edu"].authority_sha256 == (
+        FINEWEB_SELECTED_SCHEMA_CENSUS_PHYSICAL_SHA256_V1
+    )
     assert all(
         binding.authority != "FIXTURE_ONLY"
         for binding in PRODUCTION_PARSER_BINDINGS_V3.values()

@@ -63,10 +63,14 @@ from training.weft1_corpus_materialize_a2 import (
     prefill_production_parsed_asset_cache_v1,
 )
 from training.weft1_corpus_parsed_asset_cache_v1 import (
+    ParsedAssetCompatibilityPolicyV1,
     ParsedAssetRecoveryContextV1,
+    load_parsed_asset_compatibility_policy_v1,
     parsed_asset_runtime_identity_v1,
+    validate_compatible_recovery_contexts_v1,
 )
 from training import weft1_corpus_pa as production_io
+from training import weft1_corpus_source_io_a2 as source_io
 from training.weft1_corpus_sources_a2 import VerifiedLocalCacheAssetV3
 from training.weft1_gtok_a1_contract import SOURCE_FAMILIES
 from training.weft1_gtok_contract import (
@@ -97,6 +101,33 @@ BRIDGE_RELATIVE_PATH_V4 = "transport/v4-materialization-bridge.json"
 FULL_SHARD_MANIFEST_RELATIVE_PATH_V4 = "artifacts/full-shard-manifest-v4.json"
 SCREEN_SUBMANIFEST_RELATIVE_PATH_V4 = "artifacts/screen-submanifest-v4.json"
 D6_PHYSICAL_EVIDENCE_RELATIVE_PATH_V4 = "artifacts/d6-physical-evidence-v4.json"
+
+PARSED_ASSET_COMPATIBILITY_AUTHORITY_PATH_ENV_V4 = (
+    "WEFT1_REPLAY_PARSED_ASSET_COMPATIBILITY_AUTHORITY_PATH"
+)
+PARSED_ASSET_COMPATIBILITY_POLICY_SHA256_ENV_V4 = (
+    "WEFT1_REPLAY_PARSED_ASSET_COMPATIBILITY_POLICY_SHA256"
+)
+PARSED_ASSET_COMPATIBILITY_PHYSICAL_BYTES_ENV_V4 = (
+    "WEFT1_REPLAY_PARSED_ASSET_COMPATIBILITY_PHYSICAL_BYTES"
+)
+PARSED_ASSET_COMPATIBILITY_PHYSICAL_SHA256_ENV_V4 = (
+    "WEFT1_REPLAY_PARSED_ASSET_COMPATIBILITY_PHYSICAL_SHA256"
+)
+PARSED_ASSET_COMPATIBILITY_PREDECESSOR_CACHE_ROOT_ENV_V4 = (
+    "WEFT1_REPLAY_PARSED_ASSET_COMPATIBILITY_PREDECESSOR_CACHE_ROOT"
+)
+PARSED_ASSET_COMPATIBILITY_PREDECESSOR_CONTEXT_SHA256_ENV_V4 = (
+    "WEFT1_REPLAY_PARSED_ASSET_COMPATIBILITY_PREDECESSOR_CONTEXT_SHA256"
+)
+PARSED_ASSET_COMPATIBILITY_ENVIRONMENT_KEYS_V4 = (
+    PARSED_ASSET_COMPATIBILITY_AUTHORITY_PATH_ENV_V4,
+    PARSED_ASSET_COMPATIBILITY_POLICY_SHA256_ENV_V4,
+    PARSED_ASSET_COMPATIBILITY_PHYSICAL_BYTES_ENV_V4,
+    PARSED_ASSET_COMPATIBILITY_PHYSICAL_SHA256_ENV_V4,
+    PARSED_ASSET_COMPATIBILITY_PREDECESSOR_CACHE_ROOT_ENV_V4,
+    PARSED_ASSET_COMPATIBILITY_PREDECESSOR_CONTEXT_SHA256_ENV_V4,
+)
 FULL_SHARD_MANIFEST_SCHEMA_V4 = "weft1_corpus_full_shard_manifest_v4"
 SCREEN_SUBMANIFEST_SCHEMA_V4 = "weft1_corpus_screen_submanifest_v4"
 D6_PHYSICAL_EVIDENCE_SCHEMA_V4 = "weft1_corpus_d6_physical_evidence_v4"
@@ -689,6 +720,83 @@ def load_cache_fill_input_v4(
         verified_cache=adapter,  # type: ignore[arg-type]
         source_cache_download_receipt=download,  # type: ignore[arg-type]
         cache_root=cache_root,
+    )
+
+
+def validate_fineweb_selected_schema_census_preflight_v4(
+    *,
+    source_manifest_path: Path,
+    inputs: MaterializationInputV4,
+) -> str:
+    """Compose the checked-in three-asset census with live V4 inputs.
+
+    The source-manifest envelope and its semantic identity are checked here;
+    the source-I/O boundary then checks the selected asset identities/order,
+    verified observations, exact projection, serialized Arrow schema, and row
+    counts before any parsed-cache write can begin.
+    """
+
+    if not isinstance(source_manifest_path, Path):
+        raise TypeError("FineWeb census preflight requires a manifest path")
+    if not isinstance(inputs, MaterializationInputV4):
+        raise TypeError("FineWeb census preflight requires typed V4 inputs")
+    raw, unused_envelope = load_canonical_json_snapshot(source_manifest_path)
+    if (
+        len(raw)
+        != source_io.FINEWEB_SELECTED_SCHEMA_CENSUS_V1[
+            "source_manifest_physical_bytes"
+        ]
+        or hashlib.sha256(raw).hexdigest()
+        != source_io.FINEWEB_SELECTED_SCHEMA_CENSUS_V1[
+            "source_manifest_physical_sha256"
+        ]
+    ):
+        raise CorpusMaterializationV4Error(
+            "source manifest transport differs from FineWeb schema census"
+        )
+    verified = inputs.verified_cache
+    if not isinstance(verified, VerifiedCacheAdapterV4):
+        raise CorpusMaterializationV4Error(
+            "FineWeb census preflight lacks a V4 verified-cache adapter"
+        )
+    if (
+        verified.source_manifest.receipt_sha256
+        != source_io.FINEWEB_SELECTED_SCHEMA_CENSUS_V1[
+            "source_manifest_identity_sha256"
+        ]
+    ):
+        raise CorpusMaterializationV4Error(
+            "source manifest identity differs from FineWeb schema census"
+        )
+    fineweb_assets = tuple(
+        asset
+        for asset in verified.assets
+        if asset.expected.source_family == "fineweb_edu"
+    )
+    try:
+        asset_preflight_sha256 = (
+            source_io.validate_fineweb_selected_schema_census_assets_v1(
+                fineweb_assets,
+                inputs.cache_root,
+            )
+        )
+    except source_io.SourceIOError as error:
+        raise CorpusMaterializationV4Error(
+            f"FineWeb selected-schema preflight failed: {error}"
+        ) from error
+    return execution_authority_v4_bound_sha256(
+        "weft1_fineweb_selected_schema_preflight_v4",
+        {
+            "asset_preflight_sha256": asset_preflight_sha256,
+            "census_physical_sha256": (
+                source_io.FINEWEB_SELECTED_SCHEMA_CENSUS_PHYSICAL_SHA256_V1
+            ),
+            "source_identity_sha256": inputs.source_identity_sha256,
+            "source_manifest_identity_sha256": (
+                verified.source_manifest.receipt_sha256
+            ),
+            "source_manifest_physical_sha256": hashlib.sha256(raw).hexdigest(),
+        },
     )
 
 
@@ -2304,6 +2412,150 @@ def finalize_materialization_output_v4(
     )
 
 
+def _load_parsed_asset_compatibility_assignment_v4(
+    *,
+    current_context: ParsedAssetRecoveryContextV1,
+    current_cache_root: Path,
+    output_parent: Path,
+    local_work_parent: Path,
+    source_cache_root: Path,
+) -> tuple[
+    Path | None,
+    ParsedAssetRecoveryContextV1 | None,
+    ParsedAssetCompatibilityPolicyV1 | None,
+]:
+    """Load one complete lane-A bridge assignment, or prove it is absent.
+
+    The parent launches both replay lanes with the same immutable code and
+    content inputs.  Only lane A may receive this incident-scoped bundle; a
+    partial bundle is never interpreted as a request for fresh parsing.
+    """
+
+    if not isinstance(current_context, ParsedAssetRecoveryContextV1):
+        raise TypeError("current parsed-asset recovery context must be typed")
+    roots = (
+        current_cache_root,
+        output_parent,
+        local_work_parent,
+        source_cache_root,
+    )
+    if any(not isinstance(path, Path) for path in roots):
+        raise TypeError(
+            "parsed-asset compatibility roots must be pathlib.Path values"
+        )
+    raw = {
+        key: os.environ.get(key)
+        for key in PARSED_ASSET_COMPATIBILITY_ENVIRONMENT_KEYS_V4
+    }
+    present = tuple(value is not None for value in raw.values())
+    if not any(present):
+        return None, None, None
+    if not all(present) or any(value == "" for value in raw.values()):
+        raise CorpusMaterializationV4Error(
+            "parsed-asset compatibility assignment must be supplied as one complete set"
+        )
+
+    authority_path = assert_no_symlink_ancestors(
+        Path(str(raw[PARSED_ASSET_COMPATIBILITY_AUTHORITY_PATH_ENV_V4]))
+    ).resolve(strict=True)
+    local_resolved = assert_no_symlink_ancestors(local_work_parent).resolve(
+        strict=True
+    )
+    if not authority_path.is_file() or local_resolved not in authority_path.parents:
+        raise CorpusMaterializationV4Error(
+            "parsed-asset compatibility authority must be a snapshotted local-work file"
+        )
+    try:
+        policy, physical_bytes, physical_sha256 = (
+            load_parsed_asset_compatibility_policy_v1(authority_path)
+        )
+    except Exception as error:
+        raise CorpusMaterializationV4Error(
+            "parsed-asset compatibility authority failed validation"
+        ) from error
+    raw_bytes = str(
+        raw[PARSED_ASSET_COMPATIBILITY_PHYSICAL_BYTES_ENV_V4]
+    )
+    if re.fullmatch(r"[1-9][0-9]*", raw_bytes) is None:
+        raise CorpusMaterializationV4Error(
+            "parsed-asset compatibility authority byte count is invalid"
+        )
+    if (
+        policy.identity_sha256
+        != raw[PARSED_ASSET_COMPATIBILITY_POLICY_SHA256_ENV_V4]
+        or physical_bytes != int(raw_bytes)
+        or physical_sha256
+        != raw[PARSED_ASSET_COMPATIBILITY_PHYSICAL_SHA256_ENV_V4]
+    ):
+        raise CorpusMaterializationV4Error(
+            "parsed-asset compatibility authority changed after parent snapshot"
+        )
+
+    predecessor_context = ParsedAssetRecoveryContextV1(
+        run_id=current_context.run_id,
+        durable_marker_physical_sha256=(
+            current_context.durable_marker_physical_sha256
+        ),
+        runtime_identity_sha256=current_context.runtime_identity_sha256,
+        code_identity_sha256=policy.predecessor_code_identity_sha256,
+        input_identity_sha256=current_context.input_identity_sha256,
+    )
+    try:
+        validate_compatible_recovery_contexts_v1(
+            current=current_context,
+            predecessor=predecessor_context,
+            policy=policy,
+        )
+    except Exception as error:
+        raise CorpusMaterializationV4Error(
+            "parsed-asset compatibility policy does not match the current successor"
+        ) from error
+    if (
+        predecessor_context.identity_sha256
+        != raw[PARSED_ASSET_COMPATIBILITY_PREDECESSOR_CONTEXT_SHA256_ENV_V4]
+    ):
+        raise CorpusMaterializationV4Error(
+            "parsed-asset predecessor context differs from the parent assignment"
+        )
+
+    current_resolved = assert_no_symlink_ancestors(current_cache_root).resolve(
+        strict=True
+    )
+    expected_current = current_resolved.parent / current_context.identity_sha256
+    if (
+        current_resolved != expected_current
+        or current_resolved.parent.name != current_context.run_id
+    ):
+        raise CorpusMaterializationV4Error(
+            "current parsed-asset cache root does not match its exact context"
+        )
+    predecessor_resolved = assert_no_symlink_ancestors(
+        Path(
+            str(
+                raw[
+                    PARSED_ASSET_COMPATIBILITY_PREDECESSOR_CACHE_ROOT_ENV_V4
+                ]
+            )
+        )
+    ).resolve(strict=True)
+    expected_predecessor = current_resolved.parent / predecessor_context.identity_sha256
+    if predecessor_resolved != expected_predecessor or not predecessor_resolved.is_dir():
+        raise CorpusMaterializationV4Error(
+            "parsed-asset predecessor cache root is not the exact registered context"
+        )
+    for other in (output_parent, local_work_parent, source_cache_root):
+        other_resolved = assert_no_symlink_ancestors(other).resolve(strict=True)
+        if (
+            predecessor_resolved == other_resolved
+            or predecessor_resolved in other_resolved.parents
+            or other_resolved in predecessor_resolved.parents
+        ):
+            raise CorpusMaterializationV4Error(
+                "parsed-asset predecessor overlaps a governed input or work root"
+            )
+    return predecessor_resolved, predecessor_context, policy
+
+
 def run_materialization_core_v4(
     *,
     inputs: MaterializationInputV4,
@@ -2314,6 +2566,9 @@ def run_materialization_core_v4(
     runtime_build_receipt: Mapping[str, object],
     parsed_asset_cache_root: Path,
     parsed_asset_recovery_context: ParsedAssetRecoveryContextV1,
+    predecessor_cache_root: Path | None = None,
+    predecessor_recovery_context: ParsedAssetRecoveryContextV1 | None = None,
+    compatibility_policy: ParsedAssetCompatibilityPolicyV1 | None = None,
 ) -> MaterializationResultV3:
     """Run the frozen algorithm once, then forward-finalize its fresh output."""
 
@@ -2328,6 +2583,9 @@ def run_materialization_core_v4(
         parsed_asset_cache_root=parsed_asset_cache_root,
         parsed_asset_recovery_context=parsed_asset_recovery_context,
         parsed_asset_cache_read_only=True,
+        predecessor_cache_root=predecessor_cache_root,
+        predecessor_recovery_context=predecessor_recovery_context,
+        compatibility_policy=compatibility_policy,
     )
     return finalize_materialization_output_v4(result, inputs)
 
@@ -2426,6 +2684,14 @@ def run_production_materialization_worker_v4(
         cache_root=cache_root,
         breakdown_root=breakdown_root,
     )
+    # This is the production-only boundary.  Generic loader fixtures remain
+    # usable, but no authoritative worker may begin parsed-cache writes until
+    # the live V4 manifest and all three selected FineWeb schemas have been
+    # composed with the checked-in census.
+    validate_fineweb_selected_schema_census_preflight_v4(
+        source_manifest_path=source_manifest_path,
+        inputs=inputs,
+    )
     output_parent = assert_no_symlink_ancestors(output_root.parent).resolve(strict=True)
     raw_local_work_parent = os.environ.get("WEFT1_REPLAY_LOCAL_WORK_PARENT")
     if not raw_local_work_parent:
@@ -2500,12 +2766,26 @@ def run_production_materialization_worker_v4(
         raise CorpusMaterializationV4Error(
             "production V4 parsed-asset recovery identity is invalid"
         ) from error
+    (
+        predecessor_cache_root,
+        predecessor_recovery_context,
+        compatibility_policy,
+    ) = _load_parsed_asset_compatibility_assignment_v4(
+        current_context=parsed_asset_recovery_context,
+        current_cache_root=parsed_asset_cache_root,
+        output_parent=output_parent,
+        local_work_parent=local_work_parent,
+        source_cache_root=source_cache_root,
+    )
     if cache_fill_only:
         prefill_production_parsed_asset_cache_v1(
             inputs=inputs,
             parsed_asset_cache_root=parsed_asset_cache_root,
             parsed_asset_recovery_context=parsed_asset_recovery_context,
             allow_writes=True,
+            predecessor_cache_root=predecessor_cache_root,
+            predecessor_recovery_context=predecessor_recovery_context,
+            compatibility_policy=compatibility_policy,
         )
         if output_root.exists():
             raise CorpusMaterializationV4Error(
@@ -2525,6 +2805,9 @@ def run_production_materialization_worker_v4(
             runtime_build_receipt=runtime_build_receipt,
             parsed_asset_cache_root=parsed_asset_cache_root,
             parsed_asset_recovery_context=parsed_asset_recovery_context,
+            predecessor_cache_root=predecessor_cache_root,
+            predecessor_recovery_context=predecessor_recovery_context,
+            compatibility_policy=compatibility_policy,
         )
         return core_v3._write_production_replay_child_receipt_v3(
             result,
@@ -2569,6 +2852,7 @@ __all__ = [
     "iter_materialized_training_texts_v4",
     "run_materialization_core_v4",
     "run_production_materialization_worker_v4",
+    "validate_fineweb_selected_schema_census_preflight_v4",
     "recompute_physical_d6_evidence_v4",
     "validate_physical_d6_evidence_v4",
 ]

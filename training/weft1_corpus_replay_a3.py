@@ -27,6 +27,12 @@ from training.weft1_corpus_materialize_a3 import (
     MATERIALIZATION_BRIDGE_SCHEMA_V4,
     MATERIALIZED_CONTENT_SCHEMA_V4,
     MATERIALIZER_SCHEMA_V4,
+    PARSED_ASSET_COMPATIBILITY_AUTHORITY_PATH_ENV_V4,
+    PARSED_ASSET_COMPATIBILITY_PHYSICAL_BYTES_ENV_V4,
+    PARSED_ASSET_COMPATIBILITY_PHYSICAL_SHA256_ENV_V4,
+    PARSED_ASSET_COMPATIBILITY_POLICY_SHA256_ENV_V4,
+    PARSED_ASSET_COMPATIBILITY_PREDECESSOR_CACHE_ROOT_ENV_V4,
+    PARSED_ASSET_COMPATIBILITY_PREDECESSOR_CONTEXT_SHA256_ENV_V4,
     RELEASE_MANIFEST_SECTION_SCHEMA_V4,
     SCREEN_SUBMANIFEST_RELATIVE_PATH_V4,
     SCREEN_SUBMANIFEST_SCHEMA_V4,
@@ -41,8 +47,15 @@ from training.weft1_corpus_pa import (
     attest_runtime_v3,
 )
 from training.weft1_corpus_parsed_asset_cache_v1 import (
+    ParsedAssetCompatibilityPolicyV1,
+    ParsedAssetCompositeBridgeV1,
     ParsedAssetRecoveryContextV1,
+    load_parsed_asset_compatibility_policy_v1,
+    load_parsed_asset_composite_bridge_v1,
     parsed_asset_runtime_identity_v1,
+    validate_compatible_recovery_contexts_v1,
+    validate_parsed_asset_composite_bridge_policy_v1,
+    validate_parsed_asset_composite_bridge_segments_v1,
 )
 from training.weft1_corpus_replay_a2 import (
     GLOBAL_EXECUTION_PROVENANCE_RELATIVE_PATH_V3,
@@ -85,6 +98,8 @@ V4_PARENT_LANE_OPERATION_ORDER = (
     ("materialize", 0),
     ("materialize", 1),
 )
+V4_WRITE_ENABLED_CHILD_POLICY = "SINGLE_PARENT_ONE_WRITE_ENABLED_CHILD"
+V4_MAX_CONCURRENT_WRITE_ENABLED_CHILDREN = 1
 PARSED_ASSET_CODE_IDENTITY_SCHEMA_V4 = (
     "weft1_parsed_asset_cache_code_identity_v4"
 )
@@ -94,15 +109,27 @@ PARSED_ASSET_INPUT_IDENTITY_SCHEMA_V4 = (
 PARSED_ASSET_CODE_LOGICAL_NAMES_V1 = frozenset(
     {
         "production_io",
+        "worker",
+        "training/__init__.py",
         "training/weft1_corpus_a2.py",
+        "training/weft1_corpus_a3.py",
+        "training/weft1_corpus_breakdown_a3.py",
         "training/weft1_corpus_enumeration_a2.py",
+        "training/weft1_corpus_fetch_a2.py",
+        "training/weft1_corpus_fetch_a3.py",
         "training/weft1_corpus_materialize_a2.py",
         "training/weft1_corpus_materialize_a3.py",
         "training/weft1_corpus_parsed_asset_cache_v1.py",
+        "training/weft1_corpus_replay_a2.py",
+        "training/weft1_corpus_replay_a3.py",
+        "training/weft1_corpus_semantic_evidence_a3.py",
         "training/weft1_corpus_source_io_a2.py",
         "training/weft1_corpus_sources_a2.py",
+        "training/weft1_fineweb_selected_parquet_schema_census_20260904.json",
         "training/weft1_gtok_a1_contract.py",
         "training/weft1_gtok_contract.py",
+        "training/weft1_pa_schema_remediation_incident_authority_20260904.json",
+        "training/weft1_seed.py",
         "training/weft1_strict_io.py",
     }
 )
@@ -647,6 +674,9 @@ class ParentReplayVerificationV4:
     runtime_provenance_verified: bool
     os_network_isolation_verified: bool
     durable_post_write_rehash_verified: bool
+    write_enabled_child_policy: str
+    write_enabled_operation_order: tuple[tuple[str, int], ...]
+    max_concurrent_write_enabled_children: int
     input_identity_sha256: str
     worker_compatibility_sha256: str
     first_child_receipt_sha256: str
@@ -657,6 +687,16 @@ class ParentReplayVerificationV4:
     durable_parsed_asset_cache_parent: str
     first_parsed_asset_cache_context_sha256: str
     second_parsed_asset_cache_context_sha256: str
+    first_predecessor_parsed_asset_cache_context_sha256: str | None
+    incident_compatibility_policy_sha256: str | None
+    incident_compatibility_authority_physical_bytes: int | None
+    incident_compatibility_authority_physical_sha256: str | None
+    first_parsed_asset_bridge_receipt_sha256: str
+    first_parsed_asset_bridge_physical_bytes: int
+    first_parsed_asset_bridge_physical_sha256: str
+    second_parsed_asset_bridge_receipt_sha256: str
+    second_parsed_asset_bridge_physical_bytes: int
+    second_parsed_asset_bridge_physical_sha256: str
     local_work_parent: str
     evidence_sha256: str
 
@@ -674,10 +714,184 @@ class ParentReplayVerificationV4:
             )
         ):
             raise ValueError("V4 parent replay receipt may only represent full PASS")
+        if (
+            self.write_enabled_child_policy != V4_WRITE_ENABLED_CHILD_POLICY
+            or self.write_enabled_operation_order != V4_PARENT_LANE_OPERATION_ORDER
+            or self.max_concurrent_write_enabled_children
+            != V4_MAX_CONCURRENT_WRITE_ENABLED_CHILDREN
+        ):
+            raise ValueError(
+                "V4 parent replay write-enabled child topology is invalid"
+            )
+        optional_compatibility = (
+            self.first_predecessor_parsed_asset_cache_context_sha256,
+            self.incident_compatibility_policy_sha256,
+            self.incident_compatibility_authority_physical_bytes,
+            self.incident_compatibility_authority_physical_sha256,
+        )
+        if any(value is None for value in optional_compatibility) and any(
+            value is not None for value in optional_compatibility
+        ):
+            raise ValueError(
+                "V4 parent replay compatibility evidence must be complete or absent"
+            )
+        for value in (
+            self.first_parsed_asset_bridge_receipt_sha256,
+            self.first_parsed_asset_bridge_physical_sha256,
+            self.second_parsed_asset_bridge_receipt_sha256,
+            self.second_parsed_asset_bridge_physical_sha256,
+        ):
+            if (
+                not isinstance(value, str)
+                or len(value) != 64
+                or any(character not in "0123456789abcdef" for character in value)
+            ):
+                raise ValueError("V4 parent replay bridge SHA-256 is invalid")
+        for value in (
+            self.first_parsed_asset_bridge_physical_bytes,
+            self.second_parsed_asset_bridge_physical_bytes,
+        ):
+            if type(value) is not int or value < 1:
+                raise ValueError("V4 parent replay bridge byte count is invalid")
+        if self.incident_compatibility_policy_sha256 is not None:
+            for value in (
+                self.first_predecessor_parsed_asset_cache_context_sha256,
+                self.incident_compatibility_policy_sha256,
+                self.incident_compatibility_authority_physical_sha256,
+            ):
+                if (
+                    not isinstance(value, str)
+                    or len(value) != 64
+                    or any(
+                        character not in "0123456789abcdef" for character in value
+                    )
+                ):
+                    raise ValueError(
+                        "V4 parent replay compatibility SHA-256 is invalid"
+                    )
+            if (
+                type(self.incident_compatibility_authority_physical_bytes) is not int
+                or self.incident_compatibility_authority_physical_bytes < 1
+            ):
+                raise ValueError(
+                    "V4 parent replay compatibility byte count is invalid"
+                )
 
     @property
     def receipt_sha256(self) -> str:
         return execution_authority_v4_bound_sha256(PARENT_REPLAY_SCHEMA_V4, self)
+
+
+@dataclass
+class _WriteEnabledChildGuardV4:
+    """Enforce the incident's one-parent, one-live-writer subprocess topology.
+
+    This guard proves the schedule inside one parent process.  It deliberately
+    does not claim to discover another Colab/session-level supervisor; the
+    launch process audit and the single-session operating rule own that outer
+    boundary.
+    """
+
+    next_operation_index: int = 0
+    active_children: int = 0
+    max_active_children: int = 0
+
+    def run(
+        self,
+        *,
+        operation: str,
+        lane_index: int,
+        command: tuple[str, ...],
+        cwd: Path,
+        environment: Mapping[str, str],
+        timeout_seconds: float,
+    ) -> tuple[int, bytes, bytes]:
+        if self.active_children != 0:
+            raise ParentReplayError(
+                "V4 write-enabled child overlap violates the single-parent policy"
+            )
+        if self.next_operation_index >= len(V4_PARENT_LANE_OPERATION_ORDER) or (
+            operation,
+            lane_index,
+        ) != V4_PARENT_LANE_OPERATION_ORDER[self.next_operation_index]:
+            raise ParentReplayError(
+                "V4 write-enabled child launch differs from the fixed synchronous schedule"
+            )
+        self.active_children += 1
+        self.max_active_children = max(
+            self.max_active_children, self.active_children
+        )
+        try:
+            result = replay_v3._run_worker(
+                command=command,
+                cwd=cwd,
+                environment=environment,
+                timeout_seconds=timeout_seconds,
+            )
+        finally:
+            self.active_children -= 1
+        self.next_operation_index += 1
+        return result
+
+    def assert_complete(self) -> None:
+        if (
+            self.active_children != 0
+            or self.next_operation_index != len(V4_PARENT_LANE_OPERATION_ORDER)
+            or self.max_active_children != V4_MAX_CONCURRENT_WRITE_ENABLED_CHILDREN
+        ):
+            raise ParentReplayError(
+                "V4 write-enabled child topology did not complete exactly"
+            )
+
+
+def _load_expected_parsed_asset_bridge_v4(
+    *,
+    cache_root: Path,
+    current_context: ParsedAssetRecoveryContextV1,
+    predecessor_context: ParsedAssetRecoveryContextV1 | None,
+    compatibility_policy: ParsedAssetCompatibilityPolicyV1 | None,
+    validate_segment_transport: bool = False,
+) -> tuple[ParsedAssetCompositeBridgeV1, int, str]:
+    """Rehash and validate the immutable lane bridge against its assignment."""
+
+    try:
+        bridge, physical_bytes, physical_sha256 = (
+            load_parsed_asset_composite_bridge_v1(cache_root)
+        )
+        if type(validate_segment_transport) is not bool:
+            raise TypeError("bridge segment validation flag must be an exact boolean")
+        if bridge.current_context != current_context:
+            raise ValueError("current context differs")
+        if compatibility_policy is None:
+            if (
+                predecessor_context is not None
+                or bridge.predecessor_context is not None
+                or bridge.compatibility_policy_sha256 is not None
+                or bridge.predecessor_asset_count != 0
+                or bridge.current_asset_count != len(bridge.rows)
+            ):
+                raise ValueError("fresh lane contains predecessor state")
+        else:
+            if bridge.predecessor_context != predecessor_context:
+                raise ValueError("predecessor context differs")
+            validate_parsed_asset_composite_bridge_policy_v1(
+                bridge, compatibility_policy
+            )
+        if validate_segment_transport:
+            validate_parsed_asset_composite_bridge_segments_v1(
+                bridge,
+                current_root=cache_root,
+                predecessor_root=(
+                    None
+                    if predecessor_context is None
+                    else cache_root.parent / predecessor_context.identity_sha256
+                ),
+            )
+    except Exception as error:
+        raise ParentReplayError(
+            "V4 parsed-asset composite bridge failed assignment validation"
+        ) from error
+    return bridge, physical_bytes, physical_sha256
 
 
 def verify_production_materialization_replays_v4(
@@ -696,12 +910,19 @@ def verify_production_materialization_replays_v4(
     local_work_parent: Path,
     first_output_root: Path,
     second_output_root: Path,
+    incident_compatibility_authority_path: Path | None = None,
     first_run_id: str = "production-v4-replay-a",
     second_run_id: str = "production-v4-replay-b",
     timeout_seconds: float = V4_DEFAULT_WORKER_TIMEOUT_SECONDS,
 ) -> ParentReplayVerificationV4:
     """Run the V4 worker twice and mint only after all production gates pass."""
 
+    if incident_compatibility_authority_path is not None and not isinstance(
+        incident_compatibility_authority_path, Path
+    ):
+        raise TypeError(
+            "incident compatibility authority path must be pathlib.Path or None"
+        )
     if (
         isinstance(timeout_seconds, bool)
         or not isinstance(timeout_seconds, (int, float))
@@ -858,6 +1079,46 @@ def verify_production_materialization_replays_v4(
                 name="runtime build receipt",
             ),
         }
+        compatibility_policy: ParsedAssetCompatibilityPolicyV1 | None = None
+        compatibility_authority_physical_bytes: int | None = None
+        compatibility_authority_physical_sha256: str | None = None
+        compatibility_authority_rows: tuple[dict[str, object], ...] = ()
+        if incident_compatibility_authority_path is not None:
+            snapshots["incident_compatibility_authority"] = (
+                replay_v3._snapshot_governed_file_v3(
+                    incident_compatibility_authority_path,
+                    snapshot_root / "parsed-asset-compatibility-authority-v1.json",
+                    name="V4 parsed-asset compatibility authority",
+                )
+            )
+            try:
+                (
+                    compatibility_policy,
+                    compatibility_authority_physical_bytes,
+                    compatibility_authority_physical_sha256,
+                ) = load_parsed_asset_compatibility_policy_v1(
+                    snapshots["incident_compatibility_authority"]
+                )
+            except Exception as error:
+                raise ParentReplayError(
+                    "V4 parsed-asset compatibility authority failed validation"
+                ) from error
+            if (
+                compatibility_policy.successor_code_identity_sha256
+                != parsed_asset_code_identity
+                or compatibility_policy.eligible_run_id != first_run_id
+            ):
+                raise ParentReplayError(
+                    "V4 parsed-asset compatibility authority does not name the current first lane"
+                )
+            compatibility_authority_rows = replay_v3._logical_file_rows(
+                {
+                    "incident_compatibility_authority": snapshots[
+                        "incident_compatibility_authority"
+                    ]
+                },
+                name="V4 incident compatibility authority snapshot",
+            )
         expected_transport = _load_expected_transport_v4(
             snapshots["enumeration"],
             snapshots["cache_download"],
@@ -898,6 +1159,10 @@ def verify_production_materialization_replays_v4(
             "runtime_build_receipt": snapshots["runtime_build_receipt"],
             "source_manifest": snapshots["source_manifest"],
         }
+        if incident_compatibility_authority_path is not None:
+            input_files["incident_compatibility_authority"] = snapshots[
+                "incident_compatibility_authority"
+            ]
         parsed_asset_input_rows = replay_v3._logical_file_rows(
             {
                 "cache_download_receipt": snapshots["cache_download"],
@@ -931,6 +1196,43 @@ def verify_production_materialization_replays_v4(
             )
             for run_id in (first_run_id, second_run_id)
         )
+        predecessor_context: ParsedAssetRecoveryContextV1 | None = None
+        predecessor_cache_root: Path | None = None
+        if compatibility_policy is not None:
+            predecessor_context = ParsedAssetRecoveryContextV1(
+                run_id=parsed_asset_contexts[0].run_id,
+                durable_marker_physical_sha256=(
+                    parsed_asset_contexts[0].durable_marker_physical_sha256
+                ),
+                runtime_identity_sha256=(
+                    parsed_asset_contexts[0].runtime_identity_sha256
+                ),
+                code_identity_sha256=(
+                    compatibility_policy.predecessor_code_identity_sha256
+                ),
+                input_identity_sha256=(
+                    parsed_asset_contexts[0].input_identity_sha256
+                ),
+            )
+            try:
+                validate_compatible_recovery_contexts_v1(
+                    current=parsed_asset_contexts[0],
+                    predecessor=predecessor_context,
+                    policy=compatibility_policy,
+                )
+            except Exception as error:
+                raise ParentReplayError(
+                    "V4 parsed-asset predecessor context is incompatible"
+                ) from error
+            predecessor_cache_root = assert_no_symlink_ancestors(
+                parsed_asset_cache_parent
+                / first_run_id
+                / predecessor_context.identity_sha256
+            ).resolve(strict=True)
+            if not predecessor_cache_root.is_dir():
+                raise ParentReplayError(
+                    "V4 registered parsed-asset predecessor cache is unavailable"
+                )
         parsed_asset_cache_roots = []
         for context in parsed_asset_contexts:
             lane_parent = parsed_asset_cache_parent / context.run_id
@@ -970,12 +1272,33 @@ def verify_production_materialization_replays_v4(
                 "compatibility_files": replay_v3._logical_file_rows(
                     code_files, name="V4 production compatibility snapshots"
                 ),
+                "incident_compatibility_authority": (
+                    list(compatibility_authority_rows)
+                ),
+                "incident_compatibility_policy_sha256": (
+                    None
+                    if compatibility_policy is None
+                    else compatibility_policy.identity_sha256
+                ),
+                "first_lane_predecessor_context_sha256": (
+                    None
+                    if predecessor_context is None
+                    else predecessor_context.identity_sha256
+                ),
+                "max_concurrent_write_enabled_children": (
+                    V4_MAX_CONCURRENT_WRITE_ENABLED_CHILDREN
+                ),
                 "network_isolation_executable_sha256": _sha256_file(unshare),
                 "python_executable_sha256": _sha256_file(executable),
+                "write_enabled_child_policy": V4_WRITE_ENABLED_CHILD_POLICY,
+                "write_enabled_operation_order": V4_PARENT_LANE_OPERATION_ORDER,
             },
         )
         guard_sha = hashlib.sha256(replay_v3._NETWORK_GUARD_SOURCE).hexdigest()
         children = []
+        bridge_snapshots: list[
+            tuple[ParsedAssetCompositeBridgeV1, int, str] | None
+        ] = [None, None]
         with tempfile.TemporaryDirectory(
             prefix="weft1-v4-network-guard-", dir=local_parent
         ) as raw_guard:
@@ -991,19 +1314,25 @@ def verify_production_materialization_replays_v4(
                 parsed_asset_contexts,
                 strict=True,
             ))
+            write_enabled_children = _WriteEnabledChildGuardV4()
 
             def lane_environment(
                 run_id: str,
                 output_root: Path,
                 parsed_cache_root: Path,
                 parsed_context: ParsedAssetRecoveryContextV1,
+                *,
+                compatibility_enabled: bool,
             ) -> dict[str, str]:
                 replay_v3._validate_exact_code_snapshot_tree_v3(code_root, code_files)
                 runtime_now = attest_runtime_v3(
                     requirements_lock=snapshots["dependency_lock"],
                     executable=executable,
                 )
-                if runtime_now.environment_identity_sha256 != runtime_attestation.environment_identity_sha256:
+                if (
+                    runtime_now.environment_identity_sha256
+                    != runtime_attestation.environment_identity_sha256
+                ):
                     raise ParentReplayError("V4 runtime changed before worker launch")
                 if replay_v3.attest_production_storage_v3(
                     durable_mount_root=durable_mount_root,
@@ -1012,6 +1341,38 @@ def verify_production_materialization_replays_v4(
                     local_work_parent=local_parent,
                 ) != storage_identity:
                     raise ParentReplayError("V4 durable storage changed before launch")
+                extra_environment: dict[str, str] | None = None
+                if compatibility_enabled:
+                    if (
+                        compatibility_policy is None
+                        or predecessor_context is None
+                        or predecessor_cache_root is None
+                        or compatibility_authority_physical_bytes is None
+                        or compatibility_authority_physical_sha256 is None
+                    ):
+                        raise ParentReplayError(
+                            "V4 first-lane compatibility assignment is incomplete"
+                        )
+                    extra_environment = {
+                        PARSED_ASSET_COMPATIBILITY_AUTHORITY_PATH_ENV_V4: str(
+                            snapshots["incident_compatibility_authority"]
+                        ),
+                        PARSED_ASSET_COMPATIBILITY_POLICY_SHA256_ENV_V4: (
+                            compatibility_policy.identity_sha256
+                        ),
+                        PARSED_ASSET_COMPATIBILITY_PHYSICAL_BYTES_ENV_V4: str(
+                            compatibility_authority_physical_bytes
+                        ),
+                        PARSED_ASSET_COMPATIBILITY_PHYSICAL_SHA256_ENV_V4: (
+                            compatibility_authority_physical_sha256
+                        ),
+                        PARSED_ASSET_COMPATIBILITY_PREDECESSOR_CACHE_ROOT_ENV_V4: str(
+                            predecessor_cache_root
+                        ),
+                        PARSED_ASSET_COMPATIBILITY_PREDECESSOR_CONTEXT_SHA256_ENV_V4: (
+                            predecessor_context.identity_sha256
+                        ),
+                    }
                 return replay_v3._offline_environment(
                     guard_directory=guard_root,
                     guard_sha256=guard_sha,
@@ -1021,7 +1382,7 @@ def verify_production_materialization_replays_v4(
                     input_identity_sha256=input_identity,
                     worker_compatibility_sha256=worker_compatibility,
                     worker_import_root=code_root,
-                    extra_environment=None,
+                    extra_environment=extra_environment,
                     parsed_asset_cache_root=parsed_cache_root,
                     parsed_asset_code_identity_sha256=(
                         parsed_context.code_identity_sha256
@@ -1052,8 +1413,13 @@ def verify_production_materialization_replays_v4(
                     output_root,
                     parsed_cache_root,
                     parsed_context,
+                    compatibility_enabled=(
+                        lane_index == 0 and compatibility_policy is not None
+                    ),
                 )
-                replay_v3._run_worker(
+                write_enabled_children.run(
+                    operation=operation,
+                    lane_index=lane_index,
                     command=(
                         str(unshare),
                         "--net",
@@ -1075,6 +1441,18 @@ def verify_production_materialization_replays_v4(
                     raise ParentReplayError(
                         "V4 cache-fill worker mutated a replay output root"
                     )
+                bridge_snapshots[lane_index] = (
+                    _load_expected_parsed_asset_bridge_v4(
+                        cache_root=parsed_cache_root,
+                        current_context=parsed_context,
+                        predecessor_context=(
+                            predecessor_context if lane_index == 0 else None
+                        ),
+                        compatibility_policy=(
+                            compatibility_policy if lane_index == 0 else None
+                        ),
+                    )
+                )
 
             for operation, lane_index in V4_PARENT_LANE_OPERATION_ORDER:
                 if operation != "materialize":
@@ -1090,8 +1468,30 @@ def verify_production_materialization_replays_v4(
                     output_root,
                     parsed_cache_root,
                     parsed_context,
+                    compatibility_enabled=(
+                        lane_index == 0 and compatibility_policy is not None
+                    ),
                 )
-                pid, stdout, stderr = replay_v3._run_worker(
+                expected_bridge = bridge_snapshots[lane_index]
+                if expected_bridge is None or (
+                    _load_expected_parsed_asset_bridge_v4(
+                        cache_root=parsed_cache_root,
+                        current_context=parsed_context,
+                        predecessor_context=(
+                            predecessor_context if lane_index == 0 else None
+                        ),
+                        compatibility_policy=(
+                            compatibility_policy if lane_index == 0 else None
+                        ),
+                    )
+                    != expected_bridge
+                ):
+                    raise ParentReplayError(
+                        "V4 parsed-asset bridge changed before materialization"
+                    )
+                pid, stdout, stderr = write_enabled_children.run(
+                    operation=operation,
+                    lane_index=lane_index,
                     command=(
                         str(unshare),
                         "--net",
@@ -1109,6 +1509,22 @@ def verify_production_materialization_replays_v4(
                     environment=environment,
                     timeout_seconds=float(timeout_seconds),
                 )
+                if (
+                    _load_expected_parsed_asset_bridge_v4(
+                        cache_root=parsed_cache_root,
+                        current_context=parsed_context,
+                        predecessor_context=(
+                            predecessor_context if lane_index == 0 else None
+                        ),
+                        compatibility_policy=(
+                            compatibility_policy if lane_index == 0 else None
+                        ),
+                    )
+                    != expected_bridge
+                ):
+                    raise ParentReplayError(
+                        "V4 parsed-asset bridge changed during materialization"
+                    )
                 child = replay_v3._validate_child_receipt(
                     output_root=output_root,
                     expected_run_id=run_id,
@@ -1129,6 +1545,8 @@ def verify_production_materialization_replays_v4(
                     expected_release_section=release_section,
                 )
                 children.append(child)
+
+            write_enabled_children.assert_complete()
 
         first, second = children
         if (
@@ -1179,17 +1597,73 @@ def verify_production_materialization_replays_v4(
             receipt_path = Path(child.output_root) / replay_v3.CHILD_RECEIPT_FILENAME
             if _sha256_file(receipt_path) != child.child_receipt_sha256:
                 raise ParentReplayError("V4 child receipt changed before parent minting")
+        for lane_index, (parsed_cache_root, parsed_context) in enumerate(
+            zip(parsed_asset_cache_roots, parsed_asset_contexts, strict=True)
+        ):
+            expected_bridge = bridge_snapshots[lane_index]
+            if expected_bridge is None or (
+                _load_expected_parsed_asset_bridge_v4(
+                    cache_root=parsed_cache_root,
+                    current_context=parsed_context,
+                    predecessor_context=(
+                        predecessor_context if lane_index == 0 else None
+                    ),
+                    compatibility_policy=(
+                        compatibility_policy if lane_index == 0 else None
+                    ),
+                    validate_segment_transport=True,
+                )
+                != expected_bridge
+            ):
+                raise ParentReplayError(
+                    "V4 parsed-asset bridge changed before parent minting"
+                )
+        first_bridge = bridge_snapshots[0]
+        second_bridge = bridge_snapshots[1]
+        if first_bridge is None or second_bridge is None:
+            raise ParentReplayError("V4 parsed-asset bridge evidence is incomplete")
         evidence_payload = {
             "first_child_receipt_sha256": first.child_receipt_sha256,
+            "first_parsed_asset_bridge_physical_bytes": first_bridge[1],
+            "first_parsed_asset_bridge_physical_sha256": first_bridge[2],
+            "first_parsed_asset_bridge_receipt_sha256": (
+                first_bridge[0].receipt_sha256
+            ),
             "first_parsed_asset_cache_context_sha256": (
                 parsed_asset_contexts[0].identity_sha256
             ),
+            "first_predecessor_parsed_asset_cache_context_sha256": (
+                None
+                if predecessor_context is None
+                else predecessor_context.identity_sha256
+            ),
+            "incident_compatibility_authority_physical_bytes": (
+                compatibility_authority_physical_bytes
+            ),
+            "incident_compatibility_authority_physical_sha256": (
+                compatibility_authority_physical_sha256
+            ),
+            "incident_compatibility_policy_sha256": (
+                None
+                if compatibility_policy is None
+                else compatibility_policy.identity_sha256
+            ),
             "input_identity_sha256": input_identity,
+            "max_concurrent_write_enabled_children": (
+                write_enabled_children.max_active_children
+            ),
             "second_child_receipt_sha256": second.child_receipt_sha256,
+            "second_parsed_asset_bridge_physical_bytes": second_bridge[1],
+            "second_parsed_asset_bridge_physical_sha256": second_bridge[2],
+            "second_parsed_asset_bridge_receipt_sha256": (
+                second_bridge[0].receipt_sha256
+            ),
             "second_parsed_asset_cache_context_sha256": (
                 parsed_asset_contexts[1].identity_sha256
             ),
             "worker_compatibility_sha256": worker_compatibility,
+            "write_enabled_child_policy": V4_WRITE_ENABLED_CHILD_POLICY,
+            "write_enabled_operation_order": V4_PARENT_LANE_OPERATION_ORDER,
         }
         evidence_sha = execution_authority_v4_bound_sha256(
             PARENT_EVIDENCE_SCHEMA_V4, evidence_payload
@@ -1204,6 +1678,11 @@ def verify_production_materialization_replays_v4(
             runtime_provenance_verified=True,
             os_network_isolation_verified=True,
             durable_post_write_rehash_verified=True,
+            write_enabled_child_policy=V4_WRITE_ENABLED_CHILD_POLICY,
+            write_enabled_operation_order=V4_PARENT_LANE_OPERATION_ORDER,
+            max_concurrent_write_enabled_children=(
+                write_enabled_children.max_active_children
+            ),
             input_identity_sha256=input_identity,
             worker_compatibility_sha256=worker_compatibility,
             first_child_receipt_sha256=first.child_receipt_sha256,
@@ -1220,6 +1699,32 @@ def verify_production_materialization_replays_v4(
             second_parsed_asset_cache_context_sha256=(
                 parsed_asset_contexts[1].identity_sha256
             ),
+            first_predecessor_parsed_asset_cache_context_sha256=(
+                None
+                if predecessor_context is None
+                else predecessor_context.identity_sha256
+            ),
+            incident_compatibility_policy_sha256=(
+                None
+                if compatibility_policy is None
+                else compatibility_policy.identity_sha256
+            ),
+            incident_compatibility_authority_physical_bytes=(
+                compatibility_authority_physical_bytes
+            ),
+            incident_compatibility_authority_physical_sha256=(
+                compatibility_authority_physical_sha256
+            ),
+            first_parsed_asset_bridge_receipt_sha256=(
+                first_bridge[0].receipt_sha256
+            ),
+            first_parsed_asset_bridge_physical_bytes=first_bridge[1],
+            first_parsed_asset_bridge_physical_sha256=first_bridge[2],
+            second_parsed_asset_bridge_receipt_sha256=(
+                second_bridge[0].receipt_sha256
+            ),
+            second_parsed_asset_bridge_physical_bytes=second_bridge[1],
+            second_parsed_asset_bridge_physical_sha256=second_bridge[2],
             local_work_parent=str(local_parent),
             evidence_sha256=evidence_sha,
         )
@@ -1228,6 +1733,8 @@ def verify_production_materialization_replays_v4(
 __all__ = [
     "ParentReplayVerificationV4",
     "V4_DEFAULT_WORKER_TIMEOUT_SECONDS",
+    "V4_MAX_CONCURRENT_WRITE_ENABLED_CHILDREN",
     "V4_PARENT_LANE_OPERATION_ORDER",
+    "V4_WRITE_ENABLED_CHILD_POLICY",
     "verify_production_materialization_replays_v4",
 ]

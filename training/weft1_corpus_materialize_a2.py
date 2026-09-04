@@ -67,10 +67,24 @@ from training.weft1_corpus_pa import (
     write_jsonl_zstd_shards_v3,
 )
 from training.weft1_corpus_parsed_asset_cache_v1 import (
+    CURRENT_CONTEXT_RESOLUTION_V1,
+    PARSED_ASSET_COMPOSITE_BRIDGE_SCHEMA_V1,
+    PARSED_ASSET_RECOVERY_DOMAIN_V1,
+    READ_ONLY_PREDECESSOR_RESOLUTION_V1,
+    ParsedAssetCompatibilityPolicyV1,
+    ParsedAssetCompositeBridgeV1,
     ParsedAssetRecoveryContextV1,
+    ParsedAssetSegmentReceiptV1,
     RecoveredSourceParseEventV1,
     inspect_parsed_asset_segment_receipt_v1,
     iter_parsed_asset_segment_v1,
+    load_parsed_asset_composite_bridge_v1,
+    parsed_asset_composite_bridge_row_v1,
+    probe_parsed_asset_segment_v1,
+    publish_parsed_asset_composite_bridge_v1,
+    select_parsed_asset_bridge_row_v1,
+    validate_compatible_recovery_contexts_v1,
+    validate_parsed_asset_composite_bridge_policy_v1,
     write_parsed_asset_segment_v1,
 )
 from training.weft1_corpus_sources_a2 import (
@@ -2068,7 +2082,10 @@ def prefill_production_parsed_asset_cache_v1(
     parsed_asset_cache_root: Path,
     parsed_asset_recovery_context: ParsedAssetRecoveryContextV1,
     allow_writes: bool,
-) -> None:
+    predecessor_cache_root: Path | None = None,
+    predecessor_recovery_context: ParsedAssetRecoveryContextV1 | None = None,
+    compatibility_policy: ParsedAssetCompatibilityPolicyV1 | None = None,
+) -> ParsedAssetCompositeBridgeV1:
     """Fill only missing immutable parser segments without deriving corpus state."""
 
     if not all(
@@ -2088,6 +2105,45 @@ def prefill_production_parsed_asset_cache_v1(
         raise TypeError("parsed-asset prefill context must be typed")
     if type(allow_writes) is not bool:
         raise TypeError("parsed-asset prefill allow_writes must be an exact boolean")
+    predecessor_values = (
+        predecessor_cache_root,
+        predecessor_recovery_context,
+        compatibility_policy,
+    )
+    if any(value is None for value in predecessor_values) and any(
+        value is not None for value in predecessor_values
+    ):
+        raise CorpusMaterializationError(
+            "parsed-asset predecessor root, context, and policy must be supplied together"
+        )
+    if compatibility_policy is not None:
+        assert predecessor_cache_root is not None
+        assert predecessor_recovery_context is not None
+        if not isinstance(predecessor_cache_root, Path):
+            raise TypeError("parsed-asset predecessor root must be pathlib.Path")
+        if not isinstance(predecessor_recovery_context, ParsedAssetRecoveryContextV1):
+            raise TypeError("parsed-asset predecessor context must be typed")
+        validate_compatible_recovery_contexts_v1(
+            current=parsed_asset_recovery_context,
+            predecessor=predecessor_recovery_context,
+            policy=compatibility_policy,
+        )
+        predecessor_resolved = assert_no_symlink_ancestors(
+            predecessor_cache_root
+        ).resolve(strict=True)
+        current_resolved = assert_no_symlink_ancestors(
+            parsed_asset_cache_root
+        ).resolve(strict=True)
+        if (
+            not predecessor_resolved.is_dir()
+            or predecessor_resolved == current_resolved
+            or predecessor_resolved in current_resolved.parents
+            or current_resolved in predecessor_resolved.parents
+        ):
+            raise CorpusMaterializationError(
+                "parsed-asset predecessor must be a disjoint read-only cache root"
+            )
+        predecessor_cache_root = predecessor_resolved
     assert inputs.verified_cache is not None
     assert inputs.cache_root is not None
     assets_by_source = {
@@ -2098,24 +2154,139 @@ def prefill_production_parsed_asset_cache_v1(
         )
         for source in SOURCE_FAMILIES
     }
+    selected: dict[
+        tuple[str, int],
+        tuple[ParsedAssetSegmentReceiptV1, str, Path],
+    ] = {}
+
+    def inspect_current(
+        *,
+        verified_asset: VerifiedLocalCacheAssetV3,
+        binding: SourceParserBindingV3,
+        asset_order_ordinal: int,
+        next_event_ordinal: int,
+    ) -> ParsedAssetSegmentReceiptV1 | None:
+        return inspect_parsed_asset_segment_receipt_v1(
+            parsed_asset_cache_root,
+            context=parsed_asset_recovery_context,
+            verified_asset=verified_asset,
+            parser_binding=binding,
+            asset_order_ordinal=asset_order_ordinal,
+            expected_first_event_ordinal=next_event_ordinal,
+            allow_receiptless_orphan=allow_writes,
+        )
+
+    # Compatibility mode is intentionally two-phase.  Every required donor is
+    # located and (when minting the bridge) physically rehashed before a single
+    # current-code segment may be written.  A missing donor therefore cannot
+    # contaminate the successor's immutable cache and fail only at final count.
+    if compatibility_policy is not None:
+        assert predecessor_cache_root is not None
+        assert predecessor_recovery_context is not None
+        permitted_asset_count = 0
+        excluded_asset_count = 0
+        for source in SOURCE_FAMILIES:
+            for verified_asset in assets_by_source[source]:
+                binding = resolve_production_parser_binding_v3(verified_asset)
+                if compatibility_policy.permits(source, binding.binding_sha256):
+                    permitted_asset_count += 1
+                elif source in compatibility_policy.excluded_source_families:
+                    excluded_asset_count += 1
+                else:
+                    raise CorpusMaterializationError(
+                        "live parser binding is absent from compatibility authority"
+                    )
+        if (
+            permitted_asset_count
+            != compatibility_policy.expected_predecessor_asset_count
+            or excluded_asset_count
+            != compatibility_policy.expected_current_asset_count
+        ):
+            raise CorpusMaterializationError(
+                "live asset inventory differs from compatibility authority"
+            )
+        for source in SOURCE_FAMILIES:
+            next_event_ordinal = 0
+            for asset_order_ordinal, verified_asset in enumerate(
+                assets_by_source[source]
+            ):
+                binding = resolve_production_parser_binding_v3(verified_asset)
+                if not compatibility_policy.permits(
+                    source, binding.binding_sha256
+                ):
+                    continue
+                current_receipt = inspect_current(
+                    verified_asset=verified_asset,
+                    binding=binding,
+                    asset_order_ordinal=asset_order_ordinal,
+                    next_event_ordinal=next_event_ordinal,
+                )
+                if current_receipt is not None:
+                    raise CorpusMaterializationError(
+                        "current parsed-asset segment conflicts with donor-always authority"
+                    )
+                donor_receipt = inspect_parsed_asset_segment_receipt_v1(
+                    predecessor_cache_root,
+                    context=predecessor_recovery_context,
+                    verified_asset=verified_asset,
+                    parser_binding=binding,
+                    asset_order_ordinal=asset_order_ordinal,
+                    expected_first_event_ordinal=next_event_ordinal,
+                    allow_receiptless_orphan=False,
+                )
+                if donor_receipt is None:
+                    raise CorpusMaterializationError(
+                        "registered predecessor parsed-asset segment is missing"
+                    )
+                if allow_writes and probe_parsed_asset_segment_v1(
+                    predecessor_cache_root,
+                    context=predecessor_recovery_context,
+                    verified_asset=verified_asset,
+                    parser_binding=binding,
+                    asset_order_ordinal=asset_order_ordinal,
+                    expected_first_event_ordinal=next_event_ordinal,
+                ) != "HIT":
+                    raise CorpusMaterializationError(
+                        "registered predecessor parsed-asset segment disappeared"
+                    )
+                selected[(source, asset_order_ordinal)] = (
+                    donor_receipt,
+                    READ_ONLY_PREDECESSOR_RESOLUTION_V1,
+                    predecessor_cache_root,
+                )
+                next_event_ordinal = donor_receipt.next_event_ordinal
+        donor_count = sum(
+            resolution == READ_ONLY_PREDECESSOR_RESOLUTION_V1
+            for unused_receipt, resolution, unused_root in selected.values()
+        )
+        if (
+            donor_count != compatibility_policy.expected_predecessor_asset_count
+            or len(selected) != donor_count
+        ):
+            raise CorpusMaterializationError(
+                "parsed-asset donor inventory differs from compatibility authority"
+            )
+
     for source in SOURCE_FAMILIES:
         next_event_ordinal = 0
         for asset_order_ordinal, verified_asset in enumerate(
             assets_by_source[source]
         ):
+            key = (source, asset_order_ordinal)
+            if key in selected:
+                receipt, unused_resolution, unused_root = selected[key]
+                next_event_ordinal = receipt.next_event_ordinal
+                continue
             binding = resolve_production_parser_binding_v3(verified_asset)
             lexical_asset = inputs.cache_root.joinpath(
                 *PurePosixPath(verified_asset.expected.relative_path).parts
             )
             assert_no_symlink_ancestors(lexical_asset)
-            receipt = inspect_parsed_asset_segment_receipt_v1(
-                parsed_asset_cache_root,
-                context=parsed_asset_recovery_context,
+            receipt = inspect_current(
                 verified_asset=verified_asset,
-                parser_binding=binding,
+                binding=binding,
                 asset_order_ordinal=asset_order_ordinal,
-                expected_first_event_ordinal=next_event_ordinal,
-                allow_receiptless_orphan=allow_writes,
+                next_event_ordinal=next_event_ordinal,
             )
             if receipt is None:
                 if not allow_writes:
@@ -2135,7 +2306,100 @@ def prefill_production_parsed_asset_cache_v1(
                         binding=binding,
                     ),
                 ).receipt
+            selected[key] = (
+                receipt,
+                CURRENT_CONTEXT_RESOLUTION_V1,
+                parsed_asset_cache_root,
+            )
             next_event_ordinal = receipt.next_event_ordinal
+
+    expected_inventory = {
+        (source, asset_order_ordinal)
+        for source in SOURCE_FAMILIES
+        for asset_order_ordinal, unused_asset in enumerate(assets_by_source[source])
+    }
+    if set(selected) != expected_inventory:
+        raise CorpusMaterializationError(
+            "parsed-asset composite bridge does not cover the live asset inventory"
+        )
+    if compatibility_policy is not None:
+        assert predecessor_cache_root is not None
+        assert predecessor_recovery_context is not None
+        for (source, asset_order_ordinal), (
+            receipt,
+            resolution,
+            unused_root,
+        ) in sorted(selected.items()):
+            if resolution != READ_ONLY_PREDECESSOR_RESOLUTION_V1:
+                continue
+            verified_asset = assets_by_source[source][asset_order_ordinal]
+            binding = resolve_production_parser_binding_v3(verified_asset)
+            if probe_parsed_asset_segment_v1(
+                predecessor_cache_root,
+                context=predecessor_recovery_context,
+                verified_asset=verified_asset,
+                parser_binding=binding,
+                asset_order_ordinal=asset_order_ordinal,
+                expected_first_event_ordinal=receipt.first_event_ordinal,
+            ) != "HIT":
+                raise CorpusMaterializationError(
+                    "registered predecessor changed before bridge publication"
+                )
+    bridge_rows = tuple(
+        parsed_asset_composite_bridge_row_v1(
+            root=root,
+            receipt=receipt,
+            resolution=resolution,
+        )
+        for unused_key, (receipt, resolution, root) in sorted(selected.items())
+    )
+
+    predecessor_count = sum(
+        row.resolution == READ_ONLY_PREDECESSOR_RESOLUTION_V1 for row in bridge_rows
+    )
+    current_count = len(bridge_rows) - predecessor_count
+    if compatibility_policy is not None and (
+        predecessor_count != compatibility_policy.expected_predecessor_asset_count
+        or current_count != compatibility_policy.expected_current_asset_count
+    ):
+        raise CorpusMaterializationError(
+            "parsed-asset compatibility asset counts differ from authority"
+        )
+    bridge = ParsedAssetCompositeBridgeV1(
+        schema=PARSED_ASSET_COMPOSITE_BRIDGE_SCHEMA_V1,
+        recovery_domain=PARSED_ASSET_RECOVERY_DOMAIN_V1,
+        current_context=parsed_asset_recovery_context,
+        predecessor_context=predecessor_recovery_context,
+        compatibility_policy_sha256=(
+            None
+            if compatibility_policy is None
+            else compatibility_policy.identity_sha256
+        ),
+        rows=bridge_rows,
+        current_asset_count=current_count,
+        predecessor_asset_count=predecessor_count,
+    )
+    if compatibility_policy is not None:
+        validate_parsed_asset_composite_bridge_policy_v1(
+            bridge, compatibility_policy
+        )
+    if allow_writes:
+        publish_parsed_asset_composite_bridge_v1(parsed_asset_cache_root, bridge)
+    else:
+        try:
+            published, unused_bytes, unused_sha256 = (
+                load_parsed_asset_composite_bridge_v1(parsed_asset_cache_root)
+            )
+        except Exception as error:
+            raise CorpusMaterializationError(
+                "read-only parsed-asset cache lacks its compatibility bridge"
+            ) from error
+        del unused_bytes, unused_sha256
+        if published != bridge:
+            raise CorpusMaterializationError(
+                "read-only parsed-asset compatibility bridge drifted"
+            )
+    return bridge
 
 
 class _Materializer:
@@ -2152,6 +2416,9 @@ class _Materializer:
         parsed_asset_cache_root: Path | None = None,
         parsed_asset_recovery_context: ParsedAssetRecoveryContextV1 | None = None,
         parsed_asset_cache_read_only: bool = False,
+        predecessor_cache_root: Path | None = None,
+        predecessor_recovery_context: ParsedAssetRecoveryContextV1 | None = None,
+        compatibility_policy: ParsedAssetCompatibilityPolicyV1 | None = None,
     ) -> None:
         if inputs.mode != plan.mode:
             raise ValueError("input and plan modes differ")
@@ -2208,6 +2475,35 @@ class _Materializer:
             raise CorpusMaterializationError(
                 "parsed-asset cache read-only mode requires a cache assignment"
             )
+        predecessor_values = (
+            predecessor_cache_root,
+            predecessor_recovery_context,
+            compatibility_policy,
+        )
+        if any(value is None for value in predecessor_values) and any(
+            value is not None for value in predecessor_values
+        ):
+            raise CorpusMaterializationError(
+                "parsed-asset predecessor root, context, and policy must be paired"
+            )
+        if compatibility_policy is not None:
+            if parsed_asset_recovery_context is None:
+                raise CorpusMaterializationError(
+                    "parsed-asset compatibility requires a current context"
+                )
+            if not isinstance(predecessor_cache_root, Path):
+                raise TypeError("parsed-asset predecessor root must be pathlib.Path")
+            if not isinstance(
+                predecessor_recovery_context, ParsedAssetRecoveryContextV1
+            ) or not isinstance(
+                compatibility_policy, ParsedAssetCompatibilityPolicyV1
+            ):
+                raise TypeError("parsed-asset compatibility values must be typed")
+            validate_compatible_recovery_contexts_v1(
+                current=parsed_asset_recovery_context,
+                predecessor=predecessor_recovery_context,
+                policy=compatibility_policy,
+            )
         self.inputs = inputs
         self.plan = plan
         self.classifier = language_classifier
@@ -2220,6 +2516,14 @@ class _Materializer:
         )
         self.parsed_asset_recovery_context = parsed_asset_recovery_context
         self.parsed_asset_cache_read_only = parsed_asset_cache_read_only
+        self.predecessor_cache_root = (
+            None
+            if predecessor_cache_root is None
+            else Path(predecessor_cache_root)
+        )
+        self.predecessor_recovery_context = predecessor_recovery_context
+        self.compatibility_policy = compatibility_policy
+        self.parsed_asset_composite_bridge: ParsedAssetCompositeBridgeV1 | None = None
         self.streams = {stream.source_family: stream for stream in inputs.streams}
         self._production_source_db: sqlite3.Connection | None = None
         self.source_parse_receipts: dict[str, dict[str, object]] = {
@@ -2335,6 +2639,29 @@ class _Materializer:
                     raise CorpusMaterializationError(
                         f"parsed-asset cache root overlaps {name}"
                     )
+            predecessor_root = getattr(self, "predecessor_cache_root", None)
+            if predecessor_root is not None:
+                predecessor_resolved = assert_no_symlink_ancestors(
+                    predecessor_root
+                ).resolve(strict=True)
+                if not predecessor_resolved.is_dir():
+                    raise CorpusMaterializationError(
+                        "parsed-asset predecessor root must be a directory"
+                    )
+                for other, name in (
+                    (cache_resolved, "current parsed-asset cache root"),
+                    (output_resolved, "output root"),
+                    (work_resolved, "work root"),
+                    (source_cache_resolved, "source cache root"),
+                ):
+                    if (
+                        predecessor_resolved == other
+                        or predecessor_resolved in other.parents
+                        or other in predecessor_resolved.parents
+                    ):
+                        raise CorpusMaterializationError(
+                            f"parsed-asset predecessor root overlaps {name}"
+                        )
         self.output_root.mkdir(parents=True)
         self.work_root.mkdir(parents=True)
         (self.output_root / "_INCOMPLETE").write_bytes(b"P-A incomplete\n")
@@ -2442,13 +2769,20 @@ class _Materializer:
         if cache_root is None:
             return
         assert recovery_context is not None
-        prefill_production_parsed_asset_cache_v1(
+        self.parsed_asset_composite_bridge = prefill_production_parsed_asset_cache_v1(
             inputs=self.inputs,
             parsed_asset_cache_root=cache_root,
             parsed_asset_recovery_context=recovery_context,
             allow_writes=not getattr(
                 self, "parsed_asset_cache_read_only", False
             ),
+            predecessor_cache_root=getattr(
+                self, "predecessor_cache_root", None
+            ),
+            predecessor_recovery_context=getattr(
+                self, "predecessor_recovery_context", None
+            ),
+            compatibility_policy=getattr(self, "compatibility_policy", None),
         )
 
     def _prepare_production_sources(self) -> None:
@@ -2568,11 +2902,59 @@ class _Materializer:
                                 )
                         else:
                             assert recovery_context is not None
+                            bridge = self.parsed_asset_composite_bridge
+                            if bridge is None:
+                                raise CorpusMaterializationError(
+                                    "parsed-asset cache has no resolved bridge"
+                                )
+                            bridge_row = select_parsed_asset_bridge_row_v1(
+                                bridge,
+                                source_family=source,
+                                asset_order_ordinal=asset_order_ordinal,
+                            )
+                            if (
+                                bridge_row.source_asset_identity_sha256
+                                != verified_asset.expected.asset_identity_sha256
+                                or bridge_row.source_asset_sha256
+                                != verified_asset.observed_sha256
+                                or bridge_row.parser_binding_sha256
+                                != binding.binding_sha256
+                            ):
+                                raise CorpusMaterializationError(
+                                    "parsed-asset bridge selected a foreign live asset"
+                                )
+                            if (
+                                bridge_row.resolution
+                                == CURRENT_CONTEXT_RESOLUTION_V1
+                            ):
+                                selected_cache_root = cache_root
+                                selected_context = recovery_context
+                            elif (
+                                bridge_row.resolution
+                                == READ_ONLY_PREDECESSOR_RESOLUTION_V1
+                            ):
+                                selected_cache_root = getattr(
+                                    self, "predecessor_cache_root", None
+                                )
+                                selected_context = getattr(
+                                    self, "predecessor_recovery_context", None
+                                )
+                                if (
+                                    selected_cache_root is None
+                                    or selected_context is None
+                                ):
+                                    raise CorpusMaterializationError(
+                                        "parsed-asset bridge predecessor is unavailable"
+                                    )
+                            else:
+                                raise CorpusMaterializationError(
+                                    "parsed-asset bridge resolution is unknown"
+                                )
                             first_event_ordinal = state.event_ordinal
                             cached_receipt = (
                                 inspect_parsed_asset_segment_receipt_v1(
-                                    cache_root,
-                                    context=recovery_context,
+                                    selected_cache_root,
+                                    context=selected_context,
                                     verified_asset=verified_asset,
                                     parser_binding=binding,
                                     asset_order_ordinal=asset_order_ordinal,
@@ -2585,9 +2967,17 @@ class _Materializer:
                                 raise CorpusMaterializationError(
                                     "parsed-asset cache prefill left an asset incomplete"
                                 )
+                            if parsed_asset_composite_bridge_row_v1(
+                                root=selected_cache_root,
+                                receipt=cached_receipt,
+                                resolution=bridge_row.resolution,
+                            ) != bridge_row:
+                                raise CorpusMaterializationError(
+                                    "parsed-asset bridge row changed after prefill"
+                                )
                             for recovered in iter_parsed_asset_segment_v1(
-                                cache_root,
-                                context=recovery_context,
+                                selected_cache_root,
+                                context=selected_context,
                                 verified_asset=verified_asset,
                                 parser_binding=binding,
                                 asset_order_ordinal=asset_order_ordinal,
@@ -4287,6 +4677,9 @@ def materialize_corpus_pa_v3(
     parsed_asset_cache_root: Path | None = None,
     parsed_asset_recovery_context: ParsedAssetRecoveryContextV1 | None = None,
     parsed_asset_cache_read_only: bool = False,
+    predecessor_cache_root: Path | None = None,
+    predecessor_recovery_context: ParsedAssetRecoveryContextV1 | None = None,
+    compatibility_policy: ParsedAssetCompatibilityPolicyV1 | None = None,
 ) -> MaterializationResultV3:
     """Materialize P-A offline; never freeze P-B or mint D1-D6/G-TOK gates."""
 
@@ -4305,6 +4698,9 @@ def materialize_corpus_pa_v3(
         parsed_asset_cache_root=parsed_asset_cache_root,
         parsed_asset_recovery_context=parsed_asset_recovery_context,
         parsed_asset_cache_read_only=parsed_asset_cache_read_only,
+        predecessor_cache_root=predecessor_cache_root,
+        predecessor_recovery_context=predecessor_recovery_context,
+        compatibility_policy=compatibility_policy,
     ).run()
 
 

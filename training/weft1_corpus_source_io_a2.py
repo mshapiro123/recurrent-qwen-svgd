@@ -945,6 +945,7 @@ class SourceParserBindingV3:
     exact_json_top_level_fields: tuple[str, ...] = ()
     required_json_fields: tuple[JsonFieldV3, ...] = ()
     declared_parquet_columns: tuple[tuple[str, str], ...] = ()
+    declared_parquet_schema_ipc_sha256: str | None = None
 
     def __post_init__(self) -> None:
         if self.source_family not in _SOURCE_CONTAINERS:
@@ -978,6 +979,11 @@ class SourceParserBindingV3:
             column_names = tuple(name for name, _ in self.declared_parquet_columns)
             if len(column_names) != len(set(column_names)):
                 raise ValueError("Parquet binding repeats a column")
+            if self.declared_parquet_schema_ipc_sha256 is not None:
+                _require_sha256(
+                    self.declared_parquet_schema_ipc_sha256,
+                    "Parquet full-schema IPC SHA-256",
+                )
             bound_roots = (
                 self.text_path,
                 self.native_id_path,
@@ -990,7 +996,11 @@ class SourceParserBindingV3:
                 for path in bound_roots
             ):
                 raise ValueError("Parquet parser path is absent from its exact schema")
-        elif self.declared_parquet_columns or not self.required_json_fields:
+        elif (
+            self.declared_parquet_columns
+            or self.declared_parquet_schema_ipc_sha256 is not None
+            or not self.required_json_fields
+        ):
             raise ValueError("JSON binding requires exact JSON fields only")
         else:
             if (
@@ -1021,6 +1031,11 @@ class SourceParserBindingV3:
         # identity domain.
         if self.native_record_namespace_path is None:
             payload.pop("native_record_namespace_path")
+        # Preserve every pre-census parser identity byte-for-byte.  A binding
+        # enters the full-schema domain only when an exact Arrow IPC identity
+        # is explicitly declared.
+        if self.declared_parquet_schema_ipc_sha256 is None:
+            payload.pop("declared_parquet_schema_ipc_sha256")
         return canonical_sha256(
             {"payload": payload, "schema": "weft1_source_parser_binding_v3"}
         )
@@ -1107,7 +1122,6 @@ _FINEWEB_SCHEMA = (
     ("id", "string"),
     ("dump", "string"),
     ("url", "string"),
-    ("date", "string"),
     ("file_path", "string"),
     ("language", "string"),
     ("language_score", "float64"),
@@ -1115,6 +1129,286 @@ _FINEWEB_SCHEMA = (
     ("score", "float64"),
     ("int_score", "int64"),
 )
+FINEWEB_SELECTED_SCHEMA_CENSUS_SCHEMA_V1 = (
+    "weft1_fineweb_selected_parquet_schema_census_v1"
+)
+FINEWEB_SELECTED_SCHEMA_CENSUS_PATH_V1 = Path(__file__).with_name(
+    "weft1_fineweb_selected_parquet_schema_census_20260904.json"
+)
+FINEWEB_SELECTED_SCHEMA_CENSUS_PHYSICAL_BYTES_V1 = 2_176
+FINEWEB_SELECTED_SCHEMA_CENSUS_PHYSICAL_SHA256_V1 = (
+    "d17d2151448cf2463a780ddbfd2ae0a219b97c96eb854586668377a9f55acf3a"
+)
+FINEWEB_SELECTED_SCHEMA_CENSUS_RECEIPT_SHA256_V1 = (
+    "f3160bf0023c19006a181c5d241025b1fe92d81267ce90877c5f19f9fba6f29f"
+)
+
+
+def _load_fineweb_selected_schema_census_v1() -> Mapping[str, object]:
+    """Load the exact three-asset census that authorizes the projection.
+
+    The claim is deliberately no broader than the selected source-manifest
+    assets.  The artifact is transport-bound here, then semantically bound by
+    its own receipt, so the parser declaration cannot certify itself.
+    """
+
+    raw, value = load_canonical_json_snapshot(
+        FINEWEB_SELECTED_SCHEMA_CENSUS_PATH_V1
+    )
+    if (
+        raw != canonical_json_bytes(value) + b"\n"
+        or len(raw) != FINEWEB_SELECTED_SCHEMA_CENSUS_PHYSICAL_BYTES_V1
+        or hashlib.sha256(raw).hexdigest()
+        != FINEWEB_SELECTED_SCHEMA_CENSUS_PHYSICAL_SHA256_V1
+    ):
+        raise SourceSchemaError(
+            "FineWeb selected-schema census transport identity drifted"
+        )
+    expected_keys = {
+        "all_selected_assets_same_arrow_schema_ipc_sha256",
+        "all_selected_assets_same_ordered_projection",
+        "arrow_schema_ipc_sha256",
+        "claim_scope",
+        "governing_authority_sha256",
+        "ordered_projection",
+        "receipt_sha256",
+        "repository",
+        "revision",
+        "schema",
+        "selected_asset_count",
+        "selected_assets",
+        "source_family",
+        "source_manifest_identity_sha256",
+        "source_manifest_physical_bytes",
+        "source_manifest_physical_sha256",
+    }
+    if set(value) != expected_keys:
+        raise SourceSchemaError("FineWeb selected-schema census shape drifted")
+    receipt_payload = dict(value)
+    observed_receipt_sha256 = receipt_payload.pop("receipt_sha256")
+    expected_receipt_sha256 = canonical_sha256(
+        {
+            "payload": receipt_payload,
+            "schema": FINEWEB_SELECTED_SCHEMA_CENSUS_SCHEMA_V1,
+        }
+    )
+    if (
+        observed_receipt_sha256
+        != FINEWEB_SELECTED_SCHEMA_CENSUS_RECEIPT_SHA256_V1
+        or observed_receipt_sha256 != expected_receipt_sha256
+    ):
+        raise SourceSchemaError(
+            "FineWeb selected-schema census semantic identity drifted"
+        )
+    projection = value["ordered_projection"]
+    if not isinstance(projection, list) or tuple(
+        (row.get("name"), row.get("type"))
+        for row in projection
+        if isinstance(row, Mapping) and set(row) == {"name", "type"}
+    ) != _FINEWEB_SCHEMA or len(projection) != len(_FINEWEB_SCHEMA):
+        raise SourceSchemaError(
+            "FineWeb selected-schema census projection drifted"
+        )
+    assets = value["selected_assets"]
+    expected_assets = (
+        (
+            0,
+            "18128741a71fbd6a92aed78af73c72ba0a5a781c433981269460bc2aefd0cccb",
+            "47ef8acbe973f15fe58ee2fabe8de8c10172378e5f6a0c668a2e8e1491056419",
+            2_289_354_131,
+            837_580,
+            "CC-MAIN-2018-30",
+        ),
+        (
+            1,
+            "51191cf578878262bdfb34cf13c97dfa3f4f4c0e44d9b2081f6ca91278b82393",
+            "d1429ae4cca67f8e8d629da9b69726e1ad55076c773a7725ba3d4c7217d20e16",
+            2_295_347_141,
+            738_539,
+            "CC-MAIN-2023-40",
+        ),
+        (
+            2,
+            "7d9e87e7fcd9fce09282bdc7ce218e2a0b82de343de9bce275da2e393715c148",
+            "220c8ad2ba1418c507f0a6459cdd0d0c35b898561bf6a117b18cdbace7bf9b8a",
+            2_279_677_242,
+            806_318,
+            "CC-MAIN-2017-13",
+        ),
+    )
+    asset_keys = {
+        "asset_order_ordinal",
+        "dump_id",
+        "row_count",
+        "source_asset_bytes",
+        "source_asset_identity_sha256",
+        "source_asset_sha256",
+    }
+    observed_assets = tuple(
+        (
+            row.get("asset_order_ordinal"),
+            row.get("source_asset_identity_sha256"),
+            row.get("source_asset_sha256"),
+            row.get("source_asset_bytes"),
+            row.get("row_count"),
+            row.get("dump_id"),
+        )
+        for row in assets
+        if isinstance(row, Mapping) and set(row) == asset_keys
+    ) if isinstance(assets, list) else ()
+    if observed_assets != expected_assets:
+        raise SourceSchemaError("FineWeb selected-schema asset census drifted")
+    fixed = {
+        "all_selected_assets_same_arrow_schema_ipc_sha256": True,
+        "all_selected_assets_same_ordered_projection": True,
+        "arrow_schema_ipc_sha256": (
+            "c0bf305e55a4c78ed14886d317b067a461a0ca942350a6be20f5c4ba01dca0fd"
+        ),
+        "claim_scope": "THREE_SELECTED_FINEWEB_EDU_ASSETS_ONLY_NOT_UPSTREAM_FAMILY",
+        "governing_authority_sha256": (
+            "4e7b18ec676c6d613c7a0f85ece4c7b8fcc1daab48d5ce0b8cd11bc06875b6c0"
+        ),
+        "repository": "HuggingFaceFW/fineweb-edu",
+        "revision": "87f09149ef4734204d70ed1d046ddc9ca3f2b8f9",
+        "schema": FINEWEB_SELECTED_SCHEMA_CENSUS_SCHEMA_V1,
+        "selected_asset_count": 3,
+        "source_family": "fineweb_edu",
+        "source_manifest_identity_sha256": (
+            "fd2760cb9cca6a5c00d6c2bb659ad77a45291a3f73cc63618cdffb1984d5e1be"
+        ),
+        "source_manifest_physical_bytes": 251_492,
+        "source_manifest_physical_sha256": (
+            "079e865eb7ef54f7e99b04dc1bf137e269fd6cde4dd38cfdf2a11ca7711b9235"
+        ),
+    }
+    if any(value.get(key) != expected for key, expected in fixed.items()):
+        raise SourceSchemaError("FineWeb selected-schema census binding drifted")
+    return value
+
+
+FINEWEB_SELECTED_SCHEMA_CENSUS_V1 = _load_fineweb_selected_schema_census_v1()
+
+
+def _fineweb_selected_census_rows_v1() -> tuple[Mapping[str, object], ...]:
+    rows = FINEWEB_SELECTED_SCHEMA_CENSUS_V1["selected_assets"]
+    if not isinstance(rows, list) or any(not isinstance(row, Mapping) for row in rows):
+        raise AssertionError("validated FineWeb census lost its selected-asset rows")
+    return tuple(rows)  # type: ignore[arg-type]
+
+
+def _fineweb_selected_census_row_for_asset_v1(
+    verified_asset: VerifiedLocalCacheAssetV3,
+) -> Mapping[str, object]:
+    """Bind a production FineWeb parse to one of the three inspected assets."""
+
+    if not isinstance(verified_asset, VerifiedLocalCacheAssetV3):
+        raise TypeError("FineWeb census validation requires a verified cache asset")
+    expected = verified_asset.expected
+    if (
+        expected.source_family != "fineweb_edu"
+        or expected.repository != FINEWEB_SELECTED_SCHEMA_CENSUS_V1["repository"]
+        or expected.revision != FINEWEB_SELECTED_SCHEMA_CENSUS_V1["revision"]
+    ):
+        raise SourceSchemaError("FineWeb asset route differs from selected-schema census")
+    matches = tuple(
+        row
+        for row in _fineweb_selected_census_rows_v1()
+        if row["source_asset_identity_sha256"] == expected.asset_identity_sha256
+    )
+    if len(matches) != 1:
+        raise SourceSchemaError(
+            "FineWeb asset is absent from the selected-schema census"
+        )
+    row = matches[0]
+    if (
+        expected.bytes != row["source_asset_bytes"]
+        or expected.sha256 != row["source_asset_sha256"]
+        or verified_asset.observed_bytes != row["source_asset_bytes"]
+        or verified_asset.observed_sha256 != row["source_asset_sha256"]
+    ):
+        raise SourceSchemaError(
+            "FineWeb asset transport differs from selected-schema census"
+        )
+    return row
+
+
+def validate_fineweb_selected_schema_census_assets_v1(
+    verified_assets: Sequence[VerifiedLocalCacheAssetV3],
+    cache_root: Path,
+) -> str:
+    """Preflight the exact selected FineWeb manifest slice and full schemas.
+
+    This composes the checked-in census with the live verified-cache adapter.
+    It intentionally does not replace the parser's same-handle content rehash;
+    each fresh segment still verifies and parses one anonymous byte snapshot.
+    """
+
+    if not isinstance(verified_assets, Sequence) or isinstance(
+        verified_assets, (str, bytes)
+    ):
+        raise TypeError("FineWeb census assets must be a typed sequence")
+    assets = tuple(verified_assets)
+    if any(not isinstance(asset, VerifiedLocalCacheAssetV3) for asset in assets):
+        raise TypeError("FineWeb census assets contain an untyped value")
+    expected_rows = _fineweb_selected_census_rows_v1()
+    observed_identities = tuple(
+        asset.expected.asset_identity_sha256 for asset in assets
+    )
+    expected_identities = tuple(
+        str(row["source_asset_identity_sha256"]) for row in expected_rows
+    )
+    if observed_identities != expected_identities:
+        raise SourceSchemaError(
+            "FineWeb selected asset identity or order differs from census"
+        )
+    root = assert_no_symlink_ancestors(cache_root).resolve(strict=True)
+    if not root.is_dir():
+        raise SourceTransportError("FineWeb census cache root is not a directory")
+    schema_sha256s: list[str] = []
+    for asset, expected_row in zip(assets, expected_rows, strict=True):
+        row = _fineweb_selected_census_row_for_asset_v1(asset)
+        if row != expected_row:
+            raise AssertionError("FineWeb census lookup changed canonical order")
+        path = _safe_cache_path(root, asset.expected.relative_path, strict=True)
+        try:
+            stat = path.stat()
+            parquet = pq.ParquetFile(path)
+            schema = parquet.schema_arrow
+        except (OSError, pa.ArrowException) as error:
+            raise SourceContainerError(
+                "FineWeb selected asset cannot be inspected as Parquet"
+            ) from error
+        if not path.is_file() or path.is_symlink() or stat.st_size != row[
+            "source_asset_bytes"
+        ]:
+            raise SourceTransportError(
+                "FineWeb selected asset changed type or size before preflight"
+            )
+        projection = tuple(
+            (field.name, _arrow_type_name(field.type)) for field in schema
+        )
+        schema_sha256 = hashlib.sha256(schema.serialize().to_pybytes()).hexdigest()
+        if (
+            projection != _FINEWEB_SCHEMA
+            or schema_sha256
+            != FINEWEB_SELECTED_SCHEMA_CENSUS_V1["arrow_schema_ipc_sha256"]
+            or parquet.metadata is None
+            or parquet.metadata.num_rows != row["row_count"]
+        ):
+            raise SourceSchemaError(
+                "FineWeb selected asset full schema or row count differs from census"
+            )
+        schema_sha256s.append(schema_sha256)
+    return canonical_sha256(
+        {
+            "asset_identities": observed_identities,
+            "census_receipt_sha256": (
+                FINEWEB_SELECTED_SCHEMA_CENSUS_RECEIPT_SHA256_V1
+            ),
+            "schema": "weft1_fineweb_selected_schema_preflight_v1",
+            "schema_ipc_sha256s": tuple(schema_sha256s),
+        }
+    )
 
 # These are declared parser contracts, not observation receipts.  Actual
 # pinned-row evidence is minted only after re-reading cache bytes and records
@@ -1279,12 +1573,15 @@ PRODUCTION_PARSER_BINDINGS_V3: Mapping[str, SourceParserBindingV3] = {
     "fineweb_edu": SourceParserBindingV3(
         source_family="fineweb_edu",
         container="parquet",
-        authority="PINNED_CARD_DECLARATION",
-        authority_sha256="a0cc8998a20499432b28b6575f3046b714938eb8e11b8d59a1d25ddf3716061e",
+        authority="PINNED_ASSET_DECLARATION",
+        authority_sha256=FINEWEB_SELECTED_SCHEMA_CENSUS_PHYSICAL_SHA256_V1,
         text_path=("text",),
         native_id_path=("id",),
         int_score_path=("int_score",),
         declared_parquet_columns=_FINEWEB_SCHEMA,
+        declared_parquet_schema_ipc_sha256=(
+            "c0bf305e55a4c78ed14886d317b067a461a0ca942350a6be20f5c4ba01dca0fd"
+        ),
     ),
 }
 
@@ -1970,16 +2267,38 @@ def _iter_parquet_events(
     try:
         snapshot.seek(0)
         parquet = pq.ParquetFile(snapshot)
+        full_schema = parquet.schema_arrow
         observed_projection = tuple(
             (field.name, _arrow_type_name(field.type))
-            for field in parquet.schema_arrow
+            for field in full_schema
         )
         if observed_projection != binding.declared_parquet_columns:
             raise SourceSchemaError(
                 "Parquet card-declared column projection drifted"
             )
-        full_schema = parquet.schema_arrow
         full_schema_ipc = full_schema.serialize().to_pybytes()
+        if (
+            binding.declared_parquet_schema_ipc_sha256 is not None
+            and hashlib.sha256(full_schema_ipc).hexdigest()
+            != binding.declared_parquet_schema_ipc_sha256
+        ):
+            raise SourceSchemaError("Parquet full Arrow schema identity drifted")
+        if (
+            binding.source_family == "fineweb_edu"
+            and binding.authority == "PINNED_ASSET_DECLARATION"
+            and binding.authority_sha256
+            == FINEWEB_SELECTED_SCHEMA_CENSUS_PHYSICAL_SHA256_V1
+        ):
+            census_row = _fineweb_selected_census_row_for_asset_v1(
+                verified_asset
+            )
+            if (
+                parquet.metadata is None
+                or parquet.metadata.num_rows != census_row["row_count"]
+            ):
+                raise SourceSchemaError(
+                    "FineWeb Parquet row count differs from selected-schema census"
+                )
         schema_descriptor = _arrow_schema_descriptor(full_schema)
         ordinal = 0
         observation_emitted = False
@@ -2556,6 +2875,12 @@ __all__ = [
     "DROP_EMPTY_TEXT",
     "DROP_INVALID_UTF8",
     "DROP_QUALITY_LT3",
+    "FINEWEB_SELECTED_SCHEMA_CENSUS_PATH_V1",
+    "FINEWEB_SELECTED_SCHEMA_CENSUS_PHYSICAL_BYTES_V1",
+    "FINEWEB_SELECTED_SCHEMA_CENSUS_PHYSICAL_SHA256_V1",
+    "FINEWEB_SELECTED_SCHEMA_CENSUS_RECEIPT_SHA256_V1",
+    "FINEWEB_SELECTED_SCHEMA_CENSUS_SCHEMA_V1",
+    "FINEWEB_SELECTED_SCHEMA_CENSUS_V1",
     "PARSE_DISPOSITIONS",
     "PARSED_SOURCE_SPOOL_SCHEMA_V3",
     "PRODUCTION_PARSER_COMPOSITE_IDENTITIES_V3",
@@ -2589,6 +2914,7 @@ __all__ = [
     "materialize_source_cache_v3",
     "plan_source_cache_assets_v3",
     "resolve_production_parser_binding_v3",
+    "validate_fineweb_selected_schema_census_assets_v1",
     "verify_parsed_source_spool_v3",
     "write_source_cache_download_receipt_v3",
 ]

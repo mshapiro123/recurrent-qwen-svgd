@@ -490,11 +490,29 @@ def _parent_replay_payload(pa: pb.PAInspectionV4, second_root: Path) -> dict[str
     second_root.mkdir(exist_ok=True)
     core = {
         "first_child_receipt_sha256": "1" * 64,
+        "first_parsed_asset_bridge_physical_bytes": 101,
+        "first_parsed_asset_bridge_physical_sha256": "7" * 64,
+        "first_parsed_asset_bridge_receipt_sha256": "8" * 64,
         "first_parsed_asset_cache_context_sha256": "5" * 64,
+        "first_predecessor_parsed_asset_cache_context_sha256": None,
+        "incident_compatibility_authority_physical_bytes": None,
+        "incident_compatibility_authority_physical_sha256": None,
+        "incident_compatibility_policy_sha256": None,
         "input_identity_sha256": "2" * 64,
+        "max_concurrent_write_enabled_children": 1,
         "second_child_receipt_sha256": "3" * 64,
+        "second_parsed_asset_bridge_physical_bytes": 102,
+        "second_parsed_asset_bridge_physical_sha256": "9" * 64,
+        "second_parsed_asset_bridge_receipt_sha256": "a" * 64,
         "second_parsed_asset_cache_context_sha256": "6" * 64,
         "worker_compatibility_sha256": "4" * 64,
+        "write_enabled_child_policy": "SINGLE_PARENT_ONE_WRITE_ENABLED_CHILD",
+        "write_enabled_operation_order": (
+            ("cache_fill", 0),
+            ("cache_fill", 1),
+            ("materialize", 0),
+            ("materialize", 1),
+        ),
     }
     typed = pb.ParentReplayVerificationV4(
         status="PASS",
@@ -506,6 +524,11 @@ def _parent_replay_payload(pa: pb.PAInspectionV4, second_root: Path) -> dict[str
         runtime_provenance_verified=True,
         os_network_isolation_verified=True,
         durable_post_write_rehash_verified=True,
+        write_enabled_child_policy=core["write_enabled_child_policy"],
+        write_enabled_operation_order=core["write_enabled_operation_order"],
+        max_concurrent_write_enabled_children=core[
+            "max_concurrent_write_enabled_children"
+        ],
         input_identity_sha256=core["input_identity_sha256"],
         worker_compatibility_sha256=core["worker_compatibility_sha256"],
         first_child_receipt_sha256=core["first_child_receipt_sha256"],
@@ -522,12 +545,86 @@ def _parent_replay_payload(pa: pb.PAInspectionV4, second_root: Path) -> dict[str
         second_parsed_asset_cache_context_sha256=core[
             "second_parsed_asset_cache_context_sha256"
         ],
+        first_predecessor_parsed_asset_cache_context_sha256=core[
+            "first_predecessor_parsed_asset_cache_context_sha256"
+        ],
+        incident_compatibility_policy_sha256=core[
+            "incident_compatibility_policy_sha256"
+        ],
+        incident_compatibility_authority_physical_bytes=core[
+            "incident_compatibility_authority_physical_bytes"
+        ],
+        incident_compatibility_authority_physical_sha256=core[
+            "incident_compatibility_authority_physical_sha256"
+        ],
+        first_parsed_asset_bridge_receipt_sha256=core[
+            "first_parsed_asset_bridge_receipt_sha256"
+        ],
+        first_parsed_asset_bridge_physical_bytes=core[
+            "first_parsed_asset_bridge_physical_bytes"
+        ],
+        first_parsed_asset_bridge_physical_sha256=core[
+            "first_parsed_asset_bridge_physical_sha256"
+        ],
+        second_parsed_asset_bridge_receipt_sha256=core[
+            "second_parsed_asset_bridge_receipt_sha256"
+        ],
+        second_parsed_asset_bridge_physical_bytes=core[
+            "second_parsed_asset_bridge_physical_bytes"
+        ],
+        second_parsed_asset_bridge_physical_sha256=core[
+            "second_parsed_asset_bridge_physical_sha256"
+        ],
         local_work_parent=str(pa.root.parent / "work"),
         evidence_sha256=execution_authority_v4_bound_sha256(
             pb.PARENT_EVIDENCE_SCHEMA_V4, core
         ),
     )
     return {**asdict(typed), "receipt_sha256": typed.receipt_sha256}
+
+
+def test_parent_replay_topology_survives_canonical_json_round_trip(
+    tmp_path: Path,
+) -> None:
+    pa, _ = _build_scan_fixture(tmp_path)
+    path = tmp_path / "parent-round-trip.json"
+    expected = _parent_replay_payload(pa, tmp_path / "replay-b")
+    _write(path, expected)
+    unused_raw, loaded = pb._load_canonical(path, "parent round trip")
+    del unused_raw
+    body = dict(loaded)
+    body.pop("receipt_sha256")
+    body["write_enabled_operation_order"] = (
+        pb._normalize_parent_write_enabled_operation_order_v4(
+            body["write_enabled_operation_order"]
+        )
+    )
+    reconstructed = pb.ParentReplayVerificationV4(**body)
+    assert reconstructed.write_enabled_operation_order == (
+        ("cache_fill", 0),
+        ("cache_fill", 1),
+        ("materialize", 0),
+        ("materialize", 1),
+    )
+    assert reconstructed.receipt_sha256 == expected["receipt_sha256"]
+
+
+@pytest.mark.parametrize(
+    "malformed",
+    (
+        None,
+        (),
+        [["cache_fill"]],
+        [["cache_fill", True]],
+        [[1, 0]],
+        [("cache_fill", 0)],
+    ),
+)
+def test_parent_replay_topology_rejects_malformed_json_rows(
+    malformed: object,
+) -> None:
+    with pytest.raises(pb.PBFreezeError, match="operation order is malformed"):
+        pb._normalize_parent_write_enabled_operation_order_v4(malformed)
 
 
 def _balanced_independent_scan() -> dict[str, object]:

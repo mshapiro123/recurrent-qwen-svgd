@@ -351,6 +351,126 @@ def test_cache_fill_loader_skips_global_rehash_but_preserves_receipt_composition
     assert len(inputs.verified_cache.assets) == len(SOURCE_FAMILIES)
 
 
+def test_fineweb_schema_census_preflight_composes_manifest_and_asset_order(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    (
+        context,
+        _,
+        manifest,
+        _,
+        enumeration_path,
+        manifest_path,
+        download_path,
+        cache_root,
+    ) = _fixture(tmp_path)
+    monkeypatch.setattr(
+        bridge,
+        "load_pa_source_execution_context_v4",
+        lambda *, breakdown_root: context,
+    )
+    inputs = bridge.load_cache_fill_input_v4(
+        enumeration_receipt_path=enumeration_path,
+        cache_download_receipt_path=download_path,
+        source_manifest_path=manifest_path,
+        cache_root=cache_root,
+        breakdown_root=tmp_path,
+    )
+    raw = manifest_path.read_bytes()
+    explicit_fixture_census = dict(
+        bridge.source_io.FINEWEB_SELECTED_SCHEMA_CENSUS_V1
+    )
+    explicit_fixture_census.update(
+        {
+            "source_manifest_identity_sha256": manifest.receipt_sha256,
+            "source_manifest_physical_bytes": len(raw),
+            "source_manifest_physical_sha256": hashlib.sha256(raw).hexdigest(),
+        }
+    )
+    monkeypatch.setattr(
+        bridge.source_io,
+        "FINEWEB_SELECTED_SCHEMA_CENSUS_V1",
+        explicit_fixture_census,
+    )
+    observed: list[tuple[str, ...]] = []
+
+    def explicit_fixture_schema_binding(assets: object, root: Path) -> str:
+        typed = tuple(assets)  # type: ignore[arg-type]
+        observed.append(
+            tuple(asset.expected.asset_identity_sha256 for asset in typed)
+        )
+        assert root == cache_root
+        return "a" * 64
+
+    monkeypatch.setattr(
+        bridge.source_io,
+        "validate_fineweb_selected_schema_census_assets_v1",
+        explicit_fixture_schema_binding,
+    )
+    receipt = bridge.validate_fineweb_selected_schema_census_preflight_v4(
+        source_manifest_path=manifest_path,
+        inputs=inputs,
+    )
+    expected = tuple(
+        asset.asset_identity_sha256
+        for asset in manifest.assets
+        if asset.source_family == "fineweb_edu"
+    )
+    assert observed == [expected]
+    assert len(receipt) == 64
+
+
+def test_fineweb_schema_census_preflight_rejects_wrong_manifest_same_projection(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    (
+        context,
+        _,
+        _,
+        _,
+        enumeration_path,
+        manifest_path,
+        download_path,
+        cache_root,
+    ) = _fixture(tmp_path)
+    monkeypatch.setattr(
+        bridge,
+        "load_pa_source_execution_context_v4",
+        lambda *, breakdown_root: context,
+    )
+    inputs = bridge.load_cache_fill_input_v4(
+        enumeration_receipt_path=enumeration_path,
+        cache_download_receipt_path=download_path,
+        source_manifest_path=manifest_path,
+        cache_root=cache_root,
+        breakdown_root=tmp_path,
+    )
+    raw = manifest_path.read_bytes()
+    wrong_manifest_census = dict(
+        bridge.source_io.FINEWEB_SELECTED_SCHEMA_CENSUS_V1
+    )
+    wrong_manifest_census.update(
+        {
+            "source_manifest_identity_sha256": "f" * 64,
+            "source_manifest_physical_bytes": len(raw),
+            "source_manifest_physical_sha256": hashlib.sha256(raw).hexdigest(),
+        }
+    )
+    monkeypatch.setattr(
+        bridge.source_io,
+        "FINEWEB_SELECTED_SCHEMA_CENSUS_V1",
+        wrong_manifest_census,
+    )
+    with pytest.raises(
+        bridge.CorpusMaterializationV4Error,
+        match="manifest identity differs",
+    ):
+        bridge.validate_fineweb_selected_schema_census_preflight_v4(
+            source_manifest_path=manifest_path,
+            inputs=inputs,
+        )
+
+
 def test_v4_bridge_fails_closed_on_cache_mutation(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

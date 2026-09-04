@@ -35,6 +35,15 @@ def build_parser() -> argparse.ArgumentParser:
     full.add_argument("--source-cache", required=True, type=Path)
     full.add_argument("--fasttext-model", required=True, type=Path)
     full.add_argument("--runtime-build-receipt", required=True, type=Path)
+    full.add_argument(
+        "--incident-compatibility-authority-path",
+        type=Path,
+        default=None,
+        help=(
+            "optional incident-scoped V1 compatibility authority; applied to "
+            "replay lane A only while lane B remains fresh"
+        ),
+    )
     full.add_argument("--durable-mount-root", required=True, type=Path)
     full.add_argument("--durable-storage-marker", required=True, type=Path)
     full.add_argument("--durable-output-parent", required=True, type=Path)
@@ -134,6 +143,9 @@ def _run(arguments: argparse.Namespace) -> dict[str, object]:
         local_work_parent=local_parent,
         first_output_root=output_parent / "production-v4-replay-a",
         second_output_root=output_parent / "production-v4-replay-b",
+        incident_compatibility_authority_path=getattr(
+            arguments, "incident_compatibility_authority_path", None
+        ),
         timeout_seconds=arguments.timeout_seconds,
     )
     payload = {**asdict(result), "receipt_sha256": result.receipt_sha256}

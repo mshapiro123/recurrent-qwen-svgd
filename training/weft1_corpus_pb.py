@@ -1431,6 +1431,25 @@ def load_c2_fixture_evidence(path: Path) -> tuple[str, str]:
     return _sha256_bytes(raw), claimed
 
 
+def _normalize_parent_write_enabled_operation_order_v4(
+    value: object,
+) -> tuple[tuple[str, int], ...]:
+    if (
+        not isinstance(value, list)
+        or any(
+            not isinstance(row, list)
+            or len(row) != 2
+            or not isinstance(row[0], str)
+            or type(row[1]) is not int
+            for row in value
+        )
+    ):
+        raise PBFreezeError(
+            "V4 parent replay write-enabled operation order is malformed"
+        )
+    return tuple((row[0], row[1]) for row in value)
+
+
 def load_parent_replay_verification_v4(
     path: Path, *, pa: PAInspectionV4
 ) -> tuple[str, str]:
@@ -1444,6 +1463,11 @@ def load_parent_replay_verification_v4(
         "V4 parent replay verification",
     )
     body = {name: receipt[name] for name in field_names}
+    body["write_enabled_operation_order"] = (
+        _normalize_parent_write_enabled_operation_order_v4(
+            body.get("write_enabled_operation_order")
+        )
+    )
     try:
         typed = ParentReplayVerificationV4(**body)
     except (TypeError, ValueError) as error:
@@ -1457,15 +1481,50 @@ def load_parent_replay_verification_v4(
         PARENT_EVIDENCE_SCHEMA_V4,
         {
             "first_child_receipt_sha256": typed.first_child_receipt_sha256,
+            "first_parsed_asset_bridge_physical_bytes": (
+                typed.first_parsed_asset_bridge_physical_bytes
+            ),
+            "first_parsed_asset_bridge_physical_sha256": (
+                typed.first_parsed_asset_bridge_physical_sha256
+            ),
+            "first_parsed_asset_bridge_receipt_sha256": (
+                typed.first_parsed_asset_bridge_receipt_sha256
+            ),
             "first_parsed_asset_cache_context_sha256": (
                 typed.first_parsed_asset_cache_context_sha256
             ),
+            "first_predecessor_parsed_asset_cache_context_sha256": (
+                typed.first_predecessor_parsed_asset_cache_context_sha256
+            ),
+            "incident_compatibility_authority_physical_bytes": (
+                typed.incident_compatibility_authority_physical_bytes
+            ),
+            "incident_compatibility_authority_physical_sha256": (
+                typed.incident_compatibility_authority_physical_sha256
+            ),
+            "incident_compatibility_policy_sha256": (
+                typed.incident_compatibility_policy_sha256
+            ),
             "input_identity_sha256": typed.input_identity_sha256,
+            "max_concurrent_write_enabled_children": (
+                typed.max_concurrent_write_enabled_children
+            ),
             "second_child_receipt_sha256": typed.second_child_receipt_sha256,
+            "second_parsed_asset_bridge_physical_bytes": (
+                typed.second_parsed_asset_bridge_physical_bytes
+            ),
+            "second_parsed_asset_bridge_physical_sha256": (
+                typed.second_parsed_asset_bridge_physical_sha256
+            ),
+            "second_parsed_asset_bridge_receipt_sha256": (
+                typed.second_parsed_asset_bridge_receipt_sha256
+            ),
             "second_parsed_asset_cache_context_sha256": (
                 typed.second_parsed_asset_cache_context_sha256
             ),
             "worker_compatibility_sha256": typed.worker_compatibility_sha256,
+            "write_enabled_child_policy": typed.write_enabled_child_policy,
+            "write_enabled_operation_order": typed.write_enabled_operation_order,
         },
     )
     if typed.evidence_sha256 != expected_evidence:
